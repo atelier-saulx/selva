@@ -191,7 +191,10 @@ static int add_set_values(
         type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
         SVector new_set;
 
-        if (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE && (value_len % SELVA_NODE_ID_SIZE)) {
+        /* Check that the value divides into elements properly. */
+        if ((type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE && (value_len % SELVA_NODE_ID_SIZE)) ||
+            (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE && (value_len % sizeof(double))) ||
+            (type == SELVA_MODIFY_OP_SET_TYPE_LONG_LONG && (value_len % sizeof(long long)))) {
             return SELVA_EINVAL;
         }
 
@@ -350,8 +353,14 @@ string_err:
                     const double a = set_el->value_d;
 
                     /* This is probably faster than any data structure we could use. */
-                    for (size_t i = 0; i < value_len / sizeof(double); i++) {
-                        const double b = ((double *)value_ptr)[i]; /* RFE Might bork on ARM */
+                    for (size_t i = 0; i < value_len; i += sizeof(double)) {
+                        double b;
+
+                        /*
+                         * We use memcpy here because it's not guranteed that the
+                         * array is aligned properly.
+                         */
+                        memcpy(&b, value_ptr + i, sizeof(double));
 
                         if (a == b) {
                             found = 1;
@@ -370,8 +379,14 @@ string_err:
                     const long long a = set_el->value_ll;
 
                     /* This is probably faster than any data structure we could use. */
-                    for (size_t i = 0; i < value_len / sizeof(double); i++) {
-                        const long long b = ((long long *)value_ptr)[i]; /* RFE Might bork on ARM */
+                    for (size_t i = 0; i < value_len; i++) {
+                        long long b;
+
+                        /*
+                         * We use memcpy here because it's not guranteed that the
+                         * array is aligned properly.
+                         */
+                        memcpy(&b, value_ptr + i, sizeof(long long));
 
                         if (a == b) {
                             found = 1;
