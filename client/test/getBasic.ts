@@ -2246,10 +2246,6 @@ test.serial.only('get - field with array', async (t) => {
     floatArray: true,
   })
 
-  result.floatArray.forEach((x, i) => {
-    result.floatArray[i] = Number(parseFloat(`${x}`).toFixed(1))
-  })
-
   t.deepEqual(result, {
     children: [],
     descendants: [],
@@ -2261,10 +2257,6 @@ test.serial.only('get - field with array', async (t) => {
   const all = await client.get({
     $id: id,
     $all: true,
-  })
-
-  all.floatArray.forEach((x, i) => {
-    all.floatArray[i] = Number(parseFloat(`${x}`).toFixed(1))
   })
 
   t.deepEqualIgnoreOrder(all, {
