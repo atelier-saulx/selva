@@ -351,12 +351,12 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
          s = strtok_r(NULL, sep, &rest)) {
         const size_t slen = strlen(s);
         int err;
-        size_t ary_idx = -1;
+        // size_t ary_idx = -1;
 
-        if (is_array_field(key_name_str, key_name_len)) {
-            ary_idx = get_array_field_index(key_name_str, key_name_len);
-            key_name_len = get_array_field_index(key_name_str, key_name_len);
-        }
+        // if (is_array_field(key_name_str, key_name_len)) {
+        //     ary_idx = get_array_field_index(key_name_str, key_name_len);
+        //     key_name_len = get_array_field_index(key_name_str, key_name_len);
+        // }
 
         cobj = obj;
         key = NULL; /* This needs to be cleared on every iteration. */
@@ -364,6 +364,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         err = get_key(obj, s, slen, 0, &key);
         if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT)) &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
+            // TODO: handle creating a new index in array if that doesn't exist
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
              * but we are allowed to create one here.
