@@ -144,7 +144,24 @@ export const TYPE_CASTS: Record<
   boolean: (x: any) => !!Number(x),
   json: (x: any) => JSON.parse(x),
   // array: (x: any) => JSON.parse(x),
-  array: (x: any) => {
+  array: (x: any, id: string, field: string, schema, lang) => {
+    const fieldSchema = <FieldSchemaArrayLike>getNestedSchema(schema, id, field)
+    if (!fieldSchema || !fieldSchema.items) {
+      return x
+    }
+
+    if (['int', 'float', 'number'].includes(fieldSchema.items.type)) {
+      const converted = x.map((num) => {
+        if (typeof num === 'string') {
+          return Number(num)
+        } else {
+          return num
+        }
+      })
+
+      return converted
+    }
+
     return x
   },
   set: (all: any, id: string, field: string, schema, lang) => {
