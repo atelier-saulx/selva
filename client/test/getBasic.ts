@@ -2246,6 +2246,10 @@ test.serial.only('get - field with array', async (t) => {
     floatArray: true,
   })
 
+  result.floatArray.forEach((x, i) => {
+    result.floatArray[i] = Number(parseFloat(`${x}`).toFixed(1))
+  })
+
   t.deepEqual(result, {
     children: [],
     descendants: [],
@@ -2254,20 +2258,23 @@ test.serial.only('get - field with array', async (t) => {
     floatArray: [1.1, 2.2, 3.3, 4.4],
   })
 
-  t.deepEqualIgnoreOrder(
-    await client.get({
-      $id: id,
-      $all: true,
-    }),
-    {
-      id,
-      // dong: { dingdong: [] },
-      type: 'lekkerType',
-      dingdongs: ['a', 'b', 'test'],
-      intArray: [1, 2, 3, 4, 5],
-      floatArray: [1.1, 2.2, 3.3, 4.4],
-    }
-  )
+  const all = await client.get({
+    $id: id,
+    $all: true,
+  })
+
+  all.floatArray.forEach((x, i) => {
+    all.floatArray[i] = Number(parseFloat(`${x}`).toFixed(1))
+  })
+
+  t.deepEqualIgnoreOrder(all, {
+    id,
+    // dong: { dingdong: [] },
+    type: 'lekkerType',
+    dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
+  })
 
   client.destroy()
 })
