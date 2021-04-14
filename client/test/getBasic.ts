@@ -2242,6 +2242,8 @@ test.serial.only('get - field with array', async (t) => {
     children: true,
     descendants: true,
     refs: true,
+    intArray: true,
+    floatArray: true,
   })
 
   t.deepEqual(result, {
