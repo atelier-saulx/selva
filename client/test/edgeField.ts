@@ -268,6 +268,93 @@ test.serial('find can return edge fields', async (t) => {
   )
 })
 
+test.serial('find can do nested traversals', async (t) => {
+  const client = connect({ port })
+
+  // Create nodes
+  await client.redis.selva_modify('root', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('ma01', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('ma02', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('ma11', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('ma12', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('ma21', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('ma22', '', '0', 'o.a', 'hello')
+
+  // Create edges
+  await client.redis.selva_modify('root', '', '5', 'a.b', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 0,
+    $add: toCArr(['ma01', 'ma02']),
+    $delete: null,
+    $value: null,
+  }))
+  await client.redis.selva_modify('ma01', '', '5', 'children', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 0,
+    $add: toCArr(['ma11']),
+    $delete: null,
+    $value: null,
+  }))
+  await client.redis.selva_modify('ma02', '', '5', 'children', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 0,
+    $add: toCArr(['ma12']),
+    $delete: null,
+    $value: null,
+  }))
+  await client.redis.selva_modify('ma11', '', '5', 'children', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 0,
+    $add: toCArr(['ma21']),
+    $delete: null,
+    $value: null,
+  }))
+  await client.redis.selva_modify('ma12', '', '5', 'children', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 0,
+    $add: toCArr(['ma22']),
+    $delete: null,
+    $value: null,
+  }))
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs', 'a.b', 'fields', 'a.b\nparents\ndescendants', 'root'),
+    [
+      [
+        'root', [
+          'a.b', ['ma01', 'ma02'],
+          'parents', [],
+          'descendants', [
+             'ma01',
+             'ma02',
+             'ma11',
+             'ma12',
+             'ma21',
+             'ma22',
+          ],
+        ]
+      ],
+      [
+        'ma01', [
+          'parents', ['root'],
+          'descendants', ['ma11', 'ma21'],
+        ],
+      ],
+      [
+        'ma02', [
+          'parents', ['root'],
+          'descendants', ['ma12', 'ma22'],
+        ],
+      ],
+    ]
+  )
+})
+
 test.serial('missing edges are added automatically', async (t) => {
   const client = connect({ port })
 

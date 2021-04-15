@@ -576,8 +576,13 @@ static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaM
                  */
                 if (!strcmp(field_str, "ancestors")) {
                     RedisModule_ReplyWithString(ctx, field);
-                    /* Ancestors is forbidden because we only supportone traversal at time. */
-                    replyWithSelvaErrorf(ctx, SELVA_HIERARCHY_EINVAL, "Forbidden field");
+                    err = HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
+                    if (err) {
+                        fprintf(stderr, "%s:%d: Sending the ancestors field of %.*s failed: %s\n",
+                                __FILE__, __LINE__,
+                                (int)SELVA_NODE_ID_SIZE, nodeId,
+                                getSelvaErrorStr(err));
+                    }
 
                     nr_fields++;
                     break;
@@ -595,8 +600,13 @@ static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaM
                     break;
                 } else if (!strcmp(field_str, "descendants")) {
                     RedisModule_ReplyWithString(ctx, field);
-                    /* Descencants is forbidden because we only supportone traversal at time. */
-                    replyWithSelvaErrorf(ctx, SELVA_HIERARCHY_EINVAL, "Forbidden field");
+                    err = HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
+                    if (err) {
+                        fprintf(stderr, "%s:%d: Sending the descendants field of %.*s failed: %s\n",
+                                __FILE__, __LINE__,
+                                (int)SELVA_NODE_ID_SIZE, nodeId,
+                                getSelvaErrorStr(err));
+                    }
 
                     nr_fields++;
                     break;
@@ -1269,18 +1279,21 @@ static int get_skip(enum SelvaModify_HierarchyTraversal dir) {
 
 /**
  * Find node ancestors/descendants.
- * SELVA.HIERARCHY.find REDIS_KEY dfs|bfs descendants|ancestors [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
- *                                |       |                     |                      |             |            |            |                    |        |            |
- * Traversal method/algo --------/        |                     |                      |             |            |            |                    |        |            |
- * Traversal direction ------------------/                      |                      |             |            |            |                    |        |            |
- * Sort order of the results ----------------------------------/                       |             |            |            |                    |        |            |
- * Skip the first 1234 - 1 results ---------------------------------------------------/              |            |            |                    |        |            |
- * Limit the number of results (Optional) ----------------------------------------------------------/             |            |                    |        |            |
- * Merge fields. fields option must be set. ---------------------------------------------------------------------/             |                    |        |            |
- * Return field values instead of node names ---------------------------------------------------------------------------------/                     |        |            |
- * One or more node IDs concatenated (10 chars per ID) --------------------------------------------------------------------------------------------/         |            |
- * RPN filter expression -----------------------------------------------------------------------------------------------------------------------------------/             |
- * Register arguments for the RPN filter --------------------------------------------------------------------------------------------------------------------------------/
+ * SELVA.HIERARCHY.find REDIS_KEY dfs|bfs field_name [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
+ *                                |       |          |                      |             |            |            |                    |        |            |
+ * Traversal method/algo --------/        |          |                      |             |            |            |                    |        |            |
+ * Traversed field ----------------------/           |                      |             |            |            |                    |        |            |
+ * Sort order of the results -----------------------/                       |             |            |            |                    |        |            |
+ * Skip the first 1234 - 1 results ----------------------------------------/              |            |            |                    |        |            |
+ * Limit the number of results (Optional) -----------------------------------------------/             |            |                    |        |            |
+ * Merge fields. fields option must be set. ----------------------------------------------------------/             |                    |        |            |
+ * Return field values instead of node names ----------------------------------------------------------------------/                     |        |            |
+ * One or more node IDs concatenated (10 chars per ID) ---------------------------------------------------------------------------------/         |            |
+ * RPN filter expression ------------------------------------------------------------------------------------------------------------------------/             |
+ * Register arguments for the RPN filter ---------------------------------------------------------------------------------------------------------------------/
+ *
+ * The traversed field is typically either ancestors or descendants but it can
+ * be any hierarchy or edge field.
  */
 int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
