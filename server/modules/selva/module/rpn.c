@@ -556,7 +556,7 @@ static struct SelvaObject *open_node_object(struct RedisModuleCtx *redis_ctx, st
     return obj;
 }
 
-static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, struct rpn_operand *field, int type) {
+static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_operand *field, int type) {
     struct SelvaObject *obj;
     const char *field_str = OPERAND_GET_S(field);
     const size_t field_len = OPERAND_GET_S_LEN(field);

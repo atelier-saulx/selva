@@ -179,12 +179,12 @@ static int add_set_values(
     struct SelvaObject *obj,
     RedisModuleString *id,
     const RedisModuleString *field,
-    char *value_ptr,
+    const char *value_ptr,
     size_t value_len,
     int8_t type,
     int remove_diff
 ) {
-    char *ptr = value_ptr;
+    const char *ptr = value_ptr;
     int res = 0;
 
     if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
@@ -414,11 +414,11 @@ static int del_set_values(
     RedisModuleKey *alias_key,
     struct SelvaObject *obj,
     const RedisModuleString *field,
-    char *value_ptr,
+    const char *value_ptr,
     size_t value_len,
     int8_t type
 ) {
-    char *ptr = value_ptr;
+    const char *ptr = value_ptr;
     int res = 0;
 
     if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
