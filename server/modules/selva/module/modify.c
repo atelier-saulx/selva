@@ -279,7 +279,6 @@ static int add_set_values(
                     SelvaSet_DestroyElement(SelvaSet_Remove(objSet, el));
 
                     if (alias_key) {
-                        /* TODO This could be its own function in the future. */
                         Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, el);
                         RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, el, REDISMODULE_HASH_DELETE, NULL);
                     }

@@ -571,7 +571,6 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
         return RPN_ERR_NPE;
     }
 
-    /* TODO RMS wouldn't be necessary here */
     const enum SelvaObjectType field_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
     if (field_type == SELVA_OBJECT_NULL) {
         return (type == RPN_LVTYPE_NUMBER) ? push_double_result(ctx, nan_undefined()) : push_empty_value(ctx);
