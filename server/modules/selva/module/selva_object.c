@@ -420,6 +420,12 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              * Keep nesting or return an object if this was the last token.
              */
             int ary_idx = get_array_field_index(key_name_str, key_name_len);
+            size_t ary_field_len = get_array_field_index(key_name_str, key_name_len);
+            int err = SelvaObject_GetArrayIndexAsSelvaObject(obj, key_name_str, ary_field_len, ary_idx, &obj);
+            if (err) {
+                return err;
+            }
+
             // TODO: get void pointer in array index accessor (or maybe get long/double/string/selvaobject)
             // TODO: get object from this index and assign it to obj
             // TODO: if object doesn't exist but (flags & SELVA_OBJECT_GETKEY_CREATE) create it and keep iterating
@@ -978,6 +984,10 @@ static int SelvaObject_GetArrayIndex(struct SelvaObject *obj, const char *key_na
 }
 
 int SelvaObject_GetArrayIndexAsRmsStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, RedisModuleString **out) {
+    return SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_STRING, (void **)out);
+}
+
+int SelvaObject_GetArrayIndexAsSelvaObject(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, struct SelvaObject **out) {
     return SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_STRING, (void **)out);
 }
 
