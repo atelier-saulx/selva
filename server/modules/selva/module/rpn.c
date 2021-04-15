@@ -762,7 +762,7 @@ static enum rpn_error rpn_op_necess(struct RedisModuleCtx *redis_ctx __unused, s
 }
 
 static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
-    int err, exists;
+    int exists;
     struct SelvaObject *obj;
     OPERAND(ctx, field);
     const char *field_str = OPERAND_GET_S(field);
