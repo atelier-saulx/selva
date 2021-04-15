@@ -179,6 +179,11 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
     return dest;
 }
 
+static size_t calc_new_len(size_t old_len) {
+    const size_t new_len = old_len + 1;
+    return new_len + (new_len >> 1);
+}
+
 void SVector_Insert(SVector *vec, void *el) {
     if (vec->vec_mode == SVECTOR_MODE_ARRAY &&
         vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
@@ -194,7 +199,7 @@ void SVector_Insert(SVector *vec, void *el) {
         assert(el);
 
         if (i >= vec_len - 1) {
-            const size_t new_len = vec_len * 2 + 1; /* + 1 to make lazy alloc work. */
+            const size_t new_len = calc_new_len(vec_len);
             const size_t new_size = VEC_SIZE(new_len);
 
             void **new_arr = RedisModule_Realloc(vec_arr, new_size);
@@ -273,7 +278,7 @@ void *SVector_InsertFast(SVector *vec, void *el) {
         }
 
         if (vec->vec_last >= vec->vec_arr_len - 1) {
-            const size_t new_len = vec->vec_arr_len * 2;
+            const size_t new_len = calc_new_len(vec->vec_arr_len);
             const size_t new_size = VEC_SIZE(new_len);
 
             void **new_arr = RedisModule_Realloc(vec_arr, new_size);
