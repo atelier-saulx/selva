@@ -14,7 +14,7 @@ enum rpn_error {
     RPN_ERR_NPE,        /*!< A NULL pointer was encountered. */
     RPN_ERR_NAN,        /*!< Not a number. */
     RPN_ERR_DIV,        /*!< Divide by zero. */
-    RPN_ERR_NECESS,     /*!< A necessarily truthy condition failed. */
+    RPN_ERR_BREAK,      /*!< Breaking condition. Never returned. */
 };
 
 struct rpn_operand;

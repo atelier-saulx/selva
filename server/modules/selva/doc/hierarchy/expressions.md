@@ -89,6 +89,35 @@ User registers start from index 1, and register number 0 is reserved for the cur
 | `N`      | `a OR b`      | Logical OR operator.              | `#0 #1 N => 1`           |
 | `O`      | `!!a XOR !!b` | Logical XOR operator.             | `#1 #1 O => 0`           |
 | `P`      | `□a`          | Necessity (It's necessary that a) | `#0 P #1 N => 0`         |
+| `Q`      | `◇a`          | Possibly                          | `#1 Q #0 M => 1`         |
+
+`P` and `Q` are short circuiting operators and don't represent classical modal
+logic. The `P` operator bails out immediately if the operand is not truthy and
+`Q` bails out if the operand is truthy. To understand why these operators have
+a slight difference to the definition in classical modal logic, let's consider
+the dual pairing of the operators:
+
+□a = ¬◇¬a
+◇a = ¬□¬a
+
+If the translate these definitions directly to the seemingly equivalent RPN
+expressions, we'll get the following result:
+
+¬◇¬a => a L Q L
+¬□¬a => a L P L => 1
+
+| `a` | `a L Q L` | result |
+| :-: | :---------| -----: |
+| `0` | `0 1 1 X` |    `1` |
+| `1` | `1 0 0 1` |    `1` |
+
+| `a` | `a L P L` | result |
+| :-: | :---------| -----: |
+| `0` | `0 1 1 0` |    `0` |
+| `1` | `1 0 0 X` |    `0` |
+
+
+Therefore, neither of these yields the expected result.
 
 **Functions**
 

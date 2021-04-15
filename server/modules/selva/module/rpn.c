@@ -758,11 +758,29 @@ static enum rpn_error rpn_op_xor(struct RedisModuleCtx *redis_ctx __unused, stru
 static enum rpn_error rpn_op_necess(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
 
-    if (!to_bool(a)) {
-        return RPN_ERR_NECESS;
-    }
+    if (to_bool(a)) {
+        return push(ctx, a); /* Push back. */
+    } else {
+        enum rpn_error err;
 
-    return push_double_result(ctx, 1.0);
+        err = push_double_result(ctx, 0.0);
+
+        return err ? err : RPN_ERR_BREAK;
+    }
+}
+
+static enum rpn_error rpn_op_possib(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+
+    if (to_bool(a)) {
+        enum rpn_error err;
+
+        err = push(ctx, a);
+
+        return err ? err : RPN_ERR_BREAK;
+    } else {
+        return push(ctx, a); /* Push back. */
+    }
 }
 
 static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
@@ -931,7 +949,7 @@ static rpn_fp funcs[] = {
     rpn_op_or,      /* N */
     rpn_op_xor,     /* O */
     rpn_op_necess,  /* P */
-    rpn_op_abo,     /* Q spare */
+    rpn_op_possib,  /* Q */
     rpn_op_abo,     /* R spare */
     rpn_op_abo,     /* S spare */
     rpn_op_abo,     /* T spare */
@@ -1060,17 +1078,20 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
             enum rpn_error err;
             err = funcs[op](redis_ctx, ctx);
             if (err) {
-                clear_stack(ctx);
-
-                if (err == RPN_ERR_NECESS) {
+                if (err == RPN_ERR_BREAK) {
                     /*
-                     * A necessarily truthy condition failed. This can be
-                     * interpreted as a short-circuited false result for the
-                     * expression.
+                     * A breaking condition. This is currently reserved for the
+                     * modal logic operators. We just return whatever was last
+                     * in the stack.
                      */
-                    (void)push_double_result(ctx, 0.0);
+                    OPERAND(ctx, x);
+
+                    clear_stack(ctx);
+                    push(ctx, x);
+
                     break;
                 }
+                clear_stack(ctx);
 
                 return err;
             }
