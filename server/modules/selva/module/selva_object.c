@@ -422,13 +422,20 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             int ary_idx = get_array_field_index(key_name_str, key_name_len);
             size_t ary_field_len = get_array_field_index(key_name_str, key_name_len);
             int err = SelvaObject_GetArrayIndexAsSelvaObject(obj, key_name_str, ary_field_len, ary_idx, &obj);
-            if (err) {
+            if (err && err != SELVA_ENOENT) {
                 return err;
             }
 
-            // TODO: get void pointer in array index accessor (or maybe get long/double/string/selvaobject)
-            // TODO: get object from this index and assign it to obj
-            // TODO: if object doesn't exist but (flags & SELVA_OBJECT_GETKEY_CREATE) create it and keep iterating
+            if (err == SELVA_ENOENT) {
+                // TODO: if object doesn't exist but (flags & SELVA_OBJECT_GETKEY_CREATE) create it and keep iterating
+                struct SelvaObject *new_obj = SelvaObject_New();
+                err = SelvaObject_InsertArrayIndexStr(obj, key_name_str, ary_field_len, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+                if (err) {
+                    return err;
+                }
+
+                obj = new_obj;
+            }
         } else {
             /*
              * Found the final key.
