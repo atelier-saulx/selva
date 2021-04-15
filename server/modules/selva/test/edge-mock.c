@@ -7,6 +7,10 @@ struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *node __unused,
     return NULL;
 }
 
+int Edge_Refcount(struct SelvaModify_HierarchyNode *node) {
+    return 0;
+}
+
 int Edge_RdbLoad(struct RedisModuleIO *io, int encver __unused, struct SelvaModify_Hierarchy *hierarchy __unused, struct SelvaModify_HierarchyNode *node __unused) {
     RedisModule_LoadUnsigned(io);
     return 0;
