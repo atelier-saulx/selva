@@ -2,7 +2,6 @@
 #ifndef _UTIL_MEMPOOL_H_
 #define _UTIL_MEMPOOL_H_
 
-#include <assert.h>
 #include <stdint.h>
 #include "cdefs.h"
 #include "queue.h"
