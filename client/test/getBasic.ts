@@ -2279,6 +2279,7 @@ test.serial.only('get - field with array', async (t) => {
     objArray: true,
     objRec: true,
   })
+  console.dir(result, { depth: null })
 
   t.deepEqual(result, {
     children: [],

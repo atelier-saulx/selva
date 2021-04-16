@@ -346,17 +346,28 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
     char *rest;
     size_t nr_parts_found = 0;
-    for (const char *s = strtok_r(buf, sep, &rest);
+    for (char *s = strtok_r(buf, sep, &rest);
          s != NULL;
          s = strtok_r(NULL, sep, &rest)) {
-        const size_t slen = strlen(s);
+        size_t slen = strlen(s);
         int err;
-        // size_t ary_idx = -1;
+        size_t ary_idx = -1;
 
-        // if (is_array_field(key_name_str, key_name_len)) {
-        //     ary_idx = get_array_field_index(key_name_str, key_name_len);
-        //     key_name_len = get_array_field_index(key_name_str, key_name_len);
-        // }
+        if (is_array_field(s, slen)) {
+            fprintf(stderr, "STARTING POINT %.*s\n", (int)slen, s);
+            ary_idx = get_array_field_index(s, slen);
+            size_t new_len = get_array_field_start_idx(s, slen);
+            fprintf(stderr, "WHAAT %zu %zu\n", ary_idx, new_len);
+
+            char new_s[new_len + 1];
+            strncpy(new_s, s, new_len);
+            new_s[new_len] = '\0';
+
+            fprintf(stderr, "YO MANG %.*s %zu\n", (int)new_len, new_s, new_len);
+
+            s = new_s;
+            slen = new_len;
+        }
 
         cobj = obj;
         key = NULL; /* This needs to be cleared on every iteration. */
@@ -419,16 +430,14 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             /*
              * Keep nesting or return an object if this was the last token.
              */
-            int ary_idx = get_array_field_index(key_name_str, key_name_len);
-            size_t ary_field_len = get_array_field_index(key_name_str, key_name_len);
-            int err = SelvaObject_GetArrayIndexAsSelvaObject(obj, key_name_str, ary_field_len, ary_idx, &obj);
+            int err = SelvaObject_GetArrayIndexAsSelvaObject(obj, key_name_str, key_name_len, ary_idx, &obj);
             if (err && err != SELVA_ENOENT) {
                 return err;
             }
 
             if (err == SELVA_ENOENT) {
                 struct SelvaObject *new_obj = SelvaObject_New();
-                err = SelvaObject_InsertArrayIndexStr(obj, key_name_str, ary_field_len, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+                err = SelvaObject_InsertArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
                 if (err) {
                     return err;
                 }
