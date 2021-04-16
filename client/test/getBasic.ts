@@ -55,6 +55,16 @@ test.beforeEach(async (t) => {
               properties: {
                 floatArray: { type: 'array', items: { type: 'float' } },
                 intArray: { type: 'array', items: { type: 'int' } },
+                objArray: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      hello: { type: 'string' },
+                      value: { type: 'int' },
+                    },
+                  },
+                },
                 hello: {
                   type: 'string',
                 },
@@ -2238,6 +2248,20 @@ test.serial.only('get - field with array', async (t) => {
       abba: {
         intArray: [1, 2, 3, 4, 5],
         floatArray: [1.1, 2.2, 3.3, 4.4],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
       },
     },
     // refs: [],
@@ -2252,6 +2276,7 @@ test.serial.only('get - field with array', async (t) => {
     refs: true,
     intArray: true,
     floatArray: true,
+    objArray: true,
     objRec: true,
   })
 
@@ -2265,6 +2290,20 @@ test.serial.only('get - field with array', async (t) => {
       abba: {
         intArray: [1, 2, 3, 4, 5],
         floatArray: [1.1, 2.2, 3.3, 4.4],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
       },
     },
   })
@@ -2285,6 +2324,20 @@ test.serial.only('get - field with array', async (t) => {
       abba: {
         intArray: [1, 2, 3, 4, 5],
         floatArray: [1.1, 2.2, 3.3, 4.4],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
       },
     },
   })
