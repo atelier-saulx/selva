@@ -56,6 +56,7 @@ SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '"field f $1 c' "test"
 | ------ | -------------------------------- | -------------- |
 | `@`    | Read an integer from a register. | `@1 => reg[1]` |
 | `$`    | Read a string from a register.   | `$1 => reg[1]` |
+| `&`    | Read a set from a register.      | `&1 => reg[1]` |
 
 User registers start from index 1, and register number 0 is reserved for the current node ID.
 
@@ -118,6 +119,12 @@ expressions, we'll get the following result:
 
 
 Therefore, neither of these yields the expected result.
+
+**Set Operations**
+
+| Operator | Operands          | Description                           | Example (expr => result) |
+| -------- | ----------------- | ------------------------------------- | ------------------------ |
+| `z`      | `C = A ∪ B`       | Union of A and B.                     | `B A a => C`             |
 
 **Functions**
 

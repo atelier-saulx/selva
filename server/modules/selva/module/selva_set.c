@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include "cdefs.h"
 #include "errors.h"
@@ -337,4 +338,126 @@ struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId
     }
 
     return el;
+}
+
+int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src) {
+    enum SelvaSetType type = src->type;
+    struct SelvaSetElement *tmp;
+    struct SelvaSetElement *el;
+
+    if (type != dst->type) {
+        return SELVA_EINTYPE;
+    }
+
+    if (type == SELVA_SET_TYPE_RMSTRING) {
+        SELVA_SET_RMS_FOREACH_SAFE(el, src, tmp) {
+            RB_REMOVE(SelvaSetRms, &src->head_rms, el);
+            RB_INSERT(SelvaSetRms, &dst->head_rms, el);
+        }
+    } else if (type == SELVA_SET_TYPE_DOUBLE) {
+        SELVA_SET_DOUBLE_FOREACH_SAFE(el, src, tmp) {
+            RB_REMOVE(SelvaSetDouble, &src->head_d, el);
+            RB_INSERT(SelvaSetDouble, &dst->head_d, el);
+        }
+    } else if (type == SELVA_SET_TYPE_LONGLONG) {
+        SELVA_SET_LONGLONG_FOREACH_SAFE(el, src, tmp) {
+            RB_REMOVE(SelvaSetLongLong, &src->head_ll, el);
+            RB_INSERT(SelvaSetLongLong, &dst->head_ll, el);
+        }
+    } else if (type == SELVA_SET_TYPE_NODEID) {
+        SELVA_SET_NODEID_FOREACH_SAFE(el, src, tmp) {
+            RB_REMOVE(SelvaSetNodeId, &src->head_nodeId, el);
+            RB_INSERT(SelvaSetNodeId, &dst->head_nodeId, el);
+        }
+    }
+
+    return 0;
+}
+
+int SelvaSet_Union(enum SelvaSetType type, struct SelvaSet *res, ...) {
+    va_list argp;
+    int err = 0;
+
+    va_start(argp, res);
+
+    if (!res) {
+        err = SELVA_EINVAL;
+        goto out;
+    }
+
+    SelvaSet_Init(res, type);
+
+    if (type == SELVA_SET_TYPE_RMSTRING) {
+        struct SelvaSet *set;
+
+        while ((set = va_arg(argp, struct SelvaSet *))) {
+            struct SelvaSetElement *el;
+
+            if (set->type != type) {
+                continue;
+            }
+
+            SELVA_SET_RMS_FOREACH(el, set) {
+                err = SelvaSet_Add(res, el->value_rms);
+                if (err) {
+                    goto out;
+                }
+            }
+        }
+    } else if (type == SELVA_SET_TYPE_DOUBLE) {
+        struct SelvaSet *set;
+
+        while ((set = va_arg(argp, struct SelvaSet *))) {
+            struct SelvaSetElement *el;
+
+            if (set->type != type) {
+                continue;
+            }
+
+            SELVA_SET_DOUBLE_FOREACH(el, set) {
+                err = SelvaSet_Add(res, el->value_d);
+                if (err) {
+                    goto out;
+                }
+            }
+        }
+    } else if (type == SELVA_SET_TYPE_LONGLONG) {
+        struct SelvaSet *set;
+
+        while ((set = va_arg(argp, struct SelvaSet *))) {
+            struct SelvaSetElement *el;
+
+            if (set->type != type) {
+                continue;
+            }
+
+            SELVA_SET_LONGLONG_FOREACH(el, set) {
+                err = SelvaSet_Add(res, el->value_ll);
+                if (err) {
+                    goto out;
+                }
+            }
+        }
+    } else if (type == SELVA_SET_TYPE_NODEID) {
+        struct SelvaSet *set;
+
+        while ((set = va_arg(argp, struct SelvaSet *))) {
+            struct SelvaSetElement *el;
+
+            if (set->type != type) {
+                continue;
+            }
+
+            SELVA_SET_NODEID_FOREACH(el, set) {
+                err = SelvaSet_Add(res, el->value_nodeId);
+                if (err) {
+                    goto out;
+                }
+            }
+        }
+    }
+
+out:
+    va_end(argp);
+    return err;
 }

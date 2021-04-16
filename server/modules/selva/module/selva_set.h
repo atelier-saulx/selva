@@ -143,4 +143,7 @@ struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId
 #define SELVA_SET_NODEID_FOREACH_SAFE(el, set, tmp) \
     RB_FOREACH_SAFE(el, SelvaSetNodeId, &(set)->head_nodeId, tmp)
 
+int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src);
+int SelvaSet_Union(enum SelvaSetType type, struct SelvaSet *res, ...);
+
 #endif /* _SELVA_SET_H_ */

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef _MODIFY_RPN_H_
-#define _MODIFY_RPN_H_
+#ifndef _RPN_H_
+#define _RPN_H_
 
 enum rpn_error {
     RPN_ERR_OK = 0,     /*!< No error. */
@@ -21,6 +21,7 @@ struct rpn_operand;
 struct RedisModuleCtx;
 struct RedisModuleKey;
 struct RedisModuleString;
+struct SelvaSet;
 
 struct rpn_ctx {
     int depth;
@@ -46,9 +47,11 @@ struct rpn_ctx *rpn_init(int nr_reg);
 void rpn_destroy(struct rpn_ctx *ctx);
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags);
 enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, struct RedisModuleString *rms);
+enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet *set, unsigned flags);
 rpn_token *rpn_compile(const char *input, size_t len);
 enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, int *out);
 enum rpn_error rpn_double(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, double *out);
 enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, long long *out);
+enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, struct SelvaSet **out);
 
-#endif /* _MODIFY_RPN_H_ */
+#endif /* _RPN_H_ */

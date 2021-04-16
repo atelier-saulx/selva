@@ -21,6 +21,7 @@
  */
 #define RPN_LVTYPE_NUMBER   0 /*<! Lvalue type code for double. */
 #define RPN_LVTYPE_STRING   1 /*<! Lvalue type code for string. */
+#define RPN_LVTYPE_SET      2 /*<! Lvalue type code for set. */
 
 /*
  * This type should match the alignment of `typedef struct redisObject` in Redis
@@ -52,6 +53,9 @@ struct redisObjectAccessor {
 #define OPERAND_GET_S_LEN(x) \
     ((x)->s_size > 0 ? (x)->s_size - 1 : 0)
 
+#define OPERAND_GET_SET(x) \
+    ((x)->flags.slvset ? (x)->set : NULL)
+
 /**
  * Use to create an empty result operand pointer.
  */
@@ -66,13 +70,21 @@ struct rpn_operand {
         unsigned spused : 1; /*!< The value is a string pointed by sp. */
         unsigned spfree : 1; /*!< Free sp if set when freeing the operand. */
         unsigned slvset : 1; /*!< Set pointer is pointing to a SelvaSet. */
+        unsigned embset : 1; /*!< Embedded set is used and it must be destroyed. */
     } flags;
     struct rpn_operand *next_free; /* Next free in pool. */
     size_t s_size;
     double d;
     union {
         const char *sp; /*!< A pointer to a user provided string. */
-        struct SelvaSet *set; /*! A pointer to a SelvaSet. */
+        struct {
+            struct SelvaSet *set; /*! A pointer to a SelvaSet. */
+            /*
+             * Note that set_emb is after the pointer and it's not necessarily
+             * in the allocated memory block embset is not set.
+             */
+            struct SelvaSet set_emb; /*!< An embedded set. */
+        };
         char s[RPN_SMALL_OPERAND_SIZE];
     };
 };
@@ -106,7 +118,6 @@ __constructor static void init_pool(void) {
         small_operand_pool[i].next_free = prev;
         prev = &small_operand_pool[i];
     }
-
 }
 
 struct rpn_ctx *rpn_init(int nr_reg) {
@@ -154,6 +165,27 @@ void rpn_destroy(struct rpn_ctx *ctx) {
         RedisModule_Free(ctx->reg);
         RedisModule_Free(ctx);
     }
+}
+
+/*
+ * TODO We should decide and be consistent about when the d value is set as NaN
+ * and when as nan_undefined. Once that is done we can also start utilizing it
+ * better.
+ */
+static double nan_undefined() {
+    return nan("1");
+}
+
+__used static int isnan_undefined(double x) {
+    long long i;
+
+    if (!isnan(x)) {
+      return 0;
+    }
+
+    memcpy(&i, &x, sizeof(i));
+
+    return i & 1;
 }
 
 /**
@@ -232,6 +264,23 @@ static struct rpn_operand *alloc_rpn_operand(size_t s_size) {
     return v;
 }
 
+static struct rpn_operand *alloc_rpn_set_operand(enum SelvaSetType type) {
+    struct rpn_operand *v;
+
+    v = alloc_rpn_operand(sizeof(struct SelvaSet *) + sizeof(struct SelvaSet));
+    if (!v) {
+        return NULL;
+    }
+
+    v->flags.slvset = 1;
+    v->flags.embset = 1;
+    v->d = nan_undefined();
+    v->set = &v->set_emb;
+    SelvaSet_Init(v->set, type);
+
+    return v;
+}
+
 static void free_rpn_operand(void *p) {
     struct rpn_operand **pp = (struct rpn_operand **)p;
     struct rpn_operand *v;
@@ -248,6 +297,9 @@ static void free_rpn_operand(void *p) {
     if (v->flags.spused && v->flags.spfree && v->sp) {
         RedisModule_Free((void *)v->sp);
         v->sp = NULL;
+    } else if (v->flags.embset && v->flags.slvset) {
+        SelvaSet_Destroy(&v->set_emb);
+        v->set = NULL;
     }
     if (v->flags.pooled) {
         struct rpn_operand *prev = small_operand_pool_next;
@@ -260,22 +312,6 @@ static void free_rpn_operand(void *p) {
     } else {
         RedisModule_Free(v);
     }
-}
-
-static double nan_undefined() {
-    return nan("1");
-}
-
-__used static int isnan_undefined(double x) {
-    long long i;
-
-    if (!isnan(x)) {
-      return 0;
-    }
-
-    memcpy(&i, &x, sizeof(i));
-
-    return i & 1;
 }
 
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
@@ -401,7 +437,9 @@ static int to_bool(struct rpn_operand *v) {
 
     if (isnan(d)) {
         if (v->flags.slvset) {
-            return v->set && v->set->size > 0;
+            struct SelvaSet *set = OPERAND_GET_SET(v);
+
+            return set && set->size > 0;
         }
         return v->s_size > 0 && OPERAND_GET_S(v)[0] != '\0';
     }
@@ -409,12 +447,8 @@ static int to_bool(struct rpn_operand *v) {
     return !!((long long)d);
 }
 
-enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags) {
+static void clear_old_reg(struct rpn_ctx *ctx, size_t i) {
     struct rpn_operand *old;
-
-    if (i >= (size_t)ctx->nr_reg) {
-        return RPN_ERR_BNDS;
-    }
 
     old = ctx->reg[i];
     if (old) {
@@ -423,6 +457,14 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
 
         free_rpn_operand(&old);
     }
+}
+
+enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags) {
+    if (i >= (size_t)ctx->nr_reg) {
+        return RPN_ERR_BNDS;
+    }
+
+    clear_old_reg(ctx, i);
 
     if (s) {
         struct rpn_operand *r;
@@ -474,6 +516,39 @@ enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, RedisModuleString *
     return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_RMFREE);
 }
 
+/* TODO free frag for rpn_set_reg_slvset() */
+enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet *set, unsigned flags __unused) {
+    if (i >= (size_t)ctx->nr_reg) {
+        return RPN_ERR_BNDS;
+    }
+
+    clear_old_reg(ctx, i);
+
+    if (set) {
+        struct rpn_operand *r;
+
+        /*
+         * Note that the pointer exists in the struct before the embedded
+         * SelvaSet, and therefore we just don't allocate memory for it
+         * because it isn't needed.
+         */
+        r = alloc_rpn_operand(sizeof(struct SelvaSet *));
+
+        /*
+         * Set the values.
+         */
+        r->flags.regist = 1;
+        r->flags.slvset = 1;
+        /* RFE This is used elsewhere but it's not necessarily correct. */
+        r->d = nan_undefined();
+        r->set = set;
+    } else {
+        ctx->reg[i] = NULL;
+    }
+
+    return RPN_ERR_OK;
+}
+
 /*
  * This is way faster than strtoll() in glibc.
  */
@@ -513,6 +588,12 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
 
         return push(ctx, r);
     } else if (type == RPN_LVTYPE_STRING) {
+        return push(ctx, r);
+    } else if (type == RPN_LVTYPE_SET) {
+        if (!r->flags.slvset) {
+            return RPN_ERR_TYPE;
+        }
+
         return push(ctx, r);
     }
 
@@ -813,10 +894,8 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ct
     OPERAND(ctx, s); /* set */
     OPERAND(ctx, v); /* value */
 
-    if (s->flags.slvset) {
-        /* The operand `s` is a set. */
-        set = s->set;
-    } else {
+    set = OPERAND_GET_SET(s); /* The operand `s` is a set if this gets set. */
+    if (!set) {
         /* The operand `s` is a field_name string. */
         struct SelvaObject *obj;
 
@@ -926,6 +1005,34 @@ static enum rpn_error rpn_op_getdfld(struct RedisModuleCtx *redis_ctx, struct rp
     return rpn_getfld(redis_ctx, ctx, field, RPN_LVTYPE_NUMBER);
 }
 
+static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+    OPERAND(ctx, b);
+    RESULT_OPERAND(res);
+    struct SelvaSet *set_a;
+    struct SelvaSet *set_b;
+    int err;
+
+    set_a = OPERAND_GET_SET(a);
+    set_b = OPERAND_GET_SET(b);
+    if (!(set_a && set_b) || (set_a->type != set_b->type)) {
+        return RPN_ERR_TYPE;
+    }
+
+    res = alloc_rpn_set_operand(set_a->type);
+    if (!res) {
+        return RPN_ERR_ENOMEM;
+    }
+
+    err = SelvaSet_Union(set_a->type, res->set, set_a, set_b);
+    if (err) {
+        /* TODO We just return ENOMEM regardless of the real error for now. */
+        return RPN_ERR_ENOMEM;
+    }
+
+    return push(ctx, res);
+}
+
 static enum rpn_error rpn_op_abo(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx __unused) {
     return RPN_ERR_ILLOPC;
 }
@@ -990,7 +1097,7 @@ static rpn_fp funcs[] = {
     rpn_op_abo,     /* w spare */
     rpn_op_abo,     /* x spare */
     rpn_op_abo,     /* y spare */
-    rpn_op_abo,     /* z spare */
+    rpn_op_union,   /* z spare */
 };
 
 rpn_token *rpn_compile(const char *input, size_t len) {
@@ -1105,6 +1212,19 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
             case '$':
                 err = rpn_get_reg(ctx, s + 1, RPN_LVTYPE_STRING);
                 break;
+            case '&':
+                {
+                    const char *str = s + 1;
+                    enum rpn_error err;
+
+                    err = rpn_get_reg(ctx, str, RPN_LVTYPE_SET);
+                    if (err) {
+                        clear_stack(ctx);
+
+                        return err;
+                    }
+                }
+                break;
             case '#':
                 err = read_num_literal(ctx, s + 1);
                 break;
@@ -1132,6 +1252,10 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
     return RPN_ERR_OK;
 }
 
+/**
+ * Close the Selva node redis key if opened.
+ * This function must be called after every to rpn().
+ */
 static void close_node_key(struct rpn_ctx *ctx) {
     if (ctx->redis_hkey) {
         RedisModule_CloseKey(ctx->redis_hkey);
@@ -1198,6 +1322,27 @@ enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx
     }
 
     *out = (long long)round(res->d);
+    free_rpn_operand(&res);
+
+    return 0;
+}
+
+enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, struct SelvaSet **out) {
+    struct rpn_operand *res;
+    enum rpn_error err;
+
+    err = rpn(redis_ctx, ctx, expr);
+    close_node_key(ctx);
+    if (err) {
+        return err;
+    }
+
+    res = pop(ctx);
+    if (!res) {
+        return RPN_ERR_BADSTK;
+    }
+
+    *out = res->set;
     free_rpn_operand(&res);
 
     return 0;
