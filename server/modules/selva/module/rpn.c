@@ -290,9 +290,8 @@ static enum rpn_error push_double_result(struct rpn_ctx *ctx, double x) {
     }
 
     v->d = x;
-    push(ctx, v);
 
-    return RPN_ERR_OK;
+    return push(ctx, v);
 }
 
 static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long v) {
@@ -311,9 +310,8 @@ static enum rpn_error push_string_result(struct rpn_ctx *ctx, const char *s, siz
     strncpy(v->s, s, slen);
     v->s[slen] = '\0';
     v->d = nan_undefined();
-    push(ctx, v);
 
-    return RPN_ERR_OK;
+    return push(ctx, v);
 }
 
 static enum rpn_error push_empty_value(struct rpn_ctx *ctx) {
@@ -328,9 +326,8 @@ static enum rpn_error push_empty_value(struct rpn_ctx *ctx) {
     v->s_size = size;
     v->s[0] = '\0';
     v->s[1] = '\0';
-    push(ctx, v);
 
-    return RPN_ERR_OK;
+    return push(ctx, v);
 }
 
 /**
@@ -349,9 +346,7 @@ static enum rpn_error push_rm_string_result(struct rpn_ctx *ctx, const RedisModu
     v->sp = RedisModule_StringPtrLen(rms, &slen);
     v->s_size = slen + 1;
 
-    push(ctx, v);
-
-    return RPN_ERR_OK;
+    return push(ctx, v);
 }
 
 static enum rpn_error push_selva_set_result(struct rpn_ctx *ctx, struct SelvaSet *set) {
@@ -364,9 +359,7 @@ static enum rpn_error push_selva_set_result(struct rpn_ctx *ctx, struct SelvaSet
     v->flags.slvset = 1;
     v->set = set;
 
-    push(ctx, v);
-
-    return RPN_ERR_OK;
+    return push(ctx, v);
 }
 
 static struct rpn_operand *pop(struct rpn_ctx *ctx) {
@@ -506,16 +499,15 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
             return RPN_ERR_NAN;
         }
 
-        push(ctx, r);
+        return push(ctx, r);
     } else if (type == RPN_LVTYPE_STRING) {
-        push(ctx, r);
-    } else {
-        fprintf(stderr, "%s:%d: Unknown type code: %d\n",
-                __FILE__, __LINE__, type);
-        return RPN_ERR_TYPE;
+        return push(ctx, r);
     }
 
-    return RPN_ERR_OK;
+    fprintf(stderr, "%s:%d: Unknown type code: %d\n",
+            __FILE__, __LINE__, type);
+
+    return RPN_ERR_TYPE;
 }
 
 static struct SelvaObject *open_node_object(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
