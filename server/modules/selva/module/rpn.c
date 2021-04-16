@@ -345,6 +345,7 @@ static enum rpn_error push_rm_string_result(struct rpn_ctx *ctx, const RedisModu
     v->flags.spused = 1;
     v->sp = RedisModule_StringPtrLen(rms, &slen);
     v->s_size = slen + 1;
+    v->d = nan_undefined();
 
     return push(ctx, v);
 }
@@ -358,6 +359,7 @@ static enum rpn_error push_selva_set_result(struct rpn_ctx *ctx, struct SelvaSet
 
     v->flags.slvset = 1;
     v->set = set;
+    v->d = nan_undefined();
 
     return push(ctx, v);
 }
