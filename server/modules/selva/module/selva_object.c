@@ -1545,7 +1545,6 @@ static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
 }
 
 static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SVector *array) {
-
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     struct SVectorIterator it;
     size_t n = 0;
