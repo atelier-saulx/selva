@@ -339,7 +339,7 @@ static enum rpn_error push_empty_value(struct rpn_ctx *ctx) {
  */
 static enum rpn_error push_rm_string_result(struct rpn_ctx *ctx, const RedisModuleString *rms) {
     size_t slen;
-    struct rpn_operand *v = alloc_rpn_operand(0);
+    struct rpn_operand *v = alloc_rpn_operand(sizeof(RedisModuleString *));
 
     if (unlikely(!v)) {
         return RPN_ERR_ENOMEM;
@@ -355,7 +355,7 @@ static enum rpn_error push_rm_string_result(struct rpn_ctx *ctx, const RedisModu
 }
 
 static enum rpn_error push_selva_set_result(struct rpn_ctx *ctx, struct SelvaSet *set) {
-    struct rpn_operand *v = alloc_rpn_operand(0);
+    struct rpn_operand *v = alloc_rpn_operand(sizeof(struct SelvaSet *));
 
     if (unlikely(!v)) {
         return RPN_ERR_ENOMEM;
@@ -425,7 +425,7 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
     if (s) {
         struct rpn_operand *r;
 
-        r = alloc_rpn_operand(0);
+        r = alloc_rpn_operand(sizeof(char *));
 
         /*
          * Set the string value.
