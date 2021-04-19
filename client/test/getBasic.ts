@@ -2267,6 +2267,19 @@ test.serial.only('get - field with array', async (t) => {
     // refs: [],
   })
 
+  console.dir(
+    await client.get({
+      $id: id,
+      objRec: {
+        abba: {
+          objArray: true,
+        },
+      },
+    }),
+    { depth: null }
+  )
+  return
+
   const result = await client.get({
     $id: id,
     thing: true,
@@ -2279,7 +2292,6 @@ test.serial.only('get - field with array', async (t) => {
     objArray: true,
     objRec: true,
   })
-  console.dir(result, { depth: null })
 
   t.deepEqual(result, {
     children: [],

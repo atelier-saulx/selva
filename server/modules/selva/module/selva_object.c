@@ -155,7 +155,7 @@ static int clear_key_value(struct SelvaObjectKey *key) {
             }
 
             SVector_Destroy(&key->array);
-        } else if (key->subtype == SELVA_OBJECT_DOUBLE || key->subtype == SELVA_OBJECT_LONGLONG) {
+        } else if (key->subtype == SELVA_OBJECT_DOUBLE || key->subtype == SELVA_OBJECT_LONGLONG || key->subtype == SELVA_OBJECT_NULL) {
             // do nothing, we store concrete values so it's enough to just clear the SVector itself
         } else if (key->subtype == SELVA_OBJECT_OBJECT) {
             struct SVectorIterator it;
@@ -186,6 +186,7 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         return SELVA_EINTYPE;
     }
 
+    fprintf(stderr, "SETTING TYPE TO NULL %.*s with current type %d and subtype %d\n", (int)key->name_len, key->name, key->type, key->subtype);
     key->type = SELVA_OBJECT_NULL;
 
     return 0;
@@ -373,9 +374,54 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         key = NULL; /* This needs to be cleared on every iteration. */
         nr_parts_found++;
         err = get_key(obj, s, slen, 0, &key);
-        if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT)) &&
+        // TODO: broken?
+        if (0 && (err == SELVA_ENOENT || (err == 0 || (key->type != SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT))) && ary_idx >= 0 &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
-            // TODO: handle creating a new index in array if that doesn't exist
+            fprintf(stderr, "WHAT IS THIS\n");
+            /*
+             * Either the nested object doesn't exist yet or the nested key is not an object,
+             * but we are allowed to create one here.
+             */
+            if (!key) {
+                /*
+                 * Only create the key if it didn't exist. Otherwise we can just
+                 * reuse it.
+                 */
+                if (obj->obj_size == SELVA_OBJECT_SIZE_MAX) {
+                    return SELVA_OBJECT_EOBIG;
+                }
+
+                const size_t key_size = sizeof(struct SelvaObjectKey) + slen + 1;
+                key = RedisModule_Alloc(key_size);
+                if (!key) {
+                    return SELVA_ENOMEM;
+                }
+
+                memset(key, 0, key_size);
+                strcpy(key->name, s); /* strok() is safe. */
+                key->name_len = slen;
+                obj->obj_size++;
+                (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
+            } else {
+                /*
+                 * Clear the old value.
+                 */
+                clear_key_value(key);
+            }
+            key->type = SELVA_OBJECT_ARRAY;
+            if (!SVector_Init(&key->array, 1, NULL)) {
+                return SELVA_ENOMEM;
+            }
+
+            struct SelvaObject *new_obj = SelvaObject_New();
+            int err = SelvaObject_InsertArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+            if (err) {
+                return err;
+            }
+
+            obj = new_obj;
+        } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT)) &&
+            (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
              * but we are allowed to create one here.
@@ -1584,6 +1630,7 @@ static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SV
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
     default:
+        fprintf(stderr, "Unknows array type %d\n", subtype);
         RedisModule_ReplySetArrayLength(ctx, 0);
         break;
     }
