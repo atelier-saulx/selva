@@ -354,6 +354,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         int err;
         size_t ary_idx = -1;
 
+        fprintf(stderr, "WAKA WAKA 1 %.*s %s\n", (int)key_name_len, key_name_str, s);
         if (is_array_field(s, slen)) {
             fprintf(stderr, "STARTING POINT %.*s\n", (int)slen, s);
             ary_idx = get_array_field_index(s, slen);
@@ -364,20 +365,23 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             strncpy(new_s, s, new_len);
             new_s[new_len] = '\0';
 
-            fprintf(stderr, "YO MANG %.*s %zu\n", (int)new_len, new_s, new_len);
+            fprintf(stderr, "YO MANG %s => %s\n", s, new_s);
 
             s = new_s;
             slen = new_len;
         }
+        fprintf(stderr, "WAKA WAKA 2 %s\n", s);
 
         cobj = obj;
         key = NULL; /* This needs to be cleared on every iteration. */
         nr_parts_found++;
         err = get_key(obj, s, slen, 0, &key);
         // TODO: broken?
-        if (0 && (err == SELVA_ENOENT || (err == 0 || (key->type != SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT))) && ary_idx >= 0 &&
+        if (!err) {
+            fprintf(stderr, "WHAT IS THIS %.*s %d %d\n", (int)key->name_len, key->name, key->type, key->subtype);
+        }
+        if (0 && (err == SELVA_ENOENT || (err == 0 || (key->type != SELVA_OBJECT_ARRAY && nr_parts > nr_parts_found))) && ary_idx >= 0 &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
-            fprintf(stderr, "WHAT IS THIS\n");
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
              * but we are allowed to create one here.

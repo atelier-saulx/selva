@@ -2236,6 +2236,45 @@ test.serial('get - record with nested wildcard query', async (t) => {
 test.serial.only('get - field with array', async (t) => {
   const client = connect({ port })
 
+  const pid = await client.set({
+    type: 'lekkerType',
+    // thing: [],
+    // dong: { dingdong: [] },
+    // ding: { dong: [] },
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+    // refs: [],
+  })
+
+  console.dir(
+    await client.get({
+      $id: pid,
+      objRec: {
+        abba: {
+          objArray: true,
+        },
+      },
+    }),
+    { depth: null }
+  )
+  return
+
   const id = await client.set({
     type: 'lekkerType',
     // thing: [],
@@ -2266,19 +2305,6 @@ test.serial.only('get - field with array', async (t) => {
     },
     // refs: [],
   })
-
-  console.dir(
-    await client.get({
-      $id: id,
-      objRec: {
-        abba: {
-          objArray: true,
-        },
-      },
-    }),
-    { depth: null }
-  )
-  return
 
   const result = await client.get({
     $id: id,
