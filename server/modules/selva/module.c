@@ -643,7 +643,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             memcpy(&new_user_meta, value_str, sizeof(SelvaObjectMeta_t));
             err = SelvaObject_SetUserMeta(obj, field, new_user_meta, &old_user_meta);
             if (err) {
-                replyWithSelvaErrorf(ctx, err, "Failed to set key metadata");
+                replyWithSelvaErrorf(ctx, err, "Failed to set key metadata (%.*s.%s)",
+                                     (int)SELVA_NODE_ID_SIZE, nodeId,
+                                     RedisModule_StringPtrLen(field, NULL));
                 continue;
             }
 

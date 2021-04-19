@@ -14,6 +14,7 @@ enum SelvaSetType {
     SELVA_SET_TYPE_DOUBLE = 1,
     SELVA_SET_TYPE_LONGLONG = 2,
     SELVA_SET_TYPE_NODEID = 3,
+    SELVA_SET_NR_TYPES,
 };
 
 struct SelvaObject;
@@ -51,6 +52,10 @@ RB_PROTOTYPE(SelvaSetNodeId, SelvaSetElement, _entry, SelvaSet_CompareLongLong)
 void SelvaSet_Destroy(struct SelvaSet *head);
 void SelvaSet_DestroyElement(struct SelvaSetElement *el);
 
+static inline int SelvaSet_isValidType(enum SelvaSetType type) {
+    return type >= 0 && type < SELVA_SET_NR_TYPES;
+}
+
 static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
     set->type = type;
     set->size = 0;
@@ -64,7 +69,20 @@ static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
     } else if (type == SELVA_SET_TYPE_NODEID) {
         RB_INIT(&set->head_nodeId);
     } else {
-        /* TODO What to do if type is invalid */
+        /*
+         * This should never happen and there is no sane way to recover from an
+         * insanely dumb bug, so it's better to abort and fix the bug rather
+         * than actually actively checking for this at runtime.
+         *
+         * We use __builtin_trap() here to avoid requiring a header file for
+         * abort(). Typically we use abort() in places where we are pretty
+         * certain that there is an ongoing memory corruption and it would be
+         * potentially dangerous to run any clean up or RDB save. In this case
+         * it's not as certain as usually but if the caller used
+         * SelvaSet_isValidType() before calling this function then we can be
+         * quite sure that there is something nasty going on somewhere.
+         */
+        __builtin_trap();
     }
 }
 

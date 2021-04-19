@@ -55,7 +55,7 @@ void SelvaSubscriptions_InheritChild(
     return;
 }
 
-void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaModify_Hierarchy *hierarchy, const char *id_str, size_t id_len) {
+void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaModify_Hierarchy *hierarchy __unused, const char *id_str __unused, size_t id_len __unused) {
     return;
 }
 
@@ -84,9 +84,9 @@ void SelvaSubscriptions_DeferHierarchyDeletionEvents(
 
 void Selva_Subscriptions_DeferTriggerEvents(
         struct RedisModuleCtx *redis_ctx __unused,
-        struct SelvaModify_Hierarchy *hierarchy,
-        Selva_NodeId node_id,
-        enum Selva_SubscriptionTriggerType event_type) {
+        struct SelvaModify_Hierarchy *hierarchy __unused,
+        Selva_NodeId node_id __unused,
+        enum Selva_SubscriptionTriggerType event_type __unused) {
     return;
 }
 

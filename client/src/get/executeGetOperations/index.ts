@@ -408,7 +408,8 @@ export const executeNestedGetOperations = async (
   client: SelvaClient,
   props: GetOptions,
   lang: string | undefined,
-  ctx: ExecContext
+  ctx: ExecContext,
+  runAsNested: boolean = true
 ): Promise<GetResult> => {
   const id = await resolveId(client, props)
   if (!id) return null
@@ -417,7 +418,7 @@ export const executeNestedGetOperations = async (
     props.$language || lang,
     ctx,
     createGetOperations(client, props, id, '', ctx.db),
-    true
+    runAsNested
   )
 }
 
@@ -449,7 +450,17 @@ export const executeGetOperation = async (
       }
 
       const props = Object.assign({}, op.props, { $id: id })
-      return executeNestedGetOperations(client, props, lang, ctx)
+      if (!op.props.$db && ctx.db && ctx.db !== 'default') {
+        props.$db = ctx.db
+      }
+
+      return executeNestedGetOperations(
+        client,
+        props,
+        lang,
+        ctx,
+        op.fromReference === true ? false : true
+      )
     } else {
       const id = await resolveId(client, op.props)
       if (!id) return null

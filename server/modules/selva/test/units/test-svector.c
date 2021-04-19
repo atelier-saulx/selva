@@ -580,6 +580,35 @@ static char * test_remove_all(void)
     return NULL;
 }
 
+static char * test_peek(void)
+{
+    struct data el[] = { { 1 }, { 2 }, { 3 } };
+    int *v;
+
+    SVector_Init(&vec, 3, compar);
+    for (size_t i = 0; i < num_elem(el); i++) {
+        SVector_Insert(&vec, &el[i]);
+    }
+
+    v = SVector_Peek(&vec);
+    pu_assert_equal("Got the first elem", *v, 1);
+    pu_assert_ptr_equal("Shifts el[0]", SVector_Shift(&vec), &el[0]);
+    SVector_ShiftReset(&vec);
+
+    v = SVector_Peek(&vec);
+    pu_assert_equal("Got the second elem", *v, 2);
+
+    pu_assert_ptr_equal("Shifts el[0]", SVector_Shift(&vec), &el[1]);
+    v = SVector_Peek(&vec);
+    pu_assert_equal("Got the last elem", *v, 3);
+
+    pu_assert_ptr_equal("Shifts el[0]", SVector_Shift(&vec), &el[2]);
+    v = SVector_Peek(&vec);
+    pu_assert_ptr_equal("Nothing left", v, NULL);
+
+    return NULL;
+}
+
 static char * test_pop(void)
 {
     struct data el[] = { { 1 }, { 2 }, { 3 } };
@@ -758,6 +787,7 @@ void all_tests(void)
     pu_def_test(test_remove_first, PU_RUN);
     pu_def_test(test_remove_middle, PU_RUN);
     pu_def_test(test_remove_all, PU_RUN);
+    pu_def_test(test_peek, PU_RUN);
     pu_def_test(test_pop, PU_RUN);
     pu_def_test(test_shift, PU_RUN);
     pu_def_test(test_shift_reset, PU_RUN);

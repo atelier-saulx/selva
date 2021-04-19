@@ -1,4 +1,6 @@
 // Supress some unwanted warnings completely
+unusedFunction // This will be reported in the build anyway but without macro stuff
+unreachableCode // Lot of useless warnings
 cert-API01-C
 cert-EXP05-C:rmutil/sds.h
 cert-EXP05-C:include/redismodule.h

@@ -28,7 +28,7 @@ Redis hash type is 20 % - 25 %. It can potentially offer even greater
 performance improvement, compared to hashes, in use cases where the data
 structure is accessed directly inside a Redis module.
 
-`SelvaObject` stores the object keys in a red-black tree. The key can
+`SelvaObject` stores the object keys in a rank-balanced tree. The key can
 store small C-native data types as values directly and have a pointer
 to the value for more complex or storage heavy types. The key itself
 knows the data type of the value.
@@ -59,6 +59,33 @@ Node aliases (and `aliases` field) are handled by [alias.c](../module/alias.c).
 Hierarchy fields `ancestors`, `children`, `descendants`, and `parents` are
 owned, managed, and traversed by the functions in
 [hierarchy.c](../module/hierarchy.c).
+
+## Graph Link Types
+
+The Selva C module supports a number ways to link or reference to other nodes in
+the database.
+
+### Parents/Children
+
+The most important graph reference type in Selva is the parent/child
+relationship. This relationship connects selva nodes together typically in
+a tree manner but other topologies can be created by adjusting the
+relationships.
+
+This link type is fully managed and every edge must have an existing endpoint.
+The relationship is always symmetric, if a node has a parent then it's also a
+child to the parent. In addition to these constraints, in normal operation,
+if a node or subtree is left orphan, it will be destroyed.
+
+### Reference
+
+Another way to point to other nodes is to create a reference field that
+contains a set of nodeIds. These ids don't need to exist at the time of
+adding to the set, but if they do the nodes will be visited when the field
+is traversed.
+
+This reference type is completely unmanaged and nothing will happen if a
+referenced node is removed.
 
 ## Subscriptions
 

@@ -83,7 +83,6 @@ static Selva_SubscriptionMarkerId gen_marker_id(const char *s) {
  */
 int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    int err;
 
     const size_t ARGV_REDIS_KEY = 1;
     const size_t ARGV_SUB_ID = 2;
@@ -116,6 +115,7 @@ int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         RedisModuleString *alias_name = argv[ARGV_IDS + (resolved & ~SELVA_RESOLVE_FLAGS)];
         Selva_SubscriptionId sub_id;
         const Selva_SubscriptionMarkerId marker_id = gen_marker_id(RedisModule_StringPtrLen(alias_name, NULL));
+        int err;
 
         err = SelvaArgParser_SubscriptionId(sub_id, argv_sub_id);
         if (err) {

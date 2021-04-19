@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <errno.h>
 #include <math.h>
 #include <stdlib.h>
@@ -47,13 +48,6 @@ static int update_hierarchy(
     const char *field_str,
     struct SelvaModify_OpSet *setOpts
 ) {
-    RedisModuleString *key_name;
-
-    key_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
-    if (!key_name) {
-        return SELVA_ENOMEM;
-    }
-
     /*
      * If the field starts with 'p' we assume "parents"; Otherwise "children".
      * No other field can modify the hierarchy.
@@ -155,7 +149,7 @@ static int update_hierarchy(
             if (err < 0) {
                 return err;
             }
-            res += 1; // TODO err;
+            res += 1;
         }
 
         return res;
@@ -186,19 +180,22 @@ static int add_set_values(
     struct SelvaObject *obj,
     RedisModuleString *id,
     const RedisModuleString *field,
-    char *value_ptr,
+    const char *value_ptr,
     size_t value_len,
     int8_t type,
     int remove_diff
 ) {
-    char *ptr = value_ptr;
+    const char *ptr = value_ptr;
     int res = 0;
 
     if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
         type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
         SVector new_set;
 
-        if (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE && (value_len % SELVA_NODE_ID_SIZE)) {
+        /* Check that the value divides into elements properly. */
+        if ((type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE && (value_len % SELVA_NODE_ID_SIZE)) ||
+            (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE && (value_len % sizeof(double))) ||
+            (type == SELVA_MODIFY_OP_SET_TYPE_LONG_LONG && (value_len % sizeof(long long)))) {
             return SELVA_EINVAL;
         }
 
@@ -283,7 +280,6 @@ static int add_set_values(
                     SelvaSet_DestroyElement(SelvaSet_Remove(objSet, el));
 
                     if (alias_key) {
-                        /* TODO This could be its own function in the future. */
                         Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, el);
                         RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, el, REDISMODULE_HASH_DELETE, NULL);
                     }
@@ -357,8 +353,14 @@ string_err:
                     const double a = set_el->value_d;
 
                     /* This is probably faster than any data structure we could use. */
-                    for (size_t i = 0; i < value_len / sizeof(double); i++) {
-                        const double b = ((double *)value_ptr)[i]; /* RFE Might bork on ARM */
+                    for (size_t i = 0; i < value_len; i += sizeof(double)) {
+                        double b;
+
+                        /*
+                         * We use memcpy here because it's not guranteed that the
+                         * array is aligned properly.
+                         */
+                        memcpy(&b, value_ptr + i, sizeof(double));
 
                         if (a == b) {
                             found = 1;
@@ -377,8 +379,14 @@ string_err:
                     const long long a = set_el->value_ll;
 
                     /* This is probably faster than any data structure we could use. */
-                    for (size_t i = 0; i < value_len / sizeof(double); i++) {
-                        const long long b = ((long long *)value_ptr)[i]; /* RFE Might bork on ARM */
+                    for (size_t i = 0; i < value_len; i++) {
+                        long long b;
+
+                        /*
+                         * We use memcpy here because it's not guranteed that the
+                         * array is aligned properly.
+                         */
+                        memcpy(&b, value_ptr + i, sizeof(long long));
 
                         if (a == b) {
                             found = 1;
@@ -407,11 +415,11 @@ static int del_set_values(
     RedisModuleKey *alias_key,
     struct SelvaObject *obj,
     const RedisModuleString *field,
-    char *value_ptr,
+    const char *value_ptr,
     size_t value_len,
     int8_t type
 ) {
-    char *ptr = value_ptr;
+    const char *ptr = value_ptr;
     int res = 0;
 
     if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
@@ -608,7 +616,7 @@ int SelvaModify_ModifySet(
                 if (node_aliases) {
                     selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
                     (void)delete_aliases(alias_key, node_aliases);
-                    /* TODO It would be nice to print the number of deletions. */
+                    /* TODO It would be nice to return the actual number of deletions. */
                 }
             }
 
