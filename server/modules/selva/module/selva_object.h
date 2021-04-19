@@ -91,13 +91,13 @@ int SelvaObject_AddStringSet(struct SelvaObject *obj, const struct RedisModuleSt
 int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, void *p);
 int SelvaObject_AddArray(struct SelvaObject *obj, const struct RedisModuleString *key_name, enum SelvaObjectType subtype, void *p);
 int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, void *p);
-int SelvaObject_InsertArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, void *p);
-int SelvaObject_InsertArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, void *p);
+int SelvaObject_InsertArray(struct SelvaObject *obj, const struct RedisModuleString *key_name, enum SelvaObjectType subtype, void *p);
+int SelvaObject_InsertArray(struct SelvaObject *obj, const struct RedisModuleString *key_name, enum SelvaObjectType subtype, void *p);
 int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, size_t idx, void *p);
 int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType *out_subtype, struct SVector **out_p);
 int SelvaObject_GetArray(struct SelvaObject *obj, const struct RedisModuleString *key_name, enum SelvaObjectType *out_subtype, struct SVector **out_p);
 int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx);
-int SelvaObject_GetArrayIndexAsRmsStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, RedisModuleString **out);
+int SelvaObject_GetArrayIndexAsRmsStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, struct RedisModuleString **out);
 int SelvaObject_GetArrayIndexAsSelvaObject(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, struct SelvaObject **out);
 int SelvaObject_GetArrayIndexAsLongLong(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, long long *out);
 int SelvaObject_GetArrayIndexAsDouble(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, double *out);
@@ -127,12 +127,12 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, const struct RedisModuleString 
 int SelvaObject_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t *meta);
 int SelvaObject_GetUserMeta(struct SelvaObject *obj, const struct RedisModuleString *key_name, SelvaObjectMeta_t *meta);
 int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta);
-int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta);
+int SelvaObject_SetUserMeta(struct SelvaObject *obj, const struct RedisModuleString *key_name, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta);
 SelvaObject_Iterator *SelvaObject_ForeachBegin(struct SelvaObject *obj);
 const char *SelvaObject_ForeachKey(struct SelvaObject *obj, SelvaObject_Iterator **iterator);
 int SelvaObject_GetWithWildcardStr(
-        RedisModuleCtx *ctx,
-        RedisModuleString *lang,
+        struct RedisModuleCtx *ctx,
+        struct RedisModuleString *lang,
         struct SelvaObject *obj,
         const char *okey_str,
         size_t okey_len,
@@ -153,7 +153,7 @@ const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len);
 /*
  * Send a SelvaObject as a Redis reply.
  */
-int SelvaObject_ReplyWithObject(struct RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const struct RedisModuleString *key_name);
+int SelvaObject_ReplyWithObject(struct RedisModuleCtx *ctx, struct RedisModuleString *lang, struct SelvaObject *obj, const struct RedisModuleString *key_name);
 
 struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data);
 void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data);
