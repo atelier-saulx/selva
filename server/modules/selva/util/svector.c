@@ -188,7 +188,7 @@ static void SVector_Resize(SVector *vec, size_t i) {
     void **vec_arr = vec->vec_arr;
     size_t vec_len = vec->vec_arr_len;
 
-    if (i >= vec_len - 1) {
+    if (!vec_arr || i >= vec_len - 1) {
         const size_t new_len = calc_new_len(vec_len);
         const size_t new_size = VEC_SIZE(new_len);
 
