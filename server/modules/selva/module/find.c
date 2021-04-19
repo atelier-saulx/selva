@@ -16,6 +16,11 @@
 #include "subscriptions.h"
 #include "svector.h"
 
+enum SelvaTraversalAlgo {
+    HIERARCHY_BFS,
+    HIERARCHY_DFS,
+};
+
 enum merge_strategy {
     MERGE_STRATEGY_NONE = 0, /* No merge. */
     MERGE_STRATEGY_ALL,
@@ -41,11 +46,6 @@ static const struct SelvaArgParser_EnumType merge_types[] = {
         .name = NULL,
         .id = 0,
     }
-};
-
-enum SelvaModify_Hierarchy_Algo {
-    HIERARCHY_BFS,
-    HIERARCHY_DFS,
 };
 
 struct FindCommand_Args {
@@ -159,7 +159,7 @@ einval:
     return 0;
 }
 
-static int parse_algo(enum SelvaModify_Hierarchy_Algo *algo, const RedisModuleString *arg) {
+static int parse_algo(enum SelvaTraversalAlgo *algo, const RedisModuleString *arg) {
     size_t len;
     const char *str = RedisModule_StringPtrLen(arg, &len);
 
@@ -180,15 +180,15 @@ static const char *get_next_field_name(const char *s)
     return s;
 }
 
-static int parse_dir(
+int parse_dir(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         enum SelvaModify_HierarchyTraversal *dir,
         RedisModuleString **field_name_out,
         Selva_NodeId nodeId,
-        enum SelvaModify_Hierarchy_Algo algo,
-        const RedisModuleString *arg) {
-    const char *p1 = RedisModule_StringPtrLen(arg, NULL); /* Beginning of a field_name or a list of field_names. */
+        enum SelvaTraversalAlgo algo,
+        const RedisModuleString *field_name) {
+    const char *p1 = RedisModule_StringPtrLen(field_name, NULL); /* Beginning of a field_name or a list of field_names. */
     const char *p2 = get_next_field_name(p1); /* Last char of the first field_name. */
 
     /*
@@ -1347,7 +1347,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     /*
      * Select traversal method.
      */
-    enum SelvaModify_Hierarchy_Algo algo;
+    enum SelvaTraversalAlgo algo;
     err = parse_algo(&algo, argv[ARGV_ALGO]);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "traversal method");
