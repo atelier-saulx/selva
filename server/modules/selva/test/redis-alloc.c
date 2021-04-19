@@ -81,11 +81,11 @@ static void _RedisModule_RetainString(struct RedisModuleCtx *ctx __unused, struc
     robj->refcount++;
 }
 
-extern void * (*RedisModule_Alloc)(size_t size) = _RedisModule_Alloc;
-extern void* (*RedisModule_Calloc)(size_t nmemb, size_t size) = _RedisModule_Calloc;
-extern void * (*RedisModule_Realloc)(void *ptr, size_t size) = _RedisModule_Realloc;
-extern void (*RedisModule_Free)(void *ptr) = _RedisModule_Free;
-extern struct RedisModuleString *(*RedisModule_CreateString) = _RedisModule_CreateString;
-extern const char *(*RedisModule_StringPtrLen)(struct RedisModuleString *str, size_t *len) = _RedisModule_StringPtrLen;
-extern void (*RedisModule_FreeString)(struct RedisModuleCtx *ctx __unused, struct RedisModuleString *str) = _RedisModule_FreeString;
-extern void (*RedisModule_RetainString)(struct RedisModuleCtx *ctx __unused, struct RedisModuleString *str) =  _RedisModule_RetainString;
+void * (*RedisModule_Alloc)(size_t size) = _RedisModule_Alloc;
+void* (*RedisModule_Calloc)(size_t nmemb, size_t size) = _RedisModule_Calloc;
+void * (*RedisModule_Realloc)(void *ptr, size_t size) = _RedisModule_Realloc;
+void (*RedisModule_Free)(void *ptr) = _RedisModule_Free;
+struct RedisModuleString *(*RedisModule_CreateString)(struct RedisModuleCtx *ctx, const char *ptr, size_t len) = _RedisModule_CreateString;
+const char *(*RedisModule_StringPtrLen)(struct RedisModuleString *str, size_t *len) = _RedisModule_StringPtrLen;
+void (*RedisModule_FreeString)(struct RedisModuleCtx *ctx, struct RedisModuleString *str) = _RedisModule_FreeString;
+void (*RedisModule_RetainString)(struct RedisModuleCtx *ctx, struct RedisModuleString *str) =  _RedisModule_RetainString;
