@@ -198,7 +198,7 @@ void SVector_Insert(SVector *vec, void *el) {
 
         assert(el);
 
-        if (i >= vec_len - 1) {
+        if (!vec_arr || i >= vec_len - 1) {
             const size_t new_len = calc_new_len(vec_len);
             const size_t new_size = VEC_SIZE(new_len);
 
