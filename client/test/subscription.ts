@@ -1,20 +1,29 @@
 import test from 'ava'
 import { connect } from '../src/index'
-import { start } from '@saulx/selva-server'
+import { start, startOrigin } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
+let srv2
 let port: number
+let port2: number
 test.before(async () => {
   port = await getPort()
+  port2 = await getPort()
   srv = await start({
     port,
+  })
+  srv2 = await startOrigin({
+    name: 'config',
+    port: port2,
+    registry: { port },
   })
 })
 
 test.after(async (t) => {
   await srv.destroy()
+  await srv2.destroy()
   await t.connectionsAreEmpty()
 })
 
@@ -592,36 +601,42 @@ test.serial.skip(
 test.serial('basic id based reference subscriptions', async (t) => {
   const client = connect({ port })
 
-  await client.updateSchema({
-    languages: ['en', 'de', 'nl'],
-    rootType: {
-      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
-    },
-    types: {
-      refType: {
-        prefix: 're',
-        fields: {
-          yesh: { type: 'string' },
-          myRef: { type: 'reference' },
+  await client.updateSchema(
+    {
+      languages: ['en', 'de', 'nl'],
+      rootType: {
+        fields: { yesh: { type: 'string' }, no: { type: 'string' } },
+      },
+      types: {
+        refType: {
+          prefix: 're',
+          fields: {
+            yesh: { type: 'string' },
+            myRef: { type: 'reference' },
+          },
         },
       },
     },
-  })
+    'config'
+  )
 
   t.plan(3)
 
   await client.set({
+    $db: 'config',
     $id: 're2',
     yesh: 'hello from 2',
   })
 
   await client.set({
+    $db: 'config',
     $id: 're1',
     yesh: 'hello from 1',
     myRef: 're2',
   })
 
   const observable = client.observe({
+    $db: 'config',
     $id: 're1',
     yesh: true,
     myRef: {
@@ -659,6 +674,7 @@ test.serial('basic id based reference subscriptions', async (t) => {
   await wait(500 * 2)
 
   await client.set({
+    $db: 'config',
     $id: 're1',
     yesh: 'hello from 1!',
   })
@@ -666,6 +682,7 @@ test.serial('basic id based reference subscriptions', async (t) => {
   await wait(500 * 2)
 
   await client.set({
+    $db: 'config',
     $id: 're2',
     yesh: 'hello from 2!',
   })

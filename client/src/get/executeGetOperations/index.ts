@@ -430,6 +430,10 @@ export const executeGetOperation = async (
       }
 
       const props = Object.assign({}, op.props, { $id: id })
+      if (!op.props.$db && ctx.db && ctx.db !== 'default') {
+        props.$db = ctx.db
+      }
+
       return executeNestedGetOperations(
         client,
         props,
