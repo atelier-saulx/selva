@@ -163,11 +163,11 @@ size_t inheritHierarchyFields(
         size_t nr_field_names,
         RedisModuleString **field_names) {
     size_t nr_presolved = 0;
-    int err;
 
     for (size_t i = 0; i < nr_field_names; i++) {
         RedisModuleString *field_name = field_names[i];
         TO_STR(field_name);
+        int err;
 
         err = 1; /* This value will help us know if something matched. */
 

@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <errno.h>
 #include <math.h>
 #include <stdlib.h>
@@ -47,13 +48,6 @@ static int update_hierarchy(
     const char *field_str,
     struct SelvaModify_OpSet *setOpts
 ) {
-    RedisModuleString *key_name;
-
-    key_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
-    if (!key_name) {
-        return SELVA_ENOMEM;
-    }
-
     /*
      * If the field starts with 'p' we assume "parents"; Otherwise "children".
      * No other field can modify the hierarchy.
@@ -155,7 +149,7 @@ static int update_hierarchy(
             if (err < 0) {
                 return err;
             }
-            res += 1; // TODO err;
+            res += 1;
         }
 
         return res;
@@ -185,29 +179,30 @@ static int add_set_values(
     RedisModuleKey *alias_key,
     struct SelvaObject *obj,
     RedisModuleString *id,
-    RedisModuleString *field,
-    char *value_ptr,
+    const RedisModuleString *field,
+    const char *value_ptr,
     size_t value_len,
     int8_t type,
     int remove_diff
 ) {
-    char *ptr = value_ptr;
+    const char *ptr = value_ptr;
     int res = 0;
 
     if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
         type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
         SVector new_set;
 
-        if (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE && (value_len % SELVA_NODE_ID_SIZE)) {
+        /* Check that the value divides into elements properly. */
+        if ((type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE && (value_len % SELVA_NODE_ID_SIZE)) ||
+            (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE && (value_len % sizeof(double))) ||
+            (type == SELVA_MODIFY_OP_SET_TYPE_LONG_LONG && (value_len % sizeof(long long)))) {
             return SELVA_EINVAL;
         }
 
         if (remove_diff) {
-            if (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
-                SVector_Init(&new_set, value_len / SELVA_NODE_ID_SIZE, SelvaSVectorComparator_NodeId);
-            } else {
-                SVector_Init(&new_set, 1, SelvaSVectorComparator_RMS);
-            }
+            size_t inital_size = (type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) ? value_len / SELVA_NODE_ID_SIZE : 1;
+
+            SVector_Init(&new_set, inital_size, SelvaSVectorComparator_RMS);
         } else {
             /* If it's empty the destroy function will just skip over. */
             memset(&new_set, 0, sizeof(new_set));
@@ -282,10 +277,9 @@ static int add_set_values(
 
                 if (!SVector_Search(&new_set, (void *)el)) {
                     /* el doesn't exist in new_set, therefore it should be removed. */
-                    SelvaSet_DestroyElement(SelvaSet_RemoveRms(objSet, el));
+                    SelvaSet_DestroyElement(SelvaSet_Remove(objSet, el));
 
                     if (alias_key) {
-                        /* TODO This could be its own function in the future. */
                         Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, el);
                         RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, el, REDISMODULE_HASH_DELETE, NULL);
                     }
@@ -359,8 +353,14 @@ string_err:
                     const double a = set_el->value_d;
 
                     /* This is probably faster than any data structure we could use. */
-                    for (size_t i = 0; i < value_len / sizeof(double); i++) {
-                        const double b = ((double *)value_ptr)[i]; /* RFE Might bork on ARM */
+                    for (size_t i = 0; i < value_len; i += sizeof(double)) {
+                        double b;
+
+                        /*
+                         * We use memcpy here because it's not guranteed that the
+                         * array is aligned properly.
+                         */
+                        memcpy(&b, value_ptr + i, sizeof(double));
 
                         if (a == b) {
                             found = 1;
@@ -379,8 +379,14 @@ string_err:
                     const long long a = set_el->value_ll;
 
                     /* This is probably faster than any data structure we could use. */
-                    for (size_t i = 0; i < value_len / sizeof(double); i++) {
-                        const long long b = ((long long *)value_ptr)[i]; /* RFE Might bork on ARM */
+                    for (size_t i = 0; i < value_len; i++) {
+                        long long b;
+
+                        /*
+                         * We use memcpy here because it's not guranteed that the
+                         * array is aligned properly.
+                         */
+                        memcpy(&b, value_ptr + i, sizeof(long long));
 
                         if (a == b) {
                             found = 1;
@@ -408,12 +414,13 @@ static int del_set_values(
     RedisModuleCtx *ctx,
     RedisModuleKey *alias_key,
     struct SelvaObject *obj,
-    RedisModuleString *field,
-    char *value_ptr,
+    const RedisModuleString *field,
+    const char *value_ptr,
     size_t value_len,
     int8_t type
 ) {
-    char *ptr = value_ptr;
+    const char *ptr = value_ptr;
+    int res = 0;
 
     if (type == SELVA_MODIFY_OP_SET_TYPE_CHAR ||
         type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
@@ -424,13 +431,17 @@ static int del_set_values(
         for (size_t i = 0; i < value_len; ) {
             RedisModuleString *ref;
             const ssize_t part_len = string2rms(ctx, type, ptr, &ref);
+            int err;
 
             if (part_len < 0) {
                 return SELVA_EINVAL;
             }
 
             /* Remove from the node object. */
-            SelvaObject_RemStringSet(obj, field, ref);
+            err = SelvaObject_RemStringSet(obj, field, ref);
+            if (!err) {
+                res++;
+            }
 
             /* Remove from the global aliases hash. */
             if (alias_key) {
@@ -470,9 +481,15 @@ static int del_set_values(
                 memcpy(&v, ptr, part_len);
                 err = SelvaObject_RemLongLongSet(obj, field, v);
             }
-            if (err && err != SELVA_EEXIST) {
+            if (err &&
+                err != SELVA_ENOENT &&
+                err != SELVA_EEXIST &&
+                err != SELVA_EINVAL) {
                 fprintf(stderr, "%s:%d: Double set field update failed\n", __FILE__, __LINE__);
                 return err;
+            }
+            if (err == 0) {
+                res++;
             }
 
             const size_t skip_off = part_len;
@@ -483,7 +500,7 @@ static int del_set_values(
         return SELVA_EINTYPE;
     }
 
-    return 0;
+    return res;
 }
 
 /*
@@ -494,7 +511,7 @@ static int update_set(
     SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
-    RedisModuleString *field,
+    const RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
     TO_STR(field);
@@ -536,11 +553,11 @@ static int update_set(
         if (setOpts->$delete_len > 0) {
             int err;
 
-            err = del_set_values(ctx, alias_key, obj, field, setOpts->$delete,setOpts->$delete_len, setOpts->op_set_type);
-            if (err) {
+            err = del_set_values(ctx, alias_key, obj, field, setOpts->$delete, setOpts->$delete_len, setOpts->op_set_type);
+            if (err < 0) {
                 return err;
             }
-            res += 1; /* TODO This should reflect the number of actual deletions. */
+            res += err;
         }
     }
 
@@ -552,7 +569,7 @@ int SelvaModify_ModifySet(
     SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
-    RedisModuleString *field,
+    const RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
     const int is_reference = setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE;
@@ -599,7 +616,7 @@ int SelvaModify_ModifySet(
                 if (node_aliases) {
                     selva_set_defer_alias_change_events(ctx, hierarchy, node_aliases);
                     (void)delete_aliases(alias_key, node_aliases);
-                    /* TODO It would be nice to print the number of deletions. */
+                    /* TODO It would be nice to return the actual number of deletions. */
                 }
             }
 
@@ -631,9 +648,9 @@ int SelvaModify_ModifySet(
 
 void SelvaModify_ModifyIncrement(
     struct SelvaObject *obj,
-    RedisModuleString *field,
+    const RedisModuleString *field,
     enum SelvaObjectType old_type,
-    struct SelvaModify_OpIncrement *incrementOpts
+    const struct SelvaModify_OpIncrement *incrementOpts
 ) {
     int64_t new = incrementOpts->$default;
 
@@ -651,9 +668,9 @@ void SelvaModify_ModifyIncrement(
 void SelvaModify_ModifyIncrementDouble(
     RedisModuleCtx *ctx __unused,
     struct SelvaObject *obj,
-    RedisModuleString *field,
+    const RedisModuleString *field,
     enum SelvaObjectType old_type,
-    struct SelvaModify_OpIncrementDouble *incrementOpts
+    const struct SelvaModify_OpIncrementDouble *incrementOpts
 ) {
     double new = incrementOpts->$default;
 
@@ -673,7 +690,7 @@ int SelvaModify_ModifyDel(
     SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
-    RedisModuleString *field
+    const RedisModuleString *field
 ) {
     TO_STR(id, field);
     int err = 0;
@@ -698,7 +715,7 @@ int SelvaModify_ModifyDel(
             err = REDISMODULE_ERR;
         }
     } else { /* Delete a field. */
-        (void)SelvaObject_DelKey(obj, field);
+        err = SelvaObject_DelKey(obj, field);
     }
 
     return err;

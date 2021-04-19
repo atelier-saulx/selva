@@ -195,9 +195,7 @@ void SelvaObject_Clear(struct SelvaObject *obj) {
 void SelvaObject_Destroy(struct SelvaObject *obj) {
     SelvaObject_Clear(obj);
 #if MEM_DEBUG
-    if (obj) {
-        memset(obj, 0, sizeof(*obj));
-    }
+    memset(obj, 0, sizeof(*obj));
 #endif
     RedisModule_Free(obj);
 }
@@ -319,17 +317,19 @@ int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out) {
 
 static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
     const char *sep = ".";
-    const size_t nr_parts = substring_count(key_name_str, ".", key_name_len) + 1;
+    const size_t nr_parts = substring_count(key_name_str, sep, key_name_len) + 1;
     char buf[key_name_len + 1]; /* We assume that the length has been sanity checked at this point. */
-    char *s = buf;
     struct SelvaObjectKey *key = NULL;
     struct SelvaObject *cobj = obj; /* Containing object. */
 
-    strncpy(s, key_name_str, key_name_len);
-    s[key_name_len] = '\0';
+    strncpy(buf, key_name_str, key_name_len);
+    buf[key_name_len] = '\0';
 
+    char *rest;
     size_t nr_parts_found = 0;
-    for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
+    for (const char *s = strtok_r(buf, sep, &rest);
+         s != NULL;
+         s = strtok_r(NULL, sep, &rest)) {
         const size_t slen = strlen(s);
         int err;
 
@@ -468,9 +468,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         obj->obj_size--;
         (void)clear_key_value(key);
 #if MEM_DEBUG
-        if (key) {
-            memset(key, 0, sizeof(*key));
-        }
+        memset(key, 0, sizeof(*key));
 #endif
         RedisModule_Free(key);
         key = NULL;
@@ -732,6 +730,10 @@ static int get_selva_set_modify(struct SelvaObject *obj, const RedisModuleString
 
     assert(obj);
 
+    if (!SelvaSet_isValidType(type)) {
+        return SELVA_EINTYPE;
+    }
+
     err = get_key_modify(obj, key_name_str, key_name_len, &key);
     if (err) {
         return err;
@@ -820,15 +822,19 @@ static int get_selva_set(struct SelvaObject *obj, const RedisModuleString *key_n
 
 int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
     struct SelvaSet *selva_set;
+    struct SelvaSetElement *el;
     int err;
 
-    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_DOUBLE, &selva_set);
     if (err) {
         return err;
     }
 
-    /* TODO Should we return SELVA_EINVAL if the element was not found? */
-    SelvaSet_DestroyElement(SelvaSet_Remove(selva_set, value));
+    el = SelvaSet_Remove(selva_set, value);
+    if (!el) {
+        return SELVA_EINVAL;
+    }
+    SelvaSet_DestroyElement(el);
 
     return 0;
 }
@@ -841,6 +847,7 @@ int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const RedisModuleString *k
 
 int SelvaObject_RemLongLongSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
     struct SelvaSet *selva_set;
+    struct SelvaSetElement *el;
     int err;
 
     err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_LONGLONG, &selva_set);
@@ -848,8 +855,11 @@ int SelvaObject_RemLongLongSetStr(struct SelvaObject *obj, const char *key_name_
         return err;
     }
 
-    /* TODO Should we return SELVA_EINVAL if the element was not found? */
-    SelvaSet_DestroyElement(SelvaSet_Remove(selva_set, value));
+    el = SelvaSet_Remove(selva_set, value);
+    if (!el) {
+        return SELVA_EINVAL;
+    }
+    SelvaSet_DestroyElement(el);
 
     return 0;
 }
@@ -872,7 +882,7 @@ int SelvaObject_RemStringSetStr(struct SelvaObject *obj, const char *key_name_st
 
     el = SelvaSet_Remove(selva_set, value);
     if (!el) {
-        return 0; /* TODO Should we return SELVA_EINVAL? */
+        return SELVA_EINVAL;
     }
     RedisModule_FreeString(NULL, el->value_rms);
     SelvaSet_DestroyElement(el);
@@ -1143,7 +1153,7 @@ int SelvaObject_GetUserMeta(struct SelvaObject *obj, const RedisModuleString *ke
     return SelvaObject_GetUserMetaStr(obj, key_name_str, key_name_len, meta);
 }
 
-int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta) {
+int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta) {
     int err;
     struct SelvaObjectKey *key;
 
@@ -1152,14 +1162,17 @@ int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str
         return err;
     }
 
+    if (old_meta) {
+        *old_meta = key->user_meta;
+    }
     key->user_meta = meta;
     return 0;
 }
 
-int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta) {
+int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta) {
     TO_STR(key_name);
 
-    return SelvaObject_SetUserMetaStr(obj, key_name_str, key_name_len, meta);
+    return SelvaObject_SetUserMetaStr(obj, key_name_str, key_name_len, meta, old_meta);
 }
 
 /* TODO Support nested objects */
@@ -1337,17 +1350,20 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
     case SELVA_OBJECT_OBJECT:
         if (key->value) {
             TO_STR(lang);
+
             if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT && lang && lang_len > 0) {
                 char buf[lang_len + 1];
-                char *s = buf;
-                strncpy(s, lang_str, lang_len);
-                s[lang_len] = '\0';
+                memcpy(buf, lang_str, lang_len + 1);
                 const char *sep = "\n";
-                for (s = strtok(s, sep); s; s = strtok(NULL, sep)) {
-                    const size_t slen = strlen(s);
+                char *rest;
 
+                for (const char *s = strtok_r(buf, sep, &rest);
+                     s != NULL;
+                     s = strtok_r(NULL, sep, &rest)) {
+                    const size_t slen = strlen(s);
                     struct SelvaObjectKey *text_key;
                     int err = get_key(key->value, s, slen, 0, &text_key);
+
                     // ignore errors on purpose
                     if (!err && text_key->type == SELVA_OBJECT_STRING) {
                         RedisModule_ReplyWithString(ctx, text_key->value);
@@ -1436,55 +1452,71 @@ int SelvaObject_GetWithWildcardStr(
     int err;
 
     err = get_key(obj, before, before_len, 0, &key);
-    if (!err && key->type == SELVA_OBJECT_OBJECT && key->user_meta == 1) {
+    if (!err && (key->type != SELVA_OBJECT_OBJECT || key->user_meta != 1)) {
+        err = SELVA_ENOENT;
+    } else if (!err) {
         void *it = SelvaObject_ForeachBegin(key->value);
-
         const char *obj_key_name_str;
+
         while ((obj_key_name_str = SelvaObject_ForeachKey(key->value, &it))) {
             /*
-                construct a new field path with the resolved path with the following:
-                -> path before the wildcard
-                -> the current object key being iterated
-                -> path after the wildcard
-            */
+             *  Construct a new field path with the resolved path with the following:
+             *  -> path before the wildcard
+             *  -> the current object key being iterated
+             *  -> path after the wildcard
+             */
             const size_t obj_key_len = strlen(obj_key_name_str);
             const size_t new_field_len = before_len + 1 + obj_key_len + 1 + after_len;
-            char new_field[new_field_len];
-            sprintf(new_field, "%.*s.%.*s.%.*s",
+            char new_field[new_field_len + 1];
+
+            snprintf(new_field, new_field_len + 1, "%.*s.%.*s.%.*s",
                     (int)before_len, before,
                     (int)obj_key_len, obj_key_name_str,
                     (int)after_len, after);
 
             if (strnstr(new_field, ".*.", new_field_len)) {
-                /* recurse for nested wildcards while keeping the resolved path */
+                /* Recurse for nested wildcards while keeping the resolved path. */
                 SelvaObject_GetWithWildcardStr(ctx, lang, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
                 continue;
             }
 
-            struct SelvaObjectKey *key;
+            struct SelvaObjectKey *key; /* Note that we shadow the variable here. */
             err = get_key(obj, new_field, new_field_len, 0, &key);
+            if (err) {
+                /*
+                 * This is an unlikely event because the field is known to exist,
+                 * but if it happens we must skip to avoid segfaulting.
+                 */
+                fprintf(stderr, "%s:%d: Failed to get value for \"%.*s\"\n",
+                        __FILE__, __LINE__,
+                        (int)new_field_len, new_field);
+                continue;
+            }
 
             if (flags == 1) {
-                /* if the path should be spliced to start from the first wildcard (as expected by selva.object.get */
+                /* if the path should be spliced to start from the first wildcard as expected by selva.object.get */
                 const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
-                char reply_path[reply_path_len];
+                char reply_path[reply_path_len + 1];
+
                 if (resp_path_start_idx == -1) {
-                    sprintf(
-                        reply_path, "%.*s.%.*s",
+                    snprintf(
+                        reply_path, reply_path_len + 1, "%.*s.%.*s",
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
                 } else {
-                    sprintf(reply_path, "%.*s.%.*s.%.*s",
-                        (int)before_len - resp_path_start_idx, before + resp_path_start_idx,
+                    snprintf(reply_path, reply_path_len + 1, "%.*s.%.*s.%.*s",
+                        (int)(before_len - resp_path_start_idx), before + resp_path_start_idx,
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
                 }
+
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             } else {
                 /* if the whole resolved path should be returned */
                 const size_t reply_path_len = before_len + 1 + obj_key_len + 1 + key->name_len;
-                char reply_path[reply_path_len];
-                sprintf(reply_path, "%.*s.%.*s.%.*s",
+                char reply_path[reply_path_len + 1];
+
+                snprintf(reply_path, reply_path_len + 1, "%.*s.%.*s.%.*s",
                         (int)before_len, before,
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
@@ -1494,8 +1526,6 @@ int SelvaObject_GetWithWildcardStr(
             replyWithKeyValue(ctx, lang, key);
             *resp_count += 2;
         }
-    } else {
-        err = SELVA_ENOENT;
     }
 
     /* ignore errors unless nothing was returned and an error occurred */
@@ -1785,7 +1815,7 @@ int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     memcpy(&user_meta, mval_str, sizeof(SelvaObjectMeta_t));
-    err = SelvaObject_SetUserMeta(obj, argv[ARGV_OKEY], user_meta);
+    err = SelvaObject_SetUserMeta(obj, argv[ARGV_OKEY], user_meta, NULL);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "Failed to set key metadata");
     }
@@ -1977,7 +2007,7 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
          * Not the most efficient way to do this as we may need to look
          * multiple lookups.
          */
-        if (SelvaObject_SetUserMeta(obj, name, user_meta)) {
+        if (SelvaObject_SetUserMeta(obj, name, user_meta, NULL)) {
             RedisModule_LogIOError(io, "warning", "Failed to set user meta");
         }
 

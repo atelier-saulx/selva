@@ -31,6 +31,23 @@ static int field_matcher(const char *list, const char *field)
     return match;
 }
 
+static char * test_invalid_cases(void)
+{
+    const char *field = "title";
+    int match;
+
+    match = field_matcher("", field);
+    pu_assert_equal("should not match", match, 0);
+
+    match = stringlist_searchn("title", "", 0);
+    pu_assert_equal("should not match", match, 0);
+
+    match = stringlist_searchn("title", "\0", 1);
+    pu_assert_equal("should not match", match, 0);
+
+    return NULL;
+}
+
 static char * test_simple_match(void)
 {
     const char *list = "title";
@@ -50,7 +67,7 @@ static char * test_simple_no_match(void)
     int match;
 
     match = field_matcher(list, field);
-    pu_assert_equal("should just not match", match, 0);
+    pu_assert_equal("should not match", match, 0);
 
     return NULL;
 }
@@ -175,8 +192,27 @@ static char * test_empty_field(void)
     return NULL;
 }
 
+static char * test_long_string(void)
+{
+    const char *list = "abc\ntitle\ndef";
+    const char field[] = "titlee";
+    int match;
+
+    match = stringlist_searchn(list, field, sizeof(field) - 3);
+    pu_assert_equal("no match", match, 0);
+
+    match = stringlist_searchn(list, field, sizeof(field) - 2);
+    pu_assert_equal("match", match, 1);
+
+    match = stringlist_searchn(list, field, sizeof(field) - 1);
+    pu_assert_equal("no match", match, 0);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
+    pu_def_test(test_invalid_cases, PU_RUN);
     pu_def_test(test_simple_match, PU_RUN);
     pu_def_test(test_simple_no_match, PU_RUN);
     pu_def_test(test_simple_match_in_list, PU_RUN);
@@ -189,4 +225,5 @@ void all_tests(void)
     pu_def_test(test_broken_list1, PU_RUN);
     pu_def_test(test_broken_list2, PU_SKIP); /* TODO This is currently failing but it's not a big deal */
     pu_def_test(test_empty_field, PU_RUN);
+    pu_def_test(test_long_string, PU_RUN);
 }

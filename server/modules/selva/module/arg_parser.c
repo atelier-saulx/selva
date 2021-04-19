@@ -7,7 +7,7 @@
 #include "subscriptions.h"
 #include "selva_object.h"
 
-int SelvaArgParser_IntOpt(ssize_t *value, const char *name, RedisModuleString *txt, RedisModuleString *num) {
+int SelvaArgParser_IntOpt(ssize_t *value, const char *name, const RedisModuleString *txt, const RedisModuleString *num) {
     TO_STR(txt, num);
     char *end = NULL;
 
@@ -23,7 +23,7 @@ int SelvaArgParser_IntOpt(ssize_t *value, const char *name, RedisModuleString *t
     return 0;
 }
 
-int SelvaArgParser_StrOpt(const char **value, const char *name, RedisModuleString *arg_key, RedisModuleString *arg_val) {
+int SelvaArgParser_StrOpt(const char **value, const char *name, const RedisModuleString *arg_key, const RedisModuleString *arg_val) {
     TO_STR(arg_key, arg_val);
 
     if(strcmp(name, arg_key_str)) {
@@ -37,7 +37,7 @@ int SelvaArgParser_StrOpt(const char **value, const char *name, RedisModuleStrin
     return 0;
 }
 
-int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, const char *name, RedisModuleString *arg_key, RedisModuleString *arg_val) {
+int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, const char *name, const RedisModuleString *arg_key, const RedisModuleString *arg_val) {
     const char *cur;
     RedisModuleString **list = NULL;
     size_t n = 1;
@@ -106,7 +106,12 @@ int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, co
  * List separator: '|'
  * Enf of sets: '\0'
  */
-int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out, const char *name, RedisModuleString *arg_key, RedisModuleString *arg_val) {
+int SelvaArgsParser_StringSetList(
+        RedisModuleCtx *ctx,
+        struct SelvaObject **out,
+        const char *name,
+        const RedisModuleString *arg_key,
+        const RedisModuleString *arg_val) {
     struct SelvaObject *obj;
     const char *cur;
     size_t n = 0;
@@ -124,7 +129,7 @@ int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out,
 
     if (cur[0] != '\0') {
         do {
-            RedisModuleString *key;
+            const RedisModuleString *key;
             const char *next;
 #if 0
             size_t len;
@@ -198,7 +203,9 @@ int SelvaArgsParser_StringSetList(RedisModuleCtx *ctx, struct SelvaObject **out,
     return 0;
 }
 
-int SelvaArgParser_Enum(const struct SelvaArgParser_EnumType types[], RedisModuleString *arg) {
+int SelvaArgParser_Enum(
+        const struct SelvaArgParser_EnumType types[],
+        const RedisModuleString *arg) {
     size_t i = 0;
     TO_STR(arg);
 
@@ -212,7 +219,7 @@ int SelvaArgParser_Enum(const struct SelvaArgParser_EnumType types[], RedisModul
     return SELVA_ENOENT;
 }
 
-void SelvaArgParser_NodeId(Selva_NodeId node_id, RedisModuleString *arg) {
+void SelvaArgParser_NodeId(Selva_NodeId node_id, const RedisModuleString *arg) {
     size_t len;
     const char *str;
 
@@ -221,7 +228,7 @@ void SelvaArgParser_NodeId(Selva_NodeId node_id, RedisModuleString *arg) {
     memcpy(node_id, str, min(SELVA_NODE_ID_SIZE, len));
 }
 
-int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, RedisModuleString *arg) {
+int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, const RedisModuleString *arg) {
     TO_STR(arg);
 
     if (arg_len != SELVA_SUBSCRIPTION_ID_STR_LEN) {
@@ -231,7 +238,7 @@ int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, RedisModuleString *ar
     return Selva_SubscriptionStr2id(id, arg_str);
 }
 
-int SelvaArgParser_MarkerId(Selva_SubscriptionMarkerId *marker_id, RedisModuleString *arg) {
+int SelvaArgParser_MarkerId(Selva_SubscriptionMarkerId *marker_id, const RedisModuleString *arg) {
     long long ll;
 
     if (RedisModule_StringToLongLong(arg, &ll) != REDISMODULE_OK) {

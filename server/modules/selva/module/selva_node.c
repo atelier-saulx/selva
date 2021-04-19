@@ -17,8 +17,10 @@ int SelvaNode_Initialize(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleSt
         return err;
     }
 
-    /* TODO Handle errors */
-    SelvaObject_SetStringStr(obj, SELVA_ID_FIELD, sizeof(SELVA_ID_FIELD) - 1, key_name);
+    err = SelvaObject_SetStringStr(obj, SELVA_ID_FIELD, sizeof(SELVA_ID_FIELD) - 1, key_name);
+    if (err) {
+        return err;
+    }
     RedisModule_RetainString(ctx, key_name);
 
     /* Set the type for root. */
@@ -30,8 +32,13 @@ int SelvaNode_Initialize(RedisModuleCtx *ctx, RedisModuleKey *key, RedisModuleSt
             return SELVA_ENOMEM;
         }
 
-        /* TODO Handle errors */
-        SelvaObject_SetStringStr(obj, "type", 4, type);
+        err = SelvaObject_SetStringStr(obj, "type", 4, type);
+        if (err) {
+            /* We leave the object as is even though it's missing type */
+            fprintf(stderr, "%s:%d: Failed to set type field for root\n",
+                    __FILE__, __LINE__);
+            return err;
+        }
         RedisModule_RetainString(ctx, type);
     }
 

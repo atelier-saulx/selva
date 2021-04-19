@@ -688,6 +688,7 @@ test.serial('FindInSub: simple lookups', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_findinsub(
+      '',
       '___selva_hierarchy',
       subId1,
       1
@@ -697,6 +698,7 @@ test.serial('FindInSub: simple lookups', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_findinsub(
+      '',
       '___selva_hierarchy',
       subId1,
       2
@@ -706,6 +708,7 @@ test.serial('FindInSub: simple lookups', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_findinsub(
+      '',
       '___selva_hierarchy',
       subId1,
       3
@@ -715,6 +718,7 @@ test.serial('FindInSub: simple lookups', async (t) => {
 
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_findinsub(
+      '',
       '___selva_hierarchy',
       subId1,
       4
@@ -724,6 +728,7 @@ test.serial('FindInSub: simple lookups', async (t) => {
 
   t.deepEqual(
     await client.redis.selva_hierarchy_findinsub(
+      '',
       '___selva_hierarchy',
       subId1,
       5
@@ -803,6 +808,7 @@ test.serial('FindInSub: expression filter', async (t) => {
 
   t.deepEqual(
     await client.redis.selva_hierarchy_findinsub(
+      '',
       '___selva_hierarchy',
       subId1,
       1
@@ -935,6 +941,7 @@ test.serial('FindInSub: expression filter and sort', async (t) => {
 
   t.deepEqual(
     await client.redis.selva_hierarchy_findinsub(
+      '',
       '___selva_hierarchy',
       subId1,
       1,
