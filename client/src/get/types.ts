@@ -181,6 +181,7 @@ export type GetOperation =
   | (WithOptional<GetOperationCommon, 'id' | 'sourceField'> & {
       type: 'nested_query'
       props: GetOptions
+      fromReference?: boolean
     })
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
   | GetOperationFind

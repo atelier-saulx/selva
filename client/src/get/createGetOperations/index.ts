@@ -80,6 +80,7 @@ export default function createGetOperations(
         props: Object.assign({}, props, { $field: undefined }),
         id,
         sourceField: props.$field,
+        fromReference: true,
       })
 
       return
@@ -104,6 +105,7 @@ export default function createGetOperations(
           props,
           id,
           sourceField: field.substr(1),
+          fromReference: true,
         })
       } else {
         ops.push({
@@ -111,6 +113,7 @@ export default function createGetOperations(
           field: field.substr(1),
           props,
           id,
+          fromReference: true,
         })
       }
 

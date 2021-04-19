@@ -588,3 +588,97 @@ test.serial.skip(
     await client.destroy()
   }
 )
+
+test.serial('basic id based reference subscriptions', async (t) => {
+  const client = connect({ port })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
+    },
+    types: {
+      refType: {
+        prefix: 're',
+        fields: {
+          yesh: { type: 'string' },
+          myRef: { type: 'reference' },
+        },
+      },
+    },
+  })
+
+  t.plan(3)
+
+  await client.set({
+    $id: 're2',
+    yesh: 'hello from 2',
+  })
+
+  await client.set({
+    $id: 're1',
+    yesh: 'hello from 1',
+    myRef: 're2',
+  })
+
+  const observable = client.observe({
+    $id: 're1',
+    yesh: true,
+    myRef: {
+      yesh: true,
+    },
+  })
+
+  let o1counter = 0
+  const sub = observable.subscribe((d) => {
+    console.log('ddd', d)
+    if (o1counter === 0) {
+      // gets start event
+      t.deepEqualIgnoreOrder(d, {
+        yesh: 'hello from 1',
+        myRef: { yesh: 'hello from 2' },
+      })
+    } else if (o1counter === 1) {
+      // gets update event
+      t.deepEqualIgnoreOrder(d, {
+        yesh: 'hello from 1!',
+        myRef: { yesh: 'hello from 2' },
+      })
+    } else if (o1counter === 2) {
+      t.deepEqualIgnoreOrder(d, {
+        yesh: 'hello from 1!',
+        myRef: { yesh: 'hello from 2!' },
+      })
+    } else {
+      // doesn't get any more events
+      t.fail()
+    }
+    o1counter++
+  })
+
+  await wait(500 * 2)
+
+  await client.set({
+    $id: 're1',
+    yesh: 'hello from 1!',
+  })
+
+  await wait(500 * 2)
+
+  await client.set({
+    $id: 're2',
+    yesh: 'hello from 2!',
+  })
+
+  await wait(500 * 2)
+
+  sub.unsubscribe()
+
+  await wait(500 * 2)
+
+  await client.delete('root')
+
+  await wait(1000)
+
+  await client.destroy()
+})
