@@ -28,6 +28,41 @@ static char * test_init_works(void)
     return NULL;
 }
 
+static char * test_number_valid(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "#1";
+    rpn_token *expr;
+
+    expr = rpn_compile(expr_str, sizeof(expr_str));
+    pu_assert("expr is created", expr);
+
+    err = rpn_integer(NULL, ctx, expr, &res);
+
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("result is valid", res, 1);
+
+    return NULL;
+}
+
+static char * test_number_invalid(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "#r";
+    rpn_token *expr;
+
+    expr = rpn_compile(expr_str, sizeof(expr_str));
+    pu_assert("expr is created", expr);
+
+    err = rpn_integer(NULL, ctx, expr, &res);
+
+    pu_assert_equal("No error", err, RPN_ERR_NAN);
+
+    return NULL;
+}
+
 static char * test_add(void)
 {
     enum rpn_error err;
@@ -147,6 +182,8 @@ static char * test_range(void)
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
+    pu_def_test(test_number_valid, PU_RUN);
+    pu_def_test(test_number_invalid, PU_RUN);
     pu_def_test(test_add, PU_RUN);
     pu_def_test(test_add_double, PU_RUN);
     pu_def_test(test_rem, PU_RUN);

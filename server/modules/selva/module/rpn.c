@@ -52,6 +52,12 @@ struct redisObjectAccessor {
 #define OPERAND_GET_S_LEN(x) \
     ((x)->s_size > 0 ? (x)->s_size - 1 : 0)
 
+/**
+ * Use to create an empty result operand pointer.
+ */
+#define RESULT_OPERAND(x) \
+    struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = NULL
+
 struct rpn_operand {
     struct {
         unsigned in_use : 1; /*!< In use/in stack, do not free. */
@@ -89,6 +95,7 @@ const char *rpn_str_error[] = {
 };
 
 static void free_rpn_operand(void *p);
+static void clear_stack(struct rpn_ctx *ctx);
 
 __constructor static void init_pool(void) {
     struct rpn_operand *prev = NULL;
@@ -128,6 +135,7 @@ struct rpn_ctx *rpn_init(int nr_reg) {
 
 void rpn_destroy(struct rpn_ctx *ctx) {
     if (ctx) {
+        clear_stack(ctx);
         for (int i = 0; i < ctx->nr_reg; i++) {
             struct rpn_operand *v = ctx->reg[i];
 
@@ -384,7 +392,6 @@ static void clear_stack(struct rpn_ctx *ctx) {
     struct rpn_operand *v;
 
     while ((v = pop(ctx))) {
-        v->flags.in_use = 0;
         free_rpn_operand(&v);
     }
 }
@@ -421,6 +428,9 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
         struct rpn_operand *r;
 
         r = alloc_rpn_operand(sizeof(char *));
+        if (!r) {
+            return RPN_ERR_ENOMEM;
+        }
 
         /*
          * Set the string value.
@@ -1037,7 +1047,6 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                     err = rpn_get_reg(ctx, str, RPN_LVTYPE_NUMBER);
                     if (err) {
                         clear_stack(ctx);
-
                         return err;
                     }
                 }
@@ -1050,28 +1059,29 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                     err = rpn_get_reg(ctx, str, RPN_LVTYPE_STRING);
                     if (err) {
                         clear_stack(ctx);
-
                         return err;
                     }
                 }
                 break;
             case '#':
                 {
-                    struct rpn_operand *v;
                     const char *str = s + 1;
                     char *e;
+                    const double d = strtod(str, &e);
                     enum rpn_error err;
-
-                    v = alloc_rpn_operand(0);
-                    v->d = strtod(str, &e);
-                    v->s_size = 0;
-                    v->s[0] = '\0';
+                    RESULT_OPERAND(v);
 
                     if (unlikely(e == str)) {
                         fprintf(stderr, "%s:%d: Operand is not a number: %s\n",
                                 __FILE__, __LINE__, s);
+                        clear_stack(ctx);
                         return RPN_ERR_NAN;
                     }
+
+                    v = alloc_rpn_operand(0);
+                    v->d = d;
+                    v->s_size = 0;
+                    v->s[0] = '\0';
 
                     err = push(ctx, v);
                     if (err) {
@@ -1082,7 +1092,7 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                 break;
             case '"':
                 {
-                    struct rpn_operand *v;
+                    RESULT_OPERAND(v);
                     const char *str = s + 1;
                     size_t size = strlen(str) + 1;
                     enum rpn_error err;
