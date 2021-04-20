@@ -16,12 +16,13 @@ export default async (
   if (typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
+
   const r: string[] = []
 
   const fn = fieldParsers[fields.values.type]
 
   if (payload.$delete) {
-    r.push('7', field, '')
+    result.push('7', field, '')
     return
   }
   if (payload.$merge === false) {
@@ -34,7 +35,7 @@ export default async (
       if (key === '$merge') {
         // NOP
       } else if (key === '$ref') {
-        r.push('0', field + '.' + key, payload[key])
+        result.push('0', field + '.' + key, payload[key])
         return
       } else if (key === '$delete') {
         // NOP - dead branch
@@ -58,7 +59,7 @@ export default async (
 
   result.push(...r)
 
-  if (addedFields) {
+  if (addedFields && r.length) {
     const content = new Uint32Array([1])
     const buf = Buffer.from(content.buffer)
     result.push('C', field, buf)
