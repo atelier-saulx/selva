@@ -78,6 +78,7 @@ export default async (
   // refs(field, payload, lang)
   verify(payload, false, lang)
 
+  let added = 0
   const push = (o, hname: string) => {
     if (o.$delete) {
       result.push('7', hname, '')
@@ -85,8 +86,10 @@ export default async (
     }
     if (o.$merge == false) {
       result.push('7', hname, '')
+      added++
     }
     for (const k in o) {
+      added++
       if (typeof o[k] === 'string') {
         result.push('0', `${hname}.${k}`, o[k])
       } else if (o[k].$default) {
@@ -101,7 +104,9 @@ export default async (
 
   push(payload, field)
 
-  const content = new Uint32Array([2])
-  const buf = Buffer.from(content.buffer)
-  result.push('C', field, buf)
+  if (added > 0) {
+    const content = new Uint32Array([2])
+    const buf = Buffer.from(content.buffer)
+    result.push('C', field, buf)
+  }
 }
