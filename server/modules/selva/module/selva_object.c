@@ -163,6 +163,7 @@ static int clear_key_value(struct SelvaObjectKey *key) {
 
             SVector_ForeachBegin(&it, &key->array);
             while ((k = SVector_Foreach(&it))) {
+                fprintf(stderr, "HELLO HELLO HELLO %p\n", k);
                 SelvaObject_Destroy(k);
             }
         } else {
@@ -193,6 +194,7 @@ static int clear_key_value(struct SelvaObjectKey *key) {
 }
 
 void SelvaObject_Clear(struct SelvaObject *obj) {
+    fprintf(stderr, "OBJ OBJ OBJ %p\n", obj);
     struct SelvaObjectKey *next;
 
     for (struct SelvaObjectKey *key = RB_MIN(SelvaObjectKeys, &obj->keys_head); key != NULL; key = next) {
@@ -482,7 +484,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             /*
              * Keep nesting or return an object if this was the last token.
              */
-            int err = SelvaObject_GetArrayIndexAsSelvaObject(obj, key_name_str, key_name_len, ary_idx, &obj);
+            int err = SelvaObject_GetArrayIndexAsSelvaObject(obj, s, slen, ary_idx, &obj);
             if (err && err != SELVA_ENOENT) {
                 return err;
             }
@@ -1061,35 +1063,29 @@ int SelvaObject_GetArrayIndexAsSelvaObject(struct SelvaObject *obj, const char *
 }
 
 int SelvaObject_GetArrayIndexAsLongLong(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, long long *out) {
-    void **ll;
-    int err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_LONGLONG, (void **)ll);
+    void *lptr;
+    int err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_LONGLONG, &lptr);
     if (err) {
         return err;
     }
 
-    if (!*ll) {
-        return SELVA_ENOENT;
-    }
-
-
-    long long num = (long long)(*ll);
-    *out = num;
+    long long l;
+    memcpy(&l, lptr, sizeof(long long));
+    *out = l;
+    return 0;
 }
 
 int SelvaObject_GetArrayIndexAsDouble(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, double *out) {
-    void **dptr;
-    int err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_LONGLONG, (void **)dptr);
+    void *dptr;
+    int err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_DOUBLE, &dptr);
     if (err) {
         return err;
-    }
-
-    if (!*dptr) {
-        return SELVA_ENOENT;
     }
 
     double d;
     memcpy(&d, dptr, sizeof(double));
     *out = d;
+    return 0;
 }
 
 int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, void *p) {
