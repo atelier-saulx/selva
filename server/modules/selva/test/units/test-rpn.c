@@ -58,7 +58,64 @@ static char * test_number_invalid(void)
 
     err = rpn_integer(NULL, ctx, expr, &res);
 
-    pu_assert_equal("No error", err, RPN_ERR_NAN);
+    pu_assert_equal("Error NAN", err, RPN_ERR_NAN);
+
+    return NULL;
+}
+
+static char * test_operand_pool_overflow(void)
+{
+    char expr_str[3 + 2 * (RPN_SMALL_OPERAND_POOL_SIZE * 2) + 1];
+    rpn_token *expr;
+    int res;
+    enum rpn_error err;
+
+    memset(expr_str, '\0', sizeof(expr_str));
+
+    expr_str[0] = '#';
+    expr_str[1] = '1';
+    expr_str[2] = ' ';
+
+    for (size_t i = 0; i < 2 * RPN_SMALL_OPERAND_POOL_SIZE; i++) {
+        size_t op = 3 + i * 2;
+
+        expr_str[op + 0] = 'L';
+        expr_str[op + 1] = ' ';
+    }
+
+    expr = rpn_compile(expr_str, sizeof(expr_str));
+    pu_assert("expr is created", expr);
+
+    err = rpn_bool(NULL, ctx, expr, &res);
+
+    pu_assert_equal("No error", err, 0);
+
+    return NULL;
+}
+
+static char * test_stack_overflow(void)
+{
+    char expr_str[2 * (RPN_MAX_D * 2) + 3];
+    rpn_token *expr;
+    int res;
+    enum rpn_error err;
+
+    memset(expr_str, '\0', sizeof(expr_str));
+
+    for (size_t i = 0; i < 2 * RPN_MAX_D; i++) {
+        size_t op = i * 2;
+
+        expr_str[op + 0] = 'L';
+        expr_str[op + 1] = ' ';
+    }
+    expr_str[sizeof(expr_str) - 2] = 'L';
+
+    expr = rpn_compile(expr_str, sizeof(expr_str));
+    pu_assert("expr is created", expr);
+
+    err = rpn_bool(NULL, ctx, expr, &res);
+
+    pu_assert_equal("should get stack overflow", err, RPN_ERR_BADSTK);
 
     return NULL;
 }
@@ -184,6 +241,8 @@ void all_tests(void)
     pu_def_test(test_init_works, PU_RUN);
     pu_def_test(test_number_valid, PU_RUN);
     pu_def_test(test_number_invalid, PU_RUN);
+    pu_def_test(test_operand_pool_overflow, PU_RUN);
+    pu_def_test(test_stack_overflow, PU_RUN);
     pu_def_test(test_add, PU_RUN);
     pu_def_test(test_add_double, PU_RUN);
     pu_def_test(test_rem, PU_RUN);
