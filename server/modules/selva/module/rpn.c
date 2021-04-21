@@ -1012,6 +1012,43 @@ rpn_token *rpn_compile(const char *input, size_t len) {
     return expr;
 }
 
+static enum rpn_error read_num_literal(struct rpn_ctx *ctx, const char *str) {
+    char *e;
+    const double d = strtod(str, &e);
+    RESULT_OPERAND(v);
+
+    if (unlikely(e == str)) {
+        fprintf(stderr, "%s:%d: Operand is not a number: #%s\n",
+                __FILE__, __LINE__, str);
+        return RPN_ERR_NAN;
+    }
+
+    v = alloc_rpn_operand(0);
+    v->d = d;
+    v->s_size = 0;
+    v->s[0] = '\0';
+
+    return push(ctx, v);
+}
+
+static enum rpn_error read_str_literal(struct rpn_ctx *ctx, const char *str) {
+    size_t size = strlen(str) + 1;
+    RESULT_OPERAND(v);
+
+#ifdef RPN_ASSERTS
+    /* We don't expect to see extra long strings here. */
+    assert(size <= 120);
+#endif
+
+    v = alloc_rpn_operand(size);
+    v->s_size = size;
+    strncpy(v->s, str, size);
+    v->s[size - 1] = '\0';
+    v->d = nan("");
+
+    return push(ctx, v);
+}
+
 static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr) {
     const rpn_token *it = expr;
     const char *s;
@@ -1038,88 +1075,30 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                 return err;
             }
         } else { /* Operand */
+            enum rpn_error err;
+
             switch (s[0]) {
             case '@':
-                {
-                    const char *str = s + 1;
-                    enum rpn_error err;
-
-                    err = rpn_get_reg(ctx, str, RPN_LVTYPE_NUMBER);
-                    if (err) {
-                        clear_stack(ctx);
-                        return err;
-                    }
-                }
+                err = rpn_get_reg(ctx, s + 1, RPN_LVTYPE_NUMBER);
                 break;
             case '$':
-                {
-                    const char *str = s + 1;
-                    enum rpn_error err;
-
-                    err = rpn_get_reg(ctx, str, RPN_LVTYPE_STRING);
-                    if (err) {
-                        clear_stack(ctx);
-                        return err;
-                    }
-                }
+                err = rpn_get_reg(ctx, s + 1, RPN_LVTYPE_STRING);
                 break;
             case '#':
-                {
-                    const char *str = s + 1;
-                    char *e;
-                    const double d = strtod(str, &e);
-                    enum rpn_error err;
-                    RESULT_OPERAND(v);
-
-                    if (unlikely(e == str)) {
-                        fprintf(stderr, "%s:%d: Operand is not a number: %s\n",
-                                __FILE__, __LINE__, s);
-                        clear_stack(ctx);
-                        return RPN_ERR_NAN;
-                    }
-
-                    v = alloc_rpn_operand(0);
-                    v->d = d;
-                    v->s_size = 0;
-                    v->s[0] = '\0';
-
-                    err = push(ctx, v);
-                    if (err) {
-                        clear_stack(ctx);
-                        return err;
-                    }
-                }
+                err = read_num_literal(ctx, s + 1);
                 break;
             case '"':
-                {
-                    RESULT_OPERAND(v);
-                    const char *str = s + 1;
-                    size_t size = strlen(str) + 1;
-                    enum rpn_error err;
-
-#ifdef RPN_ASSERTS
-                    /* We don't expect to see extra long strings here. */
-                    assert(size <= 120);
-#endif
-
-                    v = alloc_rpn_operand(size);
-                    v->s_size = size;
-                    strncpy(v->s, str, size);
-                    v->s[size - 1] = '\0';
-                    v->d = nan("");
-
-                    err = push(ctx, v);
-                    if (err) {
-                        clear_stack(ctx);
-                        return err;
-                    }
-                }
+                err = read_str_literal(ctx, s + 1);
                 break;
             default:
                 fprintf(stderr, "%s:%d: Illegal operand: \"%s\"\n",
                         __FILE__, __LINE__, s);
+                err = RPN_ERR_ILLOPN;
+            }
+
+            if (err) {
                 clear_stack(ctx);
-                return RPN_ERR_ILLOPN;
+                return err;
             }
         }
 	}
