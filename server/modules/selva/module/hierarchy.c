@@ -1909,6 +1909,31 @@ ssize_t SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selv
     return SelvaModify_FindDir(hierarchy, id, RELATIONSHIP_CHILD, descendants);
 }
 
+int SelvaHierarchy_IsNonEmptyField(struct SelvaModify_HierarchyNode *node, const char *field_str, size_t field_len) {
+
+    if ((field_len == 7 && !strncmp("parents", field_str, 7)) ||
+        (field_len == 9 && !strncmp("ancestors", field_str, 9))) {
+        return SVector_Size(&node->parents) > 0;
+    } else if ((field_len == 8 && !strncmp("children", field_str, 8)) ||
+               (field_len == 11 && !strncmp("descendants", field_str, 11))) {
+        return SVector_Size(&node->children) > 0;
+    } else if (field_len > 0) {
+        /*
+         * Check if field is a custom edge field name.
+         */
+        const struct EdgeField *edge_field;
+
+        edge_field = Edge_GetField(node, field_str, field_len);
+        if (!edge_field) {
+            return 0;
+        }
+
+        return SVector_Size(&edge_field->arcs);
+    }
+
+    return 0;
+}
+
 int load_metadata(RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
     if (unlikely(!node)) {
         return SELVA_EINVAL;

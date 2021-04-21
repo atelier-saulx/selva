@@ -15,6 +15,7 @@ enum rpn_error {
     RPN_ERR_NAN,        /*!< Not a number. */
     RPN_ERR_DIV,        /*!< Divide by zero. */
     RPN_ERR_BREAK,      /*!< Breaking condition. Never returned. */
+    RPN_ERR_LAST,
 };
 
 struct rpn_operand;
@@ -22,11 +23,13 @@ struct RedisModuleCtx;
 struct RedisModuleKey;
 struct RedisModuleString;
 struct SelvaSet;
+struct SelvaModify_HierarchyNode;
 
 struct rpn_ctx {
     int depth;
     int nr_reg;
-    struct RedisModuleKey *redis_hkey; /*!< Redis hash key of the current node. */
+    struct SelvaModify_HierarchyNode *node; /*!< A pointer to the current hierarchy node set with rpn_set_hierarchy_node(). */
+    struct RedisModuleKey *redis_key; /*!< Redis key of the current node object. */
     struct SelvaObject *obj; /*!< Selva object of the current node. */
     struct RedisModuleString *rms_id;  /*!< This holds the id of redis_hkey. */
     struct RedisModuleString *rms_field;  /*!< This holds the name of the currently accessed field. */
@@ -41,10 +44,22 @@ typedef char rpn_token[RPN_MAX_TOKEN_SIZE];
  */
 #define RPN_SET_REG_FLAG_RMFREE 0x01
 
-extern const char *rpn_str_error[11];
+extern const char *rpn_str_error[RPN_ERR_LAST];
 
 struct rpn_ctx *rpn_init(int nr_reg);
 void rpn_destroy(struct rpn_ctx *ctx);
+
+/**
+ * Set the hierarchy node pointer in the RPN context.
+ * Setting the node pointer enables some operands operating on the hierarchy but
+ * it's not necessary to set this if those operands are not needed.
+ * An operand requiring a node pointer will return RPN_ERR_ILLOPN if the pointer
+ * is not set.
+ */
+static inline void rpn_set_hierarchy_node(struct rpn_ctx *ctx, struct SelvaModify_HierarchyNode *node) {
+    ctx->node = node;
+}
+
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags);
 enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, struct RedisModuleString *rms);
 enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet *set, unsigned flags);

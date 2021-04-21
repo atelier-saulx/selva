@@ -235,6 +235,7 @@ int parse_dir(
         } else if (sz > 0) {
             /*
              * Check if the field_name is a custom edge field name.
+             * TODO This should check that the field is non-empty.
              */
             if (Edge_GetField(SelvaHierarchy_FindNode(hierarchy, nodeId), p1, sz)) {
                 RedisModuleString *rms;
@@ -1278,7 +1279,7 @@ static int get_skip(enum SelvaModify_HierarchyTraversal dir) {
 }
 
 /**
- * Find node ancestors/descendants.
+ * Find node(s) matching the query.
  * SELVA.HIERARCHY.find REDIS_KEY dfs|bfs field_name [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
  *                                |       |          |                      |             |            |            |                    |        |            |
  * Traversal method/algo --------/        |          |                      |             |            |            |                    |        |            |
@@ -1295,7 +1296,7 @@ static int get_skip(enum SelvaModify_HierarchyTraversal dir) {
  * The traversed field is typically either ancestors or descendants but it can
  * be any hierarchy or edge field.
  */
-int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
@@ -1601,6 +1602,14 @@ out:
 
     return REDISMODULE_OK;
 #undef SHIFT_ARGS
+}
+
+int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return SelvaHierarchy_Find(ctx, 0, argv, argc);
+}
+
+int SelvaHierarchy_FindRecursiveCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return SelvaHierarchy_Find(ctx, 1, argc, argc);
 }
 
 /**
@@ -1991,6 +2000,7 @@ static int Find_OnLoad(RedisModuleCtx *ctx) {
      * Register commands.
      */
     if (RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaHierarchy_FindCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.findRecursive", SelvaHierarchy_FindRecursiveCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.findIn", SelvaHierarchy_FindInCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.findInSub", SelvaHierarchy_FindInSubCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;

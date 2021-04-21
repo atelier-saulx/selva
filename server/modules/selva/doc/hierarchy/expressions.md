@@ -29,10 +29,10 @@ d       [function]  Compares operand 0 with the result of the previous function.
 
 **Literals**
 
-| Prefix | Description                     | Example                   |
-| ------ | ------------------------------- | ------------------------- |
-| `#`    | Numeric literal (int or float). | `#5.5 => 5.5`             |
-| `"`    | String literal.                 | `"title.en => "title.en"` |
+| Prefix | Description                         | Example                   |
+| ------ | ----------------------------------- | ------------------------- |
+| `#`    | Numeric literal (int or float).     | `#5.5 => 5.5`             |
+| `"`    | String literal.                     | `"title.en => "title.en"` |
 
 A string literal starts with a `"` character. A string literal cannot be quoted
 and it's advisable to pass strings in the registers given as arguments to the
@@ -49,6 +49,17 @@ you should consider writing
 ```
 SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '"field f $1 c' "test"
 ```
+
+**Unordered Set as Literal**
+
+Unordered sets can be inlined with a `{<literal type>` prefix using comma (`,`)
+as the value separator.
+
+| Prefix | Description                                  | Example               |
+| ------ | -------------------------------------------- | --------------------- |
+| `{"`   | Unordered set of strings. `[0-9][a-Z]_-[]{}` | `{"title,description => {"title", "description"}` |
+
+Note that a string inlined in a set cannot contain whitespace characters.
 
 **Register references**
 
@@ -139,3 +150,8 @@ Therefore, neither of these yields the expected result.
 | `g`      | `node[a]`         | Get the number value of a node field. | `"field g`               |
 | `h`      | `!!node[a]`       | Field exists.                         | `"title.en h => 1`       |
 | `i`      | `a <= b <= c`     | (interval) `b` is within `a` and `c`. | `"#2 #1 #0 => 1`         |
+| `j`      | `findFirst(A)`    | Take the name of the first non-empty field into a new set. (value is set or set is non-empty) | `A j => [ 'field' ]` |
+| `k`      | `aon(A)`          | Take all or none (AON), pass the set or result an empty set. | `A k => [ 'field1', 'field2' ]` |
+
+`j` and `k` are only available if `rpn_set_hierarchy_node()` is called before
+executing an expression.

@@ -104,6 +104,7 @@ const char *rpn_str_error[] = {
     "Null pointer exception",
     "Not a number",
     "Divide by zero",
+    "Break",
 };
 
 static void free_rpn_operand(void *p);
@@ -129,7 +130,7 @@ struct rpn_ctx *rpn_init(int nr_reg) {
     }
 
     ctx->depth = 0;
-    ctx->redis_hkey = NULL;
+    ctx->redis_key = NULL;
     ctx->obj = NULL;
     ctx->rms_id = NULL;
     ctx->rms_field = NULL;
@@ -630,7 +631,7 @@ static struct SelvaObject *open_node_object(struct RedisModuleCtx *redis_ctx, st
             return NULL;
         }
 
-        ctx->redis_hkey = key;
+        ctx->redis_key = key;
         err = SelvaObject_Key2Obj(key, &obj);
         if (err) {
             return NULL;
@@ -876,6 +877,7 @@ static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn
         return push_double_result(ctx, 0.0);
     }
 
+    /* TODO Should we check hierarchy fields too? */
     exists = !SelvaObject_ExistsStr(obj, field_str, field_len);
 
     return push_int_result(ctx, exists);
@@ -987,9 +989,9 @@ static enum rpn_error rpn_op_cidcmp(struct RedisModuleCtx *redis_ctx __unused, s
 #endif
 
     /*
-     * Note the the allocated string is always large so that the comparison is safe.
+     * Note the the allocated string is always large enough,
+     * so the comparison is safe.
      */
-
     return push_int_result(ctx, !memcmp(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_TYPE_SIZE));
 }
 
@@ -1003,6 +1005,89 @@ static enum rpn_error rpn_op_getdfld(struct RedisModuleCtx *redis_ctx, struct rp
     OPERAND(ctx, field);
 
     return rpn_getfld(redis_ctx, ctx, field, RPN_LVTYPE_NUMBER);
+}
+
+static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+    struct SelvaSet *set_a;
+    RESULT_OPERAND(result);
+    struct SelvaSetElement *el;
+    struct SelvaModify_HierarchyNode *node = ctx->node;
+
+    if (!node) {
+        return RPN_ERR_ILLOPN;
+    }
+
+    set_a = OPERAND_GET_SET(a);
+    if (!set_a || set_a->type != SELVA_SET_TYPE_RMSTRING) {
+        return RPN_ERR_TYPE;
+    }
+
+    result = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
+    if (!result) {
+        return RPN_ERR_ENOMEM;
+    }
+
+    SELVA_SET_RMS_FOREACH(el, set_a) {
+        size_t field_len;
+        const char *field_str = RedisModule_StringPtrLen(el->value_rms, &field_len);
+
+        if (SelvaHierarchy_IsNonEmptyField(node, field_str, field_len)) {
+            RedisModuleString *s;
+
+            /*
+             * TODO If we are careful we could potentially reuse the original string.
+             */
+            s = RedisModule_CreateString(redis_ctx, field_str, field_len);
+            if (!s) {
+                return RPN_ERR_ENOMEM;
+            }
+
+            SelvaSet_AddRms(result->set, s);
+            break;
+        }
+    }
+
+    push(ctx, result);
+    return RPN_ERR_OK;
+}
+
+static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+    struct SelvaSet *set_a;
+    struct SelvaSetElement *el;
+    struct SelvaModify_HierarchyNode *node = ctx->node;
+
+    if (!node) {
+        return RPN_ERR_ILLOPN;
+    }
+
+    set_a = OPERAND_GET_SET(a);
+    if (!set_a || set_a->type != SELVA_SET_TYPE_RMSTRING) {
+        return RPN_ERR_TYPE;
+    }
+
+    SELVA_SET_RMS_FOREACH(el, set_a) {
+        size_t field_len;
+        const char *field_str = RedisModule_StringPtrLen(el->value_rms, &field_len);
+
+        if (!SelvaHierarchy_IsNonEmptyField(node, field_str, field_len)) {
+            RESULT_OPERAND(result);
+
+            result = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
+            if (!result) {
+                return RPN_ERR_ENOMEM;
+            }
+
+            /* Push empty set as a result. */
+            push(ctx, result);
+            return RPN_ERR_OK;
+        }
+    }
+
+    /* Push the original set as a result. */
+    push(ctx, a);
+    return RPN_ERR_OK;
 }
 
 static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
@@ -1081,8 +1166,8 @@ static rpn_fp funcs[] = {
     rpn_op_getdfld, /* g */
     rpn_op_exists,  /* h */
     rpn_op_range,   /* i */
-    rpn_op_abo,     /* j spare */
-    rpn_op_abo,     /* k spare */
+    rpn_op_ffirst,  /* j */
+    rpn_op_aon,     /* k */
     rpn_op_abo,     /* l spare */
     rpn_op_abo,     /* m spare */
     rpn_op_abo,     /* n spare */
@@ -1174,6 +1259,15 @@ static enum rpn_error read_str_literal(struct rpn_ctx *ctx, const char *str) {
     return push(ctx, v);
 }
 
+static enum rpn_error read_set_literal(struct rpn_ctx *ctx, const char *str) {
+    struct rpn_operand *v;
+
+    v = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
+    // TODO
+
+    return RPN_ERR_OK;
+}
+
 static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr) {
     const rpn_token *it = expr;
     const char *s;
@@ -1213,23 +1307,16 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                 err = rpn_get_reg(ctx, s + 1, RPN_LVTYPE_STRING);
                 break;
             case '&':
-                {
-                    const char *str = s + 1;
-                    enum rpn_error err;
-
-                    err = rpn_get_reg(ctx, str, RPN_LVTYPE_SET);
-                    if (err) {
-                        clear_stack(ctx);
-
-                        return err;
-                    }
-                }
+                err = rpn_get_reg(ctx, s + 1, RPN_LVTYPE_SET);
                 break;
             case '#':
                 err = read_num_literal(ctx, s + 1);
                 break;
             case '"':
                 err = read_str_literal(ctx, s + 1);
+                break;
+            case '{':
+                err = read_set_literal(ctx, s + 1);
                 break;
             default:
                 fprintf(stderr, "%s:%d: Illegal operand: \"%s\"\n",
@@ -1257,10 +1344,10 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
  * This function must be called after every to rpn().
  */
 static void close_node_key(struct rpn_ctx *ctx) {
-    if (ctx->redis_hkey) {
-        RedisModule_CloseKey(ctx->redis_hkey);
+    if (ctx->redis_key) {
+        RedisModule_CloseKey(ctx->redis_key);
     }
-    ctx->redis_hkey = NULL;
+    ctx->redis_key = NULL;
     ctx->obj = NULL;
 }
 
