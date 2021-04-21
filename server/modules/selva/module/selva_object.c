@@ -387,9 +387,14 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         if (!err) {
             fprintf(stderr, "WHAT IS THIS %.*s %d %d\n", (int)key->name_len, key->name, key->type, key->subtype);
         }
-        if ((err == SELVA_ENOENT || (err == 0 || (key->type != SELVA_OBJECT_ARRAY && nr_parts > nr_parts_found))) && ary_idx >= 0 &&
+        if ((err == SELVA_ENOENT || (err == 0 && (key->type != SELVA_OBJECT_ARRAY && nr_parts > nr_parts_found))) && ary_idx >= 0 &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             fprintf(stderr, "SIIS MIKSI %.*s %zu\n", (int)slen, s, ary_idx);
+            if (err == 0) {
+                fprintf(stderr, "SIIS MIKSI TYYPPI %s\n", SelvaObject_Type2String(key->type, NULL));
+            } else {
+                fprintf(stderr, "SIIS MIKSI err %s\n", getSelvaErrorStr(err));
+            }
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
              * but we are allowed to create one here.
@@ -431,12 +436,13 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
 
             int err = SelvaObject_InsertArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+            fprintf(stderr, "CREATING NEW ARRAY WITH OBJ %p\n", new_obj);
             if (err) {
                 return err;
             }
 
             obj = new_obj;
-        } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT)) &&
+        } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT && key->type != SELVA_OBJECT_ARRAY)) &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
@@ -499,6 +505,11 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
             if (err == SELVA_ENOENT) {
                 struct SelvaObject *new_obj = SelvaObject_New();
+                if (!new_obj) {
+                    return SELVA_ENOMEM;
+                }
+
+                fprintf(stderr, "EXISTING ARRAY WITH OBJ %p\n", new_obj);
                 err = SelvaObject_InsertArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
                 if (err) {
                     return err;
@@ -1209,6 +1220,7 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
         }
     }
 
+    fprintf(stderr, "YOLO WHAT IS EVEN A POINTER %zu %zu %p\n", idx, key->array.vec_arr_len, p);
     SVector_InsertIndex(&key->array, idx, p);
     return 0;
 }
