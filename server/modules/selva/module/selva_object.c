@@ -90,6 +90,10 @@ struct SelvaObject *SelvaObject_New(void) {
     struct SelvaObject *obj;
 
     obj = RedisModule_Alloc(sizeof(*obj));
+    if (!obj) {
+        return NULL;
+    }
+
     obj->obj_size = 0;
     RB_INIT(&obj->keys_head);
 
@@ -422,6 +426,10 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
 
             struct SelvaObject *new_obj = SelvaObject_New();
+            if (!new_obj) {
+                return SELVA_ENOMEM;
+            }
+
             int err = SelvaObject_InsertArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
             if (err) {
                 return err;
