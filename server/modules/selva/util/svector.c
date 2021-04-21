@@ -451,7 +451,7 @@ void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
     assert(("vec_compare must not be set", !vec->vec_compar));
 
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
-        fprintf(stderr, "THIS IS SPARTA %p %zu %zu\n", vec->vec_arr, vec->vec_last, vec->vec_arr_len);
+        fprintf(stderr, "THIS IS SPARTA %p %zu %zu %zu\n", vec->vec_arr, index, vec->vec_last, vec->vec_arr_len);
         SVector_ShiftReset(vec);
         if (index < vec->vec_last) {
             vec->vec_arr[index] = el;
