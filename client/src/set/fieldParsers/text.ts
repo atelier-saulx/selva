@@ -89,13 +89,15 @@ export default async (
       added++
     }
     for (const k in o) {
-      added++
       if (typeof o[k] === 'string') {
         result.push('0', `${hname}.${k}`, o[k])
+        added++
       } else if (o[k].$default) {
         result.push('2', `${hname}.${k}`, o[k].$default)
+        added++
       } else if (o[k].$delete === true) {
         result.push('7', `${hname}.${k}`, '')
+        added++
       } else {
         push(o[k], `${hname}.${k}`)
       }
