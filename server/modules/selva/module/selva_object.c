@@ -494,7 +494,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              * Keep nesting or return an object if this was the last token.
              */
             obj = key->value;
-        } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT) {
+        } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found) {
             /*
              * Keep nesting or return an object if this was the last token.
              */
