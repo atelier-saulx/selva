@@ -505,7 +505,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                 return err;
             }
 
-            if (err == SELVA_ENOENT) {
+            if (err == SELVA_ENOENT || !obj) {
                 struct SelvaObject *new_obj = SelvaObject_New();
                 if (!new_obj) {
                     return SELVA_ENOMEM;
@@ -1070,9 +1070,11 @@ static int SelvaObject_GetArrayIndex(struct SelvaObject *obj, const char *key_na
     }
 
     void *res = SVector_GetIndex(array, idx);
-    if (res) {
-        *out = res;
+    if (!res) {
+        return SELVA_ENOENT;
     }
+
+    *out = res;
 
     return 0;
 }
