@@ -242,14 +242,10 @@ export const TYPE_CASTS: Record<
         } else {
           const typeCast = TYPE_CASTS[fieldSchema.type]
           if (typeCast) {
-            // TODO do we need to add key here??? did not have this before - does fix stuff
-            // TODO: CHECK WITH TONY! - also does not have a test for this...
             val = typeCast(val, id, f, schema, lang)
-            // val = typeCast(val, id, field, schema, lang)
           }
 
           setNestedResult(o, key, val)
-          // o[key] = val
         }
 
         fieldCount++
