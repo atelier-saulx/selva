@@ -516,6 +516,8 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                 }
 
                 obj = new_obj;
+            } else {
+                fprintf(stderr, "EXISTING ARRAY WITH EXISTING OBJ %p\n", obj);
             }
         } else {
             /*

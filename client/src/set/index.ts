@@ -35,6 +35,7 @@ export async function _set(
   // TODO: end remove
   //
   try {
+    console.log('RAW', asAny.$id, ...payload)
     const all = await Promise.all([
       client.redis.selva_modify(
         { name: db || 'default', type: 'origin' },
