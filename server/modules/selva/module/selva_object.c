@@ -495,11 +495,13 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              */
             obj = key->value;
         } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found) {
+            fprintf(stderr, "TRYING ARRAY?????\n");
             /*
              * Keep nesting or return an object if this was the last token.
              */
             int err = SelvaObject_GetArrayIndexAsSelvaObject(obj, s, slen, ary_idx, &obj);
             if (err && err != SELVA_ENOENT) {
+                fprintf(stderr, "TRYING ARRAY ERROR %s\n", getSelvaErrorStr(err));
                 return err;
             }
 
@@ -1080,7 +1082,7 @@ int SelvaObject_GetArrayIndexAsRmsStr(struct SelvaObject *obj, const char *key_n
 }
 
 int SelvaObject_GetArrayIndexAsSelvaObject(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, struct SelvaObject **out) {
-    return SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_STRING, (void **)out);
+    return SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_OBJECT, (void **)out);
 }
 
 int SelvaObject_GetArrayIndexAsLongLong(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, long long *out) {
