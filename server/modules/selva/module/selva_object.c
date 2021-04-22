@@ -1614,7 +1614,7 @@ static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
     RedisModule_ReplySetArrayLength(ctx, n);
 }
 
-static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SVector *array) {
+static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum SelvaObjectType subtype, SVector *array) {
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     struct SVectorIterator it;
     size_t n = 0;
@@ -1650,6 +1650,16 @@ static void replyWithArray(RedisModuleCtx *ctx, enum SelvaObjectType subtype, SV
         while ((str = SVector_Foreach(&it))) {
             n++;
             RedisModule_ReplyWithString(ctx, str);
+        }
+        RedisModule_ReplySetArrayLength(ctx, n);
+        break;
+    case SELVA_OBJECT_OBJECT:
+        SVector_ForeachBegin(&it, array);
+
+        struct SelvaObject *o;
+        while ((o = SVector_Foreach(&it))) {
+            n++;
+            replyWithObject(ctx, lang, o);
         }
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
@@ -1716,7 +1726,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
         replyWithSelvaSet(ctx, &key->selva_set);
         break;
     case SELVA_OBJECT_ARRAY:
-        replyWithArray(ctx, key->subtype, &key->array);
+        replyWithArray(ctx, lang, key->subtype, &key->array);
         break;
     case SELVA_OBJECT_POINTER:
         RedisModule_ReplyWithStringBuffer(ctx, "(pointer)", 9);
