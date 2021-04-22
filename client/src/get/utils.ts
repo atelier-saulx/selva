@@ -61,9 +61,9 @@ export function getNestedSchema(
 
     if (segment.endsWith(']')) {
       // sanitize array types to look up the array so it ends up in the array object schema if below
-      for (let i = segment.length - 1; i >= 0; i--) {
-        if (segment[i] === '[') {
-          segment = segment.slice(0, i)
+      for (let j = segment.length - 1; j >= 0; j--) {
+        if (segment[j] === '[') {
+          segment = segment.slice(0, j)
           break
         }
       }
@@ -80,8 +80,9 @@ export function getNestedSchema(
     if (prop.values) {
       // record types skip the next key
       prop = prop.values
-    } else if (prop.type === 'array' && prop.items.type === 'object') {
+    } else if (prop.type === 'array') {
       prop = prop.items
+      prop = prop.properties[segment]
     } else {
       if (!prop.properties) {
         return null

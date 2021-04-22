@@ -160,6 +160,15 @@ export const TYPE_CASTS: Record<
       })
 
       return converted
+    } else if (
+      ['object', 'record'].includes(fieldSchema.items.type) ||
+      (!lang && fieldSchema.items.type === 'text')
+    ) {
+      const converted = x.map((el, i) => {
+        return TYPE_CASTS.object(el, id, `${field}[${i}]`, schema, lang)
+      })
+
+      return converted
     }
 
     return x
@@ -194,12 +203,20 @@ export const TYPE_CASTS: Record<
           return
         }
 
-        const fieldSchema = getNestedSchema(schema, id, f)
+        let fieldSchema = getNestedSchema(schema, id, f)
 
         if (!fieldSchema) {
           throw new Error(
             'Cannot find field type ' + id + ` ${f} - getNestedSchema`
           )
+        }
+
+        if (
+          fieldSchema.type === 'array' &&
+          (fieldSchema.items.type === 'object' ||
+            fieldSchema.items.type === 'text')
+        ) {
+          fieldSchema = fieldSchema.items
         }
 
         if (lang && 'text' === fieldSchema.type && Array.isArray(val)) {
