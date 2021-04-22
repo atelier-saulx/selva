@@ -11,3 +11,4 @@ SRC-rpn += ../errors-mock.c
 SRC-rpn += ../redis-alloc.c
 SRC-rpn += ../selva_node-mock.c
 SRC-rpn += ../subscriptions-mock.c
+SRC-rpn += ../hierarchy-mock.c

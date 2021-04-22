@@ -58,7 +58,7 @@ struct FindCommand_Args {
     ssize_t *limit; /*!< Limit the number of result. */
 
     struct rpn_ctx *rpn_ctx;
-    const rpn_token *filter;
+    const struct rpn_expression *filter;
 
     enum merge_strategy merge_strategy;
     RedisModuleString *merge_path;
@@ -1452,7 +1452,7 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
      * Prepare the filter expression if given.
      */
     struct rpn_ctx *rpn_ctx = NULL;
-    rpn_token *filter_expression = NULL;
+    struct rpn_expression *filter_expression = NULL;
     if (argc >= ARGV_FILTER_EXPR + 1) {
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
         const char *input;
@@ -1596,8 +1596,8 @@ out:
 #if MEM_DEBUG
         memset(filter_expression, 0, sizeof(*filter_expression));
 #endif
-        RedisModule_Free(filter_expression);
         rpn_destroy(rpn_ctx);
+        rpn_destroy_expression(filter_expression);
     }
 
     return REDISMODULE_OK;
@@ -1728,7 +1728,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     /*
      * Compile the filter expression.
      */
-    rpn_token *filter_expression = rpn_compile(filter_str, filter_len);
+    struct rpn_expression *filter_expression = rpn_compile(filter_str, filter_len);
     if (!filter_expression) {
         rpn_destroy(rpn_ctx);
         return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
@@ -1800,7 +1800,7 @@ out:
 #if MEM_DEBUG
     memset(filter_expression, 0, sizeof(*filter_expression));
 #endif
-    RedisModule_Free(filter_expression);
+    rpn_destroy_expression(filter_expression);
 
     return REDISMODULE_OK;
 #undef SHIFT_ARGS

@@ -96,7 +96,7 @@ struct Selva_SubscriptionMarker {
     };
     const char *ref_field; /*!< Ref field to traverse. */
     struct rpn_ctx *filter_ctx;
-    rpn_token *filter_expression;
+    struct rpn_expression *filter_expression;
     char *fields; /* \n separated and \0 terminated. */
 
     /*

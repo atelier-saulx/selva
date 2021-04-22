@@ -3,8 +3,14 @@
 #include "rpn.h"
 #include "selva.h"
 #include "selva_onload.h"
+#include "selva_set.h"
 
-int SelvaRpn_EvalBoolCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+enum SelvaRpnEvalType {
+    EVAL_TYPE_BOOL,
+    EVAL_TYPE_SET,
+};
+
+static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
@@ -20,7 +26,7 @@ int SelvaRpn_EvalBoolCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int 
      * Prepare the filter expression.
      */
     struct rpn_ctx *rpn_ctx = NULL;
-    rpn_token *filter_expression = NULL;
+    struct rpn_expression *filter_expression = NULL;
     const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
     const char *input;
     size_t input_len;
@@ -57,20 +63,44 @@ int SelvaRpn_EvalBoolCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int 
         rpn_set_reg(rpn_ctx, reg_i, str, str_len + 1, 0);
     }
 
-    int res;
-    err = rpn_bool(ctx, rpn_ctx, filter_expression, &res);
-    if (err) {
-        replyWithSelvaErrorf(ctx, SELVA_EGENERAL, "Expression failed: %s", rpn_str_error[err]);
-    } else {
+    if (type == EVAL_TYPE_BOOL) {
+        int res;
+
+        err = rpn_bool(ctx, rpn_ctx, filter_expression, &res);
+        if (err) {
+            goto fail;
+        }
+
         RedisModule_ReplyWithLongLong(ctx, res);
+    } else if (type == EVAL_TYPE_SET) {
+        struct SelvaSet set;
+        struct SelvaSetElement *el;
+
+        SelvaSet_Init(set, SELVA_SET_TYPE_RMSTRING);
+        err = rpn_selvaset(ctx, rpn_ctx, filter_expression, &set);
+        if (err) {
+            goto fail;
+        }
+
+        /* TODO size func/macro? */
+        RedisModule_ReplyWithArray(ctx, set.size);
+        SELVA_SET_RMS_FOREACH(el, &set) {
+            RedisModule_ReplyWithString(ctx, el->value_rms);
+        }
+    } else {
+        err = SELVA_EINTYPE;
     }
 
+fail:
+    if (err) {
+        replyWithSelvaErrorf(ctx, SELVA_EGENERAL, "Expression failed: %s", rpn_str_error[err]);
+    }
 
     if (rpn_ctx) {
 #if MEM_DEBUG
         memset(filter_expression, 0, sizeof(*filter_expression));
 #endif
-        RedisModule_Free(filter_expression);
+        rpn_destroy_expression(filter_expression);
         rpn_destroy(rpn_ctx);
     }
 
@@ -78,11 +108,21 @@ int SelvaRpn_EvalBoolCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int 
 #undef SHIFT_ARGS
 }
 
+
+int SelvaRpn_EvalBoolCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return SelvaRpn_Eval(EVAL_TYPE_BOOL, ctx, argv, argc);
+}
+
+int SelvaRpn_EvalSetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return SelvaRpn_Eval(EVAL_TYPE_SET, ctx, argv, argc);
+}
+
 static int RpnEval_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
      */
-    if (RedisModule_CreateCommand(ctx, "selva.rpn.evalbool", SelvaRpn_EvalBoolCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+    if (RedisModule_CreateCommand(ctx, "selva.rpn.evalbool", SelvaRpn_EvalBoolCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.rpn.evalset", SelvaRpn_EvalSetCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

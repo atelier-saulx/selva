@@ -52,12 +52,6 @@
  */
 
 /**
- * Maximum size of a single token in an RPN expression.
- * An operand in an expression cannot exceed this length.
- */
-#define RPN_MAX_TOKEN_SIZE              15
-
-/**
  * Operand buffer size.
  * Small operands don't require malloc and are faster to operate with.
  * In general this should be at least 1 byte bigger than the nodeId size to keep

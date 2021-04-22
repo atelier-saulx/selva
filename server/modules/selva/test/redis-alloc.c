@@ -81,6 +81,14 @@ static void _RedisModule_RetainString(struct RedisModuleCtx *ctx __unused, struc
     robj->refcount++;
 }
 
+struct RedisModuleString *_RedisModule_HoldString(struct RedisModuleCtx *ctx __unused, struct RedisModuleString *str) {
+    struct redisObjectAccessor *robj = (struct redisObjectAccessor *)str;
+
+    robj->refcount++;
+
+    return str;
+}
+
 void * (*RedisModule_Alloc)(size_t size) = _RedisModule_Alloc;
 void* (*RedisModule_Calloc)(size_t nmemb, size_t size) = _RedisModule_Calloc;
 void * (*RedisModule_Realloc)(void *ptr, size_t size) = _RedisModule_Realloc;
@@ -89,3 +97,4 @@ struct RedisModuleString *(*RedisModule_CreateString)(struct RedisModuleCtx *ctx
 const char *(*RedisModule_StringPtrLen)(struct RedisModuleString *str, size_t *len) = _RedisModule_StringPtrLen;
 void (*RedisModule_FreeString)(struct RedisModuleCtx *ctx, struct RedisModuleString *str) = _RedisModule_FreeString;
 void (*RedisModule_RetainString)(struct RedisModuleCtx *ctx, struct RedisModuleString *str) =  _RedisModule_RetainString;
+struct RedisModuleString *(*RedisModule_HoldString)(struct RedisModuleCtx *ctx, struct RedisModuleString *str) =  _RedisModule_HoldString;

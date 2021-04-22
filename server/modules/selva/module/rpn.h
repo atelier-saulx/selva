@@ -2,6 +2,13 @@
 #ifndef _RPN_H_
 #define _RPN_H_
 
+/**
+ * Maximum size of a single token in an RPN expression.
+ * An operand in a compiled expression cannot exceed this length.
+ * The size of a literal operand is not limited by this setting.
+ */
+#define RPN_MAX_TOKEN_SIZE              6
+
 enum rpn_error {
     RPN_ERR_OK = 0,     /*!< No error. */
     RPN_ERR_ENOMEM,     /*!< Out of memory. */
@@ -24,6 +31,7 @@ struct RedisModuleKey;
 struct RedisModuleString;
 struct SelvaSet;
 struct SelvaModify_HierarchyNode;
+struct rpn_operand;
 
 struct rpn_ctx {
     int depth;
@@ -38,6 +46,14 @@ struct rpn_ctx {
 };
 
 typedef char rpn_token[RPN_MAX_TOKEN_SIZE];
+
+/**
+ * A reusable compilation result of the string formatted RPN expression.
+ */
+struct rpn_expression {
+    rpn_token *expression;
+    struct rpn_operand *input_literal_reg[RPN_MAX_D];
+};
 
 /*
  * Free register values after unref.
@@ -63,10 +79,11 @@ static inline void rpn_set_hierarchy_node(struct rpn_ctx *ctx, struct SelvaModif
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags);
 enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, struct RedisModuleString *rms);
 enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet *set, unsigned flags);
-rpn_token *rpn_compile(const char *input, size_t len);
-enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, int *out);
-enum rpn_error rpn_double(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, double *out);
-enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, long long *out);
-enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const rpn_token *expr, struct SelvaSet **out);
+struct rpn_expression *rpn_compile(const char *input, size_t len);
+void rpn_destroy_expression(struct rpn_expression *expr);
+enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, int *out);
+enum rpn_error rpn_double(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, double *out);
+enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, long long *out);
+enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out);
 
 #endif /* _RPN_H_ */

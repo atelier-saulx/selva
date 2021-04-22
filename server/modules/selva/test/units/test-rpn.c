@@ -4,21 +4,25 @@
 #include "redismodule.h"
 #include "rpn.h"
 #include "cdefs.h"
+#include "selva_set.h"
 
+static struct rpn_expression *expr;
 static struct rpn_ctx *ctx;
 static char **reg;
-const int nr_reg = 10;
+static const int nr_reg = 10;
 
 static void setup(void)
 {
     reg = RedisModule_Calloc(nr_reg, sizeof(char *));
     ctx = rpn_init( nr_reg);
+    expr = NULL;
 }
 
 static void teardown(void)
 {
     RedisModule_Free(reg);
     rpn_destroy(ctx);
+    rpn_destroy_expression(expr);
 }
 
 static char * test_init_works(void)
@@ -33,7 +37,6 @@ static char * test_number_valid(void)
     enum rpn_error err;
     long long res;
     const char expr_str[] = "#1";
-    rpn_token *expr;
 
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
@@ -48,47 +51,31 @@ static char * test_number_valid(void)
 
 static char * test_number_invalid(void)
 {
-    enum rpn_error err;
-    long long res;
     const char expr_str[] = "#r";
-    rpn_token *expr;
 
     expr = rpn_compile(expr_str, sizeof(expr_str));
-    pu_assert("expr is created", expr);
-
-    err = rpn_integer(NULL, ctx, expr, &res);
-
-    pu_assert_equal("Error NAN", err, RPN_ERR_NAN);
+    pu_assert("expr is not created", !expr);
 
     return NULL;
 }
 
 static char * test_operand_pool_overflow(void)
 {
-    char expr_str[3 + 2 * (RPN_SMALL_OPERAND_POOL_SIZE * 2) + 1];
-    rpn_token *expr;
-    int res;
-    enum rpn_error err;
+    const size_t nr_operands = 5 * RPN_SMALL_OPERAND_POOL_SIZE;
+    char expr_str[3 * nr_operands + 1];
 
     memset(expr_str, '\0', sizeof(expr_str));
 
-    expr_str[0] = '#';
-    expr_str[1] = '1';
-    expr_str[2] = ' ';
+    for (size_t i = 0; i < nr_operands; i++) {
+        size_t op = i * 3;
 
-    for (size_t i = 0; i < 2 * RPN_SMALL_OPERAND_POOL_SIZE; i++) {
-        size_t op = 3 + i * 2;
-
-        expr_str[op + 0] = 'L';
-        expr_str[op + 1] = ' ';
+        expr_str[op + 0] = '#';
+        expr_str[op + 1] = '1';
+        expr_str[op + 2] = ' ';
     }
 
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
-
-    err = rpn_bool(NULL, ctx, expr, &res);
-
-    pu_assert_equal("No error", err, 0);
 
     return NULL;
 }
@@ -96,7 +83,6 @@ static char * test_operand_pool_overflow(void)
 static char * test_stack_overflow(void)
 {
     char expr_str[2 * (RPN_MAX_D * 2) + 3];
-    rpn_token *expr;
     int res;
     enum rpn_error err;
 
@@ -125,7 +111,6 @@ static char * test_add(void)
     enum rpn_error err;
     long long res;
     const char expr_str[] = "#1 #1 A";
-    rpn_token *expr;
 
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
@@ -143,7 +128,6 @@ static char * test_add_double(void)
     enum rpn_error err;
     double res;
     const char expr_str[] = "#1.5 #0.4 A";
-    rpn_token *expr;
 
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
@@ -161,7 +145,6 @@ static char * test_rem(void)
     enum rpn_error err;
     long long res;
     const char expr_str[] = "#8 #42 E";
-    rpn_token *expr;
 
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
@@ -179,7 +162,6 @@ static char * test_necessarily(void)
     enum rpn_error err;
     long long res;
     const char expr_str[] = "@1 P #1 N";
-    rpn_token *expr;
 
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
@@ -204,7 +186,6 @@ static char * test_range(void)
     enum rpn_error err;
     long long res;
     const char expr_str[] = "#10 @1 #1 i";
-    rpn_token *expr;
 
     expr = rpn_compile(expr_str, sizeof(expr_str));
     pu_assert("expr is created", expr);
@@ -236,6 +217,70 @@ static char * test_range(void)
     return NULL;
 }
 
+static char * test_selvaset_inline(void)
+{
+    enum rpn_error err;
+    const char expr_str[] = "{\"abc,def,verylongtextisalsoprettynice,thisisanotheronethatisfairlylong,nice";
+    struct SelvaSet set;
+
+    expr = rpn_compile(expr_str, sizeof(expr_str));
+    pu_assert("expr is created", expr);
+
+    SelvaSet_Init(&set, SELVA_SET_TYPE_RMSTRING);
+    err = rpn_selvaset(NULL, ctx, expr, &set);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+
+    const char *expected[] = {
+        "abc",
+        "def",
+        "verylongtextisalsoprettynice",
+        "thisisanotheronethatisfairlylong",
+        "nice",
+    };
+
+    for (size_t i = 0; i < num_elem(expected); i++) {
+        RedisModuleString *rms;
+
+        rms = RedisModule_CreateString(NULL, expected[i], strlen(expected[i]));
+        pu_assert_equal("string is found in the set", 1, SelvaSet_Has(&set, rms));
+        RedisModule_FreeString(NULL, rms);
+    }
+    pu_assert_equal("Set size is correct", num_elem(expected), set.size);
+
+    SelvaSet_Destroy(&set);
+
+    return NULL;
+}
+
+static char * test_selvaset_union(void)
+{
+    enum rpn_error err;
+    const char expr_str[] = "{\"a,b {\"c,d z";
+    struct SelvaSet set;
+
+    expr = rpn_compile(expr_str, sizeof(expr_str));
+    pu_assert("expr is created", expr);
+
+    SelvaSet_Init(&set, SELVA_SET_TYPE_RMSTRING);
+    err = rpn_selvaset(NULL, ctx, expr, &set);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+
+    const char *expected[] = { "a", "b", "c", "d" };
+
+    for (size_t i = 0; i < num_elem(expected); i++) {
+        RedisModuleString *rms;
+
+        rms = RedisModule_CreateString(NULL, expected[i], strlen(expected[i]));
+        pu_assert_equal("string is found in the set", 1, SelvaSet_Has(&set, rms));
+        RedisModule_FreeString(NULL, rms);
+    }
+    pu_assert_equal("Set size is correct", num_elem(expected), set.size);
+
+    SelvaSet_Destroy(&set);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
@@ -248,4 +293,6 @@ void all_tests(void)
     pu_def_test(test_rem, PU_RUN);
     pu_def_test(test_range, PU_RUN);
     pu_def_test(test_necessarily, PU_RUN);
+    pu_def_test(test_selvaset_inline, PU_RUN);
+    pu_def_test(test_selvaset_union, PU_RUN);
 }

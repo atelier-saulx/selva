@@ -213,7 +213,7 @@ static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
     }
     memset(marker, 0, sizeof(*marker));
 #endif
-    RedisModule_Free(marker->filter_expression);
+    rpn_destroy_expression(marker->filter_expression);
     RedisModule_Free(marker->fields);
     RedisModule_Free(marker);
 }
@@ -513,7 +513,7 @@ static int Selva_AddSubscriptionMarker(
             break;
         case 'e': /* RPN expression filter */
             marker->filter_ctx = va_arg(args, struct rpn_ctx *);
-            marker->filter_expression = va_arg(args, rpn_token *);
+            marker->filter_expression = va_arg(args, struct rpn_expression *);
             break;
         case 'f': /* Fields */
             marker->fields = RedisModule_Strdup(va_arg(args, char *));
@@ -556,7 +556,7 @@ int Selva_AddSubscriptionAliasMarker(
         Selva_NodeId node_id
     ) {
     struct rpn_ctx *filter_ctx = NULL;
-    rpn_token *filter_expression = NULL;
+    struct rpn_expression *filter_expression = NULL;
     int err = 0;
 
     if (SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id)) {
@@ -610,7 +610,7 @@ int Selva_AddSubscriptionAliasMarker(
 out:
     if (err) {
         rpn_destroy(filter_ctx);
-        RedisModule_Free(filter_expression);
+        rpn_destroy_expression(filter_expression);
     }
 
     return err;
@@ -1422,7 +1422,7 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
      * Optional.
      */
     struct rpn_ctx *filter_ctx = NULL;
-    rpn_token *filter_expression = NULL;
+    struct rpn_expression *filter_expression = NULL;
     if (argc >= ARGV_FILTER_EXPR + 1) {
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
         const char *input;
@@ -1505,7 +1505,7 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         if (err == SELVA_SUBSCRIPTIONS_EEXIST) {
             /* This shouldn't happen as we check for this already before. */
             rpn_destroy(filter_ctx);
-            RedisModule_Free(filter_expression);
+            rpn_destroy_expression(filter_expression);
 
             return RedisModule_ReplyWithLongLong(ctx, 1);
         }
@@ -1518,7 +1518,7 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 out:
         if (filter_ctx) {
             rpn_destroy(filter_ctx);
-            RedisModule_Free(filter_expression);
+            rpn_destroy_expression(filter_expression);
         }
         replyWithSelvaError(ctx, err);
     }
@@ -1805,7 +1805,7 @@ int Selva_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
      * Optional.
      */
     struct rpn_ctx *filter_ctx = NULL;
-    rpn_token *filter_expression = NULL;
+    struct rpn_expression *filter_expression = NULL;
     if (argc >= ARGV_FILTER_EXPR + 1) {
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
         const char *input;
@@ -1861,7 +1861,7 @@ int Selva_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         if (err == SELVA_SUBSCRIPTIONS_EEXIST) {
             /* This shouldn't happen as we check for this already before. */
             rpn_destroy(filter_ctx);
-            RedisModule_Free(filter_expression);
+            rpn_destroy_expression(filter_expression);
 
             return RedisModule_ReplyWithLongLong(ctx, 1);
         }
@@ -1874,7 +1874,7 @@ int Selva_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
 out:
         if (filter_ctx) {
             rpn_destroy(filter_ctx);
-            RedisModule_Free(filter_expression);
+            rpn_destroy_expression(filter_expression);
         }
         replyWithSelvaError(ctx, err);
     }
