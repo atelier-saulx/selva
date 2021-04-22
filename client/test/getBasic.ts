@@ -2243,6 +2243,8 @@ test.serial.only('get - field with array', async (t) => {
     // ding: { dong: [] },
     objRec: {
       abba: {
+        // intArray: [1, 2, 3, 4, 5],
+        // floatArray: [1.1, 2.2, 3.3, 4.4],
         objArray: [
           {
             hello: 'yes 1',
@@ -2265,11 +2267,7 @@ test.serial.only('get - field with array', async (t) => {
   console.dir(
     await client.get({
       $id: pid,
-      objRec: {
-        abba: {
-          objArray: true,
-        },
-      },
+      objRec: true,
     }),
     { depth: null }
   )
