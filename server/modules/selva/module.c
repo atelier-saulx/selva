@@ -427,7 +427,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         TO_STR(type, field, value);
         /* [0] always points to a valid char in RM_String. */
         const char type_code = type_str[0];
-        // TODO: needs to support array syntax
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
         fprintf(stderr, "SETTING FIELD %.*s\n", (int)field_len, field_str);
