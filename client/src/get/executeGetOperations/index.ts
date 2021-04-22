@@ -211,14 +211,14 @@ export const TYPE_CASTS: Record<
           )
         }
 
-        if (
-          fieldSchema.type === 'array' &&
-          (fieldSchema.items.type === 'object' ||
-            fieldSchema.items.type === 'text' ||
-            fieldSchema.items.type === 'record')
-        ) {
-          fieldSchema = fieldSchema.items
-        }
+        // if (
+        //   fieldSchema.type === 'array' &&
+        //   (fieldSchema.items.type === 'object' ||
+        //     fieldSchema.items.type === 'text' ||
+        //     fieldSchema.items.type === 'record')
+        // ) {
+        //   fieldSchema = fieldSchema.items
+        // }
 
         if (lang && 'text' === fieldSchema.type && Array.isArray(val)) {
           const txtObj = {}
