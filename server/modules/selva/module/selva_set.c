@@ -351,23 +351,39 @@ int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src) {
 
     if (type == SELVA_SET_TYPE_RMSTRING) {
         SELVA_SET_RMS_FOREACH_SAFE(el, src, tmp) {
-            RB_REMOVE(SelvaSetRms, &src->head_rms, el);
-            RB_INSERT(SelvaSetRms, &dst->head_rms, el);
+            if (!SelvaSet_Has(dst, el->value_rms)) {
+                RB_REMOVE(SelvaSetRms, &src->head_rms, el);
+                src->size--;
+                RB_INSERT(SelvaSetRms, &dst->head_rms, el);
+                dst->size++;
+            }
         }
     } else if (type == SELVA_SET_TYPE_DOUBLE) {
         SELVA_SET_DOUBLE_FOREACH_SAFE(el, src, tmp) {
-            RB_REMOVE(SelvaSetDouble, &src->head_d, el);
-            RB_INSERT(SelvaSetDouble, &dst->head_d, el);
+            if (!SelvaSet_Has(dst, el->value_d)) {
+                RB_REMOVE(SelvaSetDouble, &src->head_d, el);
+                src->size--;
+                RB_INSERT(SelvaSetDouble, &dst->head_d, el);
+                dst->size++;
+            }
         }
     } else if (type == SELVA_SET_TYPE_LONGLONG) {
         SELVA_SET_LONGLONG_FOREACH_SAFE(el, src, tmp) {
-            RB_REMOVE(SelvaSetLongLong, &src->head_ll, el);
-            RB_INSERT(SelvaSetLongLong, &dst->head_ll, el);
+            if (!SelvaSet_Has(dst, el->value_ll)) {
+                RB_REMOVE(SelvaSetLongLong, &src->head_ll, el);
+                src->size--;
+                RB_INSERT(SelvaSetLongLong, &dst->head_ll, el);
+                dst->size++;
+            }
         }
     } else if (type == SELVA_SET_TYPE_NODEID) {
         SELVA_SET_NODEID_FOREACH_SAFE(el, src, tmp) {
-            RB_REMOVE(SelvaSetNodeId, &src->head_nodeId, el);
-            RB_INSERT(SelvaSetNodeId, &dst->head_nodeId, el);
+            if (!SelvaSet_Has(dst, el->value_nodeId)) {
+                RB_REMOVE(SelvaSetNodeId, &src->head_nodeId, el);
+                src->size--;
+                RB_INSERT(SelvaSetNodeId, &dst->head_nodeId, el);
+                dst->size++;
+            }
         }
     }
 
@@ -398,8 +414,17 @@ int SelvaSet_Union(enum SelvaSetType type, struct SelvaSet *res, ...) {
             }
 
             SELVA_SET_RMS_FOREACH(el, set) {
-                err = SelvaSet_Add(res, el->value_rms);
+                RedisModuleString *rms;
+
+                rms = RedisModule_HoldString(NULL, el->value_rms);
+                if (!rms) {
+                    err = SELVA_ENOMEM;
+                    goto out;
+                }
+
+                err = SelvaSet_Add(res, rms);
                 if (err) {
+                    RedisModule_FreeString(NULL, rms);
                     goto out;
                 }
             }

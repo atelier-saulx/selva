@@ -144,6 +144,11 @@ struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId
     RB_FOREACH_SAFE(el, SelvaSetNodeId, &(set)->head_nodeId, tmp)
 
 int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src);
+
+/*
+ * Take an union of the given sets.
+ * The last argument must be NULL.
+ */
 int SelvaSet_Union(enum SelvaSetType type, struct SelvaSet *res, ...);
 
 #endif /* _SELVA_SET_H_ */
