@@ -430,6 +430,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         // TODO: needs to support array syntax
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
+        fprintf(stderr, "SETTING FIELD %.*s\n", (int)field_len, field_str);
         if (is_array_field(field_str, field_len)) {
             int idx = get_array_field_index(field_str, field_len);
             int new_len = get_array_field_start_idx(field_str, field_len);
@@ -459,7 +460,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, wrapper);
 
                 if (err) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+                    replyWithSelvaErrorf(ctx, err, "Failed to set a double value");
                     continue;
                 }
             } else if (type_code == SELVA_MODIFY_ARG_LONGLONG || type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
@@ -477,7 +478,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, wrapper);
 
                 if (err) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+                    replyWithSelvaErrorf(ctx, err, "Failed to set a long value");
                     continue;
                 }
             } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
