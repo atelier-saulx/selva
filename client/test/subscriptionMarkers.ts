@@ -788,7 +788,7 @@ test.serial('FindInSub: expression filter', async (t) => {
     '1',
     'descendants',
     'maTest0001',
-    '"title.en f $1 c',
+    '"title.en" f $1 c',
     'test'
   )
 
@@ -921,7 +921,7 @@ test.serial('FindInSub: expression filter and sort', async (t) => {
     '1',
     'descendants',
     'root',
-    '"title.en f $1 c L',
+    '"title.en" f $1 c L',
     'test'
   )
 
@@ -1095,7 +1095,7 @@ test.serial('subscribe to field events with an expression', async (t) => {
     'maTest0001',
     'fields',
     'title.en',
-    '"title.en f $1 c',
+    '"title.en" f $1 c',
     'abc'
   )
   await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)

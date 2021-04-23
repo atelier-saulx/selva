@@ -1456,7 +1456,6 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
     if (argc >= ARGV_FILTER_EXPR + 1) {
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
         const char *input;
-        size_t input_len;
 
         rpn_ctx = rpn_init(nr_reg);
         if (!rpn_ctx) {
@@ -1466,8 +1465,8 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
         /*
          * Compile the filter expression.
          */
-        input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
-        filter_expression = rpn_compile(input, input_len);
+        input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], NULL);
+        filter_expression = rpn_compile(input);
         if (!filter_expression) {
             rpn_destroy(rpn_ctx);
             return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
@@ -1609,7 +1608,7 @@ int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 }
 
 int SelvaHierarchy_FindRecursiveCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    return SelvaHierarchy_Find(ctx, 1, argc, argc);
+    return SelvaHierarchy_Find(ctx, 1, argv, argc);
 }
 
 /**
@@ -1728,7 +1727,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     /*
      * Compile the filter expression.
      */
-    struct rpn_expression *filter_expression = rpn_compile(filter_str, filter_len);
+    struct rpn_expression *filter_expression = rpn_compile(filter_str);
     if (!filter_expression) {
         rpn_destroy(rpn_ctx);
         return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");

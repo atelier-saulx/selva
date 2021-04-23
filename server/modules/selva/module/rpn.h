@@ -79,7 +79,7 @@ static inline void rpn_set_hierarchy_node(struct rpn_ctx *ctx, struct SelvaModif
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags);
 enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, struct RedisModuleString *rms);
 enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet *set, unsigned flags);
-struct rpn_expression *rpn_compile(const char *input, size_t len);
+struct rpn_expression *rpn_compile(const char *input);
 void rpn_destroy_expression(struct rpn_expression *expr);
 enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, int *out);
 enum rpn_error rpn_double(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, double *out);

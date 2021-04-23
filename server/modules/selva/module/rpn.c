@@ -1091,7 +1091,7 @@ static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, stru
     return RPN_ERR_OK;
 }
 
-static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     RESULT_OPERAND(res);
@@ -1186,6 +1186,75 @@ static rpn_fp funcs[] = {
     rpn_op_union,   /* z spare */
 };
 
+static const char *tokenize(const char *s, const char *delim, const char *group, const char **rest, size_t *len) {
+    const char *spanp;
+    const char *tok;
+    char c;
+    char sc;
+
+    if (!s && !(s = *rest)) {
+        return NULL;
+    }
+
+    /* Skip any leading delimiters. */
+cont:
+    c = *s++;
+    for (spanp = delim; (sc = *spanp++) != '\0';) {
+        if (c == sc) {
+            goto cont;
+        }
+    }
+
+    if (c == '\0') {
+        *rest = NULL;
+        return NULL;
+    }
+    tok = s - 1;
+
+    /* Look for a grouping char. */
+    char groupc = '\0';
+    if (group) {
+        for (spanp = group; (sc = *spanp++) != '\0';) {
+            if (c == sc) {
+                if (sc == '{') {
+                    groupc = '}';
+                } else {
+                    groupc = sc;
+                }
+                break;
+            }
+        }
+    }
+
+    do {
+        c = *s++;
+
+        if (groupc == '\0') {
+            spanp = delim;
+
+            do {
+                if ((sc = *spanp++) == c) {
+                    *len = (size_t)(s - tok - 1);
+                    if (c == '\0') {
+                        s = NULL;
+                    }
+                    *rest = s;
+                    return tok;
+                }
+            } while (sc != '\0');
+        } else if (c == groupc) {
+            *rest = s;
+            *len = (size_t)(s - tok);
+            return tok;
+        } else if (c == '\0') {
+            /* Invalid quoted string. */
+            *rest = NULL;
+            *len = 0;
+            return NULL;
+        }
+    } while (1);
+}
+
 static enum rpn_error compile_push_literal(struct rpn_expression *expr, int i, struct rpn_operand *v) {
     if (i >= RPN_MAX_D) {
         return RPN_ERR_BADSTK;
@@ -1197,14 +1266,19 @@ static enum rpn_error compile_push_literal(struct rpn_expression *expr, int i, s
     return RPN_ERR_OK;
 }
 
-static enum rpn_error compile_num_literal(struct rpn_expression *expr, int i, const char *str) {
+static enum rpn_error compile_num_literal(struct rpn_expression *expr, int i, const char *str, size_t len) {
+    char s[len + 1];
     char *e;
-    const double d = strtod(str, &e);
+    double d;
     RESULT_OPERAND(v);
 
-    if (unlikely(e == str)) {
+    memcpy(s, str, len);
+    s[len] = '\0';
+    d = strtod(s, &e);
+
+    if (unlikely(e == s)) {
         fprintf(stderr, "%s:%d: Operand is not a number: #%s\n",
-                __FILE__, __LINE__, str);
+                __FILE__, __LINE__, s);
         return RPN_ERR_NAN;
     }
 
@@ -1216,8 +1290,8 @@ static enum rpn_error compile_num_literal(struct rpn_expression *expr, int i, co
     return compile_push_literal(expr, i, v);
 }
 
-static enum rpn_error compile_str_literal(struct rpn_expression *expr, int i, const char *str) {
-    size_t size = strlen(str) + 1;
+static enum rpn_error compile_str_literal(struct rpn_expression *expr, int i, const char *str, size_t len) {
+    size_t size = len + 1;
     RESULT_OPERAND(v);
 
 #ifdef RPN_ASSERTS
@@ -1228,61 +1302,58 @@ static enum rpn_error compile_str_literal(struct rpn_expression *expr, int i, co
     v = alloc_rpn_operand(size);
     v->s_size = size;
     strncpy(v->s, str, size);
-    v->s[size - 1] = '\0';
+    v->s[len] = '\0';
     v->d = nan("");
 
     return compile_push_literal(expr, i, v);
 }
 
-static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, int i, const char *str) {
+static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, int i, const char *str, size_t len) {
+    char tmp[len + 1];
     const char type = *str;
-    const char *s1 = str + 1;
     RESULT_OPERAND(v);
 
-    fprintf(stderr, "Input %s\n", str);
     if (type != '"') {
         /* Currently only string sets are supported. */
         return RPN_ERR_TYPE;
     }
 
+    memcpy(tmp, str, len);
+    tmp[len] = '\0';
+
     v = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
 
-    while (*s1 != '\0') {
-        const char *s2 = s1;
+    const char *delim = ",";
+    const char *group = "\"";
+    size_t tok_len = 0;
+    const char *rest;
+    for (const char *tok_str = tokenize(tmp, delim, group, &rest, &tok_len);
+         tok_str != NULL;
+         tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
         int err;
-
-        while (*s2 != '\0' && *s2 != ',') {
-            s2++;
+        if (tok_len == 0 || tok_str[0] != '\"' || tok_str[tok_len - 1] != '\"') {
+            return RPN_ERR_ILLOPN;
         }
+        tok_str++;
+        tok_len -= 2;
 
-        const size_t len = s2 - s1;
-        fprintf(stderr, "El: %.*s %c\n", (int)len, s1, *s2);
-        RedisModuleString *rms = RedisModule_CreateString(NULL, s1, len);
+        RedisModuleString *rms = RedisModule_CreateString(NULL, tok_str, tok_len);
         if (!rms) {
             return RPN_ERR_ENOMEM;
         }
-        s1 = s2;
 
         err = SelvaSet_Add(v->set, rms);
         if (err) {
             return err;
         }
-
-        if (*s1 != '\0') {
-            s1++;
-        }
+    }
+    if (tok_len == 0) {
+        return RPN_ERR_ILLOPN;
     }
 
     return compile_push_literal(expr, i, v);
 }
-
-struct rpn_expression *rpn_compile(const char *input, size_t len) {
-    const char *w = " \t\n\r\f";
-    char sa[len + 1];
-
-    memcpy(sa, input, len);
-    sa[len] = '\0';
-
+struct rpn_expression *rpn_compile(const char *input) {
     struct rpn_expression *expr;
     expr = RedisModule_Alloc(sizeof(struct rpn_expression));
     if (!expr) {
@@ -1297,71 +1368,74 @@ struct rpn_expression *rpn_compile(const char *input, size_t len) {
         return NULL;
     }
 
+    const char *delim = " \t\n\r\f";
+    const char *group = "{\"";
     size_t input_literal_reg_i = 0;
     size_t i = 0;
-    char *rest;
-    for (const char *s = strtok_r(sa, w, &rest);
-         s != NULL;
-         s = strtok_r(NULL, w, &rest)) {
+    size_t tok_len = 0;
+    const char *rest;
+    for (const char *tok_str = tokenize(input, delim, group, &rest, &tok_len);
+         tok_str != NULL;
+         tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
         enum rpn_error err;
         char *e = expr->expression[i++];
+        rpn_token *new;
 
-        /* TODO Free memory on error. */
-        switch (s[0]) {
-        case '#':
-            err = compile_num_literal(expr, input_literal_reg_i, s + 1);
-            if (err) {
-                rpn_destroy_expression(expr);
-                return NULL;
-            }
-
-            e[0] = '#';
-            memcpy(e + 1, &input_literal_reg_i, sizeof(int));
-            e[1 + sizeof(int)] = '\0';
-            input_literal_reg_i++;
-            break;
-        case '"':
-            err = compile_str_literal(expr, input_literal_reg_i, s + 1);
-            if (err) {
-                rpn_destroy_expression(expr);
-                return NULL;
-            }
-
-            e[0] = '"';
-            memcpy(e + 1, &input_literal_reg_i, sizeof(int));
-            e[1 + sizeof(int)] = '\0';
-            input_literal_reg_i++;
-            break;
-        case '{':
-            err = compile_selvaset_literal(expr, input_literal_reg_i, s + 1);
-            if (err) {
-                return NULL;
-            }
-
-            e[0] = '"';
-            memcpy(e + 1, &input_literal_reg_i, sizeof(int));
-            e[1 + sizeof(int)] = '\0';
-            input_literal_reg_i++;
-            break;
-        default:
-            if (strlen(s) > RPN_MAX_TOKEN_SIZE) {
-                rpn_destroy_expression(expr);
-                return NULL;
-            }
-
-            strncpy(e, s, RPN_MAX_TOKEN_SIZE - 1);
+        if (tok_len == 0) {
+            goto fail;
         }
 
-        rpn_token *new = RedisModule_Realloc(expr->expression, size);
-        if (new) {
-            expr->expression = new;
-        } else {
+        /* TODO Free memory on error. */
+        switch (tok_str[0]) {
+        case '#':
+            err = compile_num_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 1);
+            break;
+        case '"':
+            err = compile_str_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 2);
+            break;
+        case '{':
+            err = compile_selvaset_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 2);
+            break;
+        default:
+            if (tok_len > RPN_MAX_TOKEN_SIZE - 1) {
+                goto fail;
+            }
+
+            memcpy(e, tok_str, tok_len);
+            e[tok_len] = '\0';
+            goto next;
+        }
+
+        if (err) {
+fail:
             rpn_destroy_expression(expr);
             return NULL;
         }
 
+        /*
+         * All literals can be marked with the same prefix from now on as
+         * fetching the value will happen with the same function.
+         */
+        e[0] = '#';
+        memcpy(e + 1, &input_literal_reg_i, sizeof(int));
+        e[1 + sizeof(int)] = '\0';
+        input_literal_reg_i++;
+next:
+        new = RedisModule_Realloc(expr->expression, size);
+        if (!new) {
+            goto fail;
+        }
+        expr->expression = new;
+
         size += sizeof(rpn_token);
     }
+
+    /* The returned length is only ever 0 if the grouping failed. */
+    if (tok_len == 0) {
+        rpn_destroy_expression(expr);
+        return NULL;
+    }
+
     memset(expr->expression[i], 0, sizeof(rpn_token));
 
     return expr;
@@ -1383,23 +1457,7 @@ void rpn_destroy_expression(struct rpn_expression *expr) {
     }
 }
 
-static enum rpn_error get_num_literal(struct rpn_ctx *ctx, const struct rpn_expression *expr, const char *s) {
-    int i;
-
-    memcpy(&i, s, sizeof(int));
-
-    return push(ctx, expr->input_literal_reg[i]);
-}
-
-static enum rpn_error get_str_literal(struct rpn_ctx *ctx, const struct rpn_expression *expr, const char *s) {
-    int i;
-
-    memcpy(&i, s, sizeof(int));
-
-    return push(ctx, expr->input_literal_reg[i]);
-}
-
-static enum rpn_error get_selvaset_literal(struct rpn_ctx *ctx, const struct rpn_expression *expr, const char *s) {
+static enum rpn_error get_literal(struct rpn_ctx *ctx, const struct rpn_expression *expr, const char *s) {
     int i;
 
     memcpy(&i, s, sizeof(int));
@@ -1449,13 +1507,7 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                 err = rpn_get_reg(ctx, s + 1, RPN_LVTYPE_SET);
                 break;
             case '#':
-                err = get_num_literal(ctx, expr, s + 1);
-                break;
-            case '"':
-                err = get_str_literal(ctx, expr, s + 1);
-                break;
-            case '{':
-                err = get_selvaset_literal(ctx, expr, s + 1);
+                err = get_literal(ctx, expr, s + 1);
                 break;
             default:
                 fprintf(stderr, "%s:%d: Illegal operand: \"%s\"\n",
@@ -1565,7 +1617,6 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
 
     res = pop(ctx);
     if (!res) {
-        fprintf(stderr, "Nothing in the stack\n");
         return RPN_ERR_BADSTK;
     }
 

@@ -8,12 +8,15 @@ notation, which is the notation used in the expression language. Briefly the
 benefit of using this notation is that the expressions don't need parenthesis
 and it's very fast to parse because there are no precedence rules.
 
-The following query selects all descendants of a node called `grphnode_1` that are of
-type `2X`. It's also possible to write the same expression using a single function
-but it wouldn't be as interesting example as the following filter is.
+The RPN syntax consists of tokens that are separated by whitespace characters.
+
+As an example, the following query selects all descendants of a node called
+`grphnode_1` that are of type `2X`. It's also possible to write the same
+expression using a single function but it wouldn't be as interesting example as
+the following filter is.
 
 ```
-SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '$0 b "2X d'
+SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '$0 b "2X" d'
 ```
 
 Breaking down the filter:
@@ -21,7 +24,7 @@ Breaking down the filter:
 ```
 $1      [reg ref]   Reads a string value from the register 1.
 b       [function]  Extracts the type string from the previous result.
-"2X     [operand 0] Is a string representing a node type.
+"2X"    [operand 0] Is a string representing a node type.
 d       [function]  Compares operand 0 with the result of the previous function.
 ```
 
@@ -29,37 +32,49 @@ d       [function]  Compares operand 0 with the result of the previous function.
 
 **Literals**
 
-| Prefix | Description                         | Example                   |
-| ------ | ----------------------------------- | ------------------------- |
-| `#`    | Numeric literal (int or float).     | `#5.5 => 5.5`             |
-| `"`    | String literal.                     | `"title.en => "title.en"` |
+```
+L -> #<num>
+L -> "<text>"
+S -> {E}
+E -> E,E
+E -> L
+```
 
-A string literal starts with a `"` character. A string literal cannot be quoted
-and it's advisable to pass strings in the registers given as arguments to the
-expression parser.
+Numeric literals can be entered in an expression by prefixing a base 10
+integer or decimal form number with the `#` character.
+
+String literals are passed as strings quoted with the `"` character.
+
+Unordered sets can be passed as literals by grouping the set values with the
+`{` and `}` characters similar to the common math notation for unordered sets.
+The values in an unordered set must be delimited by a comma (`,`) and there
+must be no whitespace characters or any other characters between the delimiter
+and two values. A valid set element must follow a delimiter character, i.e. a
+trailing comma is not allowed.
+
+| Example         | Description                        |
+| --------------- | ---------------------------------- |
+| `#5`            | An integer literal.                |
+| `#1.1`          | A real number passed as a literal. |
+| `"Hello world"` | A string literal.                  |
+| `{"a","b"}`     | A set of strings.                  |
+
+It's advisable to pass user defined strings by in the RPN registers instead of
+using literals, as this allows any data to be passed properly (even binary),
+where as a string literal cannot contain nul-bytes or quotes. This rule is
+somewhat comparable to why SQL queries are usually parametrized.
 
 For example, instead of writing
 
 ```
-SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '"field f "test c'
+SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '"field" f "test c'
 ```
 
 you should consider writing
 
 ```
-SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '"field f $1 c' "test"
+SELVA.HIERARCHY.find test dfs descendants "grphnode_1" '"field" f $1 c' "test"
 ```
-
-**Unordered Set as Literal**
-
-Unordered sets can be inlined with a `{<literal type>` prefix using comma (`,`)
-as the value separator.
-
-| Prefix | Description                                  | Example               |
-| ------ | -------------------------------------------- | --------------------- |
-| `{"`   | Unordered set of strings. `[0-9][a-Z]_-[]{}` | `{"title,description => {"title", "description"}` |
-
-Note that a string inlined in a set cannot contain whitespace characters.
 
 **Register references**
 
@@ -143,12 +158,12 @@ Therefore, neither of these yields the expected result.
 | -------- | ----------------- | ------------------------------------- | ------------------------ |
 | `a`      | `set has a`       | `has` function for SelvaSets.         | `$1 $0 a => 0`           |
 | `b`      | `id`              | Returns the type of a node id.        | `xy123 b => xy`          |
-| `c`      | `!strcmp(s1, s2)` | Compare strings.                      | `$0 "hello c => 1`       |
+| `c`      | `!strcmp(s1, s2)` | Compare strings.                      | `$0 "hello" c => 1`      |
 | `d`      | `!cmp(id1, id2)`  | Compare node IDs.                     | `$1 $0 d => 1`           |
 | `e`      | `!cmp(curT, id)`  | Compare the type of the current node. | `"AB e`                  |
-| `f`      | `node[a]`         | Get the string value of a node field. | `"field f`               |
-| `g`      | `node[a]`         | Get the number value of a node field. | `"field g`               |
-| `h`      | `!!node[a]`       | Field exists.                         | `"title.en h => 1`       |
+| `f`      | `node[a]`         | Get the string value of a node field. | `"field" f`              |
+| `g`      | `node[a]`         | Get the number value of a node field. | `"field" g`              |
+| `h`      | `!!node[a]`       | Field exists.                         | `"title.en" h => 1`      |
 | `i`      | `a <= b <= c`     | (interval) `b` is within `a` and `c`. | `"#2 #1 #0 => 1`         |
 | `j`      | `findFirst(A)`    | Take the name of the first non-empty field into a new set. (value is set or set is non-empty) | `A j => [ 'field' ]` |
 | `k`      | `aon(A)`          | Take all or none (AON), pass the set or result an empty set. | `A k => [ 'field1', 'field2' ]` |

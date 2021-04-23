@@ -29,7 +29,6 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisM
     struct rpn_expression *filter_expression = NULL;
     const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
     const char *input;
-    size_t input_len;
 
     rpn_ctx = rpn_init(nr_reg);
     if (!rpn_ctx) {
@@ -39,8 +38,8 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisM
     /*
      * Compile the filter expression.
      */
-    input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
-    filter_expression = rpn_compile(input, input_len);
+    input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], NULL);
+    filter_expression = rpn_compile(input);
     if (!filter_expression) {
         rpn_destroy(rpn_ctx);
         return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
@@ -76,7 +75,7 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisM
         struct SelvaSet set;
         struct SelvaSetElement *el;
 
-        SelvaSet_Init(set, SELVA_SET_TYPE_RMSTRING);
+        SelvaSet_Init(&set, SELVA_SET_TYPE_RMSTRING);
         err = rpn_selvaset(ctx, rpn_ctx, filter_expression, &set);
         if (err) {
             goto fail;

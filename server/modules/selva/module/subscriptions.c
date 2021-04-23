@@ -568,7 +568,7 @@ int Selva_AddSubscriptionAliasMarker(
      * Compile the filter.
      * `ALIAS_NAME in aliases`
      */
-    filter_expression = rpn_compile("$1 $2 a", 7);
+    filter_expression = rpn_compile("$1 $2 a");
     if (!filter_expression) {
         fprintf(stderr, "%s: Failed to compile a filter for alias \"%s\"\n",
                 __FILE__, RedisModule_StringPtrLen(alias_name, NULL));
@@ -1438,7 +1438,7 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
          * Compile the filter expression.
          */
         input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
-        filter_expression = rpn_compile(input, input_len);
+        filter_expression = rpn_compile(input);
         if (!filter_expression) {
             fprintf(stderr, "%s: Failed to compile a filter expression: %.*s\n",
                     __FILE__,
@@ -1821,7 +1821,7 @@ int Selva_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
          * Compile the filter expression.
          */
         input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
-        filter_expression = rpn_compile(input, input_len);
+        filter_expression = rpn_compile(input);
         if (!filter_expression) {
             fprintf(stderr, "%s: Failed to compile a filter expression: %.*s\n",
                     __FILE__,

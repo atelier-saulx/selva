@@ -38,7 +38,7 @@ static char * test_number_valid(void)
     long long res;
     const char expr_str[] = "#1";
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     err = rpn_integer(NULL, ctx, expr, &res);
@@ -53,7 +53,7 @@ static char * test_number_invalid(void)
 {
     const char expr_str[] = "#r";
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_str);
     pu_assert("expr is not created", !expr);
 
     return NULL;
@@ -74,7 +74,7 @@ static char * test_operand_pool_overflow(void)
         expr_str[op + 2] = ' ';
     }
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_st);
     pu_assert("expr is created", expr);
 
     return NULL;
@@ -96,7 +96,7 @@ static char * test_stack_overflow(void)
     }
     expr_str[sizeof(expr_str) - 2] = 'L';
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     err = rpn_bool(NULL, ctx, expr, &res);
@@ -112,7 +112,7 @@ static char * test_add(void)
     long long res;
     const char expr_str[] = "#1 #1 A";
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     err = rpn_integer(NULL, ctx, expr, &res);
@@ -129,7 +129,7 @@ static char * test_add_double(void)
     double res;
     const char expr_str[] = "#1.5 #0.4 A";
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     err = rpn_double(NULL, ctx, expr, &res);
@@ -146,7 +146,7 @@ static char * test_rem(void)
     long long res;
     const char expr_str[] = "#8 #42 E";
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     err = rpn_integer(NULL, ctx, expr, &res);
@@ -163,7 +163,7 @@ static char * test_necessarily(void)
     long long res;
     const char expr_str[] = "@1 P #1 N";
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     err = rpn_set_reg(ctx, 1, "0", 1, 0);
@@ -187,7 +187,7 @@ static char * test_range(void)
     long long res;
     const char expr_str[] = "#10 @1 #1 i";
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     err = rpn_set_reg(ctx, 1, "0", 1, 0);
@@ -220,10 +220,10 @@ static char * test_range(void)
 static char * test_selvaset_inline(void)
 {
     enum rpn_error err;
-    const char expr_str[] = "{\"abc,def,verylongtextisalsoprettynice,thisisanotheronethatisfairlylong,nice";
+    const char expr_str[] = "{\"abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\",\"nice\"}";
     struct SelvaSet set;
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     SelvaSet_Init(&set, SELVA_SET_TYPE_RMSTRING);
@@ -234,7 +234,7 @@ static char * test_selvaset_inline(void)
         "abc",
         "def",
         "verylongtextisalsoprettynice",
-        "thisisanotheronethatisfairlylong",
+        "this is another one that is fairly long and with spaces",
         "nice",
     };
 
@@ -242,6 +242,7 @@ static char * test_selvaset_inline(void)
         RedisModuleString *rms;
 
         rms = RedisModule_CreateString(NULL, expected[i], strlen(expected[i]));
+        fprintf(stderr, "Has %s\n", expected[i]);
         pu_assert_equal("string is found in the set", 1, SelvaSet_Has(&set, rms));
         RedisModule_FreeString(NULL, rms);
     }
@@ -255,10 +256,10 @@ static char * test_selvaset_inline(void)
 static char * test_selvaset_union(void)
 {
     enum rpn_error err;
-    const char expr_str[] = "{\"a,b {\"c,d z";
+    const char expr_str[] = "{\"a\",\"b\"} {\"c\",\"d\"} z";
     struct SelvaSet set;
 
-    expr = rpn_compile(expr_str, sizeof(expr_str));
+    expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     SelvaSet_Init(&set, SELVA_SET_TYPE_RMSTRING);
@@ -281,6 +282,25 @@ static char * test_selvaset_union(void)
     return NULL;
 }
 
+static char * test_selvaset_ill(void)
+{
+    enum rpn_error err;
+    const char expr_str1[] = "{\"abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\",\"nice\"";
+    const char expr_str2[] = "{\"abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces,\"nice\"}";
+    const char expr_str3[] = "{\"abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\", \"nice\"}";
+    const char expr_str4[] = "{abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\", \"nice\"}";
+    const char expr_str5[] = "{abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\", \"nice\",}";
+    struct SelvaSet set;
+
+    pu_assert_equal("Fails", NULL,  rpn_compile(expr_str1));
+    pu_assert_equal("Fails", NULL,  rpn_compile(expr_str2));
+    pu_assert_equal("Fails", NULL,  rpn_compile(expr_str3));
+    pu_assert_equal("Fails", NULL,  rpn_compile(expr_str4));
+    pu_assert_equal("Fails", NULL,  rpn_compile(expr_str5));
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
@@ -295,4 +315,5 @@ void all_tests(void)
     pu_def_test(test_necessarily, PU_RUN);
     pu_def_test(test_selvaset_inline, PU_RUN);
     pu_def_test(test_selvaset_union, PU_RUN);
+    pu_def_test(test_selvaset_ill, PU_RUN);
 }
