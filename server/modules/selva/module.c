@@ -700,7 +700,26 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_UNSHIFT) {
             // TODO
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
-            // TODO
+            union {
+                char s[sizeof(long long)];
+                long long ll;
+            } v = {
+                .ll = -9,
+            };
+            memcpy(v.s, value_str, sizeof(v.ll));
+
+            if (v.ll >= 0) {
+                int err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v.ll);
+
+                if (err) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",
+                            (int)field_len, field_str);
+                    continue;
+                }
+            }
+
+            bitmap_set(replset, i / 3 - 1);
+            continue;
         } else {
             replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid type: \"%c\"", type_code);
             continue;
