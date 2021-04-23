@@ -696,7 +696,19 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             bitmap_set(replset, i / 3 - 1);
             continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
-            // TODO
+            struct SelvaObject *new_obj = SelvaObject_New();
+            if (!new_obj) {
+                replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                        (int)field_len, field_str);
+                continue;
+            }
+
+            int err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
+            if (!err) {
+                replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                        (int)field_len, field_str);
+                continue;
+            }
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_UNSHIFT) {
             // TODO
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
