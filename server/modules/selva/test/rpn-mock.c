@@ -10,3 +10,4 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx __unused, size_t i __unused, cons
 struct rpn_expression *rpn_compile(const char *input __unused) { return NULL; }
 enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx __unused, const struct rpn_expression *expr __unused, int *out __unused) { return 1; }
 enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx __unused, const struct rpn_expression *expr __unused, long long *out __unused) { return 1; }
+enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx __unused, const struct rpn_expression *expr __unused, struct SelvaSet *out __unused) { return 1; }

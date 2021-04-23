@@ -634,6 +634,9 @@ static char * test_shift(void)
     struct data el[] = { { 1 }, { 2 }, { 3 } };
 
     SVector_Init(&vec, 3, NULL);
+
+    pu_assert_ptr_equal("Shift empty vector", SVector_Shift(&vec), NULL);
+
     for (size_t i = 0; i < num_elem(el); i++) {
         SVector_Insert(&vec, &el[i]);
     }

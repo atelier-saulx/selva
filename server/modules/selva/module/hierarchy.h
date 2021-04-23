@@ -288,6 +288,13 @@ int SelvaModify_TraverseHierarchyEdge(
         const Selva_NodeId id,
         struct RedisModuleString *field_name,
         const struct SelvaModify_HierarchyCallback *cb);
+int SelvaHierarchy_TraverseExpression(
+        struct RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        struct rpn_ctx *rpn_ctx,
+        struct rpn_expression *rpn_expr,
+        const struct SelvaModify_HierarchyCallback *cb);
 int SelvaHierarchy_IsNonEmptyField(struct SelvaModify_HierarchyNode *node, const char *field_str, size_t field_len);
 
 /*

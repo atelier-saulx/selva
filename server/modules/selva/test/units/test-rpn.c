@@ -74,7 +74,7 @@ static char * test_operand_pool_overflow(void)
         expr_str[op + 2] = ' ';
     }
 
-    expr = rpn_compile(expr_st);
+    expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     return NULL;

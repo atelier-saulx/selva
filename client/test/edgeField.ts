@@ -386,7 +386,7 @@ test.serial('edge modify `add` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '0', 'o.a', 'hello'),
     ['root', 'UPDATED']
-  );
+  )
 
   const rec = createRecord(setRecordDefCstring, {
     op_set_type: 1,
@@ -400,7 +400,7 @@ test.serial('edge modify `add` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec),
     ['root', 'UPDATED']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0, 'ma1', 'ma2']
@@ -408,7 +408,7 @@ test.serial('edge modify `add` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec),
     ['root', 'OK']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0, 'ma1', 'ma2']
@@ -422,7 +422,7 @@ test.serial('edge modify `delete` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '0', 'o.a', 'hello'),
     ['root', 'UPDATED']
-  );
+  )
 
   const rec1 = createRecord(setRecordDefCstring, {
     op_set_type: 1,
@@ -444,7 +444,7 @@ test.serial('edge modify `delete` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec1),
     ['root', 'UPDATED']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0, 'ma1', 'ma2']
@@ -452,7 +452,7 @@ test.serial('edge modify `delete` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec2),
     ['root', 'UPDATED']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0]
@@ -460,7 +460,7 @@ test.serial('edge modify `delete` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec2),
     ['root', 'OK']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0]
@@ -474,7 +474,7 @@ test.serial('edge modify `value` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '0', 'o.a', 'hello'),
     ['root', 'UPDATED']
-  );
+  )
 
   const rec = createRecord(setRecordDefCstring, {
     op_set_type: 1,
@@ -488,7 +488,7 @@ test.serial('edge modify `value` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec),
     ['root', 'UPDATED']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0, 'ma1', 'ma2']
@@ -496,7 +496,7 @@ test.serial('edge modify `value` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec),
     ['root', 'OK']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0, 'ma1', 'ma2']
@@ -510,7 +510,7 @@ test.serial('edge modify `add` and `delete` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '0', 'o.a', 'hello'),
     ['root', 'UPDATED']
-  );
+  )
 
   const rec1 = createRecord(setRecordDefCstring, {
     op_set_type: 1,
@@ -532,7 +532,7 @@ test.serial('edge modify `add` and `delete` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec1),
     ['root', 'UPDATED']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0, 'ma1']
@@ -540,7 +540,7 @@ test.serial('edge modify `add` and `delete` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec2),
     ['root', 'UPDATED']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0, 'ma2', 'ma3']
@@ -548,7 +548,7 @@ test.serial('edge modify `add` and `delete` values diff', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec2),
     ['root', 'OK']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0, 'ma2', 'ma3']
@@ -567,7 +567,7 @@ test.serial('edge modify `delete_all`', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '0', 'o.a', 'hello'),
     ['root', 'UPDATED']
-  );
+  )
 
   const rec1 = createRecord(setRecordDefCstring, {
     op_set_type: 1,
@@ -589,7 +589,7 @@ test.serial('edge modify `delete_all`', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec1),
     ['root', 'UPDATED']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0, 'ma1', 'ma2']
@@ -597,9 +597,49 @@ test.serial('edge modify `delete_all`', async (t) => {
   t.deepEqual(
     await client.redis.selva_modify('root', '', '5', 'a.b', rec2),
     ['root', 'UPDATED']
-  );
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'root', 'a.b'),
     [0]
   )
+})
+
+test.serial.only('traverse by expression', async(t) => {
+  const client = connect({ port })
+
+  // Create nodes
+  t.deepEqual(
+    await client.redis.selva_modify('root', '', '0', 'o.a', 'hello'),
+    ['root', 'UPDATED']
+  )
+
+  const rec1 = createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 0,
+    $add: toCArr(['ma1']),
+    $delete: null,
+    $value: null,
+  })
+  const rec2 = createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 0,
+    $add: toCArr(['ma2']),
+    $delete: null,
+    $value: null,
+  })
+
+  t.deepEqual(
+    await client.redis.selva_modify('root', '', '5', 'a', rec1),
+    ['root', 'UPDATED']
+  )
+  t.deepEqual(
+    await client.redis.selva_modify('root', '', '5', 'b', rec2),
+    ['root', 'UPDATED']
+  )
+
+  console.log('hop')
+  //await wait(30000)
+  console.log(await client.redis.selva_hierarchy_findrecursive('', '___selva_hierarchy', 'bfs', '{"a","b"}', 'root'))
 })

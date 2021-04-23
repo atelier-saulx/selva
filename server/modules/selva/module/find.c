@@ -1280,18 +1280,18 @@ static int get_skip(enum SelvaModify_HierarchyTraversal dir) {
 
 /**
  * Find node(s) matching the query.
- * SELVA.HIERARCHY.find REDIS_KEY dfs|bfs field_name [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
- *                                |       |          |                      |             |            |            |                    |        |            |
- * Traversal method/algo --------/        |          |                      |             |            |            |                    |        |            |
- * Traversed field ----------------------/           |                      |             |            |            |                    |        |            |
- * Sort order of the results -----------------------/                       |             |            |            |                    |        |            |
- * Skip the first 1234 - 1 results ----------------------------------------/              |            |            |                    |        |            |
- * Limit the number of results (Optional) -----------------------------------------------/             |            |                    |        |            |
- * Merge fields. fields option must be set. ----------------------------------------------------------/             |                    |        |            |
- * Return field values instead of node names ----------------------------------------------------------------------/                     |        |            |
- * One or more node IDs concatenated (10 chars per ID) ---------------------------------------------------------------------------------/         |            |
- * RPN filter expression ------------------------------------------------------------------------------------------------------------------------/             |
- * Register arguments for the RPN filter ---------------------------------------------------------------------------------------------------------------------/
+ * SELVA.HIERARCHY.find lang REDIS_KEY dfs|bfs field_name [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
+ *                                     |       |          |                      |             |            |            |                    |        |            |
+ * Traversal method/algo -------------/        |          |                      |             |            |            |                    |        |            |
+ * Traversed field ---------------------------/           |                      |             |            |            |                    |        |            |
+ * Sort order of the results ----------------------------/                       |             |            |            |                    |        |            |
+ * Skip the first 1234 - 1 results ---------------------------------------------/              |            |            |                    |        |            |
+ * Limit the number of results (Optional) ----------------------------------------------------/             |            |                    |        |            |
+ * Merge fields. fields option must be set. ---------------------------------------------------------------/             |                    |        |            |
+ * Return field values instead of node names ---------------------------------------------------------------------------/                     |        |            |
+ * One or more node IDs concatenated (10 chars per ID) --------------------------------------------------------------------------------------/         |            |
+ * RPN filter expression -----------------------------------------------------------------------------------------------------------------------------/             |
+ * Register arguments for the RPN filter --------------------------------------------------------------------------------------------------------------------------/
  *
  * The traversed field is typically either ancestors or descendants but it can
  * be any hierarchy or edge field.
@@ -1448,11 +1448,14 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
         fields = SelvaObject_New();
     }
 
+    struct rpn_ctx *rpn_ctx = NULL;
+    struct rpn_expression *filter_expression = NULL;
+    struct rpn_ctx *recursive_rpn_ctx = NULL;
+    struct rpn_expression *recursive_rpn_expr = NULL;
+
     /*
      * Prepare the filter expression if given.
      */
-    struct rpn_ctx *rpn_ctx = NULL;
-    struct rpn_expression *filter_expression = NULL;
     if (argc >= ARGV_FILTER_EXPR + 1) {
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
         const char *input;
@@ -1502,6 +1505,28 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
         }
     }
 
+    /*
+     * In the recursive mode the direction/field_name field contains
+     * an expression that should to evaluate into a set of field names.
+     */
+    if (recursive) {
+        const char *field_selector;
+
+        recursive_rpn_ctx = rpn_init(1);
+        if (!recursive_rpn_ctx) {
+            replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "field selector expression");
+            goto out;
+        }
+
+        field_selector = RedisModule_StringPtrLen(argv[ARGV_DIRECTION], NULL);
+        recursive_rpn_expr = rpn_compile(field_selector);
+        if (!recursive_rpn_expr) {
+            rpn_destroy(recursive_rpn_ctx);
+            replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the field selector expression");
+            goto out;
+        }
+    }
+
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
     /*
@@ -1516,17 +1541,22 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
 
         Selva_NodeIdCpy(nodeId, ids_str + i);
 
-        /*
-         * Get the direction parameter.
-         */
-        err = parse_dir(ctx, hierarchy, &dir, &ref_field, nodeId, algo, argv[ARGV_DIRECTION]);
-        if (err) {
-            fprintf(stderr, "%s:%d: Error \"%s\" while selecting the field and dir for the node \"%.*s\", skipping\n",
-                    __FILE__, __LINE__,
-                    getSelvaErrorStr(err),
-                    (int)SELVA_NODE_ID_SIZE, nodeId);
-            /* Skip this node */
-            continue;
+        if (!recursive) {
+            /*
+             * Get the direction parameter.
+             */
+            err = parse_dir(ctx, hierarchy, &dir, &ref_field, nodeId, algo, argv[ARGV_DIRECTION]);
+            if (err) {
+                fprintf(stderr, "%s:%d: Error \"%s\" while selecting the field and dir for the node \"%.*s\", skipping\n",
+                        __FILE__, __LINE__,
+                        getSelvaErrorStr(err),
+                        (int)SELVA_NODE_ID_SIZE, nodeId);
+                /* Skip this node */
+                continue;
+            }
+        } else {
+            /* recursive can use this for get_skip() */
+            dir = SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS;
         }
 
         /*
@@ -1559,7 +1589,9 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
             break;
         }
 
-        if (dir == SELVA_HIERARCHY_TRAVERSAL_REF && ref_field) {
+        if (recursive) {
+            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, recursive_rpn_ctx, recursive_rpn_expr, &cb);
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_REF && ref_field) {
             TO_STR(ref_field);
 
             err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, nodeId, ref_field_str, &cb);
@@ -1592,11 +1624,12 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
 
 out:
     if (rpn_ctx) {
-#if MEM_DEBUG
-        memset(filter_expression, 0, sizeof(*filter_expression));
-#endif
         rpn_destroy(rpn_ctx);
         rpn_destroy_expression(filter_expression);
+    }
+    if (recursive_rpn_ctx) {
+        rpn_destroy(recursive_rpn_ctx);
+        rpn_destroy_expression(recursive_rpn_expr);
     }
 
     return REDISMODULE_OK;
