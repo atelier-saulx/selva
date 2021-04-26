@@ -604,7 +604,6 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         obj->obj_size++;
         (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
     } else if (!key) {
-        fprintf(stderr, "ENOENT??? %s\n", key_name_str);
         return SELVA_ENOENT;
     }
 
