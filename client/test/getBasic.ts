@@ -865,6 +865,48 @@ test.serial('get - field with empty array', async (t) => {
   client.destroy()
 })
 
+test.serial('get - references', async (t) => {
+  const client = connect({ port })
+
+  const id1 = await client.set({
+    type: 'lekkerType',
+  })
+  const id11 = await client.set({
+    type: 'lekkerType',
+  })
+  const id2 = await client.set({
+    type: 'lekkerType',
+    refs: [id1, id11],
+  })
+
+  const result = await client.get({
+    $id: id2,
+    children: true,
+    descendants: true,
+    refs: true,
+  })
+
+  t.deepEqual(result, {
+    children: [],
+    descendants: [],
+    refs: [ id1, id11 ]
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: id2,
+      $all: true,
+    }),
+    {
+      id: id2,
+      type: 'lekkerType',
+      refs: [ id1, id11 ]
+    }
+  )
+
+  client.destroy()
+})
+
 test.serial('get - set with some items', async (t) => {
   const client = connect({ port })
 
@@ -2233,7 +2275,7 @@ test.serial('get - record with nested wildcard query', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('get - field with array', async (t) => {
+test.serial('get - field with array', async (t) => {
   const client = connect({ port })
 
   // const pid = await client.set({
