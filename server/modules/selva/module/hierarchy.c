@@ -1665,8 +1665,6 @@ static int bfs_expression(
         SELVA_SET_RMS_FOREACH(field_el, &fields) {
             RedisModuleString *field = field_el->value_rms;
 
-            TO_STR(field);
-
             adj_vec = get_adj_vec(node, field);
             if (!adj_vec) {
                 continue;
