@@ -959,12 +959,6 @@ static int get_selva_set_str(struct SelvaObject *obj, const char *key_name_str, 
     return 0;
 }
 
-static int get_selva_set(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
-    TO_STR(key_name);
-
-    return get_selva_set_str(obj, key_name_str, key_name_len, type, set_out);
-}
-
 int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
     struct SelvaSet *selva_set;
     struct SelvaSetElement *el;
@@ -2269,6 +2263,7 @@ static int rdb_load_object_array(RedisModuleIO *io, struct SelvaObject *obj, con
     enum SelvaObjectType arrayType = RedisModule_LoadUnsigned(io);
     const size_t n = RedisModule_LoadUnsigned(io);
 
+    /* FIXME Loop missing */
     if (arrayType == SELVA_OBJECT_LONGLONG) {
         long long value = RedisModule_LoadSigned(io);
         SelvaObject_AddArray(obj, name, arrayType, (void *)value);

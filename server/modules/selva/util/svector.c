@@ -220,7 +220,6 @@ void SVector_Insert(SVector *vec, void *el) {
         ssize_t i = vec->vec_last++;
         SVector_Resize(vec, i);
 
-        ssize_t vec_len = vec->vec_arr_len;
         void **vec_arr = vec->vec_arr;
 
         vec_arr[i] = el;
