@@ -1227,7 +1227,7 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     }
 
     fprintf(stderr, "YOLO WHAT IS EVEN A POINTER %zu %zu %p\n", idx, key->array.vec_arr_len, p);
-    SVector_InsertIndex(&key->array, idx, p);
+    SVector_SetIndex(&key->array, idx, p);
     return 0;
 }
 

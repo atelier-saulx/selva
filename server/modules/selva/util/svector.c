@@ -446,8 +446,7 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
     return p;
 }
 
-// TODO: make sure you null things before the last entry and the first inserted index if it's larger than it's current size
-void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
+void SVector_SetIndex(SVector * restrict vec, size_t index, void *el) {
     assert(("vec_compare must not be set", !vec->vec_compar));
 
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
@@ -462,7 +461,7 @@ void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
             vec->vec_last = index + 1;
         } else {
             SVector_Resize(vec, index);
-            SVector_InsertIndex(vec, index, el);
+            SVector_SetIndex(vec, index, el);
         }
     } else {
         abort();
