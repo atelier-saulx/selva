@@ -143,7 +143,36 @@ export const TYPE_CASTS: Record<
   int: Number,
   boolean: (x: any) => !!Number(x),
   json: (x: any) => JSON.parse(x),
-  array: (x: any) => JSON.parse(x),
+  // array: (x: any) => JSON.parse(x),
+  array: (x: any, id: string, field: string, schema, lang) => {
+    const fieldSchema = <FieldSchemaArrayLike>getNestedSchema(schema, id, field)
+    if (!fieldSchema || !fieldSchema.items) {
+      return x
+    }
+
+    if (['int', 'float', 'number'].includes(fieldSchema.items.type)) {
+      const converted = x.map((num) => {
+        if (typeof num === 'string') {
+          return Number(num)
+        } else {
+          return num
+        }
+      })
+
+      return converted
+    } else if (
+      ['object', 'record'].includes(fieldSchema.items.type) ||
+      (!lang && fieldSchema.items.type === 'text')
+    ) {
+      const converted = x.map((el, i) => {
+        return TYPE_CASTS.object(el, id, `${field}[${i}]`, schema, lang)
+      })
+
+      return converted
+    }
+
+    return x
+  },
   set: (all: any, id: string, field: string, schema, lang) => {
     const fieldSchema = <FieldSchemaArrayLike>getNestedSchema(schema, id, field)
     if (!fieldSchema || !fieldSchema.items) {
@@ -174,13 +203,22 @@ export const TYPE_CASTS: Record<
           return
         }
 
-        const fieldSchema = getNestedSchema(schema, id, f)
+        let fieldSchema = getNestedSchema(schema, id, f)
 
         if (!fieldSchema) {
           throw new Error(
             'Cannot find field type ' + id + ` ${f} - getNestedSchema`
           )
         }
+
+        // if (
+        //   fieldSchema.type === 'array' &&
+        //   (fieldSchema.items.type === 'object' ||
+        //     fieldSchema.items.type === 'text' ||
+        //     fieldSchema.items.type === 'record')
+        // ) {
+        //   fieldSchema = fieldSchema.items
+        // }
 
         if (lang && 'text' === fieldSchema.type && Array.isArray(val)) {
           const txtObj = {}
@@ -204,14 +242,10 @@ export const TYPE_CASTS: Record<
         } else {
           const typeCast = TYPE_CASTS[fieldSchema.type]
           if (typeCast) {
-            // TODO do we need to add key here??? did not have this before - does fix stuff
-            // TODO: CHECK WITH TONY! - also does not have a test for this...
             val = typeCast(val, id, f, schema, lang)
-            // val = typeCast(val, id, field, schema, lang)
           }
 
           setNestedResult(o, key, val)
-          // o[key] = val
         }
 
         fieldCount++

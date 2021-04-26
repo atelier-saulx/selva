@@ -2,6 +2,7 @@
 #include <time.h>
 
 #include "cdefs.h"
+#include "cstrings.h"
 #include "redismodule.h"
 #include "typestr.h"
 #include "rmutil/util.h"
@@ -428,7 +429,94 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const char type_code = type_str[0];
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
-        if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
+        fprintf(stderr, "SETTING FIELD %.*s\n", (int)field_len, field_str);
+        if (is_array_field(field_str, field_len)) {
+            int idx = get_array_field_index(field_str, field_len);
+            int new_len = get_array_field_start_idx(field_str, field_len);
+
+            if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
+                //  TODO: handle default
+                fprintf(stderr, "HELLO WORLD I AM HERE\n");
+                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
+                if (err) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+                    continue;
+                }
+
+                RedisModule_RetainString(ctx, value);
+            } else if (type_code == SELVA_MODIFY_ARG_DOUBLE || type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
+                //  TODO: handle default
+                union {
+                    char s[sizeof(double)];
+                    double d;
+                } v = {
+                    .d = 0.0,
+                };
+                memcpy(v.s, value_str, sizeof(v.d));
+                fprintf(stderr, "WUUT DOUBLE %f\n", v.d);
+                void *wrapper;
+                memcpy(&wrapper, &v.d, sizeof(v.d));
+                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, wrapper);
+
+                if (err) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to set a double value");
+                    continue;
+                }
+            } else if (type_code == SELVA_MODIFY_ARG_LONGLONG || type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
+                //  TODO: handle default
+                union {
+                    char s[sizeof(double)];
+                    long long ll;
+                } v = {
+                    .ll = 0,
+                };
+                memcpy(v.s, value_str, sizeof(v.ll));
+                fprintf(stderr, "WUUT LONG %lld\n", v.ll);
+                void *wrapper;
+                memcpy(&wrapper, &v.ll, sizeof(v.ll));
+                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, wrapper);
+
+                if (err) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to set a long value");
+                    continue;
+                }
+            } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
+                SelvaObjectMeta_t new_user_meta;
+                SelvaObjectMeta_t old_user_meta;
+
+                if (value_len < sizeof(SelvaObjectMeta_t)) {
+                    replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: %s", typeof_str(new_user_meta));
+                    continue;
+                }
+
+                memcpy(&new_user_meta, value_str, sizeof(SelvaObjectMeta_t));
+                err = SelvaObject_SetUserMeta(obj, field, new_user_meta, &old_user_meta);
+                if (err) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to set key metadata (%.*s.%s)",
+                            (int)SELVA_NODE_ID_SIZE, nodeId,
+                            RedisModule_StringPtrLen(field, NULL));
+                    continue;
+                }
+
+                if (new_user_meta != old_user_meta) {
+                    RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
+                } else {
+                    RedisModule_ReplyWithSimpleString(ctx, "OK");
+                }
+
+                /*
+                 * This triplet needs to be replicated.
+                 * We replicate it regardless of any changes just in case for now
+                 * and we might stop replicate it later on when we are sure that
+                 * it isn't necessary.
+                 */
+                bitmap_set(replset, i / 3 - 1);
+                continue;
+            } else {
+                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
+                continue;
+            }
+        } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             const struct SelvaModify_OpIncrement *incrementOpts = (const struct SelvaModify_OpIncrement *)value_str;
 
             SelvaModify_ModifyIncrement(obj, field, old_type, incrementOpts);
@@ -605,6 +693,43 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
              * and we might stop replicate it later on when we are sure that
              * it isn't necessary.
              */
+            bitmap_set(replset, i / 3 - 1);
+            continue;
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
+            struct SelvaObject *new_obj = SelvaObject_New();
+            if (!new_obj) {
+                replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                        (int)field_len, field_str);
+                continue;
+            }
+
+            int err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
+            if (!err) {
+                replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                        (int)field_len, field_str);
+                continue;
+            }
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_UNSHIFT) {
+            // TODO: need to shift the rest of the array one step to the right and add a new empty selva object or value in the beginning
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
+            union {
+                char s[sizeof(long long)];
+                long long ll;
+            } v = {
+                .ll = -9,
+            };
+            memcpy(v.s, value_str, sizeof(v.ll));
+
+            if (v.ll >= 0) {
+                int err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v.ll);
+
+                if (err) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",
+                            (int)field_len, field_str);
+                    continue;
+                }
+            }
+
             bitmap_set(replset, i / 3 - 1);
             continue;
         } else {

@@ -53,6 +53,18 @@ test.beforeEach(async (t) => {
             values: {
               type: 'object',
               properties: {
+                floatArray: { type: 'array', items: { type: 'float' } },
+                intArray: { type: 'array', items: { type: 'int' } },
+                objArray: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      hello: { type: 'string' },
+                      value: { type: 'int' },
+                    },
+                  },
+                },
                 hello: {
                   type: 'string',
                 },
@@ -104,6 +116,8 @@ test.beforeEach(async (t) => {
           },
           dong: { type: 'json' },
           dingdongs: { type: 'array', items: { type: 'string' } },
+          floatArray: { type: 'array', items: { type: 'float' } },
+          intArray: { type: 'array', items: { type: 'int' } },
           refs: { type: 'references' },
           value: { type: 'number' },
           age: { type: 'number' },
@@ -2217,4 +2231,158 @@ test.serial('get - record with nested wildcard query', async (t) => {
   await client.delete('root')
 
   await client.destroy()
+})
+
+test.serial.only('get - field with array', async (t) => {
+  const client = connect({ port })
+
+  // const pid = await client.set({
+  //   type: 'lekkerType',
+  //   // thing: [],
+  //   // dong: { dingdong: [] },
+  //   // ding: { dong: [] },
+  //   objRec: {
+  //     abba: {
+  //       // intArray: [1, 2, 3, 4, 5],
+  //       // floatArray: [1.1, 2.2, 3.3, 4.4],
+  //       objArray: [
+  //         {
+  //           hello: 'yes 1',
+  //           value: 1,
+  //         },
+  //         {
+  //           hello: 'yes 2',
+  //           value: 2,
+  //         },
+  //         {
+  //           hello: 'yes 3',
+  //           value: 3,
+  //         },
+  //       ],
+  //     },
+  //   },
+  //   // refs: [],
+  // })
+
+  // console.dir(
+  //   await client.get({
+  //     $id: pid,
+  //     // objRec: true,
+  //     objRec: {
+  //       abba: {
+  //         objArray: true,
+  //       },
+  //     },
+  //   }),
+  //   { depth: null }
+  // )
+  // return
+
+  const id = await client.set({
+    type: 'lekkerType',
+    // thing: [],
+    // dong: { dingdong: [] },
+    // ding: { dong: [] },
+    dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+    // refs: [],
+  })
+
+  const result = await client.get({
+    $id: id,
+    thing: true,
+    dingdongs: true,
+    children: true,
+    descendants: true,
+    refs: true,
+    intArray: true,
+    floatArray: true,
+    objArray: true,
+    objRec: true,
+  })
+
+  t.deepEqual(result, {
+    children: [],
+    descendants: [],
+    dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  const all = await client.get({
+    $id: id,
+    $all: true,
+  })
+
+  t.deepEqualIgnoreOrder(all, {
+    id,
+    // dong: { dingdong: [] },
+    type: 'lekkerType',
+    dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  client.destroy()
 })

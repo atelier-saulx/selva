@@ -16,35 +16,82 @@ export default async (
   const arr = payload
   if (!Array.isArray(arr)) {
     if (payload.$delete === true) {
-      // TODO
-      // result[field] = { $delete: true }
       result.push('7', field, '')
-      return
-    } else if (payload.$field) {
-      // TODO: verify that it references an array field
-      // TODO
-      // result[field] = `___selva_$ref:${payload[field]}`
-      return
-    }
-    throw new Error(`Array is not an array ${JSON.stringify(payload)}`)
-  }
-  const itemsFields = fields.items
-  let arrayResult = []
+    } else if (payload.$push) {
+      result.push('D', field, '')
 
-  if (itemsFields.type === 'json') {
-    arrayResult = arr
-  } else {
-    const parser = fieldParsers[itemsFields.type]
-    const r = []
-    // need to remove all options from nested fields!
-    await Promise.all(
-      arr.map((payload, index) =>
-        parser(client, schema, `${index}`, payload, r, itemsFields, type, $lang)
+      const fieldWithIdx = `${field}[-1]`
+      const itemsFields = fields.items
+      const parser = fieldParsers[itemsFields.type]
+      parser(
+        client,
+        schema,
+        fieldWithIdx,
+        payload,
+        result,
+        itemsFields,
+        type,
+        $lang
       )
-    )
+    } else if (payload.$unshift) {
+      result.push('E', field, '')
 
-    arrayResult = arr
+      const fieldWithIdx = `${field}[0]`
+      const itemsFields = fields.items
+      const parser = fieldParsers[itemsFields.type]
+      parser(
+        client,
+        schema,
+        fieldWithIdx,
+        payload,
+        result,
+        itemsFields,
+        type,
+        $lang
+      )
+    } else if (payload.$assign) {
+      const idx = payload.$assign.$idx
+      const value = payload.$assign.$value
+
+      if (!idx || !value) {
+        throw new Error(
+          `$assign missing $idx or $value property ${JSON.stringify(payload)}`
+        )
+      }
+
+      const fieldWithIdx = `${field}[${idx}]`
+      const itemsFields = fields.items
+      const parser = fieldParsers[itemsFields.type]
+      parser(
+        client,
+        schema,
+        fieldWithIdx,
+        payload,
+        result,
+        itemsFields,
+        type,
+        $lang
+      )
+    } else if (payload.$remove) {
+      result.push('F', field, `${payload.$removeIdx}`)
+    }
+  } else {
+    const itemsFields = fields.items
+    const parser = fieldParsers[itemsFields.type]
+    await Promise.all(
+      arr.map((payload, index) => {
+        const fieldWithIdx = `${field}[${index}]`
+        parser(
+          client,
+          schema,
+          fieldWithIdx,
+          payload,
+          result,
+          itemsFields,
+          type,
+          $lang
+        )
+      })
+    )
   }
-  // nested json special!
-  result.push('0', field, JSON.stringify(arrayResult))
 }

@@ -57,7 +57,17 @@ export function getNestedSchema(
   }
 
   for (let i = 1; i < fields.length; i++) {
-    const segment = fields[i]
+    let segment = fields[i]
+
+    if (segment.endsWith(']')) {
+      // sanitize array types to look up the array so it ends up in the array object schema if below
+      for (let j = segment.length - 1; j >= 0; j--) {
+        if (segment[j] === '[') {
+          segment = segment.slice(0, j)
+          break
+        }
+      }
+    }
 
     if (!prop) {
       return null
@@ -70,6 +80,9 @@ export function getNestedSchema(
     if (prop.values) {
       // record types skip the next key
       prop = prop.values
+    } else if (prop.type === 'array') {
+      prop = prop.items
+      prop = prop.properties[segment]
     } else {
       if (!prop.properties) {
         return null

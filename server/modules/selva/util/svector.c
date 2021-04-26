@@ -184,6 +184,29 @@ static size_t calc_new_len(size_t old_len) {
     return new_len + (new_len >> 1);
 }
 
+static void SVector_Resize(SVector *vec, size_t i) {
+    void **vec_arr = vec->vec_arr;
+    size_t vec_len = vec->vec_arr_len;
+
+    if (!vec_arr || i >= vec_len - 1) {
+        const size_t new_len = calc_new_len(vec_len);
+        const size_t new_size = VEC_SIZE(new_len);
+
+        void **new_arr = RedisModule_Realloc(vec_arr, new_size);
+        if (!new_arr) {
+            fprintf(stderr, "SVector realloc failed\n");
+            /*
+             * TODO We shouldn't abort here but there is absolutely no safe way
+             * to fail as of now.
+             */
+            abort(); /* This will cause a core dump. */
+        }
+
+        vec->vec_arr = new_arr;
+        vec->vec_arr_len = new_len;
+    }
+}
+
 void SVector_Insert(SVector *vec, void *el) {
     if (vec->vec_mode == SVECTOR_MODE_ARRAY &&
         vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
@@ -192,30 +215,13 @@ void SVector_Insert(SVector *vec, void *el) {
     }
 
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
-        ssize_t i = vec->vec_last++;
-        ssize_t vec_len = vec->vec_arr_len;
-        void **vec_arr = vec->vec_arr;
-
         assert(el);
 
-        if (!vec_arr || i >= vec_len - 1) {
-            const size_t new_len = calc_new_len(vec_len);
-            const size_t new_size = VEC_SIZE(new_len);
+        ssize_t i = vec->vec_last++;
+        SVector_Resize(vec, i);
 
-            void **new_arr = RedisModule_Realloc(vec_arr, new_size);
-            if (!new_arr) {
-                fprintf(stderr, "SVector realloc failed\n");
-                /*
-                 * TODO We shouldn't abort here but there is absolutely no safe way
-                 * to fail as of now.
-                 */
-                abort(); /* This will cause a core dump. */
-            }
-
-            vec->vec_arr = new_arr;
-            vec->vec_arr_len = new_len;
-            vec_arr = new_arr;
-        }
+        ssize_t vec_len = vec->vec_arr_len;
+        void **vec_arr = vec->vec_arr;
 
         vec_arr[i] = el;
 
@@ -440,6 +446,47 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
     return p;
 }
 
+// TODO: make sure you null things before the last entry and the first inserted index if it's larger than it's current size
+void SVector_SetIndex(SVector * restrict vec, size_t index, void *el) {
+    assert(("vec_compare must not be set", !vec->vec_compar));
+
+    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+        fprintf(stderr, "THIS IS SPARTA %p %zu %zu %zu\n", vec->vec_arr, index, vec->vec_last, vec->vec_arr_len);
+        SVector_ShiftReset(vec);
+        if (index < vec->vec_last) {
+            vec->vec_arr[index] = el;
+        } else if (index < vec->vec_arr_len) {
+            memset(vec->vec_arr + vec->vec_last, 0, vec->vec_arr_len - vec->vec_last);
+
+            vec->vec_arr[index] = el;
+            vec->vec_last = index + 1;
+        } else {
+            SVector_Resize(vec, index);
+            SVector_SetIndex(vec, index, el);
+        }
+    } else {
+        abort();
+    }
+}
+
+// TODO: make sure you null things before the last entry and the first inserted index if it's larger than it's current size
+void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
+    assert(("vec_compare must not be set", !vec->vec_compar));
+    assert(("vec mode must be array", vec->vec_mode != SVECTOR_MODE_ARRAY));
+
+    SVector_ShiftReset(vec);
+    const size_t i = vec->vec_arr_shift_index + index;
+
+    if (i < vec->vec_last) {
+        if (vec->vec_last < vec->vec_arr_len) {
+            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], vec->vec_last - i + 1);
+        }
+        vec->vec_last++;
+    }
+
+    SVector_SetIndex(vec, index, el);
+}
+
 void *SVector_Remove(SVector * restrict vec, void *key) {
     assert(("vec_compar must be set", vec->vec_compar));
 
@@ -571,7 +618,7 @@ void *SVector_Peek(SVector * restrict vec) {
 }
 
 void SVector_ShiftReset(SVector * restrict vec) {
-    if (vec->vec_mode != SVECTOR_MODE_ARRAY) {
+    if (vec->vec_mode != SVECTOR_MODE_ARRAY || !vec->vec_arr) {
         /* Reseting shift index is only necessary in the array mode. */
         return;
     }
