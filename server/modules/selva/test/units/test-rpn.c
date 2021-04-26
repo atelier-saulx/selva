@@ -157,26 +157,162 @@ static char * test_rem(void)
     return NULL;
 }
 
-static char * test_necessarily(void)
+static char * test_necessarily_or(void)
 {
     enum rpn_error err;
     long long res;
-    const char expr_str[] = "@1 P #1 N";
+    const char expr_str[] = "@1 P @2 N";
 
     expr = rpn_compile(expr_str);
     pu_assert("expr is created", expr);
 
     err = rpn_set_reg(ctx, 1, "0", 1, 0);
+    err = rpn_set_reg(ctx, 2, "0", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
     err = rpn_integer(NULL, ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
-    pu_assert_equal("necess(0) || 1 == false", res, 0);
+    pu_assert_equal("necess(0) || 0 == false", res, 0);
+
+    err = rpn_set_reg(ctx, 1, "0", 1, 0);
+    err = rpn_set_reg(ctx, 2, "1", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("necess(0) || 1 == true", res, 0);
 
     err = rpn_set_reg(ctx, 1, "1", 1, 0);
+    err = rpn_set_reg(ctx, 2, "0", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("necess(1) || 0 == true", res, 1);
+
+    err = rpn_set_reg(ctx, 1, "1", 1, 0);
+    err = rpn_set_reg(ctx, 2, "1", 1, 0);
     pu_assert_equal("reg is set", err, RPN_ERR_OK);
     err = rpn_integer(NULL, ctx, expr, &res);
     pu_assert_equal("No error", err, RPN_ERR_OK);
     pu_assert_equal("necess(1) || 1 == true", res, 1);
+
+    return NULL;
+}
+
+static char * test_necessarily_and(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "@1 P @2 M";
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    err = rpn_set_reg(ctx, 1, "0", 1, 0);
+    err = rpn_set_reg(ctx, 2, "0", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("necess(0) && 0 == false", res, 0);
+
+    err = rpn_set_reg(ctx, 1, "0", 1, 0);
+    err = rpn_set_reg(ctx, 2, "1", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("necess(1) && 0 == false", res, 0);
+
+    err = rpn_set_reg(ctx, 1, "1", 1, 0);
+    err = rpn_set_reg(ctx, 2, "0", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("necess(0) && 1 == false", res, 0);
+
+    err = rpn_set_reg(ctx, 1, "1", 1, 0);
+    err = rpn_set_reg(ctx, 2, "1", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("necess(1) || 1 == true", res, 1);
+
+    return NULL;
+}
+
+static char * test_possibly_or(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "@1 Q @2 N";
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    err = rpn_set_reg(ctx, 1, "0", 1, 0);
+    err = rpn_set_reg(ctx, 2, "0", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("possib(0) || 0 == false", res, 0);
+
+    err = rpn_set_reg(ctx, 1, "0", 1, 0);
+    err = rpn_set_reg(ctx, 2, "1", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("possib(0) || 1 == true", res, 1);
+
+    err = rpn_set_reg(ctx, 1, "1", 1, 0);
+    err = rpn_set_reg(ctx, 2, "0", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("possib(1) || 0 == true", res, 1);
+
+    err = rpn_set_reg(ctx, 1, "1", 1, 0);
+    err = rpn_set_reg(ctx, 2, "1", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("possib(1) || 1 == true", res, 1);
+
+    return NULL;
+}
+
+static char * test_possibly_and(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "@1 Q @2 M";
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    err = rpn_set_reg(ctx, 1, "0", 1, 0);
+    err = rpn_set_reg(ctx, 2, "0", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("possib(0) && 0 == false", res, 0);
+
+    err = rpn_set_reg(ctx, 1, "0", 1, 0);
+    err = rpn_set_reg(ctx, 2, "1", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("possib(0) && 1 == true", res, 0);
+
+    err = rpn_set_reg(ctx, 1, "1", 1, 0);
+    err = rpn_set_reg(ctx, 2, "0", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("possib(1) && 0 == false", res, 1);
+
+    err = rpn_set_reg(ctx, 1, "1", 1, 0);
+    err = rpn_set_reg(ctx, 2, "1", 1, 0);
+    pu_assert_equal("reg is set", err, RPN_ERR_OK);
+    err = rpn_integer(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("possib(1) && 1 == true", res, 1);
 
     return NULL;
 }
@@ -310,7 +446,10 @@ void all_tests(void)
     pu_def_test(test_add_double, PU_RUN);
     pu_def_test(test_rem, PU_RUN);
     pu_def_test(test_range, PU_RUN);
-    pu_def_test(test_necessarily, PU_RUN);
+    pu_def_test(test_necessarily_or, PU_RUN);
+    pu_def_test(test_necessarily_and, PU_RUN);
+    pu_def_test(test_possibly_or, PU_RUN);
+    pu_def_test(test_possibly_and, PU_RUN);
     pu_def_test(test_selvaset_inline, PU_RUN);
     pu_def_test(test_selvaset_union, PU_RUN);
     pu_def_test(test_selvaset_ill, PU_RUN);
