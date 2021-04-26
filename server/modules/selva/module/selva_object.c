@@ -150,10 +150,10 @@ static int clear_key_value(struct SelvaObjectKey *key) {
 
             SVector_ForeachBegin(&it, &key->array);
             while ((str = SVector_Foreach(&it))) {
-                // BEGIN DEBUG
-                TO_STR(str);
-                fprintf(stderr, "HELLO DELETE %.*s\n", (int)str_len, str_str);
-                // END DEBUG
+                // // BEGIN DEBUG
+                // TO_STR(str);
+                // fprintf(stderr, "HELLO DELETE %.*s\n", (int)str_len, str_str);
+                // // END DEBUG
 
                 RedisModule_FreeString(NULL, str);
             }
@@ -173,7 +173,6 @@ static int clear_key_value(struct SelvaObjectKey *key) {
 
             SVector_ForeachBegin(&it, &key->array);
             while ((k = SVector_Foreach(&it))) {
-                fprintf(stderr, "HELLO HELLO HELLO %p\n", k);
                 SelvaObject_Destroy(k);
             }
         } else {
@@ -197,14 +196,12 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         return SELVA_EINTYPE;
     }
 
-    fprintf(stderr, "SETTING TYPE TO NULL %.*s with current type %d and subtype %d\n", (int)key->name_len, key->name, key->type, key->subtype);
     key->type = SELVA_OBJECT_NULL;
 
     return 0;
 }
 
 void SelvaObject_Clear(struct SelvaObject *obj) {
-    fprintf(stderr, "OBJ OBJ OBJ %p\n", obj);
     struct SelvaObjectKey *next;
 
     for (struct SelvaObjectKey *key = RB_MIN(SelvaObjectKeys, &obj->keys_head); key != NULL; key = next) {
@@ -364,13 +361,10 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         int err;
         ssize_t ary_idx = -1;
 
-        fprintf(stderr, "WAKA WAKA 1 %.*s %s\n", (int)key_name_len, key_name_str, s);
         size_t new_len = 0;
         if (is_array_field(s, slen)) {
-            fprintf(stderr, "STARTING POINT %.*s\n", (int)slen, s);
             ary_idx = get_array_field_index(s, slen);
             new_len = get_array_field_start_idx(s, slen);
-            fprintf(stderr, "WHAAT %zu %zu\n", ary_idx, new_len);
         }
 
         char new_s[new_len + 1];
@@ -380,27 +374,14 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
             s = new_s;
             slen = new_len;
-            fprintf(stderr, "YO MANG %s => %s\n", s, new_s);
         }
-
-        fprintf(stderr, "WAKA WAKA 2 %s\n", s);
 
         cobj = obj;
         key = NULL; /* This needs to be cleared on every iteration. */
         nr_parts_found++;
         err = get_key(obj, s, slen, 0, &key);
-        // TODO: broken?
-        if (!err) {
-            fprintf(stderr, "WHAT IS THIS %.*s %d %d\n", (int)key->name_len, key->name, key->type, key->subtype);
-        }
         if ((err == SELVA_ENOENT || (err == 0 && (key->type != SELVA_OBJECT_ARRAY && nr_parts > nr_parts_found))) && ary_idx >= 0 &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
-            fprintf(stderr, "SIIS MIKSI %.*s %zu\n", (int)slen, s, ary_idx);
-            if (err == 0) {
-                fprintf(stderr, "SIIS MIKSI TYYPPI %s\n", SelvaObject_Type2String(key->type, NULL));
-            } else {
-                fprintf(stderr, "SIIS MIKSI err %s\n", getSelvaErrorStr(err));
-            }
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
              * but we are allowed to create one here.
@@ -442,7 +423,6 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
 
             int err = SelvaObject_InsertArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
-            fprintf(stderr, "CREATING NEW ARRAY WITH OBJ %p\n", new_obj);
             if (err) {
                 return err;
             }
@@ -501,13 +481,11 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              */
             obj = key->value;
         } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found) {
-            fprintf(stderr, "TRYING ARRAY?????\n");
             /*
              * Keep nesting or return an object if this was the last token.
              */
             int err = SelvaObject_GetArrayIndexAsSelvaObject(obj, s, slen, ary_idx, &obj);
             if (err && err != SELVA_ENOENT) {
-                fprintf(stderr, "TRYING ARRAY ERROR %s\n", getSelvaErrorStr(err));
                 return err;
             }
 
@@ -517,15 +495,12 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                     return SELVA_ENOMEM;
                 }
 
-                fprintf(stderr, "EXISTING ARRAY WITH OBJ %p\n", new_obj);
                 err = SelvaObject_InsertArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
                 if (err) {
                     return err;
                 }
 
                 obj = new_obj;
-            } else {
-                fprintf(stderr, "EXISTING ARRAY WITH EXISTING OBJ %p\n", obj);
             }
         } else {
             /*
@@ -1207,7 +1182,6 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
 
     /* TODO Should it fail if the subtype doesn't match? */
     if (key->type != SELVA_OBJECT_ARRAY || key->subtype != subtype) {
-        fprintf(stderr, "MIKS CLEAR EN JUMMARRA %.*s %d %d\n", (int)key->name_len, key->name, key->type, key->subtype);
         err = clear_key_value(key);
         if (err) {
             return err;
@@ -1225,7 +1199,6 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
         }
     }
 
-    fprintf(stderr, "YOLO WHAT IS EVEN A POINTER %zu %zu %p\n", idx, key->array.vec_arr_len, p);
     SVector_SetIndex(&key->array, idx, p);
     return 0;
 }
@@ -1669,7 +1642,7 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
     default:
-        fprintf(stderr, "Unknows array type %d\n", subtype);
+        fprintf(stderr, "Unknown array type %d\n", subtype);
         RedisModule_ReplySetArrayLength(ctx, 0);
         break;
     }
@@ -1677,7 +1650,6 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
 }
 
 static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key) {
-    fprintf(stderr, "REPLY KEY VALUE %.*s\n", (int)key->name_len, key->name);
     switch (key->type) {
     case SELVA_OBJECT_NULL:
         RedisModule_ReplyWithNull(ctx);
@@ -1931,7 +1903,6 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, okey_str, okey_len, &resp_count, -1, 1);
             RedisModule_ReplySetArrayLength(ctx, resp_count);
         } else {
-            fprintf(stderr, "HMM KEY getting %s\n", okey_str);
             err = get_key(obj, okey_str, okey_len, 0, &key);
         }
 

@@ -429,14 +429,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const char type_code = type_str[0];
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
-        fprintf(stderr, "SETTING FIELD %.*s\n", (int)field_len, field_str);
         if (is_array_field(field_str, field_len)) {
             int idx = get_array_field_index(field_str, field_len);
             int new_len = get_array_field_start_idx(field_str, field_len);
 
             if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
                 //  TODO: handle default
-                fprintf(stderr, "HELLO WORLD I AM HERE\n");
                 int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
                 if (err) {
                     replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
@@ -453,7 +451,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                     .d = 0.0,
                 };
                 memcpy(v.s, value_str, sizeof(v.d));
-                fprintf(stderr, "WUUT DOUBLE %f\n", v.d);
                 void *wrapper;
                 memcpy(&wrapper, &v.d, sizeof(v.d));
                 int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, wrapper);
@@ -471,7 +468,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                     .ll = 0,
                 };
                 memcpy(v.s, value_str, sizeof(v.ll));
-                fprintf(stderr, "WUUT LONG %lld\n", v.ll);
                 void *wrapper;
                 memcpy(&wrapper, &v.ll, sizeof(v.ll));
                 int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, wrapper);
