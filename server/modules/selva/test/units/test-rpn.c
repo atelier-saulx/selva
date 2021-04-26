@@ -284,13 +284,11 @@ static char * test_selvaset_union(void)
 
 static char * test_selvaset_ill(void)
 {
-    enum rpn_error err;
     const char expr_str1[] = "{\"abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\",\"nice\"";
     const char expr_str2[] = "{\"abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces,\"nice\"}";
     const char expr_str3[] = "{\"abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\", \"nice\"}";
     const char expr_str4[] = "{abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\", \"nice\"}";
     const char expr_str5[] = "{abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\", \"nice\",}";
-    struct SelvaSet set;
 
     pu_assert_equal("Fails", NULL,  rpn_compile(expr_str1));
     pu_assert_equal("Fails", NULL,  rpn_compile(expr_str2));
