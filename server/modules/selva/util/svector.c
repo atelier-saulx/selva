@@ -446,6 +446,7 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
     return p;
 }
 
+// TODO: make sure you null things before the last entry and the first inserted index if it's larger than it's current size
 void SVector_SetIndex(SVector * restrict vec, size_t index, void *el) {
     assert(("vec_compare must not be set", !vec->vec_compar));
 
@@ -466,6 +467,24 @@ void SVector_SetIndex(SVector * restrict vec, size_t index, void *el) {
     } else {
         abort();
     }
+}
+
+// TODO: make sure you null things before the last entry and the first inserted index if it's larger than it's current size
+void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
+    assert(("vec_compare must not be set", !vec->vec_compar));
+    assert(("vec mode must be array", vec->vec_mode != SVECTOR_MODE_ARRAY));
+
+    SVector_ShiftReset(vec);
+    const size_t i = vec->vec_arr_shift_index + index;
+
+    if (i < vec->vec_last) {
+        if (vec->vec_last < vec->vec_arr_len) {
+            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], vec->vec_last - i + 1);
+        }
+        vec->vec_last++;
+    }
+
+    SVector_SetIndex(vec, index, el);
 }
 
 void *SVector_Remove(SVector * restrict vec, void *key) {
