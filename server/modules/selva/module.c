@@ -710,7 +710,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 continue;
             }
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_UNSHIFT) {
-            // TODO
+            // TODO: need to shift the rest of the array one step to the right and add a new empty selva object or value in the beginning
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
             union {
                 char s[sizeof(long long)];
