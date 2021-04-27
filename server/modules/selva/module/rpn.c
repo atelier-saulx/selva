@@ -53,6 +53,9 @@ struct redisObjectAccessor {
 #define OPERAND_GET_S_LEN(x) \
     ((x)->s_size > 0 ? (x)->s_size - 1 : 0)
 
+#define OPERAND_GET_OBJ(x) \
+    ((x)->flags.slvobj ? (x)->obj : NULL)
+
 #define OPERAND_GET_SET(x) \
     ((x)->flags.slvset ? (x)->set : NULL)
 
@@ -69,6 +72,7 @@ struct rpn_operand {
         unsigned regist : 1; /*!< Register value, do not free. */
         unsigned spused : 1; /*!< The value is a string pointed by sp. */
         unsigned spfree : 1; /*!< Free sp if set when freeing the operand. */
+        unsigned slvobj : 1; /*!< SelvaObject pointer. */
         unsigned slvset : 1; /*!< Set pointer is pointing to a SelvaSet. */
         unsigned embset : 1; /*!< Embedded set is used and it must be destroyed. */
     } flags;
@@ -77,6 +81,7 @@ struct rpn_operand {
     double d;
     union {
         const char *sp; /*!< A pointer to a user provided string. */
+        struct SelvaObject *obj; /*!< A SelvaObject pointer. */
         struct {
             struct SelvaSet *set; /*! A pointer to a SelvaSet. */
             /*
@@ -437,7 +442,11 @@ static int to_bool(struct rpn_operand *v) {
     const double d = v->d;
 
     if (isnan(d)) {
-        if (v->flags.slvset) {
+        if (v->flags.slvobj) {
+            struct SelvaObject *obj = OPERAND_GET_OBJ(v);
+
+            return obj && SelvaObject_LenStr(obj, NULL, 0);
+        } else if (v->flags.slvset) {
             struct SelvaSet *set = OPERAND_GET_SET(v);
 
             return set && set->size > 0;
@@ -515,6 +524,34 @@ enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, RedisModuleString *
 
     memcpy(arg, rms_str, size);
     return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_RMFREE);
+}
+
+/* TODO free frag for rpn_set_reg_slvobj() */
+enum rpn_error rpn_set_reg_slvobj(struct rpn_ctx *ctx, size_t i, struct SelvaObject *obj, unsigned flags __unused) {
+    if (i >= (size_t)ctx->nr_reg) {
+        return RPN_ERR_BNDS;
+    }
+
+    clear_old_reg(ctx, i);
+
+    if (obj) {
+        struct rpn_operand *r;
+
+        r = alloc_rpn_operand(sizeof(struct SelvaObject *));
+
+        /*
+         * Set the values.
+         */
+        r->flags.regist = 1;
+        r->flags.slvobj = 1;
+        /* RFE This is used elsewhere but it's not necessarily correct. */
+        r->d = nan_undefined();
+        r->obj = obj;
+    } else {
+        ctx->reg[i] = NULL;
+    }
+
+    return RPN_ERR_OK;
 }
 
 /* TODO free frag for rpn_set_reg_slvset() */
@@ -604,39 +641,46 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     return RPN_ERR_TYPE;
 }
 
-static struct SelvaObject *open_node_object(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
-    struct SelvaObject *obj;
+static struct SelvaObject *open_object(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
+    struct SelvaObject *obj = NULL;
 
     if (ctx->obj) {
         obj = ctx->obj;
     } else {
-        RedisModuleKey *key;
+        struct rpn_operand *operand;
 
-#if RPN_ASSERTS
-        assert(redis_ctx);
-#endif
-        if (!ctx->reg[0]) {
-            return NULL;
-        }
+        /* reg[0] should contain either a SelvaObject or a node_id */
+        operand = ctx->reg[0];
+        if (operand) {
+            if (operand->flags.slvobj) {
+                ctx->obj = obj = OPERAND_GET_OBJ(operand);
+            } else if (redis_ctx) {
+                RedisModuleKey *key;
 
-        /* Current node_id is always stored in reg[0] */
-        const char *id_str = OPERAND_GET_S(ctx->reg[0]);
-        int err = cpy2rm_str(&ctx->rms_id, id_str, strnlen(id_str, SELVA_NODE_ID_SIZE));
-        if (err) {
-            return NULL;
-        }
+                /* Assume the operand is a node_id */
+                const char *id_str = OPERAND_GET_S(operand);
+                if (!id_str) {
+                    return NULL;
+                }
 
-        key = RedisModule_OpenKey(redis_ctx, ctx->rms_id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
-        if (!key) {
-            return NULL;
-        }
+                int err = cpy2rm_str(&ctx->rms_id, id_str, strnlen(id_str, SELVA_NODE_ID_SIZE));
+                if (err) {
+                    return NULL;
+                }
 
-        ctx->redis_key = key;
-        err = SelvaObject_Key2Obj(key, &obj);
-        if (err) {
-            return NULL;
+                key = RedisModule_OpenKey(redis_ctx, ctx->rms_id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
+                if (!key) {
+                    return NULL;
+                }
+
+                ctx->redis_key = key;
+                err = SelvaObject_Key2Obj(key, &obj);
+                if (err) {
+                    return NULL;
+                }
+                ctx->obj = obj;
+            }
         }
-        ctx->obj = obj;
     }
 
     return obj;
@@ -649,7 +693,7 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
     RedisModuleString *value = NULL;
     int err;
 
-    obj = open_node_object(redis_ctx, ctx);
+    obj = open_object(redis_ctx, ctx);
     if (!obj) {
         fprintf(stderr, "%s:%d: Node object not found for: \"%.*s\"\n",
                 __FILE__, __LINE__,
@@ -872,7 +916,7 @@ static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn
     const char *field_str = OPERAND_GET_S(field);
     const size_t field_len = OPERAND_GET_S_LEN(field);
 
-    obj = open_node_object(redis_ctx, ctx);
+    obj = open_object(redis_ctx, ctx);
     if (!obj) {
         return push_double_result(ctx, 0.0);
     }
@@ -901,7 +945,7 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ct
         /* The operand `s` is a field_name string. */
         struct SelvaObject *obj;
 
-        obj = open_node_object(redis_ctx, ctx);
+        obj = open_object(redis_ctx, ctx);
         if (!obj) {
             fprintf(stderr, "%s:%d: Node object not found for: \"%.*s\"\n",
                     __FILE__, __LINE__,

@@ -78,6 +78,7 @@ static inline void rpn_set_hierarchy_node(struct rpn_ctx *ctx, struct SelvaModif
 
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags);
 enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, struct RedisModuleString *rms);
+enum rpn_error rpn_set_reg_slvobj(struct rpn_ctx *ctx, size_t i, struct SelvaObject *obj, unsigned flags);
 enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet *set, unsigned flags);
 struct rpn_expression *rpn_compile(const char *input);
 void rpn_destroy_expression(struct rpn_expression *expr);
