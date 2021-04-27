@@ -373,12 +373,11 @@ const TYPE_TO_SPECIAL_OP: Record<
         id
       )
     } else {
-      return client.redis.selva_object_get(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '',
-        id,
-        field
-      )
+      const r = await client.redis.selva_hierarchy_edgeget(
+          ctx.originDescriptors[ctx.db] || { name: ctx.db },
+          '___selva_hierarchy', id, field)
+      r.shift()
+      return r;
     }
   },
   text: async (
