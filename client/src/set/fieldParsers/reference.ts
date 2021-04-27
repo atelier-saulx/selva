@@ -1,8 +1,10 @@
+import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
 import parseSetObject from '../validate'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaArrayLike } from '../../schema'
 import { verifiers } from './simple'
+import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
 
 const id = verifiers.id
 
@@ -24,6 +26,7 @@ export default async (
   _type: string,
   $lang?: string
 ): Promise<void> => {
+  let id;
   if (typeof payload === 'object') {
     if (Array.isArray(payload)) {
       throw new Error(
@@ -34,7 +37,18 @@ export default async (
     }
 
     if (payload.$delete === true) {
-      result.push('7', field, '')
+      result.push(
+        '5',
+        field,
+        createRecord(setRecordDefCstring, {
+          op_set_type: OPT_SET_TYPE.reference,
+          constraint_id: 1,
+          delete_all: true,
+          $add: '',
+          $delete: '',
+          $value: '',
+        })
+      )
       return
     }
 
@@ -47,20 +61,18 @@ export default async (
     }
 
     if (!payload.$id && payload.$alias) {
-      const id = await client.set(payload)
-      result.push('0', field, id)
+      id = await client.set(payload)
     } else if (!payload.$id && payload.type) {
-      const id = await client.id({
+      id = await client.id({
         db: (<any>result).$db || 'default',
         type: payload.type,
       })
 
       const obj = { ...payload, $id: id }
       ;(<any>result).$extraQueries.push(client.set(obj))
-      result.push('0', field, id)
     } else if (payload.$id) {
       ;(<any>result).$extraQueries.push(client.set(payload))
-      result.push('0', field, payload.$id)
+      id = payload.$id
     } else {
       throw new Error(
         `Type or $id or $alias required for nested single reference in ${field}, got: ${JSON.stringify(
@@ -79,6 +91,19 @@ export default async (
       )
     }
 
-    result.push('0', field, verifySimple(payload))
+    id = verifySimple(payload)
   }
+
+  result.push(
+    '5',
+    field,
+    createRecord(setRecordDefCstring, {
+      op_set_type: OPT_SET_TYPE.reference,
+      constraint_id: 1,
+      delete_all: false,
+      $add: '',
+      $delete: '',
+      $value: id.padEnd(10, '\0'),
+    })
+  )
 }

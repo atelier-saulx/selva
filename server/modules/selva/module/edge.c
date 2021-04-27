@@ -9,10 +9,11 @@
 
 struct EdgeFieldConstraint {
     struct {
-        unsigned __place_holder : 1;    /*!< This could be a constraint. */
+        unsigned single_ref : 1;    /*!< Single reference edge. */
     } flags;
 };
 
+static void clear_field(struct EdgeField *src_edge_field);
 static void EdgeField_Reply(struct RedisModuleCtx *ctx, void *p);
 static void EdgeField_Free(void *p);
 static size_t EdgeField_Len(void *p);
@@ -24,9 +25,14 @@ static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, void *data)
  * All the constraints available in the database must be defined here.
  */
 static const struct EdgeFieldConstraint edge_constraints[] = {
-    {
+    [0] = {
         .flags = {
-            .__place_holder = 0,
+            .single_ref = 0,
+        },
+    },
+    [1] = {
+        .flags = {
+            .single_ref = 1,
         },
     },
 };
@@ -246,6 +252,11 @@ int Edge_Add(const char *key_name_str, size_t key_name_len, unsigned constraint_
 
     if (Edge_Has(src_edge_field, dst_node)) {
         return SELVA_EEXIST;
+    }
+
+    if (constraint->flags.single_ref) {
+        /* single_ref allows only one edge to exist in the field. */
+        clear_field(src_edge_field);
     }
 
     insert_edge(src_edge_field, dst_node);

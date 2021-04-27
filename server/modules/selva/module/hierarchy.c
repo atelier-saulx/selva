@@ -2643,7 +2643,11 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 
     err = SelvaObject_GetPointer(obj, key_name, (void **)(&edge_field));
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        if (err == SELVA_ENOENT) {
+            return RedisModule_ReplyWithNull(ctx);
+        } else {
+            return replyWithSelvaError(ctx, err);
+        }
     }
 
     struct SVector *arcs = &edge_field->arcs;

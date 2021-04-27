@@ -332,6 +332,18 @@ const TYPE_TO_SPECIAL_OP: Record<
   ) => {
     return id
   },
+  reference: async (
+    client: SelvaClient,
+    ctx: ExecContext,
+    id: string,
+    field: string,
+    lang?: string
+  ) => {
+    const r = await client.redis.selva_hierarchy_edgeget(
+        ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        '___selva_hierarchy', id, field)
+    return r && r[1]
+  },
   references: async (
     client: SelvaClient,
     ctx: ExecContext,
@@ -376,6 +388,9 @@ const TYPE_TO_SPECIAL_OP: Record<
       const r = await client.redis.selva_hierarchy_edgeget(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
           '___selva_hierarchy', id, field)
+      if (!r || r.length == 1) {
+        return null
+      }
       r.shift()
       return r;
     }
