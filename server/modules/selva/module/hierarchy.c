@@ -1782,6 +1782,93 @@ static int traverse_ref(
     return 0;
 }
 
+// TODO
+static int traverse_array(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        SelvaModify_HierarchyNode *head,
+        const char *ref_field_str,
+        const struct SelvaModify_HierarchyCallback *cb) {
+    // int err;
+
+    // RedisModuleString *head_id;
+    // head_id = RedisModule_CreateString(ctx, head->id, Selva_NodeIdLen(head->id));
+    // if (!head_id) {
+    //     return SELVA_HIERARCHY_ENOMEM;
+    // }
+
+    // struct SelvaObject *head_obj;
+    // err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, head_id, REDISMODULE_READ), &head_obj);
+    // if (err) {
+    //     return err;
+    // }
+
+    // struct SelvaSet *ref_set;
+    // ref_set = SelvaObject_GetSetStr(head_obj, ref_field_str, strlen(ref_field_str));
+    // if (!ref_set) {
+    //     return SELVA_HIERARCHY_ENOENT;
+    // }
+    // if (ref_set->type != SELVA_SET_TYPE_RMSTRING) {
+    //     return SELVA_EINTYPE;
+    // }
+
+    // struct SelvaSetElement *el;
+    // SELVA_SET_RMS_FOREACH(el, ref_set) {
+    //     RedisModuleString *value = el->value_rms;
+    //     Selva_NodeId nodeId;
+    //     SelvaModify_HierarchyNode *node;
+    //     TO_STR(value);
+
+    //     memset(nodeId, 0, SELVA_NODE_ID_SIZE);
+    //     memcpy(nodeId, value_str, min(value_len, SELVA_NODE_ID_SIZE));
+
+    //     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+    //     if (node) {
+    //         cb->node_cb(node, cb->node_arg);
+    //     }
+    // }
+
+
+    int err;
+
+    RedisModuleString *head_id;
+    head_id = RedisModule_CreateString(ctx, head->id, Selva_NodeIdLen(head->id));
+    if (!head_id) {
+        return SELVA_HIERARCHY_ENOMEM;
+    }
+
+    struct SelvaObject *head_obj;
+    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, head_id, REDISMODULE_READ), &head_obj);
+    if (err) {
+        return err;
+    }
+
+    enum SelvaObjectType subtype;
+    SVector *vec;
+    err = SelvaObject_GetArrayStr(head_obj, ref_field_str, strlen(ref_field_str), &subtype, &vec);
+    if (err) {
+        return err;
+    }
+
+    struct SVectorIterator it;
+    SVector_ForeachBegin(&it, vec);
+    struct SelvaObject *obj;
+    while ((obj = SVector_Foreach(&it))) {
+    // TODO
+    // this callback will set selva object in register 0 then field functions can operate directly on the selva object
+    // and call RPN eval
+    // set in result but I think it needs to work differently since we don't use ids for the find results then
+    // maybe we need empty ids or nulls or something
+    // we probably have a macro for empty id
+    // then we don't need to make the find result have a different format for arrays
+    //     if (node) {
+    //         cb->node_cb(node, cb->node_arg);
+    //     }
+    }
+
+    return 0;
+}
+
 /*
  * A little trampoline to hide the scary internals of the hierarchy
  * implementation from the innocent users just wanting to traverse the
@@ -1872,6 +1959,23 @@ int SelvaModify_TraverseHierarchyRef(
     }
 
     return traverse_ref(ctx, hierarchy, head, ref_field, cb);
+}
+
+
+int SelvaModify_TraverseArray(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        const char *ref_field,
+        const struct SelvaModify_HierarchyCallback *cb) {
+    SelvaModify_HierarchyNode *head;
+
+    head = SelvaHierarchy_FindNode(hierarchy, id);
+    if (!head) {
+        return SELVA_HIERARCHY_ENOENT;
+    }
+
+    return traverse_array(ctx, hierarchy, head, ref_field, cb);
 }
 
 int SelvaModify_TraverseHierarchyEdge(

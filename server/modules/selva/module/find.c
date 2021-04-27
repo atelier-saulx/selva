@@ -285,6 +285,27 @@ int parse_dir(
                     *field_name_out = rms;
                     *dir = SELVA_HIERARCHY_TRAVERSAL_REF;
                     break;
+                } else if (type == SELVA_OBJECT_ARRAY) {
+                    RedisModuleString *rms;
+
+#if 0
+                    fprintf(stderr, "%s:%d: Field exists. node: %.*s field: %.*s type: %d\n",
+                            __FILE__, __LINE__,
+                            (int)SELVA_NODE_ID_SIZE, nodeId,
+                            (int)sz, p1,
+                            type);
+#endif
+
+                    rms = RedisModule_CreateString(ctx, p1, sz);
+                    if (!rms) {
+                        err = SELVA_HIERARCHY_ENOMEM;
+                        break;
+                    }
+
+                    err = 0;
+                    *field_name_out = rms;
+                    *dir = SELVA_HIERARCHY_TRAVERSAL_ARRAY;
+                    break;
                 }
             }
         } else {
@@ -1595,6 +1616,8 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
             TO_STR(ref_field);
 
             err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, nodeId, ref_field_str, &cb);
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
+            // err = SelvaModify_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD && ref_field) {
             err = SelvaModify_TraverseHierarchyEdge(hierarchy, nodeId, ref_field, &cb);
         } else {

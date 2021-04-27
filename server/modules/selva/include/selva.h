@@ -64,6 +64,7 @@ enum SelvaModify_HierarchyTraversal {
     SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS, /*!< Visit descendants of the given node using DFS. */
     SELVA_HIERARCHY_TRAVERSAL_DFS_FULL, /*!< Full DFS traversal of the whole hierarchy. */
     SELVA_HIERARCHY_TRAVERSAL_REF, /*!< Visit nodes pointed by a ref field. */
+    SELVA_HIERARCHY_TRAVERSAL_ARRAY, /*!< Visit nodes pointed by a ref field. */
     SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD, /*!< Traverse an edge field according to its constraints using BFS. */
 };
 
