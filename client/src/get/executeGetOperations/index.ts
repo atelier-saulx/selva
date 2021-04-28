@@ -462,16 +462,24 @@ export const executeGetOperation = async (
     return op.value
   } else if (op.type === 'nested_query') {
     if (op.id) {
-      const id = await client.redis.selva_object_get(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        makeLangArg(client.schemas[ctx.db].languages, lang),
-        op.id,
-        ...(op.sourceField
-          ? Array.isArray(op.sourceField)
-            ? op.sourceField
-            : [op.sourceField]
-          : [op.field])
-      )
+      const field = (op.sourceField
+            ? Array.isArray(op.sourceField)
+              ? op.sourceField
+              : [op.sourceField]
+            : [op.field])
+      const id = op.fromReference
+        ? await client.redis.selva_hierarchy_edgeget(
+          ctx.originDescriptors[ctx.db] || { name: ctx.db },
+          '___selva_hierarchy',
+          op.id,
+          ...field
+        )
+        : await client.redis.selva_object_get(
+          ctx.originDescriptors[ctx.db] || { name: ctx.db },
+          makeLangArg(client.schemas[ctx.db].languages, lang),
+          op.id,
+          ...field
+        )
 
       if (!id) {
         return null

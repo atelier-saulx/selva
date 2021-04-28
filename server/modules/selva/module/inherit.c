@@ -30,7 +30,53 @@ struct InheritCommand_Args {
     ssize_t nr_results; /*!< Number of results sent. */
 };
 
-static int send_object_field_value(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, RedisModuleString *node_id, RedisModuleString *field) {
+static int open_node_key(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleKey **key_out, struct SelvaObject **obj_out) {
+    RedisModuleString *id;
+    RedisModuleKey *key;
+    int err;
+
+    id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
+    if (!id) {
+        return SELVA_ENOMEM;
+    }
+
+    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
+    if (!key) {
+        return SELVA_ENOENT;
+    }
+
+    *key_out = key;
+
+    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, id, REDISMODULE_READ), obj_out);
+    if (err) {
+        return err;
+    }
+
+    return 0;
+}
+
+static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id, RedisModuleString *field, struct EdgeField *edge_field) {
+    SVector *arcs = &edge_field->arcs;
+    struct SVectorIterator vec_it;
+    struct SelvaModify_HierarchyNode *dst_node;
+
+    RedisModule_ReplyWithArray(ctx, 3);
+    RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
+    RedisModule_ReplyWithString(ctx, field);
+    RedisModule_ReplyWithArray(ctx, SVector_Size(arcs));
+
+    SVector_ForeachBegin(&vec_it, arcs);
+    while ((dst_node = SVector_Foreach(&vec_it))) {
+        Selva_NodeId dst_id;
+
+        SelvaModify_HierarchyGetNodeId(dst_id, dst_node);
+        RedisModule_ReplyWithStringBuffer(ctx, dst_id, Selva_NodeIdLen(dst_id));
+    }
+
+    return 0;
+}
+
+static int send_object_field_value(RedisModuleCtx *ctx, RedisModuleString *lang, const Selva_NodeId node_id, struct SelvaObject *obj, RedisModuleString *field) {
     int err = SELVA_ENOENT;
 
     if (!SelvaObject_Exists(obj, field)) {
@@ -39,8 +85,7 @@ static int send_object_field_value(RedisModuleCtx *ctx, RedisModuleString *lang,
          * [node_id, field_name, field_value]
          */
         RedisModule_ReplyWithArray(ctx, 3);
-
-        RedisModule_ReplyWithString(ctx, node_id);
+        RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
         RedisModule_ReplyWithString(ctx, field);
 
         err = SelvaObject_ReplyWithObject(ctx, lang, obj, field);
@@ -57,46 +102,36 @@ static int send_object_field_value(RedisModuleCtx *ctx, RedisModuleString *lang,
 static int send_field_value(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        const Selva_NodeId nodeId,
+        struct SelvaModify_HierarchyNode *node,
+        const Selva_NodeId node_id,
+        struct SelvaObject *obj,
         RedisModuleString *field) {
-    int err;
+    TO_STR(field);
+    struct EdgeField *edge_field;
 
-    RedisModuleString *id;
-    id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
-    if (!id) {
-        return SELVA_ENOMEM;
-    }
-
-    RedisModuleKey *key;
-    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
-    if (!key) {
-        return SELVA_ENOENT;
-    }
-
-    struct SelvaObject *obj;
-    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, id, REDISMODULE_READ), &obj);
-    if (err) {
-        return err;
-    }
-
-    /*
-     * The response should always start like this: [node_id, field_name, ...]
-     * but we don't send the header yet.
-     */
-
-    err = send_object_field_value(ctx, lang, obj, id, field);
-
-    RedisModule_CloseKey(key);
-
-    return err;
+    edge_field = Edge_GetField(node, field_str, field_len);
+    return edge_field
+        ? send_edge_field_value(ctx, node_id, field, edge_field)
+        : send_object_field_value(ctx, lang, node_id, obj, field);
 }
 
 static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
+    RedisModuleKey *key = NULL;
+    struct SelvaObject *obj;
     struct InheritCommand_Args *restrict args = (struct InheritCommand_Args *)arg;
     int err;
 
     SelvaModify_HierarchyGetNodeId(nodeId, node);
+    err = open_node_key(args->ctx, nodeId, &key, &obj);
+    if (err) {
+        fprintf(stderr, "%s:%d: Failed to open a node object. nodeId: %.*s error: %s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, nodeId,
+                getSelvaErrorStr(err));
+        /* Ignore errors. */
+        return 0;
+    }
 
     /*
      * Check that the node is of an accepted type.
@@ -112,6 +147,7 @@ static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *a
              * This node type is not accepted and we don't need to check whether
              * the field set.
              */
+            RedisModule_CloseKey(key);
             return 0;
         }
     } else {
@@ -128,14 +164,17 @@ static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *a
 
         /*
          * Get and send the field value to the client.
+         * The response should always start like this: [node_id, field_name, ...]
+         * but we don't send the header yet.
          */
-        err = send_field_value(args->ctx, args->lang, nodeId, field_name);
+        err = send_field_value(args->ctx, args->lang, node, nodeId, obj, field_name);
         if (err == 0) { /* found */
             args->field_names[i] = NULL; /* No need to look for this one anymore. */
             args->nr_results++;
 
             /* Stop traversing if all fields were found. */
             if (args->nr_results == (ssize_t)args->nr_fields) {
+                RedisModule_CloseKey(key);
                 return 1;
             }
         } else if (err != SELVA_ENOENT) {
@@ -151,6 +190,7 @@ static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *a
         }
     }
 
+    RedisModule_CloseKey(key);
     return 0;
 }
 
@@ -266,10 +306,8 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
     /*
-     * Run inherit for ancestors, descendants, parents, and children
-     * We have two reasons to do this here:
-     * - These fields will always exist in every node so these are always resolved a top level
-     * - Hierarchy traversal is not reentrant and calling it inside another traversal will stop the outter iteration
+     * Run inherit for ancestors, descendants, parents, and children.
+     * These fields will always exist in every node so these are always resolved a top level.
      */
     size_t nr_presolved = inheritHierarchyFields(ctx, hierarchy, node_id, nr_types, types, nr_field_names, field_names);
 
