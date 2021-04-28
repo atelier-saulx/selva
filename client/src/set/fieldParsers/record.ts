@@ -8,7 +8,7 @@ export default async (
   schema: Schema,
   field: string,
   payload: SetOptions,
-  result: SetOptions,
+  result: (string | Buffer)[],
   fields: FieldSchemaRecord,
   type: string,
   $lang?: string
@@ -17,7 +17,7 @@ export default async (
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
 
-  const r: string[] = []
+  // const r: string[] = []
 
   const fn = fieldParsers[fields.values.type]
 
@@ -26,7 +26,7 @@ export default async (
     return
   }
   if (payload.$merge === false) {
-    r.push('7', field, '')
+    result.push('7', field, '')
   }
 
   let addedFields = 0
@@ -49,7 +49,7 @@ export default async (
         schema,
         `${field}.${key}`,
         payload[key],
-        r,
+        result,
         fields.values,
         type,
         $lang
@@ -57,9 +57,9 @@ export default async (
     }
   }
 
-  result.push(...r)
+  // result.push(...r)
 
-  if (addedFields && r.length) {
+  if (addedFields /* && r.length */) {
     const content = new Uint32Array([1])
     const buf = Buffer.from(content.buffer)
     result.push('C', field, buf)

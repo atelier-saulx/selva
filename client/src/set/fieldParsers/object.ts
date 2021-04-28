@@ -17,7 +17,7 @@ export default async (
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
 
-  const r: string[] = []
+  // const r: string[] = []
 
   if (payload.$delete) {
     result.push('7', field, 'O')
@@ -52,7 +52,7 @@ export default async (
         schema,
         `${field}.${key}`,
         payload[key],
-        r,
+        result,
         fields.properties[key],
         type,
         $lang
@@ -60,9 +60,9 @@ export default async (
     }
   }
 
-  result.push(...r)
+  // result.push(...r)
 
-  if (addedFields && r.length) {
+  if (addedFields /* && r.length */) {
     const content = new Uint32Array([0])
     const buf = Buffer.from(content.buffer)
     result.push('C', field, buf)
