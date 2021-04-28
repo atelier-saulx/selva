@@ -32,7 +32,7 @@ export default async (
   result: (string | Buffer)[],
   fields: FieldSchemaArrayLike,
   type: string
-): Promise<void> => {
+): Promise<number> => {
   const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
   if (!typeSchema) {
     throw new Error('Cannot find type schema ' + type)
@@ -51,7 +51,9 @@ export default async (
   // @ts-ignore
   const elementType = typeSchema.fields[field]?.items?.type || 'string'
   // @ts-ignore
-  const [setRecordDef, opSetType, verify, toCArr] = doubleTypes.includes(elementType)
+  const [setRecordDef, opSetType, verify, toCArr] = doubleTypes.includes(
+    elementType
+  )
     ? [
         // def
         setRecordDefDouble,
@@ -59,10 +61,12 @@ export default async (
         OPT_SET_TYPE.double,
         // verify
         // eslint-disable-next-line no-sequences
-        async (v: SetOptions) => (await parser(client, schema, 'value', v, [], fields, type), v),
+        async (v: SetOptions) => (
+          await parser(client, schema, 'value', v, [], fields, type), v
+        ),
         // toCArr
-        (arr: any) => arr
-    ]
+        (arr: any) => arr,
+      ]
     : // @ts-ignore
     intTypes.includes(elementType)
     ? [
@@ -72,7 +76,9 @@ export default async (
         OPT_SET_TYPE.long_long,
         // verify
         // eslint-disable-next-line no-sequences
-        async (v: SetOptions) => (await parser(client, schema, 'value', v, [], fields, type), v),
+        async (v: SetOptions) => (
+          await parser(client, schema, 'value', v, [], fields, type), v
+        ),
         // toCArr
         (arr: number[] | undefined | null) => (arr ? arr.map(BigInt) : arr),
       ]
@@ -97,10 +103,7 @@ export default async (
 
     for (const k in payload) {
       if (k === '$add') {
-        if (
-          typeof payload[k] === 'object' &&
-          !Array.isArray(payload[k])
-        ) {
+        if (typeof payload[k] === 'object' && !Array.isArray(payload[k])) {
           // TODO: do these modify commands recursively and then populate the ids here
           // r.$add = [await parseSetObject(client, payload[k], schema)]
         } else {
@@ -141,4 +144,6 @@ export default async (
       })
     )
   }
+
+  return 1
 }

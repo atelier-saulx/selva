@@ -12,19 +12,19 @@ export default async (
   fields: FieldSchemaArrayLike,
   type: string,
   $lang?: string
-): Promise<void> => {
+): Promise<number> => {
   const arr = payload
   if (!Array.isArray(arr)) {
     if (payload.$delete === true) {
       // TODO
       // result[field] = { $delete: true }
       result.push('7', field, '')
-      return
+      return 0
     } else if (payload.$field) {
       // TODO: verify that it references an array field
       // TODO
       // result[field] = `___selva_$ref:${payload[field]}`
-      return
+      return 0
     }
     throw new Error(`Array is not an array ${JSON.stringify(payload)}`)
   }
@@ -47,4 +47,5 @@ export default async (
   }
   // nested json special!
   result.push('0', field, JSON.stringify(arrayResult))
+  return 1
 }

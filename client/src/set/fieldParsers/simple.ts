@@ -168,15 +168,15 @@ for (const key in verifiers) {
                   })
                 )
               }
-              return
+              return 1
             }
           }
         } else if (k === '$ref') {
           value = `___selva_$ref:${payload[k]}`
-          return
+          return 0
         } else if (k === '$delete') {
           result.push('7', field, '')
-          return
+          return 0
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }
@@ -201,7 +201,10 @@ for (const key in verifiers) {
 
     if (value !== null && value !== undefined) {
       result.push(valueType, keyname, value)
+      return 1
     }
+
+    return 0
   }
 }
 

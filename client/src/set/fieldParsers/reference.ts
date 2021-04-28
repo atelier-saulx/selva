@@ -23,7 +23,7 @@ export default async (
   _fields: FieldSchemaArrayLike,
   _type: string,
   $lang?: string
-): Promise<void> => {
+): Promise<number> => {
   if (typeof payload === 'object') {
     if (Array.isArray(payload)) {
       throw new Error(
@@ -35,7 +35,7 @@ export default async (
 
     if (payload.$delete === true) {
       result.push('7', field, '')
-      return
+      return 0
     }
 
     if ($lang) {
@@ -81,4 +81,6 @@ export default async (
 
     result.push('0', field, verifySimple(payload))
   }
+
+  return 1
 }

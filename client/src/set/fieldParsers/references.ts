@@ -166,7 +166,7 @@ export default async (
   _fields: FieldSchemaArrayLike,
   _type: string,
   $lang?: string
-): Promise<void> => {
+): Promise<number> => {
   let noRoot = false
   const r: SetOptions = {}
   const isEmpty = (v: any) => !v || !v.length
@@ -287,4 +287,6 @@ export default async (
       })
     )
   }
+
+  return 1
 }

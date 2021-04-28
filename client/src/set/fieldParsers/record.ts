@@ -12,18 +12,16 @@ export default async (
   fields: FieldSchemaRecord,
   type: string,
   $lang?: string
-): Promise<void> => {
+): Promise<number> => {
   if (typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
-
-  // const r: string[] = []
 
   const fn = fieldParsers[fields.values.type]
 
   if (payload.$delete) {
     result.push('7', field, '')
-    return
+    return 0
   }
   if (payload.$merge === false) {
     result.push('7', field, '')
@@ -36,15 +34,14 @@ export default async (
         // NOP
       } else if (key === '$ref') {
         result.push('0', field + '.' + key, payload[key])
-        return
+        return 1
       } else if (key === '$delete') {
         // NOP - dead branch
       } else {
         throw new Error(`Wrong option on object ${key}`)
       }
     } else {
-      addedFields++
-      await fn(
+      addedFields += await fn(
         client,
         schema,
         `${field}.${key}`,
@@ -57,11 +54,11 @@ export default async (
     }
   }
 
-  // result.push(...r)
-
-  if (addedFields /* && r.length */) {
+  if (addedFields) {
     const content = new Uint32Array([1])
     const buf = Buffer.from(content.buffer)
     result.push('C', field, buf)
   }
+
+  return addedFields
 }
