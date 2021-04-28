@@ -886,7 +886,7 @@ test.serial('get - references', async (t) => {
     refs: true,
   })
 
-  t.deepEqual(result, {
+  t.deepEqualIgnoreOrder(result, {
     children: [],
     descendants: [],
     refs: [ id1, id11 ]
