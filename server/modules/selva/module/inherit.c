@@ -65,6 +65,9 @@ static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id
     RedisModule_ReplyWithString(ctx, field);
     RedisModule_ReplyWithArray(ctx, SVector_Size(arcs));
 
+    /*
+     * We can't use SelvaObject_ReplyWithObject() here anymore because we have already resolved the field.
+     */
     SVector_ForeachBegin(&vec_it, arcs);
     while ((dst_node = SVector_Foreach(&vec_it))) {
         Selva_NodeId dst_id;
