@@ -77,13 +77,15 @@ static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct Selv
 RB_GENERATE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
 static const struct so_type_name type_names[] = {
-    [SELVA_OBJECT_NULL] = { "null", 4 },
-    [SELVA_OBJECT_DOUBLE] = { "double", 6 },
-    [SELVA_OBJECT_LONGLONG] = { "long long", 9 },
-    [SELVA_OBJECT_STRING] = { "string", 6 },
-    [SELVA_OBJECT_OBJECT] = { "object", 6 },
-    [SELVA_OBJECT_SET] = { "selva_set", 9 },
-    [SELVA_OBJECT_ARRAY] = { "array", 7 },
+    /* type_code                    name_str        name_len */
+    [SELVA_OBJECT_NULL] =         { "null",         4 },
+    [SELVA_OBJECT_DOUBLE] =       { "double",       6 },
+    [SELVA_OBJECT_LONGLONG] =     { "long long",    9 },
+    [SELVA_OBJECT_STRING] =       { "string",       6 },
+    [SELVA_OBJECT_OBJECT] =       { "object",       6 },
+    [SELVA_OBJECT_SET] =          { "selva_set",    9 },
+    [SELVA_OBJECT_ARRAY] =        { "array",        5 },
+    [SELVA_OBJECT_POINTER] =      { "pointer",      7 },
 };
 
 struct SelvaObject *SelvaObject_New(void) {
