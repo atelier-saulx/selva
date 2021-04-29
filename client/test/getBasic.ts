@@ -845,7 +845,6 @@ test.serial('get - field with empty array', async (t) => {
   t.deepEqual(result, {
     children: [],
     descendants: [],
-    dingdongs: [],
     dong: { dingdong: [] },
   })
 
@@ -858,7 +857,6 @@ test.serial('get - field with empty array', async (t) => {
       id,
       dong: { dingdong: [] },
       type: 'lekkerType',
-      dingdongs: [],
     }
   )
 
@@ -889,7 +887,7 @@ test.serial('get - references', async (t) => {
   t.deepEqualIgnoreOrder(result, {
     children: [],
     descendants: [],
-    refs: [ id1, id11 ]
+    refs: [id1, id11],
   })
 
   t.deepEqualIgnoreOrder(
@@ -900,7 +898,7 @@ test.serial('get - references', async (t) => {
     {
       id: id2,
       type: 'lekkerType',
-      refs: [ id1, id11 ]
+      refs: [id1, id11],
     }
   )
 
