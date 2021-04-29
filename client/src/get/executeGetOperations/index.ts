@@ -467,7 +467,7 @@ export const executeGetOperation = async (
               ? op.sourceField
               : [op.sourceField]
             : [op.field])
-      const id = op.fromReference
+      let id = op.fromReference
         ? await client.redis.selva_hierarchy_edgeget(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
           '___selva_hierarchy',
@@ -480,6 +480,9 @@ export const executeGetOperation = async (
           op.id,
           ...field
         )
+      if (op.fromReference && id) {
+        id = id[1]
+      }
 
       if (!id) {
         return null
