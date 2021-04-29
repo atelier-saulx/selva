@@ -766,13 +766,8 @@ test.serial('array, json and set', async (t) => {
       },
     ],
   })
-  const r = JSON.parse(await client.redis.selva_object_get('', id, 'flap'))
-  t.deepEqual(r, [
-    {
-      gurk: 'hello',
-      //flap: '6734082360af7f0c5aef4123f43abc44c4fbf19e8b251a316d7b9da95fde448e'
-    },
-  ])
+  const r = await client.redis.selva_object_get('', id, 'flap')
+  t.deepEqual(r, [['gurk', 'hello']])
 
   await client.destroy()
 })
