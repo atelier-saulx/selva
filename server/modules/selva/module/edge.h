@@ -9,6 +9,7 @@
 #include "selva.h"
 #include "svector.h"
 
+struct EdgeFieldConstraint;
 struct EdgeField;
 struct RedisModuleIO;
 struct SelvaModify_Hierarchy;
