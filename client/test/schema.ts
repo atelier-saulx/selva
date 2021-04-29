@@ -218,15 +218,15 @@ test.serial('schemas - basic', async (t) => {
     'searchIndexes are equal'
   )
 
-  t.true(
-    (await client.redis.keys('*')).includes('idx:default'),
-    'made redis-search index for default'
-  )
+  // t.true(
+  //   (await client.redis.keys('*')).includes('idx:default'),
+  //   'made redis-search index for default'
+  // )
 
-  t.true(
-    (await client.redis.keys('*')).includes('idx:hls'),
-    'made redis-search index for hls'
-  )
+  // t.true(
+  //   (await client.redis.keys('*')).includes('idx:hls'),
+  //   'made redis-search index for hls'
+  // )
 
   await client.updateSchema({
     types: {
@@ -322,23 +322,23 @@ test.serial('schemas - basic', async (t) => {
     )
   )
 
-  const info2 = await client.redis.command(
-    { name: 'default' },
-    'FT.INFO',
-    'default'
-  )
-  const fields2 = info2[info2.indexOf('fields') + 1]
-
+  // const info2 = await client.redis.command(
+  //   { name: 'default' },
+  //   'FT.INFO',
+  //   'default'
+  // )
+  // const fields2 = info2[info2.indexOf('fields') + 1]
+  //
   // does not drop and create a new one for now...
-  t.deepEqual(
-    fields2,
-    [
-      ['type', 'type', 'TAG', 'SEPARATOR', ','],
-      ['name', 'type', 'TAG', 'SEPARATOR', ','],
-      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
-    ],
-    'change fields in the index - does not drop index yet so stays the same!'
-  )
+  // t.deepEqual(
+  //   fields2,
+  //   [
+  //     ['type', 'type', 'TAG', 'SEPARATOR', ','],
+  //     ['name', 'type', 'TAG', 'SEPARATOR', ','],
+  //     ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
+  //   ],
+  //   'change fields in the index - does not drop index yet so stays the same!'
+  // )
 
   await client.updateSchema({
     types: {
@@ -358,23 +358,23 @@ test.serial('schemas - basic', async (t) => {
     },
   })
 
-  const info = await client.redis.command(
-    { name: 'default' },
-    'FT.INFO',
-    'default'
-  )
-  const fields = info[info.indexOf('fields') + 1]
+  // const info = await client.redis.command(
+  //   { name: 'default' },
+  //   'FT.INFO',
+  //   'default'
+  // )
+  // const fields = info[info.indexOf('fields') + 1]
 
-  t.deepEqual(
-    fields,
-    [
-      ['type', 'type', 'TAG', 'SEPARATOR', ','],
-      ['name', 'type', 'TAG', 'SEPARATOR', ','],
-      ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
-      ['flurpy.snurpie', 'type', 'TEXT', 'WEIGHT', '1'],
-    ],
-    'add fields to the index'
-  )
+  // t.deepEqual(
+  //   fields,
+  //   [
+  //     ['type', 'type', 'TAG', 'SEPARATOR', ','],
+  //     ['name', 'type', 'TAG', 'SEPARATOR', ','],
+  //     ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
+  //     ['flurpy.snurpie', 'type', 'TEXT', 'WEIGHT', '1'],
+  //   ],
+  //   'add fields to the index'
+  // )
 
   t.deepEqual(
     (await client.getSchema()).schema.types.match.fields.flurpy,
