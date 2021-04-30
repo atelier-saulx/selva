@@ -604,7 +604,7 @@ test.serial('edge modify `delete_all`', async (t) => {
   )
 })
 
-test.serial.only('traverse by expression', async(t) => {
+test.serial('traverse by expression', async(t) => {
   const client = connect({ port })
 
   // Create nodes
@@ -639,7 +639,8 @@ test.serial.only('traverse by expression', async(t) => {
     ['root', 'UPDATED']
   )
 
-  console.log('hop')
-  //await wait(30000)
-  console.log(await client.redis.selva_hierarchy_findrecursive('', '___selva_hierarchy', 'bfs', '{"a","b"}', 'root'))
+  t.deepEqualIgnoreOrder(
+    await client.redis.selva_hierarchy_findrecursive('', '___selva_hierarchy', 'bfs', '{"a","b"}', 'root'),
+    [ 'ma1', 'ma2' ]
+  )
 })
