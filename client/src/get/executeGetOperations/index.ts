@@ -169,6 +169,12 @@ export const TYPE_CASTS: Record<
       })
 
       return converted
+    } else if (fieldSchema.items.type === 'json') {
+      const converted = x.map((el, i) => {
+        return JSON.parse(el)
+      })
+
+      return converted
     }
 
     return x
@@ -340,8 +346,11 @@ const TYPE_TO_SPECIAL_OP: Record<
     lang?: string
   ) => {
     const r = await client.redis.selva_hierarchy_edgeget(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '___selva_hierarchy', id, field)
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      '___selva_hierarchy',
+      id,
+      field
+    )
     return r && r[1]
   },
   references: async (
@@ -386,13 +395,16 @@ const TYPE_TO_SPECIAL_OP: Record<
       )
     } else {
       const r = await client.redis.selva_hierarchy_edgeget(
-          ctx.originDescriptors[ctx.db] || { name: ctx.db },
-          '___selva_hierarchy', id, field)
+        ctx.originDescriptors[ctx.db] || { name: ctx.db },
+        '___selva_hierarchy',
+        id,
+        field
+      )
       if (!r || r.length == 1) {
         return null
       }
       r.shift()
-      return r;
+      return r
     }
   },
   text: async (
@@ -462,24 +474,24 @@ export const executeGetOperation = async (
     return op.value
   } else if (op.type === 'nested_query') {
     if (op.id) {
-      const field = (op.sourceField
-            ? Array.isArray(op.sourceField)
-              ? op.sourceField
-              : [op.sourceField]
-            : [op.field])
+      const field = op.sourceField
+        ? Array.isArray(op.sourceField)
+          ? op.sourceField
+          : [op.sourceField]
+        : [op.field]
       let id = op.fromReference
         ? await client.redis.selva_hierarchy_edgeget(
-          ctx.originDescriptors[ctx.db] || { name: ctx.db },
-          '___selva_hierarchy',
-          op.id,
-          ...field
-        )
+            ctx.originDescriptors[ctx.db] || { name: ctx.db },
+            '___selva_hierarchy',
+            op.id,
+            ...field
+          )
         : await client.redis.selva_object_get(
-          ctx.originDescriptors[ctx.db] || { name: ctx.db },
-          makeLangArg(client.schemas[ctx.db].languages, lang),
-          op.id,
-          ...field
-        )
+            ctx.originDescriptors[ctx.db] || { name: ctx.db },
+            makeLangArg(client.schemas[ctx.db].languages, lang),
+            op.id,
+            ...field
+          )
       if (op.fromReference && id) {
         id = id[1]
       }
