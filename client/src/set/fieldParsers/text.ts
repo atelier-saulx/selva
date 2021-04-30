@@ -86,7 +86,6 @@ export default async (
     }
     if (o.$merge == false) {
       result.push('7', hname, '')
-      added++
     }
     for (const k in o) {
       if (typeof o[k] === 'string') {
@@ -97,7 +96,6 @@ export default async (
         added++
       } else if (o[k].$delete === true) {
         result.push('7', `${hname}.${k}`, '')
-        added++
       } else {
         push(o[k], `${hname}.${k}`)
       }

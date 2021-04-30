@@ -554,7 +554,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
 
     // just return the actual array type if getting type of an array field directly
     if (is_array_field(key_name_str, key_name_len)) {
-        key_name_len = get_array_field_index(key_name_str, key_name_len);
+        key_name_len = get_array_field_start_idx(key_name_str, key_name_len);
     }
 
     const size_t key_size = sizeof(struct SelvaObjectKey) + key_name_len + 1;
