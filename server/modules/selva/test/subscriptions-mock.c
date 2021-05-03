@@ -7,7 +7,7 @@
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
 
-int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy __unused) {
+int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
 
     return !SVector_Init(&def->updates, 2, NULL) ||
@@ -25,8 +25,12 @@ int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *marke
     return 0;
 }
 
-void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy __unused) {
-    return;
+void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy) {
+    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
+
+    SVector_Destroy(&def->updates);
+    SVector_Destroy(&def->triggers);
+    SelvaObject_Destroy(hierarchy->subs.missing);
 }
 void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaModify_Hierarchy *hierarchy __unused,

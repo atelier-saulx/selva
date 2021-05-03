@@ -762,6 +762,9 @@ int SelvaModify_ModifySet(
                 err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
             } else {
                 err = Edge_ClearField(SelvaHierarchy_FindNode(hierarchy, node_id), field_str, field_len);
+                if (err >= 0) {
+                    return err;
+                }
             }
 
             /* TODO We'd potentially want to see the real number of deletions here. */

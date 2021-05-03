@@ -1004,14 +1004,24 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
     t.deepEqual(
       await new Promise((resolve, reject) =>
         r.send_command(
-          'selva.object.get',
-          ['', 'grphnode_a'],
+          'selva.hierarchy.find',
+          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
       [
-        ...['f01', ['grphnode_b', 'grphnode_c']],
-        ...['id', 'grphnode_a'],
+        [
+          'grphnode_a',
+          [
+            'id',
+            'grphnode_a',
+            'f01',
+            [
+              'grphnode_b',
+              'grphnode_c',
+            ],
+          ],
+        ],
       ]
     )
   }))
@@ -1066,14 +1076,25 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
     t.deepEqual(
       await new Promise((resolve, reject) =>
         r.send_command(
-          'selva.object.get',
-          ['', 'grphnode_a'],
+          'selva.hierarchy.find',
+          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
       [
-        ...['f01', ['grphnode_b', 'grphnode_c', 'grphnode_d']],
-        ...['id', 'grphnode_a'],
+        [
+          'grphnode_a',
+          [
+            'id',
+            'grphnode_a',
+            'f01',
+            [
+              'grphnode_b',
+              'grphnode_c',
+              'grphnode_d',
+            ],
+          ],
+        ],
       ]
     )
   }))
@@ -1128,14 +1149,24 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
     t.deepEqual(
       await new Promise((resolve, reject) =>
         r.send_command(
-          'selva.object.get',
-          ['', 'grphnode_a'],
+          'selva.hierarchy.find',
+          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
       [
-        ...['f01', ['grphnode_b', 'grphnode_d']],
-        ...['id', 'grphnode_a'],
+        [
+          'grphnode_a',
+          [
+            'id',
+            'grphnode_a',
+            'f01',
+            [
+              'grphnode_b',
+              'grphnode_d',
+            ],
+          ],
+        ],
       ]
     )
   }))
@@ -1168,14 +1199,25 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
     t.deepEqual(
       await new Promise((resolve, reject) =>
         r.send_command(
-          'selva.object.get',
-          ['', 'grphnode_a'],
+          'selva.hierarchy.find',
+          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
       [
-        ...['f01', ['grphnode_x', 'grphnode_y', 'grphnode_z']],
-        ...['id', 'grphnode_a'],
+        [
+          'grphnode_a',
+          [
+            'id',
+            'grphnode_a',
+            'f01',
+            [
+              'grphnode_x',
+              'grphnode_y',
+              'grphnode_z',
+            ],
+          ],
+        ],
       ]
     )
   }))
@@ -1230,13 +1272,22 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
     t.deepEqual(
       await new Promise((resolve, reject) =>
         r.send_command(
-          'selva.object.get',
-          ['', 'grphnode_a'],
+          'selva.hierarchy.find',
+          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
       [
-        ...['id', 'grphnode_a'],
+        [
+          'grphnode_a',
+          [
+            'id',
+            'grphnode_a',
+            'f01',
+            [
+            ],
+          ],
+        ],
       ]
     )
   }))
@@ -1269,13 +1320,22 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
     t.deepEqual(
       await new Promise((resolve, reject) =>
         r.send_command(
-          'selva.object.get',
-          ['', 'grphnode_a'],
+          'selva.hierarchy.find',
+          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
       [
-        ...['id', 'grphnode_a'],
+        [
+          'grphnode_a',
+          [
+            'id',
+            'grphnode_a',
+            'f01',
+            [
+            ],
+          ],
+        ],
       ]
     )
   }))
@@ -1308,14 +1368,23 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
     t.deepEqual(
       await new Promise((resolve, reject) =>
         r.send_command(
-          'selva.object.get',
-          ['', 'grphnode_a'],
+          'selva.hierarchy.find',
+          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
       [
-        ...['f01', ['grphnode_o']],
-        ...['id', 'grphnode_a'],
+        [
+          'grphnode_a',
+          [
+            'id',
+            'grphnode_a',
+            'f01',
+            [
+              'grphnode_o'
+            ],
+          ],
+        ],
       ]
     )
   }))

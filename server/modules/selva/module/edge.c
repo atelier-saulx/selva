@@ -56,32 +56,42 @@ SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_edge);
 
 static void deinit_node_metadata_edge(const Selva_NodeId node_id, struct SelvaModify_HierarchyMetadata *metadata) {
     struct SelvaObject *origins;
-    void *obj_it;
-    SVector *edge_fields;
-    const char *src_node_id;
+    struct SelvaObject *edges;
 
+    /*
+     * Remove the edges pointing to this node.
+     */
     origins = metadata->edge_fields.origins;
-    if (!origins) {
-        /* No edges pointing to this node. */
-        return;
-    }
+    if (origins) {
+        void *obj_it;
+        SVector *edge_fields;
+        const char *src_node_id;
 
-    obj_it = SelvaObject_ForeachBegin(origins);
-    while ((edge_fields = (SVector *)SelvaObject_ForeachValue(origins, &obj_it, &src_node_id, SELVA_OBJECT_ARRAY))) {
-        struct SVectorIterator vec_it;
-        struct EdgeField *src_field;
+        obj_it = SelvaObject_ForeachBegin(origins);
+        while ((edge_fields = (SVector *)SelvaObject_ForeachValue(origins, &obj_it, &src_node_id, SELVA_OBJECT_ARRAY))) {
+            struct SVectorIterator vec_it;
+            struct EdgeField *src_field;
 
-        /*
-         * Delete each edge connecting to this node.
-         */
-        SVector_ForeachBegin(&vec_it, edge_fields);
-        while ((src_field = SVector_Foreach(&vec_it))) {
-            SVector_Remove(&src_field->arcs, (void *)node_id);
+            /*
+             * Delete each edge connecting to this node.
+             */
+            SVector_ForeachBegin(&vec_it, edge_fields);
+            while ((src_field = SVector_Foreach(&vec_it))) {
+                SVector_Remove(&src_field->arcs, (void *)node_id);
+            }
         }
+
+        SelvaObject_Destroy(metadata->edge_fields.origins);
+        metadata->edge_fields.origins = NULL;
     }
 
-    SelvaObject_Destroy(metadata->edge_fields.origins);
-    metadata->edge_fields.origins = NULL;
+    /*
+     * Remove the edges pointing from this node to other nodes.
+     */
+    edges = metadata->edge_fields.edges;
+    if (edges) {
+        SelvaObject_Destroy(edges);
+    }
 }
 SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_edge);
 
@@ -231,8 +241,8 @@ static int get_or_create_EdgeField(struct SelvaModify_HierarchyNode *node, const
     return 0;
 }
 
-int Edge_Has(struct EdgeField *edgeField, struct SelvaModify_HierarchyNode *dst_node) {
-    return SVector_SearchIndex(&edgeField->arcs, dst_node) >= 0;
+int Edge_Has(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst_node) {
+    return SVector_SearchIndex(&edge_field->arcs, dst_node) >= 0;
 }
 
 int Edge_Add(const char *key_name_str, size_t key_name_len, unsigned constraint_id, struct SelvaModify_HierarchyNode *src_node, struct SelvaModify_HierarchyNode *dst_node) {
@@ -302,8 +312,8 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaModif
     return 0;
 }
 
-int Edge_Delete(struct EdgeField *edgeField, struct SelvaModify_HierarchyNode *src_node, Selva_NodeId dst_node_id) {
-    struct EdgeField *src_edge_field = edgeField;
+int Edge_Delete(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *src_node, Selva_NodeId dst_node_id) {
+    struct EdgeField *src_edge_field = edge_field;
     struct SelvaModify_HierarchyNode *dst_node;
     int err;
 
@@ -355,15 +365,21 @@ static void clear_field(struct EdgeField *src_edge_field) {
 
 int Edge_ClearField(struct SelvaModify_HierarchyNode *src_node, const char *key_name_str, size_t key_name_len) {
     struct EdgeField *src_edge_field;
+    size_t n;
+
+    if (!src_node) {
+        return SELVA_ENOENT;
+    }
 
     src_edge_field = Edge_GetField(src_node, key_name_str, key_name_len);
     if (!src_edge_field) {
         return SELVA_ENOENT;
     }
 
+    n = SVector_Size(&src_edge_field->arcs);
     clear_field(src_edge_field);
 
-    return 0;
+    return n;
 }
 
 int Edge_DeleteField(struct SelvaModify_HierarchyNode *src_node, const char *key_name_str, size_t key_name_len) {

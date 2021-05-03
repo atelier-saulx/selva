@@ -67,7 +67,7 @@ struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *node, const ch
  * @returns 0 = not found;
  *          1 = found.
  */
-int Edge_Has(struct EdgeField *edgeField, struct SelvaModify_HierarchyNode *dst_node);
+int Edge_Has(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst_node);
 
 /**
  * Add a new edge.
@@ -76,7 +76,12 @@ int Edge_Has(struct EdgeField *edgeField, struct SelvaModify_HierarchyNode *dst_
  * constraint then the function will return SELVA_EINVAL.
  */
 int Edge_Add(const char *key_name_str, size_t key_name_len, unsigned constraint_id, struct SelvaModify_HierarchyNode *src_node, struct SelvaModify_HierarchyNode *dst_node);
-int Edge_Delete(struct EdgeField *edgeField, struct SelvaModify_HierarchyNode *src_node, Selva_NodeId dst_node_id);
+int Edge_Delete(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *src_node, Selva_NodeId dst_node_id);
+
+/**
+ * Delete all edges of a field.
+ * @returns The number of deleted edges; Otherwise a selva error is returned.
+ */
 int Edge_ClearField(struct SelvaModify_HierarchyNode *src_node, const char *key_name_str, size_t key_name_len);
 int Edge_DeleteField(struct SelvaModify_HierarchyNode *src_node, const char *key_name_str, size_t key_name_len);
 
