@@ -21,6 +21,7 @@
 
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
+#define SELVA_OBJECT_GETKEY_PARTIAL     0x4 /*!< Return a partial result, the last key found and the offset in the key_name_str. */
 
 RB_HEAD(SelvaObjectKeys, SelvaObjectKey);
 
@@ -356,7 +357,8 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
     char *rest;
     size_t nr_parts_found = 0;
-    for (char *s = strtok_r(buf, sep, &rest);
+    char *s;
+    for (s = strtok_r(buf, sep, &rest);
          s != NULL;
          s = strtok_r(NULL, sep, &rest)) {
         size_t slen = strlen(s);
@@ -512,8 +514,17 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         }
     }
 
+    if (nr_parts_found < nr_parts &&
+        key &&
+        flags & SELVA_OBJECT_GETKEY_PARTIAL) {
+        size_t off = (size_t)(buf - s + 1) + strlen(s);
+
+        *out = key;
+        return off;
+    }
+
     /*
-     * Check that we found what  we were really looking for. Consider the
+     * Check that we found what we were really looking for. Consider the
      * following:
      * We have a key: a.b = "hello"
      * We do a lookup for "a.b.c" but end up to "a.b"
@@ -1322,6 +1333,30 @@ int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleStri
     TO_STR(key_name);
 
     return SelvaObject_GetPointerStr(obj, key_name_str, key_name_len, out_p);
+}
+
+int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p) {
+
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_PARTIAL, &key);
+    if (err < 0) {
+        return err;
+    }
+    const int off = err;
+
+    if (key->type != SELVA_OBJECT_POINTER) {
+        return SELVA_EINTYPE;
+    }
+
+    if (out_p) {
+        *out_p = key->value;
+    }
+
+    return off;
 }
 
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {

@@ -329,10 +329,6 @@ static void clear_field(struct EdgeField *src_edge_field) {
     struct SelvaModify_HierarchyNode *dst_node;
     struct SVectorIterator it;
 
-    while ((dst_node = SVector_Pop(&src_edge_field->arcs))) {
-        // TODO WTF how to get the field_name here
-    }
-
     SVector_ForeachBegin(&it, arcs);
     while ((dst_node = SVector_Foreach(&it))) {
         int err;
@@ -422,6 +418,10 @@ static void EdgeField_Reply(struct RedisModuleCtx *ctx, void *p) {
         SelvaModify_HierarchyGetNodeId(dst_node_id, dst_node);
         RedisModule_ReplyWithStringBuffer(ctx, dst_node_id, Selva_NodeIdLen(dst_node_id));
     }
+}
+
+void replyWithEdgeField(struct RedisModuleCtx *ctx, struct EdgeField *edge_field) {
+    EdgeField_Reply(ctx, edge_field);
 }
 
 static void EdgeField_Free(void *p) {

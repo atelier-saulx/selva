@@ -89,6 +89,7 @@ int Edge_DeleteField(struct SelvaModify_HierarchyNode *src_node, const char *key
  * @returns Returns the number of references from other nodes.
  */
 int Edge_Refcount(struct SelvaModify_HierarchyNode *node);
+void replyWithEdgeField(struct RedisModuleCtx *ctx, struct EdgeField *edge_field);
 
 int Edge_RdbLoad(struct RedisModuleIO *io, int encver, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node);
 void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaModify_HierarchyNode *node);

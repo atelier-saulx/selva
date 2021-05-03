@@ -57,6 +57,7 @@ struct SelvaObjectPointerOpts {
      * count of items or the byte size of the value.
      */
     size_t (*ptr_len)(void *p);
+
     SelvaObject_PtrLoad ptr_load;
     SelvaObject_PtrSave ptr_save;
 };
@@ -135,6 +136,7 @@ int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str,
 int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p, const struct SelvaObjectPointerOpts *opts);
 int SelvaObject_GetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
 int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p);
+int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct RedisModuleString *key_name);
 int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value);

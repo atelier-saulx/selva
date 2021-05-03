@@ -644,3 +644,68 @@ test.serial('traverse by expression', async(t) => {
     [ 'ma1', 'ma2' ]
   )
 })
+
+test.serial('deref node references on find', async(t) => {
+  const client = connect({ port })
+
+  // Create nodes
+  t.deepEqual(
+    await client.redis.selva_modify('match1', '', '0', 'title', 'Best Game'),
+    ['match1', 'UPDATED']
+  )
+  t.deepEqual(
+    await client.redis.selva_modify('team1', '', '0', 'name', 'Funny Team'),
+    ['team1', 'UPDATED']
+  )
+  t.deepEqual(
+    await client.redis.selva_modify('club1', '', '0', 'name', 'Funny Club'),
+    ['club1', 'UPDATED']
+  )
+  t.deepEqual(
+    await client.redis.selva_modify('manager1', '', '0', 'name', 'dung'),
+    ['manager1', 'UPDATED']
+  )
+
+  const rec1 = createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 1,
+    $add: toCArr(['team1']),
+    $delete: null,
+    $value: null,
+  })
+  const rec2 = createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 1,
+    $add: toCArr(['club1']),
+    $delete: null,
+    $value: null,
+  })
+  const rec3 = createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 1,
+    $add: toCArr(['manager1']),
+    $delete: null,
+    $value: null,
+  })
+
+  t.deepEqual(
+    await client.redis.selva_modify('match1', '', '5', 'homeTeam', rec1),
+    ['match1', 'UPDATED']
+  )
+  t.deepEqual(
+    await client.redis.selva_modify('team1', '', '5', 'club', rec2),
+    ['team1', 'UPDATED']
+  )
+  t.deepEqual(
+    await client.redis.selva_modify('club1', '', '5', 'manager', rec3),
+    ['club1', 'UPDATED']
+  )
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs', 'node', 'fields', 'title\nhomeTeam.name\nhomeTeam.club.name\nhomeTeam.club.manager.name', 'match1'),
+    [[ 'match1', [ 'title', 'Best Game', 'homeTeam.name', 'Funny Team', 'homeTeam.club.name', 'Funny Club', 'homeTeam.club.manager.name', 'dung' ]]]
+  )
+})
