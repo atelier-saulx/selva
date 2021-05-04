@@ -12,16 +12,14 @@ export default async (
   fields: FieldSchemaObject,
   type: string,
   $lang?: string
-): Promise<void> => {
+): Promise<number> => {
   if (typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error(`Incorrect payload for object ${JSON.stringify(payload)}`)
   }
 
-  const r: string[] = []
-
   if (payload.$delete) {
     result.push('7', field, 'O')
-    return
+    return 0
   }
   if (payload.$merge === false) {
     result.push('7', field, 'O')
@@ -34,7 +32,7 @@ export default async (
         // NOP
       } else if (key === '$ref') {
         result.push('0', field, payload[key])
-        return
+        return 1
       } else if (key === '$delete') {
         // NOP - dead branch
       } else {
@@ -43,16 +41,15 @@ export default async (
     } else if (!fields.properties[key]) {
       throw new Error(`Cannot find field ${key} in ${type} for object`)
     } else {
-      addedFields++
       const item = fields.properties[key]
       const fn = fieldParsers[item.type]
 
-      await fn(
+      addedFields += await fn(
         client,
         schema,
         `${field}.${key}`,
         payload[key],
-        r,
+        result,
         fields.properties[key],
         type,
         $lang
@@ -60,11 +57,11 @@ export default async (
     }
   }
 
-  result.push(...r)
-
-  if (addedFields && r.length) {
+  if (addedFields) {
     const content = new Uint32Array([0])
     const buf = Buffer.from(content.buffer)
     result.push('C', field, buf)
   }
+
+  return addedFields
 }

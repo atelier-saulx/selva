@@ -39,14 +39,15 @@ export default async (
   result: SetOptions,
   _fields: FieldSchemaOther,
   _type: string
-): Promise<void> => {
+): Promise<number> => {
   if (payload.$delete) {
     result.push('7', field, '')
-    return
+    return 0
   }
 
   refs(field, payload)
   verify(payload)
   // result[field] = `${payload.lon},${payload.lat}`
   result.push('0', field, `${payload.lon},${payload.lat}`)
+  return 1
 }

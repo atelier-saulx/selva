@@ -68,7 +68,7 @@ export default async (
   _fields: FieldSchemaOther,
   _type: string,
   $lang?: string
-): Promise<void> => {
+): Promise<number> => {
   const lang: string[] = schema.languages
 
   if ($lang) {
@@ -82,7 +82,7 @@ export default async (
   const push = (o, hname: string) => {
     if (o.$delete) {
       result.push('7', hname, '')
-      return
+      return 0
     }
     if (o.$merge == false) {
       result.push('7', hname, '')
@@ -109,4 +109,6 @@ export default async (
     const buf = Buffer.from(content.buffer)
     result.push('C', field, buf)
   }
+
+  return added
 }

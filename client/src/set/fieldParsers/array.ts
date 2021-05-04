@@ -12,11 +12,12 @@ export default async (
   fields: FieldSchemaArrayLike,
   type: string,
   $lang?: string
-): Promise<void> => {
+): Promise<number> => {
   const arr = payload
   if (!Array.isArray(arr)) {
     if (payload.$delete === true) {
       result.push('7', field, '')
+      return 0
     } else if (payload.$push) {
       result.push('D', field, '')
 
@@ -94,4 +95,6 @@ export default async (
       })
     )
   }
+
+  return 1
 }

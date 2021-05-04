@@ -12,14 +12,14 @@ export default async (
   fields: FieldSchemaJson,
   type: string,
   $lang?: string
-): Promise<void> => {
+): Promise<number> => {
   if (payload.$delete) {
     result.push('7', field, '')
-    return
+    return 0
   } else if (payload.$ref) {
     // TODO: verify that it references a json field
     result.push('0', `${field}`, `___selva_$ref:${payload.$ref}`)
-    return
+    return 1
   }
   if (payload.$merge) {
     result.push('7', field, '')
@@ -44,6 +44,7 @@ export default async (
     // result.push('0', field, JSON.stringify(obj))
   } else {
     result.push('0', field, JSON.stringify(payload))
+    return 1
   }
   // needs nested json without casting to for example, json again
 }

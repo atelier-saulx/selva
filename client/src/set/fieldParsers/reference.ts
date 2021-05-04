@@ -25,8 +25,8 @@ export default async (
   _fields: FieldSchemaArrayLike,
   _type: string,
   $lang?: string
-): Promise<void> => {
-  let id;
+): Promise<number> => {
+  let id
   if (typeof payload === 'object') {
     if (Array.isArray(payload)) {
       throw new Error(
@@ -37,19 +37,8 @@ export default async (
     }
 
     if (payload.$delete === true) {
-      result.push(
-        '5',
-        field,
-        createRecord(setRecordDefCstring, {
-          op_set_type: OPT_SET_TYPE.reference,
-          constraint_id: 1,
-          delete_all: true,
-          $add: '',
-          $delete: '',
-          $value: '',
-        })
-      )
-      return
+      result.push('7', field, '')
+      return 0
     }
 
     if ($lang) {
@@ -106,4 +95,6 @@ export default async (
       $value: id.padEnd(10, '\0'),
     })
   )
+
+  return 1
 }

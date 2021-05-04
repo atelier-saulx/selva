@@ -22,7 +22,7 @@ const fieldParsers: {
     fields: FieldSchema,
     type: string,
     $lang?: string
-  ) => Promise<void>
+  ) => Promise<number>
 } = {
   ...simple,
   text,
