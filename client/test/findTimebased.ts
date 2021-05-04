@@ -86,6 +86,7 @@ test.before(async (t) => {
     },
   })
 
+  await wait(1000)
   await client.destroy()
 })
 
