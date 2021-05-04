@@ -873,29 +873,34 @@ int SelvaModify_ModifyDel(
     const RedisModuleString *field
 ) {
     TO_STR(id, field);
+    Selva_NodeId node_id;
     int err = 0;
 
+    memset(node_id, '\0', SELVA_NODE_ID_SIZE);
+    memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
+
     if (!strcmp(field_str, "children")) {
-        Selva_NodeId node_id;
-
-        memset(node_id, '\0', SELVA_NODE_ID_SIZE);
-        memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
-
         err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
         if (err) {
             return err;
         }
     } else if (!strcmp(field_str, "parents")) {
-        Selva_NodeId node_id;
-
-        memset(node_id, '\0', SELVA_NODE_ID_SIZE);
-        memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
-
         if (!SelvaModify_DelHierarchyParents(hierarchy, node_id)) {
             err = REDISMODULE_ERR;
         }
-    } else { /* Delete a field. */
-        err = SelvaObject_DelKey(obj, field);
+    } else { /* It's either an edge field or an object field. */
+        struct SelvaModify_HierarchyNode *node;
+
+        node = SelvaHierarchy_FindNode(hierarchy, node_id);
+        if (!node) {
+            return SELVA_ENOENT; /* Unlikely */
+        }
+
+        err = Edge_DeleteField(node, field_str, field_len);
+        if (err == SELVA_ENOENT) {
+            /* Finally let's try if it's an object field. */
+            err = SelvaObject_DelKeyStr(obj, field_str, field_len);
+        }
     }
 
     return err;
