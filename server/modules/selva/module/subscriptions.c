@@ -154,6 +154,10 @@ static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *m
             match = 1;
         } else {
             /* Test if field matches to any of the fields in list. */
+
+
+
+
             const char *sep = ".";
             char *p;
 
@@ -555,11 +559,23 @@ int Selva_AddSubscriptionAliasMarker(
         RedisModuleString *alias_name,
         Selva_NodeId node_id
     ) {
+    struct Selva_SubscriptionMarker *old_marker;
     struct rpn_ctx *filter_ctx = NULL;
     struct rpn_expression *filter_expression = NULL;
     int err = 0;
 
-    if (SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id)) {
+    old_marker = SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id);
+    if (old_marker) {
+        if (memcmp(old_marker->node_id, node_id, SELVA_NODE_ID_SIZE)) {
+            TO_STR(alias_name);
+
+            fprintf(stderr, "%s:%d: Alias marker \"%.*s\" exists but it's associated with another node. No changed made. orig: %.*s new: %.*s\n:",
+                    __FILE__, __LINE__,
+                    (int)alias_name_len, alias_name_str,
+                    (int)SELVA_NODE_ID_SIZE, old_marker->node_id,
+                    (int)SELVA_NODE_ID_SIZE, node_id);
+        }
+
         /* Marker already created. */
         return SELVA_SUBSCRIPTIONS_EEXIST;
     }

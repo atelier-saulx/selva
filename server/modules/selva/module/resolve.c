@@ -123,7 +123,7 @@ int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         }
 
         err = Selva_AddSubscriptionAliasMarker(hierarchy, sub_id, marker_id, alias_name, node_id);
-        if (err) {
+        if (err && err != SELVA_SUBSCRIPTIONS_EEXIST) {
             return replyWithSelvaErrorf(ctx, err, "Failed to subscribe sub_id: \"%s.%d\" alias_name: %s node_id: %.*s\n",
                     argv_sub_id_str,
                     (int)marker_id,
