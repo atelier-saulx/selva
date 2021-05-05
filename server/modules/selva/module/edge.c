@@ -7,12 +7,6 @@
 #include "hierarchy.h"
 #include "comparator.h"
 
-struct EdgeFieldConstraint {
-    struct {
-        unsigned single_ref : 1;    /*!< Single reference edge. */
-    } flags;
-};
-
 static void clear_field(struct EdgeField *src_edge_field);
 static void EdgeField_Reply(struct RedisModuleCtx *ctx, void *p);
 static void EdgeField_Free(void *p);

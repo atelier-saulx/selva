@@ -16,6 +16,12 @@ struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyNode;
 struct SelvaObject;
 
+struct EdgeFieldConstraint {
+    struct {
+        unsigned single_ref : 1;    /*!< Single reference edge. */
+    } flags;
+};
+
 struct EdgeField {
     unsigned constraint_id; /*!< An index in the constraints array edge_constraints. */
     Selva_NodeId src_node_id; /*!< Source nodeId of this edge field. */

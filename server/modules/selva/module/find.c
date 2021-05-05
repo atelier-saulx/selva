@@ -14,6 +14,7 @@
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "subscriptions.h"
+#include "edge.h"
 #include "svector.h"
 #include "cstrings.h"
 
@@ -566,8 +567,8 @@ static int send_edge_field(
         return 0;
     }
 
-    /* TODO a #define for this */
-    if (edge_field->constraint_id != 1) {
+    const struct EdgeFieldConstraint* constraint = Edge_GetFieldConstraint(edge_field);
+    if (!constraint->flags.single_ref) {
         return SELVA_EINTYPE;
     }
 
