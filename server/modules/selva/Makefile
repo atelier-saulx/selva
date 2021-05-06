@@ -20,6 +20,7 @@ OBJS := \
 	module/resolve.o \
 	module/rpn.o \
 	module/rpn_eval.o \
+	module/selva_lang.o \
 	module/selva_node.o \
 	module/selva_object.o \
 	module/selva_set.o \

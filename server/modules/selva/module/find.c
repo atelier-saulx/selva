@@ -4,12 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include "redismodule.h"
 #include "arg_parser.h"
 #include "errors.h"
 #include "hierarchy.h"
 #include "rpn.h"
 #include "selva.h"
+#include "selva_lang.h"
 #include "selva_node.h"
 #include "selva_object.h"
 #include "selva_onload.h"
@@ -351,8 +353,8 @@ static int FindCommand_compareAsc(const void ** restrict a_raw, const void ** re
             return 1;
         }
     } else if (a->data_len && b->data_len) {
-        /* TODO different langs may have differing order. */
         const int res = strcmp(aStr, bStr);
+
         if (res != 0) {
             return res;
         }
@@ -381,8 +383,9 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     Selva_NodeId nodeId;
     RedisModuleString *id;
     RedisModuleKey *key;
-    struct FindCommand_OrderedItem *item;
+    struct FindCommand_OrderedItem *item = NULL;
     double d = 0.0;
+    char data_lang[8];
     const char *data = NULL;
     size_t data_len = 0;
     enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
@@ -442,14 +445,16 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
                         text_err = SelvaObject_GetStringStr(text_obj, token, slen, &raw_value);
                         if (!text_err && raw_value) {
                             TO_STR(raw_value);
+
                             if (raw_value_len) {
                                 value = raw_value;
+                                strncpy(data_lang, token, sizeof(data_lang) - 1);
+                                data_lang[sizeof(data_lang) - 1] = '\0';
                                 data = raw_value_str;
                                 data_len = raw_value_len;
                                 type = ORDERED_ITEM_TYPE_TEXT;
                                 break;
                             }
-
                         }
                     }
                 }
@@ -468,11 +473,17 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
                 }
             }
         }
-
-        RedisModule_CloseKey(key);
     }
 
-    item = RedisModule_PoolAlloc(ctx, sizeof(struct FindCommand_OrderedItem) + data_len + 1);
+    size_t final_data_len = data_len;
+    locale_t locale;
+
+    if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
+        locale = SelvaLang_GetLocale(data_lang, strlen(data_lang));
+        final_data_len = strxfrm_l(NULL, data, 0, locale);
+    }
+
+    item = RedisModule_PoolAlloc(ctx, sizeof(struct FindCommand_OrderedItem) + final_data_len + 1);
     if (!item) {
         /*
          * Returning NULL in case of ENOMEM here should be fairly ok as we can
@@ -485,19 +496,17 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
 
     memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
     item->type = type;
+    if (type == ORDERED_ITEM_TYPE_TEXT) {
+        if (data_len > 0) {
+            strxfrm_l(item->data, data, final_data_len + 1, locale);
+        }
+    }
     item->data_len = data_len;
     item->d = d;
-    if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
-        memcpy(item->data, data, data_len);
-        item->data[data_len] = '\0';
-    }
-
-    return item;
-
 
 cleanup:
-        RedisModule_CloseKey(key);
-        return NULL;
+    RedisModule_CloseKey(key);
+    return item;
 }
 
 static int fields_contains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len) {

@@ -67,6 +67,7 @@ struct SelvaObjectPointerOpts {
  * These types are needed for the serialization of opaque pointer types.
  */
 #define SELVA_OBJECT_POINTER_EDGE 1
+#define SELVA_OBJECT_POINTER_LANG 2
 
 /**
  * Register SELVA_OBJECT_POINTER options statically for RDB loading.
