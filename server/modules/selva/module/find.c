@@ -476,7 +476,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     }
 
     size_t final_data_len = data_len;
-    locale_t locale;
+    locale_t locale = 0;
 
     if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         locale = SelvaLang_GetLocale(data_lang, strlen(data_lang));
@@ -496,10 +496,8 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
 
     memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
     item->type = type;
-    if (type == ORDERED_ITEM_TYPE_TEXT) {
-        if (data_len > 0) {
-            strxfrm_l(item->data, data, final_data_len + 1, locale);
-        }
+    if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
+        strxfrm_l(item->data, data, final_data_len + 1, locale);
     }
     item->data_len = data_len;
     item->d = d;

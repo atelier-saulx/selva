@@ -27,7 +27,7 @@
     apply(eu, eu_ES) \
     apply(fi, fi_FI) \
     apply(fr, fr_FR) \
-    apply(gsw, de_CH) \
+    apply(gsw, gsw_CH) \
     apply(he, he_IL) \
     apply(hr, hr_HR) \
     apply(hu, hu_HU) \
@@ -38,15 +38,16 @@
     apply(kk, kk_KZ) \
     apply(ko, ko_KR) \
     apply(lt, lt_LT) \
+    apply(nb, nb_NO) \
     apply(nl, nl_NL) \
-    apply(no, no_NO) \
+    apply(nn, nn_NO) \
     apply(pl, pl_PL) \
     apply(pt, pt_PT) \
     apply(ro, ro_RO) \
     apply(ru, ru_RU) \
     apply(sk, sk_SK) \
     apply(sl, sl_SI) \
-    apply(sr, sr_YU) \
+    apply(sr, sr_RS) \
     apply(sv, sv_SE) \
     apply(tr, tr_TR) \
     apply(uk, uk_UA) \
@@ -96,7 +97,7 @@ static int add_lang(const char *lang, const char *locale_name) {
         return SELVA_ENOMEM;
     }
 
-    slang->locale = newlocale(LC_COLLATE_MASK | LC_CTYPE_MASK, locale_name, 0);
+    slang->locale = newlocale(LC_ALL_MASK, locale_name, 0);
     if (!slang->locale) {
         if (errno == EINVAL) {
             err = SELVA_EINVAL;

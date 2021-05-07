@@ -1,3 +1,4 @@
+import { resolve as pathResolve } from 'path'
 import ProcessManager from './processManager'
 import { SelvaClient, ServerType } from '@saulx/selva'
 
@@ -33,8 +34,8 @@ export default class RedisManager extends ProcessManager {
           ? {
               REDIS_PORT: port.toString(),
               SERVER_TYPE: type,
-              // TODO: this is a hack for DO droplet, pls remove
               LD_LIBRARY_PATH: `${__dirname}/../../modules/binaries/linux_x64:/usr/local/lib`,
+              LOCPATH: pathResolve(__dirname, '../../modules/binaries/linux_x64/locale'), // MacOS libSystem will ignore this
             }
           : { REDIS_PORT: port.toString(), SERVER_TYPE: type },
     })

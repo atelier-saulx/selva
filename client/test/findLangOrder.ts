@@ -14,7 +14,7 @@ test.before(async (t) => {
   })
   const client = connect({ port })
   await client.updateSchema({
-    languages: ['cs', 'en', 'de', 'fi'],
+    languages: ['cs', 'en', 'de', 'fi', 'gsw'],
     types: {
       match: {
         prefix: 'ma',
@@ -59,6 +59,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
           de: 'Öäpelin pallo',
           en: 'Öäpelin pallo',
           fi: 'Öäpelin pallo',
+          gsw: 'Öäpelin pallo',
         },
       },
       {
@@ -68,6 +69,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
           de: 'Aopelin pallo',
           en: 'Aopelin pallo',
           fi: 'Aopelin pallo',
+          gsw: 'Aopelin pallo',
         },
       },
       {
@@ -77,6 +79,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
           de: 'OOpelin pallo',
           en: 'Oopelin pallo',
           fi: 'OOpelin pallo',
+          gsw: 'OOpelin pallo',
         },
       },
       {
@@ -86,6 +89,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
           de: 'Ääpelin pallo',
           en: 'Ääpelin pallo',
           fi: 'Ääpelin pallo',
+          gsw: 'Ääpelin pallo',
         },
       },
       {
@@ -95,6 +99,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
           de: 'öäpelin pallo',
           en: 'öäpelin pallo',
           fi: 'öäpelin pallo',
+          gsw: 'öäpelin pallo',
         },
       },
       {
@@ -104,6 +109,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
           de: 'aopelin pallo',
           en: 'aopelin pallo',
           fi: 'aopelin pallo',
+          gsw: 'aopelin pallo',
         },
       },
       {
@@ -113,6 +119,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
           de: 'oOpelin pallo',
           en: 'oopelin pallo',
           fi: 'oOpelin pallo',
+          gsw: 'oOpelin pallo',
         },
       },
       {
@@ -122,6 +129,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
           de: 'ääpelin pallo',
           en: 'ääpelin pallo',
           fi: 'ääpelin pallo',
+          gsw: 'ääpelin pallo',
         },
       },
       {
@@ -131,6 +139,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
           de: 'hrnec pallo',
           en: 'hrnec pallo',
           fi: 'hrnec pallo',
+          gsw: 'hrnec pallo',
         },
       },
       {
@@ -140,6 +149,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
           de: 'chrt pallo',
           en: 'chrt pallo',
           fi: 'chrt pallo',
+          gsw: 'chrt pallo',
         },
       },
     ],
@@ -250,6 +260,34 @@ test.serial('$lang should change the order when relevant', async (t) => {
       { id: 'team2' },
       { id: 'team9' },
       { id: 'team10' },
+      { id: 'team5' },
+      { id: 'team1' },
+      { id: 'team7' },
+      { id: 'team3' },
+    ]
+  })
+
+  t.deepEqual(await client.get({
+    $language: 'gsw',
+    $id: 'match1',
+    children: {
+      id: true,
+      $list: {
+        $sort: { $field: 'title', $order: 'asc' },
+        $find: {
+          $traverse: 'descendants',
+        },
+      },
+    },
+  }),
+  {
+    children: [
+      { id: 'team8' },
+      { id: 'team4' },
+      { id: 'team6' },
+      { id: 'team2' },
+      { id: 'team10' },
+      { id: 'team9' },
       { id: 'team5' },
       { id: 'team1' },
       { id: 'team7' },
