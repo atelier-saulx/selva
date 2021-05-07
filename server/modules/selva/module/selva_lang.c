@@ -1,12 +1,12 @@
 #include <ctype.h>
 #include <errno.h>
-#include <locale.h>
 #include <string.h>
 #include <strings.h>
 #include "redismodule.h"
 #include "selva_onload.h"
 #include "cdefs.h"
 #include "errors.h"
+#include "selva_lang.h"
 #include "selva_object.h"
 
 #define FALLBACK_LANG "en"
