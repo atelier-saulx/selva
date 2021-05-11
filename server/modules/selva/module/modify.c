@@ -832,17 +832,14 @@ void SelvaModify_ModifyIncrement(
     enum SelvaObjectType old_type,
     const struct SelvaModify_OpIncrement *incrementOpts
 ) {
-    int64_t new = incrementOpts->$default;
-
+    /*
+     * Note: Do not cast the $increment or $default.
+     */
     if (old_type == SELVA_OBJECT_LONGLONG) {
-        long long old;
-
-        if (!SelvaObject_GetLongLong(obj, field, &old)) {
-            new = old + incrementOpts->$increment;
-        }
+        (void)SelvaObject_IncrementLongLong(obj, field, incrementOpts->$increment);
+    } else {
+        (void)SelvaObject_SetLongLong(obj, field, incrementOpts->$default);
     }
-
-    (void)SelvaObject_SetLongLong(obj, field, new);
 }
 
 void SelvaModify_ModifyIncrementDouble(
@@ -852,17 +849,11 @@ void SelvaModify_ModifyIncrementDouble(
     enum SelvaObjectType old_type,
     const struct SelvaModify_OpIncrementDouble *incrementOpts
 ) {
-    double new = incrementOpts->$default;
-
     if (old_type == SELVA_OBJECT_DOUBLE) {
-        double old;
-
-        if (!SelvaObject_GetDouble(obj, field, &old)) {
-            new = old + incrementOpts->$increment;
-        }
+        (void)SelvaObject_IncrementDouble(obj, field, incrementOpts->$increment);
+    } else {
+        (void)SelvaObject_SetDouble(obj, field, incrementOpts->$default);
     }
-
-    (void)SelvaObject_SetDouble(obj, field, new);
 }
 
 int SelvaModify_ModifyDel(

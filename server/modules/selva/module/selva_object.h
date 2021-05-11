@@ -82,6 +82,7 @@ void SelvaObject_Clear(struct SelvaObject *obj);
 void SelvaObject_Destroy(struct SelvaObject *obj);
 void _cleanup_SelvaObject_Destroy(struct SelvaObject **obj);
 int SelvaObject_Key2Obj(struct RedisModuleKey *key, struct SelvaObject **out);
+
 int SelvaObject_DelKeyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 int SelvaObject_DelKey(struct SelvaObject *obj, const struct RedisModuleString *key_name);
 int SelvaObject_ExistsStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
@@ -108,8 +109,15 @@ int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, 
  * @param value is the value; the caller needs to make sure the string is retained.
  */
 int SelvaObject_SetString(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct RedisModuleString *value);
+
+int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double incr);
+int SelvaObject_IncrementDouble(struct SelvaObject *obj, const struct RedisModuleString *key_name, double incr);
+int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long incr);
+int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long incr);
+
 int SelvaObject_GetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject **out);
 int SelvaObject_GetObject(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct SelvaObject **out);
+
 int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
 int SelvaObject_AddLongLongSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long value);
 int SelvaObject_AddStringSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct RedisModuleString *value);
@@ -138,8 +146,10 @@ int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleStri
 int SelvaObject_GetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
 int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p);
 int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
+
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct RedisModuleString *key_name);
+
 int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value);
 int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
 int SelvaObject_RemLongLongSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value);
@@ -148,8 +158,10 @@ int SelvaObject_RemStringSetStr(struct SelvaObject *obj, const char *key_name_st
 int SelvaObject_RemStringSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct RedisModuleString *value);
 struct SelvaSet *SelvaObject_GetSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const struct RedisModuleString *key_name);
+
 ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 ssize_t SelvaObject_Len(struct SelvaObject *obj, const struct RedisModuleString *key_name);
+
 int SelvaObject_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t *meta);
 int SelvaObject_GetUserMeta(struct SelvaObject *obj, const struct RedisModuleString *key_name, SelvaObjectMeta_t *meta);
 int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta);

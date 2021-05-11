@@ -830,6 +830,54 @@ int SelvaObject_SetString(struct SelvaObject *obj, const RedisModuleString *key_
     return SelvaObject_SetStringStr(obj, key_name_str, key_name_len, value);
 }
 
+int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double incr) {
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    } else if (key->type != SELVA_OBJECT_DOUBLE) {
+        return SELVA_EINTYPE;
+    }
+
+    key->emb_double_value += incr;
+
+    return 0;
+}
+
+int SelvaObject_IncrementDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double incr) {
+    TO_STR(key_name);
+
+    return SelvaObject_IncrementDoubleStr(obj, key_name_str, key_name_len, incr);
+}
+
+int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long incr) {
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    } else if (key->type != SELVA_OBJECT_LONGLONG) {
+        return SELVA_EINTYPE;
+    }
+
+    key->emb_ll_value += incr;
+
+    return 0;
+}
+
+int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long incr) {
+    TO_STR(key_name);
+
+    return SelvaObject_IncrementLongLongStr(obj, key_name_str, key_name_len, incr);
+}
+
 int SelvaObject_GetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject **out) {
     struct SelvaObjectKey *key;
     int err;
