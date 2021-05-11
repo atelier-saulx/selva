@@ -7,3 +7,4 @@ rmutil/test_vector
 test/units/.d
 # VTune files
 /redis-*
+vgcore.*
