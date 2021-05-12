@@ -836,7 +836,11 @@ void SelvaModify_ModifyIncrement(
      * Note: Do not cast the $increment or $default.
      */
     if (old_type == SELVA_OBJECT_LONGLONG) {
-        (void)SelvaObject_IncrementLongLong(obj, field, incrementOpts->$increment);
+        /*
+         * Giving a default value here isn't particularly useful but since we
+         * already know the type it's better to do this if..else anyway.
+         */
+        (void)SelvaObject_IncrementLongLong(obj, field, incrementOpts->$default, incrementOpts->$increment);
     } else {
         (void)SelvaObject_SetLongLong(obj, field, incrementOpts->$default);
     }
@@ -850,7 +854,7 @@ void SelvaModify_ModifyIncrementDouble(
     const struct SelvaModify_OpIncrementDouble *incrementOpts
 ) {
     if (old_type == SELVA_OBJECT_DOUBLE) {
-        (void)SelvaObject_IncrementDouble(obj, field, incrementOpts->$increment);
+        (void)SelvaObject_IncrementDouble(obj, field, incrementOpts->$default, incrementOpts->$increment);
     } else {
         (void)SelvaObject_SetDouble(obj, field, incrementOpts->$default);
     }
