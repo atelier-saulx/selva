@@ -33,12 +33,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   subscriptionManager.stagedInProgess = false
 
   subscriptionManager.incomingCount = 0
-  subscriptionManager.memberMemCache = {}
 
-  if (subscriptionManager.memberMemCacheSize > 1e5) {
-    console.info(chalk.gray(`MemberMemCache is larger then 100k flush`))
-    subscriptionManager.memberMemCacheSize = 0
-  }
   delayCount = 0
 }
 
