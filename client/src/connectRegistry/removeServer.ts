@@ -28,7 +28,7 @@ const removeServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
         const subscriptionManager = subsManagers[i]
         if (
           subscriptionManager.host === server.host &&
-          subscriptionManager.port === server.port
+          subscriptionManager.port == server.port
         ) {
           subsManagers.splice(i, 1)
           break
