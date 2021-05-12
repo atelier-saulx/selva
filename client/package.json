@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && node ../tools/script-sha.js && yarn buildTs",
@@ -50,7 +50,7 @@
     ]
   },
   "devDependencies": {
-    "@saulx/selva-server": "4.3.0",
+    "@saulx/selva-server": "4.4.0",
     "before-exit": "1.0.0",
     "async-exec": "^1.1.0",
     "@sindresorhus/fnv1a": "^2.0.1",
