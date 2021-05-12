@@ -90,8 +90,11 @@ const addOriginListeners = async (
           }
 
           if (current.type === 'origin' && server.type === 'replica') {
-            removeOriginListeners(name, subsManager, subscription)
-            addOriginListeners(name, subsManager, subscription)
+            for (const sub of subsManager.originListeners[name].subscriptions) {
+              removeOriginListeners(name, subsManager, sub)
+              sub.originDescriptors[name] = server
+              addOriginListeners(name, subsManager, sub)
+            }
           }
         }
       },

@@ -58,7 +58,7 @@ $(UTIL_LIBDIR)/libutil.a: FORCE
 	$(MAKE) -C $(UTIL_LIBDIR)
 
 module.so: $(OBJS) $(RMUTIL_LIBDIR)/librmutil.a $(UTIL_LIBDIR)/libutil.a
-	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1i/lib/ $(SHOBJ_LDLIBS)
+	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1k/lib/ $(SHOBJ_LDLIBS)
 
 check:
 ifeq ($(uname_S),Linux)
