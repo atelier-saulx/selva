@@ -132,9 +132,6 @@ const removeOriginListeners = (
     const redis = client.redis
     origin.subscriptions.delete(subscription)
     if (origin.subscriptions.size === 0) {
-      if (name in subsManager.memberMemCache) {
-        delete subsManager.memberMemCache[name]
-      }
       redis.punsubscribe({ name }, SUBSCRIPTION_UPDATE + '*')
       redis.punsubscribe({ name }, TRIGGER_UPDATE + '*')
       redis.punsubscribe({ name }, '___selva_events:*')
