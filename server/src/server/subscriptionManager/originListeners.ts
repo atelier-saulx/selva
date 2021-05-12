@@ -62,20 +62,21 @@ const addOriginListeners = async (
       subscriptions: new Set(),
       listener,
       reconnectListener: (descriptor) => {
-        subscription.originDescriptors[name] = descriptor
         const { name: dbName } = descriptor
-
-        console.info(
-          'reconn in subs manager - need to only do reconn  when we are actively connected to this server...',
-          name
-        )
 
         // not enough ofcourse
         if (name === dbName) {
+          console.info(
+            'reconn in subs manager - need to only do reconn  when we are actively connected to this server...',
+            name,
+            descriptor
+          )
+
           // need to resend subs if it dc'ed
           const origin = subsManager.originListeners[name]
           if (origin && origin.subscriptions) {
             origin.subscriptions.forEach((subscription) => {
+              subscription.originDescriptors[name] = descriptor
               addUpdate(subsManager, subscription)
             })
           }
@@ -90,11 +91,38 @@ const addOriginListeners = async (
           }
 
           if (current.type === 'origin' && server.type === 'replica') {
-            for (const sub of subsManager.originListeners[name].subscriptions) {
+            const subscriptions = new Set([
+              ...subsManager.originListeners[name].subscriptions,
+            ])
+            for (const sub of subscriptions) {
               removeOriginListeners(name, subsManager, sub)
-              sub.originDescriptors[name] = server
-              addOriginListeners(name, subsManager, sub)
             }
+
+            for (const sub of subscriptions) {
+              sub.originDescriptors[name] = server
+              addOriginListeners(name, subsManager, sub).finally(() =>
+                addUpdate(subsManager, subscription)
+              )
+            }
+          }
+        } else if (payload.event === 'remove') {
+          const { server } = payload
+          const current = subscription.originDescriptors[name]
+          if (server.name !== current.name) {
+            return
+          }
+
+          const subscriptions = new Set([
+            ...subsManager.originListeners[name].subscriptions,
+          ])
+          for (const sub of subscriptions) {
+            removeOriginListeners(name, subsManager, sub)
+          }
+
+          for (const sub of subscriptions) {
+            addOriginListeners(name, subsManager, sub).finally(() =>
+              addUpdate(subsManager, subscription)
+            )
           }
         }
       },

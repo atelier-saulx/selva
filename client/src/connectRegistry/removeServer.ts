@@ -13,7 +13,7 @@ const removeServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
       if (replicas) {
         for (let i = 0; i < replicas.length; i++) {
           const replica = replicas[i]
-          if (replica.host === server.host && replica.port === server.port) {
+          if (replica.host === server.host && replica.port == server.port) {
             replicas.splice(i, 1)
             break
           }
