@@ -720,10 +720,9 @@ static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct S
          * separate traverse just for the node itself in some special cases
          * where it's necessary.
          */
+        err = 0;
         if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS || marker->dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN) {
             err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, SELVA_HIERARCHY_TRAVERSAL_NODE, &cb);
-        } else {
-            err = 0;
         }
         if (!err) {
             err = SelvaModify_TraverseHierarchy(hierarchy, marker->node_id, marker->dir, &cb);
