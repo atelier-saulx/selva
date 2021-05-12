@@ -106,7 +106,6 @@ static int inhibitMarkerEvent(const Selva_NodeId node_id, const struct Selva_Sub
     return 0;
 }
 
-
 /*
  * SHA256 to hex string.
  * The destination buffer must be at least SELVA_SUBSCRIPTION_ID_STR_LEN + 1 bytes.
@@ -776,8 +775,8 @@ void SelvaSubscriptions_RefreshByMarker(struct SelvaModify_Hierarchy *hierarchy,
 
 /**
  * Clear subscription starting from node_id.
- * Clear subscription starting from node_id and remove the subscription if
- * node_id is the starting point.
+ * Clear the given marker of a subscription from the nodes following traversal
+ * direction starting from node_id.
  */
 static void clear_sub(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, Selva_NodeId node_id) {
     struct SelvaModify_HierarchyCallback cb = {

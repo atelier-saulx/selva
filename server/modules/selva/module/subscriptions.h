@@ -23,13 +23,13 @@
 
 /**
  * Hierarchy changed.
- * Send an event if children or parents changes.
+ * Defer an event if children or parents changes.
  */
 #define SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY    0x0002
 
 /**
  * Field changed.
- * Send an event if a named field changes.
+ * Defer an event if a named field changes.
  */
 #define SELVA_SUBSCRIPTION_FLAG_CH_FIELD        0x0004
 
