@@ -91,6 +91,11 @@ const addOriginListeners = async (
           }
 
           if (current.type === 'origin' && server.type === 'replica') {
+            console.info(
+              'Upgrading connection from origin to replica',
+              current,
+              server
+            )
             const subscriptions = new Set([
               ...subsManager.originListeners[name].subscriptions,
             ])
@@ -104,25 +109,6 @@ const addOriginListeners = async (
                 addUpdate(subsManager, subscription)
               )
             }
-          }
-        } else if (payload.event === 'remove') {
-          const { server } = payload
-          const current = subscription.originDescriptors[name]
-          if (server.name !== current.name) {
-            return
-          }
-
-          const subscriptions = new Set([
-            ...subsManager.originListeners[name].subscriptions,
-          ])
-          for (const sub of subscriptions) {
-            removeOriginListeners(name, subsManager, sub)
-          }
-
-          for (const sub of subscriptions) {
-            addOriginListeners(name, subsManager, sub).finally(() =>
-              addUpdate(subsManager, subscription)
-            )
           }
         }
       },
