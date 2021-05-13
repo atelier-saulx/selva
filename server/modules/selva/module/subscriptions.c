@@ -1031,7 +1031,7 @@ static void defer_hierarchy_events(struct SelvaModify_Hierarchy *hierarchy,
                  * marker will never need a refresh.
                  */
                 (marker->dir != SELVA_HIERARCHY_TRAVERSAL_NODE || isSubscribedToHierarchyFields(marker))) {
-                defer_update_event(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
+                marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
             }
         }
     }
@@ -1067,7 +1067,7 @@ static void defer_hierarchy_deletion_events(struct SelvaModify_Hierarchy *hierar
              * field subscriptions or inhibits.
              */
             if (isHierarchyMarker(marker->marker_flags)) {
-                defer_update_event(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
+                marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
             }
         }
     }
@@ -1110,7 +1110,7 @@ static void defer_alias_change_events(
             /* The filter should contain `in` matcher for the alias. */
             Selva_SubscriptionFilterMatch(ctx, node_id, marker)
             ) {
-            defer_update_event(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_ALIAS);
+            marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_ALIAS);
 
             /*
              * Wipe the markers of this subscription after the events have been
@@ -1186,7 +1186,7 @@ static void defer_field_change_events(
                 const int fieldsMatch = Selva_SubscriptionFieldMatch(marker, field);
 
                 if ((expressionMatchBefore && expressionMatchAfter && fieldsMatch) || (expressionMatchBefore ^ expressionMatchAfter)) {
-                    defer_update_event(hierarchy, marker, flags);
+                    marker->marker_action(hierarchy, marker, flags);
                 }
             }
         }
@@ -1282,7 +1282,11 @@ void Selva_Subscriptions_DeferTriggerEvents(
                  */
                 memcpy(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE);
 
-                defer_trigger_event(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_TRIGGER);
+                /*
+                 * We don't call defer_trigger_event() here directly to allow
+                 * customization of sunscription marker events.
+                 */
+                marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_TRIGGER);
             }
         }
     }
