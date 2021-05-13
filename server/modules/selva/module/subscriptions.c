@@ -85,7 +85,7 @@ static int isHierarchyMarker(unsigned short flags) {
 }
 
 static int isAliasMarker(unsigned short flags) {
-    return !!(flags & SELVA_SUBSCRIPTION_FLAG_ALIAS);
+    return !!(flags & SELVA_SUBSCRIPTION_FLAG_CH_ALIAS);
 }
 
 static int isTriggerMarker(unsigned short flags) {
@@ -622,7 +622,7 @@ int Selva_AddSubscriptionAliasMarker(
         goto out;
     }
 
-    const unsigned short marker_flags = SELVA_SUBSCRIPTION_FLAG_ALIAS;
+    const unsigned short marker_flags = SELVA_SUBSCRIPTION_FLAG_CH_ALIAS;
     const enum SelvaModify_HierarchyTraversal sub_dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
     err = Selva_AddSubscriptionMarker(hierarchy, sub_id, marker_id, marker_flags,
                                       defer_update_event,
@@ -1110,7 +1110,7 @@ static void defer_alias_change_events(
             /* The filter should contain `in` matcher for the alias. */
             Selva_SubscriptionFilterMatch(ctx, node_id, marker)
             ) {
-            marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_ALIAS);
+            marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_CH_ALIAS);
 
             /*
              * Wipe the markers of this subscription after the events have been

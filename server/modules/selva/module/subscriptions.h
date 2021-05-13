@@ -39,7 +39,7 @@
  * This flag also acts a as modifier and it clears the markers of the
  * subscription after an event is deferred.
  */
-#define SELVA_SUBSCRIPTION_FLAG_ALIAS           0x0008
+#define SELVA_SUBSCRIPTION_FLAG_CH_ALIAS        0x0008
 
 /**
  * Reference subscription.
