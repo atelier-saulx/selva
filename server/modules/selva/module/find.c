@@ -863,6 +863,198 @@ static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaM
     return 0;
 }
 
+static int send_array_object_field(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        SelvaModify_Hierarchy *hierarchy,
+        struct SelvaObject *obj,
+        const char *field_prefix_str,
+        size_t field_prefix_len,
+        RedisModuleString *field) {
+    TO_STR(field);
+    int err;
+
+    RedisModuleString *full_field_name;
+    if (field_prefix_str) {
+        full_field_name = RedisModule_CreateStringPrintf(ctx, "%.*s%s", (int)field_prefix_len, field_prefix_str, field_str);
+        if (!full_field_name) {
+            return SELVA_ENOMEM;
+        }
+    } else {
+        full_field_name = field;
+    }
+#define SEND_FIELD_NAME() RedisModule_ReplyWithString(ctx, full_field_name)
+
+    /*
+     * Check if the field name is a hierarchy field name.
+     */
+    if (!strcmp(field_str, "ancestors")) {
+        RedisModule_ReplyWithString(ctx, field);
+        SEND_FIELD_NAME();
+        err = HierarchyReply_WithTraversal(ctx, hierarchy, EMPTY_NODE_ID, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
+        if (err) {
+            fprintf(stderr, "%s:%d: Sending the ancestors field of %.*s failed: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
+                    getSelvaErrorStr(err));
+        }
+        return 1;
+    } else if (!strcmp(field_str, "children")) {
+        SEND_FIELD_NAME();
+        err = HierarchyReply_WithTraversal(ctx, hierarchy, EMPTY_NODE_ID, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
+        if (err) {
+            fprintf(stderr, "%s:%d: Sending the children field of %.*s failed: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
+                    getSelvaErrorStr(err));
+        }
+        return 1;
+    } else if (!strcmp(field_str, "descendants")) {
+        SEND_FIELD_NAME();
+        err = HierarchyReply_WithTraversal(ctx, hierarchy, EMPTY_NODE_ID, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
+        if (err) {
+            fprintf(stderr, "%s:%d: Sending the descendants field of %.*s failed: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
+                    getSelvaErrorStr(err));
+        }
+        return 1;
+    } else if (!strcmp(field_str, "parents")) {
+        SEND_FIELD_NAME();
+        err = HierarchyReply_WithTraversal(ctx, hierarchy, EMPTY_NODE_ID, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
+        if (err) {
+            fprintf(stderr, "%s:%d: Sending the parents field of %.*s failed: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
+                    getSelvaErrorStr(err));
+        }
+        return 1;
+    } else {
+        // TODO: should this be possible? I don't see how
+        /*
+         * Check if the field name is an edge field.
+         */
+        // struct SelvaModify_HierarchyMetadata *metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+        // struct SelvaObject *edges = metadata->edge_fields.edges;
+
+        // if (edges) {
+        //     err = send_edge_field(ctx, lang, hierarchy, node, edges, field_prefix_str, field_prefix_len, field);
+        //     if (!err) {
+        //         return 1;
+        //     }
+        // }
+    }
+
+    /*
+     * Check if we have a wildcard in the middle of the field name
+     * and process it.
+     */
+    if (strstr(field_str, ".*.")) {
+        long resp_count = 0;
+        err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, 0);
+        if (err && err != SELVA_ENOENT) {
+            fprintf(stderr, "%s:%d: Sending wildcard field %.*s of %.*s failed: %s\n",
+                    __FILE__, __LINE__,
+                    (int)field_len, field_str,
+                    (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
+                    getSelvaErrorStr(err));
+        }
+
+        return resp_count / 2;
+    }
+
+    /*
+     * Finally check if the field name is a key on the node object.
+     */
+    if (SelvaObject_Exists(obj, field)) {
+        /* Field didn't exist in the node. */
+        return 0;
+    }
+
+    /*
+     * Send the reply.
+     */
+    SEND_FIELD_NAME();
+    err = SelvaObject_ReplyWithObject(ctx, lang, obj, field);
+    if (err) {
+        fprintf(stderr, "%s:%d: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
+                __FILE__, __LINE__,
+                field_str,
+                (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
+                getSelvaErrorStr(err));
+        RedisModule_ReplyWithNull(ctx);
+    }
+
+    return 1;
+}
+
+
+static int send_array_object_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaModify_Hierarchy *hierarchy, struct SelvaObject *obj, struct SelvaObject *fields) {
+    RedisModuleString *id;
+    int err;
+
+    /*
+     * The response format:
+     * ```
+     *   [
+     *     nodeId,
+     *     [
+     *       fieldName1,
+     *       fieldValue1,
+     *       fieldName2,
+     *       fieldValue2,
+     *       ...
+     *       fieldNameN,
+     *       fieldValueN,
+     *     ]
+     *   ]
+     * ```
+     */
+
+    RedisModule_ReplyWithArray(ctx, 2);
+    RedisModule_ReplyWithString(ctx, id);
+
+    const ssize_t fields_len = SelvaObject_Len(fields, NULL);
+    if (fields_len < 0) {
+        return fields_len;
+    } else if (fields_len == 1 && fields_contains(fields, "*", 1)) { /* '*' is a wildcard */
+        err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
+        if (err) {
+            fprintf(stderr, "%s:%d: Failed to send all fields for selva object in array\n",
+                    __FILE__, __LINE__);
+        }
+    } else {
+        void *iterator;
+        const SVector *vec;
+        size_t nr_fields = 0;
+
+        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+
+        iterator = SelvaObject_ForeachBegin(fields);
+        while ((vec = SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
+            struct SVectorIterator it;
+            RedisModuleString *field;
+
+            SVector_ForeachBegin(&it, vec);
+            while ((field = SVector_Foreach(&it))) {
+                int res;
+
+                res = send_array_object_field(ctx, lang, hierarchy, obj, NULL, 0, field);
+                if (res <= 0) {
+                    continue;
+                } else {
+                    nr_fields += res;
+                    break; /* Only send one of the fields in the list. */
+                }
+            }
+        }
+
+        RedisModule_ReplySetArrayLength(ctx, 2 * nr_fields);
+    }
+
+    return 0;
+}
+
 /**
  * @param path_str is the prefix.
  * @param key_name_str is the key name in the current object.
@@ -1285,6 +1477,78 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
             struct FindCommand_OrderedItem *item;
 
             item = createFindCommand_OrderItem(args->ctx, args->lang, node, args->order_field);
+            if (item) {
+                SVector_InsertFast(args->order_result, item);
+            } else {
+                /*
+                 * It's not so easy to make the response fail at this point.
+                 * Given that we shouldn't generally even end up here in real
+                 * life, it's fairly ok to just log the error and return what
+                 * we can.
+                 */
+                fprintf(stderr, "%s:%d: Out of memory while creating an ordered result item\n",
+                        __FILE__, __LINE__);
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
+    struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
+    struct rpn_ctx *rpn_ctx = args->rpn_ctx;
+    int take = (args->offset > 0) ? !args->offset-- : 1;
+
+    if (take && rpn_ctx) {
+        int err;
+
+        /* Set node_id to the register */
+        rpn_set_reg_slvobj(rpn_ctx, 0, obj, 0);
+
+        /*
+         * Resolve the expression and get the result.
+         */
+        err = rpn_bool(args->ctx, rpn_ctx, args->filter, &take);
+        if (err) {
+            fprintf(stderr, "%s:%d: Expression failed: \"%s\"\n",
+                    __FILE__, __LINE__,
+                    rpn_str_error[err]);
+            return 1;
+        }
+    }
+
+    if (take) {
+        const int sort = !!args->order_field;
+
+        if (!sort) {
+            ssize_t *nr_nodes = args->nr_nodes;
+            ssize_t * restrict limit = args->limit;
+            int err;
+
+            if (args->fields) {
+                // err = send_node_fields(args->ctx, args->lang, args->hierarchy, node, args->fields);
+            } else {
+                // RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
+                err = 0;
+            }
+            if (err) {
+                RedisModule_ReplyWithNull(args->ctx);
+                fprintf(stderr, "%s:%d: Failed to handle field(s), err: %s\n",
+                        __FILE__, __LINE__,
+                        getSelvaErrorStr(err));
+            }
+
+            *nr_nodes = *nr_nodes + 1;
+
+            *limit = *limit - 1;
+            if (*limit == 0) {
+                return 1;
+            }
+        } else {
+            struct FindCommand_OrderedItem *item;
+
+            // item = createFindCommand_OrderItem(args->ctx, args->lang, node, args->order_field);
             if (item) {
                 SVector_InsertFast(args->order_result, item);
             } else {

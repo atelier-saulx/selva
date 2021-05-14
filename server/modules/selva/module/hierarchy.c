@@ -1853,6 +1853,7 @@ static int traverse_array(
     struct SVectorIterator it;
     SVector_ForeachBegin(&it, vec);
     struct SelvaObject *obj;
+    // struct rpn_ctx *rpn_ctx = cb->node_arg
     while ((obj = SVector_Foreach(&it))) {
     // TODO
     // this callback will set selva object in register 0 then field functions can operate directly on the selva object
