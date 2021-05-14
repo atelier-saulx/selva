@@ -2028,7 +2028,12 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
 
             err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, nodeId, ref_field_str, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
-            // err = SelvaModify_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, &cb);
+            TO_STR(ref_field);
+            const struct SelvaModify_ArrayObjectCallback ary_cb = {
+                .node_cb = FindCommand_ArrayNodeCb,
+                .node_arg = &args,
+            };
+            err = SelvaModify_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, &ary_cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD && ref_field) {
             err = SelvaModify_TraverseHierarchyEdge(hierarchy, nodeId, ref_field, &cb);
         } else {

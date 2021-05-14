@@ -1788,7 +1788,7 @@ static int traverse_array(
         SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *head,
         const char *ref_field_str,
-        const struct SelvaModify_HierarchyCallback *cb) {
+        const struct SelvaModify_ArrayObjectCallback *cb) {
     // int err;
 
     // RedisModuleString *head_id;
@@ -1968,7 +1968,7 @@ int SelvaModify_TraverseArray(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         const char *ref_field,
-        const struct SelvaModify_HierarchyCallback *cb) {
+        const struct SelvaModify_ArrayObjectCallback *cb) {
     SelvaModify_HierarchyNode *head;
 
     head = SelvaHierarchy_FindNode(hierarchy, id);
