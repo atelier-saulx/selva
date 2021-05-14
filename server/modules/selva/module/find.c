@@ -1527,9 +1527,9 @@ static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
             int err;
 
             if (args->fields) {
-                // err = send_node_fields(args->ctx, args->lang, args->hierarchy, node, args->fields);
+                err = send_array_object_fields(args->ctx, args->lang, args->hierarchy, obj, args->fields);
             } else {
-                // RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
+                RedisModule_ReplyWithStringBuffer(args->ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
                 err = 0;
             }
             if (err) {
