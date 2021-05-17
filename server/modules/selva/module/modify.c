@@ -757,9 +757,9 @@ int SelvaModify_ModifySet(
             int err;
 
             if (isChildren) {
-                err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
+                err = SelvaModify_DelHierarchyChildren(ctx, hierarchy, node_id);
             } else if (isParents) {
-                err = SelvaModify_DelHierarchyParents(hierarchy, node_id);
+                err = SelvaModify_DelHierarchyParents(ctx, hierarchy, node_id);
             } else {
                 err = Edge_ClearField(SelvaHierarchy_FindNode(hierarchy, node_id), field_str, field_len);
                 if (err >= 0) {
@@ -861,7 +861,7 @@ void SelvaModify_ModifyIncrementDouble(
 }
 
 int SelvaModify_ModifyDel(
-    RedisModuleCtx *ctx __unused,
+    RedisModuleCtx *ctx,
     SelvaModify_Hierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
@@ -875,12 +875,12 @@ int SelvaModify_ModifyDel(
     memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
 
     if (!strcmp(field_str, "children")) {
-        err = SelvaModify_DelHierarchyChildren(hierarchy, node_id);
+        err = SelvaModify_DelHierarchyChildren(ctx, hierarchy, node_id);
         if (err) {
             return err;
         }
     } else if (!strcmp(field_str, "parents")) {
-        if (!SelvaModify_DelHierarchyParents(hierarchy, node_id)) {
+        if (!SelvaModify_DelHierarchyParents(ctx, hierarchy, node_id)) {
             err = REDISMODULE_ERR;
         }
     } else { /* It's either an edge field or an object field. */

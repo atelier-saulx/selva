@@ -189,6 +189,7 @@ int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarch
 void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 
 void SelvaSubscriptions_InheritParent(
+        struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         struct SelvaModify_HierarchyMetadata *node_metadata,
@@ -196,6 +197,7 @@ void SelvaSubscriptions_InheritParent(
         const Selva_NodeId parent_id,
         struct SelvaModify_HierarchyMetadata *parent_metadata);
 void SelvaSubscriptions_InheritChild(
+        struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         struct SelvaModify_HierarchyMetadata *node_metadata,
@@ -209,9 +211,11 @@ void SelvaSubscriptions_InheritChild(
 void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaModify_Hierarchy *hierarchy, const char *id_str, size_t id_len);
 
 void SelvaSubscriptions_DeferHierarchyEvents(
+        struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
-        const struct SelvaModify_HierarchyMetadata *metadata);
+        const struct SelvaModify_HierarchyMetadata *metadata,
+        int ignore_filter);
 void SelvaSubscriptions_DeferHierarchyDeletionEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
