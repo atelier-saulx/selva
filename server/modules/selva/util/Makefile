@@ -6,6 +6,7 @@ CFLAGS += -I$(RM_INCLUDE_DIR)
 CC=gcc
 
 OBJS := \
+	base64.o \
 	bitmap.o \
 	cstrings.o \
 	mempool.o \
