@@ -32,9 +32,7 @@ export type SubscriptionManager = {
   stagedForUpdates: Set<Subscription>
   stagedInProgess: boolean
   stagedTimeout?: NodeJS.Timeout
-  memberMemCacheSize: number
   // cache by database name and by field
-  memberMemCache: Record<string, Record<string, Record<string, true>>>
   // to check if the server is still ok
   refreshNowQueriesTimeout?: NodeJS.Timeout
   // revalidates subs ones in a while

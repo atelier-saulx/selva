@@ -22,14 +22,7 @@ const initlializeSchema = async (
       )
     })
 
-    const timeout: Promise<void> = new Promise((resolve, _reject) => {
-      setTimeout(() => {
-        // let's it  fail on normal set validation by letting it proceed, so resolve is correct
-        resolve()
-      }, 1e3 * 20)
-    })
-
-    return Promise.race([p, timeout])
+    return p
   }
 
   if (!client.schemas[dbName]) {
