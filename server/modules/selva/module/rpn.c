@@ -1426,6 +1426,8 @@ struct rpn_expression *rpn_compile(const char *input) {
         rpn_token *new;
 
         if (tok_len == 0) {
+            fprintf(stderr, "%s:%d: Token length can't be zero\n",
+                    __FILE__, __LINE__);
             goto fail;
         }
 
@@ -1442,6 +1444,7 @@ struct rpn_expression *rpn_compile(const char *input) {
             break;
         default:
             if (tok_len > RPN_MAX_TOKEN_SIZE - 1) {
+                fprintf(stderr, "%s:%d: Invalid token length\n", __FILE__, __LINE__);
                 goto fail;
             }
 
@@ -1451,6 +1454,9 @@ struct rpn_expression *rpn_compile(const char *input) {
         }
 
         if (err) {
+            fprintf(stderr, "%s:%d: RPN compilation error: %d\n",
+                    __FILE__, __LINE__,
+                    err);
 fail:
             rpn_destroy_expression(expr);
             return NULL;
@@ -1467,6 +1473,7 @@ fail:
 next:
         new = RedisModule_Realloc(expr->expression, size);
         if (!new) {
+            fprintf(stderr, "%s:%d: Realloc failed\n", __FILE__, __LINE__);
             goto fail;
         }
         expr->expression = new;
@@ -1476,6 +1483,7 @@ next:
 
     /* The returned length is only ever 0 if the grouping failed. */
     if (tok_len == 0) {
+        fprintf(stderr, "%s:%d: Tokenization failed\n", __FILE__, __LINE__);
         rpn_destroy_expression(expr);
         return NULL;
     }

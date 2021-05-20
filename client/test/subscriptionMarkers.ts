@@ -1167,7 +1167,7 @@ test.serial('subscribe with a type expression', async (t) => {
     '1',
     'descendants',
     'root',
-    '"ma e'
+    '"ma" e'
   ), 1)
   await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
   t.deepEqual(

@@ -1507,7 +1507,7 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], &input_len);
         filter_expression = rpn_compile(input);
         if (!filter_expression) {
-            fprintf(stderr, "%s:%d: Failed to compile a filter expression: %.*s\n",
+            fprintf(stderr, "%s:%d: Failed to compile a filter expression: \"%.*s\"\n",
                     __FILE__, __LINE__,
                     (int)input_len, input);
             err = SELVA_RPN_ECOMP;
