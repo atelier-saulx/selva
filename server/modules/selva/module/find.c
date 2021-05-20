@@ -390,6 +390,7 @@ static struct FindCommand_OrderedItem *createFindCommand_OrderItem(RedisModuleCt
     size_t data_len = 0;
     enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
 
+    memset(data_lang, '\0', sizeof(data_lang));
     SelvaModify_HierarchyGetNodeId(nodeId, node);
 
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
