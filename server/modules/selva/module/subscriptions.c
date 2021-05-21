@@ -1054,12 +1054,6 @@ static void defer_hierarchy_events(RedisModuleCtx *ctx,
              * case we need to apply the marker to any new children.
              */
             if (isHierarchyMarker(marker->marker_flags) &&
-                /*
-                 * SELVA_HIERARCHY_TRAVERSAL_NODE doesn't need to send an event
-                 * if there is no subscription to hierarchy fields because the
-                 * marker will never need a refresh.
-                 */
-                (marker->dir != SELVA_HIERARCHY_TRAVERSAL_NODE || isSubscribedToHierarchyFields(marker)) &&
                 (ignore_filter || Selva_SubscriptionFilterMatch(ctx, node_id, marker))) {
                 marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
             }
