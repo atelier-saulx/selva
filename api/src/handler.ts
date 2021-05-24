@@ -135,12 +135,16 @@ export function noHasGuard(setOpts: any, result: any): boolean {
       return noHasGuard(val, result[key])
     })
   } else {
-    if (typeof setOpts === 'object' && Object.keys(setOpts).length === 0) {
+    if (typeof setOpts === 'object' && isObjectChildrenValueEmpty(setOpts)) {
       setOpts = undefined
     }
 
     return setOpts === result
   }
+}
+
+function isObjectChildrenValueEmpty(object) {
+  return Object.values(object).every(val => (val === null || val === '' || (val.constructor === Object && isObjectChildrenValueEmpty(val))))
 }
 
 function parseJson(
