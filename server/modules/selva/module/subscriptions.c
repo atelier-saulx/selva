@@ -1002,14 +1002,14 @@ static int isSubscribedToHierarchyFields(struct Selva_SubscriptionMarker *marker
     return res;
 }
 
-static void defer_update_event(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, unsigned short event_flags) {
+static void defer_update_event(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, unsigned short event_flags __unused) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     struct Selva_Subscription *sub = marker->sub;
 
     SVector_InsertFast(&def->updates, sub);
 }
 
-static void defer_trigger_event(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, unsigned short event_flags) {
+static void defer_trigger_event(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, unsigned short event_flags __unused) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
 
     SVector_InsertFast(&def->triggers, marker);
@@ -1071,6 +1071,7 @@ static void defer_hierarchy_events(RedisModuleCtx *ctx,
              * marker filter.
              * E.g. consider subscription marker for children of a node. In this
              * case we need to apply the marker to any new children.
+             * TODO we used to check isSubscribedToHierarchyFields(marker) here, should it still be here?
              */
             if (isHierarchyMarker(marker->marker_flags) &&
                 (ignore_filter || Selva_SubscriptionFilterMatch(ctx, node_id, marker))) {
