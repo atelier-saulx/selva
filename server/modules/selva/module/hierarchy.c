@@ -1686,7 +1686,6 @@ static int bfs_expression(
         enum rpn_error rpn_err;
         struct SelvaSetElement *field_el;
 
-        /* TODO support ref fields */
         rpn_set_hierarchy_node(rpn_ctx, node);
         rpn_err = rpn_selvaset(redis_ctx, rpn_ctx, rpn_expr, &fields);
         if (rpn_err) {

@@ -487,6 +487,7 @@ static int Selva_AddSubscriptionMarker(
     va_list args;
     struct Selva_Subscription *sub;
     struct Selva_SubscriptionMarker *marker;
+    int err = 0;
 
     sub = find_sub(hierarchy, sub_id);
     if (!sub) {
@@ -494,10 +495,10 @@ static int Selva_AddSubscriptionMarker(
         if (!sub) {
             return SELVA_SUBSCRIPTIONS_ENOMEM;
         }
-    }
-
-    if (find_sub_marker(sub, marker_id)) {
-        return SELVA_SUBSCRIPTIONS_EEXIST;
+    } else {
+        if (find_sub_marker(sub, marker_id)) {
+            return SELVA_SUBSCRIPTIONS_EEXIST;
+        }
     }
 
     marker = RedisModule_Calloc(1, sizeof(struct Selva_SubscriptionMarker));
@@ -527,6 +528,10 @@ static int Selva_AddSubscriptionMarker(
             break;
         case 'f': /* Fields */
             marker->fields = RedisModule_Strdup(va_arg(args, char *));
+            if (!marker->fields) {
+                err = SELVA_ENOMEM;
+                break;
+            }
             break;
         case 'n': /* node_id */
             memcpy(marker->node_id, va_arg(args, char *), SELVA_NODE_ID_SIZE);
@@ -534,8 +539,13 @@ static int Selva_AddSubscriptionMarker(
         case 'r': /* ref_field */
             {
                 const char *ref_field = va_arg(args, char *);
-
-                marker->ref_field = !ref_field ? NULL : RedisModule_Strdup(ref_field);
+                if (ref_field) {
+                    marker->ref_field = RedisModule_Strdup(ref_field);
+                    if (!marker->ref_field) {
+                        err = SELVA_ENOMEM;
+                        break;
+                    }
+                }
             }
             break;
         default:
@@ -545,17 +555,26 @@ static int Selva_AddSubscriptionMarker(
                 fprintf(stderr, "%s:%d: Invalid marker specifier '%c' for subscription %s\n",
                         __FILE__, __LINE__,
                         c, Selva_SubscriptionId2str(str, sub_id));
-                return SELVA_SUBSCRIPTIONS_EINVAL;
+                err = SELVA_SUBSCRIPTIONS_EINVAL;
+                break;
             }
         }
         fmt++;
     }
     va_end(args);
 
-    /* We already checked that the id doesn't exist. */
-    (void)SVector_InsertFast(&sub->markers, marker);
+    if (err) {
+        if (marker) {
+            RedisModule_Free(marker->fields);
+            RedisModule_Free(marker->ref_field);
+            RedisModule_Free(marker);
+        }
+    } else {
+        /* We already checked that the id doesn't exist. */
+        (void)SVector_InsertFast(&sub->markers, marker);
+    }
 
-    return 0;
+    return err;
 }
 
 int Selva_AddSubscriptionAliasMarker(
