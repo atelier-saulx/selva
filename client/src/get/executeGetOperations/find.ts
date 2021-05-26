@@ -8,7 +8,7 @@ import {
   isFork,
   convertNow,
 } from '@saulx/selva-query-ast-parser'
-import { executeNestedGetOperations, ExecContext, addMarker } from './'
+import { executeNestedGetOperations, ExecContext, sourceFieldToMarkerType, addMarker } from './'
 import { padId, joinIds } from '../utils'
 import { setNestedResult } from '../utils'
 import { makeLangArg } from './util'
@@ -299,9 +299,8 @@ const findIds = async (
           endLen--
         }
         const id = op.id.slice(i, endLen)
-
         const r = await addMarker(client, ctx, {
-          type: sourceField,
+          ...sourceFieldToMarkerType(sourceField),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -317,7 +316,7 @@ const findIds = async (
       }
     } else {
       const added = await addMarker(client, ctx, {
-        type: sourceField,
+        ...sourceFieldToMarkerType(sourceField),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -458,7 +457,7 @@ const findFields = async (
         const id = op.id.slice(i, endLen)
 
         const r = await addMarker(client, ctx, {
-          type: sourceField,
+          ...sourceFieldToMarkerType(sourceField),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -474,7 +473,7 @@ const findFields = async (
       }
     } else {
       const added = await addMarker(client, ctx, {
-        type: sourceField,
+        ...sourceFieldToMarkerType(sourceField),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,

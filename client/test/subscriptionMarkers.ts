@@ -44,6 +44,8 @@ test.beforeEach(async (t) => {
           title: { type: 'text' },
           value: { type: 'number' },
           description: { type: 'text' },
+          venue: { type: 'reference' },
+          venueSoft: { type: 'set', items: { type: 'string' } },
         },
       },
       game: {
@@ -54,6 +56,12 @@ test.beforeEach(async (t) => {
           description: { type: 'text' },
         },
       },
+      venue: {
+        prefix: 've',
+        fields: {
+          title: { type: 'text' },
+        },
+      }
     },
   })
 
@@ -597,6 +605,238 @@ test.serial('Add nodes and verify propagation', async (t) => {
   client.destroy()
 })
 
+test.serial.skip('FindInSub: simple lookups', async (t) => {
+  const client = connect({ port })
+  const subId1 =
+    'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b69'
+
+  await client.set({
+    $id: 'maTest0001', // marker starts here
+    title: { en: 'ma1' },
+    children: [
+      {
+        $id: 'maTest0011', // child of the first level
+        title: { en: 'ma11' },
+        parents: {
+          $add: [
+            {
+              $id: 'maTest0002', // Additional parent
+              title: { en: 'ma02' },
+            },
+          ]
+        },
+      },
+      {
+        $id: 'maTest0012', // child of the first level
+        title: { en: 'ma12' },
+      },
+      {
+        $id: 'maTest0013', // child of the first level
+        title: { en: 'ma13' },
+        children: [
+          {
+            $id: 'maTest0021',
+            title: { en: 'ma21' },
+            children: [
+              {
+                $id: 'maTest0031',
+                title: { en: 'ma31' },
+              },
+            ],
+          }
+        ],
+      },
+    ],
+  })
+  await client.set({
+      $id: 'maTest0011',
+      children: {
+        $add: ['maTest0021']
+      }
+  })
+
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    subId1,
+    '1',
+    'ancestors',
+    'maTest0031'
+  )
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    subId1,
+    '2',
+    'descendants',
+    'maTest0001'
+  )
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    subId1,
+    '3',
+    'children',
+    'maTest0001'
+  )
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    subId1,
+    '4',
+    'parents',
+    'maTest0011'
+  )
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    subId1,
+    '5',
+    'node',
+    'maTest0001'
+  )
+  await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
+
+  const s1 = await client.redis.selva_subscriptions_debug(
+    '___selva_hierarchy',
+    subId1
+  )
+  t.is(s1.length, 5, 'subscription has all the markers')
+  t.deepEqual(s1[0][1], 'marker_id: 1')
+  t.deepEqual(s1[1][1], 'marker_id: 2')
+  t.deepEqual(s1[2][1], 'marker_id: 3')
+  t.deepEqual(s1[3][1], 'marker_id: 4')
+  t.deepEqual(s1[4][1], 'marker_id: 5')
+
+  //t.deepEqualIgnoreOrder(
+  //  await client.redis.selva_hierarchy_findinsub(
+  //    '',
+  //    '___selva_hierarchy',
+  //    subId1,
+  //    1
+  //  ),
+  //  ['maTest0021', 'maTest0011', 'maTest0013', 'maTest0001', 'maTest0002', 'root']
+  //)
+
+  //t.deepEqualIgnoreOrder(
+  //  await client.redis.selva_hierarchy_findinsub(
+  //    '',
+  //    '___selva_hierarchy',
+  //    subId1,
+  //    2
+  //  ),
+  //  ['maTest0011', 'maTest0012', 'maTest0013', 'maTest0021', 'maTest0031']
+  //)
+
+  //t.deepEqualIgnoreOrder(
+  //  await client.redis.selva_hierarchy_findinsub(
+  //    '',
+  //    '___selva_hierarchy',
+  //    subId1,
+  //    3
+  //  ),
+  //  ['maTest0001', 'maTest0011', 'maTest0012', 'maTest0013']
+  //)
+
+  //t.deepEqualIgnoreOrder(
+  //  await client.redis.selva_hierarchy_findinsub(
+  //    '',
+  //    '___selva_hierarchy',
+  //    subId1,
+  //    4
+  //  ),
+  //  ['maTest0011', 'maTest0001', 'maTest0002']
+  //)
+
+  //t.deepEqual(
+  //  await client.redis.selva_hierarchy_findinsub(
+  //    '',
+  //    '___selva_hierarchy',
+  //    subId1,
+  //    5
+  //  ),
+  //  ['maTest0001']
+  //)
+
+  await client.delete('root')
+  client.destroy()
+})
+
+test.serial.skip('FindInSub: expression filter', async (t) => {
+  const client = connect({ port })
+  const subId1 =
+    '1c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b69'
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'ma1' },
+    children: [
+      {
+        $id: 'maTest0011',
+        title: { en: 'test' },
+        children: [
+          {
+            $id: 'maTest0021',
+            title: { en: 'test' },
+          },
+        ],
+      },
+      {
+        $id: 'maTest0012',
+        title: { en: 'ma12' },
+      },
+      {
+        $id: 'maTest0013',
+        title: { en: 'ma13' },
+        children: [
+          {
+            $id: 'maTest0022',
+            title: { en: 'test' },
+            children: [
+              {
+                $id: 'maTest0031',
+                title: { en: 'ma31' },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  })
+
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    subId1,
+    '1',
+    'descendants',
+    'maTest0001',
+    '"title.en" f $1 c',
+    'test'
+  )
+
+  const s1 = await client.redis.selva_subscriptions_debug(
+    '___selva_hierarchy',
+    subId1
+  )
+  t.is(s1.length, 1, 'subscription1 has one marker')
+  const s1marker1 = s1[0]
+  t.deepEqual(s1marker1[0], `sub_id: ${subId1}`)
+  t.deepEqual(s1marker1[1], 'marker_id: 1')
+  t.deepEqual(s1marker1[2], 'flags: 0x0002')
+  t.deepEqual(s1marker1[3], 'node_id: "maTest0001"')
+  t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
+  t.deepEqual(s1marker1[5], 'filter_expression: set')
+  t.deepEqual(s1marker1[6], 'fields: "(null)"')
+
+  //t.deepEqual(
+  //  await client.redis.selva_hierarchy_findinsub(
+  //    '',
+  //    '___selva_hierarchy',
+  //    subId1,
+  //    1
+  //  ),
+  //  ['maTest0011', 'maTest0021', 'maTest0022']
+  //)
+
+  await client.delete('root')
+  client.destroy()
+})
+
 test.serial('subscribe to hierarchy events', async (t) => {
   const subId1 =
     'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b70'
@@ -650,6 +890,93 @@ test.serial('subscribe to hierarchy events', async (t) => {
   client.destroy()
 })
 
+test.serial.skip('FindInSub: expression filter and sort', async (t) => {
+  const client = connect({ port })
+  const subId1 =
+    '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b69'
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'z' },
+    children: [
+      {
+        $id: 'maTest0011',
+        title: { en: 'test' },
+        children: [
+          {
+            $id: 'maTest0021',
+            title: { en: 'test' },
+          },
+        ],
+      },
+      {
+        $id: 'maTest0012',
+        title: { en: 'o' },
+      },
+      {
+        $id: 'maTest0013',
+        title: { en: 'b' },
+        children: [
+          {
+            $id: 'maTest0022',
+            title: { en: 'x' },
+            children: [
+              {
+                $id: 'maTest0031',
+                title: { en: 'a' },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  })
+
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    subId1,
+    '1',
+    'descendants',
+    'root',
+    '"title.en" f $1 c L',
+    'test'
+  )
+
+  const s1 = await client.redis.selva_subscriptions_debug(
+    '___selva_hierarchy',
+    subId1
+  )
+  t.is(s1.length, 1, 'subscription1 has one marker')
+  const s1marker1 = s1[0]
+  t.deepEqual(s1marker1[0], `sub_id: ${subId1}`)
+  t.deepEqual(s1marker1[1], 'marker_id: 1')
+  t.deepEqual(s1marker1[2], 'flags: 0x0202')
+  t.deepEqual(s1marker1[3], 'node_id: "root"')
+  t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
+  t.deepEqual(s1marker1[5], 'filter_expression: set')
+  t.deepEqual(s1marker1[6], 'fields: "(null)"')
+
+  //t.deepEqual(
+  //  await client.redis.selva_hierarchy_findinsub(
+  //    '',
+  //    '___selva_hierarchy',
+  //    subId1,
+  //    1,
+  //    'order',
+  //    'title.en',
+  //    'asc',
+  //    'offset',
+  //    '1',
+  //    'limit',
+  //    3
+  //  ),
+  //  // b, o, x
+  //  ['maTest0013', 'maTest0012', 'maTest0022']
+  //)
+
+  await client.delete('root')
+  client.destroy()
+})
 
 test.serial('subscribe to field events', async (t) => {
   const subId1 =
@@ -977,6 +1304,392 @@ test.serial('subscribe with a type expression', async (t) => {
   await client.delete('root')
   client.destroy()
 })
+
+test.serial.skip('subscribe to a soft reference', async (t) => {
+  const subId1 =
+    'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'root',
+    value: 1,
+  })
+  await client.set({
+    $id: 'maTest0001',
+    title: { 'en': 'Match 1' },
+  })
+
+  t.deepEqual(await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    subId1,
+    '2',
+    'venueSoft',
+    'maTest0001',
+  ), 1)
+  t.deepEqual(
+    await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1),
+    1
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      subId1
+    ),
+    [
+      [
+        `sub_id: ${subId1}`,
+        'marker_id: 2',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: ref',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ]
+  )
+
+  await client.set({
+    $id: 'veTest0002',
+    title: { en: 'The Best Venue' },
+  })
+  await client.set({
+    $id: 'maTest0001',
+    venueSoft: ['veTest0002'],
+  })
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'maTest0001'
+    ),
+    [
+      [
+        `sub_id: ${subId1}`,
+        'marker_id: 1',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: ref',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+      [
+        `sub_id: ${subId1}`,
+        'marker_id: 2',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: ref',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ]
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'veTest0002'
+    ),
+    [
+      [
+        'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+        'marker_id: 2',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: ref',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ],
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1),
+    1
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'veTest0002'
+    ),
+    [
+      [
+        'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+        'marker_id: 2',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: ref',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ],
+  )
+
+  await client.delete('root')
+  client.destroy()
+})
+
+test.serial('subscribe to a reference (ref)', async (t) => {
+  const subId1 =
+    'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'root',
+    value: 1,
+  })
+  await client.set({
+    $id: 'maTest0001',
+    title: { 'en': 'Match 1' },
+  })
+
+  t.deepEqual(await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    subId1,
+    '1',
+    'ref',
+    'venue',
+    'maTest0001',
+  ), 1)
+  t.deepEqual(
+    await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1),
+    1
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      subId1
+    ),
+    [
+      [
+        `sub_id: ${subId1}`,
+        'marker_id: 1',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: ref',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ]
+  )
+
+  let msgCount = 0
+  const subChannel = `___selva_subscription_update:${subId1}`
+  rclient.on('message', (channel, message) => {
+    t.deepEqual(channel, subChannel)
+    t.deepEqual(message, '')
+    msgCount++
+  })
+  rclient.subscribe(`___selva_subscription_update:${subId1}`)
+
+  await client.set({
+    $id: 'maTest0001',
+    venue: { $id: 'veTest0001', title: { en: 'The Best Venue' }},
+  })
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'maTest0001'
+    ),
+    [
+      [
+        `sub_id: ${subId1}`,
+        'marker_id: 1',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: ref',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ]
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'veTest0001'
+    ),
+    []
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1),
+    1
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'maTest0001'
+    ),
+    [
+      [
+        `sub_id: ${subId1}`,
+        'marker_id: 1',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: ref',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ]
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'veTest0001'
+    ),
+    [
+    // TODO Currently ref traversal doesn't propagate
+    //  [
+    //    'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+    //    'marker_id: 1',
+    //    'flags: 0x0002',
+    //    'node_id: "maTest0001"',
+    //    'dir: ref',
+    //    'filter_expression: unset',
+    //    'fields: "(null)"',
+    //  ],
+    ]
+  )
+
+  await wait(100)
+  t.deepEqual(msgCount, 0)
+
+  await client.delete('root')
+  client.destroy()
+})
+
+test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
+  const subId1 =
+    'fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72'
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'root',
+    value: 1,
+  })
+  await client.set({
+    $id: 'maTest0001',
+    title: { 'en': 'Match 1' },
+  })
+
+  t.deepEqual(await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    subId1,
+    '1',
+    'bfs_edge_field',
+    'venue',
+    'maTest0001',
+  ), 1)
+  t.deepEqual(
+    await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1),
+    1
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      subId1
+    ),
+    [
+      [
+        `sub_id: ${subId1}`,
+        'marker_id: 1',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: bfs_edge_field',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ]
+  )
+
+  let msgCount = 0
+  const subChannel = `___selva_subscription_update:${subId1}`
+  rclient.on('message', (channel, message) => {
+    t.deepEqual(channel, subChannel)
+    t.deepEqual(message, '')
+    msgCount++
+  })
+  rclient.subscribe(`___selva_subscription_update:${subId1}`)
+
+  await client.set({
+    $id: 'maTest0001',
+    venue: { $id: 'veTest0001', title: { en: 'The Best Venue' }},
+  })
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'maTest0001'
+    ),
+    [
+      [
+        `sub_id: ${subId1}`,
+        'marker_id: 1',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: bfs_edge_field',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ]
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'veTest0001'
+    ),
+    [
+      [
+        `sub_id: ${subId1}`,
+        'marker_id: 1',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: bfs_edge_field',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ]
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1),
+    1
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'maTest0001'
+    ),
+    [
+      [
+        `sub_id: ${subId1}`,
+        'marker_id: 1',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: bfs_edge_field',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ]
+  )
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug(
+      '___selva_hierarchy',
+      'veTest0001'
+    ),
+    [
+      [
+        'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+        'marker_id: 1',
+        'flags: 0x0002',
+        'node_id: "maTest0001"',
+        'dir: bfs_edge_field',
+        'filter_expression: unset',
+        'fields: "(null)"',
+      ],
+    ]
+  )
+
+  await wait(100)
+  t.deepEqual(msgCount, 0)
+
+  await client.delete('root')
+  client.destroy()
+})
+
 
 test.serial('Missing markers', async (t) => {
   const subId1 =

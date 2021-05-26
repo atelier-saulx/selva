@@ -1,10 +1,11 @@
 #include <stddef.h>
 #include "redismodule.h"
 #include "errors.h"
-#include "edge.h"
 #include "svector.h"
-#include "selva_object.h"
+#include "edge.h"
 #include "hierarchy.h"
+#include "selva_object.h"
+#include "subscriptions.h"
 #include "comparator.h"
 
 static void clear_field(struct EdgeField *src_edge_field);
@@ -239,7 +240,14 @@ int Edge_Has(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst
     return SVector_SearchIndex(&edge_field->arcs, dst_node) >= 0;
 }
 
-int Edge_Add(const char *key_name_str, size_t key_name_len, unsigned constraint_id, struct SelvaModify_HierarchyNode *src_node, struct SelvaModify_HierarchyNode *dst_node) {
+int Edge_Add(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        const char *key_name_str,
+        size_t key_name_len,
+        unsigned constraint_id,
+        struct SelvaModify_HierarchyNode *src_node,
+        struct SelvaModify_HierarchyNode *dst_node) {
     const struct EdgeFieldConstraint *constraint;
     struct EdgeField *src_edge_field;
     int err;
@@ -264,6 +272,12 @@ int Edge_Add(const char *key_name_str, size_t key_name_len, unsigned constraint_
     }
 
     insert_edge(src_edge_field, dst_node);
+
+    SelvaSubscriptions_InheritEdge(ctx, hierarchy, src_node, dst_node, key_name_str, key_name_len);
+#if 0
+    /* RFE is a hierarchy event even necessary here? */
+    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, dst_node->id, &dst_node->metadata, 0);
+#endif
 
     return 0;
 }
@@ -306,10 +320,21 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaModif
     return 0;
 }
 
-int Edge_Delete(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *src_node, Selva_NodeId dst_node_id) {
+int Edge_Delete(
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct EdgeField *edge_field,
+        struct SelvaModify_HierarchyNode *src_node,
+        Selva_NodeId dst_node_id) {
+    Selva_NodeId src_node_id;
     struct EdgeField *src_edge_field = edge_field;
     struct SelvaModify_HierarchyNode *dst_node;
     int err;
+
+    SelvaModify_HierarchyGetNodeId(src_node_id, src_node);
+
+    /* TODO We should probably clear from the dst? */
+    /* TODO We don't probably need to clear all markers, just those that are using the same traversal. */
+    SelvaSubscriptions_ClearAllMarkers(hierarchy, src_node);
 
     dst_node = SVector_Search(&src_edge_field->arcs, dst_node_id);
     if (!dst_node) {

@@ -354,8 +354,9 @@ int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selv
     return SelvaHierarchy_FindNode(hierarchy, id) != NULL;
 }
 
-void SelvaModify_HierarchyGetNodeId(Selva_NodeId id, const SelvaModify_HierarchyNode *node) {
+char *SelvaModify_HierarchyGetNodeId(Selva_NodeId id, const SelvaModify_HierarchyNode *node) {
     memcpy(id, node->id, SELVA_NODE_ID_SIZE);
+    return id;
 }
 
 /* TODO Rename these functions? */
@@ -761,8 +762,7 @@ static int crossRemove(
     }
 #endif
 
-    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, node->id, &node->metadata, 1);
-    SelvaSubscriptions_ClearAllMarkers(hierarchy, node->id, &node->metadata);
+    SelvaSubscriptions_ClearAllMarkers(hierarchy, node);
 
     if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
         const size_t initialNodeParentsSize = SVector_Size(&node->parents);
@@ -848,7 +848,7 @@ static int crossRemove(
 #if HIERARCHY_SORT_BY_DEPTH
     updateDepth(hierarchy, node);
 #endif
-    SelvaSubscriptions_RefreshByMarker(hierarchy, &sub_markers);
+    SelvaSubscriptions_RefreshByMarker(ctx, hierarchy, &sub_markers);
 
     return 0;
 }
@@ -888,8 +888,7 @@ static void removeRelationships(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hier
     }
 #endif
 
-    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, node->id, &node->metadata, 1);
-    SelvaSubscriptions_ClearAllMarkers(hierarchy, node->id, &node->metadata);
+    SelvaSubscriptions_ClearAllMarkers(hierarchy, node);
 
     struct SVectorIterator it;
     SelvaModify_HierarchyNode *adj;
@@ -912,7 +911,7 @@ static void removeRelationships(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hier
     }
     SVector_Clear(vec_a);
 
-    SelvaSubscriptions_RefreshByMarker(hierarchy, &sub_markers);
+    SelvaSubscriptions_RefreshByMarker(ctx, hierarchy, &sub_markers);
 
     /*
      * After this the caller should call mkHead(hierarchy, node)

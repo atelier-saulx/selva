@@ -213,7 +213,7 @@ static int update_edge(
             SVector_ForeachBegin(&it, &old_arcs);
             while ((dst_id = SVector_Foreach(&it))) {
                 if (!SVector_Search(&new_ids, dst_id)) {
-                    Edge_Delete(edgeField, node, dst_id);
+                    Edge_Delete(hierarchy, edgeField, node, dst_id);
                     res++; /* Count delete as a change. */
                 }
             }
@@ -240,7 +240,7 @@ static int update_edge(
                 return err;
             }
 
-            err = Edge_Add(field_str, field_len, constraint_id, node, dst_node);
+            err = Edge_Add(ctx, hierarchy, field_str, field_len, constraint_id, node, dst_node);
             if (!err) {
                 res++;
             } else if (err != SELVA_EEXIST) {
@@ -283,7 +283,7 @@ static int update_edge(
                     return err;
                 }
 
-                err = Edge_Add(field_str, field_len, constraint_id, node, dst_node);
+                err = Edge_Add(ctx, hierarchy, field_str, field_len, constraint_id, node, dst_node);
                 if (!err) {
                     res++;
                 } else if (err != SELVA_EEXIST) {
@@ -315,7 +315,7 @@ static int update_edge(
                      * stack.
                      */
                     memcpy(dst_node_id, setOpts->$delete + i, SELVA_NODE_ID_SIZE);
-                    err = Edge_Delete(edgeField, node, dst_node_id);
+                    err = Edge_Delete(hierarchy, edgeField, node, dst_node_id);
                     if (!err) {
                         res++;
                     }

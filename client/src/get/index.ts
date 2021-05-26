@@ -151,6 +151,7 @@ async function get(
       '___selva_hierarchy',
       subId,
       adler32({
+        // @ts-ignore RFE
         type: 'trigger-' + newProps.$trigger.$event,
         fields: [],
         id: 'root',

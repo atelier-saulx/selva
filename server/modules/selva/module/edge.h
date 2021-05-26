@@ -82,8 +82,19 @@ int Edge_Has(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst
  * If the field exists but the constraint_id doesn't match to the currently set
  * constraint then the function will return SELVA_EINVAL.
  */
-int Edge_Add(const char *key_name_str, size_t key_name_len, unsigned constraint_id, struct SelvaModify_HierarchyNode *src_node, struct SelvaModify_HierarchyNode *dst_node);
-int Edge_Delete(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *src_node, Selva_NodeId dst_node_id);
+int Edge_Add(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        const char *key_name_str,
+        size_t key_name_len,
+        unsigned constraint_id,
+        struct SelvaModify_HierarchyNode *src_node,
+        struct SelvaModify_HierarchyNode *dst_node);
+int Edge_Delete(
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct EdgeField *edge_field,
+        struct SelvaModify_HierarchyNode *src_node,
+        Selva_NodeId dst_node_id);
 
 /**
  * Delete all edges of a field.
