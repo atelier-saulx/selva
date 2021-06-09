@@ -1001,7 +1001,13 @@ static int isSubscribedToHierarchyFields(struct Selva_SubscriptionMarker *marker
 static void defer_update_event(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, unsigned short event_flags __unused) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     struct Selva_Subscription *sub = marker->sub;
+    char sub_buf[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
+    /* FIXME Remove the log line */
+    fprintf(stderr, "%s:%d: Defer update for sub_id: %s marker_id: %d\n",
+            __FILE__, __LINE__,
+            Selva_SubscriptionId2str(sub_buf, marker->sub->sub_id),
+            (int)marker->marker_id);
     SVector_InsertFast(&def->updates, sub);
 }
 
@@ -1226,7 +1232,13 @@ static void defer_field_change_events(
                 const int expressionMatchBefore = marker->filter_history.res && !memcmp(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE);
                 const int expressionMatchAfter = Selva_SubscriptionFilterMatch(ctx, node_id, marker);
                 const int fieldsMatch = Selva_SubscriptionFieldMatch(marker, field);
+                char sub_buf[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
+                /* FIXME Remove the log line */
+                fprintf(stderr, "%s:%d: sub_id: %s marker_id: %d field: %s expressionMatchBefore: %d expressionMatchAfter: %d fieldsMatch: %d\n",
+                        __FILE__, __LINE__,
+                        Selva_SubscriptionId2str(sub_buf, marker->sub->sub_id), (int)marker->marker_id,
+                        field, expressionMatchBefore, expressionMatchAfter, fieldsMatch);
                 if ((expressionMatchBefore && expressionMatchAfter && fieldsMatch) || (expressionMatchBefore ^ expressionMatchAfter)) {
                     marker->marker_action(hierarchy, marker, flags);
                 }
@@ -1342,13 +1354,11 @@ static void send_update_events(struct SelvaModify_Hierarchy *hierarchy) {
 
     SVector_ForeachBegin(&it, &def->updates);
     while ((sub = SVector_Foreach(&it))) {
-#if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
         fprintf(stderr, "%s:%d: publish update event %s\n",
                 __FILE__, __LINE__,
                 Selva_SubscriptionId2str(str, sub->sub_id));
-#endif
         SelvaModify_PublishSubscriptionUpdate(sub->sub_id);
     }
     SVector_Clear(&def->updates);
