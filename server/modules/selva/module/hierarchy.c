@@ -1165,6 +1165,7 @@ int SelvaHierarchy_UpsertNode(
         const Selva_NodeId id,
         SelvaModify_HierarchyNode **out) {
     SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, id);
+    SelvaModify_HierarchyNode *prev_node;
     int isLoading = isRdbLoading(ctx);
 
     if (node) {
@@ -1194,12 +1195,16 @@ int SelvaHierarchy_UpsertNode(
      /*
       * All nodes must be indexed.
       */
-     if (RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL) {
+     prev_node = RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node);
+     if (prev_node) {
          /*
           * We are being extremely paranoid here as this shouldn't be possible.
           */
          SelvaModify_DestroyNode(node);
 
+         if (out) {
+             *out = prev_node;
+         }
          return SELVA_HIERARCHY_EEXIST;
      }
 
