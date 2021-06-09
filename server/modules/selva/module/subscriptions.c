@@ -156,10 +156,6 @@ static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *m
             match = 1;
         } else {
             /* Test if field matches to any of the fields in list. */
-
-
-
-
             const char *sep = ".";
             char *p;
 
@@ -1227,7 +1223,7 @@ static void defer_field_change_events(
         SVector_ForeachBegin(&it, &sub_markers->vec);
         while ((marker = SVector_Foreach(&it))) {
             if (((marker->marker_flags & flags) == flags) && !inhibitMarkerEvent(node_id, marker)) {
-                const int expressionMatchBefore = (marker->filter_history.res && !memcmp(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE));
+                const int expressionMatchBefore = marker->filter_history.res && !memcmp(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE);
                 const int expressionMatchAfter = Selva_SubscriptionFilterMatch(ctx, node_id, marker);
                 const int fieldsMatch = Selva_SubscriptionFieldMatch(marker, field);
 
