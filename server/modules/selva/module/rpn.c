@@ -1417,7 +1417,7 @@ struct rpn_expression *rpn_compile(const char *input) {
     size_t input_literal_reg_i = 0;
     size_t i = 0;
     size_t tok_len = 0;
-    const char *rest;
+    const char *rest = NULL;
     for (const char *tok_str = tokenize(input, delim, group, &rest, &tok_len);
          tok_str != NULL;
          tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
