@@ -36,6 +36,7 @@ const addOriginListeners = async (
           addUpdate(subsManager, subscription)
         }
       } else {
+        console.log('GOT EVENT', channel, message)
         if (pattern.startsWith(SUBSCRIPTION_UPDATE)) {
           const subId = channel.slice(prefixLength)
           const subscription = subsManager.subscriptions[subId]
