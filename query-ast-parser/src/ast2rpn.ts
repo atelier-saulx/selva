@@ -253,6 +253,5 @@ export default function ast2rpn(
   for (let i = 1; i < regIndex; i++) {
     res[i] = reg[i]
   }
-  console.log('RPN', res)
   return res
 }
