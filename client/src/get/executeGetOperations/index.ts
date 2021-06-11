@@ -27,19 +27,9 @@ export type SubscriptionMarker = {
   rpn?: Rpn
 }
 
-// BEGIN DEBUG
-const WEIRD_MARKER_CHECK_CACHE: Map<string, { [key: number]: true }> = new Map()
-// END DEBUG
-
 export function adler32(marker: SubscriptionMarker): number {
   const MOD_ADLER = 65521
 
-  // START DEBUG
-  // const lol: SubscriptionMarker = <SubscriptionMarker>deepCopy(marker)
-  // lol.rpn = lol.rpn ? [lol.rpn[0]] : []
-  // let str: string = JSON.stringify(lol)
-  // console.log('STRR', str)
-  // END DEBUG
   const str: string = JSON.stringify(marker)
 
   let a = 1
@@ -63,34 +53,6 @@ export async function addMarker(
   }
 
   const markerId = adler32(marker)
-  let weirdCache = WEIRD_MARKER_CHECK_CACHE.get(ctx.subId)
-  if (!weirdCache) {
-    console.log('NEW SUB', ctx.subId)
-
-    const obj = {}
-    WEIRD_MARKER_CHECK_CACHE.set(ctx.subId, obj)
-    weirdCache = obj
-  }
-
-  if (!weirdCache[markerId]) {
-    console.log(
-      `NEW MARKER FOR SUB ${ctx.subId}\n`,
-      JSON.stringify(marker),
-      '\n',
-      ctx.originDescriptors[ctx.db] || { name: ctx.db },
-      '___selva_hierarchy',
-      ctx.subId,
-      markerId,
-      marker.type,
-      marker.id,
-      'fields',
-      marker.fields.join('\n'),
-      ...(marker.rpn ? marker.rpn : [])
-    )
-
-    weirdCache[markerId] = true
-  }
-
   await client.redis.selva_subscriptions_add(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     '___selva_hierarchy',
