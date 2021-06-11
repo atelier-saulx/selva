@@ -12,9 +12,11 @@ const initlializeSchema = async (
 
     const p: Promise<void> = new Promise((resolve, reject) => {
       const sub = obs.subscribe(
-        () => {
-          resolve()
-          sub.unsubscribe()
+        (schema) => {
+          if (schema.sha !== 'default') {
+            resolve()
+            sub.unsubscribe()
+          }
         },
         (e) => {
           reject(e)

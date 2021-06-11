@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "cdefs.h"
 #include "../rmutil/sds.h"
 #include "redismodule.h"
@@ -1135,6 +1136,19 @@ static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, stru
     return RPN_ERR_OK;
 }
 
+static enum rpn_error rpn_op_get_clock_realtime(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+    struct timespec t;
+    long long ts;
+
+    if (clock_gettime(CLOCK_REALTIME, &t)) {
+        return RPN_ERR_NOTSUP; /* RFE New error code? */
+    }
+
+    ts = t.tv_sec * 1000 + lround(t.tv_nsec / 1.0e6);
+
+    return push_int_result(ctx, ts);
+}
+
 static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -1215,7 +1229,7 @@ static rpn_fp funcs[] = {
     rpn_op_aon,     /* k */
     rpn_op_abo,     /* l spare */
     rpn_op_abo,     /* m spare */
-    rpn_op_abo,     /* n spare */
+    rpn_op_get_clock_realtime, /* n */
     rpn_op_abo,     /* o spare */
     rpn_op_abo,     /* p spare */
     rpn_op_abo,     /* q spare */
