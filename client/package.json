@@ -70,7 +70,7 @@
   "dependencies": {
     "data-record": "^0.5.2",
     "@saulx/selva-diff": "^1.0.17",
-    "@saulx/selva-query-ast-parser": "^1.2.0",
+    "@saulx/selva-query-ast-parser": "^2.0.0",
     "@types/uuid": "^8.3.0",
     "chalk": "^4.1.0",
     "redis": "^2.8.0",
@@ -79,3 +79,4 @@
     "@saulx/diff": "^1.0.0"
   }
 }
+
