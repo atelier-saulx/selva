@@ -124,7 +124,6 @@ export default function ast2rpn(
         f.$value.startsWith('now') &&
         (f.$operator === '<' || f.$operator === '>')
       ) {
-        // reg[regIndex++] = convertNowFilter(<string>f.$value)
         valueId = convertNowFilter(<string>f.$value)
         isNowValue = true
       } else {
@@ -164,7 +163,6 @@ export default function ast2rpn(
       let isNowValue1: boolean = false
 
       if (typeof f.$value[0] === 'string' && f.$value[0].startsWith('now')) {
-        // reg[regIndex++] = `${convertNow(<string>f.$value[0])}`
         valueId1 = convertNowFilter(<string>f.$value[0])
         isNowValue1 = true
       } else {
@@ -174,7 +172,6 @@ export default function ast2rpn(
       let valueId2: string | number = regIndex
       let isNowValue2: boolean = false
       if (typeof f.$value[1] === 'string' && f.$value[1].startsWith('now')) {
-        // reg[regIndex++] = convertNowFilter(<string>f.$value[1])
         valueId2 = convertNowFilter(<string>f.$value[1])
         isNowValue2 = true
       } else {
