@@ -1344,6 +1344,7 @@ static void send_update_events(struct SelvaModify_Hierarchy *hierarchy) {
     while ((sub = SVector_Foreach(&it))) {
 #if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
+
         fprintf(stderr, "%s:%d: publish update event %s\n",
                 __FILE__, __LINE__,
                 Selva_SubscriptionId2str(str, sub->sub_id));
