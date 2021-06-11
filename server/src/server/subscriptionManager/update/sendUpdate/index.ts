@@ -26,7 +26,6 @@ const sendUpdate = async (
   const { client, selector } = subscriptionManager
   const redis = client.redis
 
-  console.log('TRYING TO UDPATE', channel)
   if (subscriptionManager.subscriptions[channel] !== subscription) {
     subscription.beingProcessed = false
     return
@@ -78,7 +77,6 @@ const sendUpdate = async (
   let payload
   try {
     payload = await client.get(getOptions)
-    console.log('GET HAS BEEN RUN', channel)
 
     const t = Date.now() - startTime
 
@@ -201,7 +199,6 @@ const sendUpdate = async (
 
   await Promise.all(q)
 
-  console.log('PUBLISHING', channel)
   await redis.publish(
     selector,
     channel,
