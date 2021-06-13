@@ -1901,9 +1901,9 @@ static int traverse_array(
     // maybe we need empty ids or nulls or something
     // we probably have a macro for empty id
     // then we don't need to make the find result have a different format for arrays
-    //     if (node) {
-    //         cb->node_cb(node, cb->node_arg);
-    //     }
+      if (obj) {
+        cb->node_cb(obj, cb->node_arg);
+      }
     }
 
     return 0;

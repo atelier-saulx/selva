@@ -991,7 +991,6 @@ static int send_array_object_field(
 
 
 static int send_array_object_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaModify_Hierarchy *hierarchy, struct SelvaObject *obj, struct SelvaObject *fields) {
-    RedisModuleString *id;
     int err;
 
     /*
@@ -1013,7 +1012,7 @@ static int send_array_object_fields(RedisModuleCtx *ctx, RedisModuleString *lang
      */
 
     RedisModule_ReplyWithArray(ctx, 2);
-    RedisModule_ReplyWithString(ctx, id);
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateString(ctx, EMPTY_NODE_ID, 10));
 
     const ssize_t fields_len = SelvaObject_Len(fields, NULL);
     if (fields_len < 0) {
@@ -1497,6 +1496,7 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
 }
 
 static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
+    fprintf(stderr, "HELLO ARRAY NODE CB\n");
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
@@ -1528,6 +1528,7 @@ static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
             int err;
 
             if (args->fields) {
+                fprintf(stderr, "HELLO SENDING FIELDS FOR OBJ\n");
                 err = send_array_object_fields(args->ctx, args->lang, args->hierarchy, obj, args->fields);
             } else {
                 RedisModule_ReplyWithStringBuffer(args->ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
