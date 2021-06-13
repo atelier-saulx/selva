@@ -9,9 +9,10 @@
 #include "selva.h"
 #include "svector.h"
 
+struct RedisModuleIO;
+struct RedisModuleCtx;
 struct EdgeFieldConstraint;
 struct EdgeField;
-struct RedisModuleIO;
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyNode;
 struct SelvaObject;

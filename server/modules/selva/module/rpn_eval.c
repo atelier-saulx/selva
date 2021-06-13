@@ -12,7 +12,7 @@ enum SelvaRpnEvalType {
 
 static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    int err;
+    enum rpn_error err;
 
     const int ARGV_KEY         = 1;
     const int ARGV_FILTER_EXPR = 2;
@@ -87,7 +87,8 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisM
             RedisModule_ReplyWithString(ctx, el->value_rms);
         }
     } else {
-        err = SELVA_EINTYPE;
+        replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Invalid type");
+        err = 0;
     }
 
 fail:

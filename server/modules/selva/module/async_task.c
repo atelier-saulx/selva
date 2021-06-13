@@ -19,6 +19,25 @@
             char channel[sizeof(prefix) + SELVA_SUBSCRIPTION_ID_STR_LEN] = prefix; \
             Selva_SubscriptionId2str(channel + sizeof(prefix) - 1, (sub_id));
 
+/**
+ * Worker restart period. [min]
+ */
+#define WORKER_RESTART_PERIOD 5
+/**
+ * Worker hiredis max reconnection attempts.
+ */
+#define WORKER_MAX_RECONN 3
+
+#if __MACH__
+#define WORKER_TIME_SOURCE CLOCK_MONOTONIC
+#elif defined(CLOCK_MONOTONIC_COARSE)
+#define WORKER_TIME_SOURCE CLOCK_MONOTONIC_COARSE
+#elif _POSIX_MONOTONIC_CLOCK > 0
+#define WORKER_TIME_SOURCE CLOCK_MONOTONIC
+#else
+#define WORKER_TIME_SOURCE CLOCK_REALTIME
+#endif
+
 static uint64_t total_publishes;
 static uint64_t missed_publishes;
 
@@ -55,28 +74,39 @@ static void selva_yield(void) {
     usleep(ASYNC_TASK_PEEK_INTERVAL_US);
 }
 
+#define ASYNC_TASK_LOG(fmt, ...) \
+    fprintf(stderr, "%s:%d:[tid:%d]: " fmt, \
+            __FILE__, __LINE__, (int)thread_idx, ##__VA_ARGS__)
+
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     uint64_t thread_idx = (uint64_t)argv;
     redisContext *ctx = NULL;
 
-    fprintf(stderr, "Started async task worker number %i\n", (int)thread_idx);
+    ASYNC_TASK_LOG("Started async task worker\n");
 
     queue_cb_t *queue = queues + thread_idx;
 
     int port = getRedisPort();
     if (!port) {
-        fprintf(stderr, "REDIS_PORT invalid or not set\n");
+        ASYNC_TASK_LOG("REDIS_PORT invalid or not set\n");
         goto error;
     }
-    fprintf(stderr, "Connecting to Redis master on 127.0.0.1:%d\n", port);
+
+    ASYNC_TASK_LOG("Connecting to Redis master on 127.0.0.1:%d\n", port);
 
     ctx = redisConnect("127.0.0.1", port);
     if (ctx->err) {
-        fprintf(stderr, "Error connecting to the redis instance\n");
+        ASYNC_TASK_LOG("Error connecting to the redis instance\n");
+        usleep(100000);
         goto error;
     }
 
-    for (;;) {
+    struct timespec start_time;
+    struct timespec cur_time;
+    int retry_cnt = 0;
+    for (clock_gettime(WORKER_TIME_SOURCE, &start_time), clock_gettime(WORKER_TIME_SOURCE, &cur_time);
+         (cur_time.tv_sec - start_time.tv_sec) / 60 < WORKER_RESTART_PERIOD + (long long)thread_idx;
+         clock_gettime(WORKER_TIME_SOURCE, &cur_time)) {
         char *next;
 
         if (!queue_peek(queue, (void **)&next)) {
@@ -122,16 +152,39 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         fprintf(stderr, "New task received. type: %d size: %d bytes\n", (int)task->type, (int)size);
 #endif
 
+#define RETRY \
+        redisFree(ctx); \
+        ctx = NULL; \
+        retry_cnt++; \
+        goto retry
+retry:
+        if (retry_cnt > WORKER_MAX_RECONN) {
+            goto error;
+        }
+        if (!ctx) {
+            ASYNC_TASK_LOG("Reconnecting to Redis master on 127.0.0.1:%d\n", port);
+
+            ctx = redisConnect("127.0.0.1", port);
+            if (ctx->err) {
+                ASYNC_TASK_LOG("Error connecting to the redis instance\n");
+                usleep(20000);
+                RETRY;
+            }
+        }
+
         if (task->type == SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE) {
             CHANNEL_SUB_ID("___selva_subscription_update:", task->sub_update.sub_id);
             redisReply *reply = NULL;
 
-#if 0
             fprintf(stderr, "Redis publish subscription update: \"%s\"\n", channel);
-#endif
             reply = redisCommand(ctx, "PUBLISH %s %s", channel, "");
-            if (reply == NULL) {
-                fprintf(stderr, "Error occurred in publish %s\n", ctx->errstr);
+            if (!reply) {
+                ASYNC_TASK_LOG("No reply received: %s\n", ctx->errstr);
+                RETRY;
+            }
+            if (reply->type == REDIS_REPLY_ERROR) {
+                ASYNC_TASK_LOG("Error occurred in publish %s\n", ctx->errstr);
+                RETRY;
             }
 
             freeReplyObject(reply);
@@ -139,21 +192,27 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
             CHANNEL_SUB_ID("___selva_subscription_trigger:", task->sub_trigger.sub_id);
             redisReply *reply = NULL;
 
-#if 0
             fprintf(stderr, "Redis publish subscription trigger: \"%s\"\n", channel);
-#endif
             reply = redisCommand(ctx, "PUBLISH %s %b", channel, task->sub_trigger.node_id, SELVA_NODE_ID_SIZE);
-            if (reply == NULL) {
-                fprintf(stderr, "Error occurred in publish %s\n", ctx->errstr);
+            if (!reply) {
+                ASYNC_TASK_LOG("No reply received: %s\n", ctx->errstr);
+                RETRY;
+            }
+            if (reply->type == REDIS_REPLY_ERROR) {
+                ASYNC_TASK_LOG("Error occurred in publish %s\n", ctx->errstr);
+                RETRY;
             }
 
+            retry_cnt = 0;
             freeReplyObject(reply);
         } else {
-            fprintf(stderr, "Unsupported task type %d\n", task->type);
+            ASYNC_TASK_LOG("Unsupported task type %d\n", task->type);
         }
+#undef RETRY
     }
 
 error:
+    ASYNC_TASK_LOG("Thread restarting... Ran for %ld minutes", (cur_time.tv_sec - start_time.tv_sec) / 60);
     thread_ids[thread_idx] = 0;
     redisFree(ctx);
 

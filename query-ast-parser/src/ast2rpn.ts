@@ -1,5 +1,5 @@
 import { Fork, FilterAST as Filter, Rpn } from './types'
-import convertNow from './convertNow'
+import { convertNowFilter } from './convertNow'
 
 function isFork(x: any): x is Fork {
   return x.isFork
@@ -116,14 +116,16 @@ export default function ast2rpn(
       const fieldId = regIndex
       reg[regIndex++] = f.$field
 
-      const valueId = regIndex
+      let valueId: string | number = regIndex
+      let isNowValue: boolean = false
 
       if (
         typeof f.$value === 'string' &&
         f.$value.startsWith('now') &&
         (f.$operator === '<' || f.$operator === '>')
       ) {
-        reg[regIndex++] = `${convertNow(<string>f.$value)}`
+        valueId = convertNowFilter(<string>f.$value)
+        isNowValue = true
       } else {
         reg[regIndex++] = `${f.$value}`
       }
@@ -134,7 +136,9 @@ export default function ast2rpn(
         console.error(`Invalid op for ${vType} field`, f)
       }
 
-      if (vType === 'number') {
+      if (isNowValue) {
+        out += ` ${valueId} $${fieldId} g ${op}`
+      } else if (vType === 'number') {
         out += ` @${valueId} $${fieldId} g ${op}`
       } else {
         out += ` $${valueId} $${fieldId} f ${op}`
@@ -155,22 +159,28 @@ export default function ast2rpn(
     } else if (f.$operator == '..') {
       const fieldId = regIndex
       reg[regIndex++] = f.$field
-      const valueId1 = regIndex
+      let valueId1: string | number = regIndex
+      let isNowValue1: boolean = false
 
       if (typeof f.$value[0] === 'string' && f.$value[0].startsWith('now')) {
-        reg[regIndex++] = `${convertNow(<string>f.$value[0])}`
+        valueId1 = convertNowFilter(<string>f.$value[0])
+        isNowValue1 = true
       } else {
         reg[regIndex++] = `${f.$value[0]}`
       }
 
-      const valueId2 = regIndex
+      let valueId2: string | number = regIndex
+      let isNowValue2: boolean = false
       if (typeof f.$value[1] === 'string' && f.$value[1].startsWith('now')) {
-        reg[regIndex++] = `${convertNow(<string>f.$value[1])}`
+        valueId2 = convertNowFilter(<string>f.$value[1])
+        isNowValue2 = true
       } else {
         reg[regIndex++] = `${f.$value[1]}`
       }
 
-      out += ` @${valueId2} $${fieldId} g @${valueId1} i`
+      const part1 = isNowValue1 ? valueId1 : `@${valueId1}`
+      const part2 = isNowValue2 ? valueId2 : `@${valueId2}`
+      out += ` ${part2} $${fieldId} g ${part1} i`
     } else if (vType === 'object') {
       const fork: Fork = {
         isFork: true,

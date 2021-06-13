@@ -419,7 +419,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_ReplyWithString(ctx, id);
 
     for (int i = 3; i < argc; i += 3) {
-        bool publish = true;
         const RedisModuleString *type = argv[i];
         const RedisModuleString *field = argv[i + 1];
         RedisModuleString *value = argv[i + 2];
@@ -529,16 +528,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 continue;
             }
 
-            /*
-             * Hierarchy will handle events for parents and children.
-             */
-            if (!strcmp(field_str, "parents") || !strcmp(field_str, "children")) {
-                publish = false;
-            }
-
             err = SelvaModify_ModifySet(ctx, hierarchy, obj, id, field, setOpts);
             if (err == 0) {
-                publish = false;
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
             } else if (err < 0) {
@@ -564,7 +555,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             err = SelvaModify_ModifyDel(ctx, hierarchy, obj, id, field);
             if (err == SELVA_ENOENT) {
                 /* No need to replicate. */
-                publish = false;
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
             } else if (err) {
@@ -578,7 +568,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING ||
                    type_code == SELVA_MODIFY_ARG_STRING) {
             if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
-                publish = false;
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
             }
@@ -602,7 +591,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
                    type_code == SELVA_MODIFY_ARG_LONGLONG) {
             if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG && old_type != SELVA_OBJECT_NULL) {
-                publish = false;
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
             }
@@ -632,7 +620,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE ||
                    type_code == SELVA_MODIFY_ARG_DOUBLE) {
             if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE && old_type != SELVA_OBJECT_NULL) {
-                publish = false;
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
                 continue;
             }
@@ -736,7 +723,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         /* This triplet needs to be replicated. */
         bitmap_set(replset, i / 3 - 1);
 
-        if (publish) {
+        /*
+         * Publish that the field was changed.
+         * Hierarchy handles events for parents and children.
+         */
+        if (strcmp(field_str, "parents") && strcmp(field_str, "children")) {
             SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, nodeId, metadata, field_str);
         }
 

@@ -871,7 +871,7 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
 
     if (key->type == SELVA_OBJECT_NULL) {
         key->emb_ll_value = default_value;
-    } else if (key->type != SELVA_OBJECT_LONGLONG) {
+    } else if (key->type == SELVA_OBJECT_LONGLONG) {
         key->emb_ll_value += incr;
     } else {
         return SELVA_EINTYPE;

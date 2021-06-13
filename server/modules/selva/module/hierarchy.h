@@ -161,10 +161,12 @@ ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Se
 #endif
 
 int SelvaModify_DelHierarchyChildren(
+        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id);
 
 int SelvaModify_DelHierarchyParents(
+        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id);
 

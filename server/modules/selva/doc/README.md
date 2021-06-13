@@ -102,10 +102,18 @@ The edge field system is documented [here](edge.md).
 
 ## Subscriptions
 
-A subscription is a collection of subscription markers. A subscription marker is
-either set to start from a node or it's a trigger marker which is not attached
-to any specific node. A third distinct marker type is called the missing accessor
-marker that is waiting for a node or alias to be created.
+A subscription is a collection of subscription markers. There are three basic
+types of subscription markers. A regular marker is attached to a start node and
+the nodes that follow it according to the rules of the traversal specified, and
+the marker reacts to changes in the node's relationships or data.  A missing
+accessor marker is a marker that is waiting for a node or an alias to appear
+(to be created). Finally a trigger marker reacts to certain database events.
+
+The reality with the markers is a bit more complex than what was just stated,
+because the actual marker types can be mixed with matcher flags and action
+functions can change the actual behavior. Some markers are also detached and
+not directly attached to a node or nodeId, one example of such a maker is the
+trigger marker.
 
 When a regular node marker is created it's applied to the node it starts from and
 it's applied to all the connected nodes following the edge constraint of the

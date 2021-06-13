@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "cdefs.h"
 #include "../rmutil/sds.h"
 #include "redismodule.h"
@@ -1135,6 +1136,19 @@ static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, stru
     return RPN_ERR_OK;
 }
 
+static enum rpn_error rpn_op_get_clock_realtime(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+    struct timespec t;
+    long long ts;
+
+    if (clock_gettime(CLOCK_REALTIME, &t)) {
+        return RPN_ERR_NOTSUP; /* RFE New error code? */
+    }
+
+    ts = t.tv_sec * 1000 + lround(t.tv_nsec / 1.0e6);
+
+    return push_int_result(ctx, ts);
+}
+
 static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -1215,7 +1229,7 @@ static rpn_fp funcs[] = {
     rpn_op_aon,     /* k */
     rpn_op_abo,     /* l spare */
     rpn_op_abo,     /* m spare */
-    rpn_op_abo,     /* n spare */
+    rpn_op_get_clock_realtime, /* n */
     rpn_op_abo,     /* o spare */
     rpn_op_abo,     /* p spare */
     rpn_op_abo,     /* q spare */
@@ -1417,7 +1431,7 @@ struct rpn_expression *rpn_compile(const char *input) {
     size_t input_literal_reg_i = 0;
     size_t i = 0;
     size_t tok_len = 0;
-    const char *rest;
+    const char *rest = NULL;
     for (const char *tok_str = tokenize(input, delim, group, &rest, &tok_len);
          tok_str != NULL;
          tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
@@ -1426,6 +1440,8 @@ struct rpn_expression *rpn_compile(const char *input) {
         rpn_token *new;
 
         if (tok_len == 0) {
+            fprintf(stderr, "%s:%d: Token length can't be zero\n",
+                    __FILE__, __LINE__);
             goto fail;
         }
 
@@ -1442,6 +1458,7 @@ struct rpn_expression *rpn_compile(const char *input) {
             break;
         default:
             if (tok_len > RPN_MAX_TOKEN_SIZE - 1) {
+                fprintf(stderr, "%s:%d: Invalid token length\n", __FILE__, __LINE__);
                 goto fail;
             }
 
@@ -1451,6 +1468,9 @@ struct rpn_expression *rpn_compile(const char *input) {
         }
 
         if (err) {
+            fprintf(stderr, "%s:%d: RPN compilation error: %d\n",
+                    __FILE__, __LINE__,
+                    err);
 fail:
             rpn_destroy_expression(expr);
             return NULL;
@@ -1467,6 +1487,7 @@ fail:
 next:
         new = RedisModule_Realloc(expr->expression, size);
         if (!new) {
+            fprintf(stderr, "%s:%d: Realloc failed\n", __FILE__, __LINE__);
             goto fail;
         }
         expr->expression = new;
@@ -1476,6 +1497,7 @@ next:
 
     /* The returned length is only ever 0 if the grouping failed. */
     if (tok_len == 0) {
+        fprintf(stderr, "%s:%d: Tokenization failed\n", __FILE__, __LINE__);
         rpn_destroy_expression(expr);
         return NULL;
     }

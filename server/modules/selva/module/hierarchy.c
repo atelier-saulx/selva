@@ -90,7 +90,7 @@ static int rdbLoading;
 #endif
 
 static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
-static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel);
+static void removeRelationships(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel);
 RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
 
 static int SVector_HierarchyNode_id_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
@@ -395,14 +395,14 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
         Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, id, SELVA_SUBSCRIPTION_TRIGGER_TYPE_DELETED);
     }
 
-    removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
+    removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
     SelvaSubscriptions_DeferHierarchyDeletionEvents(hierarchy, id, &node->metadata);
 
     /*
      * Never delete the root node.
      */
     if (!is_root) {
-        removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+        removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
 
         /*
          * The node was now marked as a head but we are going to get rid of it
@@ -538,13 +538,11 @@ static int cross_insert_children(
         return 0; /* No changes. */
     }
 
-    SelvaSubscriptions_DeferHierarchyEvents(hierarchy, node->id, &node->metadata);
-
     for (size_t i = 0; i < n; i++) {
-        SelvaModify_HierarchyNode *adjacent;
+        SelvaModify_HierarchyNode *child;
 
-        adjacent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
-        if (!adjacent) {
+        child = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
+        if (!child) {
             int err;
 
             err = SelvaModify_SetHierarchy(ctx, hierarchy, nodes[i],
@@ -559,8 +557,8 @@ static int cross_insert_children(
                 continue;
             }
 
-            adjacent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
-            if (!adjacent) {
+            child = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
+            if (!child) {
                 fprintf(stderr, "%s:%d: Node state error, node: \"%.*s\"\n",
                         __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, nodes[i]);
@@ -568,39 +566,57 @@ static int cross_insert_children(
             }
         }
 
-        /* The adjacent node is no longer an orphan */
-        if (SVector_Size(&adjacent->parents) == 0) {
-            rmHead(hierarchy, adjacent);
+        /* The child node is no longer an orphan */
+        if (SVector_Size(&child->parents) == 0) {
+            rmHead(hierarchy, child);
         }
 
-        if (SVector_InsertFast(&node->children, adjacent) == NULL) {
-            (void)SVector_InsertFast(&adjacent->parents, node);
+        if (SVector_InsertFast(&node->children, child) == NULL) {
+            (void)SVector_InsertFast(&child->parents, node);
 
 #if 0
             fprintf(stderr, "%s:%d: Inserted %.*s.children <= %.*s\n",
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, node->id,
-                    (int)SELVA_NODE_ID_SIZE, adjacent->id);
+                    (int)SELVA_NODE_ID_SIZE, child->id);
 #endif
+
+            /*
+             * Inherit markers from the parent node to the new child.
+             */
+            SelvaSubscriptions_InheritParent(
+                ctx, hierarchy,
+                child->id, &child->metadata,
+                SVector_Size(&child->children),
+                node->id, &node->metadata);
+
+            /*
+             * Inherit markers from the new child to the parent node.
+             */
+            SelvaSubscriptions_InheritChild(
+                ctx, hierarchy,
+                node->id, &node->metadata,
+                SVector_Size(&node->parents),
+                child->id, &child->metadata);
 
             /*
              * Publish that the parents field was changed.
              * Actual events are only sent if there are subscription markers
              * set on this node.
              */
-            publishParentsUpdate(ctx, hierarchy, adjacent);
-            publishAncestorsUpdate(ctx, hierarchy, adjacent);
-            SelvaSubscriptions_InheritChild(
-                hierarchy,
-                node->id, &node->metadata,
-                SVector_Size(&node->parents),
-                adjacent->id, &adjacent->metadata);
+            publishParentsUpdate(ctx, hierarchy, child);
+            publishAncestorsUpdate(ctx, hierarchy, child);
+
+            SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, child->id, &child->metadata, 0);
+
             res++; /* Count actual insertions */
         }
 
         publishChildrenUpdate(ctx, hierarchy, node);
         publishDescendantsUpdate(ctx, hierarchy, node);
     }
+
+    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, node->id, &node->metadata, 0);
 
     /*
      * Publish that the children field was changed.
@@ -633,13 +649,11 @@ static int cross_insert_parents(
         rmHead(hierarchy, node);
     }
 
-    SelvaSubscriptions_DeferHierarchyEvents(hierarchy, node->id, &node->metadata);
-
     for (size_t i = 0; i < n; i++) {
-        SelvaModify_HierarchyNode *adjacent;
+        SelvaModify_HierarchyNode *parent;
 
-        adjacent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
-        if (!adjacent) {
+        parent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
+        if (!parent) {
             int err;
 
             /* RFE no_root is not propagated */
@@ -655,8 +669,8 @@ static int cross_insert_parents(
                 continue;
             }
 
-            adjacent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
-            if (!adjacent) {
+            parent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
+            if (!parent) {
                 fprintf(stderr, "%s:%d: Node state error, node: \"%.*s\"\n",
                         __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, nodes[i]);
@@ -665,31 +679,49 @@ static int cross_insert_parents(
         }
 
         /* Do inserts only if the relationship doesn't exist already */
-        if (SVector_InsertFast(&node->parents, adjacent) == NULL) {
-            (void)SVector_InsertFast(&adjacent->children, node);
+        if (SVector_InsertFast(&node->parents, parent) == NULL) {
+            (void)SVector_InsertFast(&parent->children, node);
 
 #if 0
             fprintf(stderr, "%s:%d: Inserted %.*s.parents <= %.*s\n",
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, node->id,
-                    (int)SELVA_NODE_ID_SIZE, adjacent->id);
+                    (int)SELVA_NODE_ID_SIZE, parent->id);
 #endif
+
+            /*
+             * Inherit subscription markers from the new parent to the node.
+             */
+            SelvaSubscriptions_InheritParent(
+                ctx, hierarchy,
+                node->id, &node->metadata,
+                SVector_Size(&node->children),
+                parent->id, &parent->metadata);
+
+            /*
+             * Inherit subscription markers from the node to the new parent.
+             */
+            SelvaSubscriptions_InheritChild(
+                ctx, hierarchy,
+                parent->id, &parent->metadata,
+                SVector_Size(&parent->parents),
+                node->id, &node->metadata);
 
             /*
              * Publish that the children field was changed.
              * Actual events are only sent if there are subscription markers
              * set on this node.
              */
-            publishChildrenUpdate(ctx, hierarchy, adjacent);
-            publishDescendantsUpdate(ctx, hierarchy, adjacent);
-            SelvaSubscriptions_InheritParent(
-                hierarchy,
-                node->id, &node->metadata,
-                SVector_Size(&node->children),
-                adjacent->id, &adjacent->metadata);
+            publishChildrenUpdate(ctx, hierarchy, parent);
+            publishDescendantsUpdate(ctx, hierarchy, parent);
+
+            SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, parent->id, &parent->metadata, 0);
+
             res++;
         }
     }
+
+    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, node->id, &node->metadata, 0);
 
     /*
      * Publish that the parents field was changed.
@@ -729,7 +761,7 @@ static int crossRemove(
     }
 #endif
 
-    SelvaSubscriptions_DeferHierarchyEvents(hierarchy, node->id, &node->metadata);
+    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, node->id, &node->metadata, 1);
     SelvaSubscriptions_ClearAllMarkers(hierarchy, node->id, &node->metadata);
 
     if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
@@ -824,7 +856,7 @@ static int crossRemove(
 /**
  * Remove all relationships rel of node.
  */
-static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel) {
+static void removeRelationships(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel) {
     size_t offset_a;
     size_t offset_b;
     SVECTOR_AUTOFREE(sub_markers);
@@ -856,7 +888,7 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
     }
 #endif
 
-    SelvaSubscriptions_DeferHierarchyEvents(hierarchy, node->id, &node->metadata);
+    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, node->id, &node->metadata, 1);
     SelvaSubscriptions_ClearAllMarkers(hierarchy, node->id, &node->metadata);
 
     struct SVectorIterator it;
@@ -889,6 +921,7 @@ static void removeRelationships(SelvaModify_Hierarchy *hierarchy, SelvaModify_Hi
 }
 
 int SelvaModify_DelHierarchyChildren(
+        RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id) {
     SelvaModify_HierarchyNode *node;
@@ -898,12 +931,13 @@ int SelvaModify_DelHierarchyChildren(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
+    removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
 
     return 0;
 }
 
 int SelvaModify_DelHierarchyParents(
+        RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id) {
     SelvaModify_HierarchyNode *node;
@@ -913,7 +947,7 @@ int SelvaModify_DelHierarchyParents(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+    removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
 
     return 0;
 }
@@ -950,8 +984,8 @@ int SelvaModify_SetHierarchy(
         res++;
     } else {
         /* Clear the existing node relationships */
-        removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
-        removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+        removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
+        removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
     }
 
     if (nr_parents == 0) {
@@ -1050,7 +1084,7 @@ int SelvaModify_SetHierarchyParents(
 
     if (nr_parents == 0) {
         /* Clear the existing node relationships. */
-        removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
+        removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
 
         /* This node is orphan. */
         mkHead(hierarchy, node);
@@ -1095,7 +1129,7 @@ int SelvaModify_SetHierarchyChildren(
 
     if (nr_children == 0) {
         /* Clear the existing node relationships */
-        removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
+        removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
 
         return 1;
     }
@@ -1131,6 +1165,7 @@ int SelvaHierarchy_UpsertNode(
         const Selva_NodeId id,
         SelvaModify_HierarchyNode **out) {
     SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, id);
+    SelvaModify_HierarchyNode *prev_node;
     int isLoading = isRdbLoading(ctx);
 
     if (node) {
@@ -1160,12 +1195,16 @@ int SelvaHierarchy_UpsertNode(
      /*
       * All nodes must be indexed.
       */
-     if (RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL) {
+     prev_node = RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node);
+     if (prev_node) {
          /*
           * We are being extremely paranoid here as this shouldn't be possible.
           */
          SelvaModify_DestroyNode(node);
 
+         if (out) {
+             *out = prev_node;
+         }
          return SELVA_HIERARCHY_EEXIST;
      }
 
@@ -1652,7 +1691,6 @@ static int bfs_expression(
         enum rpn_error rpn_err;
         struct SelvaSetElement *field_el;
 
-        /* TODO support ref fields */
         rpn_set_hierarchy_node(rpn_ctx, node);
         rpn_err = rpn_selvaset(redis_ctx, rpn_ctx, rpn_expr, &fields);
         if (rpn_err) {
@@ -2358,106 +2396,6 @@ int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
     return REDISMODULE_OK;
 }
 
-/*
- * SELVA.HIERARCHY.DELREF HIERARCHY_KEY NODE_ID PARENTS|CHILDREN
- */
-int SelvaModify_Hierarchy_DelRefCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-
-    if (argc != 4) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    /*
-     * Open the Redis key.
-     */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        return REDISMODULE_OK;
-    }
-
-    Selva_NodeId nodeId;
-
-    RMString2NodeId(nodeId, argv[2]);
-
-    SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
-    if (!node) {
-        return RedisModule_ReplyWithLongLong(ctx, 0);
-    }
-
-    const char *op = RedisModule_StringPtrLen(argv[3], NULL);
-    if (!strcmp(op, "parents")) {
-        removeRelationships(hierarchy, node, RELATIONSHIP_CHILD);
-
-        /*
-         * Reparent to root if the node is now orphan.
-         */
-        if (SVector_Size(&node->parents) == 0) {
-            (void)SelvaModify_SetHierarchy(ctx, hierarchy, node->id,
-                1, ((Selva_NodeId []){ ROOT_NODE_ID }),
-                0, NULL);
-        }
-    } else if (!strcmp(op, "children")) {
-        Selva_NodeId *ids;
-        size_t ids_len;
-
-        /* RFE Shouldn't this come later? */
-        removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
-
-        ids = getNodeIds(&node->children, &ids_len);
-        if (unlikely(!ids)) {
-            return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOMEM);
-        }
-
-        for (size_t i = 0; i < ids_len; i++) {
-            Selva_NodeId nodeId;
-
-            memcpy(nodeId, ids + i, SELVA_NODE_ID_SIZE);
-
-            /*
-             * Find the node.
-             */
-            SelvaModify_HierarchyNode *child = SelvaHierarchy_FindNode(hierarchy, nodeId);
-            if (!child) {
-                /* Node not found;
-                 * This is probably fine, as there might have been a circular link.
-                 */
-                continue;
-            }
-
-            if (SVector_Size(&child->parents) == 0) {
-                int err;
-                Selva_NodeId childId;
-
-                /*
-                 * Make a copy of the child's ID just for the sake of
-                 * potentially logging it.
-                 */
-                memcpy(childId, child->id, SELVA_NODE_ID_SIZE);
-
-                err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
-                if (err) {
-                    /*
-                     * We ignore and log any errors.
-                     */
-                    fprintf(stderr, "%s:%d: Failed to delete the child \"%.*s\" of \"%.*s\"\n",
-                            __FILE__, __LINE__,
-                            (int)SELVA_NODE_ID_SIZE, childId,
-                            (int)SELVA_NODE_ID_SIZE, nodeId);
-                }
-            }
-        }
-    } else {
-        return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOTSUP);
-    }
-
-    RedisModule_ReplyWithLongLong(ctx, 1);
-    RedisModule_ReplicateVerbatim(ctx);
-    SelvaSubscriptions_SendDeferredEvents(hierarchy);
-
-    return REDISMODULE_OK;
-}
-
 int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -2684,7 +2622,6 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
      * Register commands.
      */
     if (RedisModule_CreateCommand(ctx, "selva.hierarchy.del", SelvaModify_Hierarchy_DelNodeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.delref", SelvaModify_Hierarchy_DelRefCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.parents", SelvaModify_Hierarchy_ParentsCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.children", SelvaModify_Hierarchy_ChildrenCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.edgelist", SelvaHierarchy_EdgeListCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||

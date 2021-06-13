@@ -34,8 +34,6 @@ const createSubscriptionManager = (
     incomingCount: 0,
     stagedForUpdates: new Set(),
     stagedInProgess: false,
-    memberMemCacheSize: 0,
-    memberMemCache: {},
     clients: {},
     subscriptions: {},
     inProgressCount: 0,

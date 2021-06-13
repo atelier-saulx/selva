@@ -62,20 +62,21 @@ const addOriginListeners = async (
       subscriptions: new Set(),
       listener,
       reconnectListener: (descriptor) => {
-        subscription.originDescriptors[name] = descriptor
         const { name: dbName } = descriptor
-
-        console.info(
-          'reconn in subs manager - need to only do reconn  when we are actively connected to this server...',
-          name
-        )
 
         // not enough ofcourse
         if (name === dbName) {
+          console.info(
+            'reconn in subs manager - need to only do reconn  when we are actively connected to this server...',
+            name,
+            descriptor
+          )
+
           // need to resend subs if it dc'ed
           const origin = subsManager.originListeners[name]
           if (origin && origin.subscriptions) {
             origin.subscriptions.forEach((subscription) => {
+              subscription.originDescriptors[name] = descriptor
               addUpdate(subsManager, subscription)
             })
           }
@@ -90,8 +91,24 @@ const addOriginListeners = async (
           }
 
           if (current.type === 'origin' && server.type === 'replica') {
-            removeOriginListeners(name, subsManager, subscription)
-            addOriginListeners(name, subsManager, subscription)
+            console.info(
+              'Upgrading connection from origin to replica',
+              current,
+              server
+            )
+            const subscriptions = new Set([
+              ...subsManager.originListeners[name].subscriptions,
+            ])
+            for (const sub of subscriptions) {
+              removeOriginListeners(name, subsManager, sub)
+            }
+
+            for (const sub of subscriptions) {
+              sub.originDescriptors[name] = server
+              addOriginListeners(name, subsManager, sub).finally(() =>
+                addUpdate(subsManager, subscription)
+              )
+            }
           }
         }
       },
@@ -132,9 +149,6 @@ const removeOriginListeners = (
     const redis = client.redis
     origin.subscriptions.delete(subscription)
     if (origin.subscriptions.size === 0) {
-      if (name in subsManager.memberMemCache) {
-        delete subsManager.memberMemCache[name]
-      }
       redis.punsubscribe({ name }, SUBSCRIPTION_UPDATE + '*')
       redis.punsubscribe({ name }, TRIGGER_UPDATE + '*')
       redis.punsubscribe({ name }, '___selva_events:*')

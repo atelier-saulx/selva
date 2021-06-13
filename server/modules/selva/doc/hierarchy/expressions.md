@@ -157,16 +157,17 @@ Therefore, neither of these yields the expected result.
 | Operator | Arguments         | Description                           | Example (expr => result) |
 | -------- | ----------------- | ------------------------------------- | ------------------------ |
 | `a`      | `set has a`       | `has` function for SelvaSets.         | `$1 $0 a => 0`           |
-| `b`      | `id`              | Returns the type of a node id.        | `xy123 b => xy`          |
+| `b`      | `id`              | Returns the type of a node id.        | `"xy123" b => "xy"`      |
 | `c`      | `!strcmp(s1, s2)` | Compare strings.                      | `$0 "hello" c => 1`      |
 | `d`      | `!cmp(id1, id2)`  | Compare node IDs.                     | `$1 $0 d => 1`           |
-| `e`      | `!cmp(curT, id)`  | Compare the type of the current node. | `"AB e`                  |
+| `e`      | `!cmp(curT, id)`  | Compare the type of the current node. | `"ab" e`                 |
 | `f`      | `node[a]`         | Get the string value of a node field. | `"field" f`              |
 | `g`      | `node[a]`         | Get the number value of a node field. | `"field" g`              |
 | `h`      | `!!node[a]`       | Field exists.                         | `"title.en" h => 1`      |
 | `i`      | `a <= b <= c`     | (interval) `b` is within `a` and `c`. | `"#2 #1 #0 => 1`         |
 | `j`      | `findFirst(A)`    | Take the name of the first non-empty field into a new set. (value is set or set is non-empty) | `A j => [ 'field' ]` |
 | `k`      | `aon(A)`          | Take all or none (AON), pass the set or result an empty set. | `A k => [ 'field1', 'field2' ]` |
+| `n`      | `clk_realtime()`  | Get the current value of `CLOCK_REALTIME` in ms. | `l => 1623253120970` |
 
 `j` and `k` are only available if `rpn_set_hierarchy_node()` is called before
 executing an expression.

@@ -10,6 +10,7 @@ import { Rpn } from '@saulx/selva-query-ast-parser'
 import { FieldSchemaArrayLike, Schema } from '~selva/schema'
 import { ServerDescriptor } from '~selva/types'
 import { makeLangArg } from './util'
+import { deepCopy } from '@saulx/utils'
 
 export type ExecContext = {
   db: string
