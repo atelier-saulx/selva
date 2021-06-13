@@ -2306,20 +2306,30 @@ test.serial.only('get - field with array', async (t) => {
     // refs: [],
   })
 
-  // const x = await client.get({
-  //   $id: id,
-  //   objRec: {
-  //     abba: {
-  //       objArray: {
-  //         hello: true,
-  //         $list: true,
-  //       },
-  //     },
-  //   },
-  // })
+  const x = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: {
+            $find: {
+              $filter: [
+                {
+                  $field: 'value',
+                  $operator: '>',
+                  $value: 2,
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  })
 
-  // console.log('OBJS', JSON.stringify(x, null, 2))
-  // return
+  console.log('OBJS', JSON.stringify(x, null, 2))
+  return
 
   const result = await client.get({
     $id: id,
