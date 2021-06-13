@@ -1505,7 +1505,13 @@ static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
         int err;
 
         /* Set node_id to the register */
-        rpn_set_reg_slvobj(rpn_ctx, 0, obj, 0);
+        err = rpn_set_reg_slvobj(rpn_ctx, 0, obj, 0);
+        if (err) {
+            fprintf(stderr, "%s:%d: Register set failed: \"%s\"\n",
+                    __FILE__, __LINE__,
+                    rpn_str_error[err]);
+            return 1;
+        }
 
         /*
          * Resolve the expression and get the result.
