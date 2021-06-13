@@ -2396,7 +2396,7 @@ test.serial.only('get - field with array', async (t) => {
     },
   })
 
-  const objs = await client.get({
+  let objs = await client.get({
     $id: id,
     objRec: {
       abba: {
@@ -2408,7 +2408,121 @@ test.serial.only('get - field with array', async (t) => {
     },
   })
 
-  console.dir('OBJS', JSON.stringify(objs, null, 2))
+  t.deepEqualIgnoreOrder(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 1',
+          },
+          {
+            hello: 'yes 2',
+          },
+          {
+            hello: 'yes 3',
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          value: true,
+          $list: true,
+        },
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            value: 1,
+          },
+          {
+            value: 2,
+          },
+          {
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: true,
+        },
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: {
+            $find: {
+              $filter: [
+                {
+                  $field: 'value',
+                  $operator: '>',
+                  $value: 2,
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
 
   client.destroy()
 })
