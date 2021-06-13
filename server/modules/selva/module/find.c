@@ -508,6 +508,123 @@ cleanup:
     return item;
 }
 
+static struct FindCommand_OrderedItem *createFindCommand_ObjectBasedOrderItem(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *order_field) {
+    Selva_NodeId nodeId;
+    RedisModuleString *id;
+    RedisModuleKey *key;
+    struct FindCommand_OrderedItem *item = NULL;
+    double d = 0.0;
+    char data_lang[8];
+    const char *data = NULL;
+    size_t data_len = 0;
+    enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
+
+    memset(data_lang, '\0', sizeof(data_lang));
+
+    id = RedisModule_CreateString(ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
+
+    RedisModuleString *value = NULL;
+    int err;
+
+    enum SelvaObjectType obj_type;
+
+    obj_type = SelvaObject_GetType(obj, order_field);
+
+    if (obj_type == SELVA_OBJECT_STRING) {
+        err = SelvaObject_GetString(obj, order_field, &value);
+        if (!err && value) {
+            data = RedisModule_StringPtrLen(value, &data_len);
+            type = ORDERED_ITEM_TYPE_TEXT;
+        }
+    } else if (obj_type == SELVA_OBJECT_OBJECT) {
+        SelvaObjectMeta_t meta;
+        SelvaObject_GetUserMeta(obj, order_field, &meta);
+
+        if (meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
+            TO_STR(lang);
+            struct SelvaObject *text_obj;
+            int text_err = SelvaObject_GetObject(obj, order_field, &text_obj);
+            if (text_err) {
+                goto cleanup;
+            }
+
+            if (!lang_len) {
+                goto cleanup;
+            }
+
+            char buf[lang_len + 1];
+            memcpy(buf, lang_str, lang_len + 1);
+            const char *sep = "\n";
+            char *rest = NULL;
+
+            for (const char *token = strtok_r(buf, sep, &rest);
+                    token != NULL;
+                    token = strtok_r(NULL, sep, &rest)) {
+                const size_t slen = strlen(token);
+
+                RedisModuleString *raw_value = NULL;
+                text_err = SelvaObject_GetStringStr(text_obj, token, slen, &raw_value);
+                if (!text_err && raw_value) {
+                    TO_STR(raw_value);
+
+                    if (raw_value_len) {
+                        value = raw_value;
+                        strncpy(data_lang, token, sizeof(data_lang) - 1);
+                        data_lang[sizeof(data_lang) - 1] = '\0';
+                        data = raw_value_str;
+                        data_len = raw_value_len;
+                        type = ORDERED_ITEM_TYPE_TEXT;
+                        break;
+                    }
+                }
+            }
+        }
+    } else if (obj_type == SELVA_OBJECT_DOUBLE) {
+        err = SelvaObject_GetDouble(obj, order_field, &d);
+        if (!err) {
+            type = ORDERED_ITEM_TYPE_DOUBLE;
+        }
+    } else if (obj_type == SELVA_OBJECT_LONGLONG) {
+        long long v;
+
+        err = SelvaObject_GetLongLong(obj, order_field, &v);
+        if (!err) {
+            d = (double)v;
+            type = ORDERED_ITEM_TYPE_DOUBLE;
+        }
+    }
+
+    size_t final_data_len = data_len;
+    locale_t locale = 0;
+
+    if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
+        locale = SelvaLang_GetLocale(data_lang, strlen(data_lang));
+        final_data_len = strxfrm_l(NULL, data, 0, locale);
+    }
+
+    item = RedisModule_PoolAlloc(ctx, sizeof(struct FindCommand_OrderedItem) + final_data_len + 1);
+    if (!item) {
+        /*
+         * Returning NULL in case of ENOMEM here should be fairly ok as we can
+         * assume that Redis will free everything we allocated and opened before
+         * this point. Although it's possible that there is not enough memory to
+         * do the cleanup but there is nothing we could do better neither here.
+         */
+        return NULL;
+    }
+
+    memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
+    item->type = type;
+    if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
+        strxfrm_l(item->data, data, final_data_len + 1, locale);
+    }
+    item->data_len = data_len;
+    item->d = d;
+
+cleanup:
+    return item;
+}
+
 static int fields_contains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len) {
     void *iterator;
     const SVector *vec;
@@ -1012,7 +1129,7 @@ static int send_array_object_fields(RedisModuleCtx *ctx, RedisModuleString *lang
      */
 
     RedisModule_ReplyWithArray(ctx, 2);
-    RedisModule_ReplyWithString(ctx, RedisModule_CreateString(ctx, EMPTY_NODE_ID, 10));
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateString(ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE));
 
     const ssize_t fields_len = SelvaObject_Len(fields, NULL);
     if (fields_len < 0) {
@@ -1555,8 +1672,7 @@ static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
             }
         } else {
             struct FindCommand_OrderedItem *item;
-
-            // item = createFindCommand_OrderItem(args->ctx, args->lang, node, args->order_field);
+            item = createFindCommand_ObjectBasedOrderItem(args->ctx, args->lang, obj, args->order_field);
             if (item) {
                 SVector_InsertFast(args->order_result, item);
             } else {
