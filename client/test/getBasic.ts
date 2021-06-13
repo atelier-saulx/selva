@@ -2581,5 +2581,73 @@ test.serial('get - field with array', async (t) => {
     },
   })
 
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: {
+            $sort: {
+              $order: 'desc',
+              $field: 'value',
+            },
+            $limit: 2,
+            $offset: 0,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: {
+            $sort: {
+              $order: 'desc',
+              $field: 'value',
+            },
+            $limit: 1,
+            $offset: 1,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+        ],
+      },
+    },
+  })
+
   client.destroy()
 })
