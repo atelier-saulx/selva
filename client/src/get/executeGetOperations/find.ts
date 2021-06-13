@@ -503,6 +503,24 @@ const findFields = async (
       padId(op.id),
       ...args
     )
+    console.log(
+      'HMM',
+      '___selva_hierarchy',
+      'bfs',
+      sourceField,
+      'order',
+      op.options.sort?.$field || '',
+      op.options.sort?.$order || 'asc',
+      'offset',
+      op.options.offset,
+      'limit',
+      op.options.limit,
+      'fields',
+      [...fieldsOpt.values()].join('\n'), // TODO Probably shouldn't pass $ names?
+      padId(op.id),
+      ...args
+    )
+    console.log('HMMHMM', result)
 
     await checkForNextRefresh(
       ctx,

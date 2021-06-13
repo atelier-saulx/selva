@@ -2030,6 +2030,7 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
             err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, nodeId, ref_field_str, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             TO_STR(ref_field);
+            fprintf(stderr, "HELLO ARRAY TRAVERSAL YOYO %.*s\n", (int)ref_field_len, ref_field_str);
             const struct SelvaModify_ArrayObjectCallback ary_cb = {
                 .node_cb = FindCommand_ArrayNodeCb,
                 .node_arg = &args,
