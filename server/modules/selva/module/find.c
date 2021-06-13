@@ -1049,20 +1049,6 @@ static int send_array_object_field(
                     getSelvaErrorStr(err));
         }
         return 1;
-    } else {
-        // TODO: should this be possible? I don't see how
-        /*
-         * Check if the field name is an edge field.
-         */
-        // struct SelvaModify_HierarchyMetadata *metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
-        // struct SelvaObject *edges = metadata->edge_fields.edges;
-
-        // if (edges) {
-        //     err = send_edge_field(ctx, lang, hierarchy, node, edges, field_prefix_str, field_prefix_len, field);
-        //     if (!err) {
-        //         return 1;
-        //     }
-        // }
     }
 
     /*

@@ -1891,19 +1891,10 @@ static int traverse_array(
     struct SVectorIterator it;
     SVector_ForeachBegin(&it, vec);
     struct SelvaObject *obj;
-    // struct rpn_ctx *rpn_ctx = cb->node_arg;
     while ((obj = SVector_Foreach(&it))) {
-      fprintf(stderr, "HELLO ITERATING\n");
-    // TODO
-    // this callback will set selva object in register 0 then field functions can operate directly on the selva object
-    // and call RPN eval
-    // set in result but I think it needs to work differently since we don't use ids for the find results then
-    // maybe we need empty ids or nulls or something
-    // we probably have a macro for empty id
-    // then we don't need to make the find result have a different format for arrays
-      if (obj) {
-        cb->node_cb(obj, cb->node_arg);
-      }
+        if (obj) {
+            cb->node_cb(obj, cb->node_arg);
+        }
     }
 
     return 0;
