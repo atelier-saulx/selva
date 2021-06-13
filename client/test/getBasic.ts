@@ -2306,30 +2306,34 @@ test.serial.only('get - field with array', async (t) => {
     // refs: [],
   })
 
-  // const x = await client.get({
-  //   $id: id,
-  //   objRec: {
-  //     abba: {
-  //       objArray: {
-  //         $all: true,
-  //         $list: {
-  //           $find: {
-  //             $filter: [
-  //               {
-  //                 $field: 'value',
-  //                 $operator: '>',
-  //                 $value: 2,
-  //               },
-  //             ],
-  //           },
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
+  const x = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: {
+            $sort: {
+              $order: 'desc',
+              $field: 'value',
+            },
+            $find: {
+              $filter: [
+                {
+                  $field: 'value',
+                  $operator: '>',
+                  $value: 1,
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  })
 
-  // console.log('OBJS', JSON.stringify(x, null, 2))
-  // return
+  console.log('OBJS', JSON.stringify(x, null, 2))
+  return
 
   const result = await client.get({
     $id: id,
@@ -2528,6 +2532,49 @@ test.serial.only('get - field with array', async (t) => {
           {
             hello: 'yes 3',
             value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: {
+            $sort: {
+              $order: 'desc',
+              $field: 'value',
+            },
+            $find: {
+              $filter: [
+                {
+                  $field: 'value',
+                  $operator: '>',
+                  $value: 1,
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
           },
         ],
       },
