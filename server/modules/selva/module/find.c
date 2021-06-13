@@ -111,6 +111,7 @@ enum FindCommand_OrderedItemType {
 struct FindCommand_OrderedItem {
     Selva_NodeId id;
     enum FindCommand_OrderedItemType type;
+    struct SelvaObject *data_obj;
     double d;
     size_t data_len;
     char data[];
@@ -620,6 +621,7 @@ static struct FindCommand_OrderedItem *createFindCommand_ObjectBasedOrderItem(Re
     }
     item->data_len = data_len;
     item->d = d;
+    item->data_obj = obj;
 
 cleanup:
     return item;
@@ -1817,6 +1819,59 @@ static size_t FindCommand_PrintOrderedResult(
     return len;
 }
 
+static size_t FindCommand_PrintOrderedArrayResult(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        SelvaModify_Hierarchy *hierarchy,
+        ssize_t offset,
+        ssize_t limit,
+        enum merge_strategy merge_strategy,
+        RedisModuleString *merge_path,
+        struct SelvaObject *fields,
+        SVector *order_result,
+        size_t *nr_fields_out) {
+    struct FindCommand_OrderedItem *item;
+    struct SVectorIterator it;
+    size_t len = 0;
+
+    /*
+     * First handle the offsetting.
+     */
+    for (ssize_t i = 0; i < offset; i++) {
+        SVector_Shift(order_result);
+    }
+    SVector_ShiftReset(order_result);
+
+    /*
+     * Then send out node IDs upto the limit.
+     */
+    SVector_ForeachBegin(&it, order_result);
+    while ((item = SVector_Foreach(&it))) {
+        int err;
+        if (limit-- == 0) {
+            break;
+        }
+
+        if (item && item->data_obj) {
+            err = send_array_object_fields(ctx, lang, hierarchy, item->data_obj, fields);
+        } else {
+            err = SELVA_HIERARCHY_ENOENT;
+        }
+
+        if (err) {
+            RedisModule_ReplyWithNull(ctx);
+            fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, item->id,
+                    getSelvaErrorStr(err));
+        }
+
+        len++;
+    }
+
+    return len;
+}
+
 static int get_skip(enum SelvaModify_HierarchyTraversal dir) {
     switch (dir) {
      /*
@@ -2090,6 +2145,7 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
      */
     ssize_t nr_nodes = 0;
     size_t merge_nr_fields = 0;
+    const char *array_traversal_ref_field = NULL;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
         enum SelvaModify_HierarchyTraversal dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
         Selva_NodeId nodeId;
@@ -2153,6 +2209,7 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
             err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, nodeId, ref_field_str, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             TO_STR(ref_field);
+            array_traversal_ref_field = ref_field_str;
             fprintf(stderr, "HELLO ARRAY TRAVERSAL YOYO %.*s\n", (int)ref_field_len, ref_field_str);
             const struct SelvaModify_ArrayObjectCallback ary_cb = {
                 .node_cb = FindCommand_ArrayNodeCb,
@@ -2180,7 +2237,9 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        nr_nodes = FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields);
+        nr_nodes = array_traversal_ref_field
+            ? FindCommand_PrintOrderedArrayResult(ctx, lang, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields)
+            : FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields);
     }
 
     /* nr_nodes is never negative at this point so we can safely cast it. */
