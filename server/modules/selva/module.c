@@ -723,8 +723,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             };
             memcpy(v.s, value_str, sizeof(v.ll));
 
+            fprintf(stderr, "HELLO WAT WAT %lld\n", v.ll);
+
             if (v.ll >= 0) {
                 int err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v.ll);
+                fprintf(stderr, "REMOVED %d\n", err);
 
                 if (err) {
                     replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",

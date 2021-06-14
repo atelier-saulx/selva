@@ -8,7 +8,7 @@ export default async (
   schema: Schema,
   field: string,
   payload: SetOptions,
-  result: string[],
+  result: (string | Buffer)[],
   fields: FieldSchemaArrayLike,
   type: string,
   $lang?: string
@@ -74,7 +74,9 @@ export default async (
         $lang
       )
     } else if (payload.$remove) {
-      result.push('F', field, `${payload.$removeIdx}`)
+      const content = new Uint32Array([payload.$removeIdx])
+      const buf = Buffer.from(content.buffer)
+      result.push('F', field, buf)
     }
   } else {
     const itemsFields = fields.items
