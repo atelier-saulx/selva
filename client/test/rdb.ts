@@ -64,6 +64,18 @@ test.beforeEach(async (t) => {
               type: 'string',
             },
           },
+          intAry: {
+            type: 'array',
+            items: {
+              type: 'int',
+            },
+          },
+          doubleAry: {
+            type: 'array',
+            items: {
+              type: 'float',
+            },
+          },
           textRec: {
             type: 'record',
             values: {
@@ -114,6 +126,8 @@ test.serial('can reload from RDB', async (t) => {
     $id: 'viTest',
     title: { en: 'hello' },
     stringAry: ['hello', 'world'],
+    doubleAry: [1.0, 2.1, 3.2],
+    intAry: [7, 6, 5, 4, 3, 2, 999],
   })
 
   await client.redis.save()
@@ -131,6 +145,8 @@ test.serial('can reload from RDB', async (t) => {
       parents: ['root'],
       title: { en: 'hello' },
       stringAry: ['hello', 'world'],
+      doubleAry: [1.0, 2.1, 3.2],
+      intAry: [7, 6, 5, 4, 3, 2, 999],
     }
   )
 })

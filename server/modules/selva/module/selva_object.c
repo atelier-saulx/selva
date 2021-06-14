@@ -2337,7 +2337,7 @@ static int rdb_load_object_array(RedisModuleIO *io, struct SelvaObject *obj, con
 			double value = RedisModule_LoadDouble(io);
 			void *wrapper;
 			memcpy(&wrapper, &value, sizeof(value));
-			SelvaObject_AddArray(obj, name, arrayType, &wrapper);
+			SelvaObject_AddArray(obj, name, arrayType, wrapper);
 		}
 	} else if (arrayType == SELVA_OBJECT_STRING) {
 		for (size_t i = 0; i < n; i++) {
@@ -2546,18 +2546,20 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
     RedisModule_SaveUnsigned(io, array->vec_last);
 
     if (key->subtype == SELVA_OBJECT_LONGLONG) {
-        long long *num;
+        void* num;
         struct SVectorIterator it;
         SVector_ForeachBegin(&it, &key->array);
         while ((num = SVector_Foreach(&it))) {
-            RedisModule_SaveSigned(io, *num);
+            RedisModule_SaveSigned(io, (long long)num);
         }
     } else if (key->subtype == SELVA_OBJECT_DOUBLE) {
-        double *num;
+        void* num_ptr;
         struct SVectorIterator it;
         SVector_ForeachBegin(&it, &key->array);
-        while ((num = SVector_Foreach(&it))) {
-            RedisModule_SaveDouble(io, *num);
+        while ((num_ptr = SVector_Foreach(&it))) {
+            double num;
+            memcpy(&num, &num_ptr, sizeof(double));
+            RedisModule_SaveDouble(io, num);
         }
     } else if (key->subtype == SELVA_OBJECT_STRING) {
         RedisModuleString *str;
