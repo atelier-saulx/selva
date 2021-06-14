@@ -28,7 +28,7 @@ export default async (
         client,
         schema,
         fieldWithIdx,
-        payload,
+        payload.$push,
         result,
         itemsFields,
         type,

@@ -124,6 +124,108 @@ test.before(async (t) => {
           },
         },
       },
+      lekkerType: {
+        prefix: 'lk',
+        fields: {
+          strRec: {
+            type: 'record',
+            values: {
+              type: 'string',
+            },
+          },
+          textRec: {
+            type: 'record',
+            values: {
+              type: 'text',
+            },
+          },
+          objRec: {
+            type: 'record',
+            values: {
+              type: 'object',
+              properties: {
+                floatArray: { type: 'array', items: { type: 'float' } },
+                intArray: { type: 'array', items: { type: 'int' } },
+                objArray: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      hello: { type: 'string' },
+                      value: { type: 'int' },
+                    },
+                  },
+                },
+                hello: {
+                  type: 'string',
+                },
+                nestedRec: {
+                  type: 'record',
+                  values: {
+                    type: 'object',
+                    properties: {
+                      value: {
+                        type: 'number',
+                      },
+                      hello: {
+                        type: 'string',
+                      },
+                    },
+                  },
+                },
+                value: {
+                  type: 'number',
+                },
+                stringValue: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+          thing: { type: 'set', items: { type: 'string' } },
+          ding: {
+            type: 'object',
+            properties: {
+              dong: { type: 'set', items: { type: 'string' } },
+              texty: { type: 'text' },
+              dung: { type: 'number' },
+              dang: {
+                type: 'object',
+                properties: {
+                  dung: { type: 'number' },
+                  dunk: { type: 'string' },
+                },
+              },
+              dunk: {
+                type: 'object',
+                properties: {
+                  ding: { type: 'number' },
+                  dong: { type: 'number' },
+                },
+              },
+            },
+          },
+          dong: { type: 'json' },
+          dingdongs: { type: 'array', items: { type: 'string' } },
+          floatArray: { type: 'array', items: { type: 'float' } },
+          intArray: { type: 'array', items: { type: 'int' } },
+          refs: { type: 'references' },
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json',
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
     },
   })
 
@@ -1691,4 +1793,72 @@ test.serial('setting NaN should fail', async (t) => {
 
   await client.delete('root')
   await client.destroy()
+})
+
+test.serial.only('set - field with array', async (t) => {
+  const client = connect({ port })
+  const id = await client.set({
+    type: 'lekkerType',
+    // thing: [],
+    // dong: { dingdong: [] },
+    // ding: { dong: [] },
+    dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  console.log(
+    JSON.stringify(
+      await client.get({
+        $id: id,
+        objRec: true,
+      }),
+      null,
+      2
+    )
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        intArray: {
+          $push: { $value: 7 },
+        },
+      },
+    },
+  })
+
+  console.log(
+    JSON.stringify(
+      await client.get({
+        $id: id,
+        objRec: true,
+      }),
+      null,
+      2
+    )
+  )
+
+  client.destroy()
 })
