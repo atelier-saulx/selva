@@ -2275,49 +2275,6 @@ test.serial('get - record with nested wildcard query', async (t) => {
 
 test.serial('get - field with array', async (t) => {
   const client = connect({ port })
-
-  // const pid = await client.set({
-  //   type: 'lekkerType',
-  //   // thing: [],
-  //   // dong: { dingdong: [] },
-  //   // ding: { dong: [] },
-  //   objRec: {
-  //     abba: {
-  //       // intArray: [1, 2, 3, 4, 5],
-  //       // floatArray: [1.1, 2.2, 3.3, 4.4],
-  //       objArray: [
-  //         {
-  //           hello: 'yes 1',
-  //           value: 1,
-  //         },
-  //         {
-  //           hello: 'yes 2',
-  //           value: 2,
-  //         },
-  //         {
-  //           hello: 'yes 3',
-  //           value: 3,
-  //         },
-  //       ],
-  //     },
-  //   },
-  //   // refs: [],
-  // })
-
-  // console.dir(
-  //   await client.get({
-  //     $id: pid,
-  //     // objRec: true,
-  //     objRec: {
-  //       abba: {
-  //         objArray: true,
-  //       },
-  //     },
-  //   }),
-  //   { depth: null }
-  // )
-  // return
-
   const id = await client.set({
     type: 'lekkerType',
     // thing: [],
@@ -2348,6 +2305,35 @@ test.serial('get - field with array', async (t) => {
     },
     // refs: [],
   })
+
+  // const x = await client.get({
+  //   $id: id,
+  //   objRec: {
+  //     abba: {
+  //       objArray: {
+  //         $all: true,
+  //         $list: {
+  //           $sort: {
+  //             $order: 'desc',
+  //             $field: 'value',
+  //           },
+  //           $find: {
+  //             $filter: [
+  //               {
+  //                 $field: 'value',
+  //                 $operator: '>',
+  //                 $value: 1,
+  //               },
+  //             ],
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  // })
+
+  // console.log('OBJS', JSON.stringify(x, null, 2))
+  // return
 
   const result = await client.get({
     $id: id,
@@ -2418,6 +2404,245 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 3',
             value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  let objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          hello: true,
+          $list: true,
+        },
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 1',
+          },
+          {
+            hello: 'yes 2',
+          },
+          {
+            hello: 'yes 3',
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          value: true,
+          $list: true,
+        },
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            value: 1,
+          },
+          {
+            value: 2,
+          },
+          {
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: true,
+        },
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: {
+            $find: {
+              $filter: [
+                {
+                  $field: 'value',
+                  $operator: '>',
+                  $value: 2,
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: {
+            $sort: {
+              $order: 'desc',
+              $field: 'value',
+            },
+            $find: {
+              $filter: [
+                {
+                  $field: 'value',
+                  $operator: '>',
+                  $value: 1,
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: {
+            $sort: {
+              $order: 'desc',
+              $field: 'value',
+            },
+            $limit: 2,
+            $offset: 0,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $all: true,
+          $list: {
+            $sort: {
+              $order: 'desc',
+              $field: 'value',
+            },
+            $limit: 1,
+            $offset: 1,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 2',
+            value: 2,
           },
         ],
       },

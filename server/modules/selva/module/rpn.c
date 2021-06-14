@@ -548,6 +548,8 @@ enum rpn_error rpn_set_reg_slvobj(struct rpn_ctx *ctx, size_t i, struct SelvaObj
         /* RFE This is used elsewhere but it's not necessarily correct. */
         r->d = nan_undefined();
         r->obj = obj;
+
+        ctx->reg[i] = r;
     } else {
         ctx->reg[i] = NULL;
     }
@@ -581,6 +583,8 @@ enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet
         /* RFE This is used elsewhere but it's not necessarily correct. */
         r->d = nan_undefined();
         r->set = set;
+
+        ctx->reg[i] = r;
     } else {
         ctx->reg[i] = NULL;
     }
