@@ -1109,7 +1109,7 @@ static int send_array_object_fields(RedisModuleCtx *ctx, RedisModuleString *lang
      */
 
     RedisModule_ReplyWithArray(ctx, 2);
-    RedisModule_ReplyWithString(ctx, RedisModule_CreateString(ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE));
+    RedisModule_ReplyWithStringBuffer(ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
 
     const ssize_t fields_len = SelvaObject_Len(fields, NULL);
     if (fields_len < 0) {
