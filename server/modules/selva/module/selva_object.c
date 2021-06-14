@@ -2346,8 +2346,9 @@ static int rdb_load_object_array(RedisModuleIO *io, struct SelvaObject *obj, con
 		}
 	} else if (arrayType == SELVA_OBJECT_OBJECT) {
 		for (size_t i = 0; i < n; i++) {
-			struct SelvaObject *obj = SelvaObjectTypeRDBLoad(io, encver, ptr_load_data);
-			SelvaObject_AddArray(obj, name, arrayType, obj);
+			struct SelvaObject *o = SelvaObjectTypeRDBLoad(io, encver, ptr_load_data);
+            fprintf(stderr, "LOADING OBJECT HELLO %zu\n", o->obj_size);
+			SelvaObject_AddArray(obj, name, arrayType, o);
 		}
 	} else {
 		RedisModule_LogIOError(io, "warning", "Unknown array type");
@@ -2573,6 +2574,7 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
         struct SVectorIterator it;
         SVector_ForeachBegin(&it, &key->array);
         while ((k = SVector_Foreach(&it))) {
+            fprintf(stderr, "SAVING OBJECT HELLO\n");
             SelvaObjectTypeRDBSave(io, k, ptr_save_data);
         }
     } else {

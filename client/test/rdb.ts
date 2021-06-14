@@ -76,6 +76,23 @@ test.beforeEach(async (t) => {
               type: 'float',
             },
           },
+          objAry: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                textyText: {
+                  type: 'text',
+                },
+                strField: {
+                  type: 'string',
+                },
+                numField: {
+                  type: 'int',
+                },
+              },
+            },
+          },
           textRec: {
             type: 'record',
             values: {
@@ -128,6 +145,24 @@ test.serial('can reload from RDB', async (t) => {
     stringAry: ['hello', 'world'],
     doubleAry: [1.0, 2.1, 3.2],
     intAry: [7, 6, 5, 4, 3, 2, 999],
+    objAry: [
+      {
+        textyText: {
+          en: 'hello 1',
+          de: 'hallo 1',
+        },
+        strField: 'string value hello 1',
+        numField: 112,
+      },
+      {
+        textyText: {
+          en: 'hello 2',
+          de: 'hallo 2',
+        },
+        strField: 'string value hello 2',
+        numField: 113,
+      },
+    ],
   })
 
   await client.redis.save()
@@ -137,6 +172,13 @@ test.serial('can reload from RDB', async (t) => {
   await wait(5000)
   client = connect({ port })
 
+  console.log(
+    JSON.stringify(
+      await client.get({ $id: 'viTest', $all: true, parents: true }),
+      null,
+      2
+    )
+  )
   t.deepEqualIgnoreOrder(
     await client.get({ $id: 'viTest', $all: true, parents: true }),
     {
@@ -147,6 +189,24 @@ test.serial('can reload from RDB', async (t) => {
       stringAry: ['hello', 'world'],
       doubleAry: [1.0, 2.1, 3.2],
       intAry: [7, 6, 5, 4, 3, 2, 999],
+      objAry: [
+        {
+          textyText: {
+            en: 'hello 1',
+            de: 'hallo 1',
+          },
+          strField: 'string value hello 1',
+          numField: 112,
+        },
+        {
+          textyText: {
+            en: 'hello 2',
+            de: 'hallo 2',
+          },
+          strField: 'string value hello 2',
+          numField: 113,
+        },
+      ],
     }
   )
 })

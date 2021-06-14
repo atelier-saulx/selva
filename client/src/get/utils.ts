@@ -51,7 +51,18 @@ export function getNestedSchema(
     return null
   }
 
-  let prop: any = typeSchema.fields[fields[0]]
+  let firstSegment = fields[0]
+  if (firstSegment.endsWith(']')) {
+    // sanitize array types to look up the array so it ends up in the array object schema if below
+    for (let j = firstSegment.length - 1; j >= 0; j--) {
+      if (firstSegment[j] === '[') {
+        firstSegment = firstSegment.slice(0, j)
+        break
+      }
+    }
+  }
+
+  let prop: any = typeSchema.fields[firstSegment]
   if (!prop) {
     return null
   }
