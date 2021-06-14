@@ -2323,28 +2323,36 @@ static int rdb_load_object_set(RedisModuleIO *io, struct SelvaObject *obj, const
 }
 
 static int rdb_load_object_array(RedisModuleIO *io, struct SelvaObject *obj, const RedisModuleString *name, int encver, void *ptr_load_data) {
-    enum SelvaObjectType arrayType = RedisModule_LoadUnsigned(io);
-    const size_t n = RedisModule_LoadUnsigned(io);
+	enum SelvaObjectType arrayType = RedisModule_LoadUnsigned(io);
+	const size_t n = RedisModule_LoadUnsigned(io);
+	fprintf(stderr, "HELLO LOADING A BACKUP OF ARRAY %d %zu\n", arrayType, n);
 
-    /* FIXME Loop missing */
-    if (arrayType == SELVA_OBJECT_LONGLONG) {
-        long long value = RedisModule_LoadSigned(io);
-        SelvaObject_AddArray(obj, name, arrayType, (void *)value);
-    } else if (arrayType == SELVA_OBJECT_DOUBLE) {
-        double value = RedisModule_LoadDouble(io);
-        void *wrapper;
-        memcpy(&wrapper, &value, sizeof(value));
-        SelvaObject_AddArray(obj, name, arrayType, &wrapper);
-    } else if (arrayType == SELVA_OBJECT_STRING) {
-        RedisModuleString *value = RedisModule_LoadString(io);
-        SelvaObject_AddArray(obj, name, arrayType, value);
-    } else if (arrayType == SELVA_OBJECT_OBJECT) {
-        struct SelvaObject *obj = SelvaObjectTypeRDBLoad(io, encver, ptr_load_data);
-        SelvaObject_AddArray(obj, name, arrayType, obj);
-    } else {
-        RedisModule_LogIOError(io, "warning", "Unknown array type");
-        return SELVA_EINTYPE;
-    }
+	if (arrayType == SELVA_OBJECT_LONGLONG) {
+		for (size_t i = 0; i < n; i++) {
+			long long value = RedisModule_LoadSigned(io);
+			SelvaObject_AddArray(obj, name, arrayType, (void *)value);
+		}
+	} else if (arrayType == SELVA_OBJECT_DOUBLE) {
+		for (size_t i = 0; i < n; i++) {
+			double value = RedisModule_LoadDouble(io);
+			void *wrapper;
+			memcpy(&wrapper, &value, sizeof(value));
+			SelvaObject_AddArray(obj, name, arrayType, &wrapper);
+		}
+	} else if (arrayType == SELVA_OBJECT_STRING) {
+		for (size_t i = 0; i < n; i++) {
+			RedisModuleString *value = RedisModule_LoadString(io);
+			SelvaObject_AddArray(obj, name, arrayType, value);
+		}
+	} else if (arrayType == SELVA_OBJECT_OBJECT) {
+		for (size_t i = 0; i < n; i++) {
+			struct SelvaObject *obj = SelvaObjectTypeRDBLoad(io, encver, ptr_load_data);
+			SelvaObject_AddArray(obj, name, arrayType, obj);
+		}
+	} else {
+		RedisModule_LogIOError(io, "warning", "Unknown array type");
+		return SELVA_EINTYPE;
+	}
 
     return 0;
 }
@@ -2446,8 +2454,9 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
             }
             break;
         case SELVA_OBJECT_ARRAY:
-            /* TODO Support arrays */
-            RedisModule_LogIOError(io, "warning", "Array not supported in RDB");
+            if (rdb_load_object_array(io, obj, name, encver, ptr_load_data)) {
+                return NULL;
+            }
             break;
         case SELVA_OBJECT_POINTER:
             if (rdb_load_pointer(io, encver, obj, name, ptr_load_data)) {
@@ -2534,7 +2543,7 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
     struct SVector *array = &key->array;
 
     RedisModule_SaveUnsigned(io, key->subtype);
-    RedisModule_SaveUnsigned(io, array->vec_arr_len);
+    RedisModule_SaveUnsigned(io, array->vec_last);
 
     if (key->subtype == SELVA_OBJECT_LONGLONG) {
         long long *num;

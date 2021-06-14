@@ -5,7 +5,7 @@ import { start } from '@saulx/selva-server'
 import './assertions'
 import { removeDump } from './assertions'
 import getPort from 'get-port'
-import {wait} from '../src/util'
+import { wait } from '../src/util'
 
 const dir = join(process.cwd(), 'tmp', 'rdb-test')
 let srv
@@ -13,7 +13,7 @@ let port: number
 
 async function restartServer() {
   if (srv) {
-    srv.destroy();
+    srv.destroy()
     await wait(5000)
   }
   removeDump(dir)
@@ -55,6 +55,12 @@ test.beforeEach(async (t) => {
           strRec: {
             type: 'record',
             values: {
+              type: 'string',
+            },
+          },
+          stringAry: {
+            type: 'array',
+            items: {
               type: 'string',
             },
           },
@@ -107,6 +113,7 @@ test.serial('can reload from RDB', async (t) => {
   await client.set({
     $id: 'viTest',
     title: { en: 'hello' },
+    stringAry: ['hello', 'world'],
   })
 
   await client.redis.save()
@@ -122,7 +129,8 @@ test.serial('can reload from RDB', async (t) => {
       id: 'viTest',
       type: 'lekkerType',
       parents: ['root'],
-      title: { en: 'hello' }
+      title: { en: 'hello' },
+      stringAry: ['hello', 'world'],
     }
   )
 })
