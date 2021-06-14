@@ -1826,7 +1826,7 @@ static int traverse_array(
         SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *head,
         const char *ref_field_str,
-        const struct SelvaModify_HierarchyCallback *cb) {
+        const struct SelvaModify_ArrayObjectCallback *cb) {
     // int err;
 
     // RedisModuleString *head_id;
@@ -1892,16 +1892,9 @@ static int traverse_array(
     SVector_ForeachBegin(&it, vec);
     struct SelvaObject *obj;
     while ((obj = SVector_Foreach(&it))) {
-    // TODO
-    // this callback will set selva object in register 0 then field functions can operate directly on the selva object
-    // and call RPN eval
-    // set in result but I think it needs to work differently since we don't use ids for the find results then
-    // maybe we need empty ids or nulls or something
-    // we probably have a macro for empty id
-    // then we don't need to make the find result have a different format for arrays
-    //     if (node) {
-    //         cb->node_cb(node, cb->node_arg);
-    //     }
+        if (obj) {
+            cb->node_cb(obj, cb->node_arg);
+        }
     }
 
     return 0;
@@ -2005,7 +1998,7 @@ int SelvaModify_TraverseArray(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         const char *ref_field,
-        const struct SelvaModify_HierarchyCallback *cb) {
+        const struct SelvaModify_ArrayObjectCallback *cb) {
     SelvaModify_HierarchyNode *head;
 
     head = SelvaHierarchy_FindNode(hierarchy, id);

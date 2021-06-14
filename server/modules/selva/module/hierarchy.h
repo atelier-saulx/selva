@@ -119,6 +119,13 @@ struct SelvaModify_HierarchyCallback {
     void * node_arg;
 };
 
+typedef int (*SelvaModify_ArrayObjectCallback)(struct SelvaObject *obj, void *arg);
+
+struct SelvaModify_ArrayObjectCallback {
+    SelvaModify_ArrayObjectCallback node_cb;
+    void * node_arg;
+};
+
 struct RedisModuleCtx;
 struct RedisModuleString;
 
@@ -297,6 +304,12 @@ int SelvaHierarchy_TraverseExpression(
         struct rpn_ctx *rpn_ctx,
         struct rpn_expression *rpn_expr,
         const struct SelvaModify_HierarchyCallback *cb);
+int SelvaModify_TraverseArray(
+        struct RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        const char *ref_field,
+        const struct SelvaModify_ArrayObjectCallback *cb);
 int SelvaHierarchy_IsNonEmptyField(struct SelvaModify_HierarchyNode *node, const char *field_str, size_t field_len);
 
 /*
