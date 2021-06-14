@@ -134,6 +134,8 @@ int SelvaObject_GetArrayIndexAsRmsStr(struct SelvaObject *obj, const char *key_n
 int SelvaObject_GetArrayIndexAsSelvaObject(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, struct SelvaObject **out);
 int SelvaObject_GetArrayIndexAsLongLong(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, long long *out);
 int SelvaObject_GetArrayIndexAsDouble(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, double *out);
+size_t SelvaObject_GetArrayLen(struct SelvaObject *obj, const struct RedisModuleString *key_name);
+size_t SelvaObject_GetArrayLenStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 
 /**
  * Set a pointer value.

@@ -432,6 +432,15 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             int idx = get_array_field_index(field_str, field_len);
             int new_len = get_array_field_start_idx(field_str, field_len);
 
+            if (idx == -1) {
+                size_t ary_len = SelvaObject_GetArrayLenStr(obj, field_str, new_len);
+                idx = ary_len - 1;
+                if (idx < 0) {
+                    replyWithSelvaErrorf(ctx, err, "Unable to set value to array index %d", idx);
+                    continue;
+                }
+            }
+
             if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
                 //  TODO: handle default
                 int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);

@@ -1324,6 +1324,21 @@ int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_n
     return SelvaObject_GetArrayStr(obj, key_name_str, key_name_len, out_subtype, out_p);
 }
 
+size_t SelvaObject_GetArrayLenStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
+  SVector *vec;
+  SelvaObject_GetArrayStr(obj, key_name_str, key_name_len, NULL, &vec);
+  if (!vec) {
+    return 0;
+  }
+
+  return vec->vec_last;
+}
+
+size_t SelvaObject_GetArrayLen(struct SelvaObject *obj, const RedisModuleString *key_name) {
+    TO_STR(key_name);
+    return SelvaObject_GetArrayLenStr(obj, key_name_str, key_name_len);
+}
+
 int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p, const struct SelvaObjectPointerOpts *opts) {
     struct SelvaObjectKey *key;
     int err;
