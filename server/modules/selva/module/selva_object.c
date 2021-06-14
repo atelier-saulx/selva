@@ -153,11 +153,6 @@ static int clear_key_value(struct SelvaObjectKey *key) {
 
             SVector_ForeachBegin(&it, &key->array);
             while ((str = SVector_Foreach(&it))) {
-                // // BEGIN DEBUG
-                // TO_STR(str);
-                // fprintf(stderr, "HELLO DELETE %.*s\n", (int)str_len, str_str);
-                // // END DEBUG
-
                 RedisModule_FreeString(NULL, str);
             }
         } else if (key->subtype == SELVA_OBJECT_POINTER) {
@@ -2000,13 +1995,6 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         }
 
         if (err == SELVA_ENOENT) {
-            // fprintf(stderr, "\n\nHELLO DEBUG\n\n");
-            // void *it = SelvaObject_ForeachBegin(obj);
-            // const char *str;
-            // while ((str = SelvaObject_ForeachKey(obj, &it))) {
-            //     fprintf(stderr, "OBJ HAS KEY %s\n", str);
-            // }
-            // fprintf(stderr, "\n\nBYEEE DEBUG\n\n\n");
             /* Keep looking. */
             continue;
         } else if (err) {
@@ -2325,7 +2313,6 @@ static int rdb_load_object_set(RedisModuleIO *io, struct SelvaObject *obj, const
 static int rdb_load_object_array(RedisModuleIO *io, struct SelvaObject *obj, const RedisModuleString *name, int encver, void *ptr_load_data) {
 	enum SelvaObjectType arrayType = RedisModule_LoadUnsigned(io);
 	const size_t n = RedisModule_LoadUnsigned(io);
-	fprintf(stderr, "HELLO LOADING A BACKUP OF ARRAY %d %zu\n", arrayType, n);
 
 	if (arrayType == SELVA_OBJECT_LONGLONG) {
 		for (size_t i = 0; i < n; i++) {
@@ -2347,7 +2334,6 @@ static int rdb_load_object_array(RedisModuleIO *io, struct SelvaObject *obj, con
 	} else if (arrayType == SELVA_OBJECT_OBJECT) {
 		for (size_t i = 0; i < n; i++) {
 			struct SelvaObject *o = SelvaObjectTypeRDBLoad(io, encver, ptr_load_data);
-            fprintf(stderr, "LOADING OBJECT HELLO %zu\n", o->obj_size);
 			SelvaObject_AddArray(obj, name, arrayType, o);
 		}
 	} else {
