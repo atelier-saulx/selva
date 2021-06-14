@@ -5,7 +5,7 @@ import { start } from '@saulx/selva-server'
 import './assertions'
 import { removeDump } from './assertions'
 import getPort from 'get-port'
-import {wait} from '../src/util'
+import { wait } from '../src/util'
 
 const dir = join(process.cwd(), 'tmp', 'rdb-test')
 let srv
@@ -13,7 +13,7 @@ let port: number
 
 async function restartServer() {
   if (srv) {
-    srv.destroy();
+    srv.destroy()
     await wait(5000)
   }
   removeDump(dir)
@@ -56,6 +56,41 @@ test.beforeEach(async (t) => {
             type: 'record',
             values: {
               type: 'string',
+            },
+          },
+          stringAry: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+          intAry: {
+            type: 'array',
+            items: {
+              type: 'int',
+            },
+          },
+          doubleAry: {
+            type: 'array',
+            items: {
+              type: 'float',
+            },
+          },
+          objAry: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                textyText: {
+                  type: 'text',
+                },
+                strField: {
+                  type: 'string',
+                },
+                numField: {
+                  type: 'int',
+                },
+              },
             },
           },
           textRec: {
@@ -107,6 +142,27 @@ test.serial('can reload from RDB', async (t) => {
   await client.set({
     $id: 'viTest',
     title: { en: 'hello' },
+    stringAry: ['hello', 'world'],
+    doubleAry: [1.0, 2.1, 3.2],
+    intAry: [7, 6, 5, 4, 3, 2, 999],
+    objAry: [
+      {
+        textyText: {
+          en: 'hello 1',
+          de: 'hallo 1',
+        },
+        strField: 'string value hello 1',
+        numField: 112,
+      },
+      {
+        textyText: {
+          en: 'hello 2',
+          de: 'hallo 2',
+        },
+        strField: 'string value hello 2',
+        numField: 113,
+      },
+    ],
   })
 
   await client.redis.save()
@@ -116,13 +172,31 @@ test.serial('can reload from RDB', async (t) => {
   await wait(5000)
   client = connect({ port })
 
-  t.deepEqualIgnoreOrder(
-    await client.get({ $id: 'viTest', $all: true, parents: true }),
-    {
-      id: 'viTest',
-      type: 'lekkerType',
-      parents: ['root'],
-      title: { en: 'hello' }
-    }
-  )
+  t.deepEqual(await client.get({ $id: 'viTest', $all: true, parents: true }), {
+    id: 'viTest',
+    type: 'lekkerType',
+    parents: ['root'],
+    title: { en: 'hello' },
+    stringAry: ['hello', 'world'],
+    doubleAry: [1.0, 2.1, 3.2],
+    intAry: [7, 6, 5, 4, 3, 2, 999],
+    objAry: [
+      {
+        textyText: {
+          en: 'hello 1',
+          de: 'hallo 1',
+        },
+        strField: 'string value hello 1',
+        numField: 112,
+      },
+      {
+        textyText: {
+          en: 'hello 2',
+          de: 'hallo 2',
+        },
+        strField: 'string value hello 2',
+        numField: 113,
+      },
+    ],
+  })
 })
