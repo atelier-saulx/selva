@@ -2560,7 +2560,6 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
         struct SVectorIterator it;
         SVector_ForeachBegin(&it, &key->array);
         while ((k = SVector_Foreach(&it))) {
-            fprintf(stderr, "SAVING OBJECT HELLO\n");
             SelvaObjectTypeRDBSave(io, k, ptr_save_data);
         }
     } else {
