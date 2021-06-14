@@ -511,7 +511,6 @@ cleanup:
 
 static struct FindCommand_OrderedItem *createFindCommand_ObjectBasedOrderItem(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *order_field) {
     Selva_NodeId nodeId;
-    RedisModuleString *id;
     RedisModuleKey *key;
     struct FindCommand_OrderedItem *item = NULL;
     double d = 0.0;
@@ -521,8 +520,6 @@ static struct FindCommand_OrderedItem *createFindCommand_ObjectBasedOrderItem(Re
     enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
 
     memset(data_lang, '\0', sizeof(data_lang));
-
-    id = RedisModule_CreateString(ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
 
     RedisModuleString *value = NULL;
     int err;
@@ -1013,9 +1010,8 @@ static int send_array_object_field(
         SEND_FIELD_NAME();
         err = HierarchyReply_WithTraversal(ctx, hierarchy, EMPTY_NODE_ID, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
         if (err) {
-            fprintf(stderr, "%s:%d: Sending the ancestors field of %.*s failed: %s\n",
+            fprintf(stderr, "%s:%d: Sending the ancestors field in array object failed: %s\n",
                     __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
                     getSelvaErrorStr(err));
         }
         return 1;
@@ -1023,9 +1019,8 @@ static int send_array_object_field(
         SEND_FIELD_NAME();
         err = HierarchyReply_WithTraversal(ctx, hierarchy, EMPTY_NODE_ID, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
         if (err) {
-            fprintf(stderr, "%s:%d: Sending the children field of %.*s failed: %s\n",
+            fprintf(stderr, "%s:%d: Sending the children field in array object failed: %s\n",
                     __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
                     getSelvaErrorStr(err));
         }
         return 1;
@@ -1033,9 +1028,8 @@ static int send_array_object_field(
         SEND_FIELD_NAME();
         err = HierarchyReply_WithTraversal(ctx, hierarchy, EMPTY_NODE_ID, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
         if (err) {
-            fprintf(stderr, "%s:%d: Sending the descendants field of %.*s failed: %s\n",
+            fprintf(stderr, "%s:%d: Sending the descendants field failed: %s\n",
                     __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
                     getSelvaErrorStr(err));
         }
         return 1;
@@ -1043,9 +1037,8 @@ static int send_array_object_field(
         SEND_FIELD_NAME();
         err = HierarchyReply_WithTraversal(ctx, hierarchy, EMPTY_NODE_ID, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
         if (err) {
-            fprintf(stderr, "%s:%d: Sending the parents field of %.*s failed: %s\n",
+            fprintf(stderr, "%s:%d: Sending the parents field in array object failed: %s\n",
                     __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
                     getSelvaErrorStr(err));
         }
         return 1;
@@ -1059,10 +1052,9 @@ static int send_array_object_field(
         long resp_count = 0;
         err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, 0);
         if (err && err != SELVA_ENOENT) {
-            fprintf(stderr, "%s:%d: Sending wildcard field %.*s of %.*s failed: %s\n",
+            fprintf(stderr, "%s:%d: Sending wildcard field %.*s in array object failed: %s\n",
                     __FILE__, __LINE__,
                     (int)field_len, field_str,
-                    (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
                     getSelvaErrorStr(err));
         }
 
@@ -1083,15 +1075,15 @@ static int send_array_object_field(
     SEND_FIELD_NAME();
     err = SelvaObject_ReplyWithObject(ctx, lang, obj, field);
     if (err) {
-        fprintf(stderr, "%s:%d: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
+        fprintf(stderr, "%s:%d: Failed to send the field (%s) in array object err: \"%s\"\n",
                 __FILE__, __LINE__,
                 field_str,
-                (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID,
                 getSelvaErrorStr(err));
         RedisModule_ReplyWithNull(ctx);
     }
 
     return 1;
+#undef SEND_FIELD_NAME
 }
 
 
@@ -1601,7 +1593,6 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
 }
 
 static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
-    fprintf(stderr, "HELLO ARRAY NODE CB\n");
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
@@ -1609,7 +1600,7 @@ static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
     if (take && rpn_ctx) {
         int err;
 
-        /* Set node_id to the register */
+        /* Set obj to the register */
         err = rpn_set_reg_slvobj(rpn_ctx, 0, obj, 0);
         if (err) {
             fprintf(stderr, "%s:%d: Register set failed: \"%s\"\n",
@@ -1639,7 +1630,6 @@ static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
             int err;
 
             if (args->fields) {
-                fprintf(stderr, "HELLO SENDING FIELDS FOR OBJ\n");
                 err = send_array_object_fields(args->ctx, args->lang, args->hierarchy, obj, args->fields);
             } else {
                 RedisModule_ReplyWithStringBuffer(args->ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
@@ -2196,7 +2186,6 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             TO_STR(ref_field);
             array_traversal_ref_field = ref_field_str;
-            fprintf(stderr, "HELLO ARRAY TRAVERSAL YOYO %.*s\n", (int)ref_field_len, ref_field_str);
             const struct SelvaModify_ArrayObjectCallback ary_cb = {
                 .node_cb = FindCommand_ArrayNodeCb,
                 .node_arg = &args,
