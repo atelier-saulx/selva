@@ -670,46 +670,6 @@ struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
     return find_sub_marker(sub, marker_id);
 }
 
-/**
- * Set an opaque subscription marker on the node metadata.
- * This function can be used in traversal to refresh markers on the fly and thus
- * avoiding calling a separate refresh on the subscription marker.
- */
-void Selva_Subscriptions_SetMarker(
-        const Selva_NodeId node_id,
-        struct SelvaModify_HierarchyMetadata *metadata,
-        struct Selva_SubscriptionMarker *marker) {
-    struct Selva_SubscriptionMarkers *sub_markers = &metadata->sub_markers;
-
-    /* Detached markers are never set directly on the nodes */
-    if (marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_DETACH) {
-        return;
-    }
-
-    switch (marker->dir) {
-    case SELVA_HIERARCHY_TRAVERSAL_NONE:
-        /* NOP */
-        break;
-    case SELVA_HIERARCHY_TRAVERSAL_NODE:
-        /* fall through */
-        __attribute__((fallthrough));
-    case SELVA_HIERARCHY_TRAVERSAL_CHILDREN:
-        /* fall through */
-        __attribute__((fallthrough));
-    case SELVA_HIERARCHY_TRAVERSAL_PARENTS:
-        /* These traversal direction types are only copied/set on the node itself. */
-        if (memcmp(marker->node_id, node_id, SELVA_NODE_ID_SIZE) != 0) {
-            break;
-        }
-        /* fall through */
-        __attribute__((fallthrough));
-    default:
-        set_marker(sub_markers, marker);
-        break;
-    }
-}
-
-
 static int refreshSubscription(struct SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub) {
     struct SVectorIterator it;
     struct Selva_SubscriptionMarker *marker;

@@ -44,7 +44,6 @@ const selva_commands = [
   'selva.hierarchy.find',
   'selva.hierarchy.findrecursive',
   'selva.hierarchy.findin',
-  'selva.hierarchy.findinsub',
   'selva.hierarchy.del',
   'selva.inherit',
   'selva.resolve.nodeid',

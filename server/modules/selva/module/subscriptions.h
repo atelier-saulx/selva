@@ -176,10 +176,6 @@ struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id);
-void Selva_Subscriptions_SetMarker(
-        const Selva_NodeId node_id,
-        struct SelvaModify_HierarchyMetadata *metadata,
-        struct Selva_SubscriptionMarker *marker);
 void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_NodeId node_id,
