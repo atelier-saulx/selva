@@ -428,13 +428,16 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const char type_code = type_str[0];
         const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
 
+        fprintf(stderr, "WAAAAAT %c %.*s\n", type_code, (int)field_len, field_str);
         if (is_array_field(field_str, field_len)) {
             int idx = get_array_field_index(field_str, field_len);
             int new_len = get_array_field_start_idx(field_str, field_len);
 
             if (idx == -1) {
+                fprintf(stderr, "YOYO WRITING SOMTEHING TO INDEX %d\n", idx);
                 size_t ary_len = SelvaObject_GetArrayLenStr(obj, field_str, new_len);
                 idx = ary_len - 1;
+                fprintf(stderr, "YOYO WRITING SOMTEHING TO INDEX %d\n", idx);
                 if (idx < 0) {
                     replyWithSelvaErrorf(ctx, err, "Unable to set value to array index %d", idx);
                     continue;
@@ -688,19 +691,27 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             bitmap_set(replset, i / 3 - 1);
             continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
+            fprintf(stderr, "HELLO MAKING NEW OBJECT IN PUSH\n");
             struct SelvaObject *new_obj = SelvaObject_New();
+            fprintf(stderr, "HMM MADE OBJECT IN PUSH\n");
             if (!new_obj) {
                 replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
                         (int)field_len, field_str);
                 continue;
             }
+            fprintf(stderr, "HMM AFTER IF\n");
 
             int err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
-            if (!err) {
+            fprintf(stderr, "HMM AFTER INSERT %.*s\n", (int)field_len, field_str);
+            if (err) {
+                fprintf(stderr, "WAT WAT %d\n", err);
                 replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
                         (int)field_len, field_str);
                 continue;
             }
+
+            fprintf(stderr, "HMM DONE?\n");
+            // continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_UNSHIFT) {
             // TODO: need to shift the rest of the array one step to the right and add a new empty selva object or value in the beginning
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {

@@ -54,7 +54,7 @@ export default async (
       const idx = payload.$assign.$idx
       const value = payload.$assign.$value
 
-      if (!idx || !value) {
+      if (!Number.isInteger(idx) || !value) {
         throw new Error(
           `$assign missing $idx or $value property ${JSON.stringify(payload)}`
         )
@@ -67,7 +67,7 @@ export default async (
         client,
         schema,
         fieldWithIdx,
-        payload,
+        value,
         result,
         itemsFields,
         type,

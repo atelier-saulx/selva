@@ -1799,9 +1799,6 @@ test.serial.only('set - field with array', async (t) => {
   const client = connect({ port })
   const id = await client.set({
     type: 'lekkerType',
-    // thing: [],
-    // dong: { dingdong: [] },
-    // ding: { dong: [] },
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
@@ -1838,12 +1835,111 @@ test.serial.only('set - field with array', async (t) => {
     )
   )
 
+  // TODO
+  // await client.set({
+  //   $id: id,
+  //   objRec: {
+  //     abba: {
+  //       intArray: {
+  //         $push: { $value: 7 },
+  //       },
+  //     },
+  //   },
+  // })
+  //
+  // await client.set({
+  //   $id: id,
+  //   objRec: {
+  //     abba: {
+  //       doubleArray: {
+  //         $push: { $value: 7.275 },
+  //       },
+  //     },
+  //   },
+  // })
+  //
+  // await client.set({
+  //   $id: id,
+  //   objRec: {
+  //     abba: {
+  //       objArray: {
+  //         $push: {
+  //           hello: 'yes 7',
+  //           value: 7,
+  //         },
+  //       },
+  //     },
+  //   },
+  // })
+
   await client.set({
     $id: id,
     objRec: {
       abba: {
-        intArray: {
-          $push: { $value: 7 },
+        objArray: {
+          $assign: {
+            $idx: 0,
+            $value: {
+              hello: 'yes 7',
+              value: 7,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  console.log(
+    JSON.stringify(
+      await client.get({
+        $id: id,
+        objRec: true,
+      }),
+      null,
+      2
+    )
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $assign: {
+            $idx: 3,
+            $value: {
+              hello: 'yes 11',
+              value: 11,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  console.log(
+    JSON.stringify(
+      await client.get({
+        $id: id,
+        objRec: true,
+      }),
+      null,
+      2
+    )
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $assign: {
+            $idx: 1,
+            $value: {
+              hello: 'yes 0',
+              value: 0,
+            },
+          },
         },
       },
     },
