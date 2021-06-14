@@ -1835,7 +1835,7 @@ test.serial.only('set - field with array', async (t) => {
     )
   )
 
-  // TODO
+  // TODO: this segfaults
   // await client.set({
   //   $id: id,
   //   objRec: {
@@ -1872,89 +1872,90 @@ test.serial.only('set - field with array', async (t) => {
   //   },
   // })
 
-  await client.set({
-    $id: id,
-    objRec: {
-      abba: {
-        objArray: {
-          $assign: {
-            $idx: 0,
-            $value: {
-              hello: 'yes 7',
-              value: 7,
-            },
-          },
-        },
-      },
-    },
-  })
+  // TODO: works, make into a test
+  // await client.set({
+  //   $id: id,
+  //   objRec: {
+  //     abba: {
+  //       objArray: {
+  //         $assign: {
+  //           $idx: 0,
+  //           $value: {
+  //             hello: 'yes 7',
+  //             value: 7,
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  // })
 
-  console.log(
-    JSON.stringify(
-      await client.get({
-        $id: id,
-        objRec: true,
-      }),
-      null,
-      2
-    )
-  )
+  // console.log(
+  //   JSON.stringify(
+  //     await client.get({
+  //       $id: id,
+  //       objRec: true,
+  //     }),
+  //     null,
+  //     2
+  //   )
+  // )
 
-  await client.set({
-    $id: id,
-    objRec: {
-      abba: {
-        objArray: {
-          $assign: {
-            $idx: 3,
-            $value: {
-              hello: 'yes 11',
-              value: 11,
-            },
-          },
-        },
-      },
-    },
-  })
+  // await client.set({
+  //   $id: id,
+  //   objRec: {
+  //     abba: {
+  //       objArray: {
+  //         $assign: {
+  //           $idx: 3,
+  //           $value: {
+  //             hello: 'yes 11',
+  //             value: 11,
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  // })
 
-  console.log(
-    JSON.stringify(
-      await client.get({
-        $id: id,
-        objRec: true,
-      }),
-      null,
-      2
-    )
-  )
+  // console.log(
+  //   JSON.stringify(
+  //     await client.get({
+  //       $id: id,
+  //       objRec: true,
+  //     }),
+  //     null,
+  //     2
+  //   )
+  // )
 
-  await client.set({
-    $id: id,
-    objRec: {
-      abba: {
-        objArray: {
-          $assign: {
-            $idx: 1,
-            $value: {
-              hello: 'yes 0',
-              value: 0,
-            },
-          },
-        },
-      },
-    },
-  })
+  // await client.set({
+  //   $id: id,
+  //   objRec: {
+  //     abba: {
+  //       objArray: {
+  //         $assign: {
+  //           $idx: 1,
+  //           $value: {
+  //             hello: 'yes 0',
+  //             value: 0,
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  // })
 
-  console.log(
-    JSON.stringify(
-      await client.get({
-        $id: id,
-        objRec: true,
-      }),
-      null,
-      2
-    )
-  )
+  // console.log(
+  //   JSON.stringify(
+  //     await client.get({
+  //       $id: id,
+  //       objRec: true,
+  //     }),
+  //     null,
+  //     2
+  //   )
+  // )
 
   client.destroy()
 })
