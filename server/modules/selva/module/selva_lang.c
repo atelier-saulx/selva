@@ -63,10 +63,12 @@ struct SelvaLang {
 };
 
 static void SelvaLang_Reply(struct RedisModuleCtx *ctx, void *p);
+static void SelvaLang_Free(void *p);
 
 static const struct SelvaObjectPointerOpts obj_opts = {
     .ptr_type_id = SELVA_OBJECT_POINTER_LANG,
     .ptr_reply = SelvaLang_Reply,
+    .ptr_free = SelvaLang_Free,
 };
 
 static struct SelvaObject *langs;
@@ -121,6 +123,13 @@ static int add_lang(const char *lang, const char *locale_name) {
     }
 
     return err;
+}
+
+static void SelvaLang_Free(void *p) {
+    struct SelvaLang *slang = (struct SelvaLang *)p;
+
+    freelocale(slang->locale);
+    RedisModule_Free(slang);
 }
 
 locale_t SelvaLang_GetLocale(const char *lang_str, size_t lang_len) {
@@ -193,3 +202,17 @@ static int SelvaLang_OnLoad(RedisModuleCtx *ctx __unused) {
     return 0;
 }
 SELVA_ONLOAD(SelvaLang_OnLoad);
+
+static int SelvaLang_OnUnload(void) {
+    /*
+     * We could free the langs here but the glibc locale system seems to leak
+     * memory anyway, so why bother. All memory will get eventually freed when
+     * Redis finally exits.
+     */
+#if 0
+    SelvaObject_Destroy(langs);
+#endif
+
+    return 0;
+}
+SELVA_ONUNLOAD(SelvaLang_OnUnload);

@@ -15,3 +15,18 @@
    Memcheck:Value8
    fun:lzf_compress
 }
+
+{
+   <locale>
+   Memcheck:Leak
+   fun:realloc
+   fun:argz_add_sep
+   fun:newlocale
+   fun:add_lang
+   fun:load_lang
+   fun:SelvaLang_OnLoad
+   fun:RedisModule_OnLoad
+   fun:moduleLoad
+   fun:moduleLoadFromQueue
+   fun:main
+}

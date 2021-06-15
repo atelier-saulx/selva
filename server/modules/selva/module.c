@@ -35,6 +35,7 @@
 #define FISSET_UPDATED_AT(m) (((m) & FLAG_UPDATED_AT) == FLAG_UPDATED_AT)
 
 SET_DECLARE(selva_onload, Selva_Onload);
+SET_DECLARE(selva_onunld, Selva_Onunload);
 
 /*
  * Technically a nodeId is always 10 bytes but sometimes a printable
@@ -841,6 +842,31 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
         int err;
 
         err = onload(ctx);
+        if (err) {
+            return err;
+        }
+    }
+
+    return REDISMODULE_OK;
+}
+
+//int RedisModule_OnUnload(RedisModuleCtx *ctx) {
+/*
+ * Here we could use RedisModule_OnUnload() if it was called on exit, but it
+ * isn't. Therefore, we use the destructor attribute that is almost always
+ * called before the process terminates. As a side note, OnUnload would be never
+ * called for Selva because Redis can't unload modules exporting types or
+ * something.
+ */
+__attribute__((destructor))
+int _Selva_OnUnload() {
+    Selva_Onunload **onunload_p;
+
+    SET_FOREACH(onunload_p, selva_onunld) {
+        Selva_Onunload *onunload = *onunload_p;
+        int err;
+
+        err = onunload();
         if (err) {
             return err;
         }
