@@ -362,8 +362,14 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
         size_t new_len = 0;
         if (is_array_field(s, slen)) {
-            ary_idx = get_array_field_index(s, slen);
             new_len = get_array_field_start_idx(s, slen);
+
+            ary_idx = get_array_field_index(s, slen);
+
+            if (ary_idx == -1) {
+                size_t ary_len = SelvaObject_GetArrayLenStr(obj, s, new_len);
+                ary_idx = ary_len - 1;
+            }
         }
 
         char new_s[new_len + 1];
@@ -479,7 +485,8 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              * Keep nesting or return an object if this was the last token.
              */
             obj = key->value;
-        } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found) {
+        } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found &&
+            (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Keep nesting or return an object if this was the last token.
              */
@@ -1288,6 +1295,10 @@ int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const char *key_name_s
         return SELVA_EINVAL;
     }
 
+    if (SVector_Size(&key->array) < idx) {
+        return SELVA_EINVAL;
+    }
+
     SVector_RemoveIndex(&key->array, idx);
 
     return 0;
@@ -1322,6 +1333,21 @@ int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_n
     TO_STR(key_name);
 
     return SelvaObject_GetArrayStr(obj, key_name_str, key_name_len, out_subtype, out_p);
+}
+
+size_t SelvaObject_GetArrayLenStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
+    SVector *vec;
+
+    if (SelvaObject_GetArrayStr(obj, key_name_str, key_name_len, NULL, &vec)) {
+        return 0;
+    }
+
+    return vec->vec_last;
+}
+
+size_t SelvaObject_GetArrayLen(struct SelvaObject *obj, const RedisModuleString *key_name) {
+    TO_STR(key_name);
+    return SelvaObject_GetArrayLenStr(obj, key_name_str, key_name_len);
 }
 
 int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p, const struct SelvaObjectPointerOpts *opts) {

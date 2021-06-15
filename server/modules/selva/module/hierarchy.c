@@ -1823,7 +1823,6 @@ static int traverse_ref(
 // TODO
 static int traverse_array(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *head,
         const char *ref_field_str,
         const struct SelvaModify_ArrayObjectCallback *cb) {
@@ -2006,7 +2005,7 @@ int SelvaModify_TraverseArray(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    return traverse_array(ctx, hierarchy, head, ref_field, cb);
+    return traverse_array(ctx, head, ref_field, cb);
 }
 
 int SelvaModify_TraverseHierarchyEdge(

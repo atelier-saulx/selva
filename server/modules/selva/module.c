@@ -432,6 +432,15 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             int idx = get_array_field_index(field_str, field_len);
             int new_len = get_array_field_start_idx(field_str, field_len);
 
+            if (idx == -1) {
+                size_t ary_len = SelvaObject_GetArrayLenStr(obj, field_str, new_len);
+                idx = ary_len - 1;
+                if (idx < 0) {
+                    replyWithSelvaErrorf(ctx, err, "Unable to set value to array index %d", idx);
+                    continue;
+                }
+            }
+
             if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
                 //  TODO: handle default
                 int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
@@ -687,24 +696,19 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             }
 
             int err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
-            if (!err) {
+            if (err) {
                 replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
                         (int)field_len, field_str);
                 continue;
             }
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_UNSHIFT) {
             // TODO: need to shift the rest of the array one step to the right and add a new empty selva object or value in the beginning
-        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
-            union {
-                char s[sizeof(long long)];
-                long long ll;
-            } v = {
-                .ll = -9,
-            };
-            memcpy(v.s, value_str, sizeof(v.ll));
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE && value_len == sizeof(uint32_t)) {
+            uint32_t v;
+            memcpy(&v, value_str, sizeof(uint32_t));
 
-            if (v.ll >= 0) {
-                int err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v.ll);
+            if (v >= 0) {
+                int err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v);
 
                 if (err) {
                     replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",
@@ -712,9 +716,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                     continue;
                 }
             }
-
-            bitmap_set(replset, i / 3 - 1);
-            continue;
         } else {
             replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid type: \"%c\"", type_code);
             continue;

@@ -8,7 +8,7 @@ export default async (
   schema: Schema,
   field: string,
   payload: SetOptions,
-  result: string[],
+  result: (string | Buffer)[],
   fields: FieldSchemaArrayLike,
   type: string,
   $lang?: string
@@ -28,7 +28,7 @@ export default async (
         client,
         schema,
         fieldWithIdx,
-        payload,
+        payload.$push,
         result,
         itemsFields,
         type,
@@ -54,7 +54,7 @@ export default async (
       const idx = payload.$assign.$idx
       const value = payload.$assign.$value
 
-      if (!idx || !value) {
+      if (!Number.isInteger(idx) || !value) {
         throw new Error(
           `$assign missing $idx or $value property ${JSON.stringify(payload)}`
         )
@@ -67,14 +67,16 @@ export default async (
         client,
         schema,
         fieldWithIdx,
-        payload,
+        value,
         result,
         itemsFields,
         type,
         $lang
       )
     } else if (payload.$remove) {
-      result.push('F', field, `${payload.$removeIdx}`)
+      const content = new Uint32Array([payload.$remove.$idx])
+      const buf = Buffer.from(content.buffer)
+      result.push('F', field, buf)
     }
   } else {
     const itemsFields = fields.items

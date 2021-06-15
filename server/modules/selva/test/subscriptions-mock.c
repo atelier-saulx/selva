@@ -3,6 +3,7 @@
 #include "errors.h"
 #include "hierarchy.h"
 #include "subscriptions.h"
+#include "selva_object.h"
 
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
@@ -40,6 +41,7 @@ void SelvaSubscriptions_ClearAllMarkers(
 }
 
 void SelvaSubscriptions_InheritParent(
+        struct RedisModuleCtx *redis_ctx __unused,
         struct SelvaModify_Hierarchy *hierarchy __unused,
         const Selva_NodeId node_id __unused,
         struct SelvaModify_HierarchyMetadata *node_metadata __unused,
@@ -50,6 +52,7 @@ void SelvaSubscriptions_InheritParent(
 }
 
 void SelvaSubscriptions_InheritChild(
+        struct RedisModuleCtx *redis_ctx __unused,
         struct SelvaModify_Hierarchy *hierarchy __unused,
         const Selva_NodeId node_id __unused,
         struct SelvaModify_HierarchyMetadata *node_metadata __unused,
@@ -73,9 +76,11 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
 }
 
 void SelvaSubscriptions_DeferHierarchyEvents(
+        struct RedisModuleCtx *ctx __unused,
         struct SelvaModify_Hierarchy *hierarchy __unused,
         const Selva_NodeId node_id __unused,
-        const struct SelvaModify_HierarchyMetadata *metadata __unused) {
+        const struct SelvaModify_HierarchyMetadata *metadata __unused,
+        int ignore_filter) {
     return;
 }
 

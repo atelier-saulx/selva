@@ -415,27 +415,29 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
     void *p = NULL;
 
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+        SVector_ShiftReset(vec);
         const size_t i = vec->vec_arr_shift_index + index;
 
-        if (i < vec->vec_last) {
-            p = vec->vec_arr[i];
+        p = vec->vec_arr[i];
 
-            if (vec->vec_last < vec->vec_arr_len) {
-                memmove(&vec->vec_arr[i], &vec->vec_arr[i + 1], vec->vec_last - i - 1);
-            }
+        if (i < vec->vec_last) {
+            memmove(&vec->vec_arr[i], &vec->vec_arr[i + 1], VEC_SIZE(vec->vec_last - i - 1));
             vec->vec_last--;
         }
     } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
         size_t i = 0;
         struct SVector_rbnode *n;
 
-        for (n = RB_MIN(SVector_rbtree, (struct SVector_rbtree *)&vec->vec_rbhead);
-             n != NULL;
-             n = RB_NEXT(SVector_rbtree, &vec->vec_rbhead, n)) {
-            if (i++ == index) {
-                p = n->p;
-                RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, n);
-                break;
+        if (i < vec->vec_last) {
+            for (n = RB_MIN(SVector_rbtree, (struct SVector_rbtree *)&vec->vec_rbhead);
+                 n != NULL;
+                 n = RB_NEXT(SVector_rbtree, &vec->vec_rbhead, n)) {
+                if (i++ == index) {
+                    p = n->p;
+                    RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, n);
+                    vec->vec_last--;
+                    break;
+                }
             }
         }
     } else {
@@ -477,7 +479,7 @@ void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
 
     if (i < vec->vec_last) {
         if (vec->vec_last < vec->vec_arr_len) {
-            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], vec->vec_last - i + 1);
+            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], VEC_SIZE(vec->vec_last - i + 1));
         }
         vec->vec_last++;
     }

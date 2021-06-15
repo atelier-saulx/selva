@@ -3,6 +3,7 @@
 #include <string.h>
 #include "hierarchy.h"
 #include "cdefs.h"
+#include "redismodule.h"
 #include "../redis-rdb.h"
 #include "../hierarchy-utils.h"
 
