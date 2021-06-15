@@ -362,8 +362,18 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
         size_t new_len = 0;
         if (is_array_field(s, slen)) {
-            ary_idx = get_array_field_index(s, slen);
             new_len = get_array_field_start_idx(s, slen);
+
+            ary_idx = get_array_field_index(s, slen);
+
+            fprintf(stderr, "YOYO ARY INDEX MATE %zu\n", ary_idx);
+            if (ary_idx == -1) {
+                size_t ary_len = SelvaObject_GetArrayLenStr(obj, s, new_len);
+                ary_idx = ary_len - 1;
+                fprintf(stderr, "YOYO NEW ARY INDEX MATE %zu in len %zu\n", ary_idx, ary_len);
+            }
+
+            fprintf(stderr,"DOING THINGS TO %.*s, YES %zu %.*s\n", (int)slen, s, ary_idx, (int)new_len, s);
         }
 
         char new_s[new_len + 1];
@@ -479,7 +489,8 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              * Keep nesting or return an object if this was the last token.
              */
             obj = key->value;
-        } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found) {
+        } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found &&
+            (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Keep nesting or return an object if this was the last token.
              */
