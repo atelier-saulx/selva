@@ -1795,7 +1795,7 @@ test.serial('setting NaN should fail', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('set - field with array', async (t) => {
+test.serial('set - push into array', async (t) => {
   const client = connect({ port })
   const id = await client.set({
     type: 'lekkerType',
@@ -1824,18 +1824,7 @@ test.serial.only('set - field with array', async (t) => {
     },
   })
 
-  console.log(
-    JSON.stringify(
-      await client.get({
-        $id: id,
-        objRec: true,
-      }),
-      null,
-      2
-    )
-  )
-
-  // TODO: this segfaults
+  // TODO
   // await client.set({
   //   $id: id,
   //   objRec: {
@@ -1858,106 +1847,262 @@ test.serial.only('set - field with array', async (t) => {
   //   },
   // })
 
-  // await client.set({
-  //   $id: id,
-  //   objRec: {
-  //     abba: {
-  //       objArray: {
-  //         $push: {
-  //           hello: 'yes 7',
-  //           value: 7,
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $push: {
+            hello: 'yes 7',
+            value: 7,
+          },
+        },
+      },
+    },
+  })
 
-  // TODO: works, make into a test
-  // await client.set({
-  //   $id: id,
-  //   objRec: {
-  //     abba: {
-  //       objArray: {
-  //         $assign: {
-  //           $idx: 0,
-  //           $value: {
-  //             hello: 'yes 7',
-  //             value: 7,
-  //           },
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          intArray: [1, 2, 3, 4, 5],
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+            {
+              hello: 'yes 7',
+              value: 7,
+            },
+          ],
+        },
+      },
+    }
+  )
 
-  // console.log(
-  //   JSON.stringify(
-  //     await client.get({
-  //       $id: id,
-  //       objRec: true,
-  //     }),
-  //     null,
-  //     2
-  //   )
-  // )
+  client.destroy()
+})
 
-  // await client.set({
-  //   $id: id,
-  //   objRec: {
-  //     abba: {
-  //       objArray: {
-  //         $assign: {
-  //           $idx: 3,
-  //           $value: {
-  //             hello: 'yes 11',
-  //             value: 11,
-  //           },
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
+test.serial('set - assign into array', async (t) => {
+  const client = connect({ port })
+  const id = await client.set({
+    type: 'lekkerType',
+    dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
 
-  // console.log(
-  //   JSON.stringify(
-  //     await client.get({
-  //       $id: id,
-  //       objRec: true,
-  //     }),
-  //     null,
-  //     2
-  //   )
-  // )
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $assign: {
+            $idx: 0,
+            $value: {
+              value: 7,
+            },
+          },
+        },
+      },
+    },
+  })
 
-  // await client.set({
-  //   $id: id,
-  //   objRec: {
-  //     abba: {
-  //       objArray: {
-  //         $assign: {
-  //           $idx: 1,
-  //           $value: {
-  //             hello: 'yes 0',
-  //             value: 0,
-  //           },
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          intArray: [1, 2, 3, 4, 5],
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 7,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+          ],
+        },
+      },
+    }
+  )
 
-  // console.log(
-  //   JSON.stringify(
-  //     await client.get({
-  //       $id: id,
-  //       objRec: true,
-  //     }),
-  //     null,
-  //     2
-  //   )
-  // )
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $assign: {
+            $idx: 3,
+            $value: {
+              hello: 'yes 11',
+              value: 11,
+            },
+          },
+        },
+      },
+    },
+  })
 
-  // TODO: this segfaults
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          intArray: [1, 2, 3, 4, 5],
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 7,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+            {
+              hello: 'yes 11',
+              value: 11,
+            },
+          ],
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $assign: {
+            $idx: 1,
+            $value: {
+              hello: 'yes 0',
+              value: 0,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          intArray: [1, 2, 3, 4, 5],
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 7,
+            },
+            {
+              hello: 'yes 0',
+              value: 0,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+            {
+              hello: 'yes 11',
+              value: 11,
+            },
+          ],
+        },
+      },
+    }
+  )
+
+  client.destroy()
+})
+
+test.serial('set - remove from array', async (t) => {
+  const client = connect({ port })
+  const id = await client.set({
+    type: 'lekkerType',
+    dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
   await client.set({
     $id: id,
     objRec: {
@@ -1971,43 +2116,64 @@ test.serial.only('set - field with array', async (t) => {
     },
   })
 
-  // console.log('ATTACH. DO IT NOW.')
-  // // await wait(60e3)
-
-  console.log(
-    JSON.stringify(
-      await client.get({
-        $id: id,
-        objRec: true,
-      }),
-      null,
-      2
-    )
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          intArray: [1, 2, 3, 4, 5],
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+          ],
+        },
+      },
+    }
   )
 
-  // await client.set({
-  //   $id: id,
-  //   objRec: {
-  //     abba: {
-  //       objArray: {
-  //         $remove: {
-  //           $idx: 0,
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $remove: {
+            $idx: 0,
+          },
+        },
+      },
+    },
+  })
 
-  // console.log(
-  //   JSON.stringify(
-  //     await client.get({
-  //       $id: id,
-  //       objRec: true,
-  //     }),
-  //     null,
-  //     2
-  //   )
-  // )
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          intArray: [1, 2, 3, 4, 5],
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          objArray: [
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+          ],
+        },
+      },
+    }
+  )
 
   client.destroy()
 })
