@@ -429,13 +429,16 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
         size_t i = 0;
         struct SVector_rbnode *n;
 
-        for (n = RB_MIN(SVector_rbtree, (struct SVector_rbtree *)&vec->vec_rbhead);
-             n != NULL;
-             n = RB_NEXT(SVector_rbtree, &vec->vec_rbhead, n)) {
-            if (i++ == index) {
-                p = n->p;
-                RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, n);
-                break;
+        if (i < vec->vec_last) {
+            for (n = RB_MIN(SVector_rbtree, (struct SVector_rbtree *)&vec->vec_rbhead);
+                 n != NULL;
+                 n = RB_NEXT(SVector_rbtree, &vec->vec_rbhead, n)) {
+                if (i++ == index) {
+                    p = n->p;
+                    RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, n);
+                    vec->vec_last--;
+                    break;
+                }
             }
         }
     } else {

@@ -3,6 +3,7 @@
 #include "errors.h"
 #include "hierarchy.h"
 #include "subscriptions.h"
+#include "selva_object.h"
 
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
@@ -75,7 +76,7 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
 }
 
 void SelvaSubscriptions_DeferHierarchyEvents(
-        RedisModuleCtx *ctx __unused,
+        struct RedisModuleCtx *ctx __unused,
         struct SelvaModify_Hierarchy *hierarchy __unused,
         const Selva_NodeId node_id __unused,
         const struct SelvaModify_HierarchyMetadata *metadata __unused,
