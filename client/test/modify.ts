@@ -1978,6 +1978,7 @@ test.serial.only('set - field with array', async (t) => {
     JSON.stringify(
       await client.get({
         $id: id,
+        objRec: true,
       }),
       null,
       2
