@@ -418,11 +418,10 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
         SVector_ShiftReset(vec);
         const size_t i = vec->vec_arr_shift_index + index;
 
-        fprintf(stderr, "HMM VEC arr %p i %zu len %zu cpy from %zu of %zu bytes\n", vec->vec_arr, i, vec->vec_last, i + 1, vec->vec_last - (i + 1));
         p = vec->vec_arr[i];
 
         if (i < vec->vec_last) {
-            memmove(&vec->vec_arr[i], &vec->vec_arr[i + 1], vec->vec_last - (i + 1));
+            memmove(&vec->vec_arr[i], &vec->vec_arr[i + 1], VEC_SIZE(vec->vec_last - i - 1));
             vec->vec_last--;
         }
     } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
@@ -480,7 +479,7 @@ void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
 
     if (i < vec->vec_last) {
         if (vec->vec_last < vec->vec_arr_len) {
-            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], vec->vec_last - i + 1);
+            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], VEC_SIZE(vec->vec_last - i + 1));
         }
         vec->vec_last++;
     }
