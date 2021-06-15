@@ -1288,6 +1288,10 @@ int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const char *key_name_s
         return SELVA_EINVAL;
     }
 
+    if (SVector_Size(&key->array) < idx) {
+        return SELVA_EINVAL;
+    }
+
     SVector_RemoveIndex(&key->array, idx);
 
     return 0;
