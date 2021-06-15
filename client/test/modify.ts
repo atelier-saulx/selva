@@ -1858,19 +1858,19 @@ test.serial.only('set - field with array', async (t) => {
   //   },
   // })
 
-  await client.set({
-    $id: id,
-    objRec: {
-      abba: {
-        objArray: {
-          $push: {
-            hello: 'yes 7',
-            value: 7,
-          },
-        },
-      },
-    },
-  })
+  // await client.set({
+  //   $id: id,
+  //   objRec: {
+  //     abba: {
+  //       objArray: {
+  //         $push: {
+  //           hello: 'yes 7',
+  //           value: 7,
+  //         },
+  //       },
+  //     },
+  //   },
+  // })
 
   // TODO: works, make into a test
   // await client.set({
@@ -1890,16 +1890,16 @@ test.serial.only('set - field with array', async (t) => {
   //   },
   // })
 
-  console.log(
-    JSON.stringify(
-      await client.get({
-        $id: id,
-        objRec: true,
-      }),
-      null,
-      2
-    )
-  )
+  // console.log(
+  //   JSON.stringify(
+  //     await client.get({
+  //       $id: id,
+  //       objRec: true,
+  //     }),
+  //     null,
+  //     2
+  //   )
+  // )
 
   // await client.set({
   //   $id: id,
@@ -1958,31 +1958,31 @@ test.serial.only('set - field with array', async (t) => {
   // )
 
   // TODO: this segfaults
-  // await client.set({
-  //   $id: id,
-  //   objRec: {
-  //     abba: {
-  //       objArray: {
-  //         $remove: {
-  //           $idx: 1,
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $remove: {
+            $idx: 1,
+          },
+        },
+      },
+    },
+  })
 
   // console.log('ATTACH. DO IT NOW.')
   // // await wait(60e3)
 
-  // console.log(
-  //   JSON.stringify(
-  //     await client.get({
-  //       $id: id,
-  //     }),
-  //     null,
-  //     2
-  //   )
-  // )
+  console.log(
+    JSON.stringify(
+      await client.get({
+        $id: id,
+      }),
+      null,
+      2
+    )
+  )
 
   // await client.set({
   //   $id: id,
