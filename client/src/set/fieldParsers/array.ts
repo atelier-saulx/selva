@@ -74,7 +74,7 @@ export default async (
         $lang
       )
     } else if (payload.$remove) {
-      const content = new Uint32Array([payload.$removeIdx])
+      const content = new Uint32Array([payload.$remove.$idx])
       const buf = Buffer.from(content.buffer)
       result.push('F', field, buf)
     }

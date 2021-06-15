@@ -1981,29 +1981,29 @@ test.serial.only('set - field with array', async (t) => {
     )
   )
 
-  await client.set({
-    $id: id,
-    objRec: {
-      abba: {
-        objArray: {
-          $remove: {
-            $idx: 0,
-          },
-        },
-      },
-    },
-  })
+  // await client.set({
+  //   $id: id,
+  //   objRec: {
+  //     abba: {
+  //       objArray: {
+  //         $remove: {
+  //           $idx: 0,
+  //         },
+  //       },
+  //     },
+  //   },
+  // })
 
-  console.log(
-    JSON.stringify(
-      await client.get({
-        $id: id,
-        objRec: true,
-      }),
-      null,
-      2
-    )
-  )
+  // console.log(
+  //   JSON.stringify(
+  //     await client.get({
+  //       $id: id,
+  //       objRec: true,
+  //     }),
+  //     null,
+  //     2
+  //   )
+  // )
 
   client.destroy()
 })

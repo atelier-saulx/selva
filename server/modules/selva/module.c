@@ -715,18 +715,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_UNSHIFT) {
             // TODO: need to shift the rest of the array one step to the right and add a new empty selva object or value in the beginning
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
-            union {
-                char s[sizeof(long long)];
-                long long ll;
-            } v = {
-                .ll = -9,
-            };
-            memcpy(v.s, value_str, sizeof(v.ll));
+            uint32_t v;
+            memcpy(&v, value_str, sizeof(uint32_t));
 
-            fprintf(stderr, "HELLO WAT WAT %lld\n", v.ll);
+            fprintf(stderr, "HELLO WAT WAT %d\n", v);
 
-            if (v.ll >= 0) {
-                int err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v.ll);
+            if (v >= 0) {
+                int err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v);
                 fprintf(stderr, "REMOVED %d\n", err);
 
                 if (err) {
@@ -735,9 +730,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                     continue;
                 }
             }
-
-            bitmap_set(replset, i / 3 - 1);
-            continue;
         } else {
             replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid type: \"%c\"", type_code);
             continue;
