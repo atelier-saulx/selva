@@ -458,6 +458,7 @@ static char * test_remove_by_index(void)
     pu_assert_equal("the size is correct", SVector_Size(&vec), num_elem(el));
 
     struct data *r1 = SVector_RemoveIndex(&vec, 3);
+    pu_assert("r1 returned", r1);
     pu_assert_equal("removed the correct element", r1->id, 800);
 
     struct data *r2 = SVector_GetIndex(&vec, 3);

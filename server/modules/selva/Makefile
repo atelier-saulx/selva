@@ -48,7 +48,7 @@ CFLAGS := $(IDIR) -include tunables.h \
 	-ggdb -O2 \
 	-fno-strict-aliasing \
 	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2
-CC := gcc
+CC ?= gcc
 
 
 all: module.so
