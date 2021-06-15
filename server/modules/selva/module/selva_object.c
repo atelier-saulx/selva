@@ -366,14 +366,10 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
             ary_idx = get_array_field_index(s, slen);
 
-            fprintf(stderr, "YOYO ARY INDEX MATE %zu\n", ary_idx);
             if (ary_idx == -1) {
                 size_t ary_len = SelvaObject_GetArrayLenStr(obj, s, new_len);
                 ary_idx = ary_len - 1;
-                fprintf(stderr, "YOYO NEW ARY INDEX MATE %zu in len %zu\n", ary_idx, ary_len);
             }
-
-            fprintf(stderr,"DOING THINGS TO %.*s, YES %zu %.*s\n", (int)slen, s, ary_idx, (int)new_len, s);
         }
 
         char new_s[new_len + 1];
