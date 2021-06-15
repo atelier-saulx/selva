@@ -611,7 +611,7 @@ static struct FindCommand_OrderedItem *createFindCommand_ObjectBasedOrderItem(Re
         return NULL;
     }
 
-    memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
+    memcpy(item->id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
     item->type = type;
     if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         strxfrm_l(item->data, data, final_data_len + 1, locale);
@@ -1801,11 +1801,9 @@ static size_t FindCommand_PrintOrderedArrayResult(
         SelvaModify_Hierarchy *hierarchy,
         ssize_t offset,
         ssize_t limit,
-        enum merge_strategy merge_strategy,
         RedisModuleString *merge_path,
         struct SelvaObject *fields,
-        SVector *order_result,
-        size_t *nr_fields_out) {
+        SVector *order_result) {
     struct FindCommand_OrderedItem *item;
     struct SVectorIterator it;
     size_t len = 0;
@@ -2213,7 +2211,7 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
         nr_nodes = array_traversal_ref_field
-            ? FindCommand_PrintOrderedArrayResult(ctx, lang, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields)
+            ? FindCommand_PrintOrderedArrayResult(ctx, lang, hierarchy, offset, limit, merge_path, fields, &order_result)
             : FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields);
     }
 
