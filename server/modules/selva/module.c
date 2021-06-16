@@ -713,8 +713,36 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                         (int)field_len, field_str);
                 continue;
             }
-        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_UNSHIFT) {
-            // TODO: need to shift the rest of the array one step to the right and add a new empty selva object or value in the beginning
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_INSERT) {
+            uint32_t item_type;
+            uint32_t insert_idx;
+            memcpy(&item_type, value_str, sizeof(uint32_t));
+            memcpy(&insert_idx, value_str + sizeof(uint32_t), sizeof(uint32_t));
+
+            fprintf(stderr, "ARRAY INSERT %d %d\n", item_type, insert_idx);
+
+            int err;
+            if (item_type == SELVA_OBJECT_OBJECT) {
+                // object
+                struct SelvaObject *new_obj = SelvaObject_New();
+                if (!new_obj) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                            (int)field_len, field_str);
+                    continue;
+                }
+
+                err = SelvaObject_InsertArrayIndexStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, insert_idx, new_obj);
+            } else {
+                // TODO
+                err = 1;
+                // has_push = 1;
+            }
+
+            if (err) {
+                replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                        (int)field_len, field_str);
+                continue;
+            }
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE && value_len == sizeof(uint32_t)) {
             uint32_t v;
             memcpy(&v, value_str, sizeof(uint32_t));

@@ -2190,3 +2190,92 @@ test.serial('set - remove from array', async (t) => {
 
   client.destroy()
 })
+
+test.serial.only('set - insert into array', async (t) => {
+  const client = connect({ port })
+  const id = await client.set({
+    type: 'lekkerType',
+    dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $insert: {
+            $idx: 0,
+            $value: {
+              value: 7,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  console.log(
+    JSON.stringify(
+      await client.get({
+        $id: id,
+        objRec: true,
+      }),
+      null,
+      2
+    )
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          intArray: [1, 2, 3, 4, 5],
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          objArray: [
+            { value: 7 },
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+          ],
+        },
+      },
+    }
+  )
+
+  client.destroy()
+})
