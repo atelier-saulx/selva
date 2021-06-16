@@ -70,6 +70,7 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
 void SVector_Insert(SVector *vec, void *el);
 void SVector_SetIndex(SVector *vec, size_t idx, void *el);
 void *SVector_InsertFast(SVector *vec, void *el);
+void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el);
 
 /**
  * Return the index of key in vec.
