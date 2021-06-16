@@ -3,6 +3,15 @@ import { SetOptions } from '../types'
 import { Schema, TypeSchema, FieldSchemaArrayLike } from '../../schema'
 import fieldParsers from '.'
 
+const ITEM_TYPES: Record<string, number> = {
+  string: 0,
+  int: 2,
+  float: 1,
+  number: 1,
+  object: 4,
+  record: 4,
+}
+
 export default async (
   client: SelvaClient,
   schema: Schema,
@@ -19,7 +28,10 @@ export default async (
       result.push('7', field, '')
       return 0
     } else if (payload.$push) {
-      result.push('D', field, '')
+      const itemType = ITEM_TYPES[fields.items.type]
+      const content = new Uint32Array([itemType])
+      const buf = Buffer.from(content.buffer)
+      result.push('D', field, buf)
 
       const fieldWithIdx = `${field}[-1]`
       const itemsFields = fields.items

@@ -410,6 +410,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     bitmap_erase(replset);
 
     bool updated = false;
+    int has_push = 0;
 
     /*
      * Parse the rest of the arguments and run the modify operations.
@@ -435,7 +436,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             if (idx == -1) {
                 size_t ary_len = SelvaObject_GetArrayLenStr(obj, field_str, new_len);
-                idx = ary_len - 1;
+                idx = ary_len - 1 + has_push;
                 if (idx < 0) {
                     replyWithSelvaErrorf(ctx, err, "Unable to set value to array index %d", idx);
                     continue;
@@ -689,14 +690,24 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             bitmap_set(replset, i / 3 - 1);
             continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
-            struct SelvaObject *new_obj = SelvaObject_New();
-            if (!new_obj) {
-                replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
-                        (int)field_len, field_str);
-                continue;
+            uint32_t item_type;
+            memcpy(&item_type, value_str, sizeof(uint32_t));
+
+            int err;
+            if (item_type == SELVA_OBJECT_OBJECT) {
+                // object
+                struct SelvaObject *new_obj = SelvaObject_New();
+                if (!new_obj) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                            (int)field_len, field_str);
+                    continue;
+                }
+
+                err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
+            } else {
+                has_push = 1;
             }
 
-            int err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
             if (err) {
                 replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
                         (int)field_len, field_str);
