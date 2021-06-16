@@ -146,6 +146,7 @@ test.before(async (t) => {
               properties: {
                 floatArray: { type: 'array', items: { type: 'float' } },
                 intArray: { type: 'array', items: { type: 'int' } },
+                strArray: { type: 'array', items: { type: 'string' } },
                 objArray: {
                   type: 'array',
                   items: {
@@ -1806,6 +1807,7 @@ test.serial('set - push into array', async (t) => {
       abba: {
         intArray: [1, 2, 3, 4, 5],
         floatArray: [1.1, 2.2, 3.3, 4.4],
+        strArray: ['a', 'b', 'c'],
         objArray: [
           {
             hello: 'yes 1',
@@ -1824,28 +1826,27 @@ test.serial('set - push into array', async (t) => {
     },
   })
 
-  // TODO
-  // await client.set({
-  //   $id: id,
-  //   objRec: {
-  //     abba: {
-  //       intArray: {
-  //         $push: { $value: 7 },
-  //       },
-  //     },
-  //   },
-  // })
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        intArray: {
+          $push: 7,
+        },
+      },
+    },
+  })
 
-  // await client.set({
-  //   $id: id,
-  //   objRec: {
-  //     abba: {
-  //       doubleArray: {
-  //         $push: { $value: 7.275 },
-  //       },
-  //     },
-  //   },
-  // })
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        floatArray: {
+          $push: 7.275,
+        },
+      },
+    },
+  })
 
   await client.set({
     $id: id,
@@ -1861,6 +1862,17 @@ test.serial('set - push into array', async (t) => {
     },
   })
 
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        strArray: {
+          $push: 'abba',
+        },
+      },
+    },
+  })
+
   t.deepEqual(
     await client.get({
       $id: id,
@@ -1869,8 +1881,9 @@ test.serial('set - push into array', async (t) => {
     {
       objRec: {
         abba: {
-          intArray: [1, 2, 3, 4, 5],
-          floatArray: [1.1, 2.2, 3.3, 4.4],
+          intArray: [1, 2, 3, 4, 5, 7],
+          floatArray: [1.1, 2.2, 3.3, 4.4, 7.275],
+          strArray: ['a', 'b', 'c', 'abba'],
           objArray: [
             {
               hello: 'yes 1',
