@@ -2202,6 +2202,7 @@ test.serial.only('set - insert into array', async (t) => {
       abba: {
         intArray: [1, 2, 3, 4, 5],
         floatArray: [1.1, 2.2, 3.3, 4.4],
+        strArray: ['a', 'b', 'c'],
         objArray: [
           {
             hello: 'yes 1',
@@ -2236,6 +2237,96 @@ test.serial.only('set - insert into array', async (t) => {
     },
   })
 
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          intArray: [1, 2, 3, 4, 5],
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          strArray: ['a', 'b', 'c'],
+          objArray: [
+            { value: 7 },
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+          ],
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        strArray: {
+          $insert: {
+            $idx: 2,
+            $value: 'abba',
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          intArray: [1, 2, 3, 4, 5],
+          strArray: ['a', 'b', 'abba', 'c'],
+          objArray: [
+            { value: 7 },
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+          ],
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        intArray: {
+          $insert: {
+            $idx: 1,
+            $value: 11,
+          },
+        },
+      },
+    },
+  })
+
   console.log(
     JSON.stringify(
       await client.get({
@@ -2255,8 +2346,9 @@ test.serial.only('set - insert into array', async (t) => {
     {
       objRec: {
         abba: {
-          intArray: [1, 2, 3, 4, 5],
           floatArray: [1.1, 2.2, 3.3, 4.4],
+          intArray: [1, 11, 2, 3, 4, 5],
+          strArray: ['a', 'b', 'abba', 'c'],
           objArray: [
             { value: 7 },
             {
