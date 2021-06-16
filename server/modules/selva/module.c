@@ -445,7 +445,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
                 //  TODO: handle default
-                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
+                int err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
                 if (err) {
                     replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
                     continue;
@@ -463,7 +463,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 memcpy(v.s, value_str, sizeof(v.d));
                 void *wrapper;
                 memcpy(&wrapper, &v.d, sizeof(v.d));
-                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, wrapper);
+                int err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, wrapper);
 
                 if (err) {
                     replyWithSelvaErrorf(ctx, err, "Failed to set a double value");
@@ -480,7 +480,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 memcpy(v.s, value_str, sizeof(v.ll));
                 void *wrapper;
                 memcpy(&wrapper, &v.ll, sizeof(v.ll));
-                int err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, wrapper);
+                int err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, wrapper);
 
                 if (err) {
                     replyWithSelvaErrorf(ctx, err, "Failed to set a long value");
