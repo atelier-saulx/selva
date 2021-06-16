@@ -479,10 +479,10 @@ void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
 
     if (i < vec->vec_last) {
         if (vec->vec_last < vec->vec_arr_len) {
-            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], VEC_SIZE(vec->vec_last - i + 1));
+            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], VEC_SIZE(vec->vec_last - i));
         } else if (vec->vec_last == vec->vec_arr_len) {
             SVector_Resize(vec, vec->vec_last);
-            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], VEC_SIZE(vec->vec_last - i + 1));
+            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], VEC_SIZE(vec->vec_last - i));
         }
         vec->vec_last++;
     }

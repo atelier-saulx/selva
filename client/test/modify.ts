@@ -2331,7 +2331,9 @@ test.serial.only('set - insert into array', async (t) => {
     JSON.stringify(
       await client.get({
         $id: id,
-        objRec: true,
+        objRec: {
+          abba: true,
+        },
       }),
       null,
       2
