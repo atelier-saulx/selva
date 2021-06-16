@@ -146,6 +146,7 @@ test.before(async (t) => {
               properties: {
                 floatArray: { type: 'array', items: { type: 'float' } },
                 intArray: { type: 'array', items: { type: 'int' } },
+                strArray: { type: 'array', items: { type: 'string' } },
                 objArray: {
                   type: 'array',
                   items: {
@@ -1795,7 +1796,7 @@ test.serial('setting NaN should fail', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('set - push into array', async (t) => {
+test.serial('set - push into array', async (t) => {
   const client = connect({ port })
   const id = await client.set({
     type: 'lekkerType',
@@ -1806,6 +1807,7 @@ test.serial.only('set - push into array', async (t) => {
       abba: {
         intArray: [1, 2, 3, 4, 5],
         floatArray: [1.1, 2.2, 3.3, 4.4],
+        strArray: ['a', 'b', 'c'],
         objArray: [
           {
             hello: 'yes 1',
@@ -1860,6 +1862,17 @@ test.serial.only('set - push into array', async (t) => {
     },
   })
 
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        strArray: {
+          $push: 'abba',
+        },
+      },
+    },
+  })
+
   t.deepEqual(
     await client.get({
       $id: id,
@@ -1870,6 +1883,7 @@ test.serial.only('set - push into array', async (t) => {
         abba: {
           intArray: [1, 2, 3, 4, 5, 7],
           floatArray: [1.1, 2.2, 3.3, 4.4, 7.275],
+          strArray: ['a', 'b', 'c', 'abba'],
           objArray: [
             {
               hello: 'yes 1',
