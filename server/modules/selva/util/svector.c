@@ -447,7 +447,6 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
     return p;
 }
 
-// TODO: make sure you null things before the last entry and the first inserted index if it's larger than it's current size
 void SVector_SetIndex(SVector * restrict vec, size_t index, void *el) {
     assert(("vec_compare must not be set", !vec->vec_compar));
 
@@ -456,7 +455,7 @@ void SVector_SetIndex(SVector * restrict vec, size_t index, void *el) {
         if (index < vec->vec_last) {
             vec->vec_arr[index] = el;
         } else if (index < vec->vec_arr_len) {
-            memset(vec->vec_arr + vec->vec_last, 0, vec->vec_arr_len - vec->vec_last);
+            memset(vec->vec_arr + vec->vec_last, 0, VEC_SIZE(vec->vec_arr_len - vec->vec_last));
 
             vec->vec_arr[index] = el;
             vec->vec_last = index + 1;
@@ -469,17 +468,19 @@ void SVector_SetIndex(SVector * restrict vec, size_t index, void *el) {
     }
 }
 
-// TODO: make sure you null things before the last entry and the first inserted index if it's larger than it's current size
 void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
     assert(("vec_compare must not be set", !vec->vec_compar));
-    assert(("vec mode must be array", vec->vec_mode != SVECTOR_MODE_ARRAY));
+    assert(("vec mode must be array", vec->vec_mode == SVECTOR_MODE_ARRAY));
 
     SVector_ShiftReset(vec);
     const size_t i = vec->vec_arr_shift_index + index;
 
     if (i < vec->vec_last) {
         if (vec->vec_last < vec->vec_arr_len) {
-            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], VEC_SIZE(vec->vec_last - i + 1));
+            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], VEC_SIZE(vec->vec_last - i));
+        } else if (vec->vec_last == vec->vec_arr_len) {
+            SVector_Resize(vec, vec->vec_last);
+            memmove(&vec->vec_arr[i + 1], &vec->vec_arr[i], VEC_SIZE(vec->vec_last - i));
         }
         vec->vec_last++;
     }
@@ -671,6 +672,16 @@ static void *SVector_RbTreeForeach(struct SVectorIterator *it) {
     it->rbtree.next = RB_NEXT(SVector_rbtree, it->rbtree.head, cur);
 
     return cur->p;
+}
+
+int SVector_Done(const struct SVectorIterator *it) {
+    if (it->mode == SVECTOR_MODE_ARRAY) {
+        return it->arr.cur == it->arr.end;
+    } else if (it->mode == SVECTOR_MODE_RBTREE) {
+        return !it->rbtree.next;
+    }
+
+    return 1;
 }
 
 void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *vec) {

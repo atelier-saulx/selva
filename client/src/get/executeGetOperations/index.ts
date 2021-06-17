@@ -166,6 +166,10 @@ export const TYPE_CASTS: Record<
       (!lang && fieldSchema.items.type === 'text')
     ) {
       const converted = x.map((el, i) => {
+        if (el === null) {
+          return null
+        }
+
         return TYPE_CASTS.object(el, id, `${field}[${i}]`, schema, lang)
       })
 

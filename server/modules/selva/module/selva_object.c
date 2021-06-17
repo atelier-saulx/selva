@@ -1756,43 +1756,70 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
         SVector_ForeachBegin(&it, array);
 
         void *pd;
-        while ((pd = SVector_Foreach(&it))) {
+        do {
+            pd = SVector_Foreach(&it);
+            n++;
+
+            if (!pd) {
+                RedisModule_ReplyWithDouble(ctx, 0.0);
+                continue;
+            }
+
             double d;
             memcpy(&d, &pd, sizeof(double));
-            n++;
             RedisModule_ReplyWithDouble(ctx, d);
-        }
+        } while (!SVector_Done(&it));
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
     case SELVA_OBJECT_LONGLONG:
         SVector_ForeachBegin(&it, array);
 
         void *p;
-        while ((p = SVector_Foreach(&it))) {
-            long long ll = (long long)p;
+        do {
+            p = SVector_Foreach(&it);
+
             n++;
+            long long ll = (long long)p;
             RedisModule_ReplyWithLongLong(ctx, ll);
-        }
+        } while (!SVector_Done(&it));
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
     case SELVA_OBJECT_STRING:
         SVector_ForeachBegin(&it, array);
 
         RedisModuleString *str;
-        while ((str = SVector_Foreach(&it))) {
+
+        do {
+            str = SVector_Foreach(&it);
+
             n++;
+            if (!str) {
+                RedisModule_ReplyWithNull(ctx);
+                continue;
+            }
+
             RedisModule_ReplyWithString(ctx, str);
-        }
+        } while (!SVector_Done(&it));
+
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
     case SELVA_OBJECT_OBJECT:
         SVector_ForeachBegin(&it, array);
 
         struct SelvaObject *o;
-        while ((o = SVector_Foreach(&it))) {
+
+        do {
+            o = SVector_Foreach(&it);
+
             n++;
+            if (!o) {
+                RedisModule_ReplyWithNull(ctx);
+                continue;
+            }
+
             replyWithObject(ctx, lang, o);
-        }
+        } while (!SVector_Done(&it));
+
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
     default:
