@@ -119,3 +119,13 @@ int get_array_field_start_idx(const char *field_str, size_t field_len) {
 
     return -1;
 }
+
+int ch_count(const char *s, char ch) {
+    size_t i = 0;
+
+    while (*s) {
+        i = *s++ == ch ? i + 1 : i;
+    }
+
+    return i;
+}
