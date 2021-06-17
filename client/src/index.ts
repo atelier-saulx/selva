@@ -310,6 +310,7 @@ export {
   ServerType,
   ServerDescriptor,
   GetOptions,
+  SetOptions,
   Schema,
   FieldSchemaObject,
   RedisCommand,
