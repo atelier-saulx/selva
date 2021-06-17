@@ -2327,19 +2327,6 @@ test.serial('set - insert into array', async (t) => {
     },
   })
 
-  console.log(
-    JSON.stringify(
-      await client.get({
-        $id: id,
-        objRec: {
-          abba: true,
-        },
-      }),
-      null,
-      2
-    )
-  )
-
   t.deepEqual(
     await client.get({
       $id: id,
@@ -2365,6 +2352,88 @@ test.serial('set - insert into array', async (t) => {
               hello: 'yes 3',
               value: 3,
             },
+          ],
+        },
+      },
+    }
+  )
+
+  client.destroy()
+})
+
+test.serial('set - insert and set further into array', async (t) => {
+  const client = connect({ port })
+  const id = await client.set({
+    type: 'lekkerType',
+    dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+        strArray: ['a', 'b', 'c'],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
+          $assign: {
+            $idx: 5,
+            $value: {
+              value: 7,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          intArray: [1, 2, 3, 4, 5],
+          strArray: ['a', 'b', 'c'],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+            null,
+            null,
+            { value: 7 },
           ],
         },
       },

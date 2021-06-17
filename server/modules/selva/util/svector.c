@@ -455,7 +455,7 @@ void SVector_SetIndex(SVector * restrict vec, size_t index, void *el) {
         if (index < vec->vec_last) {
             vec->vec_arr[index] = el;
         } else if (index < vec->vec_arr_len) {
-            memset(vec->vec_arr + vec->vec_last, 0, vec->vec_arr_len - vec->vec_last);
+            memset(vec->vec_arr + vec->vec_last, 0, VEC_SIZE(vec->vec_arr_len - vec->vec_last));
 
             vec->vec_arr[index] = el;
             vec->vec_last = index + 1;
@@ -673,6 +673,17 @@ static void *SVector_RbTreeForeach(struct SVectorIterator *it) {
 
     return cur->p;
 }
+
+int SVector_Done(const struct SVectorIterator *it) {
+    if (it->mode == SVECTOR_MODE_ARRAY) {
+        return it->arr.cur == it->arr.end;
+    } else if (it->mode == SVECTOR_MODE_RBTREE) {
+        return !it->rbtree.next;
+    }
+
+    return 1;
+}
+
 
 void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *vec) {
     assert(it);

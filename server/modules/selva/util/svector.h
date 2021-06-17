@@ -118,6 +118,7 @@ void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *v
 static inline void *SVector_Foreach(struct SVectorIterator *it) {
     return it->fn(it);
 }
+int SVector_Done(const struct SVectorIterator *it);
 
 #define SVECTOR_AUTOFREE(name) \
     __attribute__((cleanup(SVector_Destroy))) SVector name = { 0 }

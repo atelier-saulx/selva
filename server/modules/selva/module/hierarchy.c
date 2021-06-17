@@ -1826,46 +1826,6 @@ static int traverse_array(
         SelvaModify_HierarchyNode *head,
         const char *ref_field_str,
         const struct SelvaModify_ArrayObjectCallback *cb) {
-    // int err;
-
-    // RedisModuleString *head_id;
-    // head_id = RedisModule_CreateString(ctx, head->id, Selva_NodeIdLen(head->id));
-    // if (!head_id) {
-    //     return SELVA_HIERARCHY_ENOMEM;
-    // }
-
-    // struct SelvaObject *head_obj;
-    // err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, head_id, REDISMODULE_READ), &head_obj);
-    // if (err) {
-    //     return err;
-    // }
-
-    // struct SelvaSet *ref_set;
-    // ref_set = SelvaObject_GetSetStr(head_obj, ref_field_str, strlen(ref_field_str));
-    // if (!ref_set) {
-    //     return SELVA_HIERARCHY_ENOENT;
-    // }
-    // if (ref_set->type != SELVA_SET_TYPE_RMSTRING) {
-    //     return SELVA_EINTYPE;
-    // }
-
-    // struct SelvaSetElement *el;
-    // SELVA_SET_RMS_FOREACH(el, ref_set) {
-    //     RedisModuleString *value = el->value_rms;
-    //     Selva_NodeId nodeId;
-    //     SelvaModify_HierarchyNode *node;
-    //     TO_STR(value);
-
-    //     memset(nodeId, 0, SELVA_NODE_ID_SIZE);
-    //     memcpy(nodeId, value_str, min(value_len, SELVA_NODE_ID_SIZE));
-
-    //     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
-    //     if (node) {
-    //         cb->node_cb(node, cb->node_arg);
-    //     }
-    // }
-
-
     int err;
 
     RedisModuleString *head_id;
@@ -1890,11 +1850,13 @@ static int traverse_array(
     struct SVectorIterator it;
     SVector_ForeachBegin(&it, vec);
     struct SelvaObject *obj;
-    while ((obj = SVector_Foreach(&it))) {
+    do {
+        obj = SVector_Foreach(&it);
+
         if (obj) {
             cb->node_cb(obj, cb->node_arg);
         }
-    }
+    } while (!SVector_Done(&it));
 
     return 0;
 }
