@@ -104,10 +104,10 @@ struct Selva_SubscriptionMarker {
         Selva_NodeId node_id;
         enum Selva_SubscriptionTriggerType event_type;
     };
-    const char *ref_field; /*!< Ref field to traverse. */
+    char *ref_field; /*!< Ref field name for traversal when dir requires it. */
     struct rpn_ctx *filter_ctx;
     struct rpn_expression *filter_expression;
-    char *fields; /* \n separated and \0 terminated. */
+    char *fields; /* \n separated and \0 terminated list of field names considered for change events. */
 
     /*
      * Temp storage for tracking filter result changes.

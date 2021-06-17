@@ -217,6 +217,7 @@ static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
 #endif
     rpn_destroy_expression(marker->filter_expression);
     RedisModule_Free(marker->fields);
+    RedisModule_Free(marker->ref_field);
     RedisModule_Free(marker);
 }
 
