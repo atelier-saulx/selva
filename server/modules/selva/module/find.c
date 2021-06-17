@@ -2127,7 +2127,9 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
             };
             err = SelvaModify_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, &ary_cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD && ref_field) {
-            err = SelvaModify_TraverseHierarchyEdge(hierarchy, nodeId, ref_field, &cb);
+            TO_STR(ref_field);
+
+            err = SelvaModify_TraverseHierarchyEdge(hierarchy, nodeId, ref_field_str, ref_field_len, &cb);
         } else {
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
         }

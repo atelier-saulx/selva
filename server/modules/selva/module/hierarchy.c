@@ -1632,10 +1632,9 @@ static int bfs(
 static int bfs_edge(
         SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *head,
-        RedisModuleString *field_name,
+        const char *field_name_str,
+        size_t field_name_len,
         const TraversalCallback * restrict cb) {
-    TO_STR(field_name);
-
     BFS_TRAVERSE(hierarchy, head, cb) {
         struct EdgeField *edge_field;
 
@@ -1772,26 +1771,27 @@ static int traverse_adjacent(
     return 0;
 }
 
-static int traverse_ref(
-        RedisModuleCtx *ctx,
+static int traverse_ref_edge_field(
+        const struct EdgeField *edge_field,
+        const struct SelvaModify_HierarchyCallback *cb) {
+    struct SVectorIterator it;
+    SelvaModify_HierarchyNode *dst;
+
+    SVector_ForeachBegin(&it, &edge_field->arcs);
+    while ((dst = SVector_Foreach(&it))) {
+        if (cb->node_cb(dst, cb->node_arg)) {
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+static int traverse_ref_string_field(
         SelvaModify_Hierarchy *hierarchy,
-        SelvaModify_HierarchyNode *head,
+        struct SelvaObject *head_obj,
         const char *ref_field_str,
         const struct SelvaModify_HierarchyCallback *cb) {
-    int err;
-
-    RedisModuleString *head_id;
-    head_id = RedisModule_CreateString(ctx, head->id, Selva_NodeIdLen(head->id));
-    if (!head_id) {
-        return SELVA_HIERARCHY_ENOMEM;
-    }
-
-    struct SelvaObject *head_obj;
-    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, head_id, REDISMODULE_READ), &head_obj);
-    if (err) {
-        return err;
-    }
-
     struct SelvaSet *ref_set;
     ref_set = SelvaObject_GetSetStr(head_obj, ref_field_str, strlen(ref_field_str));
     if (!ref_set) {
@@ -1813,11 +1813,49 @@ static int traverse_ref(
 
         node = SelvaHierarchy_FindNode(hierarchy, nodeId);
         if (node) {
-            cb->node_cb(node, cb->node_arg);
+            if (cb->node_cb(node, cb->node_arg)) {
+                return 0;
+            }
         }
     }
 
     return 0;
+}
+
+static int traverse_ref(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        SelvaModify_HierarchyNode *head,
+        const char *ref_field_str,
+        const struct SelvaModify_HierarchyCallback *cb) {
+    RedisModuleString *head_id;
+    const struct EdgeField *edge_field;
+    struct SelvaObject *head_obj;
+    int err;
+
+    /*
+     * Check if the field_name refers to an edge field.
+     */
+    edge_field = Edge_GetField(head, ref_field_str, strlen(ref_field_str));
+    if (edge_field) {
+        return traverse_ref_edge_field(edge_field, cb);
+    }
+
+    /*
+     * Check if the field_name is a string field on the node object.
+     */
+
+    head_id = RedisModule_CreateString(ctx, head->id, Selva_NodeIdLen(head->id));
+    if (!head_id) {
+        return SELVA_HIERARCHY_ENOMEM;
+    }
+
+    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, head_id, REDISMODULE_READ), &head_obj);
+    if (!err) {
+        return traverse_ref_string_field(hierarchy, head_obj, ref_field_str, cb);
+    }
+
+    return err;
 }
 
 // TODO
@@ -1854,7 +1892,9 @@ static int traverse_array(
         obj = SVector_Foreach(&it);
 
         if (obj) {
-            cb->node_cb(obj, cb->node_arg);
+            if (cb->node_cb(obj, cb->node_arg)) {
+                return 0;
+            }
         }
     } while (!SVector_Done(&it));
 
@@ -1891,10 +1931,6 @@ int SelvaModify_TraverseHierarchy(
     if (dir == SELVA_HIERARCHY_TRAVERSAL_NONE) {
         return SELVA_HIERARCHY_EINVAL;
     }
-    if (unlikely(dir == SELVA_HIERARCHY_TRAVERSAL_REF)) {
-        /* Use SelvaModify_TraverseHierarchyRef() instead */
-        return SELVA_HIERARCHY_ENOTSUP;
-    }
 
     if (dir != SELVA_HIERARCHY_TRAVERSAL_DFS_FULL) {
         head = SelvaHierarchy_FindNode(hierarchy, id);
@@ -1928,6 +1964,10 @@ int SelvaModify_TraverseHierarchy(
         err = full_dfs(hierarchy, &tcb);
         break;
      default:
+        /* Should probably use
+         * SelvaModify_TraverseHierarchyRef() or
+         * SelvaModify_TraverseHierarchyEdge().
+         */
         fprintf(stderr, "%s:%d: Invalid traversal requested (%d)\n",
                 __FILE__, __LINE__,
                 (int)dir);
@@ -1973,7 +2013,8 @@ int SelvaModify_TraverseArray(
 int SelvaModify_TraverseHierarchyEdge(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
-        RedisModuleString *field_name,
+        const char *field_name_str,
+        size_t field_name_len,
         const struct SelvaModify_HierarchyCallback *cb) {
     const TraversalCallback tcb = {
         .head_cb = NULL,
@@ -1990,7 +2031,7 @@ int SelvaModify_TraverseHierarchyEdge(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    return bfs_edge(hierarchy, head, field_name, &tcb);
+    return bfs_edge(hierarchy, head, field_name_str, field_name_len, &tcb);
 }
 
 int SelvaHierarchy_TraverseExpression(

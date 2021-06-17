@@ -295,7 +295,8 @@ int SelvaModify_TraverseHierarchyRef(
 int SelvaModify_TraverseHierarchyEdge(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
-        struct RedisModuleString *field_name,
+        const char *field_name_str,
+        size_t field_name_len,
         const struct SelvaModify_HierarchyCallback *cb);
 int SelvaHierarchy_TraverseExpression(
         struct RedisModuleCtx *ctx,
