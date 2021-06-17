@@ -739,8 +739,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             memcpy(&item_type, value_str, sizeof(uint32_t));
             memcpy(&insert_idx, value_str + sizeof(uint32_t), sizeof(uint32_t));
 
-            fprintf(stderr, "ARRAY INSERT %d %d\n", item_type, insert_idx);
-
             int err = 0;
             if (item_type == SELVA_OBJECT_OBJECT) {
                 // object

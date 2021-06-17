@@ -2440,5 +2440,58 @@ test.serial('set - insert and set further into array', async (t) => {
     }
   )
 
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        intArray: {
+          $insert: {
+            $idx: 6,
+            $value: 7,
+          },
+        },
+        floatArray: {
+          $insert: {
+            $idx: 6,
+            $value: 7.7,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          floatArray: [1.1, 2.2, 3.3, 4.4, 0, 0, 7.7],
+          intArray: [1, 2, 3, 4, 5, 0, 7],
+          strArray: ['a', 'b', 'c'],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+            null,
+            null,
+            { value: 7 },
+          ],
+        },
+      },
+    }
+  )
+
   client.destroy()
 })

@@ -1779,12 +1779,6 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
             p = SVector_Foreach(&it);
 
             n++;
-            if (!p) {
-                RedisModule_ReplyWithNull(ctx);
-                continue;
-            }
-
-
             long long ll = (long long)p;
             RedisModule_ReplyWithLongLong(ctx, ll);
         } while (!SVector_Done(&it));
