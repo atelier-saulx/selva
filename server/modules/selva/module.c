@@ -261,7 +261,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     SVECTOR_AUTOFREE(alias_query);
     int trigger_created = 0; /* Will be set to 1 if the node was created during this command. */
     bool new_alias = false; /* Set if $alias will be creating new alias(es). */
-    int err = REDISMODULE_OK;
+    int err = 0;
 
     /*
      * The comparator must be NULL to ensure that the vector is always stored
@@ -446,7 +446,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
                 //  TODO: handle default
-                int err;
                 if (active_insert_idx == idx) {
                     err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
                     active_insert_idx = -1;
@@ -471,7 +470,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 memcpy(v.s, value_str, sizeof(v.d));
                 void *wrapper;
                 memcpy(&wrapper, &v.d, sizeof(v.d));
-                int err;
+
                 if (active_insert_idx == idx) {
                     err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, wrapper);
                     active_insert_idx = -1;
@@ -491,10 +490,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 } v = {
                     .ll = 0,
                 };
+
                 memcpy(v.s, value_str, sizeof(v.ll));
                 void *wrapper;
                 memcpy(&wrapper, &v.ll, sizeof(v.ll));
-                int err;
+
                 if (active_insert_idx == idx) {
                     err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, wrapper);
                     active_insert_idx = -1;
@@ -713,7 +713,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             uint32_t item_type;
             memcpy(&item_type, value_str, sizeof(uint32_t));
 
-            int err;
             if (item_type == SELVA_OBJECT_OBJECT) {
                 // object
                 struct SelvaObject *new_obj = SelvaObject_New();
@@ -726,6 +725,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
             } else {
                 has_push = 1;
+                err = 0;
             }
 
             if (err) {
@@ -739,7 +739,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             memcpy(&item_type, value_str, sizeof(uint32_t));
             memcpy(&insert_idx, value_str + sizeof(uint32_t), sizeof(uint32_t));
 
-            int err = 0;
             if (item_type == SELVA_OBJECT_OBJECT) {
                 // object
                 struct SelvaObject *new_obj = SelvaObject_New();
@@ -752,6 +751,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 err = SelvaObject_InsertArrayIndexStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, insert_idx, new_obj);
             } else {
                 active_insert_idx = insert_idx;
+                err = 0;
             }
 
             if (err) {
@@ -764,8 +764,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             memcpy(&v, value_str, sizeof(uint32_t));
 
             if (v >= 0) {
-                int err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v);
-
+                err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v);
                 if (err) {
                     replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",
                             (int)field_len, field_str);
@@ -810,8 +809,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         SVector_ForeachBegin(&it, &alias_query);
         while ((alias = SVector_Foreach(&it))) {
-            int err;
-
             struct SelvaModify_OpSet opSet = {
                 .op_set_type = SELVA_MODIFY_OP_SET_TYPE_CHAR,
                 .$add = alias,
