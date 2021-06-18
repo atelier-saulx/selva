@@ -34,6 +34,9 @@
 #define FISSET_CREATED_AT(m) (((m) & FLAG_CREATED_AT) == FLAG_CREATED_AT)
 #define FISSET_UPDATED_AT(m) (((m) & FLAG_UPDATED_AT) == FLAG_UPDATED_AT)
 
+#define REPLY_WITH_ARG_TYPE_ERROR(v) \
+    replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: %s", typeof_str(v))
+
 SET_DECLARE(selva_onload, Selva_Onload);
 SET_DECLARE(selva_onunld, Selva_Onunload);
 
@@ -464,18 +467,23 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 union {
                     char s[sizeof(double)];
                     double d;
+                    void *p;
                 } v = {
                     .d = 0.0,
                 };
+
+                if (value_len != sizeof(v.d)) {
+                    REPLY_WITH_ARG_TYPE_ERROR(v.d);
+                    continue;
+                }
+
                 memcpy(v.s, value_str, sizeof(v.d));
-                void *wrapper;
-                memcpy(&wrapper, &v.d, sizeof(v.d));
 
                 if (active_insert_idx == idx) {
-                    err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, wrapper);
+                    err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, v.p);
                     active_insert_idx = -1;
                 } else {
-                    err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, wrapper);
+                    err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, v.p);
                 }
 
                 if (err) {
@@ -487,19 +495,23 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 union {
                     char s[sizeof(double)];
                     long long ll;
+                    void *p;
                 } v = {
                     .ll = 0,
                 };
 
+                if (value_len != sizeof(v.ll)) {
+                    REPLY_WITH_ARG_TYPE_ERROR(v.ll);
+                    continue;
+                }
+
                 memcpy(v.s, value_str, sizeof(v.ll));
-                void *wrapper;
-                memcpy(&wrapper, &v.ll, sizeof(v.ll));
 
                 if (active_insert_idx == idx) {
-                    err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, wrapper);
+                    err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, v.p);
                     active_insert_idx = -1;
                 } else {
-                    err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, wrapper);
+                    err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, v.p);
                 }
 
                 if (err) {
@@ -511,7 +523,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 SelvaObjectMeta_t old_user_meta;
 
                 if (value_len < sizeof(SelvaObjectMeta_t)) {
-                    replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: %s", typeof_str(new_user_meta));
+                    REPLY_WITH_ARG_TYPE_ERROR(new_user_meta);
                     continue;
                 }
 
@@ -626,17 +638,18 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 continue;
             }
 
-            if (value_len != sizeof(long long)) {
-                replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid length for long long");
-                continue;
-            }
-
             union {
                 char s[sizeof(long long)];
                 long long ll;
             } v = {
                 .ll = 0,
             };
+
+            if (value_len != sizeof(long long)) {
+                REPLY_WITH_ARG_TYPE_ERROR(v.ll);
+                continue;
+            }
+
             memcpy(v.s, value_str, sizeof(v.ll));
 
             long long old_value;
@@ -655,17 +668,18 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 continue;
             }
 
-            if (value_len != sizeof(double)) {
-                replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid length for double");
-                continue;
-            }
-
             union {
                 char s[sizeof(double)];
                 double d;
             } v = {
                 .d = 0.0,
             };
+
+            if (value_len != sizeof(double)) {
+                REPLY_WITH_ARG_TYPE_ERROR(v.d);
+                continue;
+            }
+
             memcpy(v.s, value_str, sizeof(v.d));
 
             double old_value;
@@ -682,7 +696,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             SelvaObjectMeta_t old_user_meta;
 
             if (value_len < sizeof(SelvaObjectMeta_t)) {
-                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: %s", typeof_str(new_user_meta));
+                REPLY_WITH_ARG_TYPE_ERROR(new_user_meta);
                 continue;
             }
 
@@ -736,6 +750,12 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_INSERT) {
             uint32_t item_type;
             uint32_t insert_idx;
+
+            if (value_len != 2 * sizeof(uint32_t)) {
+                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: int[2]");
+                continue;
+            }
+
             memcpy(&item_type, value_str, sizeof(uint32_t));
             memcpy(&insert_idx, value_str + sizeof(uint32_t), sizeof(uint32_t));
 
@@ -759,8 +779,14 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                         (int)field_len, field_str);
                 continue;
             }
-        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE && value_len == sizeof(uint32_t)) {
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
             uint32_t v;
+
+            if (value_len != sizeof(uint32_t)) {
+                REPLY_WITH_ARG_TYPE_ERROR(v);
+                continue;
+            }
+
             memcpy(&v, value_str, sizeof(uint32_t));
 
             if (v >= 0) {
