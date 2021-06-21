@@ -176,7 +176,9 @@ retry:
             CHANNEL_SUB_ID("___selva_subscription_update:", task->sub_update.sub_id);
             redisReply *reply = NULL;
 
+#if 0
             fprintf(stderr, "Redis publish subscription update: \"%s\"\n", channel);
+#endif
             reply = redisCommand(ctx, "PUBLISH %s %s", channel, "");
             if (!reply) {
                 ASYNC_TASK_LOG("No reply received: %s\n", ctx->errstr);
@@ -192,7 +194,9 @@ retry:
             CHANNEL_SUB_ID("___selva_subscription_trigger:", task->sub_trigger.sub_id);
             redisReply *reply = NULL;
 
+#if 0
             fprintf(stderr, "Redis publish subscription trigger: \"%s\"\n", channel);
+#endif
             reply = redisCommand(ctx, "PUBLISH %s %b", channel, task->sub_trigger.node_id, SELVA_NODE_ID_SIZE);
             if (!reply) {
                 ASYNC_TASK_LOG("No reply received: %s\n", ctx->errstr);
