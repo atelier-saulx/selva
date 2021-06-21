@@ -35,8 +35,7 @@ void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy) {
 }
 void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaModify_Hierarchy *hierarchy __unused,
-        Selva_NodeId node_id __unused,
-        struct SelvaModify_HierarchyMetadata *metadata __unused) {
+        struct SelvaModify_HierarchyNode *node) {
     return;
 }
 
@@ -59,6 +58,16 @@ void SelvaSubscriptions_InheritChild(
         size_t node_nr_parents __unused,
         const Selva_NodeId child_id __unused,
         struct SelvaModify_HierarchyMetadata *child_metadata __unused) {
+    return;
+}
+
+void SelvaSubscriptions_InheritEdge(
+        struct RedisModuleCtx *ctx __unused,
+        struct SelvaModify_Hierarchy *hierarchy __unused,
+        struct SelvaModify_HierarchyNode *src_node __unused,
+        struct SelvaModify_HierarchyNode *dst_node __unused,
+        const char *field_str __unused,
+        size_t field_len __unused) {
     return;
 }
 
@@ -100,6 +109,7 @@ void Selva_Subscriptions_DeferTriggerEvents(
 }
 
 void SelvaSubscriptions_RefreshByMarker(
+        struct RedisModuleCtx *ctx __unused,
         struct SelvaModify_Hierarchy *hierarchy __unused,
         SVector *markers __unused) {
     return;
