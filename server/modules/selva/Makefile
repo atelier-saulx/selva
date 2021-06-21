@@ -85,6 +85,9 @@ test-valgrind: export WITH_VALGRIND = valgrind
 test-valgrind:
 	$(MAKE) -C test
 
+test-gcov: test
+	./coverage.sh
+
 clean: FORCE
 	find . -type f -name "*.a" -exec rm -f {} \;
 	find . -type f -name "*.o" -exec rm -f {} \;
