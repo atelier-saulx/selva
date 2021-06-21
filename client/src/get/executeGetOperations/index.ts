@@ -77,6 +77,16 @@ export async function addMarker(
     return false
   }
 
+  const schema = client.schemas[ctx.db]
+  const fieldSchema = getNestedSchema(schema, marker.id, marker.refField)
+  if (fieldSchema && fieldSchema.type === 'array') {
+    return addMarker(client, ctx, {
+      type: 'node',
+      id: marker.id,
+      fields: [marker.refField],
+    })
+  }
+
   console.log('ADD MARKER', marker)
   const markerId = adler32(marker)
   const markerType = [marker.type, marker.refField].filter((v) => v)
