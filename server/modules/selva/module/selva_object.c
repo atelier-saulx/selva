@@ -518,7 +518,8 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
     if (nr_parts_found < nr_parts &&
         key &&
-        flags & SELVA_OBJECT_GETKEY_PARTIAL) {
+        flags & SELVA_OBJECT_GETKEY_PARTIAL &&
+        s) {
         size_t off = (size_t)(buf - s + 1) + strlen(s);
 
         *out = key;
