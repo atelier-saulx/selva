@@ -1336,7 +1336,7 @@ static void defer_array_field_change_events(
 
         char path_field_str[path_field_len + 1];
 
-        if (path_field_start && path_field_start && *path_field_start != '\0') {
+        if (path_field_start && *path_field_start != '\0') {
             sprintf(path_field_str, "%.*s[n]%s", (int)ary_field_len, field, path_field_start);
             defer_field_change_events(ctx, hierarchy, node_id, sub_markers, path_field_str);
         }
