@@ -80,10 +80,13 @@ export async function addMarker(
   const schema = client.schemas[ctx.db]
   const fieldSchema = getNestedSchema(schema, marker.id, marker.refField)
   if (fieldSchema && fieldSchema.type === 'array') {
+    const nestedFields = marker.fields.map((f) => {
+      return `${marker.refField}[n].${f}`
+    })
     return addMarker(client, ctx, {
       type: 'node',
       id: marker.id,
-      fields: [marker.refField],
+      fields: nestedFields,
     })
   }
 

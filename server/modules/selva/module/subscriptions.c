@@ -1287,6 +1287,43 @@ static void defer_field_change_events(
         const char *field) {
     const unsigned short flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
 
+    unsigned long field_len = strlen(field);
+    int ary_field_len = strchr(field, '[') ? get_array_field_start_idx(field, field_len) : -1;
+    char ary_field_str[ary_field_len + 1];
+    int path_field_len = -1;
+    char *path_field_start = NULL;
+
+    if (ary_field_len > 0) {
+        path_field_start = strchr(field + ary_field_len, ']');
+        if (path_field_start) {
+            path_field_start++;
+            // path part
+            path_field_len = field_len - (path_field_start - field);
+
+            // array field part
+            path_field_len += ary_field_len;
+
+            // [n] part
+            path_field_len += 3;
+        }
+    }
+
+    char path_field_str[path_field_len + 1];
+
+    if (ary_field_len > 0) {
+        memcpy(ary_field_str, field, ary_field_len);
+        ary_field_str[ary_field_len] = '\0';
+
+
+        if (path_field_start) {
+            sprintf(path_field_str, "%s[n]%s", ary_field_str, path_field_start);
+            field = path_field_str;
+        }
+
+        // check for direct subscriptions on arrayField: true
+        defer_field_change_events(ctx, hierarchy, node_id, sub_markers, ary_field_str);
+    }
+
     if ((sub_markers->flags_filter & flags) == flags) {
         struct SVectorIterator it;
         struct Selva_SubscriptionMarker *marker;

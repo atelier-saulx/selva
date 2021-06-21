@@ -810,16 +810,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
          * Hierarchy handles events for parents and children.
          */
         if (strcmp(field_str, "parents") && strcmp(field_str, "children")) {
-          if (strchr(field_str, '[')) {
-              int new_len = get_array_field_start_idx(field_str, field_len);
-              char ary_field_str[new_len + 1];
-              memcpy(ary_field_str, field_str, new_len);
-              ary_field_str[new_len] = '\0';
-
-              SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, nodeId, metadata, ary_field_str);
-          } else {
-              SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, nodeId, metadata, field_str);
-          }
+            SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, nodeId, metadata, field_str);
         }
 
 #if 0
