@@ -547,7 +547,17 @@ static int marker_set_fields(struct Selva_SubscriptionMarker *marker, const char
     return 0;
 }
 
+/**
+ * Set ref_field for the marker.
+ * The traversal direction must have been set to one of the ones requiring a ref
+ * before calling this function and the SELVA_SUBSCRIPTION_FLAG_TRIGGER flag
+ * must not be set.
+ * @param ref_field is the field used for traversal that must be a c-string.
+ */
 static int marker_set_ref_field(struct Selva_SubscriptionMarker *marker, const char *ref_field) {
+    assert((marker->dir == SELVA_HIERARCHY_TRAVERSAL_REF || marker->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD) &&
+           !(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_TRIGGER));
+
     marker->ref_field = RedisModule_Strdup(ref_field);
     if (!marker->ref_field) {
         return SELVA_ENOMEM;
