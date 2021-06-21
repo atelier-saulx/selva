@@ -114,7 +114,10 @@ static int add_lang(const char *lang, const char *locale_name) {
         return err;
     }
 
-    strncpy(slang->name, lang, sizeof(slang->name) - 1); /* -1 to avoid a warn. */
+    /*
+     * Note that slang->name is not supposed to be nul-terminated.
+     */
+    strncpy(slang->name, lang, sizeof(slang->name));
     get_territory(slang->territory, locale_name);
 
     err = SelvaObject_SetPointerStr(langs, lang, strlen(lang), slang, &obj_opts);
