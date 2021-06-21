@@ -309,7 +309,8 @@ int SelvaModify_TraverseArray(
         struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
-        const char *ref_field,
+        const char *ref_field_str,
+        size_t ref_field_len,
         const struct SelvaModify_ArrayObjectCallback *cb);
 int SelvaHierarchy_IsNonEmptyField(struct SelvaModify_HierarchyNode *node, const char *field_str, size_t field_len);
 

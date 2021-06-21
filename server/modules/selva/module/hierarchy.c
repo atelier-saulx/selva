@@ -1857,11 +1857,11 @@ static int traverse_ref(
     return err;
 }
 
-// TODO
 static int traverse_array(
         RedisModuleCtx *ctx,
         SelvaModify_HierarchyNode *head,
         const char *ref_field_str,
+        size_t ref_field_len,
         const struct SelvaModify_ArrayObjectCallback *cb) {
     int err;
 
@@ -1879,7 +1879,7 @@ static int traverse_array(
 
     enum SelvaObjectType subtype;
     SVector *vec;
-    err = SelvaObject_GetArrayStr(head_obj, ref_field_str, strlen(ref_field_str), &subtype, &vec);
+    err = SelvaObject_GetArrayStr(head_obj, ref_field_str, ref_field_len, &subtype, &vec);
     if (err) {
         return err;
     }
@@ -1997,7 +1997,8 @@ int SelvaModify_TraverseArray(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
-        const char *ref_field,
+        const char *ref_field_str,
+        size_t ref_field_len,
         const struct SelvaModify_ArrayObjectCallback *cb) {
     SelvaModify_HierarchyNode *head;
 
@@ -2006,7 +2007,7 @@ int SelvaModify_TraverseArray(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    return traverse_array(ctx, head, ref_field, cb);
+    return traverse_array(ctx, head, ref_field_str, ref_field_len, cb);
 }
 
 int SelvaModify_TraverseHierarchyEdge(
