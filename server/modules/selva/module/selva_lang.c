@@ -85,7 +85,7 @@ static void get_territory(char dst[4], const char *locale_name) {
 
     territory_str = lang + 1;
     char *s = strchr(territory_str, '.');
-    territory_len = s ? (size_t)(s - territory_str) : strlen(territory_str);
+    territory_len = s ? (size_t)(s - territory_str) : strnlen(territory_str, LANG_TERRITORY_MAX);
 
     memcpy(dst, territory_str, min(territory_len, LANG_NAME_MAX));
 }
@@ -127,7 +127,7 @@ static int add_lang(const char *lang, const char *locale_name) {
 #endif
     get_territory(slang->territory, locale_name);
 
-    err = SelvaObject_SetPointerStr(langs, lang, strlen(lang), slang, &obj_opts);
+    err = SelvaObject_SetPointerStr(langs, lang, strnlen(lang, LANG_NAME_MAX), slang, &obj_opts);
     if (err) {
         RedisModule_Free(slang);
     }
