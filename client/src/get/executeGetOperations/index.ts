@@ -21,7 +21,15 @@ export type ExecContext = {
   hasFindMarkers?: boolean
 }
 export type SubscriptionMarker = {
-  type: 'none' | 'node' | 'children' | 'parents' | 'ancestors' | 'descendants' | 'ref' | 'bfs_edge_field'
+  type:
+    | 'none'
+    | 'node'
+    | 'children'
+    | 'parents'
+    | 'ancestors'
+    | 'descendants'
+    | 'ref'
+    | 'bfs_edge_field'
   refField?: string
   id: string
   fields: string[]
@@ -44,11 +52,18 @@ export function adler32(marker: SubscriptionMarker): number {
   return res & 0x7fffffff
 }
 
-export function sourceFieldToMarkerType(field: string): { type: SubscriptionMarker['type'], refField?: string } {
-  const defaultFields: Array<SubscriptionMarker['type']> = ['children', 'parents', 'ancestors', 'descendants'] // Missing: node, node, ref, bfs_edge_field
+export function sourceFieldToMarkerType(
+  field: string
+): { type: SubscriptionMarker['type']; refField?: string } {
+  const defaultFields: Array<SubscriptionMarker['type']> = [
+    'children',
+    'parents',
+    'ancestors',
+    'descendants',
+  ] // Missing: node, node, ref, bfs_edge_field
   const isRef = !defaultFields.includes(field as SubscriptionMarker['type'])
   return {
-    type: isRef ? 'ref' : field as SubscriptionMarker['type'],
+    type: isRef ? 'ref' : (field as SubscriptionMarker['type']),
     ...(isRef ? { refField: field } : {}),
   }
 }
@@ -62,8 +77,9 @@ export async function addMarker(
     return false
   }
 
+  console.log('ADD MARKER', marker)
   const markerId = adler32(marker)
-  const markerType = [marker.type, marker.refField].filter(v => v)
+  const markerType = [marker.type, marker.refField].filter((v) => v)
   await client.redis.selva_subscriptions_add(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     '___selva_hierarchy',
