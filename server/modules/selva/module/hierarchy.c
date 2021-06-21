@@ -1790,9 +1790,10 @@ static int traverse_ref_string_field(
         SelvaModify_Hierarchy *hierarchy,
         struct SelvaObject *head_obj,
         const char *ref_field_str,
+        size_t ref_field_len,
         const struct SelvaModify_HierarchyCallback *cb) {
     struct SelvaSet *ref_set;
-    ref_set = SelvaObject_GetSetStr(head_obj, ref_field_str, strlen(ref_field_str));
+    ref_set = SelvaObject_GetSetStr(head_obj, ref_field_str, ref_field_len);
     if (!ref_set) {
         return SELVA_HIERARCHY_ENOENT;
     }
@@ -1826,6 +1827,7 @@ static int traverse_ref(
         SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *head,
         const char *ref_field_str,
+        size_t ref_field_len,
         const struct SelvaModify_HierarchyCallback *cb) {
     RedisModuleString *head_id;
     const struct EdgeField *edge_field;
@@ -1835,7 +1837,7 @@ static int traverse_ref(
     /*
      * Check if the field_name refers to an edge field.
      */
-    edge_field = Edge_GetField(head, ref_field_str, strlen(ref_field_str));
+    edge_field = Edge_GetField(head, ref_field_str, ref_field_len);
     if (edge_field) {
         return traverse_ref_edge_field(edge_field, cb);
     }
@@ -1851,7 +1853,7 @@ static int traverse_ref(
 
     err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, head_id, REDISMODULE_READ), &head_obj);
     if (!err) {
-        return traverse_ref_string_field(hierarchy, head_obj, ref_field_str, cb);
+        return traverse_ref_string_field(hierarchy, head_obj, ref_field_str, ref_field_len, cb);
     }
 
     return err;
@@ -1980,7 +1982,8 @@ int SelvaModify_TraverseHierarchyRef(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
-        const char *ref_field,
+        const char *ref_field_str,
+        size_t ref_field_len,
         const struct SelvaModify_HierarchyCallback *cb) {
     SelvaModify_HierarchyNode *head;
 
@@ -1989,7 +1992,7 @@ int SelvaModify_TraverseHierarchyRef(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    return traverse_ref(ctx, hierarchy, head, ref_field, cb);
+    return traverse_ref(ctx, hierarchy, head, ref_field_str, ref_field_len, cb);
 }
 
 

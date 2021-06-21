@@ -690,7 +690,7 @@ int SelvaSubscriptions_TraverseMarker(RedisModuleCtx *ctx, struct SelvaModify_Hi
     }
 
     if (dir == SELVA_HIERARCHY_TRAVERSAL_REF && marker->ref_field) {
-        err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, marker->node_id, marker->ref_field, cb);
+        err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, marker->node_id, marker->ref_field, strlen(marker->ref_field), cb);
         if (err && err != SELVA_ENOENT && err != SELVA_HIERARCHY_ENOENT) {
             fprintf(stderr, "%s:%d: Ref traversal error. node_id: %.*s ref_field: \"%s\" error: %s\n",
                     __FILE__, __LINE__,
