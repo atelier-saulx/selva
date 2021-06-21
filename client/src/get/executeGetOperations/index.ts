@@ -87,7 +87,6 @@ export async function addMarker(
     })
   }
 
-  console.log('ADD MARKER', marker)
   const markerId = adler32(marker)
   const markerType = [marker.type, marker.refField].filter((v) => v)
   await client.redis.selva_subscriptions_add(
