@@ -117,7 +117,14 @@ static int add_lang(const char *lang, const char *locale_name) {
     /*
      * Note that slang->name is not supposed to be nul-terminated.
      */
+#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
     strncpy(slang->name, lang, sizeof(slang->name));
+#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
     get_territory(slang->territory, locale_name);
 
     err = SelvaObject_SetPointerStr(langs, lang, strlen(lang), slang, &obj_opts);
