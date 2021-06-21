@@ -118,28 +118,6 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
     RedisModule_ReplicateVerbatimArgs(ctx, argv, argc);
 }
 
-int SelvaCommand_Flurpy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    REDISMODULE_NOT_USED(argv);
-    REDISMODULE_NOT_USED(argc);
-
-    // init auto memory for created strings
-    RedisModule_AutoMemory(ctx);
-
-    RedisModuleString *keyStr =
-            RedisModule_CreateString(ctx, "flurpypants", strlen("flurpypants"));
-    RedisModuleString *val = RedisModule_CreateString(ctx, "hallo", strlen("hallo"));
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyStr, REDISMODULE_WRITE);
-    for (int i = 0; i < 10000; i++) {
-        RedisModule_StringSet(key, val);
-        // RedisModuleCallReply *r = RedisModule_Call(ctx, "publish", "x", "y");
-    }
-
-    RedisModule_CloseKey(key);
-    RedisModuleString *reply = RedisModule_CreateString(ctx, "hallo", strlen("hallo"));
-    RedisModule_ReplyWithString(ctx, reply);
-    return REDISMODULE_OK;
-}
-
 static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, const RedisModuleString *id) {
     TO_STR(id);
 
@@ -906,10 +884,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
 #endif
 
     if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    if (RedisModule_CreateCommand(ctx, "selva.flurpypants", SelvaCommand_Flurpy, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
