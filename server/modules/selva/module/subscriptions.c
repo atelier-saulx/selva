@@ -1354,18 +1354,27 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata,
         const char *field) {
-    /* Detached markers. */
-    defer_field_change_events(ctx, hierarchy, node_id, &hierarchy->subs.detached_markers, field);
-
-    if (!metadata) {
-        fprintf(stderr, "%s:%d: Node metadata missing\n", __FILE__, __LINE__);
-        return;
-    }
-
-    /* Markers on the node. */
     if (strchr(field, '[')) {
+        /* Detached markers. */
+        defer_array_field_change_events(ctx, hierarchy, node_id, &hierarchy->subs.detached_markers, field);
+
+        if (!metadata) {
+            fprintf(stderr, "%s:%d: Node metadata missing\n", __FILE__, __LINE__);
+            return;
+        }
+
+        /* Markers on the node. */
         defer_array_field_change_events(ctx, hierarchy, node_id, &metadata->sub_markers, field);
     } else {
+        /* Detached markers. */
+        defer_field_change_events(ctx, hierarchy, node_id, &hierarchy->subs.detached_markers, field);
+
+        if (!metadata) {
+            fprintf(stderr, "%s:%d: Node metadata missing\n", __FILE__, __LINE__);
+            return;
+        }
+
+        /* Markers on the node. */
         defer_field_change_events(ctx, hierarchy, node_id, &metadata->sub_markers, field);
     }
 }
