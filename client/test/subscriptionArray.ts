@@ -49,8 +49,16 @@ test.before(async (t) => {
                   type: 'number',
                   search: { type: ['NUMERIC', 'SORTABLE'] },
                 },
+                intAry: {
+                  type: 'array',
+                  items: { type: 'int' },
+                },
               },
             },
+          },
+          intAry: {
+            type: 'array',
+            items: { type: 'int' },
           },
         },
       },
@@ -168,5 +176,133 @@ test.serial('subscription array', async (t) => {
   await wait(2000)
   sub2.unsubscribe()
   t.is(cnt2, 2)
+  await client.destroy()
+})
+
+test.serial('subscription num array', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const thing = await client.set({
+    type: 'thing',
+    title: { en: 'thing' },
+  })
+
+  const matches = []
+
+  await wait(500)
+
+  for (let i = 0; i < 10; i++) {
+    matches.push({
+      $id: thing,
+      intAry: {
+        $push: i,
+      },
+    })
+  }
+
+  await Promise.all(matches.map((v) => client.set(v)))
+
+  await wait(500)
+  const obs = client.observe({
+    $id: thing,
+    intAry: true,
+  })
+  let cnt = 0
+  const sub = obs.subscribe((d) => {
+    console.log('sub 1', d)
+    cnt++
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: thing,
+    intAry: {
+      $assign: {
+        $idx: 0,
+        $value: 982,
+      },
+    },
+  })
+
+  await wait(1000)
+  t.is(cnt, 2)
+
+  await client.destroy()
+})
+
+test.serial('subscription array in object array', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const thing = await client.set({
+    type: 'thing',
+    title: { en: 'thing' },
+  })
+
+  const matches = []
+
+  await wait(500)
+
+  for (let i = 0; i < 10; i++) {
+    matches.push({
+      $id: thing,
+      ary: {
+        $push: {
+          name: 'match ' + i,
+          intAry: {
+            $push: i,
+          },
+        },
+      },
+    })
+  }
+
+  await Promise.all(matches.map((v) => client.set(v)))
+
+  await wait(500)
+  const obs = client.observe({
+    $id: thing,
+    ary: true,
+  })
+  let cnt = 0
+  const sub = obs.subscribe((d) => {
+    console.log('sub 1', JSON.stringify(d, null, 2))
+    cnt++
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: thing,
+    ary: {
+      $insert: {
+        $idx: 0,
+        $value: {
+          name: 'match 99',
+        },
+      },
+    },
+  })
+
+  await wait(1000)
+
+  await client.set({
+    $id: thing,
+    ary: {
+      $assign: {
+        $idx: 2,
+        $value: {
+          intAry: {
+            $push: 99,
+          },
+        },
+      },
+    },
+  })
+
+  await wait(1000)
+
+  t.is(cnt, 3)
+
   await client.destroy()
 })
