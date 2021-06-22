@@ -79,6 +79,13 @@ export type Find = {
   $find?: Find
 }
 
+export type Aggregate = {
+  $db?: string
+  $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
+  $filter?: Filter | Filter[]
+  $function?: string | { $name: string; args: string[] }
+}
+
 export type Sort = {
   $field: string
   $order?: 'asc' | 'desc'
@@ -91,6 +98,7 @@ export type List =
       $limit?: number
       $sort?: Sort | Sort[]
       $find?: Find
+      $aggregate?: Aggregate
       $inherit?: Inherit
     }
 
@@ -99,6 +107,7 @@ export type GetField<T> = {
   $inherit?: Inherit
   $list?: List
   $find?: Find
+  $aggregate?: Aggregate
   $default?: T
   $all?: boolean
   $value?: any
@@ -150,6 +159,15 @@ type GetOperationCommon = {
   sourceField: string | string[]
 }
 
+export type GetOperationAggregate = GetOperationCommon & {
+  type: 'aggregate'
+  props: GetOptions
+  filter?: Fork
+  inKeys?: string[]
+  function: { name: string; args: string[] }
+  isNested?: boolean
+}
+
 export type GetOperationFind = GetOperationCommon & {
   type: 'find'
   props: GetOptions
@@ -185,4 +203,5 @@ export type GetOperation =
     })
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
   | GetOperationFind
+  | GetOperationAggregate
   | GetOperationInherit
