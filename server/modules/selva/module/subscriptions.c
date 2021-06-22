@@ -2106,6 +2106,8 @@ out:
             rpn_destroy_expression(filter_expression);
         }
         replyWithSelvaError(ctx, err);
+    } else {
+        RedisModule_ReplyWithLongLong(ctx, 1);
     }
 
     return REDISMODULE_OK;
