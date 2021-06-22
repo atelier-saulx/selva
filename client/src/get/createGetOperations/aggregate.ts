@@ -1,8 +1,8 @@
-import { Find, GetOperationAggregate, GetOptions, Sort } from '../types'
+import { Aggregate, GetOperationAggregate, GetOptions, Sort } from '../types'
 import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
 
 const createAggregateOperation = (
-  find: Find,
+  aggregate: Aggregate,
   props: GetOptions,
   id: string,
   field: string,
@@ -15,18 +15,22 @@ const createAggregateOperation = (
     field: field.substr(1),
     sourceField: field.substr(1),
     isNested,
+    function:
+      typeof aggregate.$function === 'string'
+        ? { name: aggregate.$function }
+        : { name: aggregate.$function.$name, args: aggregate.$function.$args },
   }
 
-  if (find.$traverse) {
-    if (typeof find.$traverse === 'string') {
-      op.sourceField = find.$traverse
-    } else if (Array.isArray(find.$traverse)) {
-      op.inKeys = find.$traverse
+  if (aggregate.$traverse) {
+    if (typeof aggregate.$traverse === 'string') {
+      op.sourceField = aggregate.$traverse
+    } else if (Array.isArray(aggregate.$traverse)) {
+      op.inKeys = aggregate.$traverse
     }
   }
 
-  if (find.$filter) {
-    const ast = createAst(find.$filter)
+  if (aggregate.$filter) {
+    const ast = createAst(aggregate.$filter)
 
     if (ast) {
       optimizeTypeFilters(ast)

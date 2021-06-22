@@ -83,7 +83,7 @@ export type Aggregate = {
   $db?: string
   $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
   $filter?: Filter | Filter[]
-  $function?: string | { $name: string; args: string[] }
+  $function?: string | { $name: string; $args: string[] }
 }
 
 export type Sort = {
@@ -164,7 +164,7 @@ export type GetOperationAggregate = GetOperationCommon & {
   props: GetOptions
   filter?: Fork
   inKeys?: string[]
-  function: { name: string; args: string[] }
+  function: { name: string; args?: string[] }
   isNested?: boolean
 }
 
