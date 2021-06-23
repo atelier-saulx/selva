@@ -244,7 +244,8 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata,
-        const char *field);
+        const char *field_str,
+        size_t field_len);
 void Selva_Subscriptions_DeferAliasChangeEvents(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,

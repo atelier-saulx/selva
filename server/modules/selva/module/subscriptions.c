@@ -75,8 +75,7 @@ RB_GENERATE_STATIC(hierarchy_subscriptions_tree, Selva_Subscription, _sub_index_
 
 static void defer_update_event(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, unsigned short event_flags);
 static void defer_trigger_event(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, unsigned short event_flags);
-static void defer_event_for_traversing_markers(RedisModuleCtx *ctx,
-                                               struct SelvaModify_Hierarchy *hierarchy,
+static void defer_event_for_traversing_markers(struct SelvaModify_Hierarchy *hierarchy,
                                                const Selva_NodeId node_id,
                                                const struct SelvaModify_HierarchyMetadata *metadata);
 
@@ -145,7 +144,11 @@ int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src) {
     return 0;
 }
 
-static int field_match(const char *list, const char *field) {
+/**
+ * Check if the field matches to one of fields in list.
+ * @param field_str is a nul-terminated field name.
+ */
+static int field_match(const char *list, const char *field_str, size_t field_len) {
     int match = 0;
 
     if (list[0] == '\0') {
@@ -156,14 +159,14 @@ static int field_match(const char *list, const char *field) {
         const char *sep = ".";
         char *p;
 
-        match = stringlist_searchn(list, field, strlen(field));
+        match = stringlist_searchn(list, field_str, field_len);
 
         /* Test for each subfield if there was no exact match. */
-        if (!match && (p = strstr(field, sep))) {
+        if (!match && (p = strstr(field_str, sep))) {
             do {
-                const size_t len = (ptrdiff_t)p++ - (ptrdiff_t)field;
+                const size_t len = (ptrdiff_t)p++ - (ptrdiff_t)field_str;
 
-                match = stringlist_searchn(list, field, len);
+                match = stringlist_searchn(list, field_str, len);
             } while (!match && p && (p = strstr(p, sep)));
         }
     }
@@ -173,20 +176,20 @@ static int field_match(const char *list, const char *field) {
 
 static int contains_hierarchy_fields(const char *list) {
     return list[0] == '\0' /* wildcard */ ||
-           field_match(list, "ancestors") ||
-           field_match(list, "children") ||
-           field_match(list, "descendants") ||
-           field_match(list, "parents");
+           field_match(list, "ancestors", 9) ||
+           field_match(list, "children", 8) ||
+           field_match(list, "descendants", 11) ||
+           field_match(list, "parents", 7);
 }
 
 /**
  * Check if field matches to any of the fields specified in the marker.
  */
-static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *marker, const char *field) {
+static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *marker, const char *field_str, size_t field_len) {
     int match = 0;
 
     if (!!(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD) && marker->fields) {
-        match = field_match(marker->fields, field);
+        match = field_match(marker->fields, field_str, field_len);
     }
 
     return match;
@@ -950,7 +953,7 @@ void SelvaSubscriptions_InheritParent(
      * propagated properly.
      */
     if (node_nr_children > 0) {
-        defer_event_for_traversing_markers(ctx, hierarchy, parent_id, parent_metadata);
+        defer_event_for_traversing_markers(hierarchy, parent_id, parent_metadata);
     } else {
         struct SVectorIterator it;
         struct Selva_SubscriptionMarker *marker;
@@ -1004,7 +1007,7 @@ void SelvaSubscriptions_InheritChild(
      * propagated properly.
      */
     if (node_nr_parents > 0) {
-        defer_event_for_traversing_markers(ctx, hierarchy, child_id, child_metadata);
+        defer_event_for_traversing_markers(hierarchy, child_id, child_metadata);
     } else {
         struct SVectorIterator it;
         struct Selva_SubscriptionMarker *marker;
@@ -1071,7 +1074,7 @@ void SelvaSubscriptions_InheritEdge(
      * doing this.
      */
     if (dst_edge_field) {
-        defer_event_for_traversing_markers(ctx, hierarchy, dst_node_id, dst_metadata);
+        defer_event_for_traversing_markers(hierarchy, dst_node_id, dst_metadata);
     }
 }
 
@@ -1148,8 +1151,7 @@ static void defer_traversing(struct SelvaModify_Hierarchy *hierarchy,
     }
 }
 
-static void defer_event_for_traversing_markers(RedisModuleCtx *ctx,
-                                               struct SelvaModify_Hierarchy *hierarchy,
+static void defer_event_for_traversing_markers(struct SelvaModify_Hierarchy *hierarchy,
                                                const Selva_NodeId node_id,
                                                const struct SelvaModify_HierarchyMetadata *metadata) {
     /* Detached markers. */
@@ -1324,7 +1326,8 @@ static void defer_field_change_events(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct Selva_SubscriptionMarkers *sub_markers,
-        const char *field) {
+        const char *field_str,
+        size_t field_len) {
     const unsigned short flags = SELVA_SUBSCRIPTION_FLAG_CH_FIELD;
 
     if ((sub_markers->flags_filter & flags) == flags) {
@@ -1336,7 +1339,7 @@ static void defer_field_change_events(
             if (((marker->marker_flags & flags) == flags) && !inhibitMarkerEvent(node_id, marker)) {
                 const int expressionMatchBefore = marker->filter_history.res && !memcmp(marker->filter_history.node_id, node_id, SELVA_NODE_ID_SIZE);
                 const int expressionMatchAfter = Selva_SubscriptionFilterMatch(ctx, node_id, marker);
-                const int fieldsMatch = Selva_SubscriptionFieldMatch(marker, field);
+                const int fieldsMatch = Selva_SubscriptionFieldMatch(marker, field_str, field_len);
 
                 if ((expressionMatchBefore && expressionMatchAfter && fieldsMatch) || (expressionMatchBefore ^ expressionMatchAfter)) {
                     marker->marker_action(hierarchy, marker, flags);
@@ -1351,19 +1354,19 @@ static void defer_array_field_change_events(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct Selva_SubscriptionMarkers *sub_markers,
-        const char *field) {
-    unsigned long field_len = strlen(field);
-    int ary_field_len = get_array_field_start_idx(field, field_len);
+        const char *field_str,
+        size_t field_len) {
+    int ary_field_len = get_array_field_start_idx(field_str, field_len);
     char ary_field_str[ary_field_len + 1];
     int path_field_len = -1;
     char *path_field_start = NULL;
 
     if (ary_field_len > 0) {
-        path_field_start = strchr(field + ary_field_len, ']');
+        path_field_start = strchr(field_str + ary_field_len, ']');
         if (path_field_start) {
             path_field_start++;
             // path part
-            path_field_len = field_len - (path_field_start - field);
+            path_field_len = field_len - (path_field_start - field_str);
 
             // array field part
             path_field_len += ary_field_len;
@@ -1375,14 +1378,14 @@ static void defer_array_field_change_events(
         char path_field_str[path_field_len + 1];
 
         if (path_field_start && *path_field_start != '\0') {
-            sprintf(path_field_str, "%.*s[n]%s", (int)ary_field_len, field, path_field_start);
-            defer_field_change_events(ctx, hierarchy, node_id, sub_markers, path_field_str);
+            sprintf(path_field_str, "%.*s[n]%s", (int)ary_field_len, field_str, path_field_start);
+            defer_field_change_events(ctx, hierarchy, node_id, sub_markers, path_field_str, path_field_len);
         }
 
-        memcpy(ary_field_str, field, ary_field_len);
+        memcpy(ary_field_str, field_str, ary_field_len);
         ary_field_str[ary_field_len] = '\0';
-        // check for direct subscriptions on arrayField: true
-        defer_field_change_events(ctx, hierarchy, node_id, sub_markers, ary_field_str);
+        /* check for direct subscriptions on arrayField: true */
+        defer_field_change_events(ctx, hierarchy, node_id, sub_markers, ary_field_str, ary_field_len);
     }
 }
 
@@ -1391,10 +1394,11 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata,
-        const char *field) {
-    if (strchr(field, '[')) {
+        const char *field_str,
+        size_t field_len) {
+    if (strchr(field_str, '[')) {
         /* Detached markers. */
-        defer_array_field_change_events(ctx, hierarchy, node_id, &hierarchy->subs.detached_markers, field);
+        defer_array_field_change_events(ctx, hierarchy, node_id, &hierarchy->subs.detached_markers, field_str, field_len);
 
         if (!metadata) {
             fprintf(stderr, "%s:%d: Node metadata missing\n", __FILE__, __LINE__);
@@ -1402,10 +1406,10 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         }
 
         /* Markers on the node. */
-        defer_array_field_change_events(ctx, hierarchy, node_id, &metadata->sub_markers, field);
+        defer_array_field_change_events(ctx, hierarchy, node_id, &metadata->sub_markers, field_str, field_len);
     } else {
         /* Detached markers. */
-        defer_field_change_events(ctx, hierarchy, node_id, &hierarchy->subs.detached_markers, field);
+        defer_field_change_events(ctx, hierarchy, node_id, &hierarchy->subs.detached_markers, field_str, field_len);
 
         if (!metadata) {
             fprintf(stderr, "%s:%d: Node metadata missing\n", __FILE__, __LINE__);
@@ -1413,7 +1417,7 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         }
 
         /* Markers on the node. */
-        defer_field_change_events(ctx, hierarchy, node_id, &metadata->sub_markers, field);
+        defer_field_change_events(ctx, hierarchy, node_id, &metadata->sub_markers, field_str, field_len);
     }
 }
 

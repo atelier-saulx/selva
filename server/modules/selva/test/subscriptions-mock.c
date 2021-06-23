@@ -80,7 +80,8 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         struct SelvaModify_Hierarchy *hierarchy __unused,
         const Selva_NodeId node_id __unused,
         const struct SelvaModify_HierarchyMetadata *metadata __unused,
-        const char *field __unused) {
+        const char *field_str __unused,
+        size_t field_len __unused) {
     return;
 }
 
@@ -88,8 +89,7 @@ void SelvaSubscriptions_DeferHierarchyEvents(
         struct RedisModuleCtx *ctx __unused,
         struct SelvaModify_Hierarchy *hierarchy __unused,
         const Selva_NodeId node_id __unused,
-        const struct SelvaModify_HierarchyMetadata *metadata __unused,
-        int ignore_filter) {
+        const struct SelvaModify_HierarchyMetadata *metadata __unused) {
     return;
 }
 
