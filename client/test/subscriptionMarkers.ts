@@ -141,7 +141,7 @@ test.serial('create a node marker', async (t) => {
     'sub_id: 2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b61'
   )
   t.deepEqual(ds0[1], 'marker_id: 1')
-  t.deepEqual(ds0[2], 'flags: 0x0002')
+  t.deepEqual(ds0[2], 'flags: 0x0000')
   t.deepEqual(ds0[3], 'node_id: "maTest0001"')
   t.deepEqual(ds0[4], 'dir: node')
   t.deepEqual(ds0[5], 'filter_expression: unset')
@@ -213,8 +213,7 @@ test.serial('create two node markers', async (t) => {
     'sub_id: 2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b62'
   )
   t.deepEqual(marker1[1], 'marker_id: 1')
-  t.deepEqual(marker1[2], 'flags: 0x0002')
-  t.deepEqual(marker1[3], 'node_id: "maTest0001"')
+  t.deepEqual(marker1[2], 'flags: 0x0000')
   t.deepEqual(marker1[4], 'dir: node')
   t.deepEqual(marker1[5], 'filter_expression: unset')
   const marker2 = ds[1]
@@ -223,7 +222,7 @@ test.serial('create two node markers', async (t) => {
     'sub_id: 2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b62'
   )
   t.deepEqual(marker2[1], 'marker_id: 2')
-  t.deepEqual(marker2[2], 'flags: 0x0002')
+  t.deepEqual(marker2[2], 'flags: 0x0000')
   t.deepEqual(marker2[3], 'node_id: "maTest0001"')
   t.deepEqual(marker2[4], 'dir: bfs_descendants')
   t.deepEqual(marker2[5], 'filter_expression: unset')
@@ -300,7 +299,7 @@ test.serial('create two subscriptions', async (t) => {
   const s1marker1 = s1[0]
   t.deepEqual(s1marker1[0], `sub_id: ${subId1}`)
   t.deepEqual(s1marker1[1], 'marker_id: 1')
-  t.deepEqual(s1marker1[2], 'flags: 0x0002')
+  t.deepEqual(s1marker1[2], 'flags: 0x0000')
   t.deepEqual(s1marker1[3], 'node_id: "maTest0001"')
   t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
   t.deepEqual(s1marker1[5], 'filter_expression: unset')
@@ -313,7 +312,7 @@ test.serial('create two subscriptions', async (t) => {
   const s2marker1 = s2[0]
   t.deepEqual(s2marker1[0], `sub_id: ${subId2}`)
   t.deepEqual(s2marker1[1], 'marker_id: 1')
-  t.deepEqual(s2marker1[2], 'flags: 0x0002')
+  t.deepEqual(s2marker1[2], 'flags: 0x0000')
   t.deepEqual(s2marker1[3], 'node_id: "maTest0002"')
   t.deepEqual(s2marker1[4], 'dir: bfs_ancestors')
   t.deepEqual(s2marker1[5], 'filter_expression: unset')
@@ -391,7 +390,7 @@ test.serial('Delete a subscription', async (t) => {
   const s1marker1 = s1[0]
   t.deepEqual(s1marker1[0], `sub_id: ${subId1}`)
   t.deepEqual(s1marker1[1], 'marker_id: 1')
-  t.deepEqual(s1marker1[2], 'flags: 0x0002')
+  t.deepEqual(s1marker1[2], 'flags: 0x0000')
   t.deepEqual(s1marker1[3], 'node_id: "maTest0001"')
   t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
   t.deepEqual(s1marker1[5], 'filter_expression: unset')
@@ -475,7 +474,9 @@ test.serial('Node deletion events on descendants', async (t) => {
     subId1,
     '1',
     'descendants',
-    'root'
+    'root',
+    'fields',
+    'descendants'
   )
   await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
 
@@ -790,7 +791,7 @@ test.serial('Markers with a filter', async (t) => {
   const s1marker1 = s1[0]
   t.deepEqual(s1marker1[0], `sub_id: ${subId1}`)
   t.deepEqual(s1marker1[1], 'marker_id: 1')
-  t.deepEqual(s1marker1[2], 'flags: 0x0002')
+  t.deepEqual(s1marker1[2], 'flags: 0x0000')
   t.deepEqual(s1marker1[3], 'node_id: "maTest0001"')
   t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
   t.deepEqual(s1marker1[5], 'filter_expression: set')
@@ -917,7 +918,7 @@ test.serial('Markers with a filter starting from the root', async (t) => {
   const s1marker1 = s1[0]
   t.deepEqual(s1marker1[0], `sub_id: ${subId1}`)
   t.deepEqual(s1marker1[1], 'marker_id: 1')
-  t.deepEqual(s1marker1[2], 'flags: 0x0202')
+  t.deepEqual(s1marker1[2], 'flags: 0x0200')
   t.deepEqual(s1marker1[3], 'node_id: "root"')
   t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
   t.deepEqual(s1marker1[5], 'filter_expression: set')
@@ -1127,6 +1128,8 @@ test.serial('subscribe with a type expression', async (t) => {
     '1',
     'descendants',
     'root',
+    'fields',
+    'descendants',
     '"ma" e'
   ), 1)
   await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
@@ -1139,11 +1142,11 @@ test.serial('subscribe with a type expression', async (t) => {
       [
         'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
         'marker_id: 1',
-        'flags: 0x0202',
+        'flags: 0x0206',
         'node_id: "root"',
         'dir: bfs_descendants',
         'filter_expression: set',
-        'fields: "(null)"',
+        'fields: "descendants"',
       ],
     ]
   )
@@ -1291,7 +1294,7 @@ test.serial.skip('subscribe to a soft reference', async (t) => {
       [
         `sub_id: ${subId1}`,
         'marker_id: 2',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
@@ -1317,7 +1320,7 @@ test.serial.skip('subscribe to a soft reference', async (t) => {
       [
         `sub_id: ${subId1}`,
         'marker_id: 1',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
@@ -1326,7 +1329,7 @@ test.serial.skip('subscribe to a soft reference', async (t) => {
       [
         `sub_id: ${subId1}`,
         'marker_id: 2',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
@@ -1343,7 +1346,7 @@ test.serial.skip('subscribe to a soft reference', async (t) => {
       [
         'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
         'marker_id: 2',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
@@ -1364,7 +1367,7 @@ test.serial.skip('subscribe to a soft reference', async (t) => {
       [
         'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
         'marker_id: 2',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
@@ -1412,7 +1415,7 @@ test.serial('subscribe to a reference (ref)', async (t) => {
       [
         `sub_id: ${subId1}`,
         'marker_id: 1',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
@@ -1443,7 +1446,7 @@ test.serial('subscribe to a reference (ref)', async (t) => {
       [
         `sub_id: ${subId1}`,
         'marker_id: 1',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
@@ -1471,7 +1474,7 @@ test.serial('subscribe to a reference (ref)', async (t) => {
       [
         `sub_id: ${subId1}`,
         'marker_id: 1',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
@@ -1540,7 +1543,7 @@ test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
       [
         `sub_id: ${subId1}`,
         'marker_id: 1',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: bfs_edge_field',
         'filter_expression: unset',
@@ -1571,7 +1574,7 @@ test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
       [
         `sub_id: ${subId1}`,
         'marker_id: 1',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: bfs_edge_field',
         'filter_expression: unset',
@@ -1588,7 +1591,7 @@ test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
       [
         `sub_id: ${subId1}`,
         'marker_id: 1',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: bfs_edge_field',
         'filter_expression: unset',
@@ -1609,7 +1612,7 @@ test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
       [
         `sub_id: ${subId1}`,
         'marker_id: 1',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: bfs_edge_field',
         'filter_expression: unset',
@@ -1626,7 +1629,7 @@ test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
       [
         'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
         'marker_id: 1',
-        'flags: 0x0002',
+        'flags: 0x0000',
         'node_id: "maTest0001"',
         'dir: bfs_edge_field',
         'filter_expression: unset',

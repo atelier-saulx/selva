@@ -608,7 +608,7 @@ static int cross_insert_children(
             publishParentsUpdate(ctx, hierarchy, child);
             publishAncestorsUpdate(ctx, hierarchy, child);
 
-            SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, child->id, &child->metadata, 0);
+            SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, child->id, &child->metadata);
 
             res++; /* Count actual insertions */
         }
@@ -617,7 +617,7 @@ static int cross_insert_children(
         publishDescendantsUpdate(ctx, hierarchy, node);
     }
 
-    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, node->id, &node->metadata, 0);
+    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, node->id, &node->metadata);
 
     /*
      * Publish that the children field was changed.
@@ -716,13 +716,13 @@ static int cross_insert_parents(
             publishChildrenUpdate(ctx, hierarchy, parent);
             publishDescendantsUpdate(ctx, hierarchy, parent);
 
-            SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, parent->id, &parent->metadata, 0);
+            SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, parent->id, &parent->metadata);
 
             res++;
         }
     }
 
-    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, node->id, &node->metadata, 0);
+    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, node->id, &node->metadata);
 
     /*
      * Publish that the parents field was changed.
