@@ -193,9 +193,6 @@ const executeAggregateOperation = async (
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> => {
-  const schema = client.schemas[ctx.db]
-  const { db, subId } = ctx
-
   let sourceField: string = <string>op.sourceField
   if (typeof op.props.$list === 'object' && op.props.$list.$inherit) {
     const res = await executeNestedGetOperations(
