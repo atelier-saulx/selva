@@ -1,4 +1,4 @@
-import { Aggregate, GetOperationAggregate, GetOptions, Sort } from '../types'
+import { Aggregate, GetOperationAggregate, GetOptions } from '../types'
 import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
 
 const createAggregateOperation = (

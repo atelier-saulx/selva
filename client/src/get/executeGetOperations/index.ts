@@ -583,6 +583,9 @@ export const executeGetOperation = async (
     )
   } else if (op.type === 'find') {
     return find(client, op, lang, ctx)
+  } else if (op.type === 'aggregate') {
+    console.log('HELLO AGGREGATE')
+    return 0
   } else if (op.type === 'inherit') {
     return inherit(client, op, lang, ctx)
   } else if (op.type === 'db') {
