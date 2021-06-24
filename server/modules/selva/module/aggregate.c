@@ -191,13 +191,6 @@ int SelvaAggregateCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
     SelvaArgParser_NodeId(node_id, argv[ARGV_NODE_ID]);
 
     /*
-     * Get types.
-     */
-    size_t nr_types;
-    const Selva_NodeType *types = (char const (*)[2])RedisModule_StringPtrLen(argv[ARGV_TYPES], &nr_types);
-    nr_types /= SELVA_NODE_TYPE_SIZE;
-
-    /*
      * Get field names.
      */
     const size_t nr_field_names = argc - ARGV_FIELD_NAMES;
@@ -230,6 +223,7 @@ int SelvaAggregateCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
         .node_arg = &args,
     };
 
+    // TODO: this needs to look more like a find
     err = SelvaModify_TraverseHierarchy(hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
     RedisModule_ReplySetArrayLength(ctx, args.nr_results);
 
