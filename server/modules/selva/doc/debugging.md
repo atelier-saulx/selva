@@ -122,11 +122,10 @@ There are also a number of GUI tools for parsing callgrind files.
 
 ## Intel VTune
 
-[Download](https://software.intel.com/content/www/us/en/develop/tools/vtune-profiler.html)
-Intel VTune from here. The software requires a per user license that can be registered for free.
-Install VTune according to its pre platform instructions.
+[Download](https://software.intel.com/content/www/us/en/develop/tools/oneapi/components/vtune-profiler/download.html)
+and install Intel VTune from here.
 
-### Separate Collection and Analysis
+### Separate Collection and Analysis Manually
 
 Run redis-server with `vtune`:
 
@@ -138,3 +137,14 @@ Stop the server with CTRL-C when ready.
 
 Open the `something.vtune` file that was created to the `redis-TIME` directory
 with the VTune GUI.
+
+### Remote Collection and Analysis
+
+The remote execution requires that the `ssh` command on your local machine can
+connect to the remote host without a password prompt. This can be achieved with
+`ssh_agent` or by creating an ssh key without setting a password.
+
+The path to the VTune binaries must be set in `$PATH`. Typically it's something
+like `/opt/intel/vtune_profiler_2021/bin64`. VTune can be installed on the
+remote by the local host over SSH, as long as the path you have selected is
+writable by the user.
