@@ -77,6 +77,7 @@ export type Find = {
   $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
   $filter?: Filter | Filter[]
   $find?: Find
+  $aggregate?: Aggregate
 }
 
 export type Aggregate = {
@@ -165,7 +166,7 @@ export type GetOperationAggregate = GetOperationCommon & {
   filter?: Fork
   inKeys?: string[]
   function: { name: string; args?: string[] }
-  isNested?: boolean
+  options: { limit: number; offset: number; sort?: Sort | undefined }
 }
 
 export type GetOperationFind = GetOperationCommon & {
@@ -174,7 +175,7 @@ export type GetOperationFind = GetOperationCommon & {
   single?: boolean
   filter?: Fork
   inKeys?: string[]
-  nested?: GetOperationFind
+  nested?: GetOperationFind | GetOperationAggregate
   isNested?: boolean
   options: { limit: number; offset: number; sort?: Sort | undefined }
 }

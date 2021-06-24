@@ -1,5 +1,6 @@
 import { Find, GetOperationFind, GetOptions, Sort } from '../types'
 import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
+import createAggregateOperation from './aggregate'
 
 const createFindOperation = (
   find: Find,
@@ -57,6 +58,18 @@ const createFindOperation = (
       offset,
       find.$find.$find ? undefined : sort,
       true
+    )
+  } else if (find.$aggregate) {
+    findOperation.options.limit = -1
+    findOperation.options.offset = 0
+    findOperation.nested = createAggregateOperation(
+      find.$find,
+      props,
+      '',
+      field,
+      limit,
+      offset,
+      find.$find.$find ? undefined : sort
     )
   }
 

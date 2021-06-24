@@ -1,4 +1,4 @@
-import { Aggregate, GetOperationAggregate, GetOptions } from '../types'
+import { Aggregate, GetOperationAggregate, GetOptions, Sort } from '../types'
 import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
 
 const createAggregateOperation = (
@@ -6,7 +6,9 @@ const createAggregateOperation = (
   props: GetOptions,
   id: string,
   field: string,
-  isNested?: boolean
+  limit: number = -1,
+  offset: number = 0,
+  sort?: Sort | Sort[]
 ): GetOperationAggregate => {
   const op: GetOperationAggregate = {
     type: 'aggregate',
@@ -14,7 +16,11 @@ const createAggregateOperation = (
     props,
     field: field.substr(1),
     sourceField: field.substr(1),
-    isNested,
+    options: {
+      limit,
+      offset,
+      sort: Array.isArray(sort) ? sort[0] : sort || undefined,
+    },
     function:
       typeof aggregate.$function === 'string'
         ? { name: aggregate.$function }
