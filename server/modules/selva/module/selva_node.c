@@ -118,3 +118,29 @@ int SelvaNode_ClearFields(RedisModuleCtx *ctx, struct SelvaObject *obj) {
 
     return 0;
 }
+
+static int open_node_key(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleKey **key_out, struct SelvaObject **obj_out) {
+    RedisModuleString *id;
+    RedisModuleKey *key;
+    int err;
+
+    id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
+    if (!id) {
+        return SELVA_ENOMEM;
+    }
+
+    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
+    if (!key) {
+        return SELVA_ENOENT;
+    }
+
+    *key_out = key;
+
+    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, id, REDISMODULE_READ), obj_out);
+    if (err) {
+        return err;
+    }
+
+    return 0;
+}
+
