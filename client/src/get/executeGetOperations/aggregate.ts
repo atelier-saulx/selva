@@ -193,6 +193,7 @@ const executeAggregateOperation = async (
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> => {
+  // TODO: use new aggregate command
   let sourceField: string = <string>op.sourceField
   if (typeof op.props.$list === 'object' && op.props.$list.$inherit) {
     const res = await executeNestedGetOperations(
