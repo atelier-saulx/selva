@@ -186,5 +186,5 @@ export type GetOperation =
       fromReference?: boolean
     })
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
-  | GetOperationFindRecursive
+  | GetOperationFind
   | GetOperationInherit
