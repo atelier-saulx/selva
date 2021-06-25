@@ -119,6 +119,7 @@ export default async function validateFind(
       `${mainMsg} for ${path}.$find. Required type object with the following properties:
         {
           $traverse: 'descendants' | 'ancestors' | string | string[] (optional)
+          $recursive: boolean (optional)
           $filter: FilterOptions | FilterOptions[] (and by default) (optional)
           $find: FindOptions (find within results of the find) (optional)
 
@@ -137,7 +138,7 @@ export default async function validateFind(
 
   const allowed = checkAllowed(
     find,
-    new Set(['$traverse', '$filter', '$find', '$db'])
+    new Set(['$traverse', '$recursive', '$filter', '$find', '$db'])
   )
   if (allowed !== true) {
     err(`Unsupported operator or field ${allowed}`)
@@ -168,7 +169,7 @@ export default async function validateFind(
       typeof find.$traverse !== 'string' &&
       !Array.isArray(find.$traverse)
     ) {
-      err(`Unupported type for $traverse ${find.$traverse}`)
+      err(`Unsupported type for $traverse ${find.$traverse}`)
     }
   }
 
@@ -188,6 +189,10 @@ export default async function validateFind(
       }
       delete find.$find
     }
+  }
+
+  if (find.$recursive && typeof find.$recursive !== 'boolean') {
+    err(`Invalid value for $recursive ${find.$recursive}`)
   }
 
   if (find.$filter) {

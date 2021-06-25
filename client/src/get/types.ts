@@ -75,6 +75,7 @@ export type TraverseOptions = {
 export type Find = {
   $db?: string
   $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
+  $recursive?: boolean
   $filter?: Filter | Filter[]
   $find?: Find
 }
@@ -158,6 +159,7 @@ export type GetOperationFind = GetOperationCommon & {
   inKeys?: string[]
   nested?: GetOperationFind
   isNested?: boolean
+  recursive?: boolean
   options: { limit: number; offset: number; sort?: Sort | undefined }
 }
 
@@ -184,5 +186,5 @@ export type GetOperation =
       fromReference?: boolean
     })
   | { type: 'array_query'; props: GetOptions[]; field: string; id: string }
-  | GetOperationFind
+  | GetOperationFindRecursive
   | GetOperationInherit

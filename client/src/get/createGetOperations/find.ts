@@ -19,6 +19,7 @@ const createFindOperation = (
     single,
     field: field.substr(1),
     sourceField: field.substr(1),
+    recursive: find.$recursive,
     options: {
       limit,
       offset,

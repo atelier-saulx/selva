@@ -173,7 +173,7 @@ async function checkForNextRefresh(
       }
 
       const args = ast2rpn(client.schemas[ctx.db].types, newFork, lang)
-      const ids = await client.redis.selva_hierarchy_find(
+      let ids = await client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
@@ -327,12 +327,12 @@ const findIds = async (
       }
     }
 
-    const ids = await client.redis.selva_hierarchy_find(
+    const ids = await client.redis[op.recursive ? 'selva_hierarchy_findrecursive' : 'selva_hierarchy_find'](
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       'bfs',
-      sourceField,
+      op.recursive ? `{"${sourceField}"}` : sourceField,
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
@@ -484,12 +484,12 @@ const findFields = async (
       }
     }
 
-    const result = await client.redis.selva_hierarchy_find(
+    const result = await client.redis[op.recursive ? 'selva_hierarchy_findrecursive' : 'selva_hierarchy_find'](
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       'bfs',
-      sourceField,
+      op.recursive ? `{"${sourceField}"}` : sourceField,
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
