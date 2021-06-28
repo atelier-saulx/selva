@@ -466,7 +466,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
      * If an ordered request was requested then nothing was send to the client yet
      * and we need to do it now.
      */
-	// TODO
+    // TODO
     // if (order != HIERARCHY_RESULT_ORDER_NONE) {
     //     nr_nodes = array_traversal_ref_field
     //         ? FindCommand_PrintOrderedArrayResult(ctx, lang, hierarchy, offset, limit, fields, &order_result)
