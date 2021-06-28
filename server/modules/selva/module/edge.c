@@ -274,10 +274,10 @@ int Edge_Add(
     insert_edge(src_edge_field, dst_node);
 
     SelvaSubscriptions_InheritEdge(ctx, hierarchy, src_node, dst_node, key_name_str, key_name_len);
-#if 0
-    /* RFE is a hierarchy event even necessary here? */
-    SelvaSubscriptions_DeferHierarchyEvents(ctx, hierarchy, dst_node->id, &dst_node->metadata, 0);
-#endif
+    /*
+     * Note that the normal change events for edges are only sent by the modify
+     * command.
+     */
 
     return 0;
 }

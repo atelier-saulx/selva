@@ -24,12 +24,10 @@
 /**
  * Marker cleared on a hierarchy change.
  */
-#define SELVA_SUBSCRIPTION_FLAG_CH_CLEAR        0x0001
+#define SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY    0x0001
 
 /**
  * Hierarchy changed event.
- * Matches if children, parents, or an edge changes.
- * Currently all traversing subscription markers have this flag set.
  */
 #define SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY    0x0002
 
@@ -231,8 +229,7 @@ void SelvaSubscriptions_DeferHierarchyEvents(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
-        const struct SelvaModify_HierarchyMetadata *metadata,
-        int ignore_filter);
+        const struct SelvaModify_HierarchyMetadata *metadata);
 void SelvaSubscriptions_DeferHierarchyDeletionEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
@@ -247,7 +244,8 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         const struct SelvaModify_HierarchyMetadata *metadata,
-        const char *field);
+        const char *field_str,
+        size_t field_len);
 void Selva_Subscriptions_DeferAliasChangeEvents(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,

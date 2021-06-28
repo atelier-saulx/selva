@@ -75,6 +75,7 @@ export type TraverseOptions = {
 export type Find = {
   $db?: string
   $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
+  $recursive?: boolean
   $filter?: Filter | Filter[]
   $find?: Find
   $aggregate?: Aggregate
@@ -177,6 +178,7 @@ export type GetOperationFind = GetOperationCommon & {
   inKeys?: string[]
   nested?: GetOperationFind | GetOperationAggregate
   isNested?: boolean
+  recursive?: boolean
   options: { limit: number; offset: number; sort?: Sort | undefined }
 }
 
