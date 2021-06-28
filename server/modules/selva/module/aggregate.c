@@ -20,12 +20,12 @@
 #include "traversal.h"
 
 struct AggregateCommand_Args {
-    RedisModuleCtx *ctx;
-    RedisModuleString *lang;
+    // aggregation state
+    long long int aggregation_result_int;
+    double aggregation_result_double;
+    size_t item_count;
 
-    RedisModuleString **field_names;
-    size_t nr_fields;
-    ssize_t nr_results; /*!< Number of results sent. */
+    struct FindCommand_Args find_args;
 };
 
 static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
@@ -36,7 +36,7 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
     int err;
 
     SelvaModify_HierarchyGetNodeId(nodeId, node);
-    err = open_node_key(args->ctx, nodeId, &key, &obj);
+    err = open_node_key(args->find_args.ctx, nodeId, &key, &obj);
     if (err) {
         fprintf(stderr, "%s:%d: Failed to open a node object. nodeId: %.*s error: %s\n",
                 __FILE__, __LINE__,
@@ -521,7 +521,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
          */
         ssize_t tmp_limit = -1;
         const size_t skip = get_skip(dir); /* Skip n nodes from the results. */
-        struct FindCommand_Args args = {
+        struct FindCommand_Args find_args = {
             .ctx = ctx,
             .lang = lang,
             .hierarchy = hierarchy,
@@ -537,6 +537,13 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             .order_field = order_by_field,
             .order_result = &order_result,
         };
+        struct AggregateCommand_Args args = {
+            .aggregation_result_int = 0,
+            .aggregation_result_double = 0,
+            .item_count = 0,
+            .find_args = find_args
+        };
+
         const struct SelvaModify_HierarchyCallback cb = {
             .node_cb = AggregateCommand_NodeCb,
             .node_arg = &args,
