@@ -480,5 +480,21 @@ static int fields_contains(struct SelvaObject *fields, const char *field_name_st
     return 0;
 }
 
+static int get_skip(enum SelvaModify_HierarchyTraversal dir) {
+    switch (dir) {
+     /*
+      * Find needs to skip the head node of the traverse for some types as we
+      * are not interested in the node we already know.
+      */
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS:
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS:
+    case SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS:
+    case SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS:
+    case SELVA_HIERARCHY_TRAVERSAL_DFS_FULL:
+        return 1;
+    default:
+        return 0;
+    }
+}
 
 #endif /* SELVA_TRAVERSAL */

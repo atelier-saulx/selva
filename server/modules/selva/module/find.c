@@ -1175,23 +1175,6 @@ static size_t FindCommand_PrintOrderedArrayResult(
     return len;
 }
 
-static int get_skip(enum SelvaModify_HierarchyTraversal dir) {
-    switch (dir) {
-     /*
-      * Find needs to skip the head node of the traverse for some types as we
-      * are not interested in the node we already know.
-      */
-    case SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS:
-    case SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS:
-    case SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS:
-    case SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS:
-    case SELVA_HIERARCHY_TRAVERSAL_DFS_FULL:
-        return 1;
-    default:
-        return 0;
-    }
-}
-
 /**
  * Find node(s) matching the query.
  * SELVA.HIERARCHY.find lang REDIS_KEY dfs|bfs field_name [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
