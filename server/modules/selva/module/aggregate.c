@@ -20,12 +20,12 @@
 #include "traversal.h"
 
 struct AggregateCommand_Args {
+    struct FindCommand_Args find_args;
+
     // aggregation state
     long long int aggregation_result_int;
     double aggregation_result_double;
     size_t item_count;
-
-    struct FindCommand_Args find_args;
 };
 
 static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
