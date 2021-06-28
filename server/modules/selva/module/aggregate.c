@@ -53,7 +53,7 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
 }
 
 static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
-	// TODO
+    // TODO
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
