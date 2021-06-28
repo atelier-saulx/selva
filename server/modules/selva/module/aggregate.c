@@ -130,6 +130,123 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
     return 0;
 }
 
+static size_t AggregateCommand_PrintOrderedResult(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        SelvaModify_Hierarchy *hierarchy,
+        ssize_t offset,
+        ssize_t limit,
+        enum merge_strategy merge_strategy,
+        RedisModuleString *merge_path,
+        struct SelvaObject *fields,
+        SVector *order_result,
+        size_t *nr_fields_out) {
+    struct FindCommand_OrderedItem *item;
+    struct SVectorIterator it;
+    size_t len = 0;
+
+    /*
+     * First handle the offsetting.
+     */
+    for (ssize_t i = 0; i < offset; i++) {
+        SVector_Shift(order_result);
+    }
+    SVector_ShiftReset(order_result);
+
+    /*
+     * Then send out node IDs upto the limit.
+     */
+    SVector_ForeachBegin(&it, order_result);
+    while ((item = SVector_Foreach(&it))) {
+        int err;
+        if (limit-- == 0) {
+            break;
+        }
+
+        if (merge_strategy != MERGE_STRATEGY_NONE) {
+            // TODO: aggregate instead
+            // err = send_node_object_merge(ctx, lang, item->id, merge_strategy, merge_path, fields, nr_fields_out);
+        } else if (fields) {
+            // TODO: do we actually need this if? we should always have aggregation enabled
+            struct SelvaModify_HierarchyNode *node;
+
+            /* TODO Consider if having hierarchy node pointers here would be better. */
+            node = SelvaHierarchy_FindNode(hierarchy, item->id);
+            if (node) {
+                // TODO: aggregate instead
+                // err = send_node_fields(ctx, lang, hierarchy, node, fields);
+            } else {
+                err = SELVA_HIERARCHY_ENOENT;
+            }
+        } else {
+            RedisModule_ReplyWithStringBuffer(ctx, item->id, Selva_NodeIdLen(item->id));
+            err = 0;
+        }
+        if (err) {
+            RedisModule_ReplyWithNull(ctx);
+            fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, item->id,
+                    getSelvaErrorStr(err));
+        }
+
+        len++;
+    }
+
+    return len;
+}
+
+static size_t AggregateCommand_PrintOrderedArrayResult(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        SelvaModify_Hierarchy *hierarchy,
+        ssize_t offset,
+        ssize_t limit,
+        struct SelvaObject *fields,
+        SVector *order_result) {
+    struct FindCommand_OrderedItem *item;
+    struct SVectorIterator it;
+    size_t len = 0;
+
+    /*
+     * First handle the offsetting.
+     */
+    for (ssize_t i = 0; i < offset; i++) {
+        SVector_Shift(order_result);
+    }
+    SVector_ShiftReset(order_result);
+
+    /*
+     * Then send out node IDs upto the limit.
+     */
+    SVector_ForeachBegin(&it, order_result);
+    while ((item = SVector_Foreach(&it))) {
+        int err;
+        if (limit-- == 0) {
+            break;
+        }
+
+        if (item && item->data_obj) {
+            // TODO: aggregate instead
+            // err = send_array_object_fields(ctx, lang, hierarchy, item->data_obj, fields);
+        } else {
+            err = SELVA_HIERARCHY_ENOENT;
+        }
+
+        if (err) {
+            RedisModule_ReplyWithNull(ctx);
+            fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, item->id,
+                    getSelvaErrorStr(err));
+        }
+
+        len++;
+    }
+
+    return len;
+}
+
 /**
  * Find node in set.
  * SELVA.inherit REDIS_KEY NODE_ID [TYPE1[TYPE2[...]]] [FIELD_NAME1[ FIELD_NAME2[ ...]]]
@@ -488,7 +605,6 @@ out:
 
     return REDISMODULE_OK;
 #undef SHIFT_ARGS
-
 }
 
 int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
