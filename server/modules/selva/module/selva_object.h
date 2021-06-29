@@ -193,6 +193,13 @@ const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len);
 
 /*
  * Send a SelvaObject as a Redis reply.
+ * @param key_name_str can be NULL.
+ */
+int SelvaObject_ReplyWithObjectStr(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
+
+/*
+ * Send a SelvaObject as a Redis reply.
+ * @param key_name_str can be NULL.
  */
 int SelvaObject_ReplyWithObject(struct RedisModuleCtx *ctx, struct RedisModuleString *lang, struct SelvaObject *obj, const struct RedisModuleString *key_name);
 

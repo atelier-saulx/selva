@@ -8,7 +8,12 @@ import {
   isFork,
   convertNow,
 } from '@saulx/selva-query-ast-parser'
-import { executeNestedGetOperations, ExecContext, sourceFieldToMarkerType, addMarker } from './'
+import {
+  executeNestedGetOperations,
+  ExecContext,
+  sourceFieldToMarkerType,
+  addMarker,
+} from './'
 import { padId, joinIds } from '../utils'
 import { setNestedResult } from '../utils'
 import { makeLangArg } from './util'
@@ -327,7 +332,9 @@ const findIds = async (
       }
     }
 
-    const ids = await client.redis[op.recursive ? 'selva_hierarchy_findrecursive' : 'selva_hierarchy_find'](
+    const ids = await client.redis[
+      op.recursive ? 'selva_hierarchy_findrecursive' : 'selva_hierarchy_find'
+    ](
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
@@ -484,7 +491,9 @@ const findFields = async (
       }
     }
 
-    const result = await client.redis[op.recursive ? 'selva_hierarchy_findrecursive' : 'selva_hierarchy_find'](
+    const result = await client.redis[
+      op.recursive ? 'selva_hierarchy_findrecursive' : 'selva_hierarchy_find'
+    ](
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',

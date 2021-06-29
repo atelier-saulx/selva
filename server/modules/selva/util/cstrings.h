@@ -4,6 +4,11 @@
 
 #include <stddef.h>
 
+/**
+ * Locate last occurrence of character in string.
+ */
+int strrnchr(const char *str, size_t len, char c);
+
 int stringlist_search(const char *list, const char *str);
 int stringlist_searchn(const char *list, const char *str, size_t n);
 size_t substring_count(const char *string, const char *substring, size_t n);

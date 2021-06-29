@@ -46,22 +46,7 @@ export default function createInheritOperation(
   db: string,
   ops: GetOperation[]
 ): void {
-  if (typeof inherit === 'boolean') {
-    ops.push({
-      type: 'inherit',
-      id,
-      field,
-      sourceField: props.$field || field,
-      props: {},
-      item: false,
-      required: undefined,
-      types: [],
-    })
-
-    return
-  }
-
-  if (inherit.$item) {
+  if (typeof inherit === 'object' && inherit.$item) {
     let p: GetOptions = props
 
     if (props.$all) {
@@ -92,11 +77,14 @@ export default function createInheritOperation(
     return
   }
 
-  const types: string[] = Array.isArray(inherit.$type)
-    ? inherit.$type
-    : !inherit.$type
-    ? []
-    : [inherit.$type]
+  const types: string[] =
+    typeof inherit === 'boolean'
+      ? []
+      : Array.isArray(inherit.$type)
+      ? inherit.$type
+      : !inherit.$type
+      ? []
+      : [inherit.$type]
 
   const schema = client.schemas[db]
 
@@ -106,7 +94,7 @@ export default function createInheritOperation(
 
   let hasKeys = false
   let p = props
-  if (props.$all) {
+  if (types.length && props.$all) {
     const newKeys = makeAll(client, id, field, <string>props.$field, db, props)
     if (newKeys) {
       hasKeys = true
@@ -130,6 +118,21 @@ export default function createInheritOperation(
       sourceField: props.$field || field,
       props: p,
       types,
+    })
+
+    return
+  }
+
+  if (typeof inherit === 'boolean') {
+    ops.push({
+      type: 'inherit',
+      id,
+      field,
+      sourceField: props.$field || field,
+      props,
+      item: false,
+      required: undefined,
+      types: [],
     })
 
     return
