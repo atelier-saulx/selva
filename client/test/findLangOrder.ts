@@ -160,7 +160,7 @@ test.serial('$lang should change the order when relevant', async (t) => {
       $language: 'en',
       $id: 'match1',
       children: {
-        myId: { $field: 'id' },
+        id: true,
         $list: {
           $sort: { $field: 'title', $order: 'asc' },
           $find: {
@@ -171,16 +171,16 @@ test.serial('$lang should change the order when relevant', async (t) => {
     }),
     {
       children: [
-        { myId: 'team8' },
-        { myId: 'team4' },
-        { myId: 'team6' },
-        { myId: 'team2' },
-        { myId: 'team10' },
-        { myId: 'team9' },
-        { myId: 'team5' },
-        { myId: 'team1' },
-        { myId: 'team7' },
-        { myId: 'team3' },
+        { id: 'team8' },
+        { id: 'team4' },
+        { id: 'team6' },
+        { id: 'team2' },
+        { id: 'team10' },
+        { id: 'team9' },
+        { id: 'team5' },
+        { id: 'team1' },
+        { id: 'team7' },
+        { id: 'team3' },
       ],
     }
   )
