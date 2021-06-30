@@ -822,11 +822,17 @@ test.serial('get - simple $list with $field option', async (t) => {
   const children = []
 
   for (let i = 0; i < 100; i++) {
-    children.push({
+    const opts: any = {
       type: 'custom',
       value: i,
       name: 'flurp' + i,
-    })
+    }
+
+    if (i % 2) {
+      opts.image = { thumb: 'flurp' + i }
+    }
+
+    children.push(opts)
   }
 
   await Promise.all([
@@ -845,6 +851,7 @@ test.serial('get - simple $list with $field option', async (t) => {
     children: {
       title: { $field: 'name' },
       value: true,
+      image: { thumb: { $default: 'default_image.jpg' } },
       $list: {
         $sort: { $field: 'value', $order: 'asc' },
         $limit: 10,
@@ -856,16 +863,16 @@ test.serial('get - simple $list with $field option', async (t) => {
     c,
     {
       children: [
-        { value: 0, title: 'flurp0' },
-        { value: 1, title: 'flurp1' },
-        { value: 2, title: 'flurp2' },
-        { value: 3, title: 'flurp3' },
-        { value: 4, title: 'flurp4' },
-        { value: 5, title: 'flurp5' },
-        { value: 6, title: 'flurp6' },
-        { value: 7, title: 'flurp7' },
-        { value: 8, title: 'flurp8' },
-        { value: 9, title: 'flurp9' },
+        { value: 0, title: 'flurp0', image: { thumb: 'default_image.jpg' } },
+        { value: 1, title: 'flurp1', image: { thumb: 'flurp1' } },
+        { value: 2, title: 'flurp2', image: { thumb: 'default_image.jpg' } },
+        { value: 3, title: 'flurp3', image: { thumb: 'flurp3' } },
+        { value: 4, title: 'flurp4', image: { thumb: 'default_image.jpg' } },
+        { value: 5, title: 'flurp5', image: { thumb: 'flurp5' } },
+        { value: 6, title: 'flurp6', image: { thumb: 'default_image.jpg' } },
+        { value: 7, title: 'flurp7', image: { thumb: 'flurp7' } },
+        { value: 8, title: 'flurp8', image: { thumb: 'default_image.jpg' } },
+        { value: 9, title: 'flurp9', image: { thumb: 'flurp9' } },
       ],
     },
     'non redis search sort'

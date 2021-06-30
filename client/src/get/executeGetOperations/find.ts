@@ -688,11 +688,11 @@ const executeFindOperation = async (
         for (const f of targetField) {
           setNestedResult(entryRes, f, casted)
         }
-
-        usedMappings.add(field)
       } else {
         setNestedResult(entryRes, field, casted)
       }
+
+      usedMappings.add(field)
     }
 
     const unusedMappings = new Set(
