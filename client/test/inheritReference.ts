@@ -40,8 +40,8 @@ test.before(async (t) => {
       seat: {
         prefix: 'st',
         fields: {
-          color: { type: 'text' }
-        }
+          color: { type: 'text' },
+        },
       },
     },
   })
@@ -73,19 +73,19 @@ test.serial('inherit references $list', async (t) => {
 
   const seat1 = await client.set({
     $language: 'en',
-      type: 'seat',
-      color: 'white',
+    type: 'seat',
+    color: 'white',
   })
   const seat2 = await client.set({
     $language: 'en',
-      type: 'seat',
-      color: 'red',
+    type: 'seat',
+    color: 'red',
   })
   const venue = await client.set({
     $language: 'en',
     type: 'venue',
     title: 'Ipurua Stadium',
-    seats: [ seat1, seat2 ]
+    seats: [seat1, seat2],
   })
 
   const child = await client.set({
@@ -115,15 +115,14 @@ test.serial('inherit references $list', async (t) => {
         $inherit: true,
         title: true,
         description: { $default: 'no description' },
-      }
+      },
     }),
     {
       title: 'football match',
       venue: {
-       title: 'Ipurua Stadium',
-       // FIXME
-       // description: 'no description'
-      }
+        title: 'Ipurua Stadium',
+        description: 'no description',
+      },
     }
   )
 
@@ -134,8 +133,8 @@ test.serial('inherit references $list', async (t) => {
       title: true,
       venue: {
         $inherit: true,
-        no: true
-      }
+        no: true,
+      },
     }),
     { title: 'football match' },
     'Inherit non-existing field'
@@ -149,7 +148,7 @@ test.serial('inherit references $list', async (t) => {
       venue: {
         $inherit: true,
         // TODO Id
-      }
+      },
     }),
     { title: 'football match', venue },
     'Inherit all fields from venue'
@@ -163,22 +162,26 @@ test.serial('inherit references $list', async (t) => {
       venue: {
         $inherit: true,
         $all: true,
-      }
+      },
     }),
-    { title: 'football match', venue: { id: venue, type: 'venue', title: 'Ipurua Stadium', } },
+    {
+      title: 'football match',
+      venue: { id: venue, type: 'venue', title: 'Ipurua Stadium' },
+    },
     'Inherit all fields from venue'
   )
 
   // inheriting non-single ref edge field should fail
-  t.deepEqualIgnoreOrder(await client.get({
+  t.deepEqualIgnoreOrder(
+    await client.get({
       $id: venue,
       $language: 'en',
       title: true,
       seats: {
         $inherit: true,
-      }
+      },
     }),
-    { title: 'Ipurua Stadium', seats: [ seat1, seat2 ] }
+    { title: 'Ipurua Stadium', seats: [seat1, seat2] }
   )
 
   await client.destroy()
