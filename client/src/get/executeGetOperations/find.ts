@@ -76,6 +76,13 @@ function parseGetOpts(
           mapping[$field].targetField.push(path)
         }
       }
+    } else if (k === '$default') {
+      const $default = props[k]
+      if (!mapping[path]) {
+        mapping[path] = { default: $default }
+      } else {
+        mapping[path].default = $default
+      }
     } else if (k === '$all') {
       fields = new Set(['*'])
       hasAll = true
@@ -656,10 +663,13 @@ const executeFindOperation = async (
 
   let results: any[] = await findFields(client, op, lang, ctx, fieldOpts)
 
+  const allMappings = new Set(Object.keys(fieldMapping))
   const result = []
   for (let entry of results) {
     const [id, fieldResults] = entry
     const entryRes: any = {}
+
+    const usedMappings = new Set()
     for (let i = 0; i < fieldResults.length; i += 2) {
       const field = fieldResults[i]
       const value = fieldResults[i + 1]
@@ -670,15 +680,27 @@ const executeFindOperation = async (
       }
 
       const targetField = fieldMapping[field]?.targetField
-
       const casted = typeCast(value, id, field, schema, lang)
 
       if (targetField) {
         for (const f of targetField) {
           setNestedResult(entryRes, f, casted)
         }
+
+        usedMappings.add(field)
       } else {
         setNestedResult(entryRes, field, casted)
+      }
+    }
+
+    const unusedMappings = new Set(
+      [...allMappings].filter((x) => !usedMappings.has(x))
+    )
+
+    for (const k of unusedMappings) {
+      const mapping = fieldMapping[k]
+      if (mapping?.default) {
+        setNestedResult(entryRes, k, mapping.default)
       }
     }
 
