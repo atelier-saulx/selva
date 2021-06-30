@@ -70,6 +70,7 @@ test.serial('find - single', async (t) => {
     $id: 'te0',
     singleMatch: {
       name: true,
+      nonsense: { $default: 'yes' },
       $find: {
         $traverse: 'children',
         $filter: [
@@ -89,7 +90,7 @@ test.serial('find - single', async (t) => {
   })
 
   t.deepEqual(r, {
-    singleMatch: { name: 'match0' },
+    singleMatch: { name: 'match0', nonsense: 'yes' },
   })
 
   await client.destroy()

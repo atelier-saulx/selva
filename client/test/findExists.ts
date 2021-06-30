@@ -80,6 +80,7 @@ test.serial('find - numeric exists field', async (t) => {
       id: true,
       items: {
         name: true,
+        nonsense: { $default: 'yes' },
         $list: {
           $find: {
             $traverse: 'children',
@@ -98,7 +99,7 @@ test.serial('find - numeric exists field', async (t) => {
         },
       },
     }),
-    { id: 'root', items: [{ name: 'match 1' }] }
+    { id: 'root', items: [{ name: 'match 1', nonsense: 'yes' }] }
   )
 
   await client.delete('root')
