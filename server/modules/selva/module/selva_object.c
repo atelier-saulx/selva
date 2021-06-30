@@ -1919,16 +1919,15 @@ static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct
     RedisModule_ReplySetArrayLength(ctx, n);
 }
 
-int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *key_name) {
+int SelvaObject_ReplyWithObjectStr(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     struct SelvaObjectKey *key;
     int err;
 
-    if (!key_name) {
+    if (!key_name_str) {
         replyWithObject(ctx, lang, obj);
         return 0;
     }
 
-    TO_STR(key_name);
     err = get_key(obj, key_name_str, key_name_len, 0, &key);
     if (err) {
         return err;
@@ -1937,6 +1936,16 @@ int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, st
     replyWithKeyValue(ctx, lang, key);
 
     return 0;
+}
+
+int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *key_name) {
+    if (key_name) {
+        TO_STR(key_name);
+        return SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len);
+    } else {
+        replyWithObject(ctx, lang, obj);
+        return 0;
+    }
 }
 
 int SelvaObject_GetWithWildcardStr(

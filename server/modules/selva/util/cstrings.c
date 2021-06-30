@@ -4,6 +4,19 @@
 #include <sys/types.h>
 #include "cstrings.h"
 
+/* int is probably large enough for Selva users. */
+int strrnchr(const char *str, size_t len, char c) {
+    int i = len;
+
+    while (i > 0) {
+        if (str[--i] == c) {
+            break;
+        }
+    }
+
+    return i;
+}
+
 int stringlist_search(const char *list, const char *str) {
     const char *s1 = list;
 

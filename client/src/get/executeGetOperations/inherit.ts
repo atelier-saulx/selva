@@ -546,7 +546,11 @@ export default async function inherit(
   })
 
   if (fields.length === 0) {
-    fields.push(op.sourceField)
+    if (op.props.$all) {
+      fields.push(`${op.sourceField}.*`)
+    } else {
+      fields.push(op.sourceField)
+    }
   }
 
   if (ctx.subId) {
@@ -604,14 +608,37 @@ export default async function inherit(
     ...fields
   )
 
+  const propsLen = Object.keys(op.props).length
   if (res.length === 0) {
     return null
-  } else if (Object.keys(op.props).length === 0) {
+  } else if (propsLen === 1 || (propsLen === 2 && op.props.$field)) {
     let [idx, f, v] = res[0]
     const fs = getNestedSchema(schema, idx, f)
     const typeCast = TYPE_CASTS[fs.type]
-
     return typeCast ? typeCast(v, idx, f, client.schemas.default, lang) : v
+  } else if (op.props.$all) {
+    let [idx, f, v] = res[0]
+    const fs = getNestedSchema(schema, op.id, f)
+
+    if (fs && ['reference', 'references'].includes(fs.type)) {
+      let obj = {}
+      for (let i = 0; i < v.length; i += 2) {
+        const f1 = v[i]
+        const v1 = v[i + 1]
+        const fs1 = getNestedSchema(schema, idx, f1)
+        const typeCast = TYPE_CASTS[fs1.type]
+        const v2 = typeCast
+          ? typeCast(v1, idx, f1, client.schemas.default, lang)
+          : v1
+
+        setNestedResult(obj, f1, v2)
+      }
+
+      return obj
+    } else {
+      const typeCast = TYPE_CASTS[fs.type]
+      return typeCast ? typeCast(v, idx, f, client.schemas.default, lang) : v
+    }
   }
 
   const o = buildResultFromIdFieldAndValue(ctx, client, remapped, op.field, res)
