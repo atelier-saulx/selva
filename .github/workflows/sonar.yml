@@ -1,0 +1,18 @@
+name: Sonar
+on: push
+jobs:
+  build:
+    environment: Sonar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Instal tools and libs
+        run: |
+          echo "$HOME/build-wrapper-linux-x86:$HOME/sonar-scanner-4.4.0.2170-linux/bin" >> $GITHUB_PATH
+          sudo ./.github/scripts/install.sh
+      - name: SonarCloud Scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          TEST_SECRET: ${{ secrets.TEST_SECRET }}
+        run: ./.github/scripts/sonar.sh
