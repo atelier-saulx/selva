@@ -18,9 +18,25 @@ import { padId, joinIds } from '../utils'
 import { setNestedResult } from '../utils'
 import { makeLangArg } from './util'
 
-function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
+function parseGetOpts(
+  props: GetOptions,
+  path: string,
+  nestedMapping?: Record<string, { targetField?: string[]; default?: any }>
+): [
+  Set<string>,
+  Record<string, { targetField?: string[]; default?: any }>,
+  boolean
+] {
   const pathPrefix = path === '' ? '' : path + '.'
   let fields: Set<string> = new Set()
+  const mapping: Record<
+    string,
+    {
+      targetField?: string[]
+      default?: any
+    }
+  > = nestedMapping || {}
+
   let hasAll = false
 
   for (const k in props) {
@@ -36,19 +52,44 @@ function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
       const $field = props[k]
       if (Array.isArray($field)) {
         fields.add($field.join('|'))
+        $field.forEach((f) => {
+          if (!mapping[f]) {
+            mapping[f] = { targetField: [path] }
+            return
+          }
+
+          if (!mapping[f].targetField) {
+            mapping[f].targetField = [path]
+            return
+          }
+
+          mapping[f].targetField.push(path)
+        })
       } else {
         fields.add($field)
+
+        if (!mapping[$field]) {
+          mapping[$field] = { targetField: [path] }
+        } else if (!mapping[$field].targetField) {
+          mapping[$field].targetField = [path]
+        } else {
+          mapping[$field].targetField.push(path)
+        }
       }
     } else if (k === '$all') {
       fields = new Set(['*'])
       hasAll = true
     } else if (k.startsWith('$')) {
-      return [fields, true]
+      return [fields, mapping, true]
     } else if (typeof props[k] === 'object') {
-      const [nestedFields, hasSpecial] = parseGetOpts(props[k], pathPrefix + k)
+      const [nestedFields, , hasSpecial] = parseGetOpts(
+        props[k],
+        pathPrefix + k,
+        mapping
+      )
 
       if (hasSpecial) {
-        return [fields, true]
+        return [fields, mapping, true]
       }
 
       for (const f of nestedFields.values()) {
@@ -57,7 +98,7 @@ function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
     }
   }
 
-  return [fields, false]
+  return [fields, mapping, false]
 }
 
 function findTimebased(ast: Fork): FilterAST[] {
@@ -491,6 +532,24 @@ const findFields = async (
       }
     }
 
+    console.log(
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      makeLangArg(client.schemas[ctx.db].languages, lang),
+      '___selva_hierarchy',
+      'bfs',
+      op.recursive ? `{"${sourceField}"}` : sourceField,
+      'order',
+      op.options.sort?.$field || '',
+      op.options.sort?.$order || 'asc',
+      'offset',
+      op.options.offset,
+      'limit',
+      op.options.limit,
+      'fields',
+      [...fieldsOpt.values()].join('\n'), // TODO Probably shouldn't pass $ names?
+      padId(op.id),
+      ...args
+    )
     const result = await client.redis[
       op.recursive ? 'selva_hierarchy_findrecursive' : 'selva_hierarchy_find'
     ](
@@ -557,6 +616,7 @@ const executeFindOperation = async (
       }
     }
 
+    console.log('REAL OPTS', realOpts)
     const results = await Promise.all(
       ids.map(async (id) => {
         return await executeNestedGetOperations(
@@ -579,7 +639,7 @@ const executeFindOperation = async (
     return results
   }
 
-  const [fieldOpts, additionalGets] = parseGetOpts(op.props, '')
+  const [fieldOpts, fieldMapping, additionalGets] = parseGetOpts(op.props, '')
 
   if (additionalGets) {
     let ids = await findIds(client, op, lang, ctx)
@@ -614,6 +674,7 @@ const executeFindOperation = async (
   }
 
   let results: any[] = await findFields(client, op, lang, ctx, fieldOpts)
+  console.log('RESULTS', results)
 
   const result = []
   for (let entry of results) {
@@ -628,7 +689,18 @@ const executeFindOperation = async (
         continue
       }
 
-      setNestedResult(entryRes, field, typeCast(value, id, field, schema, lang))
+      const targetField = fieldMapping[field]?.targetField
+      console.log('TARGET FIELD', fieldMapping, targetField, value)
+
+      const casted = typeCast(value, id, field, schema, lang)
+
+      if (targetField) {
+        for (const f of targetField) {
+          setNestedResult(entryRes, f, casted)
+        }
+      } else {
+        setNestedResult(entryRes, field, casted)
+      }
     }
 
     result.push(entryRes)

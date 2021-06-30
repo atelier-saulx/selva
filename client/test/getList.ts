@@ -790,3 +790,114 @@ test.serial('get - default sorting in $list with references', async (t) => {
 //
 //   await client.destroy()
 // })
+
+test.serial('get - simple $list with $field option', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    types: {
+      custom: {
+        prefix: 'cu',
+        fields: {
+          value: { type: 'number', search: true },
+          age: { type: 'number' },
+          auth: {
+            type: 'json',
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const children = []
+
+  for (let i = 0; i < 100; i++) {
+    children.push({
+      type: 'custom',
+      value: i,
+      name: 'flurp' + i,
+    })
+  }
+
+  await Promise.all([
+    client.set({
+      $id: 'cuA',
+      image: {
+        thumb: 'flurp.jpg',
+      },
+      title: { en: 'snurf' },
+      children,
+    }),
+  ])
+
+  const c = await client.get({
+    $id: 'cuA',
+    children: {
+      title: { $field: 'name' },
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'asc' },
+        $limit: 10,
+      },
+    },
+  })
+
+  t.deepEqual(
+    c,
+    {
+      children: [
+        { value: 0, title: 'flurp0' },
+        { value: 1, title: 'flurp1' },
+        { value: 2, title: 'flurp2' },
+        { value: 3, title: 'flurp3' },
+        { value: 4, title: 'flurp4' },
+        { value: 5, title: 'flurp5' },
+        { value: 6, title: 'flurp6' },
+        { value: 7, title: 'flurp7' },
+        { value: 8, title: 'flurp8' },
+        { value: 9, title: 'flurp9' },
+      ],
+    },
+    'non redis search sort'
+  )
+
+  const { children: rangeResult } = await client.get({
+    $id: 'cuA',
+    children: {
+      title: { $field: 'name' },
+      value: true,
+      $list: {
+        $limit: 10,
+      },
+    },
+  })
+
+  t.is(rangeResult.length, 10, 'non redis search range')
+
+  /*
+  const x = await client.get({
+    $id: 'cuA',
+    related: {
+      $inherit: true,
+      name: true,
+      value: true,
+      $list: {
+        $sort: { $field: 'value', $order: 'asc' },
+        $range: [0, 10]
+      }
+    }
+  })
+  */
+
+  await client.destroy()
+})
