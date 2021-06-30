@@ -23,9 +23,11 @@ function makeRealKeys(
   props: GetOptions,
   field: string,
   simple?: boolean
-): Record<string, true | string> {
+): [Record<string, true | string>, Record<string, any>] {
+  const defaults: Record<string, any> = {}
+
   if (simple) {
-    return props
+    return [props, null]
   }
 
   const p = field + '.'
@@ -36,13 +38,16 @@ function makeRealKeys(
     if (!prop.startsWith('$')) {
       if (props[prop].$field) {
         realKeys[p + prop] = <string>props[prop].$field
+      } else if (props[prop].$default !== undefined) {
+        realKeys[p + prop] = true
+        defaults[p + prop] = props[prop].$default
       } else {
         realKeys[p + prop] = true
       }
     }
   }
 
-  return realKeys
+  return [realKeys, defaults]
 }
 
 async function mergeObj(
@@ -53,7 +58,7 @@ async function mergeObj(
   ctx: ExecContext
 ): Promise<GetResult> {
   const remapped: Record<string, string> = {}
-  const props = makeRealKeys(op.props, op.field, true)
+  const [props, defaults] = makeRealKeys(op.props, op.field, true)
   const fields = Object.keys(props).map((f) => {
     if (typeof props[f] === 'string') {
       remapped[<string>props[f]] = f
@@ -137,6 +142,7 @@ async function mergeObj(
     remapped,
     field,
     res,
+    defaults,
     lang
   )
 
@@ -151,7 +157,7 @@ async function deepMergeObj(
   ctx: ExecContext
 ): Promise<GetResult> {
   const remapped: Record<string, string> = {}
-  const props = makeRealKeys(op.props, op.field, true)
+  const [props, defaults] = makeRealKeys(op.props, op.field, true)
   const fields = Object.keys(props).map((f) => {
     if (typeof props[f] === 'string') {
       remapped[<string>props[f]] = f
@@ -229,7 +235,14 @@ async function deepMergeObj(
     ...rpn
   )
 
-  const o = buildResultFromIdFieldAndValue(ctx, client, remapped, field, res)
+  const o = buildResultFromIdFieldAndValue(
+    ctx,
+    client,
+    remapped,
+    field,
+    res,
+    defaults
+  )
   return o
 }
 
@@ -241,7 +254,7 @@ async function inheritItem(
 ): Promise<GetResult> {
   const schema = client.schemas[ctx.db]
 
-  const props = makeRealKeys(op.props, op.field)
+  const [props, defaults] = makeRealKeys(op.props, op.field)
   const remapped: Record<string, string> = {}
   const fields = Object.keys(props).map((f) => {
     f = f.slice(op.field.length + 1)
@@ -338,6 +351,7 @@ async function inheritItem(
     }
 
     setNestedResult(entryRes, field, typeCast(value, id, field, schema, lang))
+    // TODO: needs $default?
   }
 
   return entryRes
@@ -534,7 +548,7 @@ export default async function inherit(
     return v
   }
 
-  const realKeys = makeRealKeys(op.props, op.field)
+  const [realKeys, defaults] = makeRealKeys(op.props, op.field)
   const remapped: Record<string, string> = {}
   const fields = Object.keys(realKeys).map((f) => {
     if (typeof realKeys[f] === 'string') {
@@ -641,6 +655,13 @@ export default async function inherit(
     }
   }
 
-  const o = buildResultFromIdFieldAndValue(ctx, client, remapped, op.field, res)
+  const o = buildResultFromIdFieldAndValue(
+    ctx,
+    client,
+    remapped,
+    op.field,
+    res,
+    defaults
+  )
   return o
 }
