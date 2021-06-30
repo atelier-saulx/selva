@@ -236,7 +236,7 @@ test.serial('find - references', async (t) => {
     related: {
       name: true,
       special: { num: { $field: 'value' } },
-      value: true,
+      // value: true,
       $list: {
         $sort: { $field: 'value', $order: 'asc' },
         $find: {
@@ -260,7 +260,7 @@ test.serial('find - references', async (t) => {
     },
   })
 
-  t.deepEqualIgnoreOrder(
+  t.deepEqual(
     relatedMatchesLeaguesNoTraverse,
     [
       // { value: 0, special: { num: 0 }, name: 'league0' },

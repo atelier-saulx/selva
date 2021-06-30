@@ -532,24 +532,6 @@ const findFields = async (
       }
     }
 
-    console.log(
-      ctx.originDescriptors[ctx.db] || { name: ctx.db },
-      makeLangArg(client.schemas[ctx.db].languages, lang),
-      '___selva_hierarchy',
-      'bfs',
-      op.recursive ? `{"${sourceField}"}` : sourceField,
-      'order',
-      op.options.sort?.$field || '',
-      op.options.sort?.$order || 'asc',
-      'offset',
-      op.options.offset,
-      'limit',
-      op.options.limit,
-      'fields',
-      [...fieldsOpt.values()].join('\n'), // TODO Probably shouldn't pass $ names?
-      padId(op.id),
-      ...args
-    )
     const result = await client.redis[
       op.recursive ? 'selva_hierarchy_findrecursive' : 'selva_hierarchy_find'
     ](
@@ -616,7 +598,6 @@ const executeFindOperation = async (
       }
     }
 
-    console.log('REAL OPTS', realOpts)
     const results = await Promise.all(
       ids.map(async (id) => {
         return await executeNestedGetOperations(
@@ -674,7 +655,6 @@ const executeFindOperation = async (
   }
 
   let results: any[] = await findFields(client, op, lang, ctx, fieldOpts)
-  console.log('RESULTS', results)
 
   const result = []
   for (let entry of results) {
@@ -690,7 +670,6 @@ const executeFindOperation = async (
       }
 
       const targetField = fieldMapping[field]?.targetField
-      console.log('TARGET FIELD', fieldMapping, targetField, value)
 
       const casted = typeCast(value, id, field, schema, lang)
 
