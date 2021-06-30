@@ -117,7 +117,9 @@ static int inhibitMarkerEvent(const Selva_NodeId node_id, const struct Selva_Sub
  */
 char *Selva_SubscriptionId2str(char dest[static SELVA_SUBSCRIPTION_ID_STR_LEN + 1], const Selva_SubscriptionId sub_id) {
     for (size_t i = 0; i < sizeof(Selva_SubscriptionId); i++) {
-        snprintf(dest + 2 * i, SELVA_SUBSCRIPTION_ID_STR_LEN + 1, "%02x", sub_id[i]);
+        const size_t k = 2 * i;
+
+        snprintf(dest + k, SELVA_SUBSCRIPTION_ID_STR_LEN + 1 - k, "%02x", sub_id[i]);
     }
     dest[SELVA_SUBSCRIPTION_ID_STR_LEN] = '\0';
 
