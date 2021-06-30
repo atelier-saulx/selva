@@ -77,6 +77,8 @@ function parseGetOpts(
         }
       }
     } else if (k === '$default') {
+      fields.add(path)
+
       const $default = props[k]
       if (!mapping[path]) {
         mapping[path] = { default: $default }
