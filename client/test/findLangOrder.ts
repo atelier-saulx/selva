@@ -155,145 +155,155 @@ test.serial('$lang should change the order when relevant', async (t) => {
     ],
   })
 
-  t.deepEqual(await client.get({
-    $language: 'en',
-    $id: 'match1',
-    children: {
-      id: true,
-      $list: {
-        $sort: { $field: 'title', $order: 'asc' },
-        $find: {
-          $traverse: 'descendants',
+  t.deepEqual(
+    await client.get({
+      $language: 'en',
+      $id: 'match1',
+      children: {
+        myId: { $field: 'id' },
+        $list: {
+          $sort: { $field: 'title', $order: 'asc' },
+          $find: {
+            $traverse: 'descendants',
+          },
         },
       },
-    },
-  }),
-  {
-    children: [
-      { id: 'team8' },
-      { id: 'team4' },
-      { id: 'team6' },
-      { id: 'team2' },
-      { id: 'team10' },
-      { id: 'team9' },
-      { id: 'team5' },
-      { id: 'team1' },
-      { id: 'team7' },
-      { id: 'team3' },
-    ]
-  })
+    }),
+    {
+      children: [
+        { myId: 'team8' },
+        { myId: 'team4' },
+        { myId: 'team6' },
+        { myId: 'team2' },
+        { myId: 'team10' },
+        { myId: 'team9' },
+        { myId: 'team5' },
+        { myId: 'team1' },
+        { myId: 'team7' },
+        { myId: 'team3' },
+      ],
+    }
+  )
 
-  t.deepEqual(await client.get({
-    $language: 'de',
-    $id: 'match1',
-    children: {
-      id: true,
-      $list: {
-        $sort: { $field: 'title', $order: 'asc' },
-        $find: {
-          $traverse: 'descendants',
+  t.deepEqual(
+    await client.get({
+      $language: 'de',
+      $id: 'match1',
+      children: {
+        id: true,
+        $list: {
+          $sort: { $field: 'title', $order: 'asc' },
+          $find: {
+            $traverse: 'descendants',
+          },
         },
       },
-    },
-  }),
-  {
-    children: [
-      { id: 'team8' },
-      { id: 'team4' },
-      { id: 'team6' },
-      { id: 'team2' },
-      { id: 'team10' },
-      { id: 'team9' },
-      { id: 'team5' },
-      { id: 'team1' },
-      { id: 'team7' },
-      { id: 'team3' },
-    ]
-  })
+    }),
+    {
+      children: [
+        { id: 'team8' },
+        { id: 'team4' },
+        { id: 'team6' },
+        { id: 'team2' },
+        { id: 'team10' },
+        { id: 'team9' },
+        { id: 'team5' },
+        { id: 'team1' },
+        { id: 'team7' },
+        { id: 'team3' },
+      ],
+    }
+  )
 
-  t.deepEqual(await client.get({
-    $language: 'fi',
-    $id: 'match1',
-    children: {
-      id: true,
-      $list: {
-        $sort: { $field: 'title', $order: 'asc' },
-        $find: {
-          $traverse: 'descendants',
+  t.deepEqual(
+    await client.get({
+      $language: 'fi',
+      $id: 'match1',
+      children: {
+        id: true,
+        $list: {
+          $sort: { $field: 'title', $order: 'asc' },
+          $find: {
+            $traverse: 'descendants',
+          },
         },
       },
-    },
-  }),
-  {
-    children: [
-      { id: 'team6' },
-      { id: 'team2' },
-      { id: 'team10' },
-      { id: 'team9' },
-      { id: 'team7' },
-      { id: 'team3' },
-      { id: 'team8' },
-      { id: 'team4' },
-      { id: 'team5' },
-      { id: 'team1' },
-    ]
-  })
+    }),
+    {
+      children: [
+        { id: 'team6' },
+        { id: 'team2' },
+        { id: 'team10' },
+        { id: 'team9' },
+        { id: 'team7' },
+        { id: 'team3' },
+        { id: 'team8' },
+        { id: 'team4' },
+        { id: 'team5' },
+        { id: 'team1' },
+      ],
+    }
+  )
 
-  t.deepEqual(await client.get({
-    $language: 'cs',
-    $id: 'match1',
-    children: {
-      id: true,
-      $list: {
-        $sort: { $field: 'title', $order: 'asc' },
-        $find: {
-          $traverse: 'descendants',
+  t.deepEqual(
+    await client.get({
+      $language: 'cs',
+      $id: 'match1',
+      children: {
+        id: true,
+        $list: {
+          $sort: { $field: 'title', $order: 'asc' },
+          $find: {
+            $traverse: 'descendants',
+          },
         },
       },
-    },
-  }),
-  {
-    children: [
-      { id: 'team8' },
-      { id: 'team4' },
-      { id: 'team6' },
-      { id: 'team2' },
-      { id: 'team9' },
-      { id: 'team10' },
-      { id: 'team5' },
-      { id: 'team1' },
-      { id: 'team7' },
-      { id: 'team3' },
-    ]
-  })
+    }),
+    {
+      children: [
+        { id: 'team8' },
+        { id: 'team4' },
+        { id: 'team6' },
+        { id: 'team2' },
+        { id: 'team9' },
+        { id: 'team10' },
+        { id: 'team5' },
+        { id: 'team1' },
+        { id: 'team7' },
+        { id: 'team3' },
+      ],
+    }
+  )
 
-  t.deepEqual(await client.get({
-    $language: 'gsw',
-    $id: 'match1',
-    children: {
-      id: true,
-      $list: {
-        $sort: { $field: 'title', $order: 'asc' },
-        $find: {
-          $traverse: 'descendants',
+  t.deepEqual(
+    await client.get({
+      $language: 'gsw',
+      $id: 'match1',
+      children: {
+        id: true,
+        $list: {
+          $sort: { $field: 'title', $order: 'asc' },
+          $find: {
+            $traverse: 'descendants',
+          },
         },
       },
-    },
-  }),
-  {
-    children: [
-      { id: 'team8' },
-      { id: 'team4' },
-      { id: 'team6' },
-      { id: 'team2' },
-      { id: 'team10' },
-      { id: 'team9' },
-      { id: 'team5' },
-      { id: 'team1' },
-      { id: 'team7' },
-      { id: 'team3' },
-    ]
-  })
+    }),
+    {
+      children: [
+        { id: 'team8' },
+        { id: 'team4' },
+        { id: 'team6' },
+        { id: 'team2' },
+        { id: 'team10' },
+        { id: 'team9' },
+        { id: 'team5' },
+        { id: 'team1' },
+        { id: 'team7' },
+        { id: 'team3' },
+      ],
+    }
+  )
 
   await client.delete('root')
   await client.destroy()

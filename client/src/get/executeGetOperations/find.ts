@@ -18,9 +18,25 @@ import { padId, joinIds } from '../utils'
 import { setNestedResult } from '../utils'
 import { makeLangArg } from './util'
 
-function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
+function parseGetOpts(
+  props: GetOptions,
+  path: string,
+  nestedMapping?: Record<string, { targetField?: string[]; default?: any }>
+): [
+  Set<string>,
+  Record<string, { targetField?: string[]; default?: any }>,
+  boolean
+] {
   const pathPrefix = path === '' ? '' : path + '.'
   let fields: Set<string> = new Set()
+  const mapping: Record<
+    string,
+    {
+      targetField?: string[]
+      default?: any
+    }
+  > = nestedMapping || {}
+
   let hasAll = false
 
   for (const k in props) {
@@ -36,19 +52,53 @@ function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
       const $field = props[k]
       if (Array.isArray($field)) {
         fields.add($field.join('|'))
+        $field.forEach((f) => {
+          if (!mapping[f]) {
+            mapping[f] = { targetField: [path] }
+            return
+          }
+
+          if (!mapping[f].targetField) {
+            mapping[f].targetField = [path]
+            return
+          }
+
+          mapping[f].targetField.push(path)
+        })
       } else {
         fields.add($field)
+
+        if (!mapping[$field]) {
+          mapping[$field] = { targetField: [path] }
+        } else if (!mapping[$field].targetField) {
+          mapping[$field].targetField = [path]
+        } else {
+          mapping[$field].targetField.push(path)
+        }
+      }
+    } else if (k === '$default') {
+      fields.add(path)
+
+      const $default = props[k]
+      if (!mapping[path]) {
+        mapping[path] = { default: $default }
+      } else {
+        mapping[path].default = $default
       }
     } else if (k === '$all') {
       fields = new Set(['*'])
       hasAll = true
     } else if (k.startsWith('$')) {
-      return [fields, true]
+      return [fields, mapping, true]
     } else if (typeof props[k] === 'object') {
-      const [nestedFields, hasSpecial] = parseGetOpts(props[k], pathPrefix + k)
+      const [nestedFields, , hasSpecial] = parseGetOpts(
+        props[k],
+        pathPrefix + k,
+        mapping
+      )
 
       if (hasSpecial) {
-        return [fields, true]
+        return [fields, mapping, true]
       }
 
       for (const f of nestedFields.values()) {
@@ -57,7 +107,7 @@ function parseGetOpts(props: GetOptions, path: string): [Set<string>, boolean] {
     }
   }
 
-  return [fields, false]
+  return [fields, mapping, false]
 }
 
 function findTimebased(ast: Fork): FilterAST[] {
@@ -579,7 +629,7 @@ const executeFindOperation = async (
     return results
   }
 
-  const [fieldOpts, additionalGets] = parseGetOpts(op.props, '')
+  const [fieldOpts, fieldMapping, additionalGets] = parseGetOpts(op.props, '')
 
   if (additionalGets) {
     let ids = await findIds(client, op, lang, ctx)
@@ -615,10 +665,13 @@ const executeFindOperation = async (
 
   let results: any[] = await findFields(client, op, lang, ctx, fieldOpts)
 
+  const allMappings = new Set(Object.keys(fieldMapping))
   const result = []
   for (let entry of results) {
     const [id, fieldResults] = entry
     const entryRes: any = {}
+
+    const usedMappings = new Set()
     for (let i = 0; i < fieldResults.length; i += 2) {
       const field = fieldResults[i]
       const value = fieldResults[i + 1]
@@ -628,7 +681,29 @@ const executeFindOperation = async (
         continue
       }
 
-      setNestedResult(entryRes, field, typeCast(value, id, field, schema, lang))
+      const targetField = fieldMapping[field]?.targetField
+      const casted = typeCast(value, id, field, schema, lang)
+
+      if (targetField) {
+        for (const f of targetField) {
+          setNestedResult(entryRes, f, casted)
+        }
+      } else {
+        setNestedResult(entryRes, field, casted)
+      }
+
+      usedMappings.add(field)
+    }
+
+    const unusedMappings = new Set(
+      [...allMappings].filter((x) => !usedMappings.has(x))
+    )
+
+    for (const k of unusedMappings) {
+      const mapping = fieldMapping[k]
+      if (mapping?.default) {
+        setNestedResult(entryRes, k, mapping.default)
+      }
     }
 
     result.push(entryRes)
