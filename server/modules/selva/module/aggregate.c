@@ -90,18 +90,7 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
             ssize_t * restrict limit = args->limit;
             int err;
 
-            // if (args->fields) {
-            //     err = send_array_object_fields(args->ctx, args->lang, args->hierarchy, obj, args->fields);
-            // } else {
-            //     RedisModule_ReplyWithStringBuffer(args->ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
-            //     err = 0;
-            // }
-            // if (err) {
-            //     RedisModule_ReplyWithNull(args->ctx);
-            //     fprintf(stderr, "%s:%d: Failed to handle field(s), err: %s\n",
-            //             __FILE__, __LINE__,
-            //             getSelvaErrorStr(err));
-            // }
+            // TODO
 
             *nr_nodes = *nr_nodes + 1;
 
