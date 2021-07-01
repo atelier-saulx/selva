@@ -20,6 +20,7 @@ test.before(async (t) => {
         prefix: 'sp',
         fields: {
           title: { type: 'text' },
+          venue: { type: 'reference' },
         },
       },
       match: {
@@ -57,13 +58,8 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('inherit references $list', async (t) => {
+test.serial('inherit single reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
-  const menuItem = await client.set({
-    $language: 'en',
-    type: 'match',
-    title: 'menu item',
-  })
 
   const sport = await client.set({
     $language: 'en',
@@ -182,6 +178,97 @@ test.serial('inherit references $list', async (t) => {
       },
     }),
     { title: 'Ipurua Stadium', seats: [seat1, seat2] }
+  )
+
+  await client.destroy()
+})
+
+test.serial('inherit fields of a single reference from ancestors', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const sport = await client.set({
+    $language: 'en',
+    type: 'sport',
+    title: 'football',
+  })
+
+  const grand = await client.set({
+    $language: 'en',
+    type: 'venue',
+    title: 'Grand Stadium',
+    description: 'The biggest stadium in the world',
+  })
+
+  const grandSport = await client.set({
+    $language: 'en',
+    type: 'sport',
+    title: 'grand sport',
+    venue: grand,
+  });
+
+  const venue = await client.set({
+    $language: 'en',
+    type: 'venue',
+    title: 'Ipurua Stadium',
+    parents: [grand],
+  })
+
+  const match = await client.set({
+    $language: 'en',
+    type: 'match',
+    title: 'football match',
+    parents: [sport, grandSport],
+    venue: venue,
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: match,
+      $language: 'en',
+      title: true,
+      venue: true,
+    }),
+    { title: 'football match', venue }
+  )
+
+  // FIXME Should we actually inherit description like this?
+  t.deepEqual(
+    await client.get({
+      $id: match,
+      $language: 'en',
+      title: true,
+      venue: {
+        $inherit: true,
+        title: true,
+        description: true,
+      },
+    }),
+    {
+      title: 'football match',
+      venue: {
+        title: 'Ipurua Stadium',
+        description: 'The biggest stadium in the world',
+      },
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: match,
+      $language: 'en',
+      title: true,
+      venue: {
+        title: { $inherit: true },
+        description: { $inherit: true },
+      },
+    }),
+    {
+      title: 'football match',
+      venue: {
+        title: 'Ipurua Stadium',
+        description: 'The biggest stadium in the world',
+      },
+    }
   )
 
   await client.destroy()
