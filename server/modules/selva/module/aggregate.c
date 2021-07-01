@@ -212,6 +212,7 @@ static size_t AggregateCommand_PrintOrderedArrayResult(
         if (item && item->data_obj) {
             // TODO: aggregate instead
             // err = send_array_object_fields(ctx, lang, hierarchy, item->data_obj, fields);
+            len++;
         } else {
             err = SELVA_HIERARCHY_ENOENT;
         }
@@ -224,9 +225,9 @@ static size_t AggregateCommand_PrintOrderedArrayResult(
                     getSelvaErrorStr(err));
         }
 
-        len++;
     }
 
+    // TODO: return the aggregation result here
     return len;
 }
 
