@@ -37,6 +37,15 @@
 #define REPLY_WITH_ARG_TYPE_ERROR(v) \
     replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: %s", typeof_str(v))
 
+/**
+ * Modify op arg handler status.
+ */
+enum selva_op_repl_state {
+    SELVA_OP_REPL_STATE_UNCHANGED,  /*!< No changes, do not replicate, reply with OK */
+    SELVA_OP_REPL_STATE_UPDATED,    /*!< Value changed, replicate, reply with UPDATED */
+    SELVA_OP_REPL_STATE_REPLICATE,  /*!< Value might have changed, replicate, reply with OK */
+};
+
 SET_DECLARE(selva_onload, Selva_Onload);
 SET_DECLARE(selva_onunld, Selva_Onunload);
 
@@ -212,6 +221,35 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
             }
         }
     }
+}
+
+enum selva_op_repl_state handle_modify_arg_op_obj_meta(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct SelvaObject *obj, const RedisModuleString *field, const RedisModuleString *value) {
+    TO_STR(value);
+    SelvaObjectMeta_t new_user_meta;
+    SelvaObjectMeta_t old_user_meta;
+    int err;
+
+    if (value_len < sizeof(SelvaObjectMeta_t)) {
+        REPLY_WITH_ARG_TYPE_ERROR(new_user_meta);
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
+    memcpy(&new_user_meta, value_str, sizeof(SelvaObjectMeta_t));
+    err = SelvaObject_SetUserMeta(obj, field, new_user_meta, &old_user_meta);
+    if (err) {
+        replyWithSelvaErrorf(ctx, err, "Failed to set key metadata (%.*s.%s)",
+                (int)SELVA_NODE_ID_SIZE, nodeId,
+                RedisModule_StringPtrLen(field, NULL));
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
+    if (new_user_meta != old_user_meta) {
+        RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
+    } else {
+        RedisModule_ReplyWithSimpleString(ctx, "OK");
+    }
+
+    return SELVA_OP_REPL_STATE_REPLICATE;
 }
 
 /*
@@ -497,36 +535,18 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                     continue;
                 }
             } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-                SelvaObjectMeta_t new_user_meta;
-                SelvaObjectMeta_t old_user_meta;
+                enum selva_op_repl_state res;
 
-                if (value_len < sizeof(SelvaObjectMeta_t)) {
-                    REPLY_WITH_ARG_TYPE_ERROR(new_user_meta);
-                    continue;
+                res = handle_modify_arg_op_obj_meta(ctx, nodeId, obj, field, value);
+                if (res == SELVA_OP_REPL_STATE_REPLICATE) {
+                    /*
+                     * This triplet needs to be replicated.
+                     * We replicate it regardless of any changes just in case for now
+                     * and we might stop replicate it later on when we are sure that
+                     * it isn't necessary.
+                     */
+                    bitmap_set(replset, i / 3 - 1);
                 }
-
-                memcpy(&new_user_meta, value_str, sizeof(SelvaObjectMeta_t));
-                err = SelvaObject_SetUserMeta(obj, field, new_user_meta, &old_user_meta);
-                if (err) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to set key metadata (%.*s.%s)",
-                            (int)SELVA_NODE_ID_SIZE, nodeId,
-                            RedisModule_StringPtrLen(field, NULL));
-                    continue;
-                }
-
-                if (new_user_meta != old_user_meta) {
-                    RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
-                } else {
-                    RedisModule_ReplyWithSimpleString(ctx, "OK");
-                }
-
-                /*
-                 * This triplet needs to be replicated.
-                 * We replicate it regardless of any changes just in case for now
-                 * and we might stop replicate it later on when we are sure that
-                 * it isn't necessary.
-                 */
-                bitmap_set(replset, i / 3 - 1);
                 continue;
             } else {
                 replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
@@ -670,43 +690,25 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             SelvaObject_SetDouble(obj, field, v.d);
         } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-            SelvaObjectMeta_t new_user_meta;
-            SelvaObjectMeta_t old_user_meta;
+            enum selva_op_repl_state res;
 
-            if (value_len < sizeof(SelvaObjectMeta_t)) {
-                REPLY_WITH_ARG_TYPE_ERROR(new_user_meta);
-                continue;
+            res = handle_modify_arg_op_obj_meta(ctx, nodeId, obj, field, value);
+            if (res == SELVA_OP_REPL_STATE_REPLICATE) {
+                /*
+                 * This triplet needs to be replicated.
+                 * We replicate it regardless of any changes just in case for now
+                 * and we might stop replicate it later on when we are sure that
+                 * it isn't necessary.
+                 */
+                bitmap_set(replset, i / 3 - 1);
             }
-
-            memcpy(&new_user_meta, value_str, sizeof(SelvaObjectMeta_t));
-            err = SelvaObject_SetUserMeta(obj, field, new_user_meta, &old_user_meta);
-            if (err) {
-                replyWithSelvaErrorf(ctx, err, "Failed to set key metadata (%.*s.%s)",
-                                     (int)SELVA_NODE_ID_SIZE, nodeId,
-                                     RedisModule_StringPtrLen(field, NULL));
-                continue;
-            }
-
-            if (new_user_meta != old_user_meta) {
-                RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
-            } else {
-                RedisModule_ReplyWithSimpleString(ctx, "OK");
-            }
-
-            /*
-             * This triplet needs to be replicated.
-             * We replicate it regardless of any changes just in case for now
-             * and we might stop replicate it later on when we are sure that
-             * it isn't necessary.
-             */
-            bitmap_set(replset, i / 3 - 1);
             continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
             uint32_t item_type;
             memcpy(&item_type, value_str, sizeof(uint32_t));
 
             if (item_type == SELVA_OBJECT_OBJECT) {
-                // object
+                /* object */
                 struct SelvaObject *new_obj = SelvaObject_New();
                 if (!new_obj) {
                     replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",

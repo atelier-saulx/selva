@@ -9,9 +9,11 @@ export function buildResultFromIdFieldAndValue(
   remapped: Record<string, string>,
   field: string,
   res: string[],
+  defaults: Record<string, any> = {},
   lang?: string
 ): GetResult {
   const o: GetResult = {}
+  const used = new Set()
   for (let i = 0; i < res.length; i++) {
     let [idx, f, v] = res[i]
 
@@ -22,6 +24,14 @@ export function buildResultFromIdFieldAndValue(
     }
 
     setNestedResult(o, f.slice(field.length + 1), newV)
+    used.add(f)
+  }
+
+  const allDefaults = new Set(Object.keys(defaults))
+  const unusedDefaults = new Set([...allDefaults].filter((x) => !used.has(x)))
+
+  for (const f of unusedDefaults) {
+    setNestedResult(o, f.slice(field.length + 1), defaults[f])
   }
 
   return o

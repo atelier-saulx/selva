@@ -57,7 +57,7 @@ const selva_commands = [
   'selva.subscriptions.list',
   'selva.subscriptions.listmissing',
   'selva.subscriptions.refresh',
-];
+]
 
 redis.RedisClient.prototype.on_info_cmd = function (err, res) {
   if (err) {

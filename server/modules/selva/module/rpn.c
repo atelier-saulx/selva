@@ -1356,11 +1356,6 @@ static enum rpn_error compile_str_literal(struct rpn_expression *expr, int i, co
     size_t size = len + 1;
     RESULT_OPERAND(v);
 
-#ifdef RPN_ASSERTS
-    /* We don't expect to see extra long strings here. */
-    assert(size <= 120);
-#endif
-
     v = alloc_rpn_operand(size);
     v->s_size = size;
     strncpy(v->s, str, size);

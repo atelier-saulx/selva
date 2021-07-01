@@ -1,0 +1,40 @@
+From 4c66cd7b433cf42149a3bb6536d08118b0cbf723 Mon Sep 17 00:00:00 2001
+From: Olli Vanhoja <olli.vanhoja@gmail.com>
+Date: Tue, 15 Jun 2021 16:25:25 +0200
+Subject: [PATCH] run valgrind
+
+---
+ client/test/modify.ts             | 2 ++
+ server/src/server/redisManager.ts | 3 ++-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/client/test/modify.ts b/client/test/modify.ts
+index 26254560..5ef32271 100644
+--- a/client/test/modify.ts
++++ b/client/test/modify.ts
+@@ -234,6 +234,8 @@ test.before(async (t) => {
+ })
+ 
+ test.after(async (t) => {
++  console.log('lollers')
++  await wait(60e3)
+   const client = connect({ port })
+   await client.delete('root')
+   await client.destroy()
+diff --git a/server/src/server/redisManager.ts b/server/src/server/redisManager.ts
+index a901b6d7..4914d9e6 100644
+--- a/server/src/server/redisManager.ts
++++ b/server/src/server/redisManager.ts
+@@ -27,7 +27,8 @@ export default class RedisManager extends ProcessManager {
+   ) {
+     const platform = process.platform === 'linux' ? 'linux_x64' : 'darwin_x64'
+     const command = `${__dirname}/../../modules/binaries/${platform}/redis-server-selva`
+-    super(command, {
++    args.unshift('--leak-check=full', '--gen-suppressions=all', `--suppressions=/${__dirname}/../../modules/selva/valgrind.sup`, command)
++    super('valgrind', {
+       args,
+       env:
+         process.platform === 'linux'
+-- 
+2.30.2
+

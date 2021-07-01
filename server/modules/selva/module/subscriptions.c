@@ -117,7 +117,9 @@ static int inhibitMarkerEvent(const Selva_NodeId node_id, const struct Selva_Sub
  */
 char *Selva_SubscriptionId2str(char dest[static SELVA_SUBSCRIPTION_ID_STR_LEN + 1], const Selva_SubscriptionId sub_id) {
     for (size_t i = 0; i < sizeof(Selva_SubscriptionId); i++) {
-        snprintf(dest + 2 * i, SELVA_SUBSCRIPTION_ID_STR_LEN + 1, "%02x", sub_id[i]);
+        const size_t k = 2 * i;
+
+        snprintf(dest + k, SELVA_SUBSCRIPTION_ID_STR_LEN + 1 - k, "%02x", sub_id[i]);
     }
     dest[SELVA_SUBSCRIPTION_ID_STR_LEN] = '\0';
 
@@ -1378,7 +1380,7 @@ static void defer_array_field_change_events(
         char path_field_str[path_field_len + 1];
 
         if (path_field_start && *path_field_start != '\0') {
-            sprintf(path_field_str, "%.*s[n]%s", (int)ary_field_len, field_str, path_field_start);
+            snprintf(path_field_str, path_field_len + 1, "%.*s[n]%s", (int)ary_field_len, field_str, path_field_start);
             defer_field_change_events(ctx, hierarchy, node_id, sub_markers, path_field_str, path_field_len);
         }
 
