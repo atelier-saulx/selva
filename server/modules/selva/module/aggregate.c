@@ -266,10 +266,6 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     int ARGV_OFFSET_NUM      = 6;
     int ARGV_LIMIT_TXT       = 5;
     int ARGV_LIMIT_NUM       = 6;
-    int ARGV_MERGE_TXT       = 5;
-    int ARGV_MERGE_VAL       = 6;
-    int ARGV_FIELDS_TXT      = 5;
-    int ARGV_FIELDS_VAL      = 6;
     int ARGV_NODE_IDS        = 5;
     int ARGV_FILTER_EXPR     = 6;
     int ARGV_FILTER_ARGS     = 7;
@@ -278,10 +274,6 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     ARGV_OFFSET_NUM += i; \
     ARGV_LIMIT_TXT += i; \
     ARGV_LIMIT_NUM += i; \
-    ARGV_MERGE_TXT += i; \
-    ARGV_MERGE_VAL += i; \
-    ARGV_FIELDS_TXT += i; \
-    ARGV_FIELDS_VAL += i; \
     ARGV_NODE_IDS += i; \
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
@@ -354,54 +346,6 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
         } else if (err != SELVA_ENOENT) {
             return replyWithSelvaErrorf(ctx, err, "limit");
         }
-    }
-
-    /*
-     * Parse the merge flag.
-     */
-    enum merge_strategy merge_strategy = MERGE_STRATEGY_NONE;
-    RedisModuleString *merge_path = NULL;
-    if (argc > ARGV_MERGE_VAL) {
-        err = SelvaArgParser_Enum(merge_types, argv[ARGV_MERGE_TXT]);
-        if (err != SELVA_ENOENT) {
-            if (err < 0) {
-                return replyWithSelvaErrorf(ctx, err, "invalid merge argument");
-            }
-
-            if (limit != -1) {
-                return replyWithSelvaErrorf(ctx, err, "merge is not supported with limit");
-            }
-
-            merge_strategy = err;
-            merge_path = argv[ARGV_MERGE_VAL];
-            SHIFT_ARGS(2);
-        }
-    }
-
-    /*
-     * Parse fields.
-     */
-    selvaobject_autofree struct SelvaObject *fields = NULL;
-    if (argc > ARGV_FIELDS_VAL) {
-		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
-        if (err == 0) {
-            if (merge_strategy == MERGE_STRATEGY_ALL) {
-                /* Having fields set turns a regular merge into a named merge. */
-                merge_strategy = MERGE_STRATEGY_NAMED;
-            } else if (merge_strategy != MERGE_STRATEGY_NONE) {
-                return replyWithSelvaErrorf(ctx, err, "only the regular merge can be used with fields");
-            }
-            SHIFT_ARGS(2);
-        } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "fields");
-        }
-    }
-    if (merge_strategy != MERGE_STRATEGY_NONE && (!fields || fields_contains(fields, "*", 1))) {
-        if (fields) {
-            SelvaObject_Destroy(fields);
-        }
-        /* Merge needs a fields object anyway but it must be empty. */
-        fields = SelvaObject_New();
     }
 
     struct rpn_ctx *rpn_ctx = NULL;
@@ -530,10 +474,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
-            .merge_strategy = merge_strategy,
-            .merge_path = merge_path,
             .merge_nr_fields = &merge_nr_fields,
-            .fields = fields,
             .order_field = order_by_field,
             .order_result = &order_result,
         };
@@ -598,7 +539,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     // }
 
     /* nr_nodes is never negative at this point so we can safely cast it. */
-    RedisModule_ReplySetArrayLength(ctx, (merge_strategy == MERGE_STRATEGY_NONE) ? (size_t)nr_nodes : merge_nr_fields);
+    RedisModule_ReplySetArrayLength(ctx, (size_t)nr_nodes);
 
 out:
     if (rpn_ctx) {
