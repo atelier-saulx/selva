@@ -163,36 +163,19 @@ static size_t AggregateCommand_PrintOrderedResult(
             break;
         }
 
-        if (merge_strategy != MERGE_STRATEGY_NONE) {
-            // TODO: aggregate instead
-            // err = send_node_object_merge(ctx, lang, item->id, merge_strategy, merge_path, fields, nr_fields_out);
-        } else if (fields) {
-            // TODO: do we actually need this if? we should always have aggregation enabled
-            struct SelvaModify_HierarchyNode *node;
-
-            /* TODO Consider if having hierarchy node pointers here would be better. */
-            node = SelvaHierarchy_FindNode(hierarchy, item->id);
-            if (node) {
-                // TODO: aggregate instead
-                // err = send_node_fields(ctx, lang, hierarchy, node, fields);
-            } else {
-                err = SELVA_HIERARCHY_ENOENT;
-            }
-        } else {
-            RedisModule_ReplyWithStringBuffer(ctx, item->id, Selva_NodeIdLen(item->id));
-            err = 0;
-        }
+        // TODO: apply aggregate to the vector entry
         if (err) {
-            RedisModule_ReplyWithNull(ctx);
             fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, item->id,
                     getSelvaErrorStr(err));
+            continue;
         }
 
         len++;
     }
 
+    // TODO: return the aggregation result here
     return len;
 }
 
