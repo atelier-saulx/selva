@@ -332,6 +332,10 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     if (argc > ARGV_FIELDS_VAL) {
 		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
+            if (SelvaObject_Len(fields, NULL) > 1) {
+                return replyWithSelvaErrorf(ctx, err, "fields");
+            }
+
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
             return replyWithSelvaErrorf(ctx, err, "fields");
