@@ -19,10 +19,18 @@
 #include "svector.h"
 #include "traversal.h"
 
+enum SelvaHierarchy_AggregateType {
+    SELVA_AGGREGATE_TYPE_COUNT_NODE,
+    SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD,
+    SELVA_AGGREGATE_TYPE_SUM_FIELD,
+    SELVA_AGGREGATE_TYPE_AVG_FIELD,
+};
+
 struct AggregateCommand_Args {
     struct FindCommand_Args find_args;
 
     // aggregation state
+    enum SelvaHierarchy_AggregateType aggregate_type;
     long long int aggregation_result_int;
     double aggregation_result_double;
     size_t item_count;
@@ -521,6 +529,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             .order_result = &order_result,
         };
         struct AggregateCommand_Args args = {
+            .aggregate_type = SELVA_AGGREGATE_TYPE_COUNT_NODE, // TODO
             .aggregation_result_int = 0,
             .aggregation_result_double = 0,
             .item_count = 0,
