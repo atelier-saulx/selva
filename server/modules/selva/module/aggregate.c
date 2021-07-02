@@ -239,6 +239,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     int ARGV_OFFSET_NUM      = 6;
     int ARGV_LIMIT_TXT       = 5;
     int ARGV_LIMIT_NUM       = 6;
+    int ARGV_FIELDS_TXT      = 5;
+    int ARGV_FIELDS_VAL      = 6;
     int ARGV_NODE_IDS        = 5;
     int ARGV_FILTER_EXPR     = 6;
     int ARGV_FILTER_ARGS     = 7;
@@ -247,6 +249,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     ARGV_OFFSET_NUM += i; \
     ARGV_LIMIT_TXT += i; \
     ARGV_LIMIT_NUM += i; \
+    ARGV_FIELDS_TXT += i; \
+    ARGV_FIELDS_VAL += i; \
     ARGV_NODE_IDS += i; \
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
@@ -318,6 +322,19 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
             return replyWithSelvaErrorf(ctx, err, "limit");
+        }
+    }
+
+    /*
+     * Parse fields.
+     */
+    selvaobject_autofree struct SelvaObject *fields = NULL;
+    if (argc > ARGV_FIELDS_VAL) {
+		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+        if (err == 0) {
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_ENOENT) {
+            return replyWithSelvaErrorf(ctx, err, "fields");
         }
     }
 
