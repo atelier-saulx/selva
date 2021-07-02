@@ -30,25 +30,74 @@ struct AggregateCommand_Args {
 
 static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
-    RedisModuleKey *key = NULL;
-    struct SelvaObject *obj;
-    struct AggregateCommand_Args *restrict args = (struct AggregateCommand_Args *)arg;
-    int err;
+    struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
+    struct rpn_ctx *rpn_ctx = args->rpn_ctx;
+    int take = (args->offset > 0) ? !args->offset-- : 1;
 
     SelvaModify_HierarchyGetNodeId(nodeId, node);
-    err = open_node_key(args->find_args.ctx, nodeId, &key, &obj);
-    if (err) {
-        fprintf(stderr, "%s:%d: Failed to open a node object. nodeId: %.*s error: %s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, nodeId,
-                getSelvaErrorStr(err));
-        /* Ignore errors. */
-        return 0;
+
+    if (take && rpn_ctx) {
+        int err;
+
+        /* Set node_id to the register */
+        rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, 0);
+
+        /*
+         * Resolve the expression and get the result.
+         */
+        err = rpn_bool(args->ctx, rpn_ctx, args->filter, &take);
+        if (err) {
+            fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, nodeId,
+                    rpn_str_error[err]);
+            return 1;
+        }
     }
 
-    // TODO
+    if (take) {
+        const int sort = !!args->order_field;
 
-    RedisModule_CloseKey(key);
+        if (!sort) {
+            ssize_t *nr_nodes = args->nr_nodes;
+            ssize_t * restrict limit = args->limit;
+            int err;
+
+            // TODO
+
+            if (err) {
+                RedisModule_ReplyWithNull(args->ctx);
+                fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                        __FILE__, __LINE__,
+                        (int)SELVA_NODE_ID_SIZE, nodeId,
+                        getSelvaErrorStr(err));
+            }
+
+            *nr_nodes = *nr_nodes + 1;
+
+            *limit = *limit - 1;
+            if (*limit == 0) {
+                return 1;
+            }
+        } else {
+            struct FindCommand_OrderedItem *item;
+
+            item = createFindCommand_OrderItem(args->ctx, args->lang, node, args->order_field);
+            if (item) {
+                SVector_InsertFast(args->order_result, item);
+            } else {
+                /*
+                 * It's not so easy to make the response fail at this point.
+                 * Given that we shouldn't generally even end up here in real
+                 * life, it's fairly ok to just log the error and return what
+                 * we can.
+                 */
+                fprintf(stderr, "%s:%d: Out of memory while creating an ordered result item\n",
+                        __FILE__, __LINE__);
+            }
+        }
+    }
+
     return 0;
 }
 
