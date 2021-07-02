@@ -74,7 +74,6 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
             // TODO
 
             if (err) {
-                RedisModule_ReplyWithNull(args->find_args.ctx);
                 fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                         __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, nodeId,
