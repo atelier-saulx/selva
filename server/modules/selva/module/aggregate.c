@@ -20,10 +20,10 @@
 #include "traversal.h"
 
 enum SelvaHierarchy_AggregateType {
-    SELVA_AGGREGATE_TYPE_COUNT_NODE,
-    SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD,
-    SELVA_AGGREGATE_TYPE_SUM_FIELD,
-    SELVA_AGGREGATE_TYPE_AVG_FIELD,
+    SELVA_AGGREGATE_TYPE_COUNT_NODE = '0',
+    SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD = '1',
+    SELVA_AGGREGATE_TYPE_SUM_FIELD = '2',
+    SELVA_AGGREGATE_TYPE_AVG_FIELD = '3',
 };
 
 struct AggregateCommand_Args {
@@ -287,7 +287,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
 
     const int ARGV_LANG      = 1;
     const int ARGV_REDIS_KEY = 2;
-    const int ARGV_ALGO      = 3;
+    const int ARGV_AGG_FN    = 3;
     const int ARGV_DIRECTION = 4;
     const int ARGV_ORDER_TXT = 5;
     const int ARGV_ORDER_FLD = 6;
@@ -334,6 +334,9 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     // if (err) {
     //     return replyWithSelvaErrorf(ctx, err, "traversal method");
     // }
+    RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
+    TO_STR(agg_fn_rms);
+    const char agg_fn_val = agg_fn_rms_str[0];
 
     /*
      * Parse the order arg.
@@ -529,7 +532,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             .order_result = &order_result,
         };
         struct AggregateCommand_Args args = {
-            .aggregate_type = SELVA_AGGREGATE_TYPE_COUNT_NODE, // TODO
+            .aggregate_type = agg_fn_val, // TODO
             .aggregation_result_int = 0,
             .aggregation_result_double = 0,
             .item_count = 0,
