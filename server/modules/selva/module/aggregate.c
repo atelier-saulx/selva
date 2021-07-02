@@ -322,7 +322,6 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
      * Select traversal method.
      */
     enum SelvaTraversalAlgo algo = HIERARCHY_BFS;
-	// TODO?
     // err = parse_algo(&algo, argv[ARGV_ALGO]);
     // if (err) {
     //     return replyWithSelvaErrorf(ctx, err, "traversal method");
