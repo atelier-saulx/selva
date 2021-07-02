@@ -111,9 +111,9 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
 
 static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
     // TODO
-    struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
-    struct rpn_ctx *rpn_ctx = args->rpn_ctx;
-    int take = (args->offset > 0) ? !args->offset-- : 1;
+    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
+    struct rpn_ctx *rpn_ctx = args->find_args.rpn_ctx;
+    int take = (args->find_args.offset > 0) ? !args->find_args.offset-- : 1;
 
     if (take && rpn_ctx) {
         int err;
@@ -130,7 +130,7 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
         /*
          * Resolve the expression and get the result.
          */
-        err = rpn_bool(args->ctx, rpn_ctx, args->filter, &take);
+        err = rpn_bool(args->find_args.ctx, rpn_ctx, args->find_args.filter, &take);
         if (err) {
             fprintf(stderr, "%s:%d: Expression failed: \"%s\"\n",
                     __FILE__, __LINE__,
@@ -140,11 +140,11 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
     }
 
     if (take) {
-        const int sort = !!args->order_field;
+        const int sort = !!args->find_args.order_field;
 
         if (!sort) {
-            ssize_t *nr_nodes = args->nr_nodes;
-            ssize_t * restrict limit = args->limit;
+            ssize_t *nr_nodes = args->find_args.nr_nodes;
+            ssize_t * restrict limit = args->find_args.limit;
             int err;
 
             // TODO
@@ -157,9 +157,9 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
             }
         } else {
             struct FindCommand_OrderedItem *item;
-            item = createFindCommand_ObjectBasedOrderItem(args->ctx, args->lang, obj, args->order_field);
+            item = createFindCommand_ObjectBasedOrderItem(args->find_args.ctx, args->find_args.lang, obj, args->find_args.order_field);
             if (item) {
-                SVector_InsertFast(args->order_result, item);
+                SVector_InsertFast(args->find_args.order_result, item);
             } else {
                 /*
                  * It's not so easy to make the response fail at this point.
