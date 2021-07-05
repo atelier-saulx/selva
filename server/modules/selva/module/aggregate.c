@@ -37,67 +37,63 @@ struct AggregateCommand_Args {
 };
 
 // TODO: can these be shared with objects? i.e. removed?
-static int agg_fn_count(struct SelvaModify_HierarchyNode *node, void *arg) {
+static int agg_fn_count(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
     // TODO
 }
 
-static int agg_fn_count_uniq(struct SelvaModify_HierarchyNode *node, void *arg) {
+static int agg_fn_count_uniq(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
     // TODO
 }
 
-static int agg_fn_sum(struct SelvaModify_HierarchyNode *node, void *arg) {
+static int agg_fn_sum(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
     // TODO
 }
 
-static int agg_fn_avg(struct SelvaModify_HierarchyNode *node, void *arg) {
+static int agg_fn_avg(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
     // TODO
 }
 
-static int apply_agg_fn(struct SelvaModify_HierarchyNode *node, void *arg) {
-    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
-
+static int apply_agg_fn(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
     int err = 0;
     if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
-        err = agg_fn_count(node, arg);
+        err = agg_fn_count(node, args);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
-        err = agg_fn_count_uniq(node, arg);
+        err = agg_fn_count_uniq(node, args);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
-        err = agg_fn_sum(node, arg);
+        err = agg_fn_sum(node, args);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
-        err = agg_fn_avg(node, arg);
+        err = agg_fn_avg(node, args);
     }
 
     return err;
 }
 
-static int agg_fn_count_obj(struct SelvaObject *obj, void *arg) {
+static int agg_fn_count_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     // TODO
 }
 
-static int agg_fn_count_uniq_obj(struct SelvaObject *obj, void *arg) {
+static int agg_fn_count_uniq_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     // TODO
 }
 
-static int agg_fn_sum_obj(struct SelvaObject *obj, void *arg) {
+static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     // TODO
 }
 
-static int agg_fn_avg_obj(struct SelvaObject *obj, void *arg) {
+static int agg_fn_avg_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     // TODO
 }
 
-static int apply_agg_fn_obj(struct SelvaObject *obj, void *arg) {
-    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
-
+static int apply_agg_fn_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     int err = 0;
     if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
-        err = agg_fn_count_obj(obj, arg);
+        err = agg_fn_count_obj(obj, args);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
-        err = agg_fn_count_uniq_obj(obj, arg);
+        err = agg_fn_count_uniq_obj(obj, args);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
-        err = agg_fn_sum_obj(obj, arg);
+        err = agg_fn_sum_obj(obj, args);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
-        err = agg_fn_avg_obj(obj, arg);
+        err = agg_fn_avg_obj(obj, args);
     }
 
     return err;
@@ -139,7 +135,7 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
             ssize_t * restrict limit = args->find_args.limit;
             int err;
 
-            err = apply_agg_fn(node, arg);
+            err = apply_agg_fn(node, args);
 
             if (err) {
                 fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
@@ -281,7 +277,7 @@ static size_t AggregateCommand_AggregateOrderedResult(
 
         /* TODO Consider if having hierarchy node pointers here would be better. */
         node = SelvaHierarchy_FindNode(hierarchy, item->id);
-        err = apply_agg_fn(node, arg);
+        err = apply_agg_fn(node, args);
         if (err) {
             fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                     __FILE__, __LINE__,
