@@ -351,6 +351,11 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
     return len;
 }
 
+static size_t AggregateCommand_PrintAggregateResult(RedisModuleCtx *ctx, void *arg) {
+    // TODO
+    return 0;
+}
+
 /**
  * Find node in set.
  * SELVA.inherit REDIS_KEY NODE_ID [TYPE1[TYPE2[...]]] [FIELD_NAME1[ FIELD_NAME2[ ...]]]
@@ -652,6 +657,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             fprintf(stderr, "%s:%d: Find failed for node: \"%.*s\"\n",
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, nodeId);
+        } else {
+            AggregateCommand_PrintAggregateResult(ctx, &args);
         }
     }
 
@@ -670,10 +677,12 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
         nr_nodes = array_traversal_ref_field
             ? AggregateCommand_AggregateOrderedArrayResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result)
             : AggregateCommand_AggregateOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result, &merge_nr_fields);
+
+        AggregateCommand_PrintAggregateResult(ctx, &args);
     }
 
     /* nr_nodes is never negative at this point so we can safely cast it. */
-    RedisModule_ReplySetArrayLength(ctx, (size_t)nr_nodes);
+    // RedisModule_ReplySetArrayLength(ctx, (size_t)nr_nodes);
 
 out:
     if (rpn_ctx) {
