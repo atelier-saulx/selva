@@ -611,7 +611,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             .order_result = &order_result,
         };
         struct AggregateCommand_Args args = {
-            .aggregate_type = agg_fn_val, // TODO
+            .aggregate_type = agg_fn_val,
             .aggregation_result_int = 0,
             .aggregation_result_double = 0,
             .item_count = 0,
