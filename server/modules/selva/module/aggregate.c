@@ -568,6 +568,17 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     /*
      * Run for each NODE_ID.
      */
+
+
+    struct AggregateCommand_Args args = {
+        .aggregate_type = agg_fn_val,
+        .aggregation_result_int = 0,
+        .aggregation_result_double = 0,
+        .item_count = 0,
+        /* .find_args = find_args */
+    };
+
+
     ssize_t nr_nodes = 0;
     size_t merge_nr_fields = 0;
     const char *array_traversal_ref_field = NULL;
@@ -614,13 +625,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             .order_field = order_by_field,
             .order_result = &order_result,
         };
-        struct AggregateCommand_Args args = {
-            .aggregate_type = agg_fn_val,
-            .aggregation_result_int = 0,
-            .aggregation_result_double = 0,
-            .item_count = 0,
-            .find_args = find_args
-        };
+        args.find_args = find_args;
 
         const struct SelvaModify_HierarchyCallback cb = {
             .node_cb = AggregateCommand_NodeCb,
@@ -661,9 +666,6 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             fprintf(stderr, "%s:%d: Find failed for node: \"%.*s\"\n",
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, nodeId);
-        } else {
-            // TODO: hmm is this correct? I'm not so sure...
-            AggregateCommand_PrintAggregateResult(ctx, &args);
         }
     }
 
@@ -683,6 +685,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             ? AggregateCommand_AggregateOrderedArrayResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result)
             : AggregateCommand_AggregateOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result, &merge_nr_fields);
 
+        AggregateCommand_PrintAggregateResult(ctx, &args);
+    } else {
         AggregateCommand_PrintAggregateResult(ctx, &args);
     }
 
