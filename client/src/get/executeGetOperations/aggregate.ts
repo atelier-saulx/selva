@@ -1,5 +1,5 @@
 import { SelvaClient } from '../../'
-import { GetOperationFind, GetResult, GetOptions } from '../types'
+import { GetOperationAggregate, GetResult, GetOptions } from '../types'
 import { typeCast } from './'
 import {
   ast2rpn,
@@ -17,6 +17,13 @@ import {
 import { padId, joinIds } from '../utils'
 import { setNestedResult } from '../utils'
 import { makeLangArg } from './util'
+
+const FN_TO_ENUM = {
+  count: '0',
+  countUnique: '1',
+  sum: '2',
+  avg: '3',
+}
 
 function findTimebased(ast: Fork): FilterAST[] {
   if (!ast) {
@@ -190,7 +197,7 @@ async function checkForNextRefresh(
 
 const executeAggregateOperation = async (
   client: SelvaClient,
-  op: GetOperationFind,
+  op: GetOperationAggregate,
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> => {
@@ -255,29 +262,31 @@ const executeAggregateOperation = async (
       }
     }
 
-    if (op.nested) {
-      let added = false
-      for (let i = 0; i < op.id.length; i += 10) {
-        let endLen = 10
-        while (op.id[i + endLen - 1] === '\0') {
-          endLen--
-        }
-        const id = op.id.slice(i, endLen)
-        const r = await addMarker(client, ctx, {
-          ...sourceFieldToMarkerType(sourceField),
-          id: id,
-          fields: op.props.$all === true ? [] : Object.keys(realOpts),
-          rpn: args,
-        })
+    // TODO: should actually allow nested I think for finds? so other way around as it's currently set up
+    // if (op.nested) {
+    //   let added = false
+    //   for (let i = 0; i < op.id.length; i += 10) {
+    //     let endLen = 10
+    //     while (op.id[i + endLen - 1] === '\0') {
+    //       endLen--
+    //     }
+    //     const id = op.id.slice(i, endLen)
+    //     const r = await addMarker(client, ctx, {
+    //       ...sourceFieldToMarkerType(sourceField),
+    //       id: id,
+    //       fields: op.props.$all === true ? [] : Object.keys(realOpts),
+    //       rpn: args,
+    //     })
 
-        added = added || r
+    //     added = added || r
 
-        await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
-      }
+    //     await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
+    //   }
 
-      if (added) {
-        ctx.hasFindMarkers = true
-      }
+    //   if (added) {
+    //     ctx.hasFindMarkers = true
+    //   }
+    if (false) {
     } else {
       const added = await addMarker(client, ctx, {
         ...sourceFieldToMarkerType(sourceField),
@@ -291,12 +300,11 @@ const executeAggregateOperation = async (
       }
     }
 
-    // TODO ??
-    const ids = await client.redis.selva_hierarchy_find(
+    const agg = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
-      '0', // or 1|2|3 (check aggregate functions in C)
+      FN_TO_ENUM[op.function.name] || '0',
       sourceField,
       'order',
       op.options.sort?.$field || '',
@@ -306,8 +314,7 @@ const executeAggregateOperation = async (
       'limit',
       op.options.limit,
       'fields',
-      // TODO: fill in field name and funtion
-      [].join('\n'),
+      (op.function.args || []).join('|'),
       padId(op.id),
       ...args
     )
@@ -321,7 +328,7 @@ const executeAggregateOperation = async (
       lang
     )
 
-    return ids
+    return agg
   }
 }
 
