@@ -136,6 +136,7 @@ async function checkForNextRefresh(
       }
 
       const args = ast2rpn(client.schemas[ctx.db].types, newFork, lang)
+      // TODO
       const ids = await client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         makeLangArg(client.schemas[ctx.db].languages, lang),
@@ -220,6 +221,7 @@ const executeAggregateOperation = async (
   // TODO: change this if ctx.subId (for markers)
   if (op.inKeys) {
     // can make this a bit better....
+    // TODO? need this?
     const ids = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       lang,
@@ -289,6 +291,7 @@ const executeAggregateOperation = async (
       }
     }
 
+    // TODO
     const ids = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),

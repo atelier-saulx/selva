@@ -590,14 +590,17 @@ const executeFindOperation = async (
     while (nestedOperation) {
       ids = await findIds(
         client,
-        Object.assign({}, nestedOperation, {
+        // TODO: needs fixing
+        Object.assign({}, <GetOperationFind>nestedOperation, {
           id: joinIds(ids),
         }),
         lang,
         ctx
       )
       prevIds = ids
-      nestedOperation = nestedOperation.nested
+
+      // TODO: needs fixing
+      nestedOperation = (<GetOperationFind>nestedOperation).nested
     }
 
     const realOpts: any = {}
