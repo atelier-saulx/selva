@@ -291,12 +291,12 @@ const executeAggregateOperation = async (
       }
     }
 
-    // TODO
+    // TODO ??
     const ids = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
-      'bfs',
+      '0', // or 1|2|3 (check aggregate functions in C)
       sourceField,
       'order',
       op.options.sort?.$field || '',
@@ -305,6 +305,9 @@ const executeAggregateOperation = async (
       op.options.offset,
       'limit',
       op.options.limit,
+      'fields',
+      // TODO: fill in field name and funtion
+      [].join('\n'),
       padId(op.id),
       ...args
     )
