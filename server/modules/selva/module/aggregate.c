@@ -349,13 +349,13 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
 
 static size_t AggregateCommand_PrintAggregateResult(RedisModuleCtx *ctx, struct AggregateCommand_Args *args) {
     if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
-        // TODO: reply with integer, take value from args
+        RedisModule_ReplyWithLongLong(ctx, args->aggregation_result_int);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
-        // TODO: reply with integer, take value from args
+        RedisModule_ReplyWithLongLong(ctx, args->aggregation_result_int);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
-        // TODO: reply with double, take value from args
+        RedisModule_ReplyWithDouble(ctx, args->aggregation_result_double);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
-        // TODO: reply with double, take value from args and divide it by integer value where we'll store count (uses both sneakily)
+        RedisModule_ReplyWithDouble(ctx, args->aggregation_result_double / args->aggregation_result_int);
     }
     return 0;
 }
