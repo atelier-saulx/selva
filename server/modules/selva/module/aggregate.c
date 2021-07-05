@@ -197,7 +197,6 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
 }
 
 static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
-    // TODO
     struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->find_args.rpn_ctx;
     int take = (args->find_args.offset > 0) ? !args->find_args.offset-- : 1;
@@ -234,7 +233,7 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
             ssize_t * restrict limit = args->find_args.limit;
             int err;
 
-            // TODO
+            err = apply_agg_fn_obj(obj, args);
 
             *nr_nodes = *nr_nodes + 1;
 
@@ -350,8 +349,7 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
         }
 
         if (item && item->data_obj) {
-            // TODO: aggregate instead
-            // err = apply_agg_fn(node, arg);
+            err = apply_agg_fn_obj(item->data_obj, arg);
             // err = send_array_object_fields(ctx, lang, hierarchy, item->data_obj, fields);
             len++;
         } else {
