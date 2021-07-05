@@ -37,7 +37,8 @@ struct AggregateCommand_Args {
 };
 
 static int agg_fn_count_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
-    // TODO
+    args->item_count++;
+    return 0;
 }
 
 static int agg_fn_count_uniq_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
@@ -45,11 +46,35 @@ static int agg_fn_count_uniq_obj(struct SelvaObject *obj, struct AggregateComman
 }
 
 static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
-    // TODO
+    struct SelvaObject *fields_obj = args->find_args.fields;
+    SVector *fields;
+    SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
+
+    struct SVectorIterator *it;
+    SVector_ForeachBegin(it, fields);
+
+    RedisModuleString *field;
+    while ((field = SVector_Foreach(it))) {
+        enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
+        if (field_type == SELVA_OBJECT_LONGLONG) {
+            long long lv = 0;
+            SelvaObject_GetLongLong(obj, field, &lv);
+            args->aggregation_result_double += lv;
+
+            args->item_count++;
+        } else if (field_type == SELVA_OBJECT_DOUBLE) {
+            double dv = 0;
+            SelvaObject_GetDouble(obj, field, &dv);
+            args->aggregation_result_double += dv;
+
+            args->item_count++;
+        }
+    }
 }
 
 static int agg_fn_avg_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
-    // TODO
+    struct SelvaObject *fields = args->find_args.fields;
+    agg_fn_sum_obj(obj, args);
 }
 
 static int apply_agg_fn_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
@@ -676,7 +701,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             .item_count = 0,
             .find_args = {
                 // we always need context
-                .ctx = ctx
+                .ctx = ctx,
+                .fields = fields
             }
         };
 
