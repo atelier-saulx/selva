@@ -36,6 +36,7 @@ struct AggregateCommand_Args {
     size_t item_count;
 };
 
+// TODO: can these be shared with objects? i.e. removed?
 static int agg_fn_count(struct SelvaModify_HierarchyNode *node, void *arg) {
     // TODO
 }
@@ -51,6 +52,57 @@ static int agg_fn_sum(struct SelvaModify_HierarchyNode *node, void *arg) {
 static int agg_fn_avg(struct SelvaModify_HierarchyNode *node, void *arg) {
     // TODO
 }
+
+static int apply_agg_fn(struct SelvaModify_HierarchyNode *node, void *arg) {
+    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
+
+    int err = 0;
+    if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
+        err = agg_fn_count(node, arg);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
+        err = agg_fn_count_uniq(node, arg);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
+        err = agg_fn_sum(node, arg);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
+        err = agg_fn_avg(node, arg);
+    }
+
+    return err;
+}
+
+static int agg_fn_count_obj(struct SelvaObject *obj, void *arg) {
+    // TODO
+}
+
+static int agg_fn_count_uniq_obj(struct SelvaObject *obj, void *arg) {
+    // TODO
+}
+
+static int agg_fn_sum_obj(struct SelvaObject *obj, void *arg) {
+    // TODO
+}
+
+static int agg_fn_avg_obj(struct SelvaObject *obj, void *arg) {
+    // TODO
+}
+
+static int apply_agg_fn_obj(struct SelvaObject *obj, void *arg) {
+    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
+
+    int err = 0;
+    if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
+        err = agg_fn_count_obj(obj, arg);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
+        err = agg_fn_count_uniq_obj(obj, arg);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
+        err = agg_fn_sum_obj(obj, arg);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
+        err = agg_fn_avg_obj(obj, arg);
+    }
+
+    return err;
+}
+
 
 static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
@@ -87,15 +139,7 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
             ssize_t * restrict limit = args->find_args.limit;
             int err;
 
-            if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
-                err = agg_fn_count(node, arg);
-            } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
-                err = agg_fn_count_uniq(node, arg);
-            } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
-                err = agg_fn_sum(node, arg);
-            } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
-                err = agg_fn_avg(node, arg);
-            }
+            err = apply_agg_fn(node, arg);
 
             if (err) {
                 fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
@@ -202,11 +246,10 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
 static size_t AggregateCommand_PrintOrderedResult(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
+        void *arg,
         SelvaModify_Hierarchy *hierarchy,
         ssize_t offset,
         ssize_t limit,
-        enum merge_strategy merge_strategy,
-        RedisModuleString *merge_path,
         struct SelvaObject *fields,
         SVector *order_result,
         size_t *nr_fields_out) {
@@ -214,7 +257,8 @@ static size_t AggregateCommand_PrintOrderedResult(
     struct SVectorIterator it;
     size_t len = 0;
 
-    // TODO: pass the aggregate command args here so we can call the same cb to aggregate???
+    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
+
     /*
      * First handle the offsetting.
      */
@@ -233,7 +277,11 @@ static size_t AggregateCommand_PrintOrderedResult(
             break;
         }
 
-        // TODO: apply aggregate to the vector entry
+        struct SelvaModify_HierarchyNode *node;
+
+        /* TODO Consider if having hierarchy node pointers here would be better. */
+        node = SelvaHierarchy_FindNode(hierarchy, item->id);
+        err = apply_agg_fn(node, arg);
         if (err) {
             fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                     __FILE__, __LINE__,
@@ -245,13 +293,13 @@ static size_t AggregateCommand_PrintOrderedResult(
         len++;
     }
 
-    // TODO: return the aggregation result here
     return len;
 }
 
 static size_t AggregateCommand_PrintOrderedArrayResult(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
+        void *arg,
         SelvaModify_Hierarchy *hierarchy,
         ssize_t offset,
         ssize_t limit,
@@ -260,7 +308,8 @@ static size_t AggregateCommand_PrintOrderedArrayResult(
     struct FindCommand_OrderedItem *item;
     struct SVectorIterator it;
     size_t len = 0;
-    // TODO: all the same stuff as above ^
+
+    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
 
     /*
      * First handle the offsetting.
@@ -282,6 +331,7 @@ static size_t AggregateCommand_PrintOrderedArrayResult(
 
         if (item && item->data_obj) {
             // TODO: aggregate instead
+            // err = apply_agg_fn(node, arg);
             // err = send_array_object_fields(ctx, lang, hierarchy, item->data_obj, fields);
             len++;
         } else {
@@ -610,12 +660,18 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
      * If an ordered request was requested then nothing was send to the client yet
      * and we need to do it now.
      */
-    // TODO
-    // if (order != HIERARCHY_RESULT_ORDER_NONE) {
-    //     nr_nodes = array_traversal_ref_field
-    //         ? FindCommand_PrintOrderedArrayResult(ctx, lang, hierarchy, offset, limit, fields, &order_result)
-    //         : FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields);
-    // }
+    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        struct AggregateCommand_Args args = {
+            .aggregate_type = agg_fn_val, // TODO
+            .aggregation_result_int = 0,
+            .aggregation_result_double = 0,
+            .item_count = 0,
+        };
+
+        nr_nodes = array_traversal_ref_field
+            ? AggregateCommand_PrintOrderedArrayResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result)
+            : AggregateCommand_PrintOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result, &merge_nr_fields);
+    }
 
     /* nr_nodes is never negative at this point so we can safely cast it. */
     RedisModule_ReplySetArrayLength(ctx, (size_t)nr_nodes);
