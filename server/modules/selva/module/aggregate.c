@@ -62,14 +62,18 @@ static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
             args->aggregation_result_double += lv;
 
             args->item_count++;
+            break;
         } else if (field_type == SELVA_OBJECT_DOUBLE) {
             double dv = 0;
             SelvaObject_GetDouble(obj, field, &dv);
             args->aggregation_result_double += dv;
 
             args->item_count++;
+            break;
         }
     }
+
+    return 0;
 }
 
 static int agg_fn_avg_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
