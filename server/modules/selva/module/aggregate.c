@@ -36,6 +36,22 @@ struct AggregateCommand_Args {
     size_t item_count;
 };
 
+static int agg_fn_count(struct SelvaModify_HierarchyNode *node, void *arg) {
+    // TODO
+}
+
+static int agg_fn_count_uniq(struct SelvaModify_HierarchyNode *node, void *arg) {
+    // TODO
+}
+
+static int agg_fn_sum(struct SelvaModify_HierarchyNode *node, void *arg) {
+    // TODO
+}
+
+static int agg_fn_avg(struct SelvaModify_HierarchyNode *node, void *arg) {
+    // TODO
+}
+
 static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
     struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
@@ -71,7 +87,15 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
             ssize_t * restrict limit = args->find_args.limit;
             int err;
 
-            // TODO
+            if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
+                err = agg_fn_count(node, arg);
+            } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
+                err = agg_fn_count_uniq(node, arg);
+            } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
+                err = agg_fn_sum(node, arg);
+            } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
+                err = agg_fn_avg(node, arg);
+            }
 
             if (err) {
                 fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
@@ -190,6 +214,7 @@ static size_t AggregateCommand_PrintOrderedResult(
     struct SVectorIterator it;
     size_t len = 0;
 
+    // TODO: pass the aggregate command args here so we can call the same cb to aggregate???
     /*
      * First handle the offsetting.
      */
@@ -235,6 +260,7 @@ static size_t AggregateCommand_PrintOrderedArrayResult(
     struct FindCommand_OrderedItem *item;
     struct SVectorIterator it;
     size_t len = 0;
+    // TODO: all the same stuff as above ^
 
     /*
      * First handle the offsetting.
