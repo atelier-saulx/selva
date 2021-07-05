@@ -36,38 +36,6 @@ struct AggregateCommand_Args {
     size_t item_count;
 };
 
-// TODO: can these be shared with objects? i.e. removed?
-static int agg_fn_count(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
-    // TODO
-}
-
-static int agg_fn_count_uniq(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
-    // TODO
-}
-
-static int agg_fn_sum(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
-    // TODO
-}
-
-static int agg_fn_avg(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
-    // TODO
-}
-
-static int apply_agg_fn(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
-    int err = 0;
-    if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
-        err = agg_fn_count(node, args);
-    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
-        err = agg_fn_count_uniq(node, args);
-    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
-        err = agg_fn_sum(node, args);
-    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
-        err = agg_fn_avg(node, args);
-    }
-
-    return err;
-}
-
 static int agg_fn_count_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     // TODO
 }
@@ -98,6 +66,33 @@ static int apply_agg_fn_obj(struct SelvaObject *obj, struct AggregateCommand_Arg
 
     return err;
 }
+
+static int apply_agg_fn(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
+    Selva_NodeId nodeId;
+    RedisModuleString *id;
+    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    id = RedisModule_CreateString(args->find_args.ctx, nodeId, Selva_NodeIdLen(nodeId));
+
+    RedisModuleKey *key;
+    key = RedisModule_OpenKey(args->find_args.ctx, id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
+
+    struct SelvaObject *node_obj;
+
+    int err = 0;
+    err = SelvaObject_Key2Obj(key, &node_obj);
+
+    if (err) {
+        goto cleanup;
+    }
+
+    err = apply_agg_fn_obj(node_obj, args);
+
+cleanup:
+    RedisModule_CloseKey(key);
+
+    return err;
+}
+
 
 
 static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
@@ -679,6 +674,10 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             .aggregation_result_int = 0,
             .aggregation_result_double = 0,
             .item_count = 0,
+            .find_args = {
+                // we always need context
+                .ctx = ctx
+            }
         };
 
         nr_nodes = array_traversal_ref_field
