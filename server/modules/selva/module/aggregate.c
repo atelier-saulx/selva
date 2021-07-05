@@ -243,7 +243,7 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
     return 0;
 }
 
-static size_t AggregateCommand_PrintOrderedResult(
+static size_t AggregateCommand_AggregateOrderedResult(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         void *arg,
@@ -296,7 +296,7 @@ static size_t AggregateCommand_PrintOrderedResult(
     return len;
 }
 
-static size_t AggregateCommand_PrintOrderedArrayResult(
+static size_t AggregateCommand_AggregateOrderedArrayResult(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         void *arg,
@@ -348,7 +348,6 @@ static size_t AggregateCommand_PrintOrderedArrayResult(
 
     }
 
-    // TODO: return the aggregation result here
     return len;
 }
 
@@ -669,8 +668,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
         };
 
         nr_nodes = array_traversal_ref_field
-            ? AggregateCommand_PrintOrderedArrayResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result)
-            : AggregateCommand_PrintOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result, &merge_nr_fields);
+            ? AggregateCommand_AggregateOrderedArrayResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result)
+            : AggregateCommand_AggregateOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result, &merge_nr_fields);
     }
 
     /* nr_nodes is never negative at this point so we can safely cast it. */
