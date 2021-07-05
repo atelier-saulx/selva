@@ -355,7 +355,7 @@ static size_t AggregateCommand_PrintAggregateResult(RedisModuleCtx *ctx, struct 
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
         RedisModule_ReplyWithDouble(ctx, args->aggregation_result_double);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
-        RedisModule_ReplyWithDouble(ctx, args->aggregation_result_double / args->aggregation_result_int);
+        RedisModule_ReplyWithDouble(ctx, args->aggregation_result_double / args->item_count);
     }
     return 0;
 }
@@ -662,6 +662,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, nodeId);
         } else {
+            // TODO: hmm is this correct? I'm not so sure...
             AggregateCommand_PrintAggregateResult(ctx, &args);
         }
     }
