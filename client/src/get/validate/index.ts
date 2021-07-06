@@ -148,7 +148,13 @@ async function validateNested(
       } else if (field === '$find') {
         await validateFind(extraQueries, props, client, props.$find, path)
       } else if (field === '$aggregate') {
-        await validateAggregate(extraQueries, props, client, props.$find, path)
+        await validateAggregate(
+          extraQueries,
+          props,
+          client,
+          props.$aggregate,
+          path
+        )
       } else if (field === '$default') {
         continue
       } else if (field === '$flatten') {

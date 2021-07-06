@@ -105,18 +105,18 @@ async function evaluateTextSearch(
 
 export default async function validateAggregate(
   extraQueries: ExtraQueries,
-  parentProp: GetOptions,
+  _parentProp: GetOptions,
   client: SelvaClient,
   find: Aggregate,
   path: string
 ): Promise<void> {
   const err = (mainMsg?: string): never => {
     if (!mainMsg) {
-      mainMsg = 'Unsupported type in operator $find'
+      mainMsg = 'Unsupported type in operator $aggregate'
     }
 
     throw new Error(
-      `${mainMsg} for ${path}.$find. Required type object with the following properties:
+      `${mainMsg} for ${path}.$aggregate. Required type object with the following properties:
         {
           $traverse: 'descendants' | 'ancestors' | string | string[] (optional)
           $recursive: boolean (optional)
@@ -137,7 +137,7 @@ export default async function validateAggregate(
 
   const allowed = checkAllowed(
     find,
-    new Set(['$traverse', '$recursive', '$filter', '$db'])
+    new Set(['$function', '$traverse', '$recursive', '$filter', '$db'])
   )
   if (allowed !== true) {
     err(`Unsupported operator or field ${allowed}`)

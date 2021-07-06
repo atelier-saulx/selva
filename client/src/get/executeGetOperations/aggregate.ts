@@ -202,6 +202,7 @@ const executeAggregateOperation = async (
   lang: string,
   ctx: ExecContext
 ): Promise<GetResult> => {
+  console.log('HEYOO AGG')
   // TODO: use new aggregate command
   let sourceField: string = <string>op.sourceField
   if (typeof op.props.$list === 'object' && op.props.$list.$inherit) {
@@ -301,7 +302,8 @@ const executeAggregateOperation = async (
       }
     }
 
-    const agg = await client.redis.selva_hierarchy_find(
+    console.log(
+      'RUNNNING AGG',
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
@@ -319,6 +321,25 @@ const executeAggregateOperation = async (
       padId(op.id),
       ...args
     )
+    const agg = await client.redis.selva_hierarchy_aggregate(
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      makeLangArg(client.schemas[ctx.db].languages, lang),
+      '___selva_hierarchy',
+      FN_TO_ENUM[op.function.name] || '0',
+      sourceField,
+      'order',
+      op.options.sort?.$field || '',
+      op.options.sort?.$order || 'asc',
+      'offset',
+      op.options.offset,
+      'limit',
+      op.options.limit,
+      'fields',
+      (op.function.args || []).join('|'),
+      padId(op.id),
+      ...args
+    )
+    console.log('AGG', agg)
 
     await checkForNextRefresh(
       ctx,

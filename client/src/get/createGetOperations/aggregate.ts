@@ -45,6 +45,7 @@ const createAggregateOperation = (
     }
   }
 
+  console.log('CREATEAD OP', op)
   return op
 }
 

@@ -84,6 +84,7 @@ test.serial('simple aggregate', async (t) => {
       id: true,
       matchCount: {
         $aggregate: {
+          $function: 'count',
           $traverse: 'children',
           $filter: [
             {
