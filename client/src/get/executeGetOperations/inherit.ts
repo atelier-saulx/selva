@@ -568,40 +568,82 @@ export default async function inherit(
   }
 
   if (ctx.subId) {
-    bufferNodeMarker(ctx, op.id, ...fields)
-    const added = await addMarker(client, ctx, {
-      type: 'ancestors',
-      id: op.id,
-      fields,
-      rpn: ast2rpn(
-        client.schemas[ctx.db].types,
-        {
-          isFork: true,
-          $and: [
-            {
-              isFork: true,
-              $or: fields.map((f) => {
-                return {
-                  $operator: 'exists',
-                  $field: f,
-                }
-              }),
-            },
-            {
-              isFork: true,
-              $or: op.types.map((t) => {
-                return {
-                  $operator: '=',
-                  $field: 'type',
-                  $value: t,
-                }
-              }),
-            },
-          ],
-        },
-        lang
-      ),
-    })
+    const sourceFieldSchema = getNestedSchema(schema, op.id, op.sourceField)
+
+
+    let added: boolean
+    if (sourceFieldSchema && sourceFieldSchema.type === 'reference') {
+      bufferNodeMarker(ctx, op.id, op.sourceField)
+      added = await addMarker(client, ctx, {
+        type: 'bfs_expression',
+        id: op.id,
+        traversal: `{"parents","${op.sourceField}"}`,
+        fields: fields.map((f: string) => f.substring(op.sourceField.length + 1)),
+        rpn: ast2rpn(
+          client.schemas[ctx.db].types,
+          {
+            isFork: true,
+            $and: [
+              {
+                isFork: true,
+                $or: fields.map((f) => {
+                  return {
+                    $operator: 'exists',
+                    $field: f.substring(op.sourceField.length + 1),
+                  }
+                }),
+              },
+              {
+                isFork: true,
+                $or: op.types.map((t) => {
+                  return {
+                    $operator: '=',
+                    $field: 'type',
+                    $value: t,
+                  }
+                }),
+              },
+            ],
+          },
+          lang
+        ),
+      })
+    } else {
+      bufferNodeMarker(ctx, op.id, ...fields)
+      added = await addMarker(client, ctx, {
+        type: 'ancestors',
+        id: op.id,
+        fields,
+        rpn: ast2rpn(
+          client.schemas[ctx.db].types,
+          {
+            isFork: true,
+            $and: [
+              {
+                isFork: true,
+                $or: fields.map((f) => {
+                  return {
+                    $operator: 'exists',
+                    $field: f,
+                  }
+                }),
+              },
+              {
+                isFork: true,
+                $or: op.types.map((t) => {
+                  return {
+                    $operator: '=',
+                    $field: 'type',
+                    $value: t,
+                  }
+                }),
+              },
+            ],
+          },
+          lang
+        ),
+      })
+    }
 
     if (added) {
       client.redis.selva_subscriptions_refresh(

@@ -27,6 +27,7 @@ enum SelvaTraversal {
     SELVA_HIERARCHY_TRAVERSAL_REF, /*!< Visit nodes pointed by a ref field. */
     SELVA_HIERARCHY_TRAVERSAL_ARRAY, /*!< Visit nodes pointed by a ref field. */
     SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD, /*!< Traverse an edge field according to its constraints using BFS. */
+    SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION, /*!< Traverse with an expression returning a set of field names. */
 };
 
 enum SelvaMergeStrategy {

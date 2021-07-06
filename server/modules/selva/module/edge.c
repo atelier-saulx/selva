@@ -321,6 +321,7 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaModif
 }
 
 int Edge_Delete(
+        RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         struct EdgeField *edge_field,
         struct SelvaModify_HierarchyNode *src_node,
@@ -334,7 +335,7 @@ int Edge_Delete(
 
     /* TODO We should probably clear from the dst? */
     /* TODO We don't probably need to clear all markers, just those that are using the same traversal. */
-    SelvaSubscriptions_ClearAllMarkers(hierarchy, src_node);
+    SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, src_node);
 
     dst_node = SVector_Search(&src_edge_field->arcs, dst_node_id);
     if (!dst_node) {

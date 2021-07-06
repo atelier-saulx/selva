@@ -31,7 +31,9 @@ export type SubscriptionMarker = {
     | 'descendants'
     | 'ref'
     | 'bfs_edge_field'
+    | 'bfs_expression'
   refField?: string
+  traversal?: string // an RPN for bfs_expression
   id: string
   fields: string[]
   rpn?: Rpn
@@ -78,6 +80,18 @@ export async function addMarker(
     return false
   }
 
+  //const shouldHaveRef = ['ref', 'bfs_edge_field'].includes(marker.type)
+  //if (shouldHaveRef && (!marker.refField || marker.traversal) ||
+  //    !shouldHaveRef && marker.refField) {
+  //    throw new Error(`Invalid params for a "${marker.type}" marker`)
+  //}
+
+  //const shouldHaveTraversal = marker.type == 'bfs_expression'
+  //if (shouldHaveTraversal && (!marker.traversal || marker.refField) ||
+  //    !shouldHaveTraversal && marker.traversal) {
+  //    throw new Error(`Invalid params for a "${marker.type}" marker`)
+  //}
+
   const schema = client.schemas[ctx.db]
   const fieldSchema = getNestedSchema(schema, marker.id, marker.refField)
   if (fieldSchema && fieldSchema.type === 'array') {
@@ -92,7 +106,7 @@ export async function addMarker(
   }
 
   const markerId = adler32(marker)
-  const markerType = [marker.type, marker.refField].filter((v) => v)
+  const markerType = [marker.type, marker.refField, marker.traversal].filter((v) => v)
   await client.redis.selva_subscriptions_add(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     '___selva_hierarchy',

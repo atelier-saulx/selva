@@ -195,7 +195,12 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
         SelvaModify_DestroyNode(node);
     }
 
-    SelvaSubscriptions_DestroyAll(hierarchy);
+    /*
+     * Note that ctx can be NULL because we are freeing the whole hierarchy
+     * which will destroy all hierarchy nodes and thus all the marker pointers
+     * will be gone anyway.
+     */
+    SelvaSubscriptions_DestroyAll(NULL, hierarchy);
 
     SVector_Destroy(&hierarchy->heads);
 #if MEM_DEBUG
@@ -763,7 +768,7 @@ static int crossRemove(
     }
 #endif
 
-    SelvaSubscriptions_ClearAllMarkers(hierarchy, node);
+    SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, node);
 
     if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
         const size_t initialNodeParentsSize = SVector_Size(&node->parents);
@@ -889,7 +894,7 @@ static void removeRelationships(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hier
     }
 #endif
 
-    SelvaSubscriptions_ClearAllMarkers(hierarchy, node);
+    SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, node);
 
     struct SVectorIterator it;
     SelvaModify_HierarchyNode *adj;
@@ -1575,8 +1580,9 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
     SVector_Insert(&q, (head)); \
     head_cb((head), (cb)->head_arg); \
     while (SVector_Size(&q) > 0) { \
-        SelvaModify_HierarchyNode *node = SVector_Shift(&q); \
-        \
+        SelvaModify_HierarchyNode *node = SVector_Shift(&q);
+
+#define BFS_VISIT_NODE() \
         if (node_cb(node, cb->node_arg)) { \
             Trx_End(&hierarchy->trx_state, &trx_cur); \
             return 0; \
@@ -1623,6 +1629,7 @@ static int bfs(
     BFS_TRAVERSE(hierarchy, head, cb) {
         SVector *adj_vec = (SVector *)((char *)node + offset);
 
+        BFS_VISIT_NODE();
         BFS_VISIT_ADJACENT(adj_vec);
     } BFS_TRAVERSE_END(hierarchy);
 
@@ -1638,6 +1645,8 @@ static int bfs_edge(
     BFS_TRAVERSE(hierarchy, head, cb) {
         struct EdgeField *edge_field;
 
+        BFS_VISIT_NODE();
+
         edge_field = Edge_GetField(node, field_name_str, field_name_len);
         if (!edge_field) {
 #if 0
@@ -1648,6 +1657,7 @@ static int bfs_edge(
             /* EdgeField not found! */
             continue;
         }
+
         BFS_VISIT_ADJACENT(&edge_field->arcs);
     } BFS_TRAVERSE_END(hierarchy);
 
@@ -1681,23 +1691,27 @@ static int bfs_expression(
         struct rpn_ctx *rpn_ctx,
         struct rpn_expression *rpn_expr,
         const TraversalCallback * restrict cb) {
-    struct SelvaSet fields;
-
-    SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
-
     BFS_TRAVERSE(hierarchy, head, cb) {
         SVector *adj_vec;
         enum rpn_error rpn_err;
+        struct SelvaSet fields;
         struct SelvaSetElement *field_el;
 
+        /* TODO If we'd have clear function we could reuse the same set. */
+        SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
+
         rpn_set_hierarchy_node(rpn_ctx, node);
+        rpn_set_reg(rpn_ctx, 0, node->id, SELVA_NODE_ID_SIZE, 0);
         rpn_err = rpn_selvaset(redis_ctx, rpn_ctx, rpn_expr, &fields);
         if (rpn_err) {
-            fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s\n",
+            fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",
                     __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node->id);
+                    (int)SELVA_NODE_ID_SIZE, node->id,
+                    rpn_str_error[rpn_err]);
             continue;
         }
+
+        BFS_VISIT_NODE();
 
         SELVA_SET_RMS_FOREACH(field_el, &fields) {
             RedisModuleString *field = field_el->value_rms;
@@ -1709,6 +1723,8 @@ static int bfs_expression(
 
             BFS_VISIT_ADJACENT(adj_vec);
         }
+
+        SelvaSet_Destroy(&fields);
     } BFS_TRAVERSE_END(hierarchy);
 
     return 0;
@@ -1738,6 +1754,8 @@ const char *SelvaModify_HierarchyDir2str(enum SelvaTraversal dir) {
         return (const char *)"ref";
     case SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD:
         return (const char *)"bfs_edge_field";
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION:
+        return (const char *)"bfs_expression";
     default:
         return "invalid";
     }

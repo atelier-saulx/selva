@@ -143,6 +143,10 @@ struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId
 #define SELVA_SET_NODEID_FOREACH_SAFE(el, set, tmp) \
     RB_FOREACH_SAFE(el, SelvaSetNodeId, &(set)->head_nodeId, tmp)
 
+/**
+ * Move elements from src to dst.
+ * Only elements that are currently missing from dst are moved.
+ */
 int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src);
 
 /*
