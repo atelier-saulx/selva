@@ -50,11 +50,15 @@ static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     SVector *fields;
     SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
 
-    struct SVectorIterator *it;
-    SVector_ForeachBegin(it, fields);
+    if (!fields) {
+        return 0;
+    }
+
+    struct SVectorIterator it;
+    SVector_ForeachBegin(&it, fields);
 
     RedisModuleString *field;
-    while ((field = SVector_Foreach(it))) {
+    while ((field = SVector_Foreach(&it))) {
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
         if (field_type == SELVA_OBJECT_LONGLONG) {
             long long lv = 0;
@@ -105,12 +109,12 @@ static int apply_agg_fn(struct SelvaModify_HierarchyNode *node, struct Aggregate
     RedisModuleKey *key;
     key = RedisModule_OpenKey(args->find_args.ctx, id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
 
-    struct SelvaObject *node_obj;
+    struct SelvaObject *node_obj = NULL;
 
     int err = 0;
     err = SelvaObject_Key2Obj(key, &node_obj);
 
-    if (err) {
+    if (err || !node_obj) {
         goto cleanup;
     }
 
@@ -371,7 +375,7 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
 
 static size_t AggregateCommand_PrintAggregateResult(RedisModuleCtx *ctx, struct AggregateCommand_Args *args) {
     if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
-        RedisModule_ReplyWithLongLong(ctx, args->aggregation_result_int);
+        RedisModule_ReplyWithLongLong(ctx, args->item_count);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
         RedisModule_ReplyWithLongLong(ctx, args->aggregation_result_int);
     } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
@@ -641,6 +645,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
+            .fields = fields,
             .merge_nr_fields = &merge_nr_fields,
             .order_field = order_by_field,
             .order_result = &order_result,

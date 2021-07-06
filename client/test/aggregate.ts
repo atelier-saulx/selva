@@ -103,6 +103,56 @@ test.serial('simple aggregate', async (t) => {
     { id: 'root', matchCount: 4 }
   )
 
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      valueSum: {
+        $aggregate: {
+          $function: { $name: 'sum', $args: ['value'] },
+          $traverse: 'children',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match',
+            },
+            {
+              $field: 'value',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    }),
+    { id: 'root', valueSum: sum }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      valueAvg: {
+        $aggregate: {
+          $function: { $name: 'avg', $args: ['value'] },
+          $traverse: 'children',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match',
+            },
+            {
+              $field: 'value',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    }),
+    { id: 'root', valueAvg: sum / 4 }
+  )
+
   await client.delete('root')
   await client.destroy()
 })
