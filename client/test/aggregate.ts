@@ -64,12 +64,26 @@ test.serial('simple aggregate', async (t) => {
   // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
   let sum = 0
+
+  await Promise.all([
+    await client.set({
+      $id: 'le0',
+      name: `league 0`,
+    }),
+    await client.set({
+      $id: 'le1',
+      name: `league 1`,
+    }),
+  ])
+
   for (let i = 0; i < 4; i++) {
     await client.set({
+      parents: [`le${i % 2}`],
       type: 'match',
       name: `match ${i}`,
       value: i + 10,
     })
+
     sum += i + 10
   }
 
@@ -85,7 +99,7 @@ test.serial('simple aggregate', async (t) => {
       matchCount: {
         $aggregate: {
           $function: 'count',
-          $traverse: 'children',
+          $traverse: 'descendants',
           $filter: [
             {
               $field: 'type',
@@ -110,7 +124,7 @@ test.serial('simple aggregate', async (t) => {
       valueSum: {
         $aggregate: {
           $function: { $name: 'sum', $args: ['value'] },
-          $traverse: 'children',
+          $traverse: 'descendants',
           $filter: [
             {
               $field: 'type',
@@ -135,7 +149,7 @@ test.serial('simple aggregate', async (t) => {
       valueAvg: {
         $aggregate: {
           $function: { $name: 'avg', $args: ['value'] },
-          $traverse: 'children',
+          $traverse: 'descendants',
           $filter: [
             {
               $field: 'type',
@@ -151,6 +165,58 @@ test.serial('simple aggregate', async (t) => {
       },
     }),
     { id: 'root', valueAvg: sum / 4 }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      id: true,
+      leagues: {
+        name: true,
+        valueAvg: {
+          $aggregate: {
+            $function: { $name: 'avg', $args: ['value'] },
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match',
+              },
+              {
+                $field: 'value',
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      id: 'root',
+      leagues: [
+        {
+          name: 'league 0',
+          valueAvg: (10 + 12) / 2,
+        },
+        {
+          name: 'league 1',
+          valueAvg: (11 + 13) / 2,
+        },
+      ],
+    }
   )
 
   await client.delete('root')
