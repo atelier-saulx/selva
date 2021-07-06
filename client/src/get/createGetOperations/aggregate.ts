@@ -16,6 +16,7 @@ const createAggregateOperation = (
     props,
     field: field.substr(1),
     sourceField: field.substr(1),
+    recursive: !!aggregate.$recursive,
     options: {
       limit,
       offset,

@@ -14,6 +14,7 @@ OBJS := \
 	module/errors.o \
 	module/find.o \
 	module/aggregate.o \
+	module/traversal.o \
 	module/hierarchy.o \
 	module/hierarchy_reply.o \
 	module/inherit.o \

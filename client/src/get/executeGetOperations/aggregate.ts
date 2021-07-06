@@ -195,6 +195,7 @@ async function checkForNextRefresh(
   )
 }
 
+// TODO: implement recursive version
 const executeAggregateOperation = async (
   client: SelvaClient,
   op: GetOperationAggregate,

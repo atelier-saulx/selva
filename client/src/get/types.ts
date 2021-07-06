@@ -85,6 +85,7 @@ export type Aggregate = {
   $db?: string
   $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
   $filter?: Filter | Filter[]
+  $recursive?: boolean
   $function?: string | { $name: string; $args: string[] }
 }
 
@@ -167,6 +168,7 @@ export type GetOperationAggregate = GetOperationCommon & {
   filter?: Fork
   inKeys?: string[]
   function: { name: string; args?: string[] }
+  recursive?: boolean
   options: { limit: number; offset: number; sort?: Sort | undefined }
 }
 
