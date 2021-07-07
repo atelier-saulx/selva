@@ -237,14 +237,33 @@ test.serial('simple aggregate', async (t) => {
     }
   )
 
-  console.log(
+  t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'root',
       id: true,
       valueAvg: {
         $aggregate: {
           $function: { $name: 'avg', $args: ['value'] },
+          $traverse: 'children',
+          $find: {
+            $traverse: 'children',
+          },
+        },
+      },
+    }),
+    {
+      id: 'root',
+      valueAvg: sum / 4,
+    }
+  )
 
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      valueAvg: {
+        $aggregate: {
+          $function: { $name: 'avg', $args: ['value'] },
           $traverse: 'children',
           $filter: [
             {
@@ -261,10 +280,6 @@ test.serial('simple aggregate', async (t) => {
                 $operator: '=',
                 $value: 'match',
               },
-              {
-                $field: 'value',
-                $operator: 'exists',
-              },
             ],
           },
         },
@@ -272,6 +287,7 @@ test.serial('simple aggregate', async (t) => {
     }),
     {
       id: 'root',
+      valueAvg: sum / 4,
     }
   )
 

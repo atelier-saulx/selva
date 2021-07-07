@@ -23,6 +23,7 @@ import {
 import { padId, joinIds } from '../utils'
 import { setNestedResult } from '../utils'
 import { makeLangArg } from './util'
+import { deepCopy } from '@saulx/utils'
 
 const FN_TO_ENUM = {
   count: '0',
@@ -209,16 +210,19 @@ const executeAggregateOperation = async (
   ctx: ExecContext
 ): Promise<number> => {
   if (op.nested) {
+    const findProps: any = deepCopy(op.props)
+    findProps.$find = op.props.$aggregate
+    delete findProps.$aggregate
+
     const findOp: GetOperationFind = {
       type: 'find',
       id: op.id,
       field: op.field,
       sourceField: op.sourceField,
-      props: op.props,
+      props: findProps,
       single: false,
       filter: op.filter,
       nested: op.nested,
-      isNested: true,
       recursive: op.recursive,
       options: op.options,
     }
@@ -248,10 +252,23 @@ const executeAggregateOperation = async (
       }
     }
 
-    op.inKeys = ids
+    return executeAggregateOperation(
+      client,
+      {
+        type: 'aggregate',
+        id: op.id,
+        field: op.field,
+        sourceField: op.sourceField,
+        function: op.function,
+        props: op.props,
+        inKeys: ids,
+        options: op.options,
+      },
+      lang,
+      ctx
+    )
   }
 
-  // TODO: use new aggregate command
   let sourceField: string = <string>op.sourceField
   if (typeof op.props.$list === 'object' && op.props.$list.$inherit) {
     const res = await executeNestedGetOperations(
