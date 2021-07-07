@@ -291,6 +291,56 @@ test.serial('simple aggregate', async (t) => {
     }
   )
 
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      value: {
+        $aggregate: {
+          $function: { $name: 'min', $args: ['value'] },
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match',
+            },
+            {
+              $field: 'value',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    }),
+    { id: 'root', value: 10 }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      value: {
+        $aggregate: {
+          $function: { $name: 'max', $args: ['value'] },
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match',
+            },
+            {
+              $field: 'value',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    }),
+    { id: 'root', value: 13 }
+  )
+
   await client.delete('root')
   await client.destroy()
 })

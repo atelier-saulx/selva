@@ -30,6 +30,8 @@ const FN_TO_ENUM = {
   countUnique: '1',
   sum: '2',
   avg: '3',
+  min: '4',
+  max: '5',
 }
 
 function findTimebased(ast: Fork): FilterAST[] {
