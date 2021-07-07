@@ -737,6 +737,241 @@ out:
 #undef SHIFT_ARGS
 }
 
+/**
+ * Find node in set.
+ * SELVA.inherit REDIS_KEY NODE_ID [TYPE1[TYPE2[...]]] [FIELD_NAME1[ FIELD_NAME2[ ...]]]
+ */
+int SelvaHierarchy_AggregateIn(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    int err;
+
+    const int ARGV_LANG      = 1;
+    const int ARGV_REDIS_KEY = 2;
+    const int ARGV_AGG_FN    = 3;
+    const int ARGV_DIRECTION = 4;
+    const int ARGV_ORDER_TXT = 5;
+    const int ARGV_ORDER_FLD = 6;
+    const int ARGV_ORDER_ORD = 7;
+    int ARGV_OFFSET_TXT      = 5;
+    int ARGV_OFFSET_NUM      = 6;
+    int ARGV_LIMIT_TXT       = 5;
+    int ARGV_LIMIT_NUM       = 6;
+    int ARGV_FIELDS_TXT      = 5;
+    int ARGV_FIELDS_VAL      = 6;
+    int ARGV_NODE_IDS        = 5;
+    int ARGV_FILTER_EXPR     = 6;
+    int ARGV_FILTER_ARGS     = 7;
+#define SHIFT_ARGS(i) \
+    ARGV_OFFSET_TXT += i; \
+    ARGV_OFFSET_NUM += i; \
+    ARGV_LIMIT_TXT += i; \
+    ARGV_LIMIT_NUM += i; \
+    ARGV_FIELDS_TXT += i; \
+    ARGV_FIELDS_VAL += i; \
+    ARGV_NODE_IDS += i; \
+    ARGV_FILTER_EXPR += i; \
+    ARGV_FILTER_ARGS += i
+
+    if (argc < 6) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    RedisModuleString *lang = argv[ARGV_LANG];
+
+    /*
+     * Open the Redis key.
+     */
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
+    }
+
+    /*
+     * Select traversal method.
+     */
+    enum SelvaTraversalAlgo algo = HIERARCHY_BFS;
+    // err = parse_algo(&algo, argv[ARGV_ALGO]);
+    // if (err) {
+    //     return replyWithSelvaErrorf(ctx, err, "traversal method");
+    // }
+    RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
+    TO_STR(agg_fn_rms);
+    const char agg_fn_val = agg_fn_rms_str[0];
+
+    /*
+     * Parse the order arg.
+     */
+    enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
+    const RedisModuleString *order_by_field = NULL;
+    if (argc > ARGV_ORDER_ORD) {
+        err = parse_order(&order_by_field, &order,
+                          argv[ARGV_ORDER_TXT],
+                          argv[ARGV_ORDER_FLD],
+                          argv[ARGV_ORDER_ORD]);
+        if (err == 0) {
+            SHIFT_ARGS(3);
+        } else if (err != SELVA_HIERARCHY_ENOENT) {
+            return replyWithSelvaErrorf(ctx, err, "order");
+        }
+    }
+
+    /*
+     * Parse the offset arg.
+     */
+    ssize_t offset = 0;
+    if (argc > ARGV_OFFSET_NUM) {
+        err = SelvaArgParser_IntOpt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
+        if (err == 0) {
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_ENOENT) {
+            return replyWithSelvaErrorf(ctx, err, "offset");
+        }
+        if (offset < -1) {
+            return replyWithSelvaErrorf(ctx, err, "offset < -1");
+        }
+    }
+
+    /*
+     * Parse the limit arg. -1 = inf
+     */
+    ssize_t limit = -1;
+    if (argc > ARGV_LIMIT_NUM) {
+        err = SelvaArgParser_IntOpt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
+        if (err == 0) {
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_ENOENT) {
+            return replyWithSelvaErrorf(ctx, err, "limit");
+        }
+    }
+
+    /*
+     * Parse fields.
+     */
+    selvaobject_autofree struct SelvaObject *fields = NULL;
+    if (argc > ARGV_FIELDS_VAL) {
+		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+        if (err == 0) {
+            if (SelvaObject_Len(fields, NULL) > 1) {
+                return replyWithSelvaErrorf(ctx, err, "fields");
+            }
+
+            SHIFT_ARGS(2);
+        } else if (err != SELVA_ENOENT) {
+            return replyWithSelvaErrorf(ctx, err, "fields");
+        }
+    }
+
+    struct rpn_ctx *rpn_ctx = NULL;
+    struct rpn_expression *filter_expression = NULL;
+    struct rpn_ctx *recursive_rpn_ctx = NULL;
+    struct rpn_expression *recursive_rpn_expr = NULL;
+
+    /*
+     * Prepare the filter expression if given.
+     */
+    if (argc >= ARGV_FILTER_EXPR + 1) {
+        const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
+        const char *input;
+
+        rpn_ctx = rpn_init(nr_reg);
+        if (!rpn_ctx) {
+            return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "filter expression");
+        }
+
+        /*
+         * Compile the filter expression.
+         */
+        input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], NULL);
+        filter_expression = rpn_compile(input);
+        if (!filter_expression) {
+            rpn_destroy(rpn_ctx);
+            return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+        }
+
+        /*
+         * Get the filter expression arguments and set them to the registers.
+         */
+        for (int i = ARGV_FILTER_ARGS; i < argc; i++) {
+            /* reg[0] is reserved for the current nodeId */
+            const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
+            size_t str_len;
+            const char *str = RedisModule_StringPtrLen(argv[i], &str_len);
+
+            rpn_set_reg(rpn_ctx, reg_i, str, str_len + 1, 0);
+        }
+    }
+
+    SVECTOR_AUTOFREE(order_result); /*!< for ordered result. */
+
+    if (argc <= ARGV_NODE_IDS) {
+        replyWithSelvaError(ctx, SELVA_HIERARCHY_EINVAL);
+        goto out;
+    }
+
+    RedisModuleString *ids = argv[ARGV_NODE_IDS];
+    TO_STR(ids);
+
+    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
+            replyWithSelvaError(ctx, SELVA_ENOMEM);
+            goto out;
+        }
+    }
+
+    /*
+     * Run the filter for each node.
+     */
+    ssize_t array_len = 0;
+    for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
+        struct SelvaModify_HierarchyNode *node;
+        ssize_t tmp_limit = -1;
+        struct FindCommand_Args find_args = {
+            .ctx = ctx,
+            .lang = lang,
+            .hierarchy = hierarchy,
+            .nr_nodes = &array_len,
+            .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset : 0,
+            .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
+            .rpn_ctx = rpn_ctx,
+            .filter = filter_expression,
+            .merge_strategy = MERGE_STRATEGY_NONE,
+            .merge_path = NULL,
+            .merge_nr_fields = 0,
+            .fields = fields,
+            .order_field = order_by_field,
+            .order_result = &order_result,
+        };
+
+        struct AggregateCommand_Args args = {
+            .aggregate_type = agg_fn_val,
+            .aggregation_result_int = 0,
+            .aggregation_result_double = 0,
+            .item_count = 0,
+            .find_args = find_args
+        };
+
+        node = SelvaHierarchy_FindNode(hierarchy, ids_str + i);
+        if (node) {
+            (void)AggregateCommand_NodeCb(node, &args);
+        }
+    }
+
+    /*
+     * If an ordered request was requested then nothing was sent to the client yet
+     * and we need to do it now.
+     */
+
+out:
+    rpn_destroy(rpn_ctx);
+#if MEM_DEBUG
+    memset(filter_expression, 0, sizeof(*filter_expression));
+#endif
+    rpn_destroy_expression(filter_expression);
+
+    return REDISMODULE_OK;
+#undef SHIFT_ARGS
+}
+
 int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     return SelvaHierarchy_Aggregate(ctx, 0, argv, argc);
 }
@@ -756,7 +991,10 @@ static int Aggregate_OnLoad(RedisModuleCtx *ctx) {
     if (RedisModule_CreateCommand(ctx, "selva.hierarchy.aggregateRecursive", SelvaHierarchy_AggregateRecursiveCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
-    // TODO: aggregateIn command? maybe not
+
+    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.aggregateIn", SelvaHierarchy_AggregateIn, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
 
     return REDISMODULE_OK;
 }
