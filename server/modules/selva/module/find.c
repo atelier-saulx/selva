@@ -1699,7 +1699,6 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     ssize_t array_len = 0;
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-    // FIXME: remove this, just an anchor for where it differs
     /*
      * Run the filter for each node.
      */
