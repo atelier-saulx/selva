@@ -1,5 +1,11 @@
 import { SelvaClient } from '../../'
-import { GetOperationAggregate, GetResult, GetOptions } from '../types'
+import {
+  GetOperationAggregate,
+  GetResult,
+  GetOptions,
+  GetOperationFind,
+} from '../types'
+import { findIds } from './find'
 import { typeCast } from './'
 import {
   ast2rpn,
@@ -202,6 +208,67 @@ const executeAggregateOperation = async (
   lang: string,
   ctx: ExecContext
 ): Promise<number> => {
+  if (op.nested) {
+    const findOp: GetOperationFind = {
+      type: 'find',
+      id: op.id,
+      field: op.field,
+      sourceField: op.sourceField,
+      props: op.props,
+      single: false,
+      filter: op.filter,
+      nested: op.nested,
+      isNested: true,
+      recursive: op.recursive,
+      options: op.options,
+    }
+
+    let ids = await findIds(client, findOp, lang, ctx)
+    let nestedOperation = op.nested
+    let prevIds = ids
+    while (nestedOperation) {
+      ids = await findIds(
+        client,
+        // TODO: needs fixing
+        Object.assign({}, nestedOperation, {
+          id: joinIds(ids),
+        }),
+        lang,
+        ctx
+      )
+      prevIds = ids
+
+      nestedOperation = nestedOperation.nested
+    }
+
+    const realOpts: any = {}
+    for (const key in op.props) {
+      if (key === '$all' || !key.startsWith('$')) {
+        realOpts[key] = op.props[key]
+      }
+    }
+
+    // const results = await Promise.all(
+    //   ids.map(async (id) => {
+    //     return await executeNestedGetOperations(
+    //       client,
+    //       {
+    //         $db: ctx.db,
+    //         $id: id,
+    //         ...realOpts,
+    //       },
+    //       lang,
+    //       ctx
+    //     )
+    //   })
+    // )
+
+    // return results
+    // TODO make an inKeys aggregate here
+    console.log('YEP IDS', ids)
+    return 0
+  }
+
   // TODO: use new aggregate command
   let sourceField: string = <string>op.sourceField
   if (typeof op.props.$list === 'object' && op.props.$list.$inherit) {
@@ -263,31 +330,29 @@ const executeAggregateOperation = async (
       }
     }
 
-    // TODO: should actually allow nested I think for finds? so other way around as it's currently set up
-    // if (op.nested) {
-    //   let added = false
-    //   for (let i = 0; i < op.id.length; i += 10) {
-    //     let endLen = 10
-    //     while (op.id[i + endLen - 1] === '\0') {
-    //       endLen--
-    //     }
-    //     const id = op.id.slice(i, endLen)
-    //     const r = await addMarker(client, ctx, {
-    //       ...sourceFieldToMarkerType(sourceField),
-    //       id: id,
-    //       fields: op.props.$all === true ? [] : Object.keys(realOpts),
-    //       rpn: args,
-    //     })
+    if (op.nested) {
+      let added = false
+      for (let i = 0; i < op.id.length; i += 10) {
+        let endLen = 10
+        while (op.id[i + endLen - 1] === '\0') {
+          endLen--
+        }
+        const id = op.id.slice(i, endLen)
+        const r = await addMarker(client, ctx, {
+          ...sourceFieldToMarkerType(sourceField),
+          id: id,
+          fields: op.props.$all === true ? [] : Object.keys(realOpts),
+          rpn: args,
+        })
 
-    //     added = added || r
+        added = added || r
 
-    //     await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
-    //   }
+        await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
+      }
 
-    //   if (added) {
-    //     ctx.hasFindMarkers = true
-    //   }
-    if (false) {
+      if (added) {
+        ctx.hasFindMarkers = true
+      }
     } else {
       const added = await addMarker(client, ctx, {
         ...sourceFieldToMarkerType(sourceField),

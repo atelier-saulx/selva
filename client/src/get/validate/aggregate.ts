@@ -6,6 +6,7 @@ import validateFilter from './filter'
 
 import { get } from '..'
 import { addExtraQuery, ExtraQueries } from '.'
+import validateFind from './find'
 
 // import fetch from 'node-fetch'
 
@@ -105,7 +106,7 @@ async function evaluateTextSearch(
 
 export default async function validateAggregate(
   extraQueries: ExtraQueries,
-  _parentProp: GetOptions,
+  parentProp: GetOptions,
   client: SelvaClient,
   find: Aggregate,
   path: string
@@ -137,7 +138,7 @@ export default async function validateAggregate(
 
   const allowed = checkAllowed(
     find,
-    new Set(['$function', '$traverse', '$recursive', '$filter', '$db'])
+    new Set(['$function', '$traverse', '$recursive', '$filter', '$db', '$find'])
   )
   if (allowed !== true) {
     err(`Unsupported operator or field ${allowed}`)
@@ -187,6 +188,10 @@ export default async function validateAggregate(
     } else {
       validateFilter(client, find.$filter, path + '.$find')
       filterAry = [find.$filter]
+    }
+
+    if (find.$find) {
+      validateFind(extraQueries, parentProp, client, find.$find, path)
     }
 
     // // FIXME: proper $language param

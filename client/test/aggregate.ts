@@ -219,6 +219,45 @@ test.serial('simple aggregate', async (t) => {
     }
   )
 
+  // t.deepEqual(
+  console.log(
+    await client.get({
+      $id: 'root',
+      id: true,
+      valueAvg: {
+        $aggregate: {
+          $function: { $name: 'avg', $args: ['value'] },
+
+          $traverse: 'children',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league',
+            },
+          ],
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match',
+              },
+              {
+                $field: 'value',
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      id: 'root',
+    }
+  )
+
   await client.delete('root')
   await client.destroy()
 })

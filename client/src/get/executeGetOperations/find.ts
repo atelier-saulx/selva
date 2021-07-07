@@ -279,7 +279,7 @@ async function checkForNextRefresh(
   )
 }
 
-const findIds = async (
+export const findIds = async (
   client: SelvaClient,
   op: GetOperationFind,
   lang: string,
@@ -591,7 +591,7 @@ const executeFindOperation = async (
       ids = await findIds(
         client,
         // TODO: needs fixing
-        Object.assign({}, <GetOperationFind>nestedOperation, {
+        Object.assign({}, nestedOperation, {
           id: joinIds(ids),
         }),
         lang,
@@ -599,8 +599,7 @@ const executeFindOperation = async (
       )
       prevIds = ids
 
-      // TODO: needs fixing
-      nestedOperation = (<GetOperationFind>nestedOperation).nested
+      nestedOperation = nestedOperation.nested
     }
 
     const realOpts: any = {}

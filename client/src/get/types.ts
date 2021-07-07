@@ -78,7 +78,6 @@ export type Find = {
   $recursive?: boolean
   $filter?: Filter | Filter[]
   $find?: Find
-  $aggregate?: Aggregate
 }
 
 export type Aggregate = {
@@ -87,6 +86,7 @@ export type Aggregate = {
   $filter?: Filter | Filter[]
   $recursive?: boolean
   $function?: string | { $name: string; $args: string[] }
+  $find?: Find
 }
 
 export type Sort = {
@@ -170,6 +170,7 @@ export type GetOperationAggregate = GetOperationCommon & {
   function: { name: string; args?: string[] }
   recursive?: boolean
   options: { limit: number; offset: number; sort?: Sort | undefined }
+  nested?: GetOperationFind
 }
 
 export type GetOperationFind = GetOperationCommon & {
@@ -178,7 +179,7 @@ export type GetOperationFind = GetOperationCommon & {
   single?: boolean
   filter?: Fork
   inKeys?: string[]
-  nested?: GetOperationFind | GetOperationAggregate
+  nested?: GetOperationFind
   isNested?: boolean
   recursive?: boolean
   options: { limit: number; offset: number; sort?: Sort | undefined }

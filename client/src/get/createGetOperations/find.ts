@@ -60,18 +60,6 @@ const createFindOperation = (
       find.$find.$find ? undefined : sort,
       true
     )
-  } else if (find.$aggregate) {
-    findOperation.options.limit = -1
-    findOperation.options.offset = 0
-    findOperation.nested = createAggregateOperation(
-      find.$find,
-      props,
-      '',
-      field,
-      limit,
-      offset,
-      find.$find.$find ? undefined : sort
-    )
   }
 
   return findOperation
