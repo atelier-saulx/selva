@@ -227,21 +227,13 @@ test.serial('simple aggregate', async (t) => {
       valueAvg: {
         $aggregate: {
           $function: { $name: 'avg', $args: ['value'] },
-
           $traverse: ['ma1', 'ma2', 'ma3'],
-          $filter: [
-            {
-              $field: 'type',
-              $operator: '=',
-              $value: 'league',
-            },
-          ],
         },
       },
     }),
     {
       id: 'root',
-      valueAvg: (10 + 11 + 12) / 3,
+      valueAvg: (11 + 12 + 13) / 3,
     }
   )
 

@@ -248,25 +248,7 @@ const executeAggregateOperation = async (
       }
     }
 
-    // const results = await Promise.all(
-    //   ids.map(async (id) => {
-    //     return await executeNestedGetOperations(
-    //       client,
-    //       {
-    //         $db: ctx.db,
-    //         $id: id,
-    //         ...realOpts,
-    //       },
-    //       lang,
-    //       ctx
-    //     )
-    //   })
-    // )
-
-    // return results
-    // TODO make an inKeys aggregate here
-    console.log('YEP IDS', ids)
-    return 0
+    op.inKeys = ids
   }
 
   // TODO: use new aggregate command
@@ -312,7 +294,7 @@ const executeAggregateOperation = async (
       op.options.limit,
       'fields',
       (op.function.args || []).join('|'),
-      padId(op.id),
+      joinIds(op.inKeys),
       ...args
     )
 
@@ -325,7 +307,7 @@ const executeAggregateOperation = async (
       lang
     )
 
-    return agg
+    return Number(agg)
   } else {
     const realOpts: any = {}
     for (const key in op.props) {
