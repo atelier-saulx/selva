@@ -435,7 +435,6 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
 
         if (item && item->data_obj) {
             err = apply_agg_fn_obj(item->data_obj, arg);
-            // err = send_array_object_fields(ctx, lang, hierarchy, item->data_obj, fields);
             len++;
         } else {
             err = SELVA_HIERARCHY_ENOENT;
