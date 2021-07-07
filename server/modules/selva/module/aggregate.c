@@ -164,15 +164,20 @@ static int agg_fn_max_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
 
 
 static int apply_agg_fn_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
-    const static int (*fun)(struct SelvaObject *, struct AggregateCommand_Args *)[] = {
-        [SELVA_AGGREGATE_TYPE_COUNT_NODE] = agg_fn_count_obj,
-        [SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD] = agg_fn_count_uniq_obj,
-        [SELVA_AGGREGATE_TYPE_SUM_FIELD] = agg_fn_sum_obj,
-        [SELVA_AGGREGATE_TYPE_MIN_FIELD] = agg_fn_min_obj,
-        [SELVA_AGGREGATE_TYPE_MAX_FIELD] = agg_fn_max_obj,
-    };
-    
-    return fun[aggregate_type](obj, args);
+    int err = 0;
+    if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
+        err = agg_fn_count_obj(obj, args);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
+        err = agg_fn_count_uniq_obj(obj, args);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
+        err = agg_fn_sum_obj(obj, args);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
+        err = agg_fn_avg_obj(obj, args);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_MIN_FIELD) {
+        err = agg_fn_min_obj(obj, args);
+    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_MAX_FIELD) {
+        err = agg_fn_max_obj(obj, args);
+    }
 
     return err;
 }
