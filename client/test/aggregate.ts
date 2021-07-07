@@ -78,6 +78,7 @@ test.serial('simple aggregate', async (t) => {
 
   for (let i = 0; i < 4; i++) {
     await client.set({
+      $id: 'ma' + i,
       parents: [`le${i % 2}`],
       type: 'match',
       name: `match ${i}`,
@@ -219,7 +220,31 @@ test.serial('simple aggregate', async (t) => {
     }
   )
 
-  // t.deepEqual(
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      id: true,
+      valueAvg: {
+        $aggregate: {
+          $function: { $name: 'avg', $args: ['value'] },
+
+          $traverse: ['ma1', 'ma2', 'ma3'],
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league',
+            },
+          ],
+        },
+      },
+    }),
+    {
+      id: 'root',
+      valueAvg: (10 + 11 + 12) / 3,
+    }
+  )
+
   console.log(
     await client.get({
       $id: 'root',

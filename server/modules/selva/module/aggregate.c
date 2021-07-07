@@ -274,8 +274,7 @@ static size_t AggregateCommand_AggregateOrderedResult(
         ssize_t offset,
         ssize_t limit,
         struct SelvaObject *fields,
-        SVector *order_result,
-        size_t *nr_fields_out) {
+        SVector *order_result) {
     struct FindCommand_OrderedItem *item;
     struct SVectorIterator it;
     size_t len = 0;
@@ -713,7 +712,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
 
         nr_nodes = array_traversal_ref_field
             ? AggregateCommand_AggregateOrderedArrayResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result)
-            : AggregateCommand_AggregateOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result, &merge_nr_fields);
+            : AggregateCommand_AggregateOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result);
 
         AggregateCommand_PrintAggregateResult(ctx, &args);
     } else {
@@ -741,7 +740,7 @@ out:
  * Find node in set.
  * SELVA.inherit REDIS_KEY NODE_ID [TYPE1[TYPE2[...]]] [FIELD_NAME1[ FIELD_NAME2[ ...]]]
  */
-int SelvaHierarchy_AggregateIn(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
@@ -921,6 +920,13 @@ int SelvaHierarchy_AggregateIn(RedisModuleCtx *ctx, RedisModuleString **argv, in
     /*
      * Run the filter for each node.
      */
+
+    struct AggregateCommand_Args args = {
+        .aggregate_type = agg_fn_val,
+        .aggregation_result_int = 0,
+        .aggregation_result_double = 0,
+        .item_count = 0,
+    };
     ssize_t array_len = 0;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
         struct SelvaModify_HierarchyNode *node;
@@ -942,13 +948,7 @@ int SelvaHierarchy_AggregateIn(RedisModuleCtx *ctx, RedisModuleString **argv, in
             .order_result = &order_result,
         };
 
-        struct AggregateCommand_Args args = {
-            .aggregate_type = agg_fn_val,
-            .aggregation_result_int = 0,
-            .aggregation_result_double = 0,
-            .item_count = 0,
-            .find_args = find_args
-        };
+        args.find_args = find_args;
 
         node = SelvaHierarchy_FindNode(hierarchy, ids_str + i);
         if (node) {
@@ -960,6 +960,24 @@ int SelvaHierarchy_AggregateIn(RedisModuleCtx *ctx, RedisModuleString **argv, in
      * If an ordered request was requested then nothing was sent to the client yet
      * and we need to do it now.
      */
+    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        struct AggregateCommand_Args args = {
+            .aggregate_type = agg_fn_val,
+            .aggregation_result_int = 0,
+            .aggregation_result_double = 0,
+            .item_count = 0,
+            .find_args = {
+                // we always need context
+                .ctx = ctx,
+                .fields = fields
+            }
+        };
+
+        AggregateCommand_AggregateOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result);
+        AggregateCommand_PrintAggregateResult(ctx, &args);
+    } else {
+        AggregateCommand_PrintAggregateResult(ctx, &args);
+    }
 
 out:
     rpn_destroy(rpn_ctx);
@@ -992,7 +1010,7 @@ static int Aggregate_OnLoad(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
 
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.aggregateIn", SelvaHierarchy_AggregateIn, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
+    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.aggregateIn", SelvaHierarchy_AggregateInCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

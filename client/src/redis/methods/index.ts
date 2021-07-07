@@ -3503,6 +3503,21 @@ async selva_hierarchy_aggregaterecursive(opts: any, ...args: args): Promise<any>
 }
 
 
+async selva_hierarchy_aggregatein(opts: ServerSelector, ...args: args): Promise<any>
+async selva_hierarchy_aggregatein(...args: args): Promise<any>
+async selva_hierarchy_aggregatein(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_aggregatein', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_aggregatein', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async selva_hierarchy_parents(opts: ServerSelector, ...args: args): Promise<any>
 async selva_hierarchy_parents(...args: args): Promise<any>
 async selva_hierarchy_parents(opts: any, ...args: args): Promise<any> {

@@ -297,10 +297,12 @@ const executeAggregateOperation = async (
   if (op.inKeys) {
     // can make this a bit better....
     // TODO? need this?
-    const ids = await client.redis.selva_hierarchy_findin(
+    const agg = await client.redis.selva_hierarchy_aggregatein(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
-      lang,
+      makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
+      FN_TO_ENUM[op.function.name] || '0',
+      sourceField,
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
@@ -308,7 +310,9 @@ const executeAggregateOperation = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      joinIds(op.inKeys),
+      'fields',
+      (op.function.args || []).join('|'),
+      padId(op.id),
       ...args
     )
 
@@ -321,7 +325,7 @@ const executeAggregateOperation = async (
       lang
     )
 
-    return ids
+    return agg
   } else {
     const realOpts: any = {}
     for (const key in op.props) {
