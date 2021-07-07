@@ -590,7 +590,6 @@ const executeFindOperation = async (
     while (nestedOperation) {
       ids = await findIds(
         client,
-        // TODO: needs fixing
         Object.assign({}, nestedOperation, {
           id: joinIds(ids),
         }),
