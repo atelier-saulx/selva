@@ -1080,11 +1080,10 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     }
 
 out:
-    rpn_destroy(rpn_ctx);
-#if MEM_DEBUG
-    memset(filter_expression, 0, sizeof(*filter_expression));
-#endif
-    rpn_destroy_expression(filter_expression);
+    if (rpn_ctx) {
+        rpn_destroy(rpn_ctx);
+        rpn_destroy_expression(filter_expression);
+    }
 
     return REDISMODULE_OK;
 #undef SHIFT_ARGS
