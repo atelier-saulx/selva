@@ -1,5 +1,6 @@
 #include "redismodule.h"
 #include "cdefs.h"
+#include "funmap.h"
 #include "selva.h"
 #include "errors.h"
 #include "hierarchy.h"
@@ -255,17 +256,13 @@ int SelvaTraversal_CompareDesc(const void ** restrict a_raw, const void ** restr
     return SelvaTraversal_CompareAsc(b_raw, a_raw);
 }
 
-orderFunc SelvaTraversal_GetOrderFunc(enum SelvaResultOrder order) {
-    switch (order) {
-    case HIERARCHY_RESULT_ORDER_ASC:
-        return SelvaTraversal_CompareAsc;
-    case HIERARCHY_RESULT_ORDER_DESC:
-        return SelvaTraversal_CompareDesc;
-    case HIERARCHY_RESULT_ORDER_NONE:
-    default:
-        return SelvaTraversal_CompareNone;
-    }
-}
+static orderFunc order_functions[] = {
+    [HIERARCHY_RESULT_ORDER_NONE] = SelvaTraversal_CompareNone,
+    [HIERARCHY_RESULT_ORDER_ASC] = SelvaTraversal_CompareAsc,
+    [HIERARCHY_RESULT_ORDER_DESC] = SelvaTraversal_CompareDesc,
+};
+
+GENERATE_FUNMAP(SelvaTraversal_GetOrderFunc, order_functions, enum SelvaResultOrder, HIERARCHY_RESULT_ORDER_NONE);
 
 struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaModify_HierarchyNode *node, const RedisModuleString *order_field) {
     Selva_NodeId nodeId;
