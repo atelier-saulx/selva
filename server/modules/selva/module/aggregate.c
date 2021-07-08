@@ -44,7 +44,7 @@ static int agg_fn_count_obj(REDISMODULE_ATTR_UNUSED struct SelvaObject *obj, str
     return 0;
 }
 
-static int agg_fn_count_uniq_obj(REDISMODULE_ATTR_UNUSED struct SelvaObject *obj, REDISMODULE_ATTR_UNUSED struct AggregateCommand_Args* args) {
+static int agg_fn_count_uniq_obj(struct SelvaObject *obj __unused,struct AggregateCommand_Args* args __unused) {
     // TODO
 }
 
