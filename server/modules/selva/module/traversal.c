@@ -32,7 +32,7 @@ static const char *get_next_field_name(const char *s) {
     return s;
 }
 
-int parse_dir(
+int SelvaTraversal_ParseDir(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         enum SelvaTraversal *dir,
@@ -180,7 +180,7 @@ int parse_dir(
     return err;
 }
 
-int parse_order(
+int SelvaTraversal_ParseOrder(
         const RedisModuleString **order_by_field,
         enum SelvaResultOrder *order,
         const RedisModuleString *txt,

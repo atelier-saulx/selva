@@ -44,8 +44,9 @@ static int agg_fn_count_obj(struct SelvaObject *obj __unused, struct AggregateCo
     return 0;
 }
 
-static int agg_fn_count_uniq_obj(struct SelvaObject *obj __unused,struct AggregateCommand_Args* args __unused) {
+static int agg_fn_count_uniq_obj(struct SelvaObject *obj __unused, struct AggregateCommand_Args* args __unused) {
     // TODO
+    return 0;
 }
 
 static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
@@ -541,7 +542,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     enum SelvaResultOrder order = HIERARCHY_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
-        err = parse_order(&order_by_field, &order,
+        err = SelvaTraversal_ParseOrder(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
                           argv[ARGV_ORDER_FLD],
                           argv[ARGV_ORDER_ORD]);
@@ -705,7 +706,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             /*
              * Get the direction parameter.
              */
-            err = parse_dir(ctx, hierarchy, &dir, &ref_field, nodeId, algo, argv[ARGV_DIRECTION]);
+            err = SelvaTraversal_ParseDir(ctx, hierarchy, &dir, &ref_field, nodeId, algo, argv[ARGV_DIRECTION]);
             if (err) {
                 fprintf(stderr, "%s:%d: Error \"%s\" while selecting the field and dir for the node \"%.*s\", skipping\n",
                         __FILE__, __LINE__,
@@ -873,14 +874,6 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return REDISMODULE_OK;
     }
 
-    /*
-     * Select traversal method.
-     */
-    enum SelvaTraversalAlgo algo = HIERARCHY_BFS;
-    // err = parse_algo(&algo, argv[ARGV_ALGO]);
-    // if (err) {
-    //     return replyWithSelvaErrorf(ctx, err, "traversal method");
-    // }
     RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
     TO_STR(agg_fn_rms);
     const char agg_fn_val = agg_fn_rms_str[0];
@@ -898,7 +891,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     enum SelvaResultOrder order = HIERARCHY_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
-        err = parse_order(&order_by_field, &order,
+        err = SelvaTraversal_ParseOrder(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
                           argv[ARGV_ORDER_FLD],
                           argv[ARGV_ORDER_ORD]);
@@ -957,7 +950,6 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
     struct rpn_ctx *rpn_ctx = NULL;
     struct rpn_expression *filter_expression = NULL;
-    struct rpn_ctx *recursive_rpn_ctx = NULL;
 
     /*
      * Prepare the filter expression if given.

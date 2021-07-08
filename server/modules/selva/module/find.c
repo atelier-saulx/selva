@@ -1257,7 +1257,7 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
     enum SelvaResultOrder order = HIERARCHY_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
-        err = parse_order(&order_by_field, &order,
+        err = SelvaTraversal_ParseOrder(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
                           argv[ARGV_ORDER_FLD],
                           argv[ARGV_ORDER_ORD]);
@@ -1443,7 +1443,7 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
             /*
              * Get the direction parameter.
              */
-            err = parse_dir(ctx, hierarchy, &dir, &ref_field, nodeId, algo, argv[ARGV_DIRECTION]);
+            err = SelvaTraversal_ParseDir(ctx, hierarchy, &dir, &ref_field, nodeId, algo, argv[ARGV_DIRECTION]);
             if (err) {
                 fprintf(stderr, "%s:%d: Error \"%s\" while selecting the field and dir for the node \"%.*s\", skipping\n",
                         __FILE__, __LINE__,
@@ -1608,7 +1608,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     enum SelvaResultOrder order = HIERARCHY_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
-        err = parse_order(&order_by_field, &order,
+        err = SelvaTraversal_ParseOrder(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
                           argv[ARGV_ORDER_FLD],
                           argv[ARGV_ORDER_ORD]);

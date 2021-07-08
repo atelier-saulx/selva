@@ -66,13 +66,6 @@ struct SelvaModify_HierarchyNode;
 
 extern const struct SelvaArgParser_EnumType merge_types[3];
 
-int parse_order(
-        const struct RedisModuleString **order_by_field,
-        enum SelvaResultOrder *order,
-        const struct RedisModuleString *txt,
-        const struct RedisModuleString *fld,
-        const struct RedisModuleString *ord);
-
 struct FindCommand_Args {
     struct RedisModuleCtx *ctx;
     struct RedisModuleString *lang;
@@ -117,7 +110,13 @@ struct FindCommand_Args {
     struct Selva_SubscriptionMarker *marker; /*!< Used by FindInSub. */
 };
 
-int parse_dir(
+int SelvaTraversal_ParseOrder(
+        const struct RedisModuleString **order_by_field,
+        enum SelvaResultOrder *order,
+        const struct RedisModuleString *txt,
+        const struct RedisModuleString *fld,
+        const struct RedisModuleString *ord);
+int SelvaTraversal_ParseDir(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         enum SelvaTraversal *dir,
