@@ -87,6 +87,9 @@ export type Aggregate = {
   $recursive?: boolean
   $function?: string | { $name: string; $args: string[] }
   $find?: Find
+  $sort?: Sort
+  $offset?: number
+  $limit?: number
 }
 
 export type Sort = {
