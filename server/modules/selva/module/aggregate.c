@@ -349,13 +349,13 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
 }
 
 static size_t AggregateCommand_AggregateOrderedResult(
-        RedisModuleCtx *ctx,
-        RedisModuleString *lang,
+        RedisModuleCtx *ctx __unused,
+        RedisModuleString *lang __unused,
         void *arg,
         SelvaModify_Hierarchy *hierarchy,
         ssize_t offset,
         ssize_t limit,
-        struct SelvaObject *fields,
+        struct SelvaObject *fields __unused,
         SVector *order_result) {
     struct FindCommand_OrderedItem *item;
     struct SVectorIterator it;
