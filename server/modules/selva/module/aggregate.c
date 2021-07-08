@@ -402,12 +402,12 @@ static size_t AggregateCommand_AggregateOrderedResult(
 
 static size_t AggregateCommand_AggregateOrderedArrayResult(
         RedisModuleCtx *ctx,
-        RedisModuleString *lang,
-        void *arg,
-        SelvaModify_Hierarchy *hierarchy,
+        RedisModuleString *lang __unused,
+        void *arg __unused,
+        SelvaModify_Hierarchy *hierarchy __unused,
         ssize_t offset,
         ssize_t limit,
-        struct SelvaObject *fields,
+        struct SelvaObject *fields __unused,
         SVector *order_result) {
     struct FindCommand_OrderedItem *item;
     struct SVectorIterator it;
