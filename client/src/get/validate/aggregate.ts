@@ -7,6 +7,7 @@ import validateFilter from './filter'
 import { get } from '..'
 import { addExtraQuery, ExtraQueries } from '.'
 import validateFind from './find'
+import validateSort from './sort'
 
 // import fetch from 'node-fetch'
 
@@ -138,7 +139,17 @@ export default async function validateAggregate(
 
   const allowed = checkAllowed(
     find,
-    new Set(['$function', '$traverse', '$recursive', '$filter', '$db', '$find'])
+    new Set([
+      '$function',
+      '$traverse',
+      '$recursive',
+      '$filter',
+      '$db',
+      '$find',
+      '$sort',
+      '$limit',
+      '$offset',
+    ])
   )
   if (allowed !== true) {
     err(`Unsupported operator or field ${allowed}`)
@@ -213,5 +224,9 @@ export default async function validateAggregate(
         value: textSearchIds,
       })
     }
+  }
+
+  if (find.$sort) {
+    validateSort(client, find.$sort, path)
   }
 }

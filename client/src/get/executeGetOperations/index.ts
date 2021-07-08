@@ -106,7 +106,9 @@ export async function addMarker(
   }
 
   const markerId = adler32(marker)
-  const markerType = [marker.type, marker.refField, marker.traversal].filter((v) => v)
+  const markerType = [marker.type, marker.refField, marker.traversal].filter(
+    (v) => v
+  )
   await client.redis.selva_subscriptions_add(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     '___selva_hierarchy',

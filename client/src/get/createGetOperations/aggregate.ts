@@ -7,10 +7,11 @@ const createAggregateOperation = (
   props: GetOptions,
   id: string,
   field: string,
-  limit: number = -1,
-  offset: number = 0,
+  limit?: number,
+  offset?: number,
   sort?: Sort | Sort[]
 ): GetOperationAggregate => {
+  sort = sort || aggregate.$sort
   const op: GetOperationAggregate = {
     type: 'aggregate',
     id,
@@ -19,8 +20,8 @@ const createAggregateOperation = (
     sourceField: field.substr(1),
     recursive: !!aggregate.$recursive,
     options: {
-      limit,
-      offset,
+      limit: limit || aggregate.$limit || -1,
+      offset: offset || aggregate.$offset || 0,
       sort: Array.isArray(sort) ? sort[0] : sort || undefined,
     },
     function:
