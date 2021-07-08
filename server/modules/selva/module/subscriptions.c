@@ -546,7 +546,7 @@ static void marker_set_node_id(struct Selva_SubscriptionMarker *marker, Selva_No
     memcpy(marker->node_id, node_id, SELVA_NODE_ID_SIZE);
 }
 
-static void marker_set_dir(struct Selva_SubscriptionMarker *marker, enum SelvaModify_HierarchyTraversal dir) {
+static void marker_set_dir(struct Selva_SubscriptionMarker *marker, enum SelvaTraversal dir) {
     marker->dir = dir;
 }
 
@@ -1549,7 +1549,7 @@ void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarc
     send_trigger_events(hierarchy);
 }
 
-static int parse_subscription_type(enum SelvaModify_HierarchyTraversal *dir, RedisModuleString *arg) {
+static int parse_subscription_type(enum SelvaTraversal *dir, RedisModuleString *arg) {
     TO_STR(arg);
 
     if (!strcmp("none", arg_str)) {
@@ -1639,7 +1639,7 @@ int Selva_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     /*
      * Parse the traversal argument.
      */
-    enum SelvaModify_HierarchyTraversal sub_dir;
+    enum SelvaTraversal sub_dir;
     const char *ref_field = NULL;
     err = parse_subscription_type(&sub_dir, argv[ARGV_MARKER_TYPE]);
     if (err) {

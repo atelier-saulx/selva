@@ -19,6 +19,7 @@
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"
+#include "traversal.h"
 #include "subscriptions.h"
 #include "svector.h"
 
@@ -1713,7 +1714,7 @@ static int bfs_expression(
     return 0;
 }
 
-const char *SelvaModify_HierarchyDir2str(enum SelvaModify_HierarchyTraversal dir) {
+const char *SelvaModify_HierarchyDir2str(enum SelvaTraversal dir) {
     switch (dir) {
     case SELVA_HIERARCHY_TRAVERSAL_NONE:
         return (const char *)"none";
@@ -1744,7 +1745,7 @@ const char *SelvaModify_HierarchyDir2str(enum SelvaModify_HierarchyTraversal dir
 
 static int traverse_adjacent(
         SelvaModify_HierarchyNode *head,
-        enum SelvaModify_HierarchyTraversal dir,
+        enum SelvaTraversal dir,
         const TraversalCallback *tcb) {
     SVector *adjVec;
     struct SVectorIterator it;
@@ -1916,7 +1917,7 @@ static int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *n
 int SelvaModify_TraverseHierarchy(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
-        enum SelvaModify_HierarchyTraversal dir,
+        enum SelvaTraversal dir,
         const struct SelvaModify_HierarchyCallback *cb) {
     const TraversalCallback tcb = {
         .head_cb = NULL,

@@ -280,11 +280,11 @@ ssize_t SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_
  */
 ssize_t SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
 
-const char *SelvaModify_HierarchyDir2str(enum SelvaModify_HierarchyTraversal dir);
+const char *SelvaModify_HierarchyDir2str(enum SelvaTraversal dir);
 int SelvaModify_TraverseHierarchy(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
-        enum SelvaModify_HierarchyTraversal dir,
+        enum SelvaTraversal dir,
         const struct SelvaModify_HierarchyCallback *cb);
 int SelvaModify_TraverseHierarchyRef(
         struct RedisModuleCtx *ctx,
@@ -329,6 +329,6 @@ int HierarchyReply_WithTraversal(
         const Selva_NodeId nodeId,
         size_t nr_types,
         const Selva_NodeType *types,
-        enum SelvaModify_HierarchyTraversal dir);
+        enum SelvaTraversal dir);
 
 #endif /* SELVA_MODIFY_HIERARCHY */

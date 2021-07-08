@@ -51,7 +51,7 @@ int HierarchyReply_WithTraversal(
         const Selva_NodeId nodeId,
         size_t nr_types,
         const Selva_NodeType *types,
-        enum SelvaModify_HierarchyTraversal dir) {
+        enum SelvaTraversal dir) {
     const size_t skip =
         dir == SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS ||
         dir == SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS;

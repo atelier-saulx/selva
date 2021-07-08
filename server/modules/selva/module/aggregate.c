@@ -263,7 +263,7 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
         } else {
             struct FindCommand_OrderedItem *item;
 
-            item = createFindCommand_OrderItem(args->find_args.ctx, args->find_args.lang, node, args->find_args.order_field);
+            item = SelvaTraversal_CreateOrderItem(args->find_args.ctx, args->find_args.lang, node, args->find_args.order_field);
             if (item) {
                 SVector_InsertFast(args->find_args.order_result, item);
             } else {
@@ -329,7 +329,7 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
             }
         } else {
             struct FindCommand_OrderedItem *item;
-            item = createFindCommand_ObjectBasedOrderItem(args->find_args.ctx, args->find_args.lang, obj, args->find_args.order_field);
+            item = SelvaTraversal_CreateObjectBasedOrderItem(args->find_args.ctx, args->find_args.lang, obj, args->find_args.order_field);
             if (item) {
                 SVector_InsertFast(args->find_args.order_result, item);
             } else {
@@ -542,7 +542,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     /*
      * Parse the order arg.
      */
-    enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
+    enum SelvaResultOrder order = HIERARCHY_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
@@ -653,7 +653,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     TO_STR(ids);
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
+        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, SelvaTraversal_GetOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
             goto out;
         }
@@ -699,7 +699,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     size_t merge_nr_fields = 0;
     const char *array_traversal_ref_field = NULL;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
-        enum SelvaModify_HierarchyTraversal dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
+        enum SelvaTraversal dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
         Selva_NodeId nodeId;
         RedisModuleString *ref_field = NULL;
 
@@ -719,7 +719,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
                 continue;
             }
         } else {
-            /* recursive can use this for get_skip() */
+            /* recursive can use this for SelvaTraversal_GetSkip() */
             dir = SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS;
         }
 
@@ -727,7 +727,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
          * Run BFS/DFS.
          */
         ssize_t tmp_limit = -1;
-        const size_t skip = get_skip(dir); /* Skip n nodes from the results. */
+        const size_t skip = SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
         struct FindCommand_Args find_args = {
             .ctx = ctx,
             .lang = lang,
@@ -900,7 +900,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     /*
      * Parse the order arg.
      */
-    enum hierarchy_result_order order = HIERARCHY_RESULT_ORDER_NONE;
+    enum SelvaResultOrder order = HIERARCHY_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
         err = parse_order(&order_by_field, &order,
@@ -1011,7 +1011,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     TO_STR(ids);
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, getOrderFunc(order))) {
+        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, SelvaTraversal_GetOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
             goto out;
         }

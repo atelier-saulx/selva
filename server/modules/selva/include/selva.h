@@ -50,25 +50,6 @@ typedef int32_t Selva_SubscriptionMarkerId;
 
 #define SELVA_SUBSCRIPTION_MARKER_ID_MIN INT32_MIN
 
-/**
- * Hierarchy traversal order.
- * Recognized by SelvaModify_TraverseHierarchy().
- */
-enum SelvaModify_HierarchyTraversal {
-    SELVA_HIERARCHY_TRAVERSAL_NONE, /*!< Do nothing. */
-    SELVA_HIERARCHY_TRAVERSAL_NODE, /*!< Visit just the given node. */
-    SELVA_HIERARCHY_TRAVERSAL_CHILDREN, /*!< Visit children of the given node. */
-    SELVA_HIERARCHY_TRAVERSAL_PARENTS, /*!< Visit parents of the given node. */
-    SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, /*!< Visit ancestors of the given node using BFS. */
-    SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS, /*!< Visit descendants of the given node using BFS. */
-    SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS, /*!< Visit ancestors of the given node using DFS. */
-    SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS, /*!< Visit descendants of the given node using DFS. */
-    SELVA_HIERARCHY_TRAVERSAL_DFS_FULL, /*!< Full DFS traversal of the whole hierarchy. */
-    SELVA_HIERARCHY_TRAVERSAL_REF, /*!< Visit nodes pointed by a ref field. */
-    SELVA_HIERARCHY_TRAVERSAL_ARRAY, /*!< Visit nodes pointed by a ref field. */
-    SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD, /*!< Traverse an edge field according to its constraints using BFS. */
-};
-
 size_t Selva_NodeIdLen(const Selva_NodeId nodeId);
 
 static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {

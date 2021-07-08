@@ -3,6 +3,7 @@
 #define SELVA_MODIFY_SUBSCRIPTIONS
 
 #include "selva.h"
+#include "traversal.h"
 #include "svector.h"
 #include "rpn.h"
 
@@ -102,7 +103,7 @@ struct Selva_SubscriptionMarker {
 
     Selva_SubscriptionMarkerAction *marker_action;
 
-    enum SelvaModify_HierarchyTraversal dir;
+    enum SelvaTraversal dir;
     union {
         /*
          * node_id is never used when SELVA_SUBSCRIPTION_FLAG_TRIGGER is set.
