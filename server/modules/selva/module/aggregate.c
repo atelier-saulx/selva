@@ -60,7 +60,7 @@ static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     struct SVectorIterator it;
     SVector_ForeachBegin(&it, fields);
 
-    RedisModuleString *field;
+    const RedisModuleString *field;
     while ((field = SVector_Foreach(&it))) {
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
         if (field_type == SELVA_OBJECT_LONGLONG) {
