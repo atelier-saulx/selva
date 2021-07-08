@@ -111,7 +111,13 @@ struct Selva_SubscriptionMarker {
         Selva_NodeId node_id;
         enum Selva_SubscriptionTriggerType event_type;
     };
-    char *ref_field; /*!< Ref field name for traversal when dir requires it. */
+    /*
+     * Which one is used depends on dir.
+     */
+    union {
+        char *ref_field; /*!< Ref field name for traversal when dir requires it. */
+        struct rpn_expression *traversal_expression; /*!< Used when SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION. */
+    };
     struct rpn_ctx *filter_ctx;
     struct rpn_expression *filter_expression;
     char *fields; /* \n separated and \0 terminated list of field names considered for change events. */
@@ -168,11 +174,11 @@ char *Selva_SubscriptionId2str(char dest[SELVA_SUBSCRIPTION_ID_STR_LEN + 1], con
 int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src);
 
 int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers);
-void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy);
+void SelvaSubscriptions_DestroyAll(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy);
 int SelvaSubscriptions_TraverseMarker(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const struct SelvaModify_HierarchyCallback *cb);
 int SelvaSubscriptions_Refresh(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
 void SelvaSubscriptions_RefreshByMarker(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SVector *markers);
-void SelvaSubscriptions_Delete(struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
+void SelvaSubscriptions_Delete(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
 int Selva_AddSubscriptionAliasMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         Selva_SubscriptionId sub_id,
@@ -191,6 +197,7 @@ struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
  * marker removed from a node.
  */
 void SelvaSubscriptions_ClearAllMarkers(
+        struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         struct SelvaModify_HierarchyNode *node);
 

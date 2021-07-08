@@ -91,6 +91,7 @@ int Edge_Add(
         struct SelvaModify_HierarchyNode *src_node,
         struct SelvaModify_HierarchyNode *dst_node);
 int Edge_Delete(
+        struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         struct EdgeField *edge_field,
         struct SelvaModify_HierarchyNode *src_node,
