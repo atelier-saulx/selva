@@ -462,7 +462,7 @@ static size_t AggregateCommand_PrintAggregateResult(RedisModuleCtx *ctx, struct 
         RedisModule_ReplyWithLongLong(ctx, args->aggregation_result_int);
         break;
     case SELVA_AGGREGATE_TYPE_AVG_FIELD:
-        RedisModule_ReplyWithDouble(ctx, args->aggregation_result_double / args->item_count);
+        RedisModule_ReplyWithDouble(ctx, args->aggregation_result_double / (double)args->item_count);
         break;
     default:
         RedisModule_ReplyWithDouble(ctx, args->aggregation_result_double);
