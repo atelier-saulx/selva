@@ -66,7 +66,7 @@ static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
         if (field_type == SELVA_OBJECT_LONGLONG) {
             long long lv = 0;
             SelvaObject_GetLongLong(obj, field, &lv);
-            args->aggregation_result_double += lv;
+            args->aggregation_result_double += (double)lv;
 
             args->item_count++;
             break;
