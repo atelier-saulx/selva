@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
+#include "cdefs.h"
+#include "funmap.h"
 #include "selva.h"
 #include "redismodule.h"
 #include "arg_parser.h"
@@ -162,24 +164,25 @@ static int agg_fn_max_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     return 0;
 }
 
+static int (*agg_funcs[])(struct SelvaObject *, struct AggregateCommand_Args *) = {
+    agg_fn_count_obj,
+    agg_fn_count_uniq_obj,
+    agg_fn_sum_obj,
+    agg_fn_avg_obj,
+    agg_fn_min_obj,
+    agg_fn_max_obj,
+    NULL
+};
+
+GENERATE_STATIC_FUNMAP(get_agg_func, agg_funcs, int, num_elem(agg_funcs) - 1);
 
 static int apply_agg_fn_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
-    int err = 0;
-    if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_NODE) {
-        err = agg_fn_count_obj(obj, args);
-    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
-        err = agg_fn_count_uniq_obj(obj, args);
-    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_SUM_FIELD) {
-        err = agg_fn_sum_obj(obj, args);
-    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_AVG_FIELD) {
-        err = agg_fn_avg_obj(obj, args);
-    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_MIN_FIELD) {
-        err = agg_fn_min_obj(obj, args);
-    } else if (args->aggregate_type == SELVA_AGGREGATE_TYPE_MAX_FIELD) {
-        err = agg_fn_max_obj(obj, args);
-    }
+    int index = args->aggregate_type - '0';
+    int (*agg_func)(struct SelvaObject *, struct AggregateCommand_Args *);
 
-    return err;
+    agg_func = get_agg_func(index);
+
+    return (!agg_func) ? 0 : agg_func(obj, args);
 }
 
 static int apply_agg_fn(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
