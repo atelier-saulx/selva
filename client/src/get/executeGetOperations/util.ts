@@ -27,11 +27,13 @@ export function buildResultFromIdFieldAndValue(
     used.add(f)
   }
 
-  const allDefaults = new Set(Object.keys(defaults))
-  const unusedDefaults = new Set([...allDefaults].filter((x) => !used.has(x)))
+  if (defaults) {
+    const allDefaults = new Set(Object.keys(defaults))
+    const unusedDefaults = new Set([...allDefaults].filter((x) => !used.has(x)))
 
-  for (const f of unusedDefaults) {
-    setNestedResult(o, f.slice(field.length + 1), defaults[f])
+    for (const f of unusedDefaults) {
+      setNestedResult(o, f.slice(field.length + 1), defaults[f])
+    }
   }
 
   return o
