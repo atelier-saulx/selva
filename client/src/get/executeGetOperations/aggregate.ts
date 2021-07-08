@@ -303,7 +303,6 @@ const executeAggregateOperation = async (
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       FN_TO_ENUM[op.function.name] || '0',
-      sourceField,
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',

@@ -84,8 +84,7 @@ static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
 }
 
 static int agg_fn_avg_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
-    struct SelvaObject *fields = args->find_args.fields;
-    agg_fn_sum_obj(obj, args);
+    return agg_fn_sum_obj(obj, args);
 }
 
 static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
@@ -317,9 +316,8 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
         if (!sort) {
             ssize_t *nr_nodes = args->find_args.nr_nodes;
             ssize_t * restrict limit = args->find_args.limit;
-            int err;
 
-            err = apply_agg_fn_obj(obj, args);
+            (void)apply_agg_fn_obj(obj, args);
 
             *nr_nodes = *nr_nodes + 1;
 
@@ -412,8 +410,6 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
     struct FindCommand_OrderedItem *item;
     struct SVectorIterator it;
     size_t len = 0;
-
-    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
 
     /*
      * First handle the offsetting.
@@ -840,19 +836,18 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     const int ARGV_LANG      = 1;
     const int ARGV_REDIS_KEY = 2;
     const int ARGV_AGG_FN    = 3;
-    const int ARGV_DIRECTION = 4;
-    const int ARGV_ORDER_TXT = 5;
-    const int ARGV_ORDER_FLD = 6;
-    const int ARGV_ORDER_ORD = 7;
-    int ARGV_OFFSET_TXT      = 5;
-    int ARGV_OFFSET_NUM      = 6;
-    int ARGV_LIMIT_TXT       = 5;
-    int ARGV_LIMIT_NUM       = 6;
-    int ARGV_FIELDS_TXT      = 5;
-    int ARGV_FIELDS_VAL      = 6;
-    int ARGV_NODE_IDS        = 5;
-    int ARGV_FILTER_EXPR     = 6;
-    int ARGV_FILTER_ARGS     = 7;
+    const int ARGV_ORDER_TXT = 4;
+    const int ARGV_ORDER_FLD = 5;
+    const int ARGV_ORDER_ORD = 6;
+    int ARGV_OFFSET_TXT      = 4;
+    int ARGV_OFFSET_NUM      = 5;
+    int ARGV_LIMIT_TXT       = 4;
+    int ARGV_LIMIT_NUM       = 5;
+    int ARGV_FIELDS_TXT      = 4;
+    int ARGV_FIELDS_VAL      = 5;
+    int ARGV_NODE_IDS        = 4;
+    int ARGV_FILTER_EXPR     = 5;
+    int ARGV_FILTER_ARGS     = 6;
 #define SHIFT_ARGS(i) \
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
@@ -963,7 +958,6 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     struct rpn_ctx *rpn_ctx = NULL;
     struct rpn_expression *filter_expression = NULL;
     struct rpn_ctx *recursive_rpn_ctx = NULL;
-    struct rpn_expression *recursive_rpn_expr = NULL;
 
     /*
      * Prepare the filter expression if given.
