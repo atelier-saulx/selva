@@ -46,7 +46,7 @@ static const struct SelvaArgParser_EnumType trigger_event_types[] = {
     }
 };
 
-static void clear_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, Selva_NodeId node_id);
+static void clear_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const Selva_NodeId node_id);
 
 static int marker_svector_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
     const struct Selva_SubscriptionMarker *a = *(const struct Selva_SubscriptionMarker **)a_raw;
@@ -869,7 +869,7 @@ void SelvaSubscriptions_RefreshByMarker(RedisModuleCtx *ctx, struct SelvaModify_
  * Clear the given marker of a subscription from the nodes following traversal
  * direction starting from node_id.
  */
-static void clear_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, Selva_NodeId node_id) {
+static void clear_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const Selva_NodeId node_id) {
     struct SelvaModify_HierarchyCallback cb = {
         .node_cb = clear_node_marker_cb,
         .node_arg = marker,
@@ -1711,7 +1711,7 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
     struct rpn_expression *filter_expression = NULL;
 
     if (sub_dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
-        RedisModuleString *input = argv[ARGV_REF_FIELD];
+        const RedisModuleString *input = argv[ARGV_REF_FIELD];
         TO_STR(input);
 
         traversal_expression = rpn_compile(input_str);
