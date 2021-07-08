@@ -279,7 +279,7 @@ async function checkForNextRefresh(
   )
 }
 
-const findIds = async (
+export const findIds = async (
   client: SelvaClient,
   op: GetOperationFind,
   lang: string,
@@ -597,6 +597,7 @@ const executeFindOperation = async (
         ctx
       )
       prevIds = ids
+
       nestedOperation = nestedOperation.nested
     }
 

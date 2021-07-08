@@ -3,6 +3,8 @@
 #define SELVA_NODE
 
 #include "selva.h"
+#include "redismodule.h"
+#include "selva_object.h"
 
 struct RedisModuleKey;
 struct RedisModuleCtx;

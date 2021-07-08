@@ -7,6 +7,7 @@ import validateField from './field'
 import validateInherit from './inherit'
 import validateList from './list'
 import validateFind from './find'
+import validateAggregate from './aggregate'
 
 export type TextSearchExtraQuery = {
   type: 'text_search'
@@ -146,6 +147,14 @@ async function validateNested(
         await validateList(extraQueries, props, client, props.$list, path)
       } else if (field === '$find') {
         await validateFind(extraQueries, props, client, props.$find, path)
+      } else if (field === '$aggregate') {
+        await validateAggregate(
+          extraQueries,
+          props,
+          client,
+          props.$aggregate,
+          path
+        )
       } else if (field === '$default') {
         continue
       } else if (field === '$flatten') {
@@ -286,6 +295,8 @@ export default async function validateTopLevel(
         await validateList(extraQueries, props, client, props.$list, path)
       } else if (field === '$find') {
         await validateFind(extraQueries, props, client, props.$find, path)
+      } else if (field === '$aggregate') {
+        await validateAggregate(extraQueries, props, client, props.$find, path)
       } else {
         throw new Error(`
           Top level query operator ${field} is not supported. Did you mean one of the following supported top level query options?

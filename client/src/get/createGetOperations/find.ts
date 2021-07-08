@@ -1,5 +1,6 @@
 import { Find, GetOperationFind, GetOptions, Sort } from '../types'
 import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
+import createAggregateOperation from './aggregate'
 
 const createFindOperation = (
   find: Find,

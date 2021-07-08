@@ -2,6 +2,7 @@ import { SelvaClient } from '../../'
 import { GetOperation, GetOptions } from '../types'
 
 import find from './find'
+import aggregate from './aggregate'
 import list from './list'
 import all from './all'
 import createInheritOperation from './inherit'
@@ -41,6 +42,8 @@ export default function createGetOperations(
     ops.push(list(props, id, field))
   } else if (props.$find) {
     ops.push(find(props.$find, props, id, field, true))
+  } else if (props.$aggregate) {
+    ops.push(aggregate(props.$aggregate, props, id, field))
   } else if (props.$default) {
     ops.push({
       type: 'db',

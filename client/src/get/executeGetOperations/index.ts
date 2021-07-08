@@ -5,6 +5,7 @@ import resolveId from '../resolveId'
 import createGetOperations from '../createGetOperations'
 import { GetOptions } from '../'
 import find from './find'
+import aggregate from './aggregate'
 import inherit from './inherit'
 import { Rpn } from '@saulx/selva-query-ast-parser'
 import { FieldSchemaArrayLike, Schema } from '~selva/schema'
@@ -584,6 +585,8 @@ export const executeGetOperation = async (
     )
   } else if (op.type === 'find') {
     return find(client, op, lang, ctx)
+  } else if (op.type === 'aggregate') {
+    return aggregate(client, op, lang, ctx)
   } else if (op.type === 'inherit') {
     return inherit(client, op, lang, ctx)
   } else if (op.type === 'db') {
