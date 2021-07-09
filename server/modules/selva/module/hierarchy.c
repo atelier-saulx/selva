@@ -1758,22 +1758,6 @@ static int traverse_adjacent(
     return 0;
 }
 
-static int traverse_ref_edge_field(
-        const struct EdgeField *edge_field,
-        const struct SelvaModify_HierarchyCallback *cb) {
-    struct SVectorIterator it;
-    SelvaModify_HierarchyNode *dst;
-
-    SVector_ForeachBegin(&it, &edge_field->arcs);
-    while ((dst = SVector_Foreach(&it))) {
-        if (cb->node_cb(dst, cb->node_arg)) {
-            return 0;
-        }
-    }
-
-    return 0;
-}
-
 static int traverse_ref_string_field(
         SelvaModify_Hierarchy *hierarchy,
         struct SelvaObject *head_obj,
@@ -1818,21 +1802,8 @@ static int traverse_ref(
         size_t ref_field_len,
         const struct SelvaModify_HierarchyCallback *cb) {
     RedisModuleString *head_id;
-    const struct EdgeField *edge_field;
     struct SelvaObject *head_obj;
     int err;
-
-    /*
-     * Check if the field_name refers to an edge field.
-     */
-    edge_field = Edge_GetField(head, ref_field_str, ref_field_len);
-    if (edge_field) {
-        return traverse_ref_edge_field(edge_field, cb);
-    }
-
-    /*
-     * Check if the field_name is a string field on the node object.
-     */
 
     head_id = RedisModule_CreateString(ctx, head->id, Selva_NodeIdLen(head->id));
     if (!head_id) {

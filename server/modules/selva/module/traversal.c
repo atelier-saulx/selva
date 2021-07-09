@@ -22,6 +22,7 @@ const struct SelvaArgParser_EnumType merge_types[] = {
         .name = "deepMerge",
         .id = MERGE_STRATEGY_DEEP,
     },
+    /* Must be last. */
     {
         .name = NULL,
         .id = 0,
