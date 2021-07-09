@@ -138,5 +138,6 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
         const struct RedisModuleString *order_field);
 int SelvaTraversal_FieldsContains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len);
 int SelvaTraversal_GetSkip(enum SelvaTraversal dir);
+const char *SelvaTraversal_Dir2str(enum SelvaTraversal dir);
 
 #endif /* SELVA_TRAVERSAL */

@@ -280,7 +280,6 @@ ssize_t SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_
  */
 ssize_t SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
 
-const char *SelvaModify_HierarchyDir2str(enum SelvaTraversal dir);
 int SelvaModify_TraverseHierarchy(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,

@@ -2435,7 +2435,7 @@ int SelvaSubscriptions_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             marker_array_len++;
         } else {
             RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "node_id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, marker->node_id));
-            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "dir: %s", SelvaModify_HierarchyDir2str(marker->dir)));
+            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "dir: %s", SelvaTraversal_Dir2str(marker->dir)));
             marker_array_len += 2;
 
             if (marker->marker_flags & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
