@@ -968,7 +968,7 @@ void SelvaSubscriptions_ClearAllMarkers(
      */
     SVector_ForeachBegin(&it, &markers);
     while ((marker = SVector_Foreach(&it))) {
-        assert(marker->marker_flags != 0);
+        assert(marker->sub);
         clear_sub(ctx, hierarchy, marker, node_id);
         marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
     }
@@ -2438,7 +2438,7 @@ int SelvaSubscriptions_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "dir: %s", SelvaTraversal_Dir2str(marker->dir)));
             marker_array_len += 2;
 
-            if (marker->marker_flags & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
+            if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_REF || marker->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD) {
                 RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "field: %s", marker->ref_field));
                 marker_array_len++;
             }

@@ -22,53 +22,55 @@
  *  flags_filters.
  */
 
-/**
- * Marker cleared on a hierarchy change.
- */
-#define SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY    0x0001
+enum SelvaSubscriptionsMarkerFlags {
+    /**
+     * Marker cleared on a hierarchy change.
+     */
+    SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY = 0x0001,
 
-/**
- * Hierarchy changed event.
- */
-#define SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY    0x0002
+    /**
+     * Hierarchy changed event.
+     */
+    SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY = 0x0002,
 
-/**
- * Field changed.
- * Matches if a named field changes.
- */
-#define SELVA_SUBSCRIPTION_FLAG_CH_FIELD        0x0004
+    /**
+     * Field changed.
+     * Matches if a named field changes.
+     */
+    SELVA_SUBSCRIPTION_FLAG_CH_FIELD = 0x0004,
 
-/**
- * Alias changed.
- * Matches if an alias is moved or deleted.
- * This flag also acts a as modifier and it clears the markers of the
- * subscription after an event is deferred.
- */
-#define SELVA_SUBSCRIPTION_FLAG_CH_ALIAS        0x0008
+    /**
+     * Alias changed.
+     * Matches if an alias is moved or deleted.
+     * This flag also acts a as modifier and it clears the markers of the
+     * subscription after an event is deferred.
+     */
+    SELVA_SUBSCRIPTION_FLAG_CH_ALIAS = 0x0008,
 
-/**
- * Reference subscription.
- * Ignores changes to the root node of the marker and only
- * sends events for changes to referenced nodes. I.e. when
- * node_id != marker->node_id.
- */
-#define SELVA_SUBSCRIPTION_FLAG_REF             0x0100
+    /**
+     * Reference subscription.
+     * Ignores changes to the root node of the marker and only
+     * sends events for changes to referenced nodes. I.e. when
+     * node_id != marker->node_id.
+     */
+    SELVA_SUBSCRIPTION_FLAG_REF = 0x0100,
 
-/**
- * Detached marker.
- * The marker should not be applied to nodes directly regardless
- * whether tarversal direction is set.
- */
-#define SELVA_SUBSCRIPTION_FLAG_DETACH          0x0200
+    /**
+     * Detached marker.
+     * The marker should not be applied to nodes directly regardless
+     * whether tarversal direction is set.
+     */
+    SELVA_SUBSCRIPTION_FLAG_DETACH = 0x0200,
 
-/**
- * Trigger marker.
- * Send a subscription trigger event.
- */
-#define SELVA_SUBSCRIPTION_FLAG_TRIGGER         0x0410
+    /**
+     * Trigger marker.
+     * Send a subscription trigger event.
+     */
+    SELVA_SUBSCRIPTION_FLAG_TRIGGER = 0x0410,
 
-#define SELVA_SUBSCRIPTION_MATCHER_FLAGS_MASK   0x00ff
-#define SELVA_SUBSCRIPTION_MODIFIER_FLAGS       0xff00
+    SELVA_SUBSCRIPTION_MATCHER_FLAGS_MASK = 0x00ff,
+    SELVA_SUBSCRIPTION_MODIFIER_FLAGS = 0xff00,
+};
 
 /*
  * End of Subscription Marker Flags.
