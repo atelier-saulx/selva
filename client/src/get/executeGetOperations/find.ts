@@ -11,7 +11,7 @@ import {
 import {
   executeNestedGetOperations,
   ExecContext,
-  sourceFieldToMarkerType,
+  sourceFieldToDir,
   addMarker,
 } from './'
 import { padId, joinIds } from '../utils'
@@ -355,7 +355,7 @@ export const findIds = async (
         }
         const id = op.id.slice(i, endLen)
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToMarkerType(sourceField),
+          ...sourceFieldToDir(sourceField),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -371,7 +371,7 @@ export const findIds = async (
       }
     } else {
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToMarkerType(sourceField),
+        ...sourceFieldToDir(sourceField),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -514,7 +514,7 @@ const findFields = async (
         const id = op.id.slice(i, endLen)
 
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToMarkerType(sourceField),
+          ...sourceFieldToDir(sourceField),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -530,7 +530,7 @@ const findFields = async (
       }
     } else {
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToMarkerType(sourceField),
+        ...sourceFieldToDir(sourceField),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,

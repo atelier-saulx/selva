@@ -17,7 +17,7 @@ import {
 import {
   executeNestedGetOperations,
   ExecContext,
-  sourceFieldToMarkerType,
+  sourceFieldToDir,
   addMarker,
 } from './'
 import { padId, joinIds } from '../utils'
@@ -343,7 +343,7 @@ const executeAggregateOperation = async (
         }
         const id = op.id.slice(i, endLen)
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToMarkerType(sourceField),
+          ...sourceFieldToDir(sourceField),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -359,7 +359,7 @@ const executeAggregateOperation = async (
       }
     } else {
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToMarkerType(sourceField),
+        ...sourceFieldToDir(sourceField),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,

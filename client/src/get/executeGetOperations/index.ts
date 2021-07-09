@@ -55,7 +55,7 @@ export function adler32(marker: SubscriptionMarker): number {
   return res & 0x7fffffff
 }
 
-export function sourceFieldToMarkerType(
+export function sourceFieldToDir(
   field: string
 ): { type: SubscriptionMarker['type']; refField?: string } {
   const defaultFields: Array<SubscriptionMarker['type']> = [
