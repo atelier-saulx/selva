@@ -430,7 +430,6 @@ const TYPE_TO_SPECIAL_OP: Record<
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         '',
         '___selva_hierarchy',
-        'bfs',
         'ancestors',
         paddedId
       )
@@ -439,7 +438,6 @@ const TYPE_TO_SPECIAL_OP: Record<
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         '',
         '___selva_hierarchy',
-        'bfs',
         'descendants',
         paddedId
       )

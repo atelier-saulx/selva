@@ -178,7 +178,7 @@ test.serial('hierarchy replication', async (t) => {
     await new Promise((resolve, reject) =>
       rclientReplica.send_command(
         'selva.hierarchy.find',
-        ['', '___selva_hierarchy', 'bfs', 'descendants', 'root'],
+        ['', '___selva_hierarchy', 'descendants', 'root'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
@@ -197,7 +197,7 @@ test.serial('hierarchy replication', async (t) => {
     await new Promise((resolve, reject) =>
       rclientReplica.send_command(
         'selva.hierarchy.find',
-        ['', '___selva_hierarchy', 'bfs', 'descendants', 'root'],
+        ['', '___selva_hierarchy', 'descendants', 'root'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
@@ -1005,7 +1005,7 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
       await new Promise((resolve, reject) =>
         r.send_command(
           'selva.hierarchy.find',
-          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
+          ['', '___selva_hierarchy', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
@@ -1077,7 +1077,7 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
       await new Promise((resolve, reject) =>
         r.send_command(
           'selva.hierarchy.find',
-          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
+          ['', '___selva_hierarchy', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
@@ -1150,7 +1150,7 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
       await new Promise((resolve, reject) =>
         r.send_command(
           'selva.hierarchy.find',
-          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
+          ['', '___selva_hierarchy', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
@@ -1200,7 +1200,7 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
       await new Promise((resolve, reject) =>
         r.send_command(
           'selva.hierarchy.find',
-          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
+          ['', '___selva_hierarchy', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
@@ -1273,7 +1273,7 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
       await new Promise((resolve, reject) =>
         r.send_command(
           'selva.hierarchy.find',
-          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
+          ['', '___selva_hierarchy', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
@@ -1321,7 +1321,7 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
       await new Promise((resolve, reject) =>
         r.send_command(
           'selva.hierarchy.find',
-          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
+          ['', '___selva_hierarchy', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),
@@ -1369,7 +1369,7 @@ test.serial('modify set ops are replicated (reference)', async (t) => {
       await new Promise((resolve, reject) =>
         r.send_command(
           'selva.hierarchy.find',
-          ['', '___selva_hierarchy', 'bfs', 'node', 'fields', 'id\nf01', 'grphnode_a'],
+          ['', '___selva_hierarchy', 'node', 'fields', 'id\nf01', 'grphnode_a'],
           (err, res) => (err ? reject(err) : resolve(res))
         )
       ),

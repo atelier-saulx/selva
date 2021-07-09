@@ -251,7 +251,6 @@ test.serial.skip(
       client.redis.selva_hierarchy_find(
         '',
         '___selva_hierarchy',
-        'bfs',
         'ancestors',
         id
       )
@@ -362,7 +361,6 @@ test.serial('ancestry has only one season in real world setting', async (t) => {
     client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       id
     )
@@ -464,7 +462,6 @@ test.serial.skip(
       client.redis.selva_hierarchy_find(
         '',
         '___selva_hierarchy',
-        'bfs',
         'ancestors',
         id
       )
@@ -592,7 +589,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       family1
     ),
@@ -602,7 +598,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       family2
     ),
@@ -614,7 +609,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       player1
     ),
@@ -624,7 +618,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       player2
     ),
@@ -634,7 +627,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       player3
     ),
@@ -644,7 +636,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       player
     ),
@@ -656,7 +647,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       porche
     ),
@@ -666,7 +656,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       coownedFerrari
     ),
@@ -678,7 +667,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       league
     ),
@@ -690,7 +678,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       season
     ),
@@ -702,7 +689,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       club
     ),
@@ -714,7 +700,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       team
     ),
@@ -724,7 +709,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       team2
     ),
@@ -736,7 +720,6 @@ test.serial('more complex hierarchies', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       match
     ),

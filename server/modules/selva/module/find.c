@@ -21,21 +21,6 @@
 #include "cstrings.h"
 #include "traversal.h"
 
-static int parse_algo(enum SelvaTraversalAlgo *algo, const RedisModuleString *arg) {
-    size_t len;
-    const char *str = RedisModule_StringPtrLen(arg, &len);
-
-    if (!strcmp("bfs", str)) {
-        *algo = HIERARCHY_BFS;
-    } else if (!strcmp("dfs", str)) {
-        *algo = HIERARCHY_DFS;
-    } else {
-        return SELVA_HIERARCHY_ENOTSUP;
-    }
-
-    return 0;
-}
-
 /* TODO MOVE this */
 static int send_node_field(
         RedisModuleCtx *ctx,
@@ -1177,18 +1162,17 @@ static size_t FindCommand_PrintOrderedArrayResult(
 
 /**
  * Find node(s) matching the query.
- * SELVA.HIERARCHY.find lang REDIS_KEY dfs|bfs field_name [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
- *                                     |       |          |                      |             |            |            |                    |        |            |
- * Traversal method/algo -------------/        |          |                      |             |            |            |                    |        |            |
- * Traversed field ---------------------------/           |                      |             |            |            |                    |        |            |
- * Sort order of the results ----------------------------/                       |             |            |            |                    |        |            |
- * Skip the first 1234 - 1 results ---------------------------------------------/              |            |            |                    |        |            |
- * Limit the number of results (Optional) ----------------------------------------------------/             |            |                    |        |            |
- * Merge fields. fields option must be set. ---------------------------------------------------------------/             |                    |        |            |
- * Return field values instead of node names ---------------------------------------------------------------------------/                     |        |            |
- * One or more node IDs concatenated (10 chars per ID) --------------------------------------------------------------------------------------/         |            |
- * RPN filter expression -----------------------------------------------------------------------------------------------------------------------------/             |
- * Register arguments for the RPN filter --------------------------------------------------------------------------------------------------------------------------/
+ * SELVA.HIERARCHY.find lang REDIS_KEY  field_name [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
+ *                                      |          |                      |             |            |            |                    |        |            |
+ * Traversed field --------------------/           |                      |             |            |            |                    |        |            |
+ * Sort order of the results ---------------------/                       |             |            |            |                    |        |            |
+ * Skip the first 1234 - 1 results --------------------------------------/              |            |            |                    |        |            |
+ * Limit the number of results (Optional) ---------------------------------------------/             |            |                    |        |            |
+ * Merge fields. fields option must be set. --------------------------------------------------------/             |                    |        |            |
+ * Return field values instead of node names --------------------------------------------------------------------/                     |        |            |
+ * One or more node IDs concatenated (10 chars per ID) -------------------------------------------------------------------------------/         |            |
+ * RPN filter expression ----------------------------------------------------------------------------------------------------------------------/             |
+ * Register arguments for the RPN filter -------------------------------------------------------------------------------------------------------------------/
  *
  * The traversed field is typically either ancestors or descendants but it can
  * be any hierarchy or edge field.
@@ -1199,22 +1183,21 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
 
     const int ARGV_LANG      = 1;
     const int ARGV_REDIS_KEY = 2;
-    const int ARGV_ALGO      = 3;
-    const int ARGV_DIRECTION = 4;
-    const int ARGV_ORDER_TXT = 5;
-    const int ARGV_ORDER_FLD = 6;
-    const int ARGV_ORDER_ORD = 7;
-    int ARGV_OFFSET_TXT      = 5;
-    int ARGV_OFFSET_NUM      = 6;
-    int ARGV_LIMIT_TXT       = 5;
-    int ARGV_LIMIT_NUM       = 6;
-    int ARGV_MERGE_TXT       = 5;
-    int ARGV_MERGE_VAL       = 6;
-    int ARGV_FIELDS_TXT      = 5;
-    int ARGV_FIELDS_VAL      = 6;
-    int ARGV_NODE_IDS        = 5;
-    int ARGV_FILTER_EXPR     = 6;
-    int ARGV_FILTER_ARGS     = 7;
+    const int ARGV_DIRECTION = 3;
+    const int ARGV_ORDER_TXT = 4;
+    const int ARGV_ORDER_FLD = 5;
+    const int ARGV_ORDER_ORD = 6;
+    int ARGV_OFFSET_TXT      = 4;
+    int ARGV_OFFSET_NUM      = 5;
+    int ARGV_LIMIT_TXT       = 4;
+    int ARGV_LIMIT_NUM       = 5;
+    int ARGV_MERGE_TXT       = 4;
+    int ARGV_MERGE_VAL       = 5;
+    int ARGV_FIELDS_TXT      = 4;
+    int ARGV_FIELDS_VAL      = 5;
+    int ARGV_NODE_IDS        = 4;
+    int ARGV_FILTER_EXPR     = 5;
+    int ARGV_FILTER_ARGS     = 6;
 #define SHIFT_ARGS(i) \
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
@@ -1228,7 +1211,7 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    if (argc < 6) {
+    if (argc < 5) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -1242,14 +1225,8 @@ static int SelvaHierarchy_Find(RedisModuleCtx *ctx, int recursive, RedisModuleSt
         return REDISMODULE_OK;
     }
 
-    /*
-     * Select traversal method.
-     */
-    enum SelvaTraversalAlgo algo;
-    err = parse_algo(&algo, argv[ARGV_ALGO]);
-    if (err) {
-        return replyWithSelvaErrorf(ctx, err, "traversal method");
-    }
+    /* TODO Remove SelvaTraversalAlgo completely. */
+    const enum SelvaTraversalAlgo algo = HIERARCHY_BFS;
 
     /*
      * Parse the order arg.

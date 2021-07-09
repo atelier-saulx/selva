@@ -186,14 +186,8 @@ test.serial('traverse a custom field', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs', 'a.b', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'a.b', 'root'),
     [ 'root', 'ma1', 'ma2', 'ma3', 'ma4' ]
-  )
-  // Currently an error is not returned even though dfs is not supported, instead
-  // an invalid traversal option just skips the node in the list.
-  t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'dfs', 'a.b', 'root'),
-    []
   )
 })
 
@@ -234,7 +228,7 @@ test.serial('find can return edge fields', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs', 'a.b', 'fields', 'a.b\nparents', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'a.b', 'fields', 'a.b\nparents', 'root'),
     [
       [
         'root', [
@@ -323,7 +317,7 @@ test.serial('find can do nested traversals', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs', 'a.b', 'fields', 'a.b\nparents\ndescendants', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'a.b', 'fields', 'a.b\nparents\ndescendants', 'root'),
     [
       [
         'root', [
@@ -374,7 +368,7 @@ test.serial('missing edges are added automatically', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs', 'a.b', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'a.b', 'root'),
     [ 'root', 'ma1', 'ma2' ]
   )
 })
@@ -640,7 +634,7 @@ test.serial('traverse by expression', async(t) => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_findrecursive('', '___selva_hierarchy', 'bfs', '{"a","b"}', 'root'),
+    await client.redis.selva_hierarchy_findrecursive('', '___selva_hierarchy', '{"a","b"}', 'root'),
     [ 'ma1', 'ma2' ]
   )
 })
@@ -705,7 +699,7 @@ test.serial('deref node references on find', async(t) => {
   )
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs', 'node', 'fields', 'title\nhomeTeam.name\nhomeTeam.club.name\nhomeTeam.club.manager.name', 'match1'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'title\nhomeTeam.name\nhomeTeam.club.name\nhomeTeam.club.manager.name', 'match1'),
     [[ 'match1', [ 'title', 'Best Game', 'homeTeam.name', 'Funny Team', 'homeTeam.club.name', 'Funny Club', 'homeTeam.club.manager.name', 'dung' ]]]
   )
 })
