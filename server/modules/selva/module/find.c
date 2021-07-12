@@ -461,7 +461,6 @@ static int send_array_object_field(
 #undef SEND_FIELD_NAME
 }
 
-
 static int send_array_object_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaModify_Hierarchy *hierarchy, struct SelvaObject *obj, struct SelvaObject *fields) {
     int err;
 
@@ -492,8 +491,9 @@ static int send_array_object_fields(RedisModuleCtx *ctx, RedisModuleString *lang
     } else if (fields_len == 1 && SelvaTraversal_FieldsContains(fields, "*", 1)) { /* '*' is a wildcard */
         err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to send all fields for selva object in array\n",
-                    __FILE__, __LINE__);
+            fprintf(stderr, "%s:%d: Failed to send all fields for selva object in array: %s\n",
+                    __FILE__, __LINE__,
+                    getSelvaErrorStr(err));
         }
     } else {
         void *iterator;
