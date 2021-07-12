@@ -448,3 +448,126 @@ test.serial('list avg aggregate sub', async (t) => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial('simple nested find avg aggregate sub', async (t) => {
+  // simple nested - single query
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  t.plan(3)
+
+  let sum = 0
+
+  await Promise.all([
+    await client.set({
+      $id: 'le0',
+      name: `league 0`,
+    }),
+    await client.set({
+      $id: 'le1',
+      name: `league 1`,
+    }),
+  ])
+
+  for (let i = 0; i < 4; i++) {
+    await client.set({
+      $id: 'ma' + i,
+      parents: [`le${i % 2}`],
+      type: 'match',
+      name: `match ${i}`,
+      value: i + 10,
+    })
+
+    sum += i + 10
+  }
+
+  await client.set({
+    type: 'match',
+    name: 'match 999',
+  })
+
+  const countObs = client.observe({
+    $id: 'root',
+    id: true,
+    thing: {
+      $aggregate: {
+        $function: { $name: 'avg', $args: ['value'] },
+        $traverse: 'children',
+        $filter: [
+          {
+            $field: 'type',
+            $operator: '=',
+            $value: 'league',
+          },
+        ],
+        $find: {
+          $traverse: 'children',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match',
+            },
+          ],
+        },
+      },
+    },
+  })
+
+  let i = 0
+  const countSub = countObs.subscribe((x) => {
+    if (i === 0) {
+      t.deepEqualIgnoreOrder(x, { id: 'root', thing: sum / 4 })
+    } else if (i === 1) {
+      t.deepEqualIgnoreOrder(x, { id: 'root', thing: (sum + 72) / 5 })
+    } else if (i === 2) {
+      t.deepEqualIgnoreOrder(x, {
+        id: 'root',
+        thing: (sum + 72 + 73 + 74 + 75) / 8,
+      })
+    } else {
+      t.fail()
+    }
+    i++
+  })
+
+  await wait(1e3)
+
+  await client.set({
+    $id: 'ma10',
+    parents: ['le1'],
+    type: 'match',
+    name: 'match 10',
+    value: 72,
+  })
+
+  await wait(1e3)
+
+  await Promise.all([
+    client.set({
+      $id: 'ma11',
+      parents: ['le2'],
+      type: 'match',
+      name: 'match 11',
+      value: 73,
+    }),
+    client.set({
+      $id: 'ma12',
+      parents: ['le1'],
+      type: 'match',
+      name: 'match 12',
+      value: 74,
+    }),
+    client.set({
+      $id: 'ma13',
+      parents: ['le2'],
+      type: 'match',
+      name: 'match 13',
+      value: 75,
+    }),
+  ])
+
+  await wait(2e3)
+
+  await client.delete('root')
+  await client.destroy()
+})
