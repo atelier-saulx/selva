@@ -210,12 +210,13 @@ export async function start(opts: Options) {
     ...parsedOpts,
     name: 'registry',
   })
+
   const origin = await startOrigin({
     name: 'default',
     registry,
     // @ts-ignore
     dir: opts.dir,
-    pipeRedisLogs: {
+    pipeRedisLogs: parsedOpts.pipeRedisLogs || {
       stdout: true,
       stderr: true,
     },
