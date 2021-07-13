@@ -68,7 +68,14 @@ export default (server: SelvaServer, opts: ServerOptions) => {
   server.pm.on('error', (err) => server.emit('error', err))
   server.pm.on('stdout', (s) => server.emit('stdout', s))
   server.pm.on('stderr', (s) => server.emit('stderr', s))
-  server.pm.on('stdout', (s) => console.log('stdout', s))
-  server.pm.on('stderr', (s) => console.log('stderr', s))
+
+  if (opts?.pipeRedisLogs?.stdout) {
+    server.pm.on('stdout', (s) => console.log('stdout', s))
+  }
+
+  if (opts?.pipeRedisLogs?.stderr) {
+    server.pm.on('stderr', (s) => console.log('stderr', s))
+  }
+
   server.pm.on('stats', (o) => server.emit('stats', o))
 }

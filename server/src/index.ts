@@ -215,6 +215,10 @@ export async function start(opts: Options) {
     registry,
     // @ts-ignore
     dir: opts.dir,
+    pipeRedisLogs: {
+      stdout: true,
+      stderr: true,
+    },
   })
 
   const subs = await startSubscriptionManager({
