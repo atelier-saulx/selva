@@ -755,10 +755,6 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
 
         if (recursive) {
             err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, recursive_rpn_ctx, recursive_rpn_expr, &cb);
-        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_REF && ref_field) {
-            TO_STR(ref_field);
-
-            err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, nodeId, ref_field_str, ref_field_len, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             TO_STR(ref_field);
             array_traversal_ref_field = ref_field_str;
@@ -768,10 +764,13 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             };
 
             err = SelvaModify_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
-        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD && ref_field) {
+        } else if (ref_field &&
+                   (dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
+                           SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
+                           SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))) {
             TO_STR(ref_field);
 
-            err = SelvaModify_TraverseHierarchyEdge(hierarchy, nodeId, ref_field_str, ref_field_len, &cb);
+            err = SelvaModify_TraverseHierarchyField(ctx, hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
         } else {
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
         }

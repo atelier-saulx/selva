@@ -1758,42 +1758,6 @@ static int traverse_adjacent(
     return 0;
 }
 
-static int traverse_ref_string_field(
-        SelvaModify_Hierarchy *hierarchy,
-        struct SelvaObject *head_obj,
-        const char *ref_field_str,
-        size_t ref_field_len,
-        const struct SelvaModify_HierarchyCallback *cb) {
-    struct SelvaSet *ref_set;
-    ref_set = SelvaObject_GetSetStr(head_obj, ref_field_str, ref_field_len);
-    if (!ref_set) {
-        return SELVA_HIERARCHY_ENOENT;
-    }
-    if (ref_set->type != SELVA_SET_TYPE_RMSTRING) {
-        return SELVA_EINTYPE;
-    }
-
-    struct SelvaSetElement *el;
-    SELVA_SET_RMS_FOREACH(el, ref_set) {
-        RedisModuleString *value = el->value_rms;
-        Selva_NodeId nodeId;
-        SelvaModify_HierarchyNode *node;
-        TO_STR(value);
-
-        memset(nodeId, 0, SELVA_NODE_ID_SIZE);
-        memcpy(nodeId, value_str, min(value_len, SELVA_NODE_ID_SIZE));
-
-        node = SelvaHierarchy_FindNode(hierarchy, nodeId);
-        if (node) {
-            if (cb->node_cb(node, cb->node_arg)) {
-                return 0;
-            }
-        }
-    }
-
-    return 0;
-}
-
 static int traverse_ref(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
@@ -1812,10 +1776,94 @@ static int traverse_ref(
 
     err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, head_id, REDISMODULE_READ), &head_obj);
     if (!err) {
-        return traverse_ref_string_field(hierarchy, head_obj, ref_field_str, ref_field_len, cb);
+        struct SelvaSet *ref_set;
+
+        ref_set = SelvaObject_GetSetStr(head_obj, ref_field_str, ref_field_len);
+        if (!ref_set) {
+            return SELVA_HIERARCHY_ENOENT;
+        }
+        if (ref_set->type != SELVA_SET_TYPE_RMSTRING) {
+            return SELVA_EINTYPE;
+        }
+
+        struct SelvaSetElement *el;
+        SELVA_SET_RMS_FOREACH(el, ref_set) {
+            RedisModuleString *value = el->value_rms;
+            Selva_NodeId nodeId;
+            SelvaModify_HierarchyNode *node;
+            TO_STR(value);
+
+            memset(nodeId, 0, SELVA_NODE_ID_SIZE);
+            memcpy(nodeId, value_str, min(value_len, SELVA_NODE_ID_SIZE));
+
+            node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+            if (node) {
+                if (cb->node_cb(node, cb->node_arg)) {
+                    return 0;
+                }
+            }
+        }
     }
 
-    return err;
+    return 0;
+}
+
+static int traverse_edge_field(
+        SelvaModify_HierarchyNode *head,
+        const char *ref_field_str,
+        size_t ref_field_len,
+        const struct SelvaModify_HierarchyCallback *cb) {
+    const struct EdgeField *edge_field;
+
+    edge_field = Edge_GetField(head, ref_field_str, ref_field_len);
+    if (edge_field) {
+        struct SVectorIterator it;
+        SelvaModify_HierarchyNode *dst;
+
+        SVector_ForeachBegin(&it, &edge_field->arcs);
+        while ((dst = SVector_Foreach(&it))) {
+            if (cb->node_cb(dst, cb->node_arg)) {
+                return 0;
+            }
+        }
+    }
+
+    return 0;
+}
+
+/*
+ * A little trampoline to hide the scary internals of the hierarchy
+ * implementation from the innocent users just wanting to traverse the
+ * hierarchy.
+ */
+static int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *node, void *arg) {
+    struct SelvaModify_HierarchyCallback *cb = (struct SelvaModify_HierarchyCallback *)arg;
+
+    return cb->node_cb(node, cb->node_arg);
+}
+
+static int traverse_bfs_edge(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        const char *field_name_str,
+        size_t field_name_len,
+        const struct SelvaModify_HierarchyCallback *cb) {
+    const TraversalCallback tcb = {
+        .head_cb = NULL,
+        .head_arg = NULL,
+        .node_cb = SelvaModify_TraverseHierarchy_cb_wrapper,
+        .node_arg = (void *)cb,
+        .child_cb = NULL,
+        .child_arg = NULL,
+    };
+    SelvaModify_HierarchyNode *head;
+
+    head = SelvaHierarchy_FindNode(hierarchy, id);
+    if (!head) {
+        return SELVA_HIERARCHY_ENOENT;
+    }
+
+    return bfs_edge(hierarchy, head, field_name_str, field_name_len, &tcb);
 }
 
 static int traverse_array(
@@ -1859,17 +1907,6 @@ static int traverse_array(
     } while (!SVector_Done(&it));
 
     return 0;
-}
-
-/*
- * A little trampoline to hide the scary internals of the hierarchy
- * implementation from the innocent users just wanting to traverse the
- * hierarchy.
- */
-static int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *node, void *arg) {
-    struct SelvaModify_HierarchyCallback *cb = (struct SelvaModify_HierarchyCallback *)arg;
-
-    return cb->node_cb(node, cb->node_arg);
 }
 
 int SelvaModify_TraverseHierarchy(
@@ -1924,10 +1961,7 @@ int SelvaModify_TraverseHierarchy(
         err = full_dfs(hierarchy, &tcb);
         break;
      default:
-        /* Should probably use
-         * SelvaModify_TraverseHierarchyRef() or
-         * SelvaModify_TraverseHierarchyEdge().
-         */
+        /* Should probably use some other traversal function. */
         fprintf(stderr, "%s:%d: Invalid traversal requested (%d)\n",
                 __FILE__, __LINE__,
                 (int)dir);
@@ -1937,55 +1971,14 @@ int SelvaModify_TraverseHierarchy(
     return err;
 }
 
-int SelvaModify_TraverseHierarchyRef(
+int SelvaModify_TraverseHierarchyField(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
-        const char *ref_field_str,
-        size_t ref_field_len,
-        const struct SelvaModify_HierarchyCallback *cb) {
-    SelvaModify_HierarchyNode *head;
-
-    head = SelvaHierarchy_FindNode(hierarchy, id);
-    if (!head) {
-        return SELVA_HIERARCHY_ENOENT;
-    }
-
-    return traverse_ref(ctx, hierarchy, head, ref_field_str, ref_field_len, cb);
-}
-
-
-int SelvaModify_TraverseArray(
-        RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
-        const Selva_NodeId id,
-        const char *ref_field_str,
-        size_t ref_field_len,
-        const struct SelvaModify_ArrayObjectCallback *cb) {
-    SelvaModify_HierarchyNode *head;
-
-    head = SelvaHierarchy_FindNode(hierarchy, id);
-    if (!head) {
-        return SELVA_HIERARCHY_ENOENT;
-    }
-
-    return traverse_array(ctx, head, ref_field_str, ref_field_len, cb);
-}
-
-int SelvaModify_TraverseHierarchyEdge(
-        SelvaModify_Hierarchy *hierarchy,
-        const Selva_NodeId id,
+        enum SelvaTraversal dir,
         const char *field_name_str,
         size_t field_name_len,
         const struct SelvaModify_HierarchyCallback *cb) {
-    const TraversalCallback tcb = {
-        .head_cb = NULL,
-        .head_arg = NULL,
-        .node_cb = SelvaModify_TraverseHierarchy_cb_wrapper,
-        .node_arg = (void *)cb,
-        .child_cb = NULL,
-        .child_arg = NULL,
-    };
     SelvaModify_HierarchyNode *head;
 
     head = SelvaHierarchy_FindNode(hierarchy, id);
@@ -1993,7 +1986,20 @@ int SelvaModify_TraverseHierarchyEdge(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    return bfs_edge(hierarchy, head, field_name_str, field_name_len, &tcb);
+    switch (dir) {
+    case SELVA_HIERARCHY_TRAVERSAL_REF:
+        return traverse_ref(ctx, hierarchy, head, field_name_str, field_name_len, cb);
+    case SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD:
+        return traverse_bfs_edge(hierarchy, id, field_name_str, field_name_len, cb);
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD:
+        return traverse_edge_field(head, field_name_str, field_name_len, cb);
+     default:
+        /* Should probably use some other traversal function. */
+        fprintf(stderr, "%s:%d: Invalid traversal requested (%d)\n",
+                __FILE__, __LINE__,
+                (int)dir);
+        return SELVA_HIERARCHY_ENOTSUP;
+    }
 }
 
 int SelvaHierarchy_TraverseExpression(
@@ -2019,6 +2025,23 @@ int SelvaHierarchy_TraverseExpression(
     }
 
     return bfs_expression(ctx, hierarchy, head, rpn_ctx, rpn_expr, &tcb);
+}
+
+int SelvaModify_TraverseArray(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        const char *ref_field_str,
+        size_t ref_field_len,
+        const struct SelvaModify_ArrayObjectCallback *cb) {
+    SelvaModify_HierarchyNode *head;
+
+    head = SelvaHierarchy_FindNode(hierarchy, id);
+    if (!head) {
+        return SELVA_HIERARCHY_ENOENT;
+    }
+
+    return traverse_array(ctx, head, ref_field_str, ref_field_len, cb);
 }
 
 static int dfs_make_list_node_cb(SelvaModify_HierarchyNode *node, void *arg) {

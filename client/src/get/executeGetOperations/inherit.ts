@@ -567,7 +567,6 @@ export default async function inherit(
   if (ctx.subId) {
     const sourceFieldSchema = getNestedSchema(schema, op.id, op.sourceField)
 
-
     let added: boolean
     if (sourceFieldSchema && sourceFieldSchema.type === 'reference') {
       bufferNodeMarker(ctx, op.id, op.sourceField)

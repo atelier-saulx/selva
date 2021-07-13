@@ -285,16 +285,11 @@ int SelvaModify_TraverseHierarchy(
         const Selva_NodeId id,
         enum SelvaTraversal dir,
         const struct SelvaModify_HierarchyCallback *cb);
-int SelvaModify_TraverseHierarchyRef(
+int SelvaModify_TraverseHierarchyField(
         struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
-        const char *ref_field_str,
-        size_t ref_field_len,
-        const struct SelvaModify_HierarchyCallback *cb);
-int SelvaModify_TraverseHierarchyEdge(
-        SelvaModify_Hierarchy *hierarchy,
-        const Selva_NodeId id,
+        enum SelvaTraversal dir,
         const char *field_name_str,
         size_t field_name_len,
         const struct SelvaModify_HierarchyCallback *cb);
