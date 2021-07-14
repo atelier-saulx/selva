@@ -1383,7 +1383,7 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, int 
     const char *delim = ",";
     const char *group = "\"";
     size_t tok_len = 0;
-    const char *rest;
+    const char *rest = NULL;
     for (const char *tok_str = tokenize(tmp, delim, group, &rest, &tok_len);
          tok_str != NULL;
          tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {

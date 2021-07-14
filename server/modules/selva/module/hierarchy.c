@@ -1692,7 +1692,6 @@ static int bfs_expression(
         struct rpn_expression *rpn_expr,
         const TraversalCallback * restrict cb) {
     BFS_TRAVERSE(hierarchy, head, cb) {
-        SVector *adj_vec;
         enum rpn_error rpn_err;
         struct SelvaSet fields;
         struct SelvaSetElement *field_el;
@@ -1715,6 +1714,7 @@ static int bfs_expression(
 
         SELVA_SET_RMS_FOREACH(field_el, &fields) {
             RedisModuleString *field = field_el->value_rms;
+            SVector *adj_vec;
 
             adj_vec = get_adj_vec(node, field);
             if (!adj_vec) {
@@ -1895,10 +1895,10 @@ static int traverse_array(
 
     struct SVectorIterator it;
     SVector_ForeachBegin(&it, vec);
-    struct SelvaObject *obj;
     do {
-        obj = SVector_Foreach(&it);
+        struct SelvaObject *obj;
 
+        obj = SVector_Foreach(&it);
         if (obj) {
             if (cb->node_cb(obj, cb->node_arg)) {
                 return 0;
@@ -2406,7 +2406,7 @@ int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString 
     SVector *parents;
 
 #if HIERARCHY_SORT_BY_DEPTH
-    SVECTOR_AUTOFREE(Sparents_d);
+    SVECTOR_AUTOFREE(parents_d);
 
     if (unlikely(!SVector_Clone(&parents_d, &node->parents, SVector_HierarchyNode_depth_compare))) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOMEM);

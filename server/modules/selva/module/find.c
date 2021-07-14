@@ -118,13 +118,14 @@ static int send_edge_field(
     if (!next_field) {
         return SELVA_ENOMEM;
     }
-    RedisModuleString *next_prefix;
 
     const char *next_prefix_str;
     size_t next_prefix_len;
+
     if (field_prefix_str) {
         const char *s = strnstr(field_str, ".", field_len);
         const int n = s ? (int)(s - field_str) + 1 : (int)field_len;
+        RedisModuleString *next_prefix;
 
         next_prefix = RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, n, field_str);
         next_prefix_str = RedisModule_StringPtrLen(next_prefix, &next_prefix_len);
@@ -705,7 +706,6 @@ static ssize_t send_deep_merge(
      */
     iterator = SelvaObject_ForeachBegin(obj);
     while ((key_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
-        RedisModuleString *key_name;
         const size_t key_name_len = strlen(key_name_str);
         RedisModuleString *next_path;
         enum SelvaObjectType type;
@@ -745,11 +745,6 @@ static ssize_t send_deep_merge(
         } else {
             int err;
 
-            key_name = RedisModule_CreateString(ctx, key_name_str, key_name_len);
-            if (!key_name) {
-                return SELVA_ENOMEM;
-            }
-
             ++*nr_fields_out;
 
             /*
@@ -760,7 +755,7 @@ static ssize_t send_deep_merge(
 
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
             RedisModule_ReplyWithString(ctx, next_path);
-            err = SelvaObject_ReplyWithObject(ctx, lang, obj, key_name);
+            err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len);
             if (err) {
                 TO_STR(obj_path);
 
@@ -1140,7 +1135,7 @@ static size_t FindCommand_PrintOrderedArrayResult(
             break;
         }
 
-        if (item && item->data_obj) {
+        if (item->data_obj) {
             err = send_array_object_fields(ctx, lang, hierarchy, item->data_obj, fields);
         } else {
             err = SELVA_HIERARCHY_ENOENT;

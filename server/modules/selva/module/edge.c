@@ -495,7 +495,6 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
     unsigned constraint_id;
     size_t nr_edges;
     struct EdgeField *edge_field;
-    int err;
 
     constraint_id = RedisModule_LoadUnsigned(io);
     nr_edges = RedisModule_LoadUnsigned(io);
@@ -509,6 +508,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
     for (size_t i = 0; i < nr_edges; i++) {
         RedisModuleString *dst_id;
         struct SelvaModify_HierarchyNode *dst_node;
+        int err;
 
         dst_id = RedisModule_LoadString(io);
         TO_STR(dst_id);

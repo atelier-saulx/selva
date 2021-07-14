@@ -191,12 +191,10 @@ static int send_field_value(
     edge_field = Edge_GetField(node, field_str, field_len);
     if (edge_field) {
         return send_edge_field_value(ctx, node_id, full_field, edge_field);
-    }
-
-    /*
-     * If field was not an edge field perhaps a substring of field is an edge field.
-     */
-    if (!edge_field) {
+    } else {
+        /*
+         * If field was not an edge field perhaps a substring of field is an edge field.
+         */
         ssize_t n = field_len;
 
         while ((n = strrnchr(field_str, n, '.')) > 0) {
