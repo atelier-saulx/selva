@@ -360,7 +360,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       match
     ),
@@ -371,7 +370,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       league
     ),
@@ -400,7 +398,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       person
     ),
@@ -433,7 +430,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       person
     ),
@@ -464,7 +460,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       person
     ),
@@ -505,7 +500,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       person
     ),
@@ -560,7 +554,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       person
     ),
@@ -591,7 +584,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       person
     ),
@@ -624,7 +616,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       person
     ),
@@ -635,7 +626,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       match
     ),
@@ -660,7 +650,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       person
     ),
@@ -677,7 +666,6 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       match
     ),
@@ -733,7 +721,6 @@ test.serial('deep hierarchy manipulation', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       'cuB'
     ),
@@ -744,7 +731,6 @@ test.serial('deep hierarchy manipulation', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       'cuC'
     ),
@@ -755,7 +741,6 @@ test.serial('deep hierarchy manipulation', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       'cuD'
     ),
@@ -766,7 +751,6 @@ test.serial('deep hierarchy manipulation', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       'cuE'
     ),
@@ -778,7 +762,6 @@ test.serial('deep hierarchy manipulation', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       'cuD'
     )
@@ -793,7 +776,6 @@ test.serial('deep hierarchy manipulation', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       'cuD'
     )
@@ -802,7 +784,6 @@ test.serial('deep hierarchy manipulation', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       'cuD'
     ),
@@ -813,7 +794,6 @@ test.serial('deep hierarchy manipulation', async (t) => {
     await client.redis.selva_hierarchy_find(
       '',
       '___selva_hierarchy',
-      'bfs',
       'ancestors',
       'cuE'
     ),

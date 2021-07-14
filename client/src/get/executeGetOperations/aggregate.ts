@@ -6,7 +6,6 @@ import {
   GetOperationFind,
 } from '../types'
 import { findIds } from './find'
-import { typeCast } from './'
 import {
   ast2rpn,
   Fork,
@@ -15,13 +14,15 @@ import {
   convertNow,
 } from '@saulx/selva-query-ast-parser'
 import {
+  typeCast,
   executeNestedGetOperations,
   ExecContext,
-  sourceFieldToMarkerType,
+  sourceFieldToDir,
+  sourceFieldToFindArgs,
   addMarker,
 } from './'
 import { padId, joinIds } from '../utils'
-import { setNestedResult } from '../utils'
+import { getNestedSchema, setNestedResult } from '../utils'
 import { makeLangArg } from './util'
 import { deepCopy } from '@saulx/utils'
 
@@ -157,8 +158,8 @@ async function checkForNextRefresh(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
-        'bfs',
-        sourceField,
+        // TODO proper dir
+        sourceField, //...sourceFieldToFindArgs(sourceFieldSchema, sourceField, false),
         'order',
         f.$field,
         'asc',
@@ -342,8 +343,10 @@ const executeAggregateOperation = async (
           endLen--
         }
         const id = op.id.slice(i, endLen)
+        const schema = client.schemas[ctx.db]
+        const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToMarkerType(sourceField),
+          ...sourceFieldToDir(sourceFieldSchema, sourceField),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -358,8 +361,10 @@ const executeAggregateOperation = async (
         ctx.hasFindMarkers = true
       }
     } else {
+      const schema = client.schemas[ctx.db]
+      const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToMarkerType(sourceField),
+        ...sourceFieldToDir(sourceFieldSchema, sourceField),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -370,12 +375,16 @@ const executeAggregateOperation = async (
       }
     }
 
+    const schema = client.schemas[ctx.db]
+    const sourceFieldSchema = op.nested
+      ? null
+      : getNestedSchema(schema, op.id, sourceField)
     const agg = await client.redis.selva_hierarchy_aggregate(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       FN_TO_ENUM[op.function.name] || '0',
-      sourceField,
+      ...sourceFieldToFindArgs(sourceFieldSchema, sourceField, false),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',

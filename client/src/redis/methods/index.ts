@@ -3458,21 +3458,6 @@ async selva_hierarchy_findin(opts: any, ...args: args): Promise<any> {
 }
 
 
-async selva_hierarchy_findrecursive(opts: ServerSelector, ...args: args): Promise<any>
-async selva_hierarchy_findrecursive(...args: args): Promise<any>
-async selva_hierarchy_findrecursive(opts: any, ...args: args): Promise<any> {
-  if (typeof opts === 'object') {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_hierarchy_findrecursive', args, resolve, reject }, opts)
-    })
-  } else {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_hierarchy_findrecursive', args: [opts, ...args], resolve, reject })
-    })
-  }
-}
-
-
 async selva_hierarchy_aggregate(opts: ServerSelector, ...args: args): Promise<any>
 async selva_hierarchy_aggregate(...args: args): Promise<any>
 async selva_hierarchy_aggregate(opts: any, ...args: args): Promise<any> {
@@ -3483,21 +3468,6 @@ async selva_hierarchy_aggregate(opts: any, ...args: args): Promise<any> {
   } else {
     return new Promise((resolve, reject) => {
       this.addCommandToQueue({ command: 'selva_hierarchy_aggregate', args: [opts, ...args], resolve, reject })
-    })
-  }
-}
-
-
-async selva_hierarchy_aggregaterecursive(opts: ServerSelector, ...args: args): Promise<any>
-async selva_hierarchy_aggregaterecursive(...args: args): Promise<any>
-async selva_hierarchy_aggregaterecursive(opts: any, ...args: args): Promise<any> {
-  if (typeof opts === 'object') {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_hierarchy_aggregaterecursive', args, resolve, reject }, opts)
-    })
-  } else {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_hierarchy_aggregaterecursive', args: [opts, ...args], resolve, reject })
     })
   }
 }

@@ -125,6 +125,6 @@ static inline void *SVector_Foreach(struct SVectorIterator *it) {
 int SVector_Done(const struct SVectorIterator *it);
 
 #define SVECTOR_AUTOFREE(name) \
-    __attribute__((cleanup(SVector_Destroy))) SVector name = { 0 }
+    __attribute__((cleanup(SVector_Destroy))) SVector name = { .vec_mode = SVECTOR_MODE_NONE }
 
 #endif /* _UTIL_SVECTOR_H_ */

@@ -126,7 +126,6 @@ async function mergeObj(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
-    'bfs',
     'ancestors',
     'offset',
     -1,
@@ -225,7 +224,6 @@ async function deepMergeObj(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
-    'bfs',
     'ancestors',
     'offset',
     -1,
@@ -320,7 +318,6 @@ async function inheritItem(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
-    'bfs',
     'ancestors',
     'limit',
     1,
@@ -569,7 +566,6 @@ export default async function inherit(
 
   if (ctx.subId) {
     const sourceFieldSchema = getNestedSchema(schema, op.id, op.sourceField)
-
 
     let added: boolean
     if (sourceFieldSchema && sourceFieldSchema.type === 'reference') {

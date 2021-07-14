@@ -472,11 +472,7 @@ static size_t AggregateCommand_PrintAggregateResult(RedisModuleCtx *ctx, struct 
     return 0;
 }
 
-/**
- * Find node in set.
- * SELVA.inherit REDIS_KEY NODE_ID [TYPE1[TYPE2[...]]] [FIELD_NAME1[ FIELD_NAME2[ ...]]]
- */
-int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleString **argv, int argc) {
+int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
 
@@ -484,9 +480,10 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     const int ARGV_REDIS_KEY = 2;
     const int ARGV_AGG_FN    = 3;
     const int ARGV_DIRECTION = 4;
-    const int ARGV_ORDER_TXT = 5;
-    const int ARGV_ORDER_FLD = 6;
-    const int ARGV_ORDER_ORD = 7;
+    const int ARGV_REF_FIELD = 5;
+    int ARGV_ORDER_TXT       = 5;
+    int ARGV_ORDER_FLD       = 6;
+    int ARGV_ORDER_ORD       = 7;
     int ARGV_OFFSET_TXT      = 5;
     int ARGV_OFFSET_NUM      = 6;
     int ARGV_LIMIT_TXT       = 5;
@@ -497,6 +494,9 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     int ARGV_FILTER_EXPR     = 6;
     int ARGV_FILTER_ARGS     = 7;
 #define SHIFT_ARGS(i) \
+    ARGV_ORDER_TXT += i; \
+    ARGV_ORDER_FLD += i; \
+    ARGV_ORDER_ORD += i; \
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
     ARGV_LIMIT_TXT += i; \
@@ -511,6 +511,10 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
         return RedisModule_WrongArity(ctx);
     }
 
+    struct rpn_ctx *traversal_rpn_ctx = NULL;
+    struct rpn_expression *traversal_expression = NULL;
+    struct rpn_ctx *rpn_ctx = NULL;
+    struct rpn_expression *filter_expression = NULL;
     RedisModuleString *lang = argv[ARGV_LANG];
 
     /*
@@ -522,13 +526,48 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     }
 
     /*
-     * Select traversal method.
+     * Parse the traversal arguments.
      */
-    enum SelvaTraversalAlgo algo = HIERARCHY_BFS;
-    // err = parse_algo(&algo, argv[ARGV_ALGO]);
-    // if (err) {
-    //     return replyWithSelvaErrorf(ctx, err, "traversal method");
-    // }
+    enum SelvaTraversal dir;
+    const RedisModuleString *ref_field = NULL;
+    err = SelvaTraversal_ParseDir2(&dir, argv[ARGV_DIRECTION]);
+    if (err) {
+        replyWithSelvaErrorf(ctx, err, "Traversal argument");
+        goto out;
+    }
+    if (argc <= ARGV_REF_FIELD &&
+        (dir & (SELVA_HIERARCHY_TRAVERSAL_ARRAY |
+                SELVA_HIERARCHY_TRAVERSAL_REF |
+                SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
+                SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
+                SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION))) {
+        RedisModule_WrongArity(ctx);
+        goto out;
+    }
+    if (dir & (SELVA_HIERARCHY_TRAVERSAL_ARRAY |
+               SELVA_HIERARCHY_TRAVERSAL_REF |
+               SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
+               SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
+        ref_field = argv[ARGV_REF_FIELD];
+        SHIFT_ARGS(1);
+    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+        const RedisModuleString *input = argv[ARGV_REF_FIELD];
+        TO_STR(input);
+
+        traversal_rpn_ctx = rpn_init(1);
+        if (!traversal_rpn_ctx) {
+            replyWithSelvaError(ctx, SELVA_ENOMEM);
+            goto out;
+        }
+
+        traversal_expression = rpn_compile(input_str);
+        if (!traversal_expression) {
+            replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the traversal expression");
+            goto out;
+        }
+        SHIFT_ARGS(1);
+    }
+
     RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
     TO_STR(agg_fn_rms);
     const char agg_fn_val = agg_fn_rms_str[0];
@@ -552,7 +591,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
         if (err == 0) {
             SHIFT_ARGS(3);
         } else if (err != SELVA_HIERARCHY_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "order");
+            replyWithSelvaErrorf(ctx, err, "order");
+            goto out;
         }
     }
 
@@ -565,10 +605,12 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "offset");
+            replyWithSelvaErrorf(ctx, err, "offset");
+            goto out;
         }
         if (offset < -1) {
-            return replyWithSelvaErrorf(ctx, err, "offset < -1");
+            replyWithSelvaErrorf(ctx, err, "offset < -1");
+            goto out;
         }
     }
 
@@ -581,7 +623,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "limit");
+            replyWithSelvaErrorf(ctx, err, "limit");
+            goto out;
         }
     }
 
@@ -593,19 +636,16 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
 		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             if (SelvaObject_Len(fields, NULL) > 1) {
-                return replyWithSelvaErrorf(ctx, err, "fields");
+                replyWithSelvaErrorf(ctx, err, "fields");
+                goto out;
             }
 
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "fields");
+            replyWithSelvaErrorf(ctx, err, "fields");
+            goto out;
         }
     }
-
-    struct rpn_ctx *rpn_ctx = NULL;
-    struct rpn_expression *filter_expression = NULL;
-    struct rpn_ctx *recursive_rpn_ctx = NULL;
-    struct rpn_expression *recursive_rpn_expr = NULL;
 
     /*
      * Prepare the filter expression if given.
@@ -616,7 +656,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
 
         rpn_ctx = rpn_init(nr_reg);
         if (!rpn_ctx) {
-            return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "filter expression");
+            replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "filter expression");
+            goto out;
         }
 
         /*
@@ -625,8 +666,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
         input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], NULL);
         filter_expression = rpn_compile(input);
         if (!filter_expression) {
-            rpn_destroy(rpn_ctx);
-            return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+            replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+            goto out;
         }
 
         /*
@@ -660,32 +701,8 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     }
 
     /*
-     * In the recursive mode the direction/field_name field contains
-     * an expression that should to evaluate into a set of field names.
-     */
-    if (recursive) {
-        const char *field_selector;
-
-        recursive_rpn_ctx = rpn_init(1);
-        if (!recursive_rpn_ctx) {
-            replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "field selector expression");
-            goto out;
-        }
-
-        field_selector = RedisModule_StringPtrLen(argv[ARGV_DIRECTION], NULL);
-        recursive_rpn_expr = rpn_compile(field_selector);
-        if (!recursive_rpn_expr) {
-            rpn_destroy(recursive_rpn_ctx);
-            replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the field selector expression");
-            goto out;
-        }
-    }
-
-    /*
      * Run for each NODE_ID.
      */
-
-
     struct AggregateCommand_Args args = {
         .aggregate_type = agg_fn_val,
         .aggregation_result_int = 0,
@@ -694,34 +711,12 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
         /* .find_args = find_args */
     };
 
-
     ssize_t nr_nodes = 0;
     size_t merge_nr_fields = 0;
-    const char *array_traversal_ref_field = NULL;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
-        enum SelvaTraversal dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
         Selva_NodeId nodeId;
-        RedisModuleString *ref_field = NULL;
 
         Selva_NodeIdCpy(nodeId, ids_str + i);
-
-        if (!recursive) {
-            /*
-             * Get the direction parameter.
-             */
-            err = SelvaTraversal_ParseDir(ctx, hierarchy, &dir, &ref_field, nodeId, algo, argv[ARGV_DIRECTION]);
-            if (err) {
-                fprintf(stderr, "%s:%d: Error \"%s\" while selecting the field and dir for the node \"%.*s\", skipping\n",
-                        __FILE__, __LINE__,
-                        getSelvaErrorStr(err),
-                        (int)SELVA_NODE_ID_SIZE, nodeId);
-                /* Skip this node */
-                continue;
-            }
-        } else {
-            /* recursive can use this for SelvaTraversal_GetSkip() */
-            dir = SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS;
-        }
 
         /*
          * Run BFS/DFS.
@@ -753,25 +748,23 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             break;
         }
 
-        if (recursive) {
-            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, recursive_rpn_ctx, recursive_rpn_expr, &cb);
-        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_REF && ref_field) {
-            TO_STR(ref_field);
-
-            err = SelvaModify_TraverseHierarchyRef(ctx, hierarchy, nodeId, ref_field_str, ref_field_len, &cb);
-        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
-            TO_STR(ref_field);
-            array_traversal_ref_field = ref_field_str;
+        if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             const struct SelvaModify_ArrayObjectCallback ary_cb = {
                 .node_cb = AggregateCommand_ArrayNodeCb,
                 .node_arg = &args,
             };
-
-            err = SelvaModify_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
-        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD && ref_field) {
             TO_STR(ref_field);
 
-            err = SelvaModify_TraverseHierarchyEdge(hierarchy, nodeId, ref_field_str, ref_field_len, &cb);
+            err = SelvaModify_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
+        } else if (ref_field &&
+                   (dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
+                           SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
+                           SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))) {
+            TO_STR(ref_field);
+
+            err = SelvaModify_TraverseHierarchyField(ctx, hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && traversal_expression) {
+            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
         } else {
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
         }
@@ -780,7 +773,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            fprintf(stderr, "%s:%d: Find failed for node: \"%.*s\"\n",
+            fprintf(stderr, "%s:%d: Aggregate failed for node: \"%.*s\"\n",
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, nodeId);
         }
@@ -803,7 +796,7 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
             }
         };
 
-        nr_nodes = array_traversal_ref_field
+        nr_nodes = (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY)
             ? AggregateCommand_AggregateOrderedArrayResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result)
             : AggregateCommand_AggregateOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result);
 
@@ -816,13 +809,13 @@ int SelvaHierarchy_Aggregate(RedisModuleCtx *ctx, int recursive, RedisModuleStri
     // RedisModule_ReplySetArrayLength(ctx, (size_t)nr_nodes);
 
 out:
+    if (traversal_rpn_ctx) {
+        rpn_destroy(traversal_rpn_ctx);
+        rpn_destroy_expression(traversal_expression);
+    }
     if (rpn_ctx) {
         rpn_destroy(rpn_ctx);
         rpn_destroy_expression(filter_expression);
-    }
-    if (recursive_rpn_ctx) {
-        rpn_destroy(recursive_rpn_ctx);
-        rpn_destroy_expression(recursive_rpn_expr);
     }
 
     return REDISMODULE_OK;
@@ -1078,23 +1071,11 @@ out:
 #undef SHIFT_ARGS
 }
 
-int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    return SelvaHierarchy_Aggregate(ctx, 0, argv, argc);
-}
-
-int SelvaHierarchy_AggregateRecursiveCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    return SelvaHierarchy_Aggregate(ctx, 1, argv, argc);
-}
-
 static int Aggregate_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
      */
     if (RedisModule_CreateCommand(ctx, "selva.hierarchy.aggregate", SelvaHierarchy_AggregateCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.aggregateRecursive", SelvaHierarchy_AggregateRecursiveCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

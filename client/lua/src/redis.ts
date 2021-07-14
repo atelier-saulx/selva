@@ -39,7 +39,6 @@ export function ancestors(id: string): string[] {
   return redis.call(
     'SELVA.HIERARCHY.FIND',
     DEFAULT_HIERARCHY,
-    'bfs',
     'ancestors',
     id
   )
@@ -49,7 +48,6 @@ export function descendants(id: string): string[] {
   return redis.call(
     'SELVA.HIERARCHY.FIND',
     DEFAULT_HIERARCHY,
-    'bfs',
     'descendants',
     id
   )

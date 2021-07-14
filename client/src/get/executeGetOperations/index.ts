@@ -1,5 +1,6 @@
 import { SelvaClient } from '../../'
 import { GetOperation, GetResult } from '../types'
+import { FieldSchema } from '../../schema'
 import { setNestedResult, getNestedSchema } from '../utils'
 import resolveId from '../resolveId'
 import createGetOperations from '../createGetOperations'
@@ -21,17 +22,20 @@ export type ExecContext = {
   nodeMarkers?: Record<string, Set<string>>
   hasFindMarkers?: boolean
 }
+export type TraversalType =
+  | 'none'
+  | 'node'
+  | 'array'
+  | 'children'
+  | 'parents'
+  | 'ancestors'
+  | 'descendants'
+  | 'ref'
+  | 'edge_field'
+  | 'bfs_edge_field'
+  | 'bfs_expression'
 export type SubscriptionMarker = {
-  type:
-    | 'none'
-    | 'node'
-    | 'children'
-    | 'parents'
-    | 'ancestors'
-    | 'descendants'
-    | 'ref'
-    | 'bfs_edge_field'
-    | 'bfs_expression'
+  type: TraversalType
   refField?: string
   traversal?: string // an RPN for bfs_expression
   id: string
@@ -55,20 +59,51 @@ export function adler32(marker: SubscriptionMarker): number {
   return res & 0x7fffffff
 }
 
-export function sourceFieldToMarkerType(
+export function sourceFieldToDir(
+  fieldSchema: FieldSchema,
   field: string
-): { type: SubscriptionMarker['type']; refField?: string } {
-  const defaultFields: Array<SubscriptionMarker['type']> = [
+): { type: TraversalType; refField?: string } {
+  const defaultFields: Array<TraversalType> = [
     'children',
     'parents',
     'ancestors',
     'descendants',
-  ] // Missing: node, node, ref, bfs_edge_field
-  const isRef = !defaultFields.includes(field as SubscriptionMarker['type'])
-  return {
-    type: isRef ? 'ref' : (field as SubscriptionMarker['type']),
-    ...(isRef ? { refField: field } : {}),
+  ]
+  if (defaultFields.includes(field as TraversalType)) {
+    return {
+      type: field as TraversalType,
+    }
+  } else if (fieldSchema.type === 'array') {
+    return {
+      type: 'array',
+      refField: field,
+    }
+  } else {
+    return {
+      type: fieldSchema.type === 'string' ? 'ref' : 'edge_field',
+      refField: field,
+    }
   }
+}
+
+export function sourceFieldToFindArgs(
+  fieldSchema: FieldSchema | null,
+  sourceField: string,
+  recursive: boolean
+): [SubscriptionMarker['type'], string?] {
+  // if fieldSchema is null it usually means that the caller needs to do an op
+  // over multiple nodes and thus it's not possible to determine an optimal
+  // hierarchy traversal method. We'll fallback to bfs_expression.
+  if (!fieldSchema) {
+    return ['bfs_expression', `{"${sourceField}"}`]
+  }
+
+  const t = sourceFieldToDir(fieldSchema, sourceField)
+  return recursive && t.refField
+    ? ['bfs_expression', `{"${sourceField}"}`]
+    : t.refField
+    ? [t.type, t.refField]
+    : [t.type]
 }
 
 export async function addMarker(
@@ -430,7 +465,6 @@ const TYPE_TO_SPECIAL_OP: Record<
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         '',
         '___selva_hierarchy',
-        'bfs',
         'ancestors',
         paddedId
       )
@@ -439,7 +473,6 @@ const TYPE_TO_SPECIAL_OP: Record<
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         '',
         '___selva_hierarchy',
-        'bfs',
         'descendants',
         paddedId
       )

@@ -85,11 +85,12 @@ test.beforeEach(async (t) => {
   rclient = redis.createClient(client.servers.origins.default.port)
 })
 
-test.after(async (_t) => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.afterEach(async () => {

@@ -15,19 +15,20 @@ enum SelvaTraversalAlgo {
  * Recognized by SelvaModify_TraverseHierarchy().
  */
 enum SelvaTraversal {
-    SELVA_HIERARCHY_TRAVERSAL_NONE, /*!< Do nothing. */
-    SELVA_HIERARCHY_TRAVERSAL_NODE, /*!< Visit just the given node. */
-    SELVA_HIERARCHY_TRAVERSAL_CHILDREN, /*!< Visit children of the given node. */
-    SELVA_HIERARCHY_TRAVERSAL_PARENTS, /*!< Visit parents of the given node. */
-    SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, /*!< Visit ancestors of the given node using BFS. */
-    SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS, /*!< Visit descendants of the given node using BFS. */
-    SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS, /*!< Visit ancestors of the given node using DFS. */
-    SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS, /*!< Visit descendants of the given node using DFS. */
-    SELVA_HIERARCHY_TRAVERSAL_DFS_FULL, /*!< Full DFS traversal of the whole hierarchy. */
-    SELVA_HIERARCHY_TRAVERSAL_REF, /*!< Visit nodes pointed by a ref field. */
-    SELVA_HIERARCHY_TRAVERSAL_ARRAY, /*!< Visit nodes pointed by a ref field. */
-    SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD, /*!< Traverse an edge field according to its constraints using BFS. */
-    SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION, /*!< Traverse with an expression returning a set of field names. */
+    SELVA_HIERARCHY_TRAVERSAL_NONE =            0x0000, /*!< Do nothing. */
+    SELVA_HIERARCHY_TRAVERSAL_NODE =            0x0001, /*!< Visit just the given node. */
+    SELVA_HIERARCHY_TRAVERSAL_ARRAY =           0x0002, /*!< Traverse an array. */
+    SELVA_HIERARCHY_TRAVERSAL_REF =             0x0004, /*!< Visit nodes pointed by a string ref field. */
+    SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD =      0x0008, /*!< Visit nodes pointed by an edge field. */
+    SELVA_HIERARCHY_TRAVERSAL_CHILDREN =        0x0010, /*!< Visit children of the given node. */
+    SELVA_HIERARCHY_TRAVERSAL_PARENTS =         0x0020, /*!< Visit parents of the given node. */
+    SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS =   0x0040, /*!< Visit ancestors of the given node using BFS. */
+    SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS = 0x0080, /*!< Visit descendants of the given node using BFS. */
+    SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS =   0x0100, /*!< Visit ancestors of the given node using DFS. */
+    SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS = 0x0200, /*!< Visit descendants of the given node using DFS. */
+    SELVA_HIERARCHY_TRAVERSAL_DFS_FULL =        0x0400, /*!< Full DFS traversal of the whole hierarchy. */
+    SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD =  0x0800, /*!< Traverse an edge field according to its constraints using BFS. */
+    SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION =  0x1000, /*!< Traverse with an expression returning a set of field names. */
 };
 
 enum SelvaMergeStrategy {
@@ -125,6 +126,7 @@ int SelvaTraversal_ParseDir(
         Selva_NodeId nodeId,
         enum SelvaTraversalAlgo algo,
         const struct RedisModuleString *field_name);
+int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, struct RedisModuleString *arg);
 orderFunc SelvaTraversal_GetOrderFunc(enum SelvaResultOrder order);
 struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(
         struct RedisModuleCtx *ctx,
