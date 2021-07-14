@@ -58,7 +58,7 @@
     ]
   },
   "dependencies": {
-    "@saulx/selva": "2.0.11",
+    "@saulx/selva": "2.0.17",
     "body-parser": "^1.19.0"
   }
 }
