@@ -735,10 +735,10 @@ int SelvaSubscriptions_TraverseMarker(RedisModuleCtx *ctx, struct SelvaModify_Hi
     err = 0;
     if (dir &
         (SELVA_HIERARCHY_TRAVERSAL_REF |
-        SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
-        SELVA_HIERARCHY_TRAVERSAL_PARENTS |
-        SELVA_HIERARCHY_TRAVERSAL_CHILDREN |
-        SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
+         SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
+         SELVA_HIERARCHY_TRAVERSAL_PARENTS |
+         SELVA_HIERARCHY_TRAVERSAL_CHILDREN |
+         SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
         /*
          * This could be implemented with a head callback but it's not
          * currently implemented for the traverse API. Therefore we do a
