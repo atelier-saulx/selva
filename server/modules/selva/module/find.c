@@ -1220,11 +1220,13 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return RedisModule_WrongArity(ctx);
     }
 
+    RedisModuleString *lang = argv[ARGV_LANG];
+    SVECTOR_AUTOFREE(order_result); /*!< for ordered result. */
+    selvaobject_autofree struct SelvaObject *fields = NULL;
     struct rpn_ctx *traversal_rpn_ctx = NULL;
     struct rpn_expression *traversal_expression = NULL;
     struct rpn_ctx *rpn_ctx = NULL;
     struct rpn_expression *filter_expression = NULL;
-    RedisModuleString *lang = argv[ARGV_LANG];
 
     /*
      * Open the Redis key.
@@ -1354,7 +1356,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     /*
      * Parse fields.
      */
-    selvaobject_autofree struct SelvaObject *fields = NULL;
     if (argc > ARGV_FIELDS_VAL) {
 		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
@@ -1412,8 +1413,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             rpn_set_reg(rpn_ctx, reg_i, str, str_len + 1, 0);
         }
     }
-
-    SVECTOR_AUTOFREE(order_result); /*!< for ordered result. */
 
     if (argc <= ARGV_NODE_IDS) {
         replyWithSelvaError(ctx, SELVA_HIERARCHY_EINVAL);
