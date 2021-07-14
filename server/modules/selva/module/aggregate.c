@@ -433,7 +433,7 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
             break;
         }
 
-        if (item && item->data_obj) {
+        if (item->data_obj) {
             err = apply_agg_fn_obj(item->data_obj, arg);
             len++;
         } else {
