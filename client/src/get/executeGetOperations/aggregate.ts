@@ -6,7 +6,6 @@ import {
   GetOperationFind,
 } from '../types'
 import { findIds } from './find'
-import { typeCast } from './'
 import {
   ast2rpn,
   Fork,
@@ -15,6 +14,7 @@ import {
   convertNow,
 } from '@saulx/selva-query-ast-parser'
 import {
+  typeCast,
   executeNestedGetOperations,
   ExecContext,
   sourceFieldToDir,
@@ -375,12 +375,16 @@ const executeAggregateOperation = async (
       }
     }
 
+    const schema = client.schemas[ctx.db]
+    const sourceFieldSchema = op.nested
+      ? null
+      : getNestedSchema(schema, op.id, sourceField)
     const agg = await client.redis.selva_hierarchy_aggregate(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       FN_TO_ENUM[op.function.name] || '0',
-      sourceField,
+      ...sourceFieldToFindArgs(sourceFieldSchema, sourceField, false),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',

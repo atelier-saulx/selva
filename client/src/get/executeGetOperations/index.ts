@@ -23,17 +23,17 @@ export type ExecContext = {
   hasFindMarkers?: boolean
 }
 export type TraversalType =
-    | 'none'
-    | 'node'
-    | 'array'
-    | 'children'
-    | 'parents'
-    | 'ancestors'
-    | 'descendants'
-    | 'ref'
-    | 'edge_field'
-    | 'bfs_edge_field'
-    | 'bfs_expression'
+  | 'none'
+  | 'node'
+  | 'array'
+  | 'children'
+  | 'parents'
+  | 'ancestors'
+  | 'descendants'
+  | 'ref'
+  | 'edge_field'
+  | 'bfs_edge_field'
+  | 'bfs_expression'
 export type SubscriptionMarker = {
   type: TraversalType
   refField?: string
@@ -71,28 +71,39 @@ export function sourceFieldToDir(
   ]
   if (defaultFields.includes(field as TraversalType)) {
     return {
-      type: field as TraversalType
+      type: field as TraversalType,
     }
   } else if (fieldSchema.type === 'array') {
     return {
       type: 'array',
-      refField: field
+      refField: field,
     }
   } else {
     return {
       type: fieldSchema.type === 'string' ? 'ref' : 'edge_field',
-      refField: field
+      refField: field,
     }
   }
 }
 
 export function sourceFieldToFindArgs(
-  fieldSchema: FieldSchema,
+  fieldSchema: FieldSchema | null,
   sourceField: string,
   recursive: boolean
 ): [SubscriptionMarker['type'], string?] {
+  // if fieldSchema is null it usually means that the caller needs to do an op
+  // over multiple nodes and thus it's not possible to determine an optimal
+  // hierarchy traversal method. We'll fallback to bfs_expression.
+  if (!fieldSchema) {
+    return ['bfs_expression', `{"${sourceField}"}`]
+  }
+
   const t = sourceFieldToDir(fieldSchema, sourceField)
-  return (recursive && t.refField) ? ['bfs_expression', `{"${sourceField}"}`] : (t.refField) ? [t.type, t.refField] : [t.type]
+  return recursive && t.refField
+    ? ['bfs_expression', `{"${sourceField}"}`]
+    : t.refField
+    ? [t.type, t.refField]
+    : [t.type]
 }
 
 export async function addMarker(

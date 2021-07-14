@@ -1603,7 +1603,7 @@ void SelvaSubscriptions_SendDeferredEvents(struct SelvaModify_Hierarchy *hierarc
 
 /*
  * Add a new marker to the subscription.
- * KEY SUB_ID MARKER_ID node|ancestors|descendants [ref_field_name] NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
+ * KEY SUB_ID MARKER_ID traversal_type [ref_field_name] NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
  */
 int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -1777,7 +1777,7 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
          * save time and space.
          */
         marker_flags = SELVA_SUBSCRIPTION_FLAG_DETACH;
-    } else if (sub_dir & (SELVA_HIERARCHY_TRAVERSAL_CHILDREN | sub_dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS)) {
+    } else if (sub_dir & (SELVA_HIERARCHY_TRAVERSAL_CHILDREN | SELVA_HIERARCHY_TRAVERSAL_PARENTS)) {
         /*
          * RFE We might want to have an arg for REF flag
          * but currently it seems to be enough to support

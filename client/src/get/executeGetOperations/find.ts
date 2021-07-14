@@ -386,7 +386,9 @@ export const findIds = async (
     }
 
     const schema = client.schemas[ctx.db]
-    const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
+    const sourceFieldSchema = op.nested
+      ? null
+      : getNestedSchema(schema, op.id, sourceField)
     const ids = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(schema.languages, lang),
@@ -548,7 +550,9 @@ const findFields = async (
     }
 
     const schema = client.schemas[ctx.db]
-    const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
+    const sourceFieldSchema = op.nested
+      ? null
+      : getNestedSchema(schema, op.id, sourceField)
     const result = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
