@@ -1,5 +1,8 @@
 name: Sonar
-on: push
+on:
+  push:
+    paths:
+      - 'server/modules/selva'
 jobs:
   build:
     environment: Sonar
