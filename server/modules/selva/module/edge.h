@@ -9,35 +9,115 @@
 #include "selva.h"
 #include "svector.h"
 
-struct RedisModuleIO;
 struct RedisModuleCtx;
-struct EdgeFieldConstraint;
-struct EdgeField;
+struct RedisModuleIO;
+struct RedisModuleString;
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyNode;
 struct SelvaObject;
 
-struct EdgeFieldConstraint {
-    struct {
-        unsigned single_ref : 1;    /*!< Single reference edge. */
-    } flags;
+#define EDGE_FIELD_CONSTRAINT_ID_DEFAULT    0
+#define EDGE_FIELD_CONSTRAINT_SINGLE_REF    1
+#define EDGE_FIELD_CONSTRAINT_DYNAMIC       2
+
+/*
+ * EdgeFieldConstraint Flags
+ * -------------------------
+ *
+ * Bidirectional references:
+ * If one edge is removed the other edge is removed too. This flag requires
+ * that bck_constraint_id, fwd_field, and bck_field are set.
+ */
+#define EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF       0x01 /*!< Single reference edge. */
+#define EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL    0x02 /*!< Bidirectional reference. */
+#define EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC          0x04 /*!< Lookup from dynamic constraints by node type and field_name. */
+
+struct EdgeFieldDynConstraintParams {
+    unsigned flags;
+    unsigned bck_constraint_id;
+    Selva_NodeType fwd_node_type;
+    Selva_NodeType bck_node_type;
+    struct RedisModuleString *fwd_field_name;
+    struct RedisModuleString *bck_field_name;
 };
 
-struct EdgeField {
-    unsigned constraint_id; /*!< An index in the constraints array edge_constraints. */
-    Selva_NodeId src_node_id; /*!< Source nodeId of this edge field. */
-    struct SVector arcs; /*!< Pointers to nodes. */
+/**
+ * Edge constraint.
+ * Edge constraints controls how an edge field behaves on different operations
+ * like arc insertion and deletion or hierarchy node deletion.
+ */
+struct EdgeFieldConstraint {
+    /**
+     * Constraint flags controlling the behaviour.
+     */
+    unsigned flags;
+
+    unsigned bck_constraint_id;
+    Selva_NodeType bck_node_type;
+
+    /**
+     * Forward traversing field of this constraint.
+     */
+    char *field_name_str;
+    size_t field_name_len;
+
+    /**
+     * Constraint of the backwards traversing field.
+     * Used if the EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL flag is set.
+     * TODO Figure out how to do this.
+     */
+    char *bck_field_name_str;
+    size_t bck_field_name_len;
+};
+
+/**
+ * Edge field constraints per hierarchy key.
+ * Edge field constraints are insert only and the only way to clear all the
+ * constraints is by deleting the whole structure, meaning deleting the
+ * hierarchy key.
+ * Each constraint has an unique constraint_id given at creation time which also
+ * corresponds its location in the constraints array of this structure.
+ * This structure should be accessed with the following functions:
+ *
+ * - Edge_InitEdgeFieldConstraints(),
+ * - Edge_NewConstraint(),
+ * - Edge_GetConstraint(),
+ */
+struct EdgeFieldConstraints {
+    struct EdgeFieldConstraint hard_constraints[2];
+    struct SelvaObject *dyn_constraints;
 };
 
 /*
- * Hierarchy node metadata structure for storing references to the origin
- * EdgeFields.
+ * EdgeField Flags
+ * ---------------
+ *
+ *  These flags are generally implemented to help with handling the constraints
+ *  efficiently.
+ */
+#define EDGE_FIELD_FLAG_BIDIRECTIONAL   0x01 /*!< This is a bidirectional edge field. */
+
+/**
+ * A struct for edge fields.
+ * This struct contains the actual arcs pointing directly to other nodes in the
+ * hierarchy.
+ */
+struct EdgeField {
+    unsigned constraint_id; /*!< An index in the constraints array edge_constraints. */
+    unsigned edge_flags; /*!< Flags related to the constraint handling. */
+    Selva_NodeId src_node_id; /*!< Source/owner nodeId of this edge field. */
+    struct SVector arcs; /*!< Pointers to hierarchy nodes. */
+};
+
+/*
+ * Hierarchy node metadata structure for storing edges and references to the
+ * origin EdgeFields.
  */
 struct EdgeFieldContainer {
     /**
      * Custom edge fields.
-     * A.field -> B
      *
+     * A.field -> B
      * {
      *   custom.field: <struct EdgeField>
      * }
@@ -45,8 +125,11 @@ struct EdgeFieldContainer {
     struct SelvaObject *edges;
     /**
      * Custom edge field origin references.
-     * A.field <- B
+     * This object contains pointers to each field pointing to this node. As
+     * it's organized per nodeId the size of the object tells how many nodes
+     * are pointing to this node via edge fields.
      *
+     * A.field <- B
      * {
      *   nodeId1: [     // The node pointing to this node
      *     fieldPtr1,   // A pointer to the edgeField pointing to this node
@@ -57,8 +140,9 @@ struct EdgeFieldContainer {
     struct SelvaObject *origins;
 };
 
-const struct EdgeFieldConstraint *Edge_GetConstraint(unsigned constraint_id);
-const struct EdgeFieldConstraint* Edge_GetFieldConstraint(const struct EdgeField *edge_field);
+void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data);
+int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, struct EdgeFieldDynConstraintParams *params);
+const struct EdgeFieldConstraint *Edge_GetConstraint(const struct EdgeFieldConstraints *data, unsigned constraint_id, Selva_NodeType node_type, const char *field_name_str, size_t field_name_len);
 
 /**
  * Get a pointer to an EdgeField.
@@ -67,7 +151,7 @@ const struct EdgeFieldConstraint* Edge_GetFieldConstraint(const struct EdgeField
  * @param node is a pointer to the node the lookup should be applied to. Can be NULL.
  * @returns A pointer to an EdgeField if node is set and the field is found; Otherwise NULL.
  */
-struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *node, const char *key_name_str, size_t key_name_len);
+struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *node, const char *field_name_str, size_t field_name_len);
 
 /**
  * Check if an EdgeField has a reference to dst_node.
@@ -85,14 +169,16 @@ int Edge_Has(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst
 int Edge_Add(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
-        const char *key_name_str,
-        size_t key_name_len,
         unsigned constraint_id,
+        const char *field_name_str,
+        size_t field_name_len,
         struct SelvaModify_HierarchyNode *src_node,
         struct SelvaModify_HierarchyNode *dst_node);
 int Edge_Delete(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
+        const char *field_name_str,
+        size_t field_name_len,
         struct EdgeField *edge_field,
         struct SelvaModify_HierarchyNode *src_node,
         Selva_NodeId dst_node_id);
@@ -101,8 +187,8 @@ int Edge_Delete(
  * Delete all edges of a field.
  * @returns The number of deleted edges; Otherwise a selva error is returned.
  */
-int Edge_ClearField(struct SelvaModify_HierarchyNode *src_node, const char *key_name_str, size_t key_name_len);
-int Edge_DeleteField(struct SelvaModify_HierarchyNode *src_node, const char *key_name_str, size_t key_name_len);
+int Edge_ClearField(struct SelvaModify_HierarchyNode *src_node, const char *field_name_str, size_t field_name_len);
+int Edge_DeleteField(struct SelvaModify_HierarchyNode *src_node, const char *field_name_str, size_t field_name_len);
 
 /**
  * Get the number of nodes pointing to this nodes from edge fields.

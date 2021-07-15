@@ -153,6 +153,8 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
         goto fail;
     }
 
+    Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
+
     /*
      * Subscriptions.
      * TODO It might make sense to move these to subscriptions.c
@@ -363,6 +365,11 @@ int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selv
 char *SelvaModify_HierarchyGetNodeId(Selva_NodeId id, const SelvaModify_HierarchyNode *node) {
     memcpy(id, node->id, SELVA_NODE_ID_SIZE);
     return id;
+}
+
+char *SelvaModify_HierarchyGetNodeType(char type[SELVA_NODE_TYPE_SIZE], const SelvaModify_HierarchyNode *node) {
+    memcpy(type, node->id, SELVA_NODE_TYPE_SIZE);
+    return type;
 }
 
 /* TODO Rename these functions? */

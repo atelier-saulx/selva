@@ -885,6 +885,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
     RedisModule_SetModuleOptions(ctx, REDISMODULE_OPTIONS_HANDLE_IO_ERRORS);
 #endif
 
+    /* TODO Fix the command creation modes */
     if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }

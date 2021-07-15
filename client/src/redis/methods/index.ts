@@ -3862,6 +3862,21 @@ async selva_subscriptions_refresh(opts: any, ...args: args): Promise<any> {
   }
 }
 
+
+async selva_edge_addconstraint(opts: ServerSelector, ...args: args): Promise<any>
+async selva_edge_addconstraint(...args: args): Promise<any>
+async selva_edge_addconstraint(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_edge_addconstraint', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_edge_addconstraint', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
 }
 
 export default RedisMethods

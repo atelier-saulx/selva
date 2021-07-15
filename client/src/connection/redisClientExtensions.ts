@@ -59,6 +59,7 @@ const selva_commands = [
   'selva.subscriptions.list',
   'selva.subscriptions.listmissing',
   'selva.subscriptions.refresh',
+  'selva.edge.addconstraint',
 ]
 
 redis.RedisClient.prototype.on_info_cmd = function (err, res) {

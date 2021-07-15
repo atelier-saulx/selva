@@ -68,6 +68,7 @@ redis.add_command('selva.subscriptions.delmarker')
 redis.add_command('selva.subscriptions.list')
 redis.add_command('selva.subscriptions.listMissing')
 redis.add_command('selva.subscriptions.refresh')
+redis.add_command('selva.edge.addconstraint')
 const proto = redis.RedisClient.prototype
 for (const key in redis.RedisClient.prototype) {
   if (/[A-Z]/.test(key[0]) && typeof proto[key] === 'function') {

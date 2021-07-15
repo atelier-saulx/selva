@@ -11,6 +11,7 @@ OBJS := \
 	module/async_task.o \
 	module/comparator.o \
 	module/edge.o \
+	module/edge_constraint.o \
 	module/errors.o \
 	module/find.o \
 	module/aggregate.o \

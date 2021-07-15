@@ -62,6 +62,11 @@ struct SelvaModify_Hierarchy {
      */
     SVector heads;
 
+    /**
+     * Edge field constraints.
+     */
+    struct EdgeFieldConstraints edge_field_constraints;
+
     struct {
         /**
          * A tree of all subscriptions applying to this tree.
@@ -150,6 +155,7 @@ int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selv
  * Copy nodeId to a buffer.
  */
 char *SelvaModify_HierarchyGetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node);
+char *SelvaModify_HierarchyGetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaModify_HierarchyNode *node);
 
 struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
 struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadata(
