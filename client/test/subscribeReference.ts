@@ -103,24 +103,34 @@ test.serial.only('subscription to a reference', async (t) => {
   })
   let n = 0
   const sub = obs.subscribe((v) => {
-      console.log('got', v)
-      switch (n++) {
-        case 0:
-          t.deepEqualIgnoreOrder(v, { title: 'football match' })
-          break
-        case 1:
-          t.deepEqualIgnoreOrder(v, { title: 'football match', venue: { title: 'Ipurua Stadium', seats: [seat1] } })
-          break
-        case 2:
-          t.deepEqualIgnoreOrder(v, { title: 'football match', venue: { title: 'Ipurua Stadium', seats: [seat1, seat2] } })
-          break;
-        default:
-          t.fail()
-      }
+    console.log('got', v)
+    switch (n++) {
+      case 0:
+        t.deepEqualIgnoreOrder(v, { title: 'football match' })
+        break
+      case 1:
+        t.deepEqualIgnoreOrder(v, {
+          title: 'football match',
+          venue: { title: 'Ipurua Stadium', seats: [seat1] },
+        })
+        break
+      case 2:
+        t.deepEqualIgnoreOrder(v, {
+          title: 'football match',
+          venue: { title: 'Ipurua Stadium', seats: [seat1, seat2] },
+        })
+        break
+      default:
+        t.fail()
+    }
   })
   await wait(1e3)
-  const [sid] = await client.redis.selva_subscriptions_list('___selva_hierarchy');
-  console.log(await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid))
+  const [sid] = await client.redis.selva_subscriptions_list(
+    '___selva_hierarchy'
+  )
+  console.log(
+    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid)
+  )
   await client.set({
     $id: match,
     venue: venue,
@@ -128,13 +138,12 @@ test.serial.only('subscription to a reference', async (t) => {
   await wait(1e3)
   await client.set({
     $id: venue,
-    seats: { $add: [seat2] }
+    seats: { $add: [seat2] },
   })
   await wait(1e3)
   t.deepEqual(n, 3, 'All change events received')
 
   sub.unsubscribe()
-
 
   await client.destroy()
 })
@@ -181,20 +190,26 @@ test.serial('subscription to inherit an edge', async (t) => {
   })
   let n = 0
   const sub = obs.subscribe((v) => {
-      console.log('got', v)
-      switch (n++) {
-        case 0:
-          t.deepEqualIgnoreOrder(v, { title: 'football match' })
-          break
-        case 1:
-          t.deepEqualIgnoreOrder(v, { title: 'football match', venue: { title: 'Ipurua Stadium', seats: [seat1] } })
-          break
-        case 2:
-          t.deepEqualIgnoreOrder(v, { title: 'football match', venue: { title: 'Ipurua Stadium', seats: [seat1, seat2] } })
-          break;
-        default:
-          t.fail()
-      }
+    console.log('got', v)
+    switch (n++) {
+      case 0:
+        t.deepEqualIgnoreOrder(v, { title: 'football match' })
+        break
+      case 1:
+        t.deepEqualIgnoreOrder(v, {
+          title: 'football match',
+          venue: { title: 'Ipurua Stadium', seats: [seat1] },
+        })
+        break
+      case 2:
+        t.deepEqualIgnoreOrder(v, {
+          title: 'football match',
+          venue: { title: 'Ipurua Stadium', seats: [seat1, seat2] },
+        })
+        break
+      default:
+        t.fail()
+    }
   })
   await wait(1e3)
 
@@ -205,7 +220,7 @@ test.serial('subscription to inherit an edge', async (t) => {
   await wait(1e3)
   await client.set({
     $id: venue,
-    seats: { $add: [seat2] }
+    seats: { $add: [seat2] },
   })
   await wait(1e3)
   t.deepEqual(n, 3, 'All change events received')
