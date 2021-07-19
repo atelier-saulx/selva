@@ -85,6 +85,12 @@ test.serial.only('subscription to a reference', async (t) => {
     title: 'Ipurua Stadium',
     seats: [seat1],
   })
+  const venue2 = await client.set({
+    $language: 'en',
+    type: 'venue',
+    title: 'Fake Ipurua Stadium',
+    seats: [],
+  })
   const match = await client.set({
     $language: 'en',
     type: 'match',
@@ -120,6 +126,12 @@ test.serial.only('subscription to a reference', async (t) => {
           venue: { title: 'Ipurua Stadium', seats: [seat1, seat2] },
         })
         break
+      case 3:
+        t.deepEqual(v, {
+          title: 'football match',
+          venue: { title: 'Fake Ipurua Stadium' },
+        })
+        break
       default:
         t.fail()
     }
@@ -141,7 +153,12 @@ test.serial.only('subscription to a reference', async (t) => {
     seats: { $add: [seat2] },
   })
   await wait(1e3)
-  t.deepEqual(n, 3, 'All change events received')
+  await client.set({
+    $id: match,
+    venue: venue2,
+  })
+  await wait(1e3)
+  t.deepEqual(n, 4, 'All change events received')
 
   sub.unsubscribe()
 
