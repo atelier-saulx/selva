@@ -587,8 +587,13 @@ export const executeGetOperation = async (
             op.id,
             ...field
           )
-      if (op.fromReference && id) {
-        id = id[1]
+
+      if (op.fromReference) {
+        bufferNodeMarker(ctx, op.id, ...field)
+
+        if (id) {
+          id = id[1]
+        }
       }
 
       if (!id) {
