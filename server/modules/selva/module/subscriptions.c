@@ -46,7 +46,7 @@ static const struct SelvaArgParser_EnumType trigger_event_types[] = {
     }
 };
 
-static void clear_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const Selva_NodeId node_id);
+static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const Selva_NodeId node_id);
 
 static int marker_svector_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
     const struct Selva_SubscriptionMarker *a = *(const struct Selva_SubscriptionMarker **)a_raw;
@@ -291,36 +291,64 @@ static void remove_sub_missing_accessor_markers(SelvaModify_Hierarchy *hierarchy
     RedisModule_FreeString(NULL, sub_id);
 }
 
+/**
+ * Clear and destroy a marker that has been already removed from the subscription.
+ * The marker must have been removed from the sub->markers svector before
+ * this function is called.
+ */
+static void do_sub_marker_removal(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker) {
+    if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE ||
+            (marker->marker_flags & (SELVA_SUBSCRIPTION_FLAG_DETACH | SELVA_SUBSCRIPTION_FLAG_TRIGGER))) {
+        (void)SVector_Remove(&hierarchy->subs.detached_markers.vec, marker);
+    } else {
+        /*
+         * Other markers are normally pointed by one or more nodes in
+         * the hierarchy.
+         * If ctx is NULL we assume that the whole hierarchy will be
+         * destroyed and thus there is no need to clear each marker.
+         */
+        if (ctx) {
+            clear_node_sub(ctx, hierarchy, marker, marker->node_id);
+        } else {
+            fprintf(stderr, "%s:%d: Warning no RedisModuleCtx given. This usually means that the whole hierarchy key will be deleted.\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    destroy_marker(marker);
+}
+
+int SelvaSubscriptions_DeleteMarker(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub, Selva_SubscriptionMarkerId marker_id) {
+    struct Selva_SubscriptionMarker find = {
+        .marker_id = marker_id,
+        .sub = sub,
+    };
+    struct Selva_SubscriptionMarker *marker;
+
+    marker = SVector_Remove(&sub->markers, &find);
+    if (!marker) {
+        return SELVA_ENOENT;
+    }
+
+    do_sub_marker_removal(ctx, hierarchy, marker);
+    return 0;
+}
+
+/**
+ * Remove and destroy all markers of a subscription.
+ */
 static void remove_sub_markers(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub) {
     if (SVector_Size(&sub->markers) > 0) {
         struct Selva_SubscriptionMarker *marker;
 
         while ((marker = SVector_Shift(&sub->markers))) {
-            if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_NONE ||
-                (marker->marker_flags & (SELVA_SUBSCRIPTION_FLAG_DETACH | SELVA_SUBSCRIPTION_FLAG_TRIGGER))) {
-                (void)SVector_Remove(&hierarchy->subs.detached_markers.vec, marker);
-            } else {
-                /*
-                 * Other markers are normally pointed by one or more nodes in
-                 * the hierarchy.
-                 * If ctx is NULL we assume that the whole hierarchy will be
-                 * destroyed and thus there is no need to clear each marker.
-                 */
-                if (ctx) {
-                    clear_sub(ctx, hierarchy, marker, marker->node_id);
-                } else {
-                    fprintf(stderr, "%s:%d: Warning no RedisModuleCtx given. This usually means that the whole hierarchy key will be deleted.\n",
-                            __FILE__, __LINE__);
-                }
-            }
-            destroy_marker(marker);
+            do_sub_marker_removal(ctx, hierarchy, marker);
         }
         SVector_ShiftReset(&sub->markers);
     }
 }
 
 /*
- * Destroy all markers owned by a subscription.
+ * Destroy all markers owned by a subscription and destroy the subscription.
  */
 static void destroy_sub(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub) {
     /* Destroy markers. */
@@ -338,7 +366,7 @@ static void destroy_sub(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, s
 }
 
 /*
- * Destroy all subscription markers.
+ * Destroy all subscription markers and subscriptions.
  */
 static void destroy_all_sub_markers(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy) {
     struct hierarchy_subscriptions_tree *subs_head = &hierarchy->subs.head;
@@ -352,7 +380,7 @@ static void destroy_all_sub_markers(RedisModuleCtx *ctx, SelvaModify_Hierarchy *
 }
 
 /*
- * Destroy all subscriptions and markers in a hierarchy.
+ * Destroy all data structures of the subscriptions subsystem and cancel all deferred events.
  */
 void SelvaSubscriptions_DestroyAll(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy) {
     /*
@@ -866,7 +894,7 @@ void SelvaSubscriptions_RefreshByMarker(RedisModuleCtx *ctx, struct SelvaModify_
  * Clear the given marker of a subscription from the nodes following traversal
  * direction starting from node_id.
  */
-static void clear_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const Selva_NodeId node_id) {
+static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const Selva_NodeId node_id) {
     struct SelvaModify_HierarchyCallback cb = {
         .node_cb = clear_node_marker_cb,
         .node_arg = marker,
@@ -967,7 +995,7 @@ void SelvaSubscriptions_ClearAllMarkers(
     SVector_ForeachBegin(&it, &markers);
     while ((marker = SVector_Foreach(&it))) {
         assert(marker->sub);
-        clear_sub(ctx, hierarchy, marker, node_id);
+        clear_node_sub(ctx, hierarchy, marker, node_id);
         marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
     }
     SVector_Clear(&metadata->sub_markers.vec);
@@ -1549,7 +1577,7 @@ void Selva_Subscriptions_DeferTriggerEvents(
 
                 /*
                  * We don't call defer_trigger_event() here directly to allow
-                 * customization of sunscription marker events.
+                 * customization of subscription marker events.
                  */
                 marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_TRIGGER);
             }

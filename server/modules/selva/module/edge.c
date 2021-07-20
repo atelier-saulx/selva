@@ -320,6 +320,70 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaModif
     return 0;
 }
 
+/**
+ * Delete markers that are related to edge traversing markers reaching from src to dst.
+ * This function allows the client to create any markers on the dst node and
+ * get them cleaned up automatically when the edge between the two nodes is
+ * removed. A related marker is one that has the same subscription id as the
+ * marker on the destination node and it starts from the source node.
+ */
+static void remove_related_edge_markers(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, struct SelvaModify_HierarchyNode *dst_node) {
+    SVECTOR_AUTOFREE(sub_markers);
+    struct SVectorIterator dst_it;
+    struct Selva_SubscriptionMarker *dst_marker;
+    struct SelvaModify_HierarchyMetadata *src_meta;
+    struct SelvaModify_HierarchyMetadata *dst_meta;
+    Selva_NodeId src_node_id;
+
+    src_meta = SelvaModify_HierarchyGetNodeMetadataByPtr(src_node);
+    dst_meta = SelvaModify_HierarchyGetNodeMetadataByPtr(dst_node);
+    SelvaModify_HierarchyGetNodeId(src_node_id, src_node);
+
+    if (unlikely(!SVector_Clone(&sub_markers, &dst_meta->sub_markers.vec, NULL))) {
+        fprintf(stderr, "%s:%d: ENOMEM failed to remove sub markers from a referenced node\n",
+                __FILE__, __LINE__);
+        return;
+    }
+
+    SVector_ForeachBegin(&dst_it, &sub_markers);
+    while ((dst_marker = SVector_Foreach(&dst_it))) {
+        struct SVectorIterator src_it;
+        struct Selva_SubscriptionMarker *src_marker;
+
+        if ((dst_marker->dir &
+             (SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
+              SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
+              SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION)) &&
+            !memcmp(dst_marker->node_id, src_node_id, SELVA_NODE_ID_SIZE)) {
+            /*
+             * Skip markers that are fixable with a clear & refresh,
+             * edge traversing markers, that are actually important for
+             * determining which markers are related to the edge subscription.
+             */
+            continue;
+        }
+
+        /*
+         * The contract is that we must delete all markers that belong to the
+         * same subscription as an edge traversing marker on the source node.
+         */
+        SVector_ForeachBegin(&src_it, &src_meta->sub_markers.vec);
+        while ((src_marker = SVector_Foreach(&src_it))) {
+            if ((src_marker->dir &
+                 (SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
+                  SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
+                  SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION)) &&
+                src_marker->sub == dst_marker->sub &&
+                !memcmp(src_marker->node_id, src_node_id, SELVA_NODE_ID_SIZE)) {
+                /* RFE Is it a bit ugly to do this here? */
+                dst_marker->marker_action(hierarchy, dst_marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
+
+                (void)SelvaSubscriptions_DeleteMarker(ctx, hierarchy, dst_marker->sub, dst_marker->marker_id);
+            }
+        }
+    }
+}
+
 int Edge_Delete(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
@@ -332,15 +396,16 @@ int Edge_Delete(
     int err;
 
     SelvaModify_HierarchyGetNodeId(src_node_id, src_node);
-
-    /* TODO We should probably clear from the dst? */
-    /* TODO We don't probably need to clear all markers, just those that are using the same traversal. */
-    SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, src_node);
-
     dst_node = SVector_Search(&src_edge_field->arcs, dst_node_id);
     if (!dst_node) {
         return SELVA_ENOENT;
     }
+
+    remove_related_edge_markers(ctx, hierarchy, src_node, dst_node);
+    /* TODO We should probably clear from the dst? */
+    /* TODO We don't probably need to clear all markers, just those that are using the same traversal. */
+    SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, src_node);
+
     err = remove_origin_ref(src_edge_field, dst_node);
     if (err) {
         return err;
