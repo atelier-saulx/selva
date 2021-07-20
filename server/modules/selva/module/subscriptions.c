@@ -2504,6 +2504,64 @@ int SelvaSubscriptions_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     return REDISMODULE_OK;
 }
 
+/*
+ * KEY SUB_ID MARKER_ID
+ */
+int SelvaSubscriptions_DelMarkerCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    int err;
+
+    if (argc != 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_SUB_ID    = 2;
+    const int ARGV_MARKER_ID = 3;
+
+    RedisModuleString *marker_id_rms = argv[ARGV_MARKER_ID];
+    Selva_SubscriptionMarkerId marker_id;
+    TO_STR(marker_id_rms);
+
+    if (marker_id_rms_len != sizeof(Selva_SubscriptionMarkerId)) {
+        return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "marker_id");
+    }
+    memcpy(&marker_id, marker_id_rms_str, sizeof(marker_id));
+
+    /*
+     * Open the Redis key.
+     */
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    if (!hierarchy) {
+        /* Do not send redis messages here. */
+        return REDISMODULE_OK;
+    }
+
+    Selva_SubscriptionId sub_id;
+    err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
+    if (err) {
+        fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n",
+                __FILE__, __LINE__,
+                RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
+        return replyWithSelvaError(ctx, err);
+    }
+
+    struct Selva_Subscription *sub;
+    sub = find_sub(hierarchy, sub_id);
+    if (!sub) {
+        RedisModule_ReplyWithLongLong(ctx, 0);
+        return REDISMODULE_OK;
+    }
+
+    err = SelvaSubscriptions_DeleteMarker(ctx, hierarchy, sub, marker_id);
+    if (err) {
+        replyWithSelvaError(ctx, err);
+    }
+
+
+    RedisModule_ReplyWithLongLong(ctx, 1);
+    return REDISMODULE_OK;
+}
+
 static int Hierarchy_Subscriptions_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
@@ -2520,7 +2578,8 @@ static int Hierarchy_Subscriptions_OnLoad(RedisModuleCtx *ctx) {
         RedisModule_CreateCommand(ctx, "selva.subscriptions.list", SelvaSubscriptions_ListCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.listMissing", SelvaSubscriptions_ListMissingCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.debug", SelvaSubscriptions_DebugCommand, "readonly deny-script", 1, 1, 1) ||
-        RedisModule_CreateCommand(ctx, "selva.subscriptions.del", SelvaSubscriptions_DelCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+        RedisModule_CreateCommand(ctx, "selva.subscriptions.del", SelvaSubscriptions_DelCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.subscriptions.delmarker", SelvaSubscriptions_DelMarkerCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
