@@ -102,7 +102,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('inherit merge works for records', async (t) => {
+test.serial('nested wildcard query for records', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
