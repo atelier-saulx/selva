@@ -606,14 +606,14 @@ export const executeGetOperation = async (
         bufferNodeMarker(ctx, op.id, ...field)
 
         if (id) {
-          id = id[1]
-
           await addMarker(client, ctx, {
             id: op.id,
             type: 'edge_field',
-            refField: field[idIdx],
+            refField: field[idIdx], // TODO: use expression?
             fields: Object.keys(op.props).filter((f) => !f.startsWith('$')),
           })
+
+          id = id[1]
         }
       }
 
