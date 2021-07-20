@@ -574,45 +574,35 @@ export const executeGetOperation = async (
           ? op.sourceField
           : [op.sourceField]
         : [op.field]
-      let id: any = op.fromReference
-        ? await Promise.all(
-            field.map((f) =>
-              client.redis.selva_hierarchy_edgeget(
-                ctx.originDescriptors[ctx.db] || { name: ctx.db },
-                '___selva_hierarchy',
-                op.id,
-                f
-              )
-            )
+
+      let id = op.fromReference
+        ? await client.redis.selva_hierarchy_edgeget(
+            ctx.originDescriptors[ctx.db] || { name: ctx.db },
+            '___selva_hierarchy',
+            op.id,
+            ...field
           )
-        : await Promise.all(
-            field.map((f) =>
-              client.redis.selva_object_get(
-                ctx.originDescriptors[ctx.db] || { name: ctx.db },
-                makeLangArg(client.schemas[ctx.db].languages, lang),
-                op.id,
-                f
-              )
-            )
+        : await client.redis.selva_object_get(
+            ctx.originDescriptors[ctx.db] || { name: ctx.db },
+            makeLangArg(client.schemas[ctx.db].languages, lang),
+            op.id,
+            ...field
           )
 
       if (op.fromReference) {
-        const idIdx = id.findIndex((v) => {
-          return !!v && v.length === 2
-        })
-
-        id = id[idIdx]
-
         bufferNodeMarker(ctx, op.id, ...field)
+        await Promise.all(
+          field.map((f) => {
+            return addMarker(client, ctx, {
+              id: op.id,
+              type: 'edge_field',
+              refField: f, // TODO: use expression?
+              fields: Object.keys(op.props).filter((f) => !f.startsWith('$')),
+            })
+          })
+        )
 
         if (id) {
-          await addMarker(client, ctx, {
-            id: op.id,
-            type: 'edge_field',
-            refField: field[idIdx], // TODO: use expression?
-            fields: Object.keys(op.props).filter((f) => !f.startsWith('$')),
-          })
-
           id = id[1]
         }
       }
