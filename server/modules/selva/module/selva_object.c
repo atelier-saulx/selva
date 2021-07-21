@@ -2006,9 +2006,11 @@ int SelvaObject_GetWithWildcardStr(
                  * This is an unlikely event because the field is known to exist,
                  * but if it happens we must skip to avoid segfaulting.
                  */
+                /*
                 fprintf(stderr, "%s:%d: Failed to get value for \"%.*s\"\n",
                         __FILE__, __LINE__,
                         (int)new_field_len, new_field);
+                */
                 continue;
             }
 
