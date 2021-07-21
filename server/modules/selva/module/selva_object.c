@@ -2000,7 +2000,6 @@ int SelvaObject_GetWithWildcardStr(
             }
 
             struct SelvaObjectKey *key; /* Note that we shadow the variable here. */
-            fprintf(stderr, "NEW FIELD %.*s\n", (int)new_field_len, new_field);
             err = get_key(obj, new_field, new_field_len, 0, &key);
             if (err) {
                 /*
@@ -2015,16 +2014,10 @@ int SelvaObject_GetWithWildcardStr(
 
             if (flags == 1) {
                 /* if the path should be spliced to start from the first wildcard as expected by selva.object.get */
-                // const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
-                const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + after_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
+                const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + after_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + after_len;
                 char reply_path[reply_path_len + 1];
 
                 if (resp_path_start_idx == -1) {
-                    fprintf(stderr, "YOYO\n");
-                    // snprintf(
-                    //     reply_path, reply_path_len + 1, "%.*s.%.*s",
-                    //     (int)obj_key_len, obj_key_name_str,
-                    //     (int)key->name_len, key->name);
                     snprintf(reply_path, reply_path_len + 1, "%.*s.%.*s",
                         (int)obj_key_len, obj_key_name_str,
                         (int)after_len, after);
@@ -2032,10 +2025,9 @@ int SelvaObject_GetWithWildcardStr(
                     snprintf(reply_path, reply_path_len + 1, "%.*s.%.*s.%.*s",
                         (int)(before_len - resp_path_start_idx), before + resp_path_start_idx,
                         (int)obj_key_len, obj_key_name_str,
-                        (int)key->name_len, key->name);
+                        (int)after_len, after);
                 }
 
-                fprintf(stderr, "IFFY %.*s %.*s\n", (int)okey_len, okey_str, (int)reply_path_len, reply_path);
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             } else {
                 /* if the whole resolved path should be returned */
