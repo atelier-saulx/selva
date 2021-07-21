@@ -2006,27 +2006,28 @@ int SelvaObject_GetWithWildcardStr(
                  * This is an unlikely event because the field is known to exist,
                  * but if it happens we must skip to avoid segfaulting.
                  */
+                /*
                 fprintf(stderr, "%s:%d: Failed to get value for \"%.*s\"\n",
                         __FILE__, __LINE__,
                         (int)new_field_len, new_field);
+                */
                 continue;
             }
 
             if (flags == 1) {
                 /* if the path should be spliced to start from the first wildcard as expected by selva.object.get */
-                const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + key->name_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + key->name_len;
+                const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + after_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + after_len;
                 char reply_path[reply_path_len + 1];
 
                 if (resp_path_start_idx == -1) {
-                    snprintf(
-                        reply_path, reply_path_len + 1, "%.*s.%.*s",
+                    snprintf(reply_path, reply_path_len + 1, "%.*s.%.*s",
                         (int)obj_key_len, obj_key_name_str,
-                        (int)key->name_len, key->name);
+                        (int)after_len, after);
                 } else {
                     snprintf(reply_path, reply_path_len + 1, "%.*s.%.*s.%.*s",
                         (int)(before_len - resp_path_start_idx), before + resp_path_start_idx,
                         (int)obj_key_len, obj_key_name_str,
-                        (int)key->name_len, key->name);
+                        (int)after_len, after);
                 }
 
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);

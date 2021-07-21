@@ -295,7 +295,7 @@ export const TYPE_CASTS: Record<
     let fieldCount = 0
     const parse = (o, field: string, arr: string[]) =>
       arr.forEach((key, i, arr) => {
-        const f = origField.includes('.*.')
+        const f = field.includes('.*.')
           ? `${field.substr(0, field.indexOf('*') - 1)}.${key}`
           : `${field}.${key}`
 
