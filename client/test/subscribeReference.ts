@@ -60,38 +60,45 @@ test.after(async (t) => {
 test.serial.only('subscription to a reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const menuItem = await client.set({
+    $id: 'ma1',
     $language: 'en',
     type: 'match',
     title: 'menu item',
   })
   const sport = await client.set({
+    $id: 'sp1',
     $language: 'en',
     type: 'sport',
     title: 'football',
   })
   const seat1 = await client.set({
+    $id: 'se1',
     $language: 'en',
     type: 'seat',
     color: 'white',
   })
   const seat2 = await client.set({
+    $id: 'se2',
     $language: 'en',
     type: 'seat',
     color: 'red',
   })
   const venue = await client.set({
+    $id: 've1',
     $language: 'en',
     type: 'venue',
     title: 'Ipurua Stadium',
     seats: [seat1],
   })
   const venue2 = await client.set({
+    $id: 've2',
     $language: 'en',
     type: 'venue',
     title: 'Fake Ipurua Stadium',
     seats: [],
   })
   const match = await client.set({
+    $id: 'ma2',
     $language: 'en',
     type: 'match',
     title: 'football match',
@@ -141,10 +148,30 @@ test.serial.only('subscription to a reference', async (t) => {
     '___selva_hierarchy'
   )
 
-  // TODO make assert
-  console.log(
-    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid)
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid),
+    [
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 961614000',
+        'flags: 0x0004',
+        'node_id: "ma2"',
+        'dir: node',
+        'filter_expression: unset',
+        'fields: "title\nvenue"',
+      ],
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 1217403185',
+        'flags: 0x0004',
+        'node_id: "ma2"',
+        'dir: edge_field',
+        'filter_expression: unset',
+        'fields: "title\nseats"',
+      ],
+    ]
   )
+
   await client.set({
     $id: match,
     venue: venue,
@@ -155,11 +182,38 @@ test.serial.only('subscription to a reference', async (t) => {
     seats: { $add: [seat2] },
   })
 
-  // TODO make assert
-  console.log(
-    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid)
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid),
+    [
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 961614000',
+        'flags: 0x0004',
+        'node_id: "ma2"',
+        'dir: node',
+        'filter_expression: unset',
+        'fields: "title\nvenue"',
+      ],
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 983306425',
+        'flags: 0x0004',
+        'node_id: "ve1"',
+        'dir: node',
+        'filter_expression: unset',
+        'fields: "title\nseats"',
+      ],
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 1217403185',
+        'flags: 0x0004',
+        'node_id: "ma2"',
+        'dir: edge_field',
+        'filter_expression: unset',
+        'fields: "title\nseats"',
+      ],
+    ]
   )
-
   await wait(1e3)
   await client.set({
     $id: match,
@@ -168,9 +222,37 @@ test.serial.only('subscription to a reference', async (t) => {
   await wait(1e3)
   t.deepEqual(n, 4, 'All change events received')
 
-  // TODO make assert
-  console.log(
-    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid)
+  t.deepEqual(
+    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid),
+    [
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 961614000',
+        'flags: 0x0004',
+        'node_id: "ma2"',
+        'dir: node',
+        'filter_expression: unset',
+        'fields: "title\nvenue"',
+      ],
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 985272506',
+        'flags: 0x0004',
+        'node_id: "ve2"',
+        'dir: node',
+        'filter_expression: unset',
+        'fields: "title\nseats"',
+      ],
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 1217403185',
+        'flags: 0x0004',
+        'node_id: "ma2"',
+        'dir: edge_field',
+        'filter_expression: unset',
+        'fields: "title\nseats"',
+      ],
+    ]
   )
 
   sub.unsubscribe()
