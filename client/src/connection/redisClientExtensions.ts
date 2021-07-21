@@ -55,6 +55,7 @@ const selva_commands = [
   'selva.subscriptions.addtrigger',
   'selva.subscriptions.debug',
   'selva.subscriptions.del',
+  'selva.subscriptions.delmarker',
   'selva.subscriptions.list',
   'selva.subscriptions.listmissing',
   'selva.subscriptions.refresh',

@@ -1842,7 +1842,7 @@ static int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *n
     return cb->node_cb(node, cb->node_arg);
 }
 
-static int traverse_bfs_edge(
+static int traverse_bfs_edge_field(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         const char *field_name_str,
@@ -1990,9 +1990,9 @@ int SelvaModify_TraverseHierarchyField(
     case SELVA_HIERARCHY_TRAVERSAL_REF:
         return traverse_ref(ctx, hierarchy, head, field_name_str, field_name_len, cb);
     case SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD:
-        return traverse_bfs_edge(hierarchy, id, field_name_str, field_name_len, cb);
-    case SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD:
         return traverse_edge_field(head, field_name_str, field_name_len, cb);
+    case SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD:
+        return traverse_bfs_edge_field(hierarchy, id, field_name_str, field_name_len, cb);
      default:
         /* Should probably use some other traversal function. */
         fprintf(stderr, "%s:%d: Invalid traversal requested (%d)\n",

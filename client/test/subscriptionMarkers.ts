@@ -1851,3 +1851,76 @@ test.serial('Trigger: deleted', async (t) => {
   await wait(500)
   t.deepEqual(msgCount, 1)
 })
+
+test.serial('Delete a single marker', async (t) => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'maTest0001',
+    title: { en: 'ma1' },
+    children: [
+      {
+        $id: 'maTest0002',
+        title: { en: 'ma2' },
+      },
+    ],
+  })
+
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b62',
+    '1',
+    'descendants',
+    'maTest0001'
+  )
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b62',
+    '2',
+    'descendants',
+    'maTest0001'
+  )
+  await client.redis.selva_subscriptions_refresh(
+    '___selva_hierarchy',
+    '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b62'
+  )
+
+  t.deepEqual(await client.redis.selva_subscriptions_delmarker('___selva_hierarchy', '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b62', '1'), 1);
+
+  let dn1 = await client.redis.selva_subscriptions_debug(
+    '___selva_hierarchy',
+    'maTest0001'
+  )
+  t.is(dn1.length, 1, 'node has one marker')
+  let dn2 = await client.redis.selva_subscriptions_debug(
+    '___selva_hierarchy',
+    'maTest0002'
+  )
+  t.is(dn2.length, 1, 'node has one marker')
+
+  await client.redis.selva_subscriptions_add(
+    '___selva_hierarchy',
+    '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b62',
+    '3',
+    'descendants',
+    'maTest0001'
+  )
+  await client.redis.selva_subscriptions_refresh(
+    '___selva_hierarchy',
+    '2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b62'
+  )
+
+  dn1 = await client.redis.selva_subscriptions_debug(
+    '___selva_hierarchy',
+    'maTest0001'
+  )
+  t.is(dn1.length, 2, 'node has two markers')
+  dn2 = await client.redis.selva_subscriptions_debug(
+    '___selva_hierarchy',
+    'maTest0002'
+  )
+  t.is(dn2.length, 2, 'node has two markers')
+
+  await client.delete('root')
+  client.destroy()
+})

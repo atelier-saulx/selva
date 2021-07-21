@@ -574,6 +574,7 @@ export const executeGetOperation = async (
           ? op.sourceField
           : [op.sourceField]
         : [op.field]
+
       let id = op.fromReference
         ? await client.redis.selva_hierarchy_edgeget(
             ctx.originDescriptors[ctx.db] || { name: ctx.db },
@@ -590,6 +591,16 @@ export const executeGetOperation = async (
 
       if (op.fromReference) {
         bufferNodeMarker(ctx, op.id, ...field)
+        await Promise.all(
+          field.map((f) => {
+            return addMarker(client, ctx, {
+              id: op.id,
+              type: 'edge_field',
+              refField: f, // TODO: use expression?
+              fields: Object.keys(op.props).filter((f) => !f.startsWith('$')),
+            })
+          })
+        )
 
         if (id) {
           id = id[1]
