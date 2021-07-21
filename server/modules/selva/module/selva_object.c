@@ -2038,7 +2038,6 @@ int SelvaObject_GetWithWildcardStr(
                         (int)before_len, before,
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
-                fprintf(stderr, "ELSY %.*s\n",  (int)reply_path_len, reply_path);
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             }
 
