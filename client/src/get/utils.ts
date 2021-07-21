@@ -39,7 +39,6 @@ export function getNestedSchema(
   id: string,
   field: string
 ): FieldSchema | null {
-  console.log('called', id, field)
   if (!field || field === '') {
     return null
   }
