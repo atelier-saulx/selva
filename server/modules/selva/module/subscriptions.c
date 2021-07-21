@@ -637,7 +637,7 @@ static int marker_set_fields(struct Selva_SubscriptionMarker *marker, const char
  * @param ref_field is the field used for traversal that must be a c-string.
  */
 static int marker_set_ref_field(struct Selva_SubscriptionMarker *marker, const char *ref_field) {
-    assert((marker->dir & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) &&
+    assert((marker->dir & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD | SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD)) &&
            !(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_TRIGGER));
 
     marker->ref_field = RedisModule_Strdup(ref_field);
@@ -1705,7 +1705,8 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
         )) {
         return replyWithSelvaErrorf(ctx, err, "Traversal argument");
     }
-    if (sub_dir & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
+
+    if (sub_dir & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD | SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD)) {
         ref_field = RedisModule_StringPtrLen(argv[ARGV_REF_FIELD], NULL);
         SHIFT_ARGS(1);
     }

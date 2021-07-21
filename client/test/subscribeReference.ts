@@ -140,6 +140,8 @@ test.serial.only('subscription to a reference', async (t) => {
   const [sid] = await client.redis.selva_subscriptions_list(
     '___selva_hierarchy'
   )
+
+  // TODO make assert
   console.log(
     await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid)
   )
@@ -152,6 +154,12 @@ test.serial.only('subscription to a reference', async (t) => {
     $id: venue,
     seats: { $add: [seat2] },
   })
+
+  // TODO make assert
+  console.log(
+    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid)
+  )
+
   await wait(1e3)
   await client.set({
     $id: match,
@@ -159,6 +167,11 @@ test.serial.only('subscription to a reference', async (t) => {
   })
   await wait(1e3)
   t.deepEqual(n, 4, 'All change events received')
+
+  // TODO make assert
+  console.log(
+    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid)
+  )
 
   sub.unsubscribe()
 
