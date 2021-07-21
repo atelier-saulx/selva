@@ -306,6 +306,7 @@ export const TYPE_CASTS: Record<
           return
         }
 
+        console.log('HELLOO', all, id, origField)
         let fieldSchema = getNestedSchema(schema, id, f)
 
         if (!fieldSchema) {
