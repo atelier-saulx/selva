@@ -2518,15 +2518,6 @@ int SelvaSubscriptions_DelMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
     const int ARGV_SUB_ID    = 2;
     const int ARGV_MARKER_ID = 3;
 
-    RedisModuleString *marker_id_rms = argv[ARGV_MARKER_ID];
-    Selva_SubscriptionMarkerId marker_id;
-    TO_STR(marker_id_rms);
-
-    if (marker_id_rms_len != sizeof(Selva_SubscriptionMarkerId)) {
-        return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "marker_id");
-    }
-    memcpy(&marker_id, marker_id_rms_str, sizeof(marker_id));
-
     /*
      * Open the Redis key.
      */
@@ -2536,6 +2527,9 @@ int SelvaSubscriptions_DelMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
         return REDISMODULE_OK;
     }
 
+    /*
+     * Get the subscription id.
+     */
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
@@ -2543,6 +2537,15 @@ int SelvaSubscriptions_DelMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
                 __FILE__, __LINE__,
                 RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
         return replyWithSelvaError(ctx, err);
+    }
+
+    /*
+     * Get the marker id.
+     */
+    Selva_SubscriptionMarkerId marker_id;
+    err = SelvaArgParser_MarkerId(&marker_id, argv[ARGV_MARKER_ID]);
+    if (err) {
+        return replyWithSelvaErrorf(ctx, err, "Marker ID");
     }
 
     struct Selva_Subscription *sub;
@@ -2556,7 +2559,6 @@ int SelvaSubscriptions_DelMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
     if (err) {
         replyWithSelvaError(ctx, err);
     }
-
 
     RedisModule_ReplyWithLongLong(ctx, 1);
     return REDISMODULE_OK;
