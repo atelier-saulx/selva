@@ -39,6 +39,7 @@ export function getNestedSchema(
   id: string,
   field: string
 ): FieldSchema | null {
+  console.log('called', id, field)
   if (!field || field === '') {
     return null
   }
@@ -69,7 +70,6 @@ export function getNestedSchema(
 
   for (let i = 1; i < fields.length; i++) {
     let segment = fields[i]
-    console.log('heyoo', id, field, segment, JSON.stringify(prop, null, 2))
 
     if (segment.endsWith(']')) {
       // sanitize array types to look up the array so it ends up in the array object schema if below
@@ -90,10 +90,8 @@ export function getNestedSchema(
     }
 
     if (prop.values) {
-      if (i < fields.length - 1) {
-        // record types skip the next key
-        prop = prop.values
-      }
+      // record types skip the next key
+      prop = prop.values
     } else if (prop.type === 'array') {
       prop = prop.items
       prop = prop.properties[segment]
