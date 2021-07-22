@@ -186,7 +186,7 @@ test.serial('traverse a custom field', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'edge_field', 'a.b', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs_edge_field', 'a.b', 'root'),
     [ 'root', 'ma1', 'ma2', 'ma3', 'ma4' ]
   )
 })
@@ -228,7 +228,7 @@ test.serial('find can return edge fields', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'edge_field', 'a.b', 'fields', 'a.b\nparents', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs_edge_field', 'a.b', 'fields', 'a.b\nparents', 'root'),
     [
       [
         'root', [
@@ -317,7 +317,7 @@ test.serial('find can do nested traversals', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'edge_field', 'a.b', 'fields', 'a.b\nparents\ndescendants', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs_edge_field', 'a.b', 'fields', 'a.b\nparents\ndescendants', 'root'),
     [
       [
         'root', [
@@ -368,7 +368,7 @@ test.serial('missing edges are added automatically', async (t) => {
   }))
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'edge_field', 'a.b', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs_edge_field', 'a.b', 'root'),
     [ 'root', 'ma1', 'ma2' ]
   )
 })
