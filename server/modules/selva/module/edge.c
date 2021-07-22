@@ -652,7 +652,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
 int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node) {
     RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
 
-    if (encver < HIERARCHY_ENCODING_VERSION) {
+    if (encver < 1) { /* hierarchy encver */
         return 0; /* Only the latest version supports loading metadata. */
     }
 

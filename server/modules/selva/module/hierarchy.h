@@ -10,7 +10,7 @@
 #include "edge.h"
 #include "subscriptions.h"
 
-#define HIERARCHY_ENCODING_VERSION  1
+#define HIERARCHY_ENCODING_VERSION  2
 
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;

@@ -2158,6 +2158,10 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 #endif
     SelvaModify_Hierarchy *hierarchy = SelvaModify_NewHierarchy(NULL);
 
+    if (encver >= 2) {
+        /* TODO Load dyn constraints */
+    }
+
     while (1) {
         int err;
         size_t len = 0;
@@ -2293,10 +2297,12 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
 
     /*
      * Serialization format:
+     * EDGE_CONSTRAINTS
      * NODE_ID1 | METADATA | NR_CHILDREN | CHILD_ID_0,..
      * NODE_ID2 | METADATA | NR_CHILDREN | ...
      * HIERARCHY_RDB_EOF
      */
+    /* TODO Save Edge constraints */
     (void)full_dfs(hierarchy, &cb);
     RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
