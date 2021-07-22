@@ -88,15 +88,6 @@ struct EdgeFieldConstraints {
     struct SelvaObject *dyn_constraints;
 };
 
-/*
- * EdgeField Flags
- * ---------------
- *
- *  These flags are generally implemented to help with handling the constraints
- *  efficiently.
- */
-#define EDGE_FIELD_FLAG_BIDIRECTIONAL   0x01 /*!< This is a bidirectional edge field. */
-
 /**
  * A struct for edge fields.
  * This struct contains the actual arcs pointing directly to other nodes in the
@@ -104,7 +95,6 @@ struct EdgeFieldConstraints {
  */
 struct EdgeField {
     unsigned constraint_id; /*!< An index in the constraints array edge_constraints. */
-    unsigned edge_flags; /*!< Flags related to the constraint handling. */
     Selva_NodeId src_node_id; /*!< Source/owner nodeId of this edge field. */
     struct SVector arcs; /*!< Pointers to hierarchy nodes. */
 };
