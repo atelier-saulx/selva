@@ -768,29 +768,28 @@ test.serial.only('bidirectional edge fields', async (t) => {
   )
 
   // Delete an edge
-  // TODO delete_all doesn't work currently
-  //t.deepEqual(await client.redis.selva_modify('pl3', '', '5', 'team', createRecord(setRecordDefCstring, {
-  //  op_set_type: 1,
-  //  delete_all: 1,
-  //  constraint_id: 2,
-  //  $add: null,
-  //  $delete: null,
-  //  $value: null,
-  //})), ['pl3', 'UPDATED'])
-  //t.deepEqual(
-  //  await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'te1'),
-  //  ['players', [
-  //      'pl1',
-  //      'pl2',
-  //    ],
-  //  ]
-  //)
-  //t.deepEqual(
-  //  await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'pl3'),
-  //  ['team', [
-  //    ]
-  //  ]
-  //)
+  t.deepEqual(await client.redis.selva_modify('pl3', '', '5', 'team', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 1,
+    constraint_id: 2,
+    $add: null,
+    $delete: null,
+    $value: null,
+  })), ['pl3', 'UPDATED'])
+  t.deepEqual(
+    await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'te1'),
+    ['players', [
+        'pl1',
+        'pl2',
+      ],
+    ]
+  )
+  t.deepEqual(
+    await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'pl3'),
+    ['team', [
+      ]
+    ]
+  )
 
   // Delete an edge
   t.deepEqual(await client.redis.selva_modify('pl2', '', '5', 'team', createRecord(setRecordDefCstring, {
@@ -805,7 +804,6 @@ test.serial.only('bidirectional edge fields', async (t) => {
     await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'te1'),
     ['players', [
         'pl1',
-        'pl3', // TODO this shouldn't be here
       ],
     ]
   )

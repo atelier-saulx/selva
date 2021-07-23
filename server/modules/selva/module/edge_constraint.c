@@ -303,6 +303,7 @@ int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 static int EdgeConstraints_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
+     * TODO A list command would be useful.
      */
     if (RedisModule_CreateCommand(ctx, "selva.hierarchy.addconstraint", Edge_AddConstraintCommand, "write", 2, 2, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
