@@ -708,7 +708,7 @@ test.serial.only('bidirectional edge fields', async (t) => {
   const client = connect({ port })
 
   // Create dynamic constraints
-  await client.redis.selva_edge_addconstraint('___selva_hierarchy',
+  await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
       'te', // source node type
       'players', // source field name
       '2', // constraint flags
@@ -716,7 +716,7 @@ test.serial.only('bidirectional edge fields', async (t) => {
       'pl', // bck node type
       'team' // bck field name
   )
-  await client.redis.selva_edge_addconstraint('___selva_hierarchy',
+  await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
       'pl',
       'team',
       '3',

@@ -37,15 +37,16 @@ export default RedisMethods
 const methods = []
 
 // redis.add_command(`FT.${cmd}`)
-redis.add_command('selva.hierarchy.children')
-redis.add_command('selva.hierarchy.del')
-redis.add_command('selva.hierarchy.find')
-redis.add_command('selva.hierarchy.findin')
+redis.add_command('selva.hierarchy.addconstraint')
 redis.add_command('selva.hierarchy.aggregate')
 redis.add_command('selva.hierarchy.aggregatein')
-redis.add_command('selva.hierarchy.parents')
-redis.add_command('selva.hierarchy.edgelist')
+redis.add_command('selva.hierarchy.children')
+redis.add_command('selva.hierarchy.del')
 redis.add_command('selva.hierarchy.edgeget')
+redis.add_command('selva.hierarchy.edgelist')
+redis.add_command('selva.hierarchy.find')
+redis.add_command('selva.hierarchy.findin')
+redis.add_command('selva.hierarchy.parents')
 redis.add_command('selva.inherit')
 redis.add_command('selva.modify')
 redis.add_command('selva.resolve.nodeid')
@@ -68,7 +69,6 @@ redis.add_command('selva.subscriptions.delmarker')
 redis.add_command('selva.subscriptions.list')
 redis.add_command('selva.subscriptions.listMissing')
 redis.add_command('selva.subscriptions.refresh')
-redis.add_command('selva.edge.addconstraint')
 const proto = redis.RedisClient.prototype
 for (const key in redis.RedisClient.prototype) {
   if (/[A-Z]/.test(key[0]) && typeof proto[key] === 'function') {

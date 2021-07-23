@@ -193,5 +193,7 @@ void replyWithEdgeField(struct RedisModuleCtx *ctx, struct EdgeField *edge_field
 
 int Edge_RdbLoad(struct RedisModuleIO *io, int encver, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node);
 void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaModify_HierarchyNode *node);
+int EdgeConstraint_RdbLoad(struct RedisModuleIO *io, int encver, struct EdgeFieldConstraints *data);
+void EdgeConstraint_RdbSave(struct RedisModuleIO *io, struct EdgeFieldConstraints *data);
 
 #endif /* _EDGE_H_ */

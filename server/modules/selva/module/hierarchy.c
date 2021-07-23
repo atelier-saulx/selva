@@ -2159,7 +2159,13 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
     SelvaModify_Hierarchy *hierarchy = SelvaModify_NewHierarchy(NULL);
 
     if (encver >= 2) {
-        /* TODO Load dyn constraints */
+        int err;
+
+        err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
+        if (err) {
+            RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints");
+            goto error;
+        }
     }
 
     while (1) {
@@ -2302,7 +2308,7 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
      * NODE_ID2 | METADATA | NR_CHILDREN | ...
      * HIERARCHY_RDB_EOF
      */
-    /* TODO Save Edge constraints */
+    EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
     (void)full_dfs(hierarchy, &cb);
     RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
