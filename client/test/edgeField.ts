@@ -704,7 +704,7 @@ test.serial('deref node references on find', async(t) => {
   )
 })
 
-test.serial.only('bidirectional edge fields', async (t) => {
+test.serial('bidirectional edge fields', async (t) => {
   const client = connect({ port })
 
   // Create dynamic constraints
@@ -713,7 +713,6 @@ test.serial.only('bidirectional edge fields', async (t) => {
       'players', // source field name
       '2', // constraint flags
       '2', // bck constraint type
-      'pl', // bck node type
       'team' // bck field name
   )
   await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
@@ -721,7 +720,6 @@ test.serial.only('bidirectional edge fields', async (t) => {
       'team',
       '3',
       '2',
-      'te',
       'players'
   )
 

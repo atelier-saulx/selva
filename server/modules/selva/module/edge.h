@@ -36,7 +36,6 @@ struct EdgeFieldDynConstraintParams {
     unsigned flags;
     unsigned bck_constraint_id;
     Selva_NodeType fwd_node_type;
-    Selva_NodeType bck_node_type;
     struct RedisModuleString *fwd_field_name;
     struct RedisModuleString *bck_field_name;
 };
@@ -53,7 +52,6 @@ struct EdgeFieldConstraint {
     unsigned flags;
 
     unsigned bck_constraint_id;
-    Selva_NodeType bck_node_type;
 
     /**
      * Forward traversing field of this constraint.
