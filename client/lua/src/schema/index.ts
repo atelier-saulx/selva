@@ -325,7 +325,7 @@ function checkNestedChanges(
         redis.call(
           'selva.hierarchy.addconstraint',
           '___selva_hierarchy',
-          newType.prefix,
+          <string>newType.prefix,
           field,
           '3',
           f.bidirectional.fromField
@@ -335,7 +335,7 @@ function checkNestedChanges(
         redis.call(
           'selva.hierarchy.addconstraint',
           '___selva_hierarchy',
-          newType.prefix,
+          <string>newType.prefix,
           field,
           '2',
           f.bidirectional.fromField
@@ -512,6 +512,10 @@ export function verifyAndEnsureRequiredFields(
     return err
   }
 
+  if ((err = ensurePrefixes(oldSchema, newSchema))) {
+    return err
+  }
+
   if (
     (err = verifyTypes(
       searchIndexes,
@@ -520,10 +524,6 @@ export function verifyAndEnsureRequiredFields(
       newSchema
     ))
   ) {
-    return err
-  }
-
-  if ((err = ensurePrefixes(oldSchema, newSchema))) {
     return err
   }
 
