@@ -6,6 +6,7 @@ import {
   SearchRaw,
   defaultFields,
   rootDefaultFields,
+  FieldSchemaReferences,
 } from '../../../src/schema/index'
 import ensurePrefixes from './prefixes'
 import updateSearchIndexes from './searchIndexes'
@@ -248,6 +249,37 @@ function checkField(
     ) {
       return err
     }
+  } else if (newField.type === 'reference' || newField.type === 'references') {
+    const castedOld = <FieldSchemaReferences>oldField
+    if (!newField.bidirectional && castedOld.bidirectional) {
+      return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
+        // @ts-ignore
+        oldField.search.type
+      )} to ${cjson.encode(
+        // @ts-ignore
+        searchRaw && searchRaw.type
+      )}. This will be supported in the future.`
+    } else if (newField.bidirectional && castedOld.bidirectional) {
+      if (
+        newField.bidirectional.fromField !== castedOld.bidirectional.fromField
+      ) {
+        return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
+          // @ts-ignore
+          oldField.search.type
+        )} to ${cjson.encode(
+          // @ts-ignore
+          searchRaw && searchRaw.type
+        )}. This will be supported in the future.`
+      }
+    } else {
+      return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
+        // @ts-ignore
+        oldField.search.type
+      )} to ${cjson.encode(
+        // @ts-ignore
+        searchRaw && searchRaw.type
+      )}. This will be supported in the future.`
+    }
   }
 
   return null
@@ -285,12 +317,16 @@ function checkNestedChanges(
 
   for (const field in newType.fields) {
     if (!oldType.fields || !oldType.fields[field]) {
-      findSearchConfigurations(
-        newType.fields[field],
-        field,
-        searchIndexes,
-        changedIndexes
-      )
+      const f = newType.fields[field]
+      findSearchConfigurations(f, field, searchIndexes, changedIndexes)
+
+      if (
+        (f.type === 'reference' || f.type === 'references') &&
+        f.bidirectional
+      ) {
+        // TODO
+        // redis.call('selva.hierarchy.addconstraint', '___selva_hierarchy', newType.prefix, field, '2', '2',
+      }
     }
   }
 
