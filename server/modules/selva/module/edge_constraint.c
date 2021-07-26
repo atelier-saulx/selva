@@ -139,7 +139,7 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(const struct EdgeFieldConst
 static void EdgeConstraint_Reply(struct RedisModuleCtx *ctx, void *p) {
     struct EdgeFieldConstraint *constraint = (struct EdgeFieldConstraint *)p;
 
-    RedisModule_ReplyWithArray(ctx, 10);
+    RedisModule_ReplyWithArray(ctx, 6);
 
     RedisModule_ReplyWithSimpleString(ctx, "flags");
     RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "0x%x", constraint->flags));
@@ -263,12 +263,37 @@ int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     }
 }
 
+int Edge_ListConstraintsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    const int ARGV_REDIS_KEY = 1;
+    int err;
+
+    fprintf(stderr, "argc: %d\n", argc);
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    /*
+     * Open the Redis key.
+     */
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
+    }
+
+    err = SelvaObject_ReplyWithObject(ctx, NULL, hierarchy->edge_field_constraints.dyn_constraints, NULL);
+    if (err) {
+        return replyWithSelvaError(ctx, err);
+    }
+
+    return REDISMODULE_OK;
+}
+
 static int EdgeConstraints_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
-     * TODO A list command would be useful.
      */
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.addconstraint", Edge_AddConstraintCommand, "write", 2, 2, 1) == REDISMODULE_ERR) {
+    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.addconstraint", Edge_AddConstraintCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.listconstraints", Edge_ListConstraintsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
