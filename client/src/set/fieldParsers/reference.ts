@@ -87,7 +87,11 @@ export default async (
   if (fields.bidirectional) {
     const fromField = fields.bidirectional.fromField
     const targetField = getNestedSchema(schema, id, fromField)
-    if (!targetField) {
+    if (
+      !targetField ||
+      (targetField.type !== 'reference' && targetField.type !== 'references') ||
+      !targetField.bidirectional
+    ) {
       throw new Error(
         `Wrong payload for reference ${JSON.stringify(
           payload

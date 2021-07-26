@@ -2,7 +2,8 @@ import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
 import { _set } from '../index'
 import { SetOptions } from '../types'
-import { Schema, FieldSchemaArrayLike } from '../../schema'
+import { getNestedSchema } from '../../get/utils'
+import { Schema, FieldSchemaReferences } from '../../schema'
 import parseSetObject from '../validate'
 import { verifiers } from './simple'
 import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
@@ -81,6 +82,7 @@ const addParent = (
 const toCArr = async (
   client: SelvaClient,
   field: string,
+  fields: FieldSchemaReferences,
   schema: Schema,
   result: any,
   setObj: ({ [index: string]: any } | string)[] | string | undefined | null,
@@ -151,6 +153,26 @@ const toCArr = async (
     }
   }
 
+  if (fields.bidirectional) {
+    const fromField = fields.bidirectional.fromField
+
+    for (const id of ids) {
+      const targetField = getNestedSchema(schema, id, fromField)
+      if (
+        !targetField ||
+        (targetField.type !== 'reference' &&
+          targetField.type !== 'references') ||
+        !targetField.bidirectional
+      ) {
+        throw new Error(
+          `Wrong payload for reference ${JSON.stringify(
+            setObj
+          )}, bidirectional reference requires a bidirectional target field ${fromField} for id ${id}`
+        )
+      }
+    }
+  }
+
   return ids
     .filter((s: string | null) => !!s)
     .map((s: string) => s.padEnd(10, '\0'))
@@ -163,7 +185,7 @@ export default async (
   field: string,
   payload: SetOptions,
   result: (string | Buffer)[],
-  _fields: FieldSchemaArrayLike,
+  fields: FieldSchemaReferences,
   _type: string,
   $lang?: string
 ): Promise<number> => {
@@ -240,6 +262,7 @@ export default async (
           $add: await toCArr(
             client,
             field,
+            fields,
             schema,
             result,
             r.$add,
@@ -249,6 +272,7 @@ export default async (
           $delete: await toCArr(
             client,
             field,
+            fields,
             schema,
             result,
             r.$delete,
@@ -258,6 +282,7 @@ export default async (
           $value: await toCArr(
             client,
             field,
+            fields,
             schema,
             result,
             r.$value,
@@ -274,7 +299,16 @@ export default async (
     } else {
       r = payload
     }
-    const $value = await toCArr(client, field, schema, result, r, noRoot, $lang)
+    const $value = await toCArr(
+      client,
+      field,
+      fields,
+      schema,
+      result,
+      r,
+      noRoot,
+      $lang
+    )
 
     result.push(
       '5',
