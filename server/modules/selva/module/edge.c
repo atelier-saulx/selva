@@ -223,7 +223,6 @@ int Edge_Has(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst
 }
 
 /* TODO Optimize by taking edgeField as an arg. */
-/* TODO Verify src_node and dst_node types when applicable. */
 int Edge_Add(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
