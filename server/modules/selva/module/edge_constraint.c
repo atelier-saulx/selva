@@ -89,20 +89,25 @@ static struct EdgeFieldConstraint *create_constraint(struct EdgeFieldDynConstrai
 
 int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, struct EdgeFieldDynConstraintParams *params) {
     size_t fwd_field_name_len;
-    (void)RedisModule_StringPtrLen(params->fwd_field_name, &fwd_field_name_len);
+    const char *fwd_field_name_str = RedisModule_StringPtrLen(params->fwd_field_name, &fwd_field_name_len);
     const size_t constraint_name_len = DYN_CONSTRAINT_NAME_LEN(fwd_field_name_len);
     char constraint_name_str[constraint_name_len];
     struct EdgeFieldConstraint *p;
+    int err;
+
+    make_dyn_constraint_name(constraint_name_str, params->fwd_node_type, fwd_field_name_str, fwd_field_name_len);
+
+    err = SelvaObject_ExistsStr(data->dyn_constraints, constraint_name_str, constraint_name_len);
+    if (err != SELVA_ENOENT) {
+        return err;
+    }
 
     p = create_constraint(params);
     if (!p) {
         return SELVA_ENOMEM;
     }
 
-    make_dyn_constraint_name(constraint_name_str, params->fwd_node_type, p->field_name_str, p->field_name_len);
-    SelvaObject_SetPointerStr(data->dyn_constraints, constraint_name_str, constraint_name_len, p, &obj_opts);
-
-    return 0;
+    return SelvaObject_SetPointerStr(data->dyn_constraints, constraint_name_str, constraint_name_len, p, &obj_opts);
 }
 
 const struct EdgeFieldConstraint *Edge_GetConstraint(const struct EdgeFieldConstraints *data, unsigned constraint_id, Selva_NodeType node_type, const char *field_name_str, size_t field_name_len) {
@@ -248,13 +253,14 @@ int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     };
 
     err = Edge_NewDynConstraint(&hierarchy->edge_field_constraints, &params);
-    if (err) {
+    if (err == SELVA_EEXIST) {
+        return RedisModule_ReplyWithLongLong(ctx, 0);
+    } else if (err) {
         return replyWithSelvaError(ctx, err);
+    } else {
+        RedisModule_ReplyWithLongLong(ctx, 1);
+        return RedisModule_ReplicateVerbatim(ctx);
     }
-
-    RedisModule_ReplyWithLongLong(ctx, 1);
-
-    return RedisModule_ReplicateVerbatim(ctx);
 }
 
 static int EdgeConstraints_OnLoad(RedisModuleCtx *ctx) {
