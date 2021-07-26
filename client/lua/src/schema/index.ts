@@ -305,28 +305,7 @@ function checkNestedChanges(
     if (!oldType.fields || !oldType.fields[field]) {
       const f = newType.fields[field]
       findSearchConfigurations(f, field, searchIndexes, changedIndexes)
-
-      if (f.type === 'reference' && f.bidirectional) {
-        // TODO: needs back type?
-        redis.call(
-          'selva.hierarchy.addconstraint',
-          '___selva_hierarchy',
-          <string>newType.prefix,
-          field,
-          '3',
-          f.bidirectional.fromField
-        )
-      } else if (f.type === 'references' && f.bidirectional) {
-        // TODO: needs back type?
-        redis.call(
-          'selva.hierarchy.addconstraint',
-          '___selva_hierarchy',
-          <string>newType.prefix,
-          field,
-          '2',
-          f.bidirectional.fromField
-        )
-      }
+      findBidirectionalReferenceConfigurations(newType, f, field)
     }
   }
 
@@ -369,11 +348,17 @@ function verifyTypes(
         defaultFields,
         newSchema.types[type].fields || {}
       )
+
       findSearchConfigurations(
         newSchema.types[type],
         '',
         searchIndexes,
         changedSearchIndexes
+      )
+      findBidirectionalReferenceConfigurations(
+        newSchema.types[type],
+        newSchema.types[type],
+        ''
       )
     }
   }
@@ -480,6 +465,62 @@ function findSearchConfigurations(
           fieldName,
           searchIndexes,
           changedSearchIndexes
+        )
+      }
+    }
+  }
+}
+
+function findBidirectionalReferenceConfigurations(
+  type: TypeSchema,
+  obj: TypeSchema | FieldSchema,
+  path: string
+) {
+  if ((<any>obj).type) {
+    const field = <FieldSchema>obj
+    if (
+      field.type === 'object' ||
+      (field.type === 'json' && field.properties)
+    ) {
+      for (const propName in field.properties) {
+        findBidirectionalReferenceConfigurations(
+          type,
+          field.properties[propName],
+          `${path}.${propName}`
+        )
+      }
+    } else {
+      const f = field
+      if (f.type === 'reference' && f.bidirectional) {
+        // TODO: needs back type?
+        redis.call(
+          'selva.hierarchy.addconstraint',
+          '___selva_hierarchy',
+          <string>type.prefix,
+          path,
+          '3',
+          f.bidirectional.fromField
+        )
+      } else if (f.type === 'references' && f.bidirectional) {
+        // TODO: needs back type?
+        redis.call(
+          'selva.hierarchy.addconstraint',
+          '___selva_hierarchy',
+          <string>type.prefix,
+          path,
+          '2',
+          f.bidirectional.fromField
+        )
+      }
+    }
+  } else {
+    const type = <TypeSchema>obj
+    if (type.fields) {
+      for (const fieldName in type.fields) {
+        findBidirectionalReferenceConfigurations(
+          type,
+          type.fields[fieldName],
+          fieldName
         )
       }
     }
