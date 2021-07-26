@@ -38,6 +38,7 @@ const selva_commands = [
   'selva.object.getmeta',
   'selva.object.setmeta',
   'selva.hierarchy.addconstraint',
+  'selva.hierarchy.listconstraints',
   'selva.hierarchy.aggregate',
   'selva.hierarchy.aggregatein',
   'selva.hierarchy.children',

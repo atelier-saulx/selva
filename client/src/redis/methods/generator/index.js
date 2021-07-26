@@ -38,6 +38,7 @@ const methods = []
 
 // redis.add_command(`FT.${cmd}`)
 redis.add_command('selva.hierarchy.addconstraint')
+redis.add_command('selva.hierarchy.listconstraints')
 redis.add_command('selva.hierarchy.aggregate')
 redis.add_command('selva.hierarchy.aggregatein')
 redis.add_command('selva.hierarchy.children')
