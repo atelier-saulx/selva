@@ -320,12 +320,26 @@ function checkNestedChanges(
       const f = newType.fields[field]
       findSearchConfigurations(f, field, searchIndexes, changedIndexes)
 
-      if (
-        (f.type === 'reference' || f.type === 'references') &&
-        f.bidirectional
-      ) {
-        // TODO
-        // redis.call('selva.hierarchy.addconstraint', '___selva_hierarchy', newType.prefix, field, '2', '2',
+      if (f.type === 'reference' && f.bidirectional) {
+        // TODO: needs back type?
+        redis.call(
+          'selva.hierarchy.addconstraint',
+          '___selva_hierarchy',
+          newType.prefix,
+          field,
+          '3',
+          f.bidirectional.fromField
+        )
+      } else if (f.type === 'references' && f.bidirectional) {
+        // TODO: needs back type?
+        redis.call(
+          'selva.hierarchy.addconstraint',
+          '___selva_hierarchy',
+          newType.prefix,
+          field,
+          '2',
+          f.bidirectional.fromField
+        )
       }
     }
   }
