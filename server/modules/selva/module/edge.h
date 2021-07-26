@@ -26,7 +26,7 @@ struct SelvaObject;
  *
  * Bidirectional references:
  * If one edge is removed the other edge is removed too. This flag requires
- * that bck_constraint_id, fwd_field, and bck_field are set.
+ * that fwd_field, and bck_field are set.
  */
 #define EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF       0x01 /*!< Single reference edge. */
 #define EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL    0x02 /*!< Bidirectional reference. */
@@ -34,7 +34,6 @@ struct SelvaObject;
 
 struct EdgeFieldDynConstraintParams {
     unsigned flags;
-    unsigned bck_constraint_id;
     Selva_NodeType fwd_node_type;
     struct RedisModuleString *fwd_field_name;
     struct RedisModuleString *bck_field_name;
@@ -50,8 +49,6 @@ struct EdgeFieldConstraint {
      * Constraint flags controlling the behaviour.
      */
     unsigned flags;
-
-    unsigned bck_constraint_id;
 
     /**
      * Forward traversing field of this constraint.

@@ -274,8 +274,8 @@ int Edge_Add(
         /*
          * This field is bidirectional and so we need to create an edge pointing back.
          */
-        err = Edge_Add(ctx, hierarchy,
-                       constraint->bck_constraint_id, constraint->bck_field_name_str, constraint->bck_field_name_len,
+        err = Edge_Add(ctx, hierarchy, EDGE_FIELD_CONSTRAINT_DYNAMIC,
+                       constraint->bck_field_name_str, constraint->bck_field_name_len,
                        dst_node, src_node);
         if (err && err != SELVA_EEXIST) {
             /*

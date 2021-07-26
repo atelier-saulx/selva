@@ -712,14 +712,12 @@ test.serial('bidirectional edge fields', async (t) => {
       'te', // source node type
       'players', // source field name
       '2', // constraint flags
-      '2', // bck constraint type
       'team' // bck field name
   )
   await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
       'pl',
       'team',
       '3',
-      '2',
       'players'
   )
 
