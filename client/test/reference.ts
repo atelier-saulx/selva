@@ -49,6 +49,12 @@ test.beforeEach(async (t) => {
               fromField: 'bidirClub',
             },
           },
+          relatedClubs: {
+            type: 'references',
+            bidirectional: {
+              fromField: 'relatedClubs',
+            },
+          },
           bidirLogo: {
             type: 'reference',
             bidirectional: {
@@ -543,21 +549,6 @@ test.serial('list of simple singular reference', async (t) => {
 test.serial('simple singular bidirectional reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
-  // const match1 = await client.set({
-  //   $id: 'maA',
-  //   title: {
-  //     en: 'yesh match'
-  //   }
-  // })
-
-  // const club1 = await client.set({
-  //   $id: 'clA',
-  //   title: {
-  //     en: 'yesh club'
-  //   },
-  //   specialMatch: match1
-  // })
-
   const club1 = await client.set({
     $id: 'clA',
     title: {
@@ -580,6 +571,16 @@ test.serial('simple singular bidirectional reference', async (t) => {
     bidirLogo: {
       $id: 'lo1',
       name: 'logo 1',
+    },
+  })
+
+  const club2 = await client.set({
+    $id: 'clB',
+    title: {
+      en: 'yesh club 2',
+    },
+    relatedClubs: {
+      $add: 'clA',
     },
   })
 
@@ -731,6 +732,75 @@ test.serial('simple singular bidirectional reference', async (t) => {
       id: 'clA',
       title: 'yesh club',
       bidirMatches: [],
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      relatedClubs: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      relatedClubs: [
+        {
+          id: 'clB',
+          title: 'yesh club 2',
+        },
+      ],
+    }
+  )
+
+  await client.set({
+    $id: 'clB',
+    relatedClubs: {
+      $delete: 'clA',
+    },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      relatedClubs: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      relatedClubs: [],
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clB',
+      $language: 'en',
+      id: true,
+      title: true,
+      relatedClubs: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+    }),
+    {
+      id: 'clB',
+      title: 'yesh club 2',
+      relatedClubs: [],
     }
   )
 
