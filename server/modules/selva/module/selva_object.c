@@ -2611,6 +2611,12 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
 struct SelvaObject *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver, void *ptr_load_data) {
     struct SelvaObject *obj;
 
+    obj = rdb_load_object(io, encver, ptr_load_data);
+
+    return obj;
+}
+
+void *_SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
     if (encver != SELVA_OBJECT_ENCODING_VERSION) {
         /*
          * RFE
@@ -2620,12 +2626,6 @@ struct SelvaObject *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver, void *
         return NULL;
     }
 
-    obj = rdb_load_object(io, encver, ptr_load_data);
-
-    return obj;
-}
-
-void *_SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
     return SelvaObjectTypeRDBLoad(io, encver, NULL);
 }
 
