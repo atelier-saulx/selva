@@ -98,6 +98,21 @@ export default async (
         )}, bidirectional reference requires a bidirectional target field ${fromField} for id ${id}`
       )
     }
+
+    result.push(
+      '5',
+      field,
+      createRecord(setRecordDefCstring, {
+        op_set_type: OPT_SET_TYPE.reference,
+        constraint_id: 2,
+        delete_all: false,
+        $add: '',
+        $delete: '',
+        $value: id.padEnd(10, '\0'),
+      })
+    )
+
+    return
   }
 
   result.push(
