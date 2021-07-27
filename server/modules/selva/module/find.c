@@ -66,12 +66,7 @@ static int send_edge_field(
         return 0;
     }
 
-
-    Selva_NodeType node_type;
-    const struct EdgeFieldConstraint *constraint;
-    SelvaModify_HierarchyGetNodeType(node_type, node);
-    constraint = Edge_GetConstraint(&hierarchy->edge_field_constraints, edge_field->constraint_id, node_type, field_str, field_len);
-    if (!(constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
+    if (!edge_field->constraint || !(edge_field->constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
         return SELVA_EINTYPE;
     }
 

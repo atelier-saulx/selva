@@ -213,7 +213,7 @@ static int update_edge(
             SVector_ForeachBegin(&it, &old_arcs);
             while ((dst_id = SVector_Foreach(&it))) {
                 if (!SVector_Search(&new_ids, dst_id)) {
-                    Edge_Delete(ctx, hierarchy, field_str, field_len, edgeField, node, dst_id);
+                    Edge_Delete(ctx, hierarchy, edgeField, node, dst_id);
                     res++; /* Count delete as a change. */
                 }
             }
@@ -315,7 +315,7 @@ static int update_edge(
                      * stack.
                      */
                     memcpy(dst_node_id, setOpts->$delete + i, SELVA_NODE_ID_SIZE);
-                    err = Edge_Delete(ctx, hierarchy, field_str, field_len, edgeField, node, dst_node_id);
+                    err = Edge_Delete(ctx, hierarchy, edgeField, node, dst_node_id);
                     if (!err) {
                         res++;
                     }

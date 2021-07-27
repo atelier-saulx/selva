@@ -45,10 +45,14 @@ struct EdgeFieldDynConstraintParams {
  * like arc insertion and deletion or hierarchy node deletion.
  */
 struct EdgeFieldConstraint {
+    unsigned constraint_id;
+
     /**
      * Constraint flags controlling the behaviour.
      */
     unsigned flags;
+
+    Selva_NodeType node_type;
 
     /**
      * Forward traversing field of this constraint.
@@ -89,7 +93,7 @@ struct EdgeFieldConstraints {
  * hierarchy.
  */
 struct EdgeField {
-    unsigned constraint_id; /*!< An index in the constraints array edge_constraints. */
+    const struct EdgeFieldConstraint *constraint; /*!< A pointer to the constraint of this edge field. */
     Selva_NodeId src_node_id; /*!< Source/owner nodeId of this edge field. */
     struct SVector arcs; /*!< Pointers to hierarchy nodes. */
 };
@@ -162,8 +166,6 @@ int Edge_Add(
 int Edge_Delete(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
-        const char *field_name_str,
-        size_t field_name_len,
         struct EdgeField *edge_field,
         struct SelvaModify_HierarchyNode *src_node,
         Selva_NodeId dst_node_id);

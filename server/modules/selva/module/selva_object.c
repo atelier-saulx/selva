@@ -1653,6 +1653,42 @@ const void *SelvaObject_ForeachValue(struct SelvaObject *obj, void **iterator, c
     return NULL;
 }
 
+const void *SelvaObject_ForeachValueType(struct SelvaObject *obj, void **iterator, const char **name_out, enum SelvaObjectType *type_out) {
+    struct SelvaObjectKey *key;
+    (void)obj; /* This makes the compiler think we are actually using obj. */
+
+    key = *iterator;
+    if (!key) {
+        return NULL;
+    }
+
+    *iterator = RB_NEXT(SelvaObjectKeys, &obj->keys_head, key);
+
+    if (name_out) {
+        *name_out = key->name;
+    }
+    *type_out = key->type;
+
+    switch (key->type) {
+    case SELVA_OBJECT_NULL:
+        return NULL;
+    case SELVA_OBJECT_DOUBLE:
+        return &key->emb_double_value;
+    case SELVA_OBJECT_LONGLONG:
+        return &key->emb_ll_value;
+    case SELVA_OBJECT_STRING:
+    case SELVA_OBJECT_OBJECT:
+    case SELVA_OBJECT_POINTER:
+        return key->value;
+    case SELVA_OBJECT_SET:
+        return &key->selva_set;
+    case SELVA_OBJECT_ARRAY:
+        return &key->array;
+    }
+
+    return NULL;
+}
+
 const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len) {
     if (type >= 0 && type < num_elem(type_names)) {
         const struct so_type_name *tn = &type_names[type];

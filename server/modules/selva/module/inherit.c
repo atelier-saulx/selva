@@ -83,17 +83,13 @@ static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id
 
 static int deref_single_ref(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
-        const char *field_str,
-        size_t field_len,
         struct EdgeField *edge_field,
         Selva_NodeId node_id_out,
         RedisModuleKey **key_out,
         struct SelvaObject **obj_out) {
-    const struct EdgeFieldConstraint *constraint;
+    const struct EdgeFieldConstraint *constraint = edge_field->constraint;
     struct SelvaModify_HierarchyNode *node;
 
-    constraint = Edge_GetConstraint(&hierarchy->edge_field_constraints, edge_field->constraint_id, edge_field->src_node_id, field_str, field_len);
     if (constraint) {
         if (!(constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
             return SELVA_EINVAL; /* We can only deref fields from a single ref. */
@@ -122,7 +118,7 @@ static int send_edge_field_deref_value(
     Selva_NodeId nodeId;
     int err;
 
-    err = deref_single_ref(ctx, hierarchy, field_str, field_len, edge_field, nodeId, &key, &obj);
+    err = deref_single_ref(ctx, edge_field, nodeId, &key, &obj);
     if (err) {
         return err;
     }

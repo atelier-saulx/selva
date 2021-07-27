@@ -23,6 +23,8 @@ static const struct SelvaObjectPointerOpts obj_opts = {
 
 void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
     memset(data, 0, sizeof(*data));
+    data->hard_constraints[0].constraint_id = EDGE_FIELD_CONSTRAINT_ID_DEFAULT;
+    data->hard_constraints[1].constraint_id = EDGE_FIELD_CONSTRAINT_SINGLE_REF;
     data->hard_constraints[1].flags = EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF;
     data->dyn_constraints = SelvaObject_New();
 
@@ -68,7 +70,9 @@ static struct EdgeFieldConstraint *create_constraint(struct EdgeFieldDynConstrai
         return NULL;
     }
 
+    p->constraint_id = EDGE_FIELD_CONSTRAINT_DYNAMIC;
     p->flags = params->flags | EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC;
+    memcpy(p->node_type, params->fwd_node_type, SELVA_NODE_TYPE_SIZE);
     p->field_name_str = (char *)p + sizeof(*p);
     p->field_name_len = fwd_field_name_len;
     memcpy(p->field_name_str, fwd_field_name_str, fwd_field_name_len);

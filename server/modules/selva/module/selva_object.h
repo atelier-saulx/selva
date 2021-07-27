@@ -189,6 +189,13 @@ const void *SelvaObject_ForeachValue(
         SelvaObject_Iterator **iterator,
         const char **name_out,
         enum SelvaObjectType type);
+const void *SelvaObject_ForeachValueType(struct SelvaObject *obj, void **iterator, const char **name_out, enum SelvaObjectType *type_out);
+
+/**
+ * Get a string name of a SelvaObjectType.
+ * @param type is the type.
+ * @param len is an optional argument that will be set to the size of the string returned.
+ */
 const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len);
 
 /*

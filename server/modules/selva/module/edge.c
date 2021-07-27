@@ -9,6 +9,7 @@
 #include "subscriptions.h"
 #include "comparator.h"
 
+static void clear_all_fields(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node);
 static void EdgeField_Reply(struct RedisModuleCtx *ctx, void *p);
 static void EdgeField_Free(void *p);
 static size_t EdgeField_Len(void *p);
@@ -32,7 +33,11 @@ static void init_node_metadata_edge(
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_edge);
 
-static void deinit_node_metadata_edge(const Selva_NodeId node_id, struct SelvaModify_HierarchyMetadata *metadata) {
+static void deinit_node_metadata_edge(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *node,
+        struct SelvaModify_HierarchyMetadata *metadata) {
     struct SelvaObject *origins;
     struct SelvaObject *edges;
 
@@ -55,7 +60,7 @@ static void deinit_node_metadata_edge(const Selva_NodeId node_id, struct SelvaMo
              */
             SVector_ForeachBegin(&vec_it, edge_fields);
             while ((src_field = SVector_Foreach(&vec_it))) {
-                SVector_Remove(&src_field->arcs, (void *)node_id);
+                SVector_Remove(&src_field->arcs, (void *)node);
             }
         }
 
@@ -68,7 +73,9 @@ static void deinit_node_metadata_edge(const Selva_NodeId node_id, struct SelvaMo
      */
     edges = metadata->edge_fields.edges;
     if (edges) {
+        clear_all_fields(ctx, hierarchy, node);
         SelvaObject_Destroy(edges);
+        metadata->edge_fields.edges = NULL;
     }
 }
 SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_edge);
@@ -76,7 +83,7 @@ SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_edge);
 /**
  * Allocate a new EdgeField struct and initialize it.
  */
-static struct EdgeField *alloc_EdgeField(Selva_NodeId src_node_id, unsigned constraint_id, size_t initial_size) {
+static struct EdgeField *alloc_EdgeField(Selva_NodeId src_node_id, const struct EdgeFieldConstraint *constraint, size_t initial_size) {
     struct EdgeField *edgeField;
 
     edgeField = RedisModule_Calloc(1, sizeof(struct EdgeField));
@@ -84,7 +91,7 @@ static struct EdgeField *alloc_EdgeField(Selva_NodeId src_node_id, unsigned cons
         return NULL;
     }
 
-    edgeField->constraint_id = constraint_id;
+    edgeField->constraint = constraint;
     memcpy(edgeField->src_node_id, src_node_id, SELVA_NODE_ID_SIZE);
     SVector_Init(&edgeField->arcs, initial_size, SelvaSVectorComparator_Node);
 
@@ -120,20 +127,14 @@ struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *src_node, cons
 /**
  * Create a new edge field and store it on the hierarchy node.
  */
-static struct EdgeField *Edge_NewField(const struct EdgeFieldConstraints *constraints, struct SelvaModify_HierarchyNode *node, const char *field_name_str, size_t field_name_len, unsigned constraint_id) {
+static struct EdgeField *Edge_NewField(struct SelvaModify_HierarchyNode *node, const char *field_name_str, size_t field_name_len, const struct EdgeFieldConstraint *constraint) {
     Selva_NodeId node_id;
     struct SelvaModify_HierarchyMetadata *node_metadata;
-    const struct EdgeFieldConstraint *constraint;
     struct SelvaObject *edges;
     struct EdgeField *edge_field;
 
     SelvaModify_HierarchyGetNodeId(node_id, node);
     node_metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
-
-    constraint = Edge_GetConstraint(constraints, constraint_id, node_id, field_name_str, field_name_len);
-    if (!constraint) {
-        return NULL;
-    }
 
     edges = node_metadata->edge_fields.edges;
     if (!edges) {
@@ -145,13 +146,12 @@ static struct EdgeField *Edge_NewField(const struct EdgeFieldConstraints *constr
         node_metadata->edge_fields.edges = edges;
     }
 
-    edge_field = alloc_EdgeField(node_id, constraint_id, 0);
+    edge_field = alloc_EdgeField(node_id, constraint, 0);
     if (!edge_field) {
         /* Just leave the edges obj there as it's already properly initialized. */
         return NULL;
     }
 
-    edge_field->constraint_id = constraint_id;
     SelvaObject_SetPointerStr(edges, field_name_str, field_name_len, edge_field, &obj_opts);
 
     return edge_field;
@@ -197,16 +197,24 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_Hie
 }
 
 static int get_or_create_EdgeField(const struct EdgeFieldConstraints *constraints, struct SelvaModify_HierarchyNode *node, const char *field_name_str, size_t field_name_len, unsigned constraint_id, struct EdgeField **out) {
+    Selva_NodeType node_type;
+    const struct EdgeFieldConstraint *constraint;
     struct EdgeField *edge_field;
+
+    SelvaModify_HierarchyGetNodeType(node_type, node);
+    constraint = Edge_GetConstraint(constraints, constraint_id, node_type, field_name_str, field_name_len);
+    if (!constraint) {
+        return SELVA_EINVAL;
+    }
 
     edge_field = Edge_GetField(node, field_name_str, field_name_len);
     if (!edge_field) {
-        edge_field = Edge_NewField(constraints, node, field_name_str, field_name_len, constraint_id);
+        edge_field = Edge_NewField(node, field_name_str, field_name_len, constraint);
         if (!edge_field) {
             return SELVA_ENOMEM;
         }
     } else {
-        if (edge_field->constraint_id != constraint_id) {
+        if (edge_field->constraint != constraint) {
             return SELVA_EINVAL;
         }
         if (SVector_Search(&edge_field->arcs, node)) {
@@ -234,15 +242,7 @@ int Edge_Add(
     const struct EdgeFieldConstraints *constraints = &hierarchy->edge_field_constraints;
     const struct EdgeFieldConstraint *constraint;
     struct EdgeField *src_edge_field;
-    Selva_NodeType src_node_type;
     int err;
-
-
-    SelvaModify_HierarchyGetNodeType(src_node_type, src_node);
-    constraint = Edge_GetConstraint(constraints, constraint_id, src_node_type, field_name_str, field_name_len);
-    if (!constraint) {
-        return SELVA_EINVAL;
-    }
 
     /*
      * Get src_edge_field
@@ -255,6 +255,8 @@ int Edge_Add(
     if (Edge_Has(src_edge_field, dst_node)) {
         return SELVA_EEXIST;
     }
+
+    constraint = src_edge_field->constraint;
 
     if (constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF) {
         int res;
@@ -406,8 +408,6 @@ static void remove_related_edge_markers(struct RedisModuleCtx *ctx, struct Selva
 int Edge_Delete(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
-        const char *field_name_str,
-        size_t field_name_len,
         struct EdgeField *edge_field,
         struct SelvaModify_HierarchyNode *src_node,
         Selva_NodeId dst_node_id) {
@@ -422,10 +422,16 @@ int Edge_Delete(
         return SELVA_ENOENT;
     }
 
-    remove_related_edge_markers(ctx, hierarchy, src_node, dst_node);
-    /* TODO We should probably clear from the dst? */
-    /* TODO We don't probably need to clear all markers, just those that are using the same traversal. */
-    SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, src_node);
+    /*
+     * ctx is not set if the function is called from RDB functions or some
+     * initialization functions in hierarchy.
+     */
+    if (ctx) {
+        remove_related_edge_markers(ctx, hierarchy, src_node, dst_node);
+        /* TODO We should probably clear from the dst? */
+        /* TODO We don't probably need to clear all markers, just those that are using the same traversal. */
+        SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, src_node);
+    }
 
     err = remove_origin_ref(src_edge_field, dst_node);
     if (err) {
@@ -441,53 +447,32 @@ int Edge_Delete(
      * For bidirectional edge fields we need to also remove the edge directed
      * back from the destination node.
      */
-    struct EdgeFieldConstraints *constraints = &hierarchy->edge_field_constraints;
-    const struct EdgeFieldConstraint *src_constraint;
-    src_constraint = Edge_GetConstraint(constraints, edge_field->constraint_id, src_node_id, field_name_str, field_name_len);
+    const struct EdgeFieldConstraint *src_constraint = edge_field->constraint;
     if (src_constraint && src_constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
         struct EdgeField *bck_edge_field;
         const char *bck_field_name_str = src_constraint->bck_field_name_str;
         size_t bck_field_name_len = src_constraint->bck_field_name_len;
 
         bck_edge_field = Edge_GetField(dst_node, bck_field_name_str, bck_field_name_len);
-        err = Edge_Delete(ctx, hierarchy, bck_field_name_str, bck_field_name_len, bck_edge_field, dst_node, src_node_id);
+        err = Edge_Delete(ctx, hierarchy, bck_edge_field, dst_node, src_node_id);
         if (err && err != SELVA_ENOENT) {
             fprintf(stderr, "%s:%d: Failed to to remove a backwards edge of a bidirectional edge field\n",
                     __FILE__, __LINE__);
         }
-    } else {
-        fprintf(stderr, "%s:%d: Source field constraint not found\n",
+    } else if (!src_constraint) {
+        fprintf(stderr, "%s:%d: Source field constraint not set\n",
                 __FILE__, __LINE__);
     }
 
     return 0;
 }
 
-int Edge_ClearField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, const char *field_name_str, size_t field_name_len) {
-    Selva_NodeType node_type;
-    struct EdgeField *src_edge_field;
-    const struct EdgeFieldConstraint *constraint;
+static int clear_field(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, struct EdgeField *edge_field) {
     SVECTOR_AUTOFREE(arcs);
     struct SVectorIterator it;
     struct SelvaModify_HierarchyNode *dst_node;
 
-    if (!src_node) {
-        return SELVA_ENOENT;
-    }
-
-    SelvaModify_HierarchyGetNodeType(node_type, src_node);
-
-    src_edge_field = Edge_GetField(src_node, field_name_str, field_name_len);
-    if (!src_edge_field) {
-        return SELVA_ENOENT;
-    }
-
-    constraint = Edge_GetConstraint(&hierarchy->edge_field_constraints, src_edge_field->constraint_id, node_type, field_name_str, field_name_len);
-    if (!constraint) {
-        return SELVA_EINVAL; /* TODO Not sure if this is the right error. */
-    }
-
-    if (unlikely(!SVector_Clone(&arcs, &src_edge_field->arcs, NULL))) {
+    if (unlikely(!SVector_Clone(&arcs, &edge_field->arcs, NULL))) {
         return SELVA_ENOMEM;
     }
 
@@ -500,9 +485,7 @@ int Edge_ClearField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy
         (void)Edge_Delete(
                 ctx,
                 hierarchy,
-                field_name_str,
-                field_name_len,
-                src_edge_field,
+                edge_field,
                 src_node,
                 dst_node_id);
     }
@@ -510,9 +493,51 @@ int Edge_ClearField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy
     return SVector_Size(&arcs);
 }
 
+static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node, struct SelvaObject *obj) {
+    SelvaObject_Iterator *it;
+    enum SelvaObjectType type;
+    void *p;
+
+    it = SelvaObject_ForeachBegin(obj);
+    while ((p = (void *)SelvaObject_ForeachValueType(obj, &it, NULL, &type))) {
+        if (type == SELVA_OBJECT_POINTER) {
+            clear_field(ctx, hierarchy, node, p);
+        } else if (type == SELVA_OBJECT_OBJECT) {
+            _clear_all_fields(ctx, hierarchy, node, p);
+        } else {
+            fprintf(stderr, "%s:%d: edges should not contain %s values\n",
+                    __FILE__, __LINE__,
+                    SelvaObject_Type2String(type, NULL));
+        }
+    }
+}
+
+static void clear_all_fields(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node) {
+    struct SelvaObject *obj = SelvaModify_HierarchyGetNodeMetadataByPtr(node)->edge_fields.edges;
+
+    _clear_all_fields(ctx, hierarchy, node, obj);
+}
+
+int Edge_ClearField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, const char *field_name_str, size_t field_name_len) {
+    Selva_NodeType node_type;
+    struct EdgeField *src_edge_field;
+
+    if (!src_node) {
+        return SELVA_ENOENT;
+    }
+
+    SelvaModify_HierarchyGetNodeType(node_type, src_node);
+
+    src_edge_field = Edge_GetField(src_node, field_name_str, field_name_len);
+    if (!src_edge_field) {
+        return SELVA_ENOENT;
+    }
+
+    return clear_field(ctx, hierarchy, src_node, src_edge_field);
+}
+
 int Edge_DeleteField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, const char *field_name_str, size_t field_name_len) {
     Selva_NodeType src_node_type;
-    const struct EdgeFieldConstraint *constraint;
     struct EdgeField *src_edge_field;
     int res;
 
@@ -521,11 +546,6 @@ int Edge_DeleteField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarch
     src_edge_field = Edge_GetField(src_node, field_name_str, field_name_len);
     if (!src_edge_field) {
         return SELVA_ENOENT;
-    }
-
-    constraint = Edge_GetConstraint(&hierarchy->edge_field_constraints, src_edge_field->constraint_id, src_node_type, field_name_str, field_name_len);
-    if (!constraint) {
-        return SELVA_EINVAL; /* TODO Not sure if this is the right error. */
     }
 
     res = Edge_ClearField(ctx, hierarchy, src_node, field_name_str, field_name_len);
@@ -565,10 +585,6 @@ static void EdgeField_Reply(struct RedisModuleCtx *ctx, void *p) {
     struct SVectorIterator it;
 
     RedisModule_ReplyWithArray(ctx, SVector_Size(arcs));
-#if 0
-    RedisModule_ReplyWithArray(ctx, 1 + SVector_Size(arcs));
-    RedisModule_ReplyWithLongLong(ctx, edge_field->constraint_id);
-#endif
 
     SVector_ForeachBegin(&it, arcs);
     while ((dst_node = SVector_Foreach(&it))) {
@@ -587,11 +603,11 @@ static void EdgeField_Free(void *p) {
     struct EdgeField *edge_field = (struct EdgeField *)p;
 
     /*
-     * RFE We might not need to do clear_field() here if we manage to call
-     * it directly or indirectly before the field is deleted.
+     * We don't need to call clear_field() here if we manage to always call it
+     * before this function is called, and thus we avoid passing the context.
      */
 #if 0
-    clear_field(edge_field);
+    clear_all_fields(ctx, hierarchy, node, edge_field);
 #endif
     SVector_Destroy(&edge_field->arcs);
     RedisModule_Free(p);
@@ -622,14 +638,29 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
     struct SelvaModify_Hierarchy *hierarchy = load_data->hierarchy;
     Selva_NodeId src_node_id;
     unsigned constraint_id;
+    const struct EdgeFieldConstraint *constraint;
     size_t nr_edges;
     struct EdgeField *edge_field;
 
     constraint_id = RedisModule_LoadUnsigned(io);
+
+    if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
+        char *node_type;
+        char *field_name_str;
+        size_t field_name_len;
+
+        node_type = RedisModule_LoadStringBuffer(io, NULL);
+        field_name_str = RedisModule_LoadStringBuffer(io, &field_name_len);
+        constraint = Edge_GetConstraint(&hierarchy->edge_field_constraints, constraint_id, node_type, field_name_str, field_name_len);
+        RedisModule_Free(field_name_str);
+    } else {
+        constraint = Edge_GetConstraint(&hierarchy->edge_field_constraints, constraint_id, "NA", "", 0);
+    }
+
     nr_edges = RedisModule_LoadUnsigned(io);
 
     SelvaModify_HierarchyGetNodeId(src_node_id, load_data->src_node);
-    edge_field = alloc_EdgeField(src_node_id, constraint_id, nr_edges);
+    edge_field = alloc_EdgeField(src_node_id, constraint, nr_edges);
     if (!edge_field) {
         return NULL;
     }
@@ -699,10 +730,17 @@ int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hi
  */
 static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused void *save_data) {
     struct EdgeField *edgeField = (struct EdgeField *)value;
+    unsigned constraint_id = edgeField->constraint ? edgeField->constraint->constraint_id : EDGE_FIELD_CONSTRAINT_ID_DEFAULT;
     struct SVectorIterator vec_it;
     struct SelvaModify_HierarchyNode *dst_node;
 
-    RedisModule_SaveUnsigned(io, edgeField->constraint_id);
+    RedisModule_SaveUnsigned(io, constraint_id);
+    if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
+        const struct EdgeFieldConstraint *constraint = edgeField->constraint;
+
+        RedisModule_SaveStringBuffer(io, constraint->node_type, SELVA_NODE_TYPE_SIZE);
+        RedisModule_SaveStringBuffer(io, constraint->field_name_str, constraint->field_name_len);
+    }
     RedisModule_SaveUnsigned(io, SVector_Size(&edgeField->arcs)); /* nr_edges */
 
     SVector_ForeachBegin(&vec_it, &edgeField->arcs);

@@ -407,7 +407,9 @@ static void init_node_metadata_subs(
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_subs);
 
 static void deinit_node_metadata_subs(
-        Selva_NodeId id __unused,
+        RedisModuleCtx *ctx __unused,
+        SelvaModify_Hierarchy *hierarchy __unused,
+        struct SelvaModify_HierarchyNode *node __unused,
         struct SelvaModify_HierarchyMetadata *metadata) {
     SVector_Destroy(&metadata->sub_markers.vec);
 }
