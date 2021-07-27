@@ -706,6 +706,34 @@ test.serial('simple singular bidirectional reference', async (t) => {
     }
   )
 
+  await client.set({
+    $id: 'maB',
+    bidirClub: { $delete: true },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      bidirMatches: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+      bidirLogo: {
+        id: true,
+        name: true,
+      },
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      bidirMatches: [],
+    }
+  )
+
   await client.delete('root')
   await client.destroy()
 })
