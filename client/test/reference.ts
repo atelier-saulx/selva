@@ -570,6 +570,12 @@ test.serial.only('simple singular bidirectional reference', async (t) => {
           en: 'yesh match',
         },
       },
+      {
+        $id: 'maB',
+        title: {
+          en: 'yesh match 2',
+        },
+      },
     ],
     bidirLogo: {
       $id: 'lo1',
@@ -577,28 +583,6 @@ test.serial.only('simple singular bidirectional reference', async (t) => {
     },
   })
 
-  console.log(
-    'yolo consts',
-    await client.redis.selva_hierarchy_edgeget(
-      '___selva_hierarchy',
-      'clA',
-      'bidirMatches'
-    ),
-    await client.redis.selva_hierarchy_edgeget(
-      '___selva_hierarchy',
-      'maA',
-      'bidirClub'
-    ),
-    await client.redis.selva_hierarchy_listconstraints('___selva_hierarchy'),
-    await client.get({
-      $id: 'clA',
-      $all: true,
-      bidirMatches: {
-        $all: true,
-        $list: true,
-      },
-    })
-  )
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'maA',
@@ -624,6 +608,101 @@ test.serial.only('simple singular bidirectional reference', async (t) => {
           name: 'logo 1',
         },
       },
+    }
+  )
+
+  await client.set({
+    $id: 'clA',
+    bidirMatches: {
+      $delete: 'maA',
+    },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      $language: 'en',
+      id: true,
+      title: true,
+      bidirClub: {
+        id: true,
+        title: true,
+        logo: {
+          $field: 'bidirLogo',
+          name: true,
+        },
+      },
+    }),
+    {
+      id: 'maA',
+      title: 'yesh match',
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      bidirMatches: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+      bidirLogo: {
+        id: true,
+        name: true,
+      },
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      bidirMatches: [
+        {
+          id: 'maB',
+          title: 'yesh match 2',
+        },
+      ],
+      bidirLogo: {
+        id: 'lo1',
+        name: 'logo 1',
+      },
+    }
+  )
+
+  await client.set({
+    $id: 'clA',
+    bidirLogo: {
+      $delete: true,
+    },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      bidirMatches: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+      bidirLogo: {
+        id: true,
+        name: true,
+      },
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      bidirMatches: [
+        {
+          id: 'maB',
+          title: 'yesh match 2',
+        },
+      ],
     }
   )
 
