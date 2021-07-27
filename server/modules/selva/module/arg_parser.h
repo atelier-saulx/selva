@@ -46,8 +46,11 @@ int SelvaArgsParser_StringSetList(
 int SelvaArgParser_Enum(
         const struct SelvaArgParser_EnumType types[],
         const struct RedisModuleString *arg);
-void SelvaArgParser_NodeId(
+int SelvaArgParser_NodeId(
         Selva_NodeId node_id,
+        const struct RedisModuleString *arg);
+int SelvaArgParser_NodeType(
+        Selva_NodeType node_type,
         const struct RedisModuleString *arg);
 int SelvaArgParser_SubscriptionId(
         Selva_SubscriptionId id,

@@ -6,6 +6,7 @@ import {
   SearchRaw,
   defaultFields,
   rootDefaultFields,
+  FieldSchemaReferences,
 } from '../../../src/schema/index'
 import ensurePrefixes from './prefixes'
 import updateSearchIndexes from './searchIndexes'
@@ -248,6 +249,23 @@ function checkField(
     ) {
       return err
     }
+  } else if (newField.type === 'reference' || newField.type === 'references') {
+    const castedOld = <FieldSchemaReferences>oldField
+    if (!newField.bidirectional && castedOld.bidirectional) {
+      return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
+        // @ts-ignore
+        oldField.bidirectional
+      )} to null}. This will be supported in the future.`
+    } else if (newField.bidirectional && castedOld.bidirectional) {
+      if (
+        newField.bidirectional.fromField !== castedOld.bidirectional.fromField
+      ) {
+        return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
+          // @ts-ignore
+          oldField.bidirectional
+        )} to null}. This will be supported in the future.`
+      }
+    }
   }
 
   return null
@@ -285,12 +303,9 @@ function checkNestedChanges(
 
   for (const field in newType.fields) {
     if (!oldType.fields || !oldType.fields[field]) {
-      findSearchConfigurations(
-        newType.fields[field],
-        field,
-        searchIndexes,
-        changedIndexes
-      )
+      const f = newType.fields[field]
+      findSearchConfigurations(f, field, searchIndexes, changedIndexes)
+      findBidirectionalReferenceConfigurations(newType, f, field)
     }
   }
 
@@ -333,11 +348,17 @@ function verifyTypes(
         defaultFields,
         newSchema.types[type].fields || {}
       )
+
       findSearchConfigurations(
         newSchema.types[type],
         '',
         searchIndexes,
         changedSearchIndexes
+      )
+      findBidirectionalReferenceConfigurations(
+        newSchema.types[type],
+        newSchema.types[type],
+        ''
       )
     }
   }
@@ -450,6 +471,62 @@ function findSearchConfigurations(
   }
 }
 
+function findBidirectionalReferenceConfigurations(
+  type: TypeSchema,
+  obj: TypeSchema | FieldSchema,
+  path: string
+) {
+  if ((<any>obj).type) {
+    const field = <FieldSchema>obj
+    if (
+      field.type === 'object' ||
+      (field.type === 'json' && field.properties)
+    ) {
+      for (const propName in field.properties) {
+        findBidirectionalReferenceConfigurations(
+          type,
+          field.properties[propName],
+          `${path}.${propName}`
+        )
+      }
+    } else {
+      const f = field
+      if (f.type === 'reference' && f.bidirectional) {
+        // TODO: needs back type?
+        redis.call(
+          'selva.hierarchy.addconstraint',
+          '___selva_hierarchy',
+          <string>type.prefix,
+          path,
+          '3',
+          f.bidirectional.fromField
+        )
+      } else if (f.type === 'references' && f.bidirectional) {
+        // TODO: needs back type?
+        redis.call(
+          'selva.hierarchy.addconstraint',
+          '___selva_hierarchy',
+          <string>type.prefix,
+          path,
+          '2',
+          f.bidirectional.fromField
+        )
+      }
+    }
+  } else {
+    const type = <TypeSchema>obj
+    if (type.fields) {
+      for (const fieldName in type.fields) {
+        findBidirectionalReferenceConfigurations(
+          type,
+          type.fields[fieldName],
+          fieldName
+        )
+      }
+    }
+  }
+}
+
 export function verifyAndEnsureRequiredFields(
   searchIndexes: SearchIndexes,
   changedSearchIndexes: Record<string, boolean>,
@@ -462,6 +539,10 @@ export function verifyAndEnsureRequiredFields(
     return err
   }
 
+  if ((err = ensurePrefixes(oldSchema, newSchema))) {
+    return err
+  }
+
   if (
     (err = verifyTypes(
       searchIndexes,
@@ -470,10 +551,6 @@ export function verifyAndEnsureRequiredFields(
       newSchema
     ))
   ) {
-    return err
-  }
-
-  if ((err = ensurePrefixes(oldSchema, newSchema))) {
     return err
   }
 

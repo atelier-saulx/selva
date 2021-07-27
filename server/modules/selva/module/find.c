@@ -66,8 +66,7 @@ static int send_edge_field(
         return 0;
     }
 
-    const struct EdgeFieldConstraint* constraint = Edge_GetFieldConstraint(edge_field);
-    if (!constraint->flags.single_ref) {
+    if (!edge_field->constraint || !(edge_field->constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
         return SELVA_EINTYPE;
     }
 

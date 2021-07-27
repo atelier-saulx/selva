@@ -703,3 +703,110 @@ test.serial('deref node references on find', async(t) => {
     [[ 'match1', [ 'title', 'Best Game', 'homeTeam.name', 'Funny Team', 'homeTeam.club.name', 'Funny Club', 'homeTeam.club.manager.name', 'dung' ]]]
   )
 })
+
+test.serial('bidirectional edge fields', async (t) => {
+  const client = connect({ port })
+
+  // Create dynamic constraints
+  await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
+      'te', // source node type
+      'players', // source field name
+      '2', // constraint flags
+      'team' // bck field name
+  )
+  await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
+      'pl',
+      'team',
+      '3',
+      'players'
+  )
+
+  // Create nodes
+  await client.redis.selva_modify('root', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('te1', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('pl1', '', '0', 'o.a', 'tim')
+  await client.redis.selva_modify('pl2', '', '0', 'o.a', 'bob')
+  await client.redis.selva_modify('pl3', '', '0', 'o.a', 'jack')
+
+  // Create edges
+  await client.redis.selva_modify('root', '', '5', 'teams', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 0,
+    $add: toCArr(['te1']),
+    $delete: null,
+    $value: null,
+  }))
+  t.deepEqual(await client.redis.selva_modify('te1', '', '5', 'players', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: null,
+    $delete: null,
+    $value: toCArr(['pl1', 'pl2', 'pl3']),
+  })), ['te1', 'UPDATED'])
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'te1'),
+    ['players', [
+        'pl1',
+        'pl2',
+        'pl3',
+      ],
+    ]
+  )
+  t.deepEqual(
+    await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'pl1'),
+    ['team', [
+        'te1',
+      ]
+    ]
+  )
+
+  // Delete an edge
+  t.deepEqual(await client.redis.selva_modify('pl3', '', '5', 'team', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 1,
+    constraint_id: 2,
+    $add: null,
+    $delete: null,
+    $value: null,
+  })), ['pl3', 'UPDATED'])
+  t.deepEqual(
+    await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'te1'),
+    ['players', [
+        'pl1',
+        'pl2',
+      ],
+    ]
+  )
+  t.deepEqual(
+    await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'pl3'),
+    ['team', [
+      ]
+    ]
+  )
+
+  // Delete an edge
+  t.deepEqual(await client.redis.selva_modify('pl2', '', '5', 'team', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: null,
+    $delete: toCArr(['te1']),
+    $value: null,
+  })), ['pl2', 'UPDATED'])
+  t.deepEqual(
+    await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'te1'),
+    ['players', [
+        'pl1',
+      ],
+    ]
+  )
+  t.deepEqual(
+    await client.redis.selva_hierarchy_edgelist('___selva_hierarchy', 'pl2'),
+    ['team', [
+      ]
+    ]
+  )
+})

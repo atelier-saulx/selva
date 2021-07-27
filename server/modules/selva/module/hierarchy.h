@@ -10,7 +10,7 @@
 #include "edge.h"
 #include "subscriptions.h"
 
-#define HIERARCHY_ENCODING_VERSION  1
+#define HIERARCHY_ENCODING_VERSION  2
 
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
@@ -33,7 +33,8 @@ struct SelvaModify_HierarchyMetadata {
     struct EdgeFieldContainer edge_fields;
 };
 
-typedef void SelvaModify_HierarchyMetadataHook(const Selva_NodeId id, struct SelvaModify_HierarchyMetadata *metadata);
+typedef void SelvaModify_HierarchyMetadataConstructorHook(const Selva_NodeId id, struct SelvaModify_HierarchyMetadata *metadata);
+typedef void SelvaModify_HierarchyMetadataDestructorHook(struct RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node, struct SelvaModify_HierarchyMetadata *metadata);
 
 #define SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(fun) \
     DATA_SET(selva_HMCtor, fun)
@@ -61,6 +62,11 @@ struct SelvaModify_Hierarchy {
      * Orphan nodes aka heads of the hierarchy.
      */
     SVector heads;
+
+    /**
+     * Edge field constraints.
+     */
+    struct EdgeFieldConstraints edge_field_constraints;
 
     struct {
         /**
@@ -150,6 +156,7 @@ int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selv
  * Copy nodeId to a buffer.
  */
 char *SelvaModify_HierarchyGetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node);
+char *SelvaModify_HierarchyGetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaModify_HierarchyNode *node);
 
 struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
 struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadata(

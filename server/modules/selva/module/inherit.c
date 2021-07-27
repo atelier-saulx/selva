@@ -81,11 +81,19 @@ static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id
     return 0;
 }
 
-static int deref_single_ref(RedisModuleCtx *ctx, struct EdgeField *edge_field, Selva_NodeId node_id_out, RedisModuleKey **key_out, struct SelvaObject **obj_out) {
+static int deref_single_ref(
+        RedisModuleCtx *ctx,
+        struct EdgeField *edge_field,
+        Selva_NodeId node_id_out,
+        RedisModuleKey **key_out,
+        struct SelvaObject **obj_out) {
+    const struct EdgeFieldConstraint *constraint = edge_field->constraint;
     struct SelvaModify_HierarchyNode *node;
 
-    if (!Edge_GetFieldConstraint(edge_field)->flags.single_ref) {
-        return SELVA_EINVAL; /* We can only deref fields from a single ref. */
+    if (constraint) {
+        if (!(constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
+            return SELVA_EINVAL; /* We can only deref fields from a single ref. */
+        }
     }
 
     node = SVector_GetIndex(&edge_field->arcs, 0);
@@ -128,7 +136,7 @@ static int send_edge_field_deref_value(
          */
         RedisModule_ReplyWithArray(ctx, 3);
         RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId)); /* The actual node_id. */
-        RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len - 2);
+        RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
         SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
     } else {
         struct SelvaModify_HierarchyNode *node;

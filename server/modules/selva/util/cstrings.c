@@ -142,3 +142,15 @@ int ch_count(const char *s, char ch) {
 
     return i;
 }
+
+char *ch_replace(char *s, size_t n, char orig_ch, char new_ch) {
+	char * const e = s + n;
+
+	for (char *p = s, c = *s; p != e && c != '\0'; c = *++p) {
+		if (c == orig_ch) {
+			*p = new_ch;
+		}
+	}
+
+	return s;
+}
