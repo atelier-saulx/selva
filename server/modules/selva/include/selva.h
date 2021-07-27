@@ -36,7 +36,7 @@
 typedef char Selva_NodeId[SELVA_NODE_ID_SIZE];
 
 /**
- * Type ofr Selva NodeType.
+ * Type of Selva NodeType.
  */
 typedef char Selva_NodeType[SELVA_NODE_TYPE_SIZE];
 
