@@ -2171,7 +2171,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
         err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
         if (err) {
-            RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints");
+            RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints: %s", getSelvaErrorStr(err));
             goto error;
         }
     }

@@ -13,13 +13,14 @@ static void *so_rdb_load(struct RedisModuleIO *io, int encver, void *load_data);
 static void so_rdb_save(struct RedisModuleIO *io, void *value, void *load_data);
 
 static const struct SelvaObjectPointerOpts obj_opts = {
-    .ptr_type_id = SELVA_OBJECT_POINTER_EDGE,
+    .ptr_type_id = SELVA_OBJECT_POINTER_EDGE_CONSTRAINTS,
     .ptr_reply = EdgeConstraint_Reply,
     .ptr_free = NULL, /* We don't allow freeing constraints. */
     .ptr_len = NULL,
     .ptr_save = so_rdb_save,
     .ptr_load = so_rdb_load,
 };
+SELVA_OBJECT_POINTER_OPTS(obj_opts);
 
 void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
     memset(data, 0, sizeof(*data));

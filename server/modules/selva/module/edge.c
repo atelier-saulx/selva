@@ -24,6 +24,7 @@ static const struct SelvaObjectPointerOpts obj_opts = {
     .ptr_save = EdgeField_RdbSave,
     .ptr_load = EdgeField_RdbLoad,
 };
+SELVA_OBJECT_POINTER_OPTS(obj_opts);
 
 static void init_node_metadata_edge(
         Selva_NodeId id __unused,
@@ -681,8 +682,10 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
          * Ensure that the destination node exist before creating an edge.
          */
         err = SelvaModify_AddHierarchy(ctx, hierarchy, dst_id_str, 0, NULL, 0, NULL);
-        if (err) {
-            RedisModule_LogIOError(io, "warning", "AddHierarchy() failed");
+        if (err < 0) {
+            RedisModule_LogIOError(io, "warning", "AddHierarchy(%.*s) failed: %s",
+                                   (int)SELVA_NODE_ID_SIZE, dst_id_str,
+                                   getSelvaErrorStr(err));
             return NULL;
         }
 
@@ -711,12 +714,16 @@ int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hi
 
     /* A boolean flag to tell whether there are any edge fields. */
     if (RedisModule_LoadUnsigned(io)) {
+        struct SelvaModify_HierarchyMetadata *metadata;
+
+        metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+
         /*
          * We use the SelvaObject RDB loader to load the object which will then
          * call EdgeField_RdbLoad for each field stored in the object to
          * initialize the actual EdgeField structures.
          */
-        SelvaObjectTypeRDBLoad(io, encver, &(struct EdgeField_load_data){
+        metadata->edge_fields.edges = SelvaObjectTypeRDBLoad(io, encver, &(struct EdgeField_load_data){
             .hierarchy = hierarchy,
             .src_node = node,
         });

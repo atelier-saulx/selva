@@ -106,10 +106,7 @@ struct SelvaObject *SelvaObject_New(void) {
 static struct SelvaObjectPointerOpts *get_ptr_opts(unsigned ptr_type_id) {
     struct SelvaObjectPointerOpts **p;
 
-    if (ptr_type_id >= SET_COUNT(selva_objpop)) {
-        ptr_type_id = 0;
-    }
-
+retry:
     SET_FOREACH(p, selva_objpop) {
         struct SelvaObjectPointerOpts *opts = *p;
 
@@ -117,6 +114,9 @@ static struct SelvaObjectPointerOpts *get_ptr_opts(unsigned ptr_type_id) {
             return opts;
         }
     }
+
+    ptr_type_id = 0;
+    goto retry;
 
     __builtin_unreachable();
     return NULL; /* Never reached. */
@@ -2495,6 +2495,7 @@ static int rdb_load_pointer(RedisModuleIO *io, int encver, struct SelvaObject *o
 
         opts = get_ptr_opts(ptr_type_id);
         if (!(opts && opts->ptr_load)) {
+            RedisModule_LogIOError(io, "warning", "No ptr_load given");
             return SELVA_EINVAL; /* Presumably a serialized pointer should have a loader fn. */
         }
 
@@ -2506,11 +2507,12 @@ static int rdb_load_pointer(RedisModuleIO *io, int encver, struct SelvaObject *o
 
         err = SelvaObject_SetPointer(obj, name, p, opts);
         if (err) {
-            RedisModule_LogIOError(io, "warning", "Failed to load a SELVA_OBJECT_POINTER");
+            RedisModule_LogIOError(io, "warning", "Failed to load a SELVA_OBJECT_POINTER: %s",
+                                   getSelvaErrorStr(err));
             return SELVA_EGENERAL;
         }
     } else {
-        RedisModule_LogIOError(io, "warning", "No ptr_load given");
+        RedisModule_LogIOError(io, "warning", "ptr_type_id shouldn't be 0");
     }
 
     return 0;
@@ -2530,6 +2532,7 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
         RedisModuleString *name = RedisModule_LoadString(io);
         const enum SelvaObjectType type = RedisModule_LoadUnsigned(io);
         const SelvaObjectMeta_t user_meta = RedisModule_LoadUnsigned(io);
+        int err;
 
         if (unlikely(!name)) {
             RedisModule_LogIOError(io, "warning", "SelvaObject key name cannot be NULL");
@@ -2541,17 +2544,26 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
             /* NOP - There is generally no reason to recreate NULLs */
             break;
         case SELVA_OBJECT_DOUBLE:
-            if(rdb_load_object_double(io, obj, name)) {
+            err = rdb_load_object_double(io, obj, name);
+            if(err) {
+                RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_DOUBLE: %s",
+                                       getSelvaErrorStr(err));
                 return NULL;
             }
             break;
         case SELVA_OBJECT_LONGLONG:
-            if (rdb_load_object_long_long(io, obj, name)) {
+            err = rdb_load_object_long_long(io, obj, name);
+            if (err) {
+                RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_LONGLONG: %s",
+                                       getSelvaErrorStr(err));
                 return NULL;
             }
             break;
         case SELVA_OBJECT_STRING:
-            if (rdb_load_object_string(io, obj, name)) {
+            err = rdb_load_object_string(io, obj, name);
+            if (err) {
+                RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_STRING: %s",
+                                       getSelvaErrorStr(err));
                 return NULL;
             }
             break;
@@ -2559,34 +2571,43 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
             {
                 struct SelvaObjectKey *key;
                 TO_STR(name);
-                int err;
 
                 err = get_key(obj, name_str, name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
                 if (err) {
-                    RedisModule_LogIOError(io, "warning", "Error while creating an object key");
+                    RedisModule_LogIOError(io, "warning", "Error while creating an object key: %s",
+                                           getSelvaErrorStr(err));
                     return NULL;
                 }
 
                 key->value = rdb_load_object(io, encver, ptr_load_data);
                 if (!key->value) {
-                    RedisModule_LogIOError(io, "warning", "Error while loading an object");
+                    RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_OBJECT");
                     return NULL;
                 }
                 key->type = SELVA_OBJECT_OBJECT;
             }
             break;
         case SELVA_OBJECT_SET:
-            if (rdb_load_object_set(io, obj, name)) {
+            err = rdb_load_object_set(io, obj, name);
+            if (err) {
+                RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_SET: %s",
+                                       getSelvaErrorStr(err));
                 return NULL;
             }
             break;
         case SELVA_OBJECT_ARRAY:
-            if (rdb_load_object_array(io, obj, name, encver, ptr_load_data)) {
+            err = rdb_load_object_array(io, obj, name, encver, ptr_load_data);
+            if (err) {
+                RedisModule_LogIOError(io, "warning", "Error while loading an SELVA_OBJECT_ARRAY: %s",
+                                       getSelvaErrorStr(err));
                 return NULL;
             }
             break;
         case SELVA_OBJECT_POINTER:
-            if (rdb_load_pointer(io, encver, obj, name, ptr_load_data)) {
+            err = rdb_load_pointer(io, encver, obj, name, ptr_load_data);
+            if (err) {
+                RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_POINTER: %s",
+                                       getSelvaErrorStr(err));
                 return NULL;
             }
             break;
@@ -2711,7 +2732,7 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, struct SelvaObject *obj, void *pt
     struct SelvaObjectKey *key;
 
     if (unlikely(!obj)) {
-        RedisModule_LogIOError(io, "warning", "value can't be NULL");
+        RedisModule_LogIOError(io, "warning", "obj can't be NULL");
         return;
     }
 
