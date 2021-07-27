@@ -579,7 +579,25 @@ test.serial.only('simple singular bidirectional reference', async (t) => {
 
   console.log(
     'yolo consts',
-    await client.redis.selva_hierarchy_listconstraints('___selva_hierarchy')
+    await client.redis.selva_hierarchy_edgeget(
+      '___selva_hierarchy',
+      'clA',
+      'bidirMatches'
+    ),
+    await client.redis.selva_hierarchy_edgeget(
+      '___selva_hierarchy',
+      'maA',
+      'bidirClub'
+    ),
+    await client.redis.selva_hierarchy_listconstraints('___selva_hierarchy'),
+    await client.get({
+      $id: 'clA',
+      $all: true,
+      bidirMatches: {
+        $all: true,
+        $list: true,
+      },
+    })
   )
   t.deepEqualIgnoreOrder(
     await client.get({
