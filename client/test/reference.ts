@@ -540,7 +540,7 @@ test.serial('list of simple singular reference', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('simple singular bidirectional reference', async (t) => {
+test.serial('simple singular bidirectional reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   // const match1 = await client.set({
