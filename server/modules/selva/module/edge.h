@@ -63,7 +63,6 @@ struct EdgeFieldConstraint {
     /**
      * Constraint of the backwards traversing field.
      * Used if the EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL flag is set.
-     * TODO Figure out how to do this.
      */
     char *bck_field_name_str;
     size_t bck_field_name_len;
