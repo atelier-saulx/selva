@@ -427,7 +427,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                 return SELVA_ENOMEM;
             }
 
-            int err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+            err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
             if (err) {
                 return err;
             }
@@ -490,7 +490,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             /*
              * Keep nesting or return an object if this was the last token.
              */
-            int err = SelvaObject_GetArrayIndexAsSelvaObject(obj, s, slen, ary_idx, &obj);
+            err = SelvaObject_GetArrayIndexAsSelvaObject(obj, s, slen, ary_idx, &obj);
             if (err && err != SELVA_ENOENT) {
                 return err;
             }
@@ -1792,8 +1792,10 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
     case SELVA_OBJECT_DOUBLE:
         SVector_ForeachBegin(&it, array);
 
-        void *pd;
         do {
+            void *pd;
+            double d;
+
             pd = SVector_Foreach(&it);
             n++;
 
@@ -1802,7 +1804,6 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
                 continue;
             }
 
-            double d;
             memcpy(&d, &pd, sizeof(double));
             RedisModule_ReplyWithDouble(ctx, d);
         } while (!SVector_Done(&it));
@@ -1811,12 +1812,14 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
     case SELVA_OBJECT_LONGLONG:
         SVector_ForeachBegin(&it, array);
 
-        void *p;
         do {
+            void *p;
+            long long ll;
+
             p = SVector_Foreach(&it);
 
             n++;
-            long long ll = (long long)p;
+            ll = (long long)p;
             RedisModule_ReplyWithLongLong(ctx, ll);
         } while (!SVector_Done(&it));
         RedisModule_ReplySetArrayLength(ctx, n);
@@ -1824,9 +1827,9 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
     case SELVA_OBJECT_STRING:
         SVector_ForeachBegin(&it, array);
 
-        RedisModuleString *str;
-
         do {
+            RedisModuleString *str;
+
             str = SVector_Foreach(&it);
 
             n++;
@@ -1843,9 +1846,9 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
     case SELVA_OBJECT_OBJECT:
         SVector_ForeachBegin(&it, array);
 
-        struct SelvaObject *o;
-
         do {
+            struct SelvaObject *o;
+
             o = SVector_Foreach(&it);
 
             n++;

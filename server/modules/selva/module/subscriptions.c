@@ -1439,11 +1439,12 @@ static void defer_array_field_change_events(
         const char *field_str,
         size_t field_len) {
     int ary_field_len = get_array_field_start_idx(field_str, field_len);
-    char ary_field_str[ary_field_len + 1];
-    int path_field_len = -1;
-    char *path_field_start = NULL;
 
     if (ary_field_len > 0) {
+        char ary_field_str[ary_field_len + 1];
+        int path_field_len = -1;
+        char *path_field_start = NULL;
+
         path_field_start = strchr(field_str + ary_field_len, ']');
         if (path_field_start) {
             path_field_start++;
@@ -1457,9 +1458,9 @@ static void defer_array_field_change_events(
             path_field_len += 3;
         }
 
-        char path_field_str[path_field_len + 1];
-
         if (path_field_start && *path_field_start != '\0') {
+            char path_field_str[path_field_len + 1];
+
             snprintf(path_field_str, path_field_len + 1, "%.*s[n]%s", (int)ary_field_len, field_str, path_field_start);
             defer_field_change_events(ctx, hierarchy, node_id, sub_markers, path_field_str, path_field_len);
         }
