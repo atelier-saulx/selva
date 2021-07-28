@@ -92,4 +92,11 @@ static inline int Selva_CmpNodeIdType(const Selva_NodeId nodeId, const char type
     return Selva_CmpNodeType(nodeId, type);
 }
 
+/**
+ * Selva subscription ID to hex string.
+ */
+char *Selva_SubscriptionId2str(char dest[SELVA_SUBSCRIPTION_ID_STR_LEN + 1], const Selva_SubscriptionId sub_id);
+
+int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src);
+
 #endif /* _SELVA_ */

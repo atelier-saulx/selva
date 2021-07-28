@@ -168,13 +168,6 @@ struct SelvaSubscriptions_DeferredEvents {
     SVector triggers; /*!< A set of Selva_SubscriptionMarkers */
 };
 
-/**
- * Selva subscription ID to hex string.
- */
-char *Selva_SubscriptionId2str(char dest[SELVA_SUBSCRIPTION_ID_STR_LEN + 1], const Selva_SubscriptionId sub_id);
-
-int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src);
-
 int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers);
 void SelvaSubscriptions_DestroyAll(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy);
 int SelvaSubscriptions_TraverseMarker(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const struct SelvaModify_HierarchyCallback *cb);

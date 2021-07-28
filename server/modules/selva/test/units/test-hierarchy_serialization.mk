@@ -6,6 +6,7 @@ SRC-hierarchy_serialization += ../../module/hierarchy.c
 SRC-hierarchy_serialization += ../../module/selva_node.c
 SRC-hierarchy_serialization += ../../module/selva_object.c
 SRC-hierarchy_serialization += ../../module/selva_set.c
+SRC-hierarchy_serialization += ../../module/selva_type.c
 SRC-hierarchy_serialization += ../../rmutil/sds.c
 SRC-hierarchy_serialization += ../../util/cstrings.c
 SRC-hierarchy_serialization += ../../util/strnstr.c

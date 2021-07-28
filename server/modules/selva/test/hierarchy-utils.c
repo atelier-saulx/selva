@@ -29,17 +29,6 @@ int SelvaNodeId_Compare(const void *a, const void *b) {
     return memcmp((const char *)a, (const char *)b, SELVA_NODE_ID_SIZE);
 }
 
-/* Copied from module.c */
-size_t Selva_NodeIdLen(const Selva_NodeId nodeId) {
-    size_t len = SELVA_NODE_ID_SIZE;
-
-    while (len >= 1 && nodeId[len - 1] == '\0') {
-        len--;
-    }
-
-    return len;
-}
-
 void SelvaNodeId_SortRes(size_t len) {
     qsort(findRes, len, sizeof(Selva_NodeId), SelvaNodeId_Compare);
 }
