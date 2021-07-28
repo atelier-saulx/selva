@@ -46,7 +46,7 @@ void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
  * @param field_name_str is a edge field name
  * @param field_name_len is the length of field_name_str without the terminating character
  */
-static char *make_dyn_constraint_name(char *buf, char node_type[SELVA_NODE_TYPE_SIZE], const char *field_name_str, size_t field_name_len) {
+static char *make_dyn_constraint_name(char *buf, const char node_type[SELVA_NODE_TYPE_SIZE], const char *field_name_str, size_t field_name_len) {
     buf[SELVA_NODE_TYPE_SIZE] = '.';
     memcpy(buf, node_type, SELVA_NODE_TYPE_SIZE);
     memcpy(buf + SELVA_NODE_TYPE_SIZE + 1, field_name_str, field_name_len);
@@ -55,7 +55,7 @@ static char *make_dyn_constraint_name(char *buf, char node_type[SELVA_NODE_TYPE_
     return buf;
 }
 
-static struct EdgeFieldConstraint *create_constraint(struct EdgeFieldDynConstraintParams *params) {
+static struct EdgeFieldConstraint *create_constraint(const struct EdgeFieldDynConstraintParams *params) {
     const int is_bidir = !!(params->flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL);
     size_t fwd_field_name_len;
     const char *fwd_field_name_str = RedisModule_StringPtrLen(params->fwd_field_name, &fwd_field_name_len);
@@ -143,7 +143,7 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(const struct EdgeFieldConst
 }
 
 static void EdgeConstraint_Reply(struct RedisModuleCtx *ctx, void *p) {
-    struct EdgeFieldConstraint *constraint = (struct EdgeFieldConstraint *)p;
+    const struct EdgeFieldConstraint *constraint = (struct EdgeFieldConstraint *)p;
 
     RedisModule_ReplyWithArray(ctx, 6);
 
@@ -186,7 +186,7 @@ static void *so_rdb_load(struct RedisModuleIO *io, int encver __unused, void *lo
  * Serializer for SelvaObject ptr value.
  */
 static void so_rdb_save(struct RedisModuleIO *io, void *value, void *save_data __unused) {
-    struct EdgeFieldConstraint *constraint = (struct EdgeFieldConstraint *)value;
+    const struct EdgeFieldConstraint *constraint = (struct EdgeFieldConstraint *)value;
 
     RedisModule_SaveUnsigned(io, constraint->flags);
     RedisModule_SaveStringBuffer(io, constraint->field_name_str, constraint->field_name_len);

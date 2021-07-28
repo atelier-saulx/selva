@@ -84,7 +84,7 @@ SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_edge);
 /**
  * Allocate a new EdgeField struct and initialize it.
  */
-static struct EdgeField *alloc_EdgeField(Selva_NodeId src_node_id, const struct EdgeFieldConstraint *constraint, size_t initial_size) {
+static struct EdgeField *alloc_EdgeField(const Selva_NodeId src_node_id, const struct EdgeFieldConstraint *constraint, size_t initial_size) {
     struct EdgeField *edgeField;
 
     edgeField = RedisModule_Calloc(1, sizeof(struct EdgeField));
@@ -353,8 +353,8 @@ static void remove_related_edge_markers(struct RedisModuleCtx *ctx, struct Selva
     SVECTOR_AUTOFREE(sub_markers);
     struct SVectorIterator dst_it;
     struct Selva_SubscriptionMarker *dst_marker;
-    struct SelvaModify_HierarchyMetadata *src_meta;
-    struct SelvaModify_HierarchyMetadata *dst_meta;
+    const struct SelvaModify_HierarchyMetadata *src_meta;
+    const struct SelvaModify_HierarchyMetadata *dst_meta;
     Selva_NodeId src_node_id;
 
     src_meta = SelvaModify_HierarchyGetNodeMetadataByPtr(src_node);
@@ -370,7 +370,7 @@ static void remove_related_edge_markers(struct RedisModuleCtx *ctx, struct Selva
     SVector_ForeachBegin(&dst_it, &sub_markers);
     while ((dst_marker = SVector_Foreach(&dst_it))) {
         struct SVectorIterator src_it;
-        struct Selva_SubscriptionMarker *src_marker;
+        const struct Selva_SubscriptionMarker *src_marker;
 
         if ((dst_marker->dir &
              (SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
@@ -471,7 +471,7 @@ int Edge_Delete(
 static int clear_field(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, struct EdgeField *edge_field) {
     SVECTOR_AUTOFREE(arcs);
     struct SVectorIterator it;
-    struct SelvaModify_HierarchyNode *dst_node;
+    const struct SelvaModify_HierarchyNode *dst_node;
 
     if (unlikely(!SVector_Clone(&arcs, &edge_field->arcs, NULL))) {
         return SELVA_ENOMEM;
