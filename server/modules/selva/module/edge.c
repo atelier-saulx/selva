@@ -178,11 +178,11 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_Hie
      */
     dst_node_metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(dst_node);
 
+    /* TODO can we avoid crashing in the following error cases? */
     if (!dst_node_metadata->edge_fields.origins) {
         /* The edge origin refs struct is initialized lazily. */
         dst_node_metadata->edge_fields.origins = SelvaObject_New();
         if (!dst_node_metadata->edge_fields.origins) {
-            /* TODO can we avoid crashing? */
             fprintf(stderr, "%s:%d: OOM while inserting an edge\n",
                     __FILE__, __LINE__);
             abort();
@@ -190,10 +190,10 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_Hie
     }
     err = SelvaObject_AddArrayStr(dst_node_metadata->edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, SELVA_OBJECT_POINTER, src_edge_field);
     if (err) {
-        /* TODO This error would be pretty fatal now. */
         fprintf(stderr, "%s:%d: Edge origin update failed: %s\n",
                 __FILE__, __LINE__,
                 getSelvaErrorStr(err));
+        abort();
     }
 }
 
@@ -480,15 +480,20 @@ static int clear_field(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierar
     SVector_ForeachBegin(&it, &arcs);
     while ((dst_node = SVector_Foreach(&it))) {
         Selva_NodeId dst_node_id;
+        int err;
 
         SelvaModify_HierarchyGetNodeId(dst_node_id, dst_node);
-        /* TODO Handle error */
-        (void)Edge_Delete(
+        err = Edge_Delete(
                 ctx,
                 hierarchy,
                 edge_field,
                 src_node,
                 dst_node_id);
+        if (err) {
+            fprintf(stderr, "%s:%d:%s: Unable to delete an edge: %s\n",
+                    __FILE__, __LINE__, __func__,
+                    getSelvaErrorStr(err));
+        }
     }
 
     return SVector_Size(&arcs);
