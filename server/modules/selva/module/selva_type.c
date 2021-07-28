@@ -1,4 +1,6 @@
-#include "stddef.h"
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "cdefs.h"
 #include "selva.h"
 #include "errors.h"
