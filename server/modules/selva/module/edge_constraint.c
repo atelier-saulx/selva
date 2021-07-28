@@ -56,13 +56,14 @@ static char *make_dyn_constraint_name(char *buf, char node_type[SELVA_NODE_TYPE_
 }
 
 static struct EdgeFieldConstraint *create_constraint(struct EdgeFieldDynConstraintParams *params) {
+    const int is_bidir = !!(params->flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL);
     size_t fwd_field_name_len;
     const char *fwd_field_name_str = RedisModule_StringPtrLen(params->fwd_field_name, &fwd_field_name_len);
     size_t bck_field_name_len = 0;
     const char *bck_field_name_str = NULL;
     struct EdgeFieldConstraint *p;
 
-    if (params->flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
+    if (is_bidir) {
         bck_field_name_str = RedisModule_StringPtrLen(params->bck_field_name, &bck_field_name_len);
     }
 
@@ -79,10 +80,10 @@ static struct EdgeFieldConstraint *create_constraint(struct EdgeFieldDynConstrai
     memcpy(p->field_name_str, fwd_field_name_str, fwd_field_name_len);
     p->field_name_str[fwd_field_name_len] = '\0';
 
-    if (p->flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
-        /*
-         * Copy the bck_field_name.
-         */
+    /*
+     * Copy the bck_field_name if the field is bidirectional.
+     */
+    if (is_bidir) {
         p->bck_field_name_str = p->field_name_str + fwd_field_name_len + 1;
         p->bck_field_name_len = bck_field_name_len;
         memcpy(p->bck_field_name_str, bck_field_name_str, bck_field_name_len);
