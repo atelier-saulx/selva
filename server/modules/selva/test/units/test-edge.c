@@ -36,14 +36,14 @@ static char * test_alter_edge_relationship(void)
     SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 0, NULL, 0, NULL);
 
     /* Add edges. */
-    pu_assert("Add edge", !Edge_Add(NULL, NULL, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")));
-    pu_assert("Add edge", !Edge_Add(NULL, NULL, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_b"), SelvaHierarchy_FindNode(hierarchy, "grphnode_d")));
+    pu_assert("Add edge", !Edge_Add(NULL, hierarchy, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")));
+    pu_assert("Add edge", !Edge_Add(NULL, hierarchy, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_b"), SelvaHierarchy_FindNode(hierarchy, "grphnode_d")));
 
     pu_assert_equal("a.a has c", Edge_Has(Edge_GetField(SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), "a", 1), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")), 1);
     pu_assert_equal("b.a has d", Edge_Has(Edge_GetField(SelvaHierarchy_FindNode(hierarchy, "grphnode_b"), "a", 1), SelvaHierarchy_FindNode(hierarchy, "grphnode_d")), 1);
 
     /* Alter edges. */
-    pu_assert("Add edge", !Edge_Add(NULL, NULL, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_b"), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")));
+    pu_assert("Add edge", !Edge_Add(NULL, hierarchy, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_b"), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")));
 
     pu_assert_equal("a.a has c", Edge_Has(Edge_GetField(SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), "a", 1), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")), 1);
     pu_assert_equal("b.a has c", Edge_Has(Edge_GetField(SelvaHierarchy_FindNode(hierarchy, "grphnode_b"), "a", 1), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")), 1);
@@ -60,8 +60,8 @@ static char * test_delete_edge(void)
     SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 0, NULL, 0, NULL);
 
     /* Add edges. */
-    pu_assert("Add edge", !Edge_Add(NULL, NULL, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), SelvaHierarchy_FindNode(hierarchy, "grphnode_b")));
-    pu_assert("Add edge", !Edge_Add(NULL, NULL, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")));
+    pu_assert("Add edge", !Edge_Add(NULL, hierarchy, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), SelvaHierarchy_FindNode(hierarchy, "grphnode_b")));
+    pu_assert("Add edge", !Edge_Add(NULL, hierarchy, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")));
 
     /* Delete an edge. */
     struct SelvaModify_HierarchyNode *node_a = SelvaHierarchy_FindNode(hierarchy, "grphnode_a");

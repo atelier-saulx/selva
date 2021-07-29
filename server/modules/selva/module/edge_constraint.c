@@ -135,8 +135,6 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(const struct EdgeFieldConst
         }
     } else if (constraint_id < num_elem(data->hard_constraints)) {
         p = &data->hard_constraints[constraint_id];
-    } else {
-        p = NULL;
     }
 
     return p;

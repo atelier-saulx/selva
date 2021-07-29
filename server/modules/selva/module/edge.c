@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include "redismodule.h"
@@ -242,8 +243,10 @@ int Edge_Add(
         struct SelvaModify_HierarchyNode *dst_node) {
     const struct EdgeFieldConstraints *constraints = &hierarchy->edge_field_constraints;
     const struct EdgeFieldConstraint *constraint;
-    struct EdgeField *src_edge_field;
+    struct EdgeField *src_edge_field = NULL;
     int err;
+
+    assert(hierarchy);
 
     /*
      * Get src_edge_field
