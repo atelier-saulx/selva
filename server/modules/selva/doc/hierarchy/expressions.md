@@ -109,14 +109,15 @@ User registers start from index 1, and register number 0 is reserved for the cur
 
 **Logical operators**
 
-| Operator | Operands      | Description                       | Example (expr => result) |
-| -------- | ------------- | --------------------------------- | ------------------------ |
-| `L`      | `!a`          | Logical NOT operator. (unary)     | `#1 L => 0`              |
-| `M`      | `a AND b`     | Logical AND operator.             | `#1 #1 M => 1`           |
-| `N`      | `a OR b`      | Logical OR operator.              | `#0 #1 N => 1`           |
-| `O`      | `!!a XOR !!b` | Logical XOR operator.             | `#1 #1 O => 0`           |
-| `P`      | `□a`          | Necessity (It's necessary that a) | `#0 P #1 N => 0`         |
-| `Q`      | `◇a`          | Possibly                          | `#1 Q #0 M => 1`         |
+| Operator | Operands      | Description                        | Example (expr => result) |
+| -------- | ------------- | ---------------------------------- | ------------------------ |
+| `L`      | `!a`          | Logical NOT operator. (unary)      | `#1 L => 0`              |
+| `M`      | `a AND b`     | Logical AND operator.              | `#1 #1 M => 1`           |
+| `N`      | `a OR b`      | Logical OR operator.               | `#0 #1 N => 1`           |
+| `O`      | `!!a XOR !!b` | Logical XOR operator.              | `#1 #1 O => 0`           |
+| `P`      | `□a`          | Necessity. (It's necessary that a) | `#0 P #1 N => 0`         |
+| `Q`      | `◇a`          | Possibly.                          | `#1 Q #0 M => 1`         |
+| `T`      | `a ? b : c`   | Ternary.                           | `$3 $2 @1 T => X`        |
 
 `P` and `Q` are short circuiting operators and don't represent classical modal
 logic. The `P` operator bails out immediately if the operand is not truthy and
