@@ -317,6 +317,37 @@ static char * test_possibly_and(void)
     return NULL;
 }
 
+static char * test_ternary(void)
+{
+    enum rpn_error err;
+    const char expr_str[] = "$3 $2 @1 T";
+    RedisModuleString *res = NULL;
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    for (int i = 0; i <= 1; i++) {
+        char a[1] = "0";
+        a[0] += i;
+        char expected[2] = "C";
+        expected[0] -= i;
+
+        err = rpn_set_reg(ctx, 1, a, 1, 0);
+        pu_assert_equal("reg is set", err, RPN_ERR_OK);
+        err = rpn_set_reg(ctx, 2, "B", 2, 0);
+        pu_assert_equal("reg is set", err, RPN_ERR_OK);
+        err = rpn_set_reg(ctx, 3, "C", 2, 0);
+        pu_assert_equal("reg is set", err, RPN_ERR_OK);
+        err = rpn_rms(NULL, ctx, expr, &res);
+        pu_assert_equal("No error", err, RPN_ERR_OK);
+
+        TO_STR(res);
+        pu_assert_str_equal("Ternary result is valid", res_str, expected);
+    }
+
+    return NULL;
+}
+
 static char * test_range(void)
 {
     enum rpn_error err;
@@ -450,6 +481,7 @@ void all_tests(void)
     pu_def_test(test_necessarily_and, PU_RUN);
     pu_def_test(test_possibly_or, PU_RUN);
     pu_def_test(test_possibly_and, PU_RUN);
+    pu_def_test(test_ternary, PU_RUN);
     pu_def_test(test_selvaset_inline, PU_RUN);
     pu_def_test(test_selvaset_union, PU_RUN);
     pu_def_test(test_selvaset_ill, PU_RUN);

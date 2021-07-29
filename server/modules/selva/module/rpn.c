@@ -470,7 +470,7 @@ static void clear_old_reg(struct rpn_ctx *ctx, size_t i) {
     }
 }
 
-enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags) {
+enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t size, unsigned flags) {
     if (i >= (size_t)ctx->nr_reg) {
         return RPN_ERR_BNDS;
     }
@@ -491,14 +491,14 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
         r->flags.regist = 1; /* Can't be freed when this flag is set. */
         r->flags.spused = 1;
         r->flags.spfree = (flags & RPN_SET_REG_FLAG_RMFREE) == RPN_SET_REG_FLAG_RMFREE;
-        r->s_size = slen;
+        r->s_size = size;
         r->sp = s;
 
         /*
          * Set the integer value.
          */
         char *e = (char *)s;
-        if (slen > 0) {
+        if (size > 0) {
             r->d = strtod(s, &e);
         }
         if (e == s) {
@@ -914,6 +914,18 @@ static enum rpn_error rpn_op_possib(struct RedisModuleCtx *redis_ctx __unused, s
     }
 }
 
+static enum rpn_error rpn_op_ternary(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+    OPERAND(ctx, b);
+    OPERAND(ctx, c);
+
+    if (to_bool(a)) {
+        return push(ctx, b);
+    } else {
+        return push(ctx, c);
+    }
+}
+
 static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
     int exists;
     struct SelvaObject *obj;
@@ -1208,7 +1220,7 @@ static rpn_fp funcs[] = {
     rpn_op_possib,  /* Q */
     rpn_op_abo,     /* R spare */
     rpn_op_abo,     /* S spare */
-    rpn_op_abo,     /* T spare */
+    rpn_op_ternary, /* T spare */
     rpn_op_abo,     /* U spare */
     rpn_op_abo,     /* V spare */
     rpn_op_abo,     /* W spare */
@@ -1669,6 +1681,27 @@ enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx
     free_rpn_operand(&res);
 
     return RPN_ERR_OK;
+}
+
+enum rpn_error rpn_rms(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, RedisModuleString **out) {
+    struct rpn_operand *res;
+    enum rpn_error err;
+
+    err = rpn(redis_ctx, ctx, expr);
+    close_node_key(ctx);
+    if (err) {
+        return err;
+    }
+
+    res = pop(ctx);
+    if (!res) {
+        return RPN_ERR_BADSTK;
+    }
+
+    *out = RedisModule_CreateString(redis_ctx, OPERAND_GET_S(res), OPERAND_GET_S_LEN(res));
+    free_rpn_operand(&res);
+
+    return out ? RPN_ERR_OK : RPN_ERR_ENOMEM;
 }
 
 enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out) {
