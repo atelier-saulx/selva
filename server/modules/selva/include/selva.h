@@ -54,6 +54,11 @@ typedef int32_t Selva_SubscriptionMarkerId;
 #define SELVA_SUBSCRIPTION_MARKER_ID_MIN INT32_MIN
 
 /**
+ * Selva version.
+ */
+extern const char * const selva_version;
+
+/**
  * Get the length of nodeId ignoring nul bytes at the end of the string.
  */
 size_t Selva_NodeIdLen(const Selva_NodeId nodeId);

@@ -23,6 +23,11 @@
 #include "subscriptions.h"
 #include "svector.h"
 
+struct SelvaDbVersionInfo {
+    RedisModuleString *created_with;
+    RedisModuleString *updated_with;
+} selva_db_version_info;
+
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
     struct trx trx_label;
@@ -2610,6 +2615,26 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     return REDISMODULE_OK;
 }
 
+static int SelvaVersion_AuxLoad(RedisModuleIO *io, int encver, int when) {
+    selva_db_version_info.created_with = RedisModule_LoadString(io);
+    selva_db_version_info.updated_with = RedisModule_LoadString(io);
+
+    fprintf(stderr, "Selva hierarchy version info created_with: %s updated_with: %s\n",
+            RedisModule_StringPtrLen(selva_db_version_info.created_with, NULL),
+            RedisModule_StringPtrLen(selva_db_version_info.updated_with, NULL));
+
+    return 0;
+}
+
+static void SelvaVersion_AuxSave(RedisModuleIO *io, int when) {
+    if (selva_db_version_info.created_with) {
+        RedisModule_SaveString(io, selva_db_version_info.created_with);
+    } else {
+        RedisModule_SaveStringBuffer(io, selva_version, strlen(selva_version));
+    }
+    RedisModule_SaveStringBuffer(io, selva_version, strlen(selva_version));
+}
+
 static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
     RedisModuleTypeMethods tm = {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
@@ -2617,6 +2642,9 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         .rdb_save = HierarchyTypeRDBSave,
         .aof_rewrite = HierarchyTypeAOFRewrite,
         .free = HierarchyTypeFree,
+        .aux_load = SelvaVersion_AuxLoad,
+        .aux_save = SelvaVersion_AuxSave,
+        .aux_save_triggers = REDISMODULE_AUX_BEFORE_RDB,
     };
 
     HierarchyType = RedisModule_CreateDataType(ctx, "hierarchy", HIERARCHY_ENCODING_VERSION, &tm);

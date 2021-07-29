@@ -8,3 +8,4 @@ test/units/.d
 # VTune files
 /redis-*
 vgcore.*
+/version.c
