@@ -2262,19 +2262,38 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         RedisModule_ReplyWithStringBuffer(ctx, tn->name, tn->len);
 
         if (type == SELVA_OBJECT_ARRAY) {
-            enum SelvaObjectType subtype = key->subtype;
+            const enum SelvaObjectType subtype = key->subtype;
+            const char *subtype_str;
+            size_t subtype_len;
 
-            if (subtype >= 0 && subtype < num_elem(type_names)) {
-                const struct so_type_name *sub_tn = &type_names[subtype];
+            subtype_str = SelvaObject_Type2String(subtype, &subtype_len);
 
-                RedisModule_ReplyWithStringBuffer(ctx, sub_tn->name, sub_tn->len);
+            if (subtype_str) {
+                RedisModule_ReplyWithStringBuffer(ctx, subtype_str, subtype_len);
             } else {
                 replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key subtype %d", (int)subtype);
             }
 
             RedisModule_ReplySetArrayLength(ctx, 2);
         } else if (type == SELVA_OBJECT_SET) {
-            RedisModule_ReplyWithLongLong(ctx, key->selva_set.type); /* TODO Type as a string */
+            switch (key->selva_set.type) {
+            case SELVA_SET_TYPE_RMSTRING:
+                RedisModule_ReplyWithSimpleString(ctx, "string");
+                break;
+            case SELVA_SET_TYPE_DOUBLE:
+                RedisModule_ReplyWithSimpleString(ctx, "double");
+                break;
+            case SELVA_SET_TYPE_LONGLONG:
+                RedisModule_ReplyWithSimpleString(ctx, "long long");
+                break;
+            case SELVA_SET_TYPE_NODEID:
+                RedisModule_ReplyWithSimpleString(ctx, "nodeId");
+                break;
+            default:
+                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid set type %d", (int)key->selva_set.type);
+                break;
+            }
+
             RedisModule_ReplySetArrayLength(ctx, 2);
         } else {
             RedisModule_ReplySetArrayLength(ctx, 1);
