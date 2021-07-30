@@ -15,11 +15,13 @@
 #include "selva_node.h"
 #include "selva_object.h"
 #include "selva_onload.h"
+#include "selva_set.h"
 #include "subscriptions.h"
 #include "edge.h"
 #include "svector.h"
 #include "cstrings.h"
 #include "traversal.h"
+#include "find_index.h"
 
 /* TODO MOVE this */
 static int send_node_field(
@@ -1225,6 +1227,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     const int ARGV_REDIS_KEY = 2;
     const int ARGV_DIRECTION = 3;
     const int ARGV_REF_FIELD = 4;
+    int ARGV_INDEX_TXT       = 4;
+    int ARGV_INDEX_VAL       = 5;
     int ARGV_ORDER_TXT       = 4;
     int ARGV_ORDER_FLD       = 5;
     int ARGV_ORDER_ORD       = 6;
@@ -1240,6 +1244,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     int ARGV_FILTER_EXPR     = 5;
     int ARGV_FILTER_ARGS     = 6;
 #define SHIFT_ARGS(i) \
+    ARGV_INDEX_TXT += i; \
+    ARGV_INDEX_VAL += i; \
     ARGV_ORDER_TXT += i; \
     ARGV_ORDER_FLD += i; \
     ARGV_ORDER_ORD += i; \
@@ -1316,6 +1322,15 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             goto out;
         }
         SHIFT_ARGS(1);
+    }
+
+    /*
+     * Parse the indexing hint.
+     */
+    RedisModuleString *index_hint = NULL;
+    if (!SelvaArgParser_StrOpt(NULL, "index", argv[ARGV_INDEX_TXT], argv[ARGV_INDEX_VAL])) {
+        index_hint = argv[ARGV_INDEX_VAL];
+        SHIFT_ARGS(2);
     }
 
     /*
@@ -1477,14 +1492,27 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     size_t merge_nr_fields = 0;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
         Selva_NodeId nodeId;
+        struct SelvaSet *ind_out = NULL;
 
         Selva_NodeIdCpy(nodeId, ids_str + i);
+
+        if (index_hint) {
+            int ind_err;
+
+            /* TODO Add support for traversal expression. */
+            ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, NULL, nodeId, index_hint, &ind_out);
+            if (ind_err && ind_err != SELVA_ENOENT) {
+                fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
+                        __FILE__, __LINE__,
+                        getSelvaErrorStr(ind_err));
+            }
+        }
 
         /*
          * Run BFS/DFS.
          */
         ssize_t tmp_limit = -1;
-        const size_t skip = SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
+        const size_t skip = ind_out ? 0 : SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
         struct FindCommand_Args args = {
             .ctx = ctx,
             .lang = lang,
@@ -1510,7 +1538,18 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             break;
         }
 
-        if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
+        if (ind_out) {
+            struct SelvaSetElement *el;
+
+            SELVA_SET_NODEID_FOREACH(el, ind_out) {
+                struct SelvaModify_HierarchyNode *node;
+
+                node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
+                if (node) {
+                    (void)FindCommand_NodeCb(node, &args);
+                }
+            }
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             const struct SelvaModify_ArrayObjectCallback ary_cb = {
                 .node_cb = FindCommand_ArrayNodeCb,
                 .node_arg = &args,

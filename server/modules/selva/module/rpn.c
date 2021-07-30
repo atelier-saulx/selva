@@ -1481,7 +1481,9 @@ struct rpn_expression *rpn_compile(const char *input) {
             break;
         default:
             if (tok_len > RPN_MAX_TOKEN_SIZE - 1) {
-                fprintf(stderr, "%s:%d: Invalid token length\n", __FILE__, __LINE__);
+                fprintf(stderr, "%s:%d: Invalid token length %llu\n",
+                        __FILE__, __LINE__,
+                        (unsigned long long)tok_len);
                 goto fail;
             }
 

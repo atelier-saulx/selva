@@ -133,6 +133,14 @@ struct Selva_SubscriptionMarker {
     Selva_SubscriptionMarkerId marker_id;
     unsigned short marker_flags;
 
+    /**
+     * A function that should defer an action that will be typically taken at later moment.
+     * Typically this function should add the subscription in one of the
+     * deferred events lists and eventually SelvaSubscriptions_SendDeferredEvents
+     * will be called to handle the event. Normally all this mangling is done just
+     * to dedup multiple events for the same subscription but this function
+     * pointer can be alternatively used to execute or defer any action.
+     */
     Selva_SubscriptionMarkerAction *marker_action;
     /**
      * A pointer to optional data for the action to grab the required context.
@@ -201,6 +209,19 @@ struct SelvaSubscriptions_DeferredEvents {
     SVector updates; /*!< A set of Selva_Subscriptions. */
     SVector triggers; /*!< A set of Selva_SubscriptionMarkers */
 };
+
+/**
+ * Generate a subscription marker id by hashing an input string.
+ * Sometimes we need to come up with an id for a subscription marker without the
+ * clients help and this function is here for those occasions.
+ * The generated id will have the MSB set, making it impossible for the client
+ * to generate such an id. This makes it easier to recognize server generated
+ * ids as well as avoids collision with the client generated ids.
+ * @param prev is the previous hash result in case the caller wants to hash multiple input values; Otherwise 0.
+ * @param str is a nul-terminated input string that will be hashed.
+ * @returns The function returns a new subscription marker id.
+ */
+Selva_SubscriptionMarkerId Selva_GenSubscriptionMarkerId(Selva_SubscriptionMarkerId prev, const char *s);
 
 /**
  * Init subscriptions data structures in the hierarchy.

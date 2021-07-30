@@ -67,17 +67,6 @@ int SelvaResolve_NodeId(
     return res;
 }
 
-static Selva_SubscriptionMarkerId gen_marker_id(const char *s) {
-    /* fnv32 */
-    unsigned hash = 2166136261u;
-
-    for (; *s; s++) {
-        hash = (hash ^ *s) * 0x01000193;
-    }
-
-    return (Selva_SubscriptionMarkerId)(0x80000000 | hash);
-}
-
 /*
  * HIERARCHY_KEY SUB_ID IDS...
  */
@@ -114,7 +103,7 @@ int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     if ((resolved & SELVA_RESOLVE_ALIAS) && argv_sub_id_len > 0) {
         RedisModuleString *alias_name = argv[ARGV_IDS + (resolved & ~SELVA_RESOLVE_FLAGS)];
         Selva_SubscriptionId sub_id;
-        const Selva_SubscriptionMarkerId marker_id = gen_marker_id(RedisModule_StringPtrLen(alias_name, NULL));
+        const Selva_SubscriptionMarkerId marker_id = Selva_GenSubscriptionMarkerId(0, RedisModule_StringPtrLen(alias_name, NULL));
         int err;
 
         err = SelvaArgParser_SubscriptionId(sub_id, argv_sub_id);
