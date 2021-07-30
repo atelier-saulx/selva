@@ -19,7 +19,7 @@ static int send_hierarchy_field_NodeCb(struct SelvaModify_HierarchyNode *node, v
     struct send_hierarchy_field_data *args = (struct send_hierarchy_field_data *)arg;
     int match = 0;
 
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
 
     /*
      * Some traversal modes must skip the first entry.

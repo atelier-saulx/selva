@@ -251,7 +251,7 @@ static int create_node_object(RedisModuleCtx *ctx, const Selva_NodeId id) {
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE,
                 id);
-        return SELVA_HIERARCHY_ENOMEM; // TODO ??
+        return SELVA_HIERARCHY_ENOMEM;
     }
 
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
@@ -350,26 +350,25 @@ SelvaModify_HierarchyNode *SelvaHierarchy_FindNode(SelvaModify_Hierarchy *hierar
     return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaModify_HierarchyNode *)(&filter));
 }
 
-int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
+int SelvaHierarchy_NodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
     return SelvaHierarchy_FindNode(hierarchy, id) != NULL;
 }
 
-char *SelvaModify_HierarchyGetNodeId(Selva_NodeId id, const SelvaModify_HierarchyNode *node) {
+char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const SelvaModify_HierarchyNode *node) {
     memcpy(id, node->id, SELVA_NODE_ID_SIZE);
     return id;
 }
 
-char *SelvaModify_HierarchyGetNodeType(char type[SELVA_NODE_TYPE_SIZE], const SelvaModify_HierarchyNode *node) {
+char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const SelvaModify_HierarchyNode *node) {
     memcpy(type, node->id, SELVA_NODE_TYPE_SIZE);
     return type;
 }
 
-/* TODO Rename these functions? */
-struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadataByPtr(SelvaModify_HierarchyNode *node) {
+struct SelvaModify_HierarchyMetadata *SelvaHierarchy_GetNodeMetadataByPtr(SelvaModify_HierarchyNode *node) {
     return &node->metadata;
 }
 
-struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadata(
+struct SelvaModify_HierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id) {
     SelvaModify_HierarchyNode *node;

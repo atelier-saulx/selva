@@ -150,16 +150,16 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy);
  */
 SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name, int mode);
 
-int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
+int SelvaHierarchy_NodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
 
 /**
  * Copy nodeId to a buffer.
  */
-char *SelvaModify_HierarchyGetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node);
-char *SelvaModify_HierarchyGetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaModify_HierarchyNode *node);
+char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node);
+char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaModify_HierarchyNode *node);
 
-struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
-struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadata(
+struct SelvaModify_HierarchyMetadata *SelvaHierarchy_GetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
+struct SelvaModify_HierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id);
 

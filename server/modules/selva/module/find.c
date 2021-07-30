@@ -75,7 +75,7 @@ static int send_edge_field(
     if (!dst_node) {
         Selva_NodeId node_id;
 
-        SelvaModify_HierarchyGetNodeId(node_id, node);
+        SelvaHierarchy_GetNodeId(node_id, node);
         fprintf(stderr, "%s:%d: Edge %.*s.%.*s shouldn't contain NULL arcs\n",
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE, node_id,
@@ -90,7 +90,7 @@ static int send_edge_field(
      */
 
     Selva_NodeId dst_id;
-    SelvaModify_HierarchyGetNodeId(dst_id, dst_node);
+    SelvaHierarchy_GetNodeId(dst_id, dst_node);
 
     RedisModuleString *dst_id_rms;
     dst_id_rms = RedisModule_CreateString(ctx, dst_id, Selva_NodeIdLen(dst_id));
@@ -150,7 +150,7 @@ static int send_node_field(
     Selva_NodeId nodeId;
     int err;
 
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
 
     RedisModuleString *full_field_name;
     if (field_prefix_str) {
@@ -211,7 +211,7 @@ static int send_node_field(
         /*
          * Check if the field name is an edge field.
          */
-        struct SelvaModify_HierarchyMetadata *metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+        struct SelvaModify_HierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
         struct SelvaObject *edges = metadata->edge_fields.edges;
 
         if (edges) {
@@ -270,7 +270,7 @@ static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaM
     RedisModuleString *id;
     int err;
 
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
 
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
     if (!id) {
@@ -888,7 +888,7 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
 
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
 
     if (take && rpn_ctx) {
         int err;

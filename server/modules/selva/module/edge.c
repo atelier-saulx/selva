@@ -113,7 +113,7 @@ struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *src_node, cons
     /*
      * The edges object is allocated lazily so the called might need to allocate it.
      */
-    src_metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(src_node);
+    src_metadata = SelvaHierarchy_GetNodeMetadataByPtr(src_node);
     if (!src_metadata->edge_fields.edges) {
         return NULL;
     }
@@ -135,8 +135,8 @@ static struct EdgeField *Edge_NewField(struct SelvaModify_HierarchyNode *node, c
     struct SelvaObject *edges;
     struct EdgeField *edge_field;
 
-    SelvaModify_HierarchyGetNodeId(node_id, node);
-    node_metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+    SelvaHierarchy_GetNodeId(node_id, node);
+    node_metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 
     edges = node_metadata->edge_fields.edges;
     if (!edges) {
@@ -177,7 +177,7 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_Hie
      * Add origin reference.
      * Note that we must ensure that this insertion is only ever done once.
      */
-    dst_node_metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(dst_node);
+    dst_node_metadata = SelvaHierarchy_GetNodeMetadataByPtr(dst_node);
 
     /* TODO can we avoid crashing in the following error cases? */
     if (!dst_node_metadata->edge_fields.origins) {
@@ -203,7 +203,7 @@ static int get_or_create_EdgeField(const struct EdgeFieldConstraints *constraint
     const struct EdgeFieldConstraint *constraint;
     struct EdgeField *edge_field;
 
-    SelvaModify_HierarchyGetNodeType(node_type, node);
+    SelvaHierarchy_GetNodeType(node_type, node);
     constraint = Edge_GetConstraint(constraints, constraint_id, node_type, field_name_str, field_name_len);
     if (!constraint) {
         return SELVA_EINVAL;
@@ -313,7 +313,7 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaModif
     SVector *origin_fields;
     int err;
 
-    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(dst_node);
+    metadata = SelvaHierarchy_GetNodeMetadataByPtr(dst_node);
     err = SelvaObject_GetArrayStr(metadata->edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, &out_subtype, &origin_fields);
     if (err) {
         return err;
@@ -360,9 +360,9 @@ static void remove_related_edge_markers(struct RedisModuleCtx *ctx, struct Selva
     const struct SelvaModify_HierarchyMetadata *dst_meta;
     Selva_NodeId src_node_id;
 
-    src_meta = SelvaModify_HierarchyGetNodeMetadataByPtr(src_node);
-    dst_meta = SelvaModify_HierarchyGetNodeMetadataByPtr(dst_node);
-    SelvaModify_HierarchyGetNodeId(src_node_id, src_node);
+    src_meta = SelvaHierarchy_GetNodeMetadataByPtr(src_node);
+    dst_meta = SelvaHierarchy_GetNodeMetadataByPtr(dst_node);
+    SelvaHierarchy_GetNodeId(src_node_id, src_node);
 
     if (unlikely(!SVector_Clone(&sub_markers, &dst_meta->sub_markers.vec, NULL))) {
         fprintf(stderr, "%s:%d: ENOMEM failed to remove sub markers from a referenced node\n",
@@ -420,7 +420,7 @@ int Edge_Delete(
     struct SelvaModify_HierarchyNode *dst_node;
     int err;
 
-    SelvaModify_HierarchyGetNodeId(src_node_id, src_node);
+    SelvaHierarchy_GetNodeId(src_node_id, src_node);
     dst_node = SVector_Search(&src_edge_field->arcs, dst_node_id);
     if (!dst_node) {
         return SELVA_ENOENT;
@@ -485,7 +485,7 @@ static int clear_field(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierar
         Selva_NodeId dst_node_id;
         int err;
 
-        SelvaModify_HierarchyGetNodeId(dst_node_id, dst_node);
+        SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
         err = Edge_Delete(
                 ctx,
                 hierarchy,
@@ -522,7 +522,7 @@ static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy 
 }
 
 static void clear_all_fields(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node) {
-    struct SelvaObject *obj = SelvaModify_HierarchyGetNodeMetadataByPtr(node)->edge_fields.edges;
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeMetadataByPtr(node)->edge_fields.edges;
 
     _clear_all_fields(ctx, hierarchy, node, obj);
 }
@@ -535,7 +535,7 @@ int Edge_ClearField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy
         return SELVA_ENOENT;
     }
 
-    SelvaModify_HierarchyGetNodeType(node_type, src_node);
+    SelvaHierarchy_GetNodeType(node_type, src_node);
 
     src_edge_field = Edge_GetField(src_node, field_name_str, field_name_len);
     if (!src_edge_field) {
@@ -550,7 +550,7 @@ int Edge_DeleteField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarch
     struct EdgeField *src_edge_field;
     int res;
 
-    SelvaModify_HierarchyGetNodeType(src_node_type, src_node);
+    SelvaHierarchy_GetNodeType(src_node_type, src_node);
 
     src_edge_field = Edge_GetField(src_node, field_name_str, field_name_len);
     if (!src_edge_field) {
@@ -565,7 +565,7 @@ int Edge_DeleteField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarch
     /*
      * Doing this will cause a full cleanup of the edges and origin pointers (EdgeField_Free()).
      */
-    if (SelvaObject_DelKeyStr(SelvaModify_HierarchyGetNodeMetadataByPtr(src_node)->edge_fields.edges, field_name_str, field_name_len)) {
+    if (SelvaObject_DelKeyStr(SelvaHierarchy_GetNodeMetadataByPtr(src_node)->edge_fields.edges, field_name_str, field_name_len)) {
         fprintf(stderr, "%s:%d: Failed to delete the edge field: \"%.*s\"",
                 __FILE__, __LINE__,
                 (int)field_name_len, field_name_str);
@@ -578,7 +578,7 @@ int Edge_Refcount(struct SelvaModify_HierarchyNode *node) {
     struct SelvaModify_HierarchyMetadata *metadata;
     int refcount = 0;
 
-    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 
     if (metadata->edge_fields.origins) {
         refcount = SelvaObject_Len(metadata->edge_fields.origins, NULL);
@@ -599,7 +599,7 @@ static void EdgeField_Reply(struct RedisModuleCtx *ctx, void *p) {
     while ((dst_node = SVector_Foreach(&it))) {
         Selva_NodeId dst_node_id;
 
-        SelvaModify_HierarchyGetNodeId(dst_node_id, dst_node);
+        SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
         RedisModule_ReplyWithStringBuffer(ctx, dst_node_id, Selva_NodeIdLen(dst_node_id));
     }
 }
@@ -668,7 +668,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
 
     nr_edges = RedisModule_LoadUnsigned(io);
 
-    SelvaModify_HierarchyGetNodeId(src_node_id, load_data->src_node);
+    SelvaHierarchy_GetNodeId(src_node_id, load_data->src_node);
     edge_field = alloc_EdgeField(src_node_id, constraint, nr_edges);
     if (!edge_field) {
         return NULL;
@@ -724,7 +724,7 @@ int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hi
     if (RedisModule_LoadUnsigned(io)) {
         struct SelvaModify_HierarchyMetadata *metadata;
 
-        metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+        metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 
         /*
          * We use the SelvaObject RDB loader to load the object which will then
@@ -762,13 +762,13 @@ static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused vo
     while ((dst_node = SVector_Foreach(&vec_it))) {
         Selva_NodeId dst_node_id;
 
-        SelvaModify_HierarchyGetNodeId(dst_node_id, dst_node);
+        SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
         RedisModule_SaveStringBuffer(io, dst_node_id, SELVA_NODE_ID_SIZE);
     }
 }
 
 void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaModify_HierarchyNode *node) {
-    struct SelvaModify_HierarchyMetadata *metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+    struct SelvaModify_HierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
     struct SelvaObject *edges = metadata->edge_fields.edges;
 
     /* A boolean marker to trigger the loader. */

@@ -476,7 +476,7 @@ static int set_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *arg)
     if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_REF) {
         Selva_NodeId node_id;
 
-        if (memcmp(SelvaModify_HierarchyGetNodeId(node_id, node), marker->node_id, SELVA_NODE_ID_SIZE)) {
+        if (memcmp(SelvaHierarchy_GetNodeId(node_id, node), marker->node_id, SELVA_NODE_ID_SIZE)) {
             /* FIXME ref markers don't really work as one might expect. */
             /*
              * ref markers are not propagated beyond the first node because
@@ -486,12 +486,12 @@ static int set_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *arg)
         }
     }
 
-    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 #if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
     Selva_NodeId node_id;
 
-    SelvaModify_HierarchyGetNodeId(node_id, node);
+    SelvaHierarchy_GetNodeId(node_id, node);
     fprintf(stderr, "%s:%d: Set sub marker %s:%d to %.*s\n",
             __FILE__, __LINE__,
             Selva_SubscriptionId2str(str, marker->sub->sub_id),
@@ -507,12 +507,12 @@ static int clear_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *ar
     struct SelvaModify_HierarchyMetadata *metadata;
     struct Selva_SubscriptionMarker *marker = (struct Selva_SubscriptionMarker*)arg;
 
-    metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 #if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
     Selva_NodeId id;
 
-    SelvaModify_HierarchyGetNodeId(id, node);
+    SelvaHierarchy_GetNodeId(id, node);
     fprintf(stderr, "%s:%d: Clear sub marker %s:%d from node %.*s (nr_subs: %zd)\n",
             __FILE__, __LINE__,
             Selva_SubscriptionId2str(str, marker->sub->sub_id),
@@ -963,14 +963,14 @@ void SelvaSubscriptions_ClearAllMarkers(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         struct SelvaModify_HierarchyNode *node) {
-    struct SelvaModify_HierarchyMetadata *metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+    struct SelvaModify_HierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
     const size_t nr_markers = SVector_Size(&metadata->sub_markers.vec);
     struct SVectorIterator it;
     struct Selva_SubscriptionMarker *marker;
     SVECTOR_AUTOFREE(markers);
     Selva_NodeId node_id;
 
-    SelvaModify_HierarchyGetNodeId(node_id, node);
+    SelvaHierarchy_GetNodeId(node_id, node);
 
     if (nr_markers == 0) {
         return;
@@ -1116,8 +1116,8 @@ void SelvaSubscriptions_InheritEdge(
         struct SelvaModify_HierarchyNode *dst_node,
         const char *field_str,
         size_t field_len) {
-    struct SelvaModify_HierarchyMetadata *src_metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(src_node);
-    struct SelvaModify_HierarchyMetadata *dst_metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(dst_node);
+    struct SelvaModify_HierarchyMetadata *src_metadata = SelvaHierarchy_GetNodeMetadataByPtr(src_node);
+    struct SelvaModify_HierarchyMetadata *dst_metadata = SelvaHierarchy_GetNodeMetadataByPtr(dst_node);
     struct Selva_SubscriptionMarkers *src_markers = &src_metadata->sub_markers;
     struct Selva_SubscriptionMarkers *dst_markers = &dst_metadata->sub_markers;
     struct SVectorIterator it;
@@ -1125,7 +1125,7 @@ void SelvaSubscriptions_InheritEdge(
     Selva_NodeId dst_node_id;
     int traversing = 0;
 
-    SelvaModify_HierarchyGetNodeId(dst_node_id, dst_node);
+    SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
 
     SVector_ForeachBegin(&it, &src_markers->vec);
     while ((marker = SVector_Foreach(&it))) {
@@ -1512,7 +1512,7 @@ void Selva_Subscriptions_DeferAliasChangeEvents(
     if (err < 0) {
         return;
     }
-    orig_metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, orig_node_id);
+    orig_metadata = SelvaHierarchy_GetNodeMetadata(hierarchy, orig_node_id);
     if (!orig_metadata) {
         fprintf(stderr, "%s:%d: Failed to get metadata for node: \"%.*s\"\n",
                 __FILE__, __LINE__,
@@ -2398,7 +2398,7 @@ int SelvaSubscriptions_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             Selva_NodeIdCpy(node_id, id_str);
             struct SelvaModify_HierarchyMetadata *metadata;
 
-            metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, node_id);
+            metadata = SelvaHierarchy_GetNodeMetadata(hierarchy, node_id);
             if (!metadata) {
                 return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_ENOENT);
             }

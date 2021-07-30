@@ -316,7 +316,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
                     RedisModuleString2Selva_NodeId(nodeId, tmp_id);
 
-                    if (SelvaModify_HierarchyNodeExists(hierarchy, nodeId)) {
+                    if (SelvaHierarchy_NodeExists(hierarchy, nodeId)) {
                         id = tmp_id;
 
                         /*
@@ -390,7 +390,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     const struct SelvaModify_HierarchyMetadata *metadata;
 
-    metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
+    metadata = SelvaHierarchy_GetNodeMetadata(hierarchy, nodeId);
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, nodeId, metadata);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {

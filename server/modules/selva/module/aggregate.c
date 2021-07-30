@@ -188,7 +188,7 @@ static int apply_agg_fn_obj(struct SelvaObject *obj, struct AggregateCommand_Arg
 static int apply_agg_fn(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
     Selva_NodeId nodeId;
     RedisModuleString *id;
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
     id = RedisModule_CreateString(args->find_args.ctx, nodeId, Selva_NodeIdLen(nodeId));
 
     RedisModuleKey *key;
@@ -219,7 +219,7 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
     struct rpn_ctx *rpn_ctx = args->find_args.rpn_ctx;
     int take = (args->find_args.offset > 0) ? !args->find_args.offset-- : 1;
 
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
 
     if (take && rpn_ctx) {
         int err;

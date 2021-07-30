@@ -101,7 +101,7 @@ static int deref_single_ref(
         return SELVA_ENOENT;
     }
 
-    SelvaModify_HierarchyGetNodeId(node_id_out, node);
+    SelvaHierarchy_GetNodeId(node_id_out, node);
     return open_node_key(ctx, node_id_out, key_out, obj_out);
 }
 
@@ -227,7 +227,7 @@ static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *a
     struct InheritCommand_Args *restrict args = (struct InheritCommand_Args *)arg;
     int err;
 
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
     err = open_node_key(args->ctx, nodeId, &key, &obj);
     if (err) {
         fprintf(stderr, "%s:%d: Failed to open a node object. nodeId: %.*s error: %s\n",
