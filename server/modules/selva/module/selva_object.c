@@ -1598,7 +1598,6 @@ int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *ke
     return SelvaObject_SetUserMetaStr(obj, key_name_str, key_name_len, meta, old_meta);
 }
 
-/* TODO Support nested objects */
 void *SelvaObject_ForeachBegin(struct SelvaObject *obj) {
     return RB_MIN(SelvaObjectKeys, &obj->keys_head);
 }
