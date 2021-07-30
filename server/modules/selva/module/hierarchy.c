@@ -162,6 +162,13 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
     Selva_Subscriptions_InitHierarchy(hierarchy);
 
+    hierarchy->dyn_index = SelvaObject_New();
+    if (!hierarchy->dyn_index) {
+        SelvaModify_DestroyHierarchy(hierarchy);
+        hierarchy = NULL;
+        goto fail;
+    }
+
     if(unlikely(SelvaModify_SetHierarchy(ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL) < 0)) {
         SelvaModify_DestroyHierarchy(hierarchy);
         hierarchy = NULL;
@@ -188,6 +195,10 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
      * will be gone anyway.
      */
     SelvaSubscriptions_DestroyAll(NULL, hierarchy);
+
+    /* TODO Do we need to destroy constraints? */
+
+    SelvaObject_Destroy(hierarchy->dyn_index);
 
     SVector_Destroy(&hierarchy->heads);
 #if MEM_DEBUG

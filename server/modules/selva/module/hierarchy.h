@@ -112,6 +112,8 @@ struct SelvaModify_Hierarchy {
          */
         struct SelvaSubscriptions_DeferredEvents deferred_events;
     } subs;
+
+    struct SelvaObject *dyn_index;
 };
 
 /**

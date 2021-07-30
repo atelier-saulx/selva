@@ -182,7 +182,6 @@ int Selva_SubscriptionFilterMatch(RedisModuleCtx *ctx, const struct SelvaModify_
     }
 
     SelvaHierarchy_GetNodeId(node_id, node);
-
     rpn_set_hierarchy_node(filter_ctx, node);
     rpn_set_reg(filter_ctx, 0, node_id, SELVA_NODE_ID_SIZE, 0);
     err = rpn_bool(ctx, filter_ctx, marker->filter_expression, &res);
@@ -195,6 +194,17 @@ int Selva_SubscriptionFilterMatch(RedisModuleCtx *ctx, const struct SelvaModify_
     }
 
     return res;
+}
+
+Selva_SubscriptionMarkerId Selva_GenSubscriptionMarkerId(Selva_SubscriptionMarkerId prev, const char *s) {
+    /* fnv32 */
+    uint32_t hash = prev > 0 ? (uint32_t)(prev & 0x7FFFFFFF) : 2166136261u;
+
+    for (; *s; s++) {
+        hash = (hash ^ *s) * 0x01000193;
+    }
+
+    return (Selva_SubscriptionMarkerId)(0x80000000 | hash);
 }
 
 /*
@@ -833,6 +843,13 @@ int SelvaSubscriptions_AddCallbackMarker(
 
     if (filter) {
         marker_set_filter(marker, filter_ctx, filter);
+
+        /*
+         * For now we just match to any field change and assume that the filter
+         * takes care of the actual matching. This will work fine for indexing
+         * but some other use cases might require another approach later on.
+         */
+        marker_set_fields(marker, "");
     }
 
     marker_set_action_owner_ctx(marker, owner_ctx);
@@ -1409,12 +1426,6 @@ static void defer_hierarchy_events(
 
         SVector_ForeachBegin(&it, &sub_markers->vec);
         while ((marker = SVector_Foreach(&it))) {
-            /*
-             * RFE Is this still true?
-             * We cannot call inhibitMarkerEvent() here because the client needs
-             * to refresh the subscription even if this node is not part of the
-             * marker filter.
-             */
             if (isHierarchyMarker(marker->marker_flags) &&
                 Selva_SubscriptionFilterMatch(ctx, node, marker)) {
                 marker->marker_action(ctx, hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY, node);

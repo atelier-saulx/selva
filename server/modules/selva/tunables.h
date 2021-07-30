@@ -73,6 +73,18 @@
 #define RPN_MAX_D                       256
 
 /*
+ * Dynamic Find Query Index Tunables.
+ */
+
+#define FIND_INDICES_MAX         100  /*!< Maximum number of indices. */
+#define FIND_LFU_PERIOD          1000 /*!< Refresh period [ms] */
+#define FIND_LFU_COUNT_INIT      500  /*!< Initial value for a new control block. */
+#define FIND_LFU_COUNT_INCR      100  /*!< Increment when the index is used. */
+#define FIND_LFU_COUNT_CREATE    1000 /*!< The count required to create an index. */
+#define FIND_LFU_COUNT_DISCARD   100  /*!< The count when the index is discarded; 0 = never. */
+#define FIND_LFU_COUNT_DESTROY   0    /*!< The count when the control block is destroyed. */
+
+/*
  * Async_task Tunables.
  */
 

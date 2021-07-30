@@ -17,6 +17,7 @@ OBJS := \
 	module/edge_constraint.o \
 	module/errors.o \
 	module/find.o \
+	module/find_index.o \
 	module/aggregate.o \
 	module/traversal.o \
 	module/hierarchy.o \
@@ -54,7 +55,8 @@ CFLAGS := $(IDIR) -include tunables.h \
 	-Wall -Wextra -Wno-unused-value -Wno-zero-length-array -Wno-c11-extensions \
 	-ggdb -O2 \
 	-fno-strict-aliasing \
-	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2
+	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2 \
+	-D REDISMODULE_EXPERIMENTAL_API=1
 CC ?= gcc
 
 
