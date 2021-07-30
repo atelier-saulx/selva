@@ -159,28 +159,7 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     }
 
     Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
-
-    /*
-     * Subscriptions.
-     * TODO It might make sense to move these to subscriptions.c
-     */
-    RB_INIT(&hierarchy->subs.head);
-    hierarchy->subs.missing = SelvaObject_New();
-    if (!hierarchy->subs.missing) {
-        SelvaModify_DestroyHierarchy(hierarchy);
-        hierarchy = NULL;
-        goto fail;
-    }
-    if (SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers)) {
-        SelvaModify_DestroyHierarchy(hierarchy);
-        hierarchy = NULL;
-        goto fail;
-    }
-    if (SelvaSubscriptions_InitDeferredEvents(hierarchy)) {
-        SelvaModify_DestroyHierarchy(hierarchy);
-        hierarchy = NULL;
-        goto fail;
-    }
+    Selva_Subscriptions_InitHierarchy(hierarchy);
 
     if(unlikely(SelvaModify_SetHierarchy(ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL) < 0)) {
         SelvaModify_DestroyHierarchy(hierarchy);

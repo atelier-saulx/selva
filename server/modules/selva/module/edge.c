@@ -232,7 +232,7 @@ int Edge_Has(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst
     return SVector_SearchIndex(&edge_field->arcs, dst_node) >= 0;
 }
 
-/* TODO Optimize by taking edgeField as an arg. */
+/* RFE Optimize by taking edgeField as an arg. */
 int Edge_Add(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,

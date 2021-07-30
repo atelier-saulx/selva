@@ -8,20 +8,14 @@
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
 
-int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy) {
+int Selva_Subscriptions_InitHierarchy(struct SelvaModify_Hierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
 
-    return !SVector_Init(&def->updates, 2, NULL) ||
-           !SVector_Init(&def->triggers, 3, NULL)
-           ? SELVA_SUBSCRIPTIONS_ENOMEM : 0;
-}
-
-int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers) {
-    if (!SVector_Init(&markers->vec, 0, NULL)) {
-        return SELVA_SUBSCRIPTIONS_ENOMEM;
-    }
-
-    markers->flags_filter = 0;
+    hierarchy->subs.missing = SelvaObject_New();
+    SVector_Init(&def->updates, 2, NULL);
+    SVector_Init(&def->triggers, 3, NULL);
+    SVector_Init(&hierarchy->subs.detached_markers, 0, NULL);
+    hierarchy->subs.detached_markers.flags_filter = 0;
 
     return 0;
 }

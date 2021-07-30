@@ -168,8 +168,16 @@ struct SelvaSubscriptions_DeferredEvents {
     SVector triggers; /*!< A set of Selva_SubscriptionMarkers */
 };
 
-int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers);
+/**
+ * Init subscriptions data structures in the hierarchy.
+ */
+int Selva_Subscriptions_InitHierarchy(struct SelvaModify_Hierarchy *hierarchy);
+
+/**
+ * Destroy all data structures of the subscriptions subsystem and cancel all deferred events.
+ */
 void SelvaSubscriptions_DestroyAll(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy);
+
 int SelvaSubscriptions_TraverseMarker(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const struct SelvaModify_HierarchyCallback *cb);
 int SelvaSubscriptions_Refresh(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id);
 void SelvaSubscriptions_RefreshByMarker(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SVector *markers);
@@ -202,7 +210,6 @@ void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaModify_Hierarchy *hierarchy,
         struct SelvaModify_HierarchyNode *node);
 
-int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hierarchy);
 
 void SelvaSubscriptions_InheritParent(

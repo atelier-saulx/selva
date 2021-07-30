@@ -344,9 +344,49 @@ static void destroy_all_sub_markers(RedisModuleCtx *ctx, SelvaModify_Hierarchy *
     }
 }
 
-/*
- * Destroy all data structures of the subscriptions subsystem and cancel all deferred events.
- */
+static int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers) {
+    if (!SVector_Init(&markers->vec, 0, marker_svector_compare)) {
+        return SELVA_SUBSCRIPTIONS_ENOMEM;
+    }
+
+    markers->flags_filter = 0;
+
+    return 0;
+}
+
+static int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy) {
+    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
+
+    return !SVector_Init(&def->updates, 2, SelvaSubscription_svector_compare) ||
+           !SVector_Init(&def->triggers, 3, marker_svector_compare)
+           ? SELVA_SUBSCRIPTIONS_ENOMEM : 0;
+}
+
+int Selva_Subscriptions_InitHierarchy(SelvaModify_Hierarchy *hierarchy) {
+    int err = 0;
+
+    RB_INIT(&hierarchy->subs.head);
+
+    hierarchy->subs.missing = SelvaObject_New();
+    if (!hierarchy->subs.missing) {
+        err = SELVA_ENOMEM;
+    }
+
+    if (SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers)) {
+        err = SELVA_ENOMEM;
+    }
+
+    if (SelvaSubscriptions_InitDeferredEvents(hierarchy)) {
+        err = SELVA_ENOMEM;
+    }
+
+    if (err) {
+        SelvaSubscriptions_DestroyAll(NULL, hierarchy);
+    }
+
+    return err;
+}
+
 void SelvaSubscriptions_DestroyAll(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy) {
     /*
      * If we destroy the defer vectors first then clearing the subs won't be
@@ -367,6 +407,7 @@ void SelvaSubscriptions_DestroyAll(RedisModuleCtx *ctx, SelvaModify_Hierarchy *h
 static void init_node_metadata_subs(
         Selva_NodeId id __unused,
         struct SelvaModify_HierarchyMetadata *metadata) {
+    /* TODO Should we handle ENOMEM? */
     SelvaSubscriptions_InitMarkersStruct(&metadata->sub_markers);
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_subs);
@@ -379,16 +420,6 @@ static void deinit_node_metadata_subs(
     SVector_Destroy(&metadata->sub_markers.vec);
 }
 SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_subs);
-
-int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers) {
-    if (!SVector_Init(&markers->vec, 0, marker_svector_compare)) {
-        return SELVA_SUBSCRIPTIONS_ENOMEM;
-    }
-
-    markers->flags_filter = 0;
-
-    return 0;
-}
 
 static struct Selva_Subscription *find_sub(SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id) {
     struct Selva_Subscription filter;
@@ -966,14 +997,6 @@ void SelvaSubscriptions_ClearAllMarkers(
         marker->marker_action(hierarchy, marker, SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY | SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY);
     }
     SVector_Clear(&metadata->sub_markers.vec);
-}
-
-int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy) {
-    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
-
-    return !SVector_Init(&def->updates, 2, SelvaSubscription_svector_compare) ||
-           !SVector_Init(&def->triggers, 3, marker_svector_compare)
-           ? SELVA_SUBSCRIPTIONS_ENOMEM : 0;
 }
 
 void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hierarchy) {

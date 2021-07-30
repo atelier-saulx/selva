@@ -47,7 +47,7 @@ static int agg_fn_count_obj(struct SelvaObject *obj __unused, struct AggregateCo
 }
 
 static int agg_fn_count_uniq_obj(struct SelvaObject *obj __unused, struct AggregateCommand_Args* args __unused) {
-    // TODO
+    /* TODO */
     return 0;
 }
 
