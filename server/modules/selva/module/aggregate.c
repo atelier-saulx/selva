@@ -224,6 +224,7 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
     if (take && rpn_ctx) {
         int err;
 
+        rpn_set_hierarchy_node(rpn_ctx, node);
         /* Set node_id to the register */
         rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, 0);
 
