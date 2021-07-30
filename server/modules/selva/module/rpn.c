@@ -932,13 +932,23 @@ static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn
     OPERAND(ctx, field);
     const char *field_str = OPERAND_GET_S(field);
     const size_t field_len = OPERAND_GET_S_LEN(field);
+    struct SelvaModify_HierarchyNode *node = ctx->node;
+
+    /*
+     * First check if it's a non-empty hierarchy/edge field.
+     */
+    if (node && SelvaHierarchy_IsNonEmptyField(node, field_str, field_len) > 0) {
+        return push_int_result(ctx, 1);
+    }
 
     obj = open_object(redis_ctx, ctx);
     if (!obj) {
-        return push_double_result(ctx, 0.0);
+        return push_int_result(ctx, 0);
     }
 
-    /* TODO Should we check hierarchy fields too? */
+    /*
+     * Finally check if it's a node object field.
+     */
     exists = !SelvaObject_ExistsStr(obj, field_str, field_len);
 
     return push_int_result(ctx, exists);
