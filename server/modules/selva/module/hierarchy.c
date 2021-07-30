@@ -2615,7 +2615,7 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     return REDISMODULE_OK;
 }
 
-static int SelvaVersion_AuxLoad(RedisModuleIO *io, int encver, int when) {
+static int SelvaVersion_AuxLoad(RedisModuleIO *io, int encver __unused, int when __unused) {
     selva_db_version_info.created_with = RedisModule_LoadString(io);
     selva_db_version_info.updated_with = RedisModule_LoadString(io);
 
@@ -2626,7 +2626,7 @@ static int SelvaVersion_AuxLoad(RedisModuleIO *io, int encver, int when) {
     return 0;
 }
 
-static void SelvaVersion_AuxSave(RedisModuleIO *io, int when) {
+static void SelvaVersion_AuxSave(RedisModuleIO *io, int when __unused) {
     if (selva_db_version_info.created_with) {
         RedisModule_SaveString(io, selva_db_version_info.created_with);
     } else {
