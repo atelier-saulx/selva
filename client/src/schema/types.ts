@@ -62,6 +62,7 @@ export type FieldSchemaObject = {
     [key: string]: FieldSchema
   }
   meta?: any
+  timeseries?: boolean
 }
 
 export type FieldSchemaJson = {
@@ -71,6 +72,7 @@ export type FieldSchemaJson = {
   }
   search?: SearchRaw | Search
   meta?: any
+  timeseries?: boolean
 }
 
 export type FieldSchemaRecord = {
@@ -78,6 +80,7 @@ export type FieldSchemaRecord = {
   values: FieldSchema
   search?: SearchRaw | Search
   meta?: any
+  timeseries?: boolean
 }
 
 export type FieldSchemaReferences = {
@@ -87,12 +90,14 @@ export type FieldSchemaReferences = {
   }
   search?: SearchRaw | Search
   meta?: any
+  timeseries?: boolean
 }
 
 export type FieldSchemaOther = {
   search?: SearchRaw | Search
   type: FieldType
   meta?: any
+  timeseries?: boolean
 }
 
 export type FieldSchemaArrayLike = {
@@ -100,6 +105,7 @@ export type FieldSchemaArrayLike = {
   type: 'set' | 'array'
   items: FieldSchema
   meta?: any
+  timeseries?: boolean
 }
 
 export type FieldSchema =
