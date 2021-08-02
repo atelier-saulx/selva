@@ -1,0 +1,267 @@
+import test from 'ava'
+import { connect } from '../src/index'
+import { start } from '@saulx/selva-server'
+import './assertions'
+import getPort from 'get-port'
+
+let srv
+let port: number
+
+test.before(async (t) => {
+  port = await getPort()
+  srv = await start({
+    port,
+  })
+  await new Promise((resolve, _reject) => {
+    setTimeout(resolve, 100)
+  })
+})
+
+test.beforeEach(async (t) => {
+  const client = connect({ port })
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: {
+        value: { type: 'number' },
+        nested: {
+          type: 'object',
+          properties: {
+            fun: { type: 'string' },
+          },
+        },
+      },
+    },
+    types: {
+      lekkerType: {
+        prefix: 'vi',
+        fields: {
+          strRec: {
+            type: 'record',
+            values: {
+              type: 'string',
+            },
+          },
+          textRec: {
+            type: 'record',
+            values: {
+              type: 'text',
+            },
+          },
+          objRec: {
+            type: 'record',
+            values: {
+              type: 'object',
+              properties: {
+                floatArray: { type: 'array', items: { type: 'float' } },
+                intArray: { type: 'array', items: { type: 'int' } },
+                objArray: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      hello: { type: 'string' },
+                      value: { type: 'int' },
+                    },
+                  },
+                },
+                hello: {
+                  type: 'string',
+                },
+                nestedRec: {
+                  type: 'record',
+                  values: {
+                    type: 'object',
+                    properties: {
+                      value: {
+                        type: 'number',
+                      },
+                      hello: {
+                        type: 'string',
+                      },
+                    },
+                  },
+                },
+                value: {
+                  type: 'number',
+                },
+                stringValue: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+          thing: { type: 'set', items: { type: 'string' } },
+          ding: {
+            type: 'object',
+            properties: {
+              dong: { type: 'set', items: { type: 'string' } },
+              texty: { type: 'text' },
+              dung: { type: 'number' },
+              dang: {
+                type: 'object',
+                properties: {
+                  dung: { type: 'number' },
+                  dunk: { type: 'string' },
+                },
+              },
+              dunk: {
+                type: 'object',
+                properties: {
+                  ding: { type: 'number' },
+                  dong: { type: 'number' },
+                },
+              },
+            },
+          },
+          dong: { type: 'json' },
+          dingdongs: { type: 'array', items: { type: 'string' } },
+          floatArray: { type: 'array', items: { type: 'float' } },
+          intArray: { type: 'array', items: { type: 'int' } },
+          refs: { type: 'references' },
+          value: { type: 'number', timeseries: true },
+          age: { type: 'number' },
+          auth: {
+            type: 'json',
+            timeseries: true,
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+      custom: {
+        prefix: 'cu',
+        fields: {
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json',
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+      club: {
+        prefix: 'cl',
+        fields: {
+          value: { type: 'number' },
+          age: { type: 'number' },
+          auth: {
+            type: 'json',
+          },
+          title: { type: 'text' },
+          description: { type: 'text' },
+          image: {
+            type: 'object',
+            properties: {
+              thumb: { type: 'string' },
+              poster: { type: 'string' },
+            },
+          },
+        },
+      },
+      match: {
+        prefix: 'ma',
+        fields: {
+          title: { type: 'text' },
+          value: { type: 'number' },
+          description: { type: 'text' },
+        },
+      },
+      yesno: {
+        prefix: 'yn',
+        fields: {
+          bolYes: { type: 'boolean' },
+          bolNo: { type: 'boolean' },
+        },
+      },
+    },
+  })
+
+  // A small delay is needed after setting the schema
+  await new Promise((r) => setTimeout(r, 100))
+
+  await client.destroy()
+})
+
+test.after(async (t) => {
+  const client = connect({ port })
+  await client.delete('root')
+  await client.destroy()
+  await srv.destroy()
+  await t.connectionsAreEmpty()
+})
+
+test.serial('get - basic value types timeseries', async (t) => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'viA',
+    title: {
+      en: 'nice!',
+    },
+    value: 25,
+    auth: {
+      // role needs to be different , different roles per scope should be possible
+      role: {
+        id: ['root'],
+        type: 'admin',
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viA',
+      id: true,
+      title: true,
+      value: true,
+    }),
+    {
+      id: 'viA',
+      title: { en: 'nice!' },
+      value: 25,
+    }
+  )
+
+  // t.deepEqual(
+  //   await client.get({
+  //     $id: 'viA',
+  //     auth: true,
+  //   }),
+  //   {
+  //     auth: { role: { id: ['root'], type: 'admin' } },
+  //   },
+  //   'get role'
+  // )
+
+  // not supported without 'properties'
+  // t.deepEqual(
+  //   await client.get({
+  //     $id: 'viA',
+  //     auth: { role: { id: true } }
+  //   }),
+  //   {
+  //     auth: { role: { id: ['root'] } }
+  //   },
+  //   'get role nested'
+  // )
+
+  await client.delete('root')
+
+  await client.destroy()
+})

@@ -12,6 +12,45 @@ import object from './object'
 import record from './record'
 import array from './array'
 
+type FieldParserFn = (
+  client: SelvaClient,
+  schema: Schema,
+  field: string,
+  payload: SetOptions,
+  result: (string | Buffer)[],
+  fields: FieldSchema,
+  type: string,
+  $lang?: string
+) => Promise<number>
+
+const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
+  fn: FieldParserFn
+) => {
+  return (
+    client: SelvaClient,
+    schema: Schema,
+    field: string,
+    payload: SetOptions,
+    result: (string | Buffer)[],
+    fields: FieldSchema,
+    type: string,
+    $lang?: string
+  ) => {
+    if (fields.timeseries) {
+      const timeseriesCtx = {
+        nodeType: type,
+        field,
+        fieldSchema: fields,
+        payload,
+      }
+
+      console.log('HELLO TIMESERIES', timeseriesCtx)
+    }
+
+    return fn(client, schema, field, payload, result, fields, type, $lang)
+  }
+}
+
 const fieldParsers: {
   [index: string]: (
     client: SelvaClient,
@@ -34,6 +73,10 @@ const fieldParsers: {
   object,
   array,
   record,
+}
+
+for (const fnName in fieldParsers) {
+  fieldParsers[fnName] = wrapTimeseries(fieldParsers[fnName])
 }
 
 export default fieldParsers
