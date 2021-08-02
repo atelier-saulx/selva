@@ -1389,46 +1389,52 @@ static enum rpn_error compile_str_literal(struct rpn_expression *expr, int i, co
 }
 
 static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, int i, const char *str, size_t len) {
-    char tmp[len + 1];
     const char type = *str;
     RESULT_OPERAND(v);
 
-    if (type != '"') {
+    if (type != '"' &&
+        type != '}' /* empty set */
+       ) {
+        fprintf(stderr, "Type: %c\n", type);
         /* Currently only string sets are supported. */
         return RPN_ERR_TYPE;
     }
 
-    memcpy(tmp, str, len);
-    tmp[len] = '\0';
-
     v = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
 
-    const char *delim = ",";
-    const char *group = "\"";
-    size_t tok_len = 0;
-    const char *rest = NULL;
-    for (const char *tok_str = tokenize(tmp, delim, group, &rest, &tok_len);
-         tok_str != NULL;
-         tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
-        int err;
-        if (tok_len == 0 || tok_str[0] != '\"' || tok_str[tok_len - 1] != '\"') {
+    if (type != '}') {
+        char tmp[len + 1];
+        const char *delim = ",";
+        const char *group = "\"";
+        size_t tok_len = 0;
+        const char *rest = NULL;
+
+        memcpy(tmp, str, len);
+        tmp[len] = '\0';
+
+        for (const char *tok_str = tokenize(tmp, delim, group, &rest, &tok_len);
+             tok_str != NULL;
+             tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
+            int err;
+            if (tok_len == 0 || tok_str[0] != '\"' || tok_str[tok_len - 1] != '\"') {
+                return RPN_ERR_ILLOPN;
+            }
+            tok_str++;
+            tok_len -= 2;
+
+            RedisModuleString *rms = RedisModule_CreateString(NULL, tok_str, tok_len);
+            if (!rms) {
+                return RPN_ERR_ENOMEM;
+            }
+
+            err = SelvaSet_Add(v->set, rms);
+            if (err) {
+                return err;
+            }
+        }
+        if (tok_len == 0) {
             return RPN_ERR_ILLOPN;
         }
-        tok_str++;
-        tok_len -= 2;
-
-        RedisModuleString *rms = RedisModule_CreateString(NULL, tok_str, tok_len);
-        if (!rms) {
-            return RPN_ERR_ENOMEM;
-        }
-
-        err = SelvaSet_Add(v->set, rms);
-        if (err) {
-            return err;
-        }
-    }
-    if (tok_len == 0) {
-        return RPN_ERR_ILLOPN;
     }
 
     return compile_push_literal(expr, i, v);
@@ -1490,9 +1496,9 @@ struct rpn_expression *rpn_compile(const char *input) {
         }
 
         if (err) {
-            fprintf(stderr, "%s:%d: RPN compilation error: %d\n",
+            fprintf(stderr, "%s:%d: RPN compilation error: %s\n",
                     __FILE__, __LINE__,
-                    err);
+                    err >= 0 && err < num_elem(rpn_str_error) ? rpn_str_error[err] : "Unknown");
 fail:
             rpn_destroy_expression(expr);
             return NULL;
