@@ -167,7 +167,7 @@ export default async function validateFind(
         path: path + '.$find.$traverse',
       })
     } else if (isTraverseByType(traverse)) {
-      // TODO
+      // FIXME: needs specific validation?
     } else if (
       typeof find.$traverse !== 'string' &&
       !Array.isArray(find.$traverse)

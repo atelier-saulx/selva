@@ -178,7 +178,7 @@ export default async function validateAggregate(
         path: path + '.$find.$traverse',
       })
     } else if (isTraverseByType(traverse)) {
-      // TODO
+      // FIXME: needs specific validation?
     } else if (
       typeof find.$traverse !== 'string' &&
       !Array.isArray(find.$traverse)

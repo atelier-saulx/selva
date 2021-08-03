@@ -196,6 +196,7 @@ export type GetOperationAggregate = GetOperationCommon & {
   inKeys?: string[]
   function: { name: string; args?: string[] }
   recursive?: boolean
+  byType?: TraverseByType
   options: { limit: number; offset: number; sort?: Sort | undefined }
   nested?: GetOperationFind
 }
@@ -209,6 +210,7 @@ export type GetOperationFind = GetOperationCommon & {
   nested?: GetOperationFind
   isNested?: boolean
   recursive?: boolean
+  byType?: TraverseByType
   options: { limit: number; offset: number; sort?: Sort | undefined }
 }
 
