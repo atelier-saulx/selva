@@ -18,11 +18,10 @@ function all2rpn(
   t: { $all: TraverseByTypeExpression[] }
 ): string {
   let result = ''
-  for (const expr of t.$all) {
-    result += ' ' + expr2rpn(types, expr)
+  for (let i = 0; i < t.$all.length; i++) {
+    const expr = t.$all[i]
+    result += ' ' + expr2rpn(types, expr) + (i > 0 ? ' z' : '')
   }
-
-  result += ' z'
 
   return result
 }
@@ -32,11 +31,12 @@ function first2rpn(
   t: { $first: TraverseByTypeExpression[] }
 ): string {
   let result = ''
-  for (const expr of t.$first) {
-    result += ' ' + expr2rpn(types, expr)
+  for (let i = 0; i < t.$first.length; i++) {
+    const expr = t.$first[i]
+    result += ' ' + expr2rpn(types, expr) + (i > 0 ? ' z' : '')
   }
 
-  result += ' z j'
+  result += ' j'
 
   return result
 }
@@ -56,7 +56,7 @@ export default function bfsExpr2rpn(
     const valueExpr = expr2rpn(types, rule)
 
     const typePrefix = types[typeName].prefix
-    const ternSegment = ` ${valueExpr} ${typePrefix} e T`
+    const ternSegment = `${valueExpr} ${typePrefix} e T`
 
     rpn = ternSegment + rpn
   }
