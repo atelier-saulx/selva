@@ -1735,18 +1735,20 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
         return RPN_ERR_BADSTK;
     }
 
-    if (!res->set) {
+    if (res->set) {
+        if (res->flags.regist) {
+            SelvaSet_Union(out->type, out, res->set, NULL);
+        } else {
+            /* Safe to move the strings. */
+            SelvaSet_Merge(out, res->set);
+        }
+        free_rpn_operand(&res);
+    } else if (to_bool(res)) {
+        /* However, if res is falsy we interpret it as meaning an empty set. */
         free_rpn_operand(&res);
         return RPN_ERR_TYPE;
     }
 
-    if (res->flags.regist) {
-        SelvaSet_Union(out->type, out, res->set, NULL);
-    } else {
-        /* Safe to move the strings. */
-        SelvaSet_Merge(out, res->set);
-    }
-    free_rpn_operand(&res);
 
     return RPN_ERR_OK;
 }
