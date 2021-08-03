@@ -1,5 +1,5 @@
 import { SelvaClient } from '../../'
-import { GetOperation, GetResult } from '../types'
+import { GetOperation, GetResult, TraverseByType } from '../types'
 import { FieldSchema } from '../../schema'
 import { setNestedResult, getNestedSchema } from '../utils'
 import resolveId from '../resolveId'
@@ -89,8 +89,14 @@ export function sourceFieldToDir(
 export function sourceFieldToFindArgs(
   fieldSchema: FieldSchema | null,
   sourceField: string,
-  recursive: boolean
+  recursive: boolean,
+  byType?: TraverseByType
 ): [SubscriptionMarker['type'], string?] {
+  if (byType) {
+    // TODO: create rpn expression
+    return ['bfs_expression', '']
+  }
+
   // if fieldSchema is null it usually means that the caller needs to do an op
   // over multiple nodes and thus it's not possible to determine an optimal
   // hierarchy traversal method. We'll fallback to bfs_expression.
