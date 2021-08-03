@@ -90,6 +90,25 @@ console.log(
       },
     },
     {
+      match: false,
+      $any: { $all: ['parents', 'things'] },
+    }
+  )
+)
+console.log(
+  bfsExpr2rpn(
+    {
+      team: {
+        prefix: 'te',
+      },
+      league: {
+        prefix: 'le',
+      },
+      match: {
+        prefix: 'ma',
+      },
+    },
+    {
       team: { $first: [{ $all: ['divisions', 'leagues'] }, 'parents'] },
       match: { $all: ['parents', 'clubs'] },
       $any: 'parents',
