@@ -72,9 +72,27 @@ export type TraverseOptions = {
   // TODO: add $filter, $limit, $offset
 }
 
+export type TraverseByTypeExpression =
+  | string
+  | {
+      $first?: TraverseByTypeExpression[]
+      $all?: TraverseByTypeExpression[]
+    }
+
+export type TraverseByType = {
+  $any: TraverseByTypeExpression
+  [k: string]: TraverseByTypeExpression
+}
+
 export type Find = {
   $db?: string
-  $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
+  $traverse?:
+    | 'descendants'
+    | 'ancestors'
+    | string
+    | string[]
+    | TraverseOptions
+    | TraverseByType
   $recursive?: boolean
   $filter?: Filter | Filter[]
   $find?: Find
@@ -82,7 +100,13 @@ export type Find = {
 
 export type Aggregate = {
   $db?: string
-  $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
+  $traverse?:
+    | 'descendants'
+    | 'ancestors'
+    | string
+    | string[]
+    | TraverseOptions
+    | TraverseByType
   $filter?: Filter | Filter[]
   $recursive?: boolean
   $function?: string | { $name: string; $args: string[] }
