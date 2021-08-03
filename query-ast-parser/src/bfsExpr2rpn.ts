@@ -23,7 +23,7 @@ function all2rpn(
     result += ' ' + expr2rpn(types, expr) + (i > 0 ? ' z' : '')
   }
 
-  return result
+  return result.slice(1)
 }
 
 function first2rpn(
@@ -38,7 +38,7 @@ function first2rpn(
 
   result += ' j'
 
-  return result
+  return result.slice(1)
 }
 
 export default function bfsExpr2rpn(
@@ -56,7 +56,7 @@ export default function bfsExpr2rpn(
     const valueExpr = expr2rpn(types, rule)
 
     const typePrefix = types[typeName].prefix
-    const ternSegment = `${valueExpr} ${typePrefix} e T`
+    const ternSegment = ` ${valueExpr} ${typePrefix} e T`
 
     rpn = ternSegment + rpn
   }
