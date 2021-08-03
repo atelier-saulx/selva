@@ -73,6 +73,7 @@ export type TraverseOptions = {
 }
 
 export type TraverseByTypeExpression =
+  | false
   | string
   | {
       $first?: TraverseByTypeExpression[]
