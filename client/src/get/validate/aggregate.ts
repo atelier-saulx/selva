@@ -8,7 +8,7 @@ import { get } from '..'
 import { addExtraQuery, ExtraQueries } from '.'
 import validateFind from './find'
 import validateSort from './sort'
-import { isTraverseOptions } from '../utils'
+import { isTraverseByType, isTraverseOptions } from '../utils'
 
 // import fetch from 'node-fetch'
 
@@ -177,6 +177,8 @@ export default async function validateAggregate(
         value: result.traverse,
         path: path + '.$find.$traverse',
       })
+    } else if (isTraverseByType(traverse)) {
+      // TODO
     } else if (
       typeof find.$traverse !== 'string' &&
       !Array.isArray(find.$traverse)

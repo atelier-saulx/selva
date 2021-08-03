@@ -6,7 +6,7 @@ import validateFilter from './filter'
 
 import { get } from '..'
 import { addExtraQuery, ExtraQueries } from '.'
-import { isTraverseOptions } from '../utils'
+import { isTraverseByType, isTraverseOptions } from '../utils'
 
 // import fetch from 'node-fetch'
 
@@ -166,6 +166,8 @@ export default async function validateFind(
         value: result.traverse,
         path: path + '.$find.$traverse',
       })
+    } else if (isTraverseByType(traverse)) {
+      // TODO
     } else if (
       typeof find.$traverse !== 'string' &&
       !Array.isArray(find.$traverse)

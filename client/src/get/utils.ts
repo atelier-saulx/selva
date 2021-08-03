@@ -1,9 +1,15 @@
 import { FieldSchema, Schema } from '../schema'
-import { GetResult, TraverseOptions } from './types'
+import { GetResult, TraverseByType, TraverseOptions } from './types'
 
 export function isTraverseOptions(traverse: any): traverse is TraverseOptions {
   return (
     typeof traverse === 'object' && !Array.isArray(traverse) && traverse.$field
+  )
+}
+
+export function isTraverseByType(traverse: any): traverse is TraverseByType {
+  return (
+    typeof traverse === 'object' && !Array.isArray(traverse) && traverse.$any
   )
 }
 
