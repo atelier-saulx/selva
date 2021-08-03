@@ -1,5 +1,18 @@
 import { TraverseByType, TraverseByTypeExpression } from './types'
 
+function expr2rpn(
+  types: Record<string, { prefix?: string }>,
+  rule: TraverseByTypeExpression
+): string {
+  return typeof rule === 'string'
+    ? `{"${rule}"}`
+    : rule === false
+    ? '{}'
+    : rule.$all
+    ? all2rpn(types, { $all: rule.$all })
+    : first2rpn(types, { $first: rule.$first })
+}
+
 function all2rpn(
   types: Record<string, { prefix?: string }>,
   t: { $all: TraverseByTypeExpression[] }
@@ -12,19 +25,6 @@ function first2rpn(
   t: { $first: TraverseByTypeExpression[] }
 ): string {
   return ''
-}
-
-function expr2rpn(
-  types: Record<string, { prefix?: string }>,
-  rule: TraverseByTypeExpression
-): string {
-  return typeof rule === 'string'
-    ? rule
-    : rule === false
-    ? '{}'
-    : rule.$all
-    ? all2rpn(types, { $all: rule.$all })
-    : first2rpn(types, { $first: rule.$first })
 }
 
 export default function bfsExpr2rpn(
