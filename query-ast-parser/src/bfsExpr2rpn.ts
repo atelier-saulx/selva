@@ -17,14 +17,28 @@ function all2rpn(
   types: Record<string, { prefix?: string }>,
   t: { $all: TraverseByTypeExpression[] }
 ): string {
-  return ''
+  let result = ''
+  for (const expr of t.$all) {
+    result += ' ' + expr2rpn(types, expr)
+  }
+
+  result += ' z'
+
+  return result
 }
 
 function first2rpn(
   types: Record<string, { prefix?: string }>,
   t: { $first: TraverseByTypeExpression[] }
 ): string {
-  return ''
+  let result = ''
+  for (const expr of t.$first) {
+    result += ' ' + expr2rpn(types, expr)
+  }
+
+  result += ' z j'
+
+  return result
 }
 
 export default function bfsExpr2rpn(
