@@ -38,3 +38,25 @@ export {
   convertNow,
   optimizeTypeFilters,
 }
+
+// TODO: remove
+console.log(
+  bfsExpr2rpn(
+    {
+      team: {
+        prefix: 'te',
+      },
+      league: {
+        prefix: 'le',
+      },
+      match: {
+        prefix: 'ma',
+      },
+    },
+    {
+      team: { $first: [{ $all: ['divisions', 'leagues'] }, 'parents'] },
+      match: { $all: ['parents', 'clubs'] },
+      $any: 'parents',
+    }
+  )
+)
