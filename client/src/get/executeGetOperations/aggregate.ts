@@ -159,7 +159,7 @@ async function checkForNextRefresh(
         makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
         // TODO proper dir
-        sourceField, //...sourceFieldToFindArgs(sourceFieldSchema, sourceField, false),
+        ...sourceFieldToFindArgs(null, sourceField, false),
         'order',
         f.$field,
         'asc',

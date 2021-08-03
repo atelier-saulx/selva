@@ -232,7 +232,7 @@ async function checkForNextRefresh(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
-        sourceField,
+        ...sourceFieldToFindArgs(null, sourceField, false),
         'order',
         f.$field,
         'asc',
