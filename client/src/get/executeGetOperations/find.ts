@@ -362,7 +362,12 @@ export const findIds = async (
         const schema = client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToDir(sourceFieldSchema, sourceField),
+          ...sourceFieldToDir(
+            schema,
+            sourceFieldSchema,
+            sourceField,
+            op.byType
+          ),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -380,7 +385,7 @@ export const findIds = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(sourceFieldSchema, sourceField),
+        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -532,7 +537,12 @@ const findFields = async (
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
 
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToDir(sourceFieldSchema, sourceField),
+          ...sourceFieldToDir(
+            schema,
+            sourceFieldSchema,
+            sourceField,
+            op.byType
+          ),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -550,7 +560,7 @@ const findFields = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(sourceFieldSchema, sourceField),
+        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,

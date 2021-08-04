@@ -60,9 +60,18 @@ export function adler32(marker: SubscriptionMarker): number {
 }
 
 export function sourceFieldToDir(
+  schema: Schema,
   fieldSchema: FieldSchema,
-  field: string
+  field: string,
+  byType?: TraverseByType
 ): { type: TraversalType; refField?: string } {
+  if (byType) {
+    return {
+      type: 'bfs_expression',
+      refField: bfsExpr2rpn(schema.types, byType),
+    }
+  }
+
   const defaultFields: Array<TraversalType> = [
     'children',
     'parents',
@@ -104,7 +113,7 @@ export function sourceFieldToFindArgs(
     return ['bfs_expression', `{"${sourceField}"}`]
   }
 
-  const t = sourceFieldToDir(fieldSchema, sourceField)
+  const t = sourceFieldToDir(schema, fieldSchema, sourceField, byType)
   return recursive && t.refField
     ? ['bfs_expression', `{"${sourceField}"}`]
     : t.refField
