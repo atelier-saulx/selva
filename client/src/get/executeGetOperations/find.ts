@@ -233,7 +233,12 @@ async function checkForNextRefresh(
         makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
         // TODO: needs byType expression
-        ...sourceFieldToFindArgs(null, sourceField, false),
+        ...sourceFieldToFindArgs(
+          client.schemas[ctx.db],
+          null,
+          sourceField,
+          false
+        ),
         'order',
         f.$field,
         'asc',
@@ -395,6 +400,7 @@ export const findIds = async (
       makeLangArg(schema.languages, lang),
       '___selva_hierarchy',
       ...sourceFieldToFindArgs(
+        client.schemas[ctx.db],
         sourceFieldSchema,
         sourceField,
         op.recursive,
@@ -564,6 +570,7 @@ const findFields = async (
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       ...sourceFieldToFindArgs(
+        client.schemas[ctx.db],
         sourceFieldSchema,
         sourceField,
         op.recursive,

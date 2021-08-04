@@ -159,7 +159,12 @@ async function checkForNextRefresh(
         makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
         // TODO proper dir, needs byType
-        ...sourceFieldToFindArgs(null, sourceField, false),
+        ...sourceFieldToFindArgs(
+          client.schemas[ctx.db],
+          null,
+          sourceField,
+          false
+        ),
         'order',
         f.$field,
         'asc',
@@ -385,6 +390,7 @@ const executeAggregateOperation = async (
       '___selva_hierarchy',
       FN_TO_ENUM[op.function.name] || '0',
       ...sourceFieldToFindArgs(
+        client.schemas[ctx.db],
         sourceFieldSchema,
         sourceField,
         false,

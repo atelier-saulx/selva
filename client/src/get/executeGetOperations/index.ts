@@ -8,7 +8,7 @@ import { GetOptions } from '../'
 import find from './find'
 import aggregate from './aggregate'
 import inherit from './inherit'
-import { Rpn } from '@saulx/selva-query-ast-parser'
+import { Rpn, bfsExpr2rpn } from '@saulx/selva-query-ast-parser'
 import { FieldSchemaArrayLike, Schema } from '~selva/schema'
 import { ServerDescriptor } from '~selva/types'
 import { makeLangArg } from './util'
@@ -87,14 +87,14 @@ export function sourceFieldToDir(
 }
 
 export function sourceFieldToFindArgs(
+  schema: Schema,
   fieldSchema: FieldSchema | null,
   sourceField: string,
   recursive: boolean,
   byType?: TraverseByType
 ): [SubscriptionMarker['type'], string?] {
   if (byType) {
-    // TODO: create rpn expression
-    return ['bfs_expression', '']
+    return ['bfs_expression', bfsExpr2rpn(schema.types, byType)]
   }
 
   // if fieldSchema is null it usually means that the caller needs to do an op
