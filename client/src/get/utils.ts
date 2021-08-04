@@ -9,7 +9,9 @@ export function isTraverseOptions(traverse: any): traverse is TraverseOptions {
 
 export function isTraverseByType(traverse: any): traverse is TraverseByType {
   return (
-    typeof traverse === 'object' && !Array.isArray(traverse) && traverse.$any
+    typeof traverse === 'object' &&
+    !Array.isArray(traverse) &&
+    traverse.$any !== undefined
   )
 }
 
