@@ -1110,13 +1110,13 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
             /*
              * TODO If we are careful we could potentially reuse the original string.
              */
-            s = RedisModule_CreateString(redis_ctx, field_str, field_len);
+            s = RedisModule_CreateString(NULL, field_str, field_len);
             if (!s) {
                 return RPN_ERR_ENOMEM;
             }
 
             /* TODO Handle errors and retain string */
-            SelvaSet_AddRms(result->set, s);
+            SelvaSet_Add(result->set, s);
             break;
         }
     }
