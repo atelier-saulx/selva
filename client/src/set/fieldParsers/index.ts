@@ -44,7 +44,7 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
         payload,
       }
 
-      console.log('HELLO TIMESERIES', timeseriesCtx)
+      console.log('HELLO TIMESERIES', JSON.stringify(timeseriesCtx, null, 2))
     }
 
     return fn(client, schema, field, payload, result, fields, type, $lang)

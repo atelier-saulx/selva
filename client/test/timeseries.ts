@@ -128,6 +128,7 @@ test.beforeEach(async (t) => {
           title: { type: 'text' },
           description: { type: 'text' },
           image: {
+            timeseries: true,
             type: 'object',
             properties: {
               thumb: { type: 'string' },
@@ -221,6 +222,9 @@ test.serial('get - basic value types timeseries', async (t) => {
         id: ['root'],
         type: 'admin',
       },
+    },
+    image: {
+      thumb: 'lol',
     },
   })
 
