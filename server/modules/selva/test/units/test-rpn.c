@@ -449,6 +449,22 @@ static char * test_selvaset_union(void)
     return NULL;
 }
 
+static char * test_selvaset_empty(void)
+{
+    enum rpn_error err;
+    const char expr_str[] = "\"e\" {} a";
+    int res;
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    err = rpn_bool(NULL, ctx, expr, &res);
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("Not found", res, 0);
+
+    return NULL;
+}
+
 static char * test_selvaset_ill(void)
 {
     const char expr_str1[] = "{\"abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\",\"nice\"";
@@ -484,5 +500,6 @@ void all_tests(void)
     pu_def_test(test_ternary, PU_RUN);
     pu_def_test(test_selvaset_inline, PU_RUN);
     pu_def_test(test_selvaset_union, PU_RUN);
+    pu_def_test(test_selvaset_empty, PU_RUN);
     pu_def_test(test_selvaset_ill, PU_RUN);
 }

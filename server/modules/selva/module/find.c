@@ -1491,8 +1491,9 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            fprintf(stderr, "%s:%d: Find failed. dir: %s node_id: \"%.*s\"\n",
+            fprintf(stderr, "%s:%d: Find failed. err: %s dir: %s node_id: \"%.*s\"\n",
                     __FILE__, __LINE__,
+                    getSelvaErrorStr(err),
                     SelvaTraversal_Dir2str(dir),
                     (int)SELVA_NODE_ID_SIZE, nodeId);
         }

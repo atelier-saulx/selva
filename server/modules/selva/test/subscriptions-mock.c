@@ -14,7 +14,7 @@ int Selva_Subscriptions_InitHierarchy(struct SelvaModify_Hierarchy *hierarchy) {
     hierarchy->subs.missing = SelvaObject_New();
     SVector_Init(&def->updates, 2, NULL);
     SVector_Init(&def->triggers, 3, NULL);
-    SVector_Init(&hierarchy->subs.detached_markers, 0, NULL);
+    SVector_Init(&hierarchy->subs.detached_markers.vec, 0, NULL);
     hierarchy->subs.detached_markers.flags_filter = 0;
 
     return 0;

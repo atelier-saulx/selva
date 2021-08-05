@@ -1,5 +1,7 @@
+import { Client } from 'pg'
 import { Options, ServerOptions } from './types'
 import { SelvaServer, startServer } from './server'
+import PostgresManager from './server/postgresManager'
 import getPort from 'get-port'
 import chalk from 'chalk'
 import os from 'os'
@@ -186,6 +188,39 @@ export async function startSubscriptionRegistry(opts: Options) {
     throw new Error(err)
   }
   return startServer('subscriptionRegistry', parsedOpts)
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+export async function startPostgresDb(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+  const password = `baratta`
+  const db = new PostgresManager({
+    port: parsedOpts.port,
+    password,
+    name: `main`,
+  })
+  db.start()
+
+  let ctr = 0
+  while (ctr < 1000) {
+    ++ctr
+    try {
+      const client = new Client({
+        connectionString: `postgres://postgres:${password}@127.0.0.1:${parsedOpts.port}`,
+      })
+      await client.connect()
+      await client.query(`select 1`, [])
+      await client.end()
+      break
+    } catch (e) {
+      // nop
+    }
+    await sleep(1000)
+  }
+  // ready for use
 }
 
 // make a registry, then add origin, then add subs manager
