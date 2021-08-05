@@ -20,7 +20,9 @@ async function ensureStarted(node: PostgresManager) {
   while (ctr < 1000) {
     ++ctr
     try {
-      const client = new Client({ connectionString: `postgres://postgres:${password}@127.0.0.1:${port}` })
+      const client = new Client({
+        connectionString: `postgres://postgres:${password}@127.0.0.1:${port}`,
+      })
       await client.connect()
       await client.query(`select 1`, [])
       await client.end()
@@ -37,17 +39,24 @@ async function main() {
   await Promise.all(nodes.map((node) => node.start()))
   await Promise.all(nodes.map((node) => ensureStarted(node)))
 
-  const masterClient = new PG({ connectionString: `postgres://postgres:${password}@127.0.0.1:${master.getPort()}` })
-  const node1Client = new PG({ connectionString: `postgres://postgres:${password}@127.0.0.1:${node1.getPort()}` })
-  const node2Client = new PG({ connectionString: `postgres://postgres:${password}@127.0.0.1:${node2.getPort()}` })
+  const masterClient = new PG({
+    connectionString: `postgres://postgres:${password}@127.0.0.1:${master.getPort()}`,
+  })
+  const node1Client = new PG({
+    connectionString: `postgres://postgres:${password}@127.0.0.1:${node1.getPort()}`,
+  })
+  const node2Client = new PG({
+    connectionString: `postgres://postgres:${password}@127.0.0.1:${node2.getPort()}`,
+  })
 
   await masterClient.execute(`CREATE EXTENSION postgres_fdw`, [])
   await node1Client.execute(`CREATE EXTENSION postgres_fdw`, [])
   await node2Client.execute(`CREATE EXTENSION postgres_fdw`, [])
 
-  
-  function createServerSQL (nodeName: string, nodePort: number): string {
-    return `CREATE SERVER ${nodeName} FOREIGN DATA WRAPPER postgres_fdw OPTIONS (dbname 'postgres', host '192.168.57.12', port ${`'` + nodePort + `'`});`
+  function createServerSQL(nodeName: string, nodePort: number): string {
+    return `CREATE SERVER ${nodeName} FOREIGN DATA WRAPPER postgres_fdw OPTIONS (dbname 'postgres', host '192.168.57.12', port ${
+      `'` + nodePort + `'`
+    });`
   }
 
   console.log(`Create SERVER`)
@@ -55,13 +64,14 @@ async function main() {
   await masterClient.execute(createServerSQL(`node2`, node2.getPort()), [])
 
   function createUserMappingSQL(nodeName: string, password: string) {
-    return `CREATE USER MAPPING for postgres SERVER ${nodeName} OPTIONS (user 'postgres', password ${`'` + password + `'`});`
+    return `CREATE USER MAPPING for postgres SERVER ${nodeName} OPTIONS (user 'postgres', password ${
+      `'` + password + `'`
+    });`
   }
   console.log(`Create USER`)
 
   await masterClient.execute(createUserMappingSQL(`node1`, password), [])
   await masterClient.execute(createUserMappingSQL(`node2`, password), [])
-
 
   //const table = `CREATE TABLE analytics_data (created: TIMESTAMP, properties: jsonb)`
   const table = `
@@ -87,24 +97,39 @@ async function main() {
   `
 
   console.log(`Create Table`)
-  await masterClient.execute(`CREATE TABLE IF NOT EXISTS weather_metrics ${table} PARTITION BY LIST(city_name) `, [])
-  await node1Client.execute(`CREATE TABLE IF NOT EXISTS weather_metrics ${table}`, [])
-  await node2Client.execute(`CREATE TABLE IF NOT EXISTS weather_metrics ${table}`, [])
+  await masterClient.execute(
+    `CREATE TABLE IF NOT EXISTS weather_metrics ${table} PARTITION BY LIST(city_name) `,
+    []
+  )
+  await node1Client.execute(
+    `CREATE TABLE IF NOT EXISTS weather_metrics ${table}`,
+    []
+  )
+  await node2Client.execute(
+    `CREATE TABLE IF NOT EXISTS weather_metrics ${table}`,
+    []
+  )
 
-  await masterClient.execute(`create foreign table weather_non_usa  partition of weather_metrics  for values in ('Vienna', 'Pietermaritzburg', 'Lisbon','Nairobi','Stockholm','Toronto') SERVER node1 OPTIONS (schema_name 'public', table_name 'weather_metrics', batch_size '10000');`, [])
-  await masterClient.execute(`create foreign table weather_usa  partition of weather_metrics  for values in ('Austin', 'New York', 'San Francisco', 'Princeton') SERVER node2 OPTIONS (schema_name 'public', table_name 'weather_metrics', batch_size '10000');`, [])
+  await masterClient.execute(
+    `create foreign table weather_non_usa  partition of weather_metrics  for values in ('Vienna', 'Pietermaritzburg', 'Lisbon','Nairobi','Stockholm','Toronto') SERVER node1 OPTIONS (schema_name 'public', table_name 'weather_metrics', batch_size '10000');`,
+    []
+  )
+  await masterClient.execute(
+    `create foreign table weather_usa  partition of weather_metrics  for values in ('Austin', 'New York', 'San Francisco', 'Princeton') SERVER node2 OPTIONS (schema_name 'public', table_name 'weather_metrics', batch_size '10000');`,
+    []
+  )
 
- 'Vienna'
- 'Pietermaritzburg'
- 'Lisbon'
- 'Nairobi'
- 'Stockholm'
- 'Toronto'
+  ;('Vienna')
+  ;('Pietermaritzburg')
+  ;('Lisbon')
+  ;('Nairobi')
+  ;('Stockholm')
+  ;('Toronto')
 
- 'Austin'
- 'New York'
- 'San Francisco'
- 'Princeton'
+  ;('Austin')
+  ;('New York')
+  ;('San Francisco')
+  ;('Princeton')
   console.log(table)
   //await masterClient.execute(`
   //    CREATE FOREIGN TABLE weather1
@@ -118,7 +143,6 @@ async function main() {
   //    SERVER node2
   //    OPTIONS (schema_name 'public', table_name 'weather_metrics');
   //`, [])
-
 }
 
 process.on('SIGINT', function () {
