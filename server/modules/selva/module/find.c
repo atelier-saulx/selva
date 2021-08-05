@@ -66,8 +66,7 @@ static int send_edge_field(
         return 0;
     }
 
-    const struct EdgeFieldConstraint* constraint = Edge_GetFieldConstraint(edge_field);
-    if (!constraint->flags.single_ref) {
+    if (!edge_field->constraint || !(edge_field->constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
         return SELVA_EINTYPE;
     }
 
@@ -76,7 +75,7 @@ static int send_edge_field(
     if (!dst_node) {
         Selva_NodeId node_id;
 
-        SelvaModify_HierarchyGetNodeId(node_id, node);
+        SelvaHierarchy_GetNodeId(node_id, node);
         fprintf(stderr, "%s:%d: Edge %.*s.%.*s shouldn't contain NULL arcs\n",
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE, node_id,
@@ -91,7 +90,7 @@ static int send_edge_field(
      */
 
     Selva_NodeId dst_id;
-    SelvaModify_HierarchyGetNodeId(dst_id, dst_node);
+    SelvaHierarchy_GetNodeId(dst_id, dst_node);
 
     RedisModuleString *dst_id_rms;
     dst_id_rms = RedisModule_CreateString(ctx, dst_id, Selva_NodeIdLen(dst_id));
@@ -151,7 +150,7 @@ static int send_node_field(
     Selva_NodeId nodeId;
     int err;
 
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
 
     RedisModuleString *full_field_name;
     if (field_prefix_str) {
@@ -212,7 +211,7 @@ static int send_node_field(
         /*
          * Check if the field name is an edge field.
          */
-        struct SelvaModify_HierarchyMetadata *metadata = SelvaModify_HierarchyGetNodeMetadataByPtr(node);
+        struct SelvaModify_HierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
         struct SelvaObject *edges = metadata->edge_fields.edges;
 
         if (edges) {
@@ -271,7 +270,7 @@ static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaM
     RedisModuleString *id;
     int err;
 
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
 
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
     if (!id) {
@@ -889,11 +888,12 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
 
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
 
     if (take && rpn_ctx) {
         int err;
 
+        rpn_set_hierarchy_node(rpn_ctx, node);
         /* Set node_id to the register */
         rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, 0);
 
@@ -1491,8 +1491,9 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            fprintf(stderr, "%s:%d: Find failed. dir: %s node_id: \"%.*s\"\n",
+            fprintf(stderr, "%s:%d: Find failed. err: %s dir: %s node_id: \"%.*s\"\n",
                     __FILE__, __LINE__,
+                    getSelvaErrorStr(err),
                     SelvaTraversal_Dir2str(dir),
                     (int)SELVA_NODE_ID_SIZE, nodeId);
         }

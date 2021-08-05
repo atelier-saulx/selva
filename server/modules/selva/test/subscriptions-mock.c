@@ -8,25 +8,19 @@
 struct SelvaModify_Hierarchy;
 struct SelvaModify_HierarchyMetadata;
 
-int SelvaSubscriptions_InitDeferredEvents(struct SelvaModify_Hierarchy *hierarchy) {
+int Selva_Subscriptions_InitHierarchy(struct SelvaModify_Hierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
 
-    return !SVector_Init(&def->updates, 2, NULL) ||
-           !SVector_Init(&def->triggers, 3, NULL)
-           ? SELVA_SUBSCRIPTIONS_ENOMEM : 0;
-}
-
-int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers) {
-    if (!SVector_Init(&markers->vec, 0, NULL)) {
-        return SELVA_SUBSCRIPTIONS_ENOMEM;
-    }
-
-    markers->flags_filter = 0;
+    hierarchy->subs.missing = SelvaObject_New();
+    SVector_Init(&def->updates, 2, NULL);
+    SVector_Init(&def->triggers, 3, NULL);
+    SVector_Init(&hierarchy->subs.detached_markers.vec, 0, NULL);
+    hierarchy->subs.detached_markers.flags_filter = 0;
 
     return 0;
 }
 
-void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy) {
+void SelvaSubscriptions_DestroyAll(struct RedisModuleCtx *ctx __unused, struct SelvaModify_Hierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
 
     SVector_Destroy(&def->updates);
@@ -34,8 +28,9 @@ void SelvaSubscriptions_DestroyAll(struct SelvaModify_Hierarchy *hierarchy) {
     SelvaObject_Destroy(hierarchy->subs.missing);
 }
 void SelvaSubscriptions_ClearAllMarkers(
+        struct RedisModuleCtx *ctx __unused,
         struct SelvaModify_Hierarchy *hierarchy __unused,
-        struct SelvaModify_HierarchyNode *node) {
+        struct SelvaModify_HierarchyNode *node __unused) {
     return;
 }
 
@@ -69,6 +64,10 @@ void SelvaSubscriptions_InheritEdge(
         const char *field_str __unused,
         size_t field_len __unused) {
     return;
+}
+
+int SelvaSubscriptions_DeleteMarker(RedisModuleCtx *ctx __unused, SelvaModify_Hierarchy *hierarchy __unused, struct Selva_Subscription *sub __unused, Selva_SubscriptionMarkerId marker_id __unused) {
+    return 0;
 }
 
 void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaModify_Hierarchy *hierarchy __unused, const char *id_str __unused, size_t id_len __unused) {

@@ -44,7 +44,7 @@ export const verifiers = {
   timestamp: (payload: 'now' | number) => {
     return (
       payload === 'now' ||
-      (typeof payload === 'number' && Number.isInteger(payload) && payload > 0)
+      (typeof payload === 'number' && Number.isInteger(payload))
     )
   },
   url: (payload: string) => {

@@ -66,8 +66,9 @@ struct SelvaObjectPointerOpts {
  * Pointer types.
  * These types are needed for the serialization of opaque pointer types.
  */
-#define SELVA_OBJECT_POINTER_EDGE 1
-#define SELVA_OBJECT_POINTER_LANG 2
+#define SELVA_OBJECT_POINTER_EDGE               1
+#define SELVA_OBJECT_POINTER_EDGE_CONSTRAINTS   2
+#define SELVA_OBJECT_POINTER_LANG               3
 
 /**
  * Register SELVA_OBJECT_POINTER options statically for RDB loading.
@@ -181,7 +182,10 @@ int SelvaObject_GetWithWildcardStr(
         int resp_path_start_idx,
         unsigned int flags);
 /**
- * Foreach value in object.
+ * Foreach value of specified type in an object.
+ * Visiting all subobjects can be achieved by using
+ * SelvaObject_ForeachValueType() and recursing when a SELVA_OBJECT_OBJECT is
+ * found.
  * @param name_out is a direct pointer to the name and it will be rendered invalid if the key is deleted.
  */
 const void *SelvaObject_ForeachValue(
@@ -189,6 +193,19 @@ const void *SelvaObject_ForeachValue(
         SelvaObject_Iterator **iterator,
         const char **name_out,
         enum SelvaObjectType type);
+
+/**
+ * Foreach value in an object.
+ * @param name_out is set to the name of the key found.
+ * @param type_out is set to the type of the returned value.
+ */
+const void *SelvaObject_ForeachValueType(struct SelvaObject *obj, void **iterator, const char **name_out, enum SelvaObjectType *type_out);
+
+/**
+ * Get a string name of a SelvaObjectType.
+ * @param type is the type.
+ * @param len is an optional argument that will be set to the size of the string returned.
+ */
 const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len);
 
 /*

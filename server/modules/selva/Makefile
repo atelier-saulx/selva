@@ -1,16 +1,19 @@
 # find the OS
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
+SELVA_VERSION := $(shell sh -c 'git describe')
 INCLUDE_DIR := ./include ./util
 RMUTIL_LIBDIR := rmutil
 UTIL_LIBDIR := util
 OBJS := \
+	version.o \
 	module.o \
 	module/alias.o \
 	module/arg_parser.o \
 	module/async_task.o \
 	module/comparator.o \
 	module/edge.o \
+	module/edge_constraint.o \
 	module/errors.o \
 	module/find.o \
 	module/aggregate.o \
@@ -26,6 +29,7 @@ OBJS := \
 	module/selva_node.o \
 	module/selva_object.o \
 	module/selva_set.o \
+	module/selva_type.o \
 	module/subscriptions.o
 
 IDIR := $(patsubst %,-I%, $(INCLUDE_DIR))
@@ -54,6 +58,10 @@ CC ?= gcc
 
 
 all: module.so
+
+version.c: FORCE
+	echo $(SELVA_VERSION)
+	echo "const char * const selva_version = \"$(SELVA_VERSION)\";" > version.c
 
 $(RMUTIL_LIBDIR)/librmutil.a: FORCE
 	$(MAKE) -C $(RMUTIL_LIBDIR)

@@ -27,10 +27,40 @@ test.beforeEach(async (t) => {
       },
     },
     types: {
+      logo: {
+        prefix: 'lo',
+        fields: {
+          name: { type: 'string' },
+          bidirClub: {
+            type: 'reference',
+            bidirectional: {
+              fromField: 'bidirLogo',
+            },
+          },
+        },
+      },
       club: {
         prefix: 'cl',
         fields: {
           specialMatch: { type: 'reference' },
+          bidirMatches: {
+            type: 'references',
+            bidirectional: {
+              fromField: 'bidirClub',
+            },
+          },
+          relatedClubs: {
+            type: 'references',
+            bidirectional: {
+              fromField: 'relatedClubs',
+            },
+          },
+          bidirLogo: {
+            type: 'reference',
+            bidirectional: {
+              fromField: 'bidirClub',
+            },
+          },
           nested: {
             type: 'object',
             properties: {
@@ -59,6 +89,12 @@ test.beforeEach(async (t) => {
           value: { type: 'number' },
           title: { type: 'text' },
           description: { type: 'text' },
+          bidirClub: {
+            type: 'reference',
+            bidirectional: {
+              fromField: 'bidirMatches',
+            },
+          },
         },
       },
     },
@@ -505,6 +541,268 @@ test.serial('list of simple singular reference', async (t) => {
     },
   })
   //console.dir(result, { depth: null })
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('simple singular bidirectional reference', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const club1 = await client.set({
+    $id: 'clA',
+    title: {
+      en: 'yesh club',
+    },
+    bidirMatches: [
+      {
+        $id: 'maA',
+        title: {
+          en: 'yesh match',
+        },
+      },
+      {
+        $id: 'maB',
+        title: {
+          en: 'yesh match 2',
+        },
+      },
+    ],
+    bidirLogo: {
+      $id: 'lo1',
+      name: 'logo 1',
+    },
+  })
+
+  const club2 = await client.set({
+    $id: 'clB',
+    title: {
+      en: 'yesh club 2',
+    },
+    relatedClubs: {
+      $add: 'clA',
+    },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      $language: 'en',
+      id: true,
+      title: true,
+      bidirClub: {
+        id: true,
+        title: true,
+        logo: {
+          $field: 'bidirLogo',
+          name: true,
+        },
+      },
+    }),
+    {
+      id: 'maA',
+      title: 'yesh match',
+      bidirClub: {
+        id: 'clA',
+        title: 'yesh club',
+        logo: {
+          name: 'logo 1',
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: 'clA',
+    bidirMatches: {
+      $delete: 'maA',
+    },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'maA',
+      $language: 'en',
+      id: true,
+      title: true,
+      bidirClub: {
+        id: true,
+        title: true,
+        logo: {
+          $field: 'bidirLogo',
+          name: true,
+        },
+      },
+    }),
+    {
+      id: 'maA',
+      title: 'yesh match',
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      bidirMatches: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+      bidirLogo: {
+        id: true,
+        name: true,
+      },
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      bidirMatches: [
+        {
+          id: 'maB',
+          title: 'yesh match 2',
+        },
+      ],
+      bidirLogo: {
+        id: 'lo1',
+        name: 'logo 1',
+      },
+    }
+  )
+
+  await client.set({
+    $id: 'clA',
+    bidirLogo: {
+      $delete: true,
+    },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      bidirMatches: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+      bidirLogo: {
+        id: true,
+        name: true,
+      },
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      bidirMatches: [
+        {
+          id: 'maB',
+          title: 'yesh match 2',
+        },
+      ],
+    }
+  )
+
+  await client.set({
+    $id: 'maB',
+    bidirClub: { $delete: true },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      bidirMatches: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+      bidirLogo: {
+        id: true,
+        name: true,
+      },
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      bidirMatches: [],
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      relatedClubs: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      relatedClubs: [
+        {
+          id: 'clB',
+          title: 'yesh club 2',
+        },
+      ],
+    }
+  )
+
+  await client.set({
+    $id: 'clB',
+    relatedClubs: {
+      $delete: 'clA',
+    },
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clA',
+      $language: 'en',
+      id: true,
+      title: true,
+      relatedClubs: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+    }),
+    {
+      id: 'clA',
+      title: 'yesh club',
+      relatedClubs: [],
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'clB',
+      $language: 'en',
+      id: true,
+      title: true,
+      relatedClubs: {
+        id: true,
+        title: true,
+        $list: true,
+      },
+    }),
+    {
+      id: 'clB',
+      title: 'yesh club 2',
+      relatedClubs: [],
+    }
+  )
 
   await client.delete('root')
   await client.destroy()

@@ -309,7 +309,7 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(RedisModuleCtx *c
     enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
 
     memset(data_lang, '\0', sizeof(data_lang));
-    SelvaModify_HierarchyGetNodeId(nodeId, node);
+    SelvaHierarchy_GetNodeId(nodeId, node);
 
     id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
     if (!id) {

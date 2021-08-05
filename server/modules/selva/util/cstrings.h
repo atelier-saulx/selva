@@ -17,5 +17,6 @@ int is_array_field(const char *field_str, size_t field_len);
 int get_array_field_index(const char *field_str, size_t field_len);
 int get_array_field_start_idx(const char *field_str, size_t field_len);
 int ch_count(const char *s, char ch);
+char *ch_replace(char *s, size_t n, char orig_ch, char new_ch);
 
 #endif /* _UTIL_CSTRINGS_H_ */

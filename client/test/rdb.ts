@@ -52,6 +52,15 @@ test.beforeEach(async (t) => {
         prefix: 'vi',
         fields: {
           title: { type: 'text' },
+          lekkerLink: {
+              type: 'reference',
+              bidirectional: {
+                  fromField: 'lekkerLink',
+              },
+          },
+          fren: {
+            type: 'reference',
+          },
           strRec: {
             type: 'record',
             values: {
@@ -165,6 +174,19 @@ test.serial('can reload from RDB', async (t) => {
     ],
   })
 
+  await client.set({
+    $id: 'viLink1',
+    title: { en: 'hi' },
+    lekkerLink: {
+      $id: 'viLink2',
+      title: { en: 'yo' }
+    },
+    fren: {
+      $id: 'viLink3',
+      title: { en: 'sup' },
+    }
+  })
+
   await client.redis.save()
   await wait(1000)
   await restartServer()
@@ -198,5 +220,24 @@ test.serial('can reload from RDB', async (t) => {
         numField: 113,
       },
     ],
+  })
+
+  t.deepEqual(await client.get({ $id: 'viLink1', $all: true, lekkerLink: true, fren: true }), {
+    id: 'viLink1',
+    type: 'lekkerType',
+    title: { en: 'hi' },
+    lekkerLink: 'viLink2',
+    fren: 'viLink3',
+  })
+  t.deepEqual(await client.get({ $id: 'viLink2', $all: true, lekkerLink: true, fren: true }), {
+    id: 'viLink2',
+    type: 'lekkerType',
+    title: { en: 'yo' },
+    lekkerLink: 'viLink1',
+  })
+  t.deepEqual(await client.get({ $id: 'viLink3', $all: true, lekkerLink: true, fren: true }), {
+    id: 'viLink3',
+    type: 'lekkerType',
+    title: { en: 'sup' },
   })
 })

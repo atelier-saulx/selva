@@ -240,7 +240,7 @@ static int update_edge(
                 return err;
             }
 
-            err = Edge_Add(ctx, hierarchy, field_str, field_len, constraint_id, node, dst_node);
+            err = Edge_Add(ctx, hierarchy, constraint_id, field_str, field_len, node, dst_node);
             if (!err) {
                 res++;
             } else if (err != SELVA_EEXIST) {
@@ -283,7 +283,7 @@ static int update_edge(
                     return err;
                 }
 
-                err = Edge_Add(ctx, hierarchy, field_str, field_len, constraint_id, node, dst_node);
+                err = Edge_Add(ctx, hierarchy, constraint_id, field_str, field_len, node, dst_node);
                 if (!err) {
                     res++;
                 } else if (err != SELVA_EEXIST) {
@@ -761,7 +761,7 @@ int SelvaModify_ModifySet(
             } else if (isParents) {
                 err = SelvaModify_DelHierarchyParents(ctx, hierarchy, node_id);
             } else {
-                err = Edge_ClearField(SelvaHierarchy_FindNode(hierarchy, node_id), field_str, field_len);
+                err = Edge_ClearField(ctx, hierarchy, SelvaHierarchy_FindNode(hierarchy, node_id), field_str, field_len);
                 if (err >= 0) {
                     return err;
                 }
@@ -891,7 +891,7 @@ int SelvaModify_ModifyDel(
             return SELVA_ENOENT; /* Unlikely */
         }
 
-        err = Edge_DeleteField(node, field_str, field_len);
+        err = Edge_DeleteField(ctx, hierarchy, node, field_str, field_len);
         if (err == SELVA_ENOENT) {
             /* Finally let's try if it's an object field. */
             err = SelvaObject_DelKeyStr(obj, field_str, field_len);

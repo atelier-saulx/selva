@@ -12,8 +12,6 @@ export type FieldType =
   | 'boolean'
   | 'number'
   | 'int'
-  | 'reference'
-  | 'references'
   | 'string'
   | 'text'
   | 'id'
@@ -82,6 +80,15 @@ export type FieldSchemaRecord = {
   meta?: any
 }
 
+export type FieldSchemaReferences = {
+  type: 'reference' | 'references'
+  bidirectional?: {
+    fromField: string
+  }
+  search?: SearchRaw | Search
+  meta?: any
+}
+
 export type FieldSchemaOther = {
   search?: SearchRaw | Search
   type: FieldType
@@ -97,10 +104,11 @@ export type FieldSchemaArrayLike = {
 
 export type FieldSchema =
   | FieldSchemaObject
+  | FieldSchemaRecord
   | FieldSchemaJson
   | FieldSchemaArrayLike
+  | FieldSchemaReferences
   | FieldSchemaOther
-  | FieldSchemaRecord
 
 export type Fields = Record<string, FieldSchema>
 

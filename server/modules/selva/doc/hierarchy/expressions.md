@@ -109,14 +109,15 @@ User registers start from index 1, and register number 0 is reserved for the cur
 
 **Logical operators**
 
-| Operator | Operands      | Description                       | Example (expr => result) |
-| -------- | ------------- | --------------------------------- | ------------------------ |
-| `L`      | `!a`          | Logical NOT operator. (unary)     | `#1 L => 0`              |
-| `M`      | `a AND b`     | Logical AND operator.             | `#1 #1 M => 1`           |
-| `N`      | `a OR b`      | Logical OR operator.              | `#0 #1 N => 1`           |
-| `O`      | `!!a XOR !!b` | Logical XOR operator.             | `#1 #1 O => 0`           |
-| `P`      | `□a`          | Necessity (It's necessary that a) | `#0 P #1 N => 0`         |
-| `Q`      | `◇a`          | Possibly                          | `#1 Q #0 M => 1`         |
+| Operator | Operands      | Description                        | Example (expr => result) |
+| -------- | ------------- | ---------------------------------- | ------------------------ |
+| `L`      | `!a`          | Logical NOT operator. (unary)      | `#1 L => 0`              |
+| `M`      | `a AND b`     | Logical AND operator.              | `#1 #1 M => 1`           |
+| `N`      | `a OR b`      | Logical OR operator.               | `#0 #1 N => 1`           |
+| `O`      | `!!a XOR !!b` | Logical XOR operator.              | `#1 #1 O => 0`           |
+| `P`      | `□a`          | Necessity. (It's necessary that a) | `#0 P #1 N => 0`         |
+| `Q`      | `◇a`          | Possibly.                          | `#1 Q #0 M => 1`         |
+| `T`      | `a ? b : c`   | Ternary.                           | `$3 $2 @1 T => X`        |
 
 `P` and `Q` are short circuiting operators and don't represent classical modal
 logic. The `P` operator bails out immediately if the operand is not truthy and
@@ -156,17 +157,17 @@ Therefore, neither of these yields the expected result.
 
 | Operator | Arguments         | Description                           | Example (expr => result) |
 | -------- | ----------------- | ------------------------------------- | ------------------------ |
-| `a`      | `set has a`       | `has` function for SelvaSets.         | `$1 $0 a => 0`           |
+| `a`      | `set has a`       | `has` function for SelvaSets.         | `"c" ["a", "b"] a => 0`  |
 | `b`      | `id`              | Returns the type of a node id.        | `"xy123" b => "xy"`      |
-| `c`      | `!strcmp(s1, s2)` | Compare strings.                      | `$0 "hello" c => 1`      |
+| `c`      | `!strcmp(s1, s2)` | Compare strings.                      | `$1 "hello" c => 1`      |
 | `d`      | `!cmp(id1, id2)`  | Compare node IDs.                     | `$1 $0 d => 1`           |
 | `e`      | `!cmp(curT, id)`  | Compare the type of the current node. | `"ab" e`                 |
 | `f`      | `node[a]`         | Get the string value of a node field. | `"field" f`              |
 | `g`      | `node[a]`         | Get the number value of a node field. | `"field" g`              |
 | `h`      | `!!node[a]`       | Field exists.                         | `"title.en" h => 1`      |
 | `i`      | `a <= b <= c`     | (interval) `b` is within `a` and `c`. | `"#2 #1 #0 => 1`         |
-| `j`      | `findFirst(A)`    | Take the name of the first non-empty field into a new set. (value is set or set is non-empty) | `A j => [ 'field' ]` |
-| `k`      | `aon(A)`          | Take all or none (AON), pass the set or result an empty set. | `A k => [ 'field1', 'field2' ]` |
+| `j`      | `findFirst(A)`    | Take the name of the first non-empty field into a new set. (value is set or set is non-empty) | `{"nonfield","field"} j => [ 'field' ]` |
+| `k`      | `aon(A)`          | Take all or none (AON), pass the set or result an empty set. | `{"field1","field2"} k => [ 'field1', 'field2' ]` |
 | `n`      | `clk_realtime()`  | Get the current value of `CLOCK_REALTIME` in ms. | `l => 1623253120970` |
 
 `j` and `k` are only available if `rpn_set_hierarchy_node()` is called before

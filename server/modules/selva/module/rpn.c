@@ -470,7 +470,7 @@ static void clear_old_reg(struct rpn_ctx *ctx, size_t i) {
     }
 }
 
-enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags) {
+enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t size, unsigned flags) {
     if (i >= (size_t)ctx->nr_reg) {
         return RPN_ERR_BNDS;
     }
@@ -491,14 +491,14 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
         r->flags.regist = 1; /* Can't be freed when this flag is set. */
         r->flags.spused = 1;
         r->flags.spfree = (flags & RPN_SET_REG_FLAG_RMFREE) == RPN_SET_REG_FLAG_RMFREE;
-        r->s_size = slen;
+        r->s_size = size;
         r->sp = s;
 
         /*
          * Set the integer value.
          */
         char *e = (char *)s;
-        if (slen > 0) {
+        if (size > 0) {
             r->d = strtod(s, &e);
         }
         if (e == s) {
@@ -914,19 +914,41 @@ static enum rpn_error rpn_op_possib(struct RedisModuleCtx *redis_ctx __unused, s
     }
 }
 
+static enum rpn_error rpn_op_ternary(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+    OPERAND(ctx, b);
+    OPERAND(ctx, c);
+
+    if (to_bool(a)) {
+        return push(ctx, b);
+    } else {
+        return push(ctx, c);
+    }
+}
+
 static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
     int exists;
     struct SelvaObject *obj;
     OPERAND(ctx, field);
     const char *field_str = OPERAND_GET_S(field);
     const size_t field_len = OPERAND_GET_S_LEN(field);
+    struct SelvaModify_HierarchyNode *node = ctx->node;
+
+    /*
+     * First check if it's a non-empty hierarchy/edge field.
+     */
+    if (node && SelvaHierarchy_IsNonEmptyField(node, field_str, field_len) > 0) {
+        return push_int_result(ctx, 1);
+    }
 
     obj = open_object(redis_ctx, ctx);
     if (!obj) {
-        return push_double_result(ctx, 0.0);
+        return push_int_result(ctx, 0);
     }
 
-    /* TODO Should we check hierarchy fields too? */
+    /*
+     * Finally check if it's a node object field.
+     */
     exists = !SelvaObject_ExistsStr(obj, field_str, field_len);
 
     return push_int_result(ctx, exists);
@@ -1040,6 +1062,7 @@ static enum rpn_error rpn_op_cidcmp(struct RedisModuleCtx *redis_ctx __unused, s
     /*
      * Note the the allocated string is always large enough,
      * so the comparison is safe.
+     * TODO Could use Selva_CmpNodeType() here
      */
     return push_int_result(ctx, !memcmp(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_TYPE_SIZE));
 }
@@ -1207,7 +1230,7 @@ static rpn_fp funcs[] = {
     rpn_op_possib,  /* Q */
     rpn_op_abo,     /* R spare */
     rpn_op_abo,     /* S spare */
-    rpn_op_abo,     /* T spare */
+    rpn_op_ternary, /* T spare */
     rpn_op_abo,     /* U spare */
     rpn_op_abo,     /* V spare */
     rpn_op_abo,     /* W spare */
@@ -1366,46 +1389,52 @@ static enum rpn_error compile_str_literal(struct rpn_expression *expr, int i, co
 }
 
 static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, int i, const char *str, size_t len) {
-    char tmp[len + 1];
     const char type = *str;
     RESULT_OPERAND(v);
 
-    if (type != '"') {
+    if (type != '"' &&
+        type != '}' /* empty set */
+       ) {
+        fprintf(stderr, "Type: %c\n", type);
         /* Currently only string sets are supported. */
         return RPN_ERR_TYPE;
     }
 
-    memcpy(tmp, str, len);
-    tmp[len] = '\0';
-
     v = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
 
-    const char *delim = ",";
-    const char *group = "\"";
-    size_t tok_len = 0;
-    const char *rest = NULL;
-    for (const char *tok_str = tokenize(tmp, delim, group, &rest, &tok_len);
-         tok_str != NULL;
-         tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
-        int err;
-        if (tok_len == 0 || tok_str[0] != '\"' || tok_str[tok_len - 1] != '\"') {
+    if (type != '}') {
+        char tmp[len + 1];
+        const char *delim = ",";
+        const char *group = "\"";
+        size_t tok_len = 0;
+        const char *rest = NULL;
+
+        memcpy(tmp, str, len);
+        tmp[len] = '\0';
+
+        for (const char *tok_str = tokenize(tmp, delim, group, &rest, &tok_len);
+             tok_str != NULL;
+             tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
+            int err;
+            if (tok_len == 0 || tok_str[0] != '\"' || tok_str[tok_len - 1] != '\"') {
+                return RPN_ERR_ILLOPN;
+            }
+            tok_str++;
+            tok_len -= 2;
+
+            RedisModuleString *rms = RedisModule_CreateString(NULL, tok_str, tok_len);
+            if (!rms) {
+                return RPN_ERR_ENOMEM;
+            }
+
+            err = SelvaSet_Add(v->set, rms);
+            if (err) {
+                return err;
+            }
+        }
+        if (tok_len == 0) {
             return RPN_ERR_ILLOPN;
         }
-        tok_str++;
-        tok_len -= 2;
-
-        RedisModuleString *rms = RedisModule_CreateString(NULL, tok_str, tok_len);
-        if (!rms) {
-            return RPN_ERR_ENOMEM;
-        }
-
-        err = SelvaSet_Add(v->set, rms);
-        if (err) {
-            return err;
-        }
-    }
-    if (tok_len == 0) {
-        return RPN_ERR_ILLOPN;
     }
 
     return compile_push_literal(expr, i, v);
@@ -1467,9 +1496,9 @@ struct rpn_expression *rpn_compile(const char *input) {
         }
 
         if (err) {
-            fprintf(stderr, "%s:%d: RPN compilation error: %d\n",
+            fprintf(stderr, "%s:%d: RPN compilation error: %s\n",
                     __FILE__, __LINE__,
-                    err);
+                    err >= 0 && err < num_elem(rpn_str_error) ? rpn_str_error[err] : "Unknown");
 fail:
             rpn_destroy_expression(expr);
             return NULL;
@@ -1668,6 +1697,27 @@ enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx
     free_rpn_operand(&res);
 
     return RPN_ERR_OK;
+}
+
+enum rpn_error rpn_rms(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, RedisModuleString **out) {
+    struct rpn_operand *res;
+    enum rpn_error err;
+
+    err = rpn(redis_ctx, ctx, expr);
+    close_node_key(ctx);
+    if (err) {
+        return err;
+    }
+
+    res = pop(ctx);
+    if (!res) {
+        return RPN_ERR_BADSTK;
+    }
+
+    *out = RedisModule_CreateString(redis_ctx, OPERAND_GET_S(res), OPERAND_GET_S_LEN(res));
+    free_rpn_operand(&res);
+
+    return out ? RPN_ERR_OK : RPN_ERR_ENOMEM;
 }
 
 enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out) {

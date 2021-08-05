@@ -23,6 +23,11 @@
 #include "subscriptions.h"
 #include "svector.h"
 
+struct SelvaDbVersionInfo {
+    RedisModuleString *created_with;
+    RedisModuleString *updated_with;
+} selva_db_version_info;
+
 typedef struct SelvaModify_HierarchyNode {
     Selva_NodeId id;
     struct trx trx_label;
@@ -75,9 +80,9 @@ typedef struct TraversalCallback {
 } TraversalCallback;
 
 /* Node metadata constructors. */
-SET_DECLARE(selva_HMCtor, SelvaModify_HierarchyMetadataHook);
+SET_DECLARE(selva_HMCtor, SelvaModify_HierarchyMetadataConstructorHook);
 /* Node metadata destructors. */
-SET_DECLARE(selva_HMDtor, SelvaModify_HierarchyMetadataHook);
+SET_DECLARE(selva_HMDtor, SelvaModify_HierarchyMetadataDestructorHook);
 
 __nonstring static const Selva_NodeId HIERARCHY_RDB_EOF;
 static RedisModuleType *HierarchyType;
@@ -90,7 +95,7 @@ static RedisModuleType *HierarchyType;
 static int rdbLoading;
 #endif
 
-static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node);
+static void SelvaModify_DestroyNode(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node);
 static void removeRelationships(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel);
 RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
 
@@ -153,27 +158,8 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
         goto fail;
     }
 
-    /*
-     * Subscriptions.
-     * TODO It might make sense to move these to subscriptions.c
-     */
-    RB_INIT(&hierarchy->subs.head);
-    hierarchy->subs.missing = SelvaObject_New();
-    if (!hierarchy->subs.missing) {
-        SelvaModify_DestroyHierarchy(hierarchy);
-        hierarchy = NULL;
-        goto fail;
-    }
-    if (SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers)) {
-        SelvaModify_DestroyHierarchy(hierarchy);
-        hierarchy = NULL;
-        goto fail;
-    }
-    if (SelvaSubscriptions_InitDeferredEvents(hierarchy)) {
-        SelvaModify_DestroyHierarchy(hierarchy);
-        hierarchy = NULL;
-        goto fail;
-    }
+    Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
+    Selva_Subscriptions_InitHierarchy(hierarchy);
 
     if(unlikely(SelvaModify_SetHierarchy(ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL) < 0)) {
         SelvaModify_DestroyHierarchy(hierarchy);
@@ -192,7 +178,7 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
 	for (node = RB_MIN(hierarchy_index_tree, &hierarchy->index_head); node != NULL; node = next) {
 		next = RB_NEXT(hierarchy_index_tree, &hierarchy->index_head, node);
 		RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
-        SelvaModify_DestroyNode(node);
+        SelvaModify_DestroyNode(NULL, hierarchy, node);
     }
 
     /*
@@ -265,7 +251,7 @@ static int create_node_object(RedisModuleCtx *ctx, const Selva_NodeId id) {
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE,
                 id);
-        return SELVA_HIERARCHY_ENOMEM; // TODO ??
+        return SELVA_HIERARCHY_ENOMEM;
     }
 
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
@@ -287,6 +273,9 @@ static int create_node_object(RedisModuleCtx *ctx, const Selva_NodeId id) {
     return 0;
 }
 
+/**
+ * Create a new node.
+ */
 static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
     SelvaModify_HierarchyNode *node = RedisModule_Calloc(1, sizeof(SelvaModify_HierarchyNode));
     if (unlikely(!node)) {
@@ -301,7 +290,12 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
 
     if (unlikely(!SVector_Init(&node->parents, HIERARCHY_INITIAL_VECTOR_LEN, SVector_HierarchyNode_id_compare) ||
                  !SVector_Init(&node->children, HIERARCHY_INITIAL_VECTOR_LEN, SVector_HierarchyNode_id_compare))) {
-        SelvaModify_DestroyNode(node);
+        SVector_Destroy(&node->parents);
+        SVector_Destroy(&node->children);
+#if MEM_DEBUG
+        memset(node, 0, sizeof(*node));
+#endif
+        RedisModule_Free(node);
         return NULL;
     }
 
@@ -323,22 +317,22 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
         }
     }
 
-    SelvaModify_HierarchyMetadataHook **metadata_ctor_p;
+    SelvaModify_HierarchyMetadataConstructorHook **metadata_ctor_p;
 
     SET_FOREACH(metadata_ctor_p, selva_HMCtor) {
-        SelvaModify_HierarchyMetadataHook *ctor = *metadata_ctor_p;
+        SelvaModify_HierarchyMetadataConstructorHook *ctor = *metadata_ctor_p;
         ctor(node->id, &node->metadata);
     }
 
     return node;
 }
 
-static void SelvaModify_DestroyNode(SelvaModify_HierarchyNode *node) {
-    SelvaModify_HierarchyMetadataHook **dtor_p;
+static void SelvaModify_DestroyNode(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
+    SelvaModify_HierarchyMetadataDestructorHook **dtor_p;
 
     SET_FOREACH(dtor_p, selva_HMDtor) {
-        SelvaModify_HierarchyMetadataHook *dtor = *dtor_p;
-        dtor(node->id, &node->metadata);
+        SelvaModify_HierarchyMetadataDestructorHook *dtor = *dtor_p;
+        dtor(ctx, hierarchy, node, &node->metadata);
     }
 
     SVector_Destroy(&node->parents);
@@ -356,21 +350,25 @@ SelvaModify_HierarchyNode *SelvaHierarchy_FindNode(SelvaModify_Hierarchy *hierar
     return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaModify_HierarchyNode *)(&filter));
 }
 
-int SelvaModify_HierarchyNodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
+int SelvaHierarchy_NodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
     return SelvaHierarchy_FindNode(hierarchy, id) != NULL;
 }
 
-char *SelvaModify_HierarchyGetNodeId(Selva_NodeId id, const SelvaModify_HierarchyNode *node) {
+char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const SelvaModify_HierarchyNode *node) {
     memcpy(id, node->id, SELVA_NODE_ID_SIZE);
     return id;
 }
 
-/* TODO Rename these functions? */
-struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadataByPtr(SelvaModify_HierarchyNode *node) {
+char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const SelvaModify_HierarchyNode *node) {
+    memcpy(type, node->id, SELVA_NODE_TYPE_SIZE);
+    return type;
+}
+
+struct SelvaModify_HierarchyMetadata *SelvaHierarchy_GetNodeMetadataByPtr(SelvaModify_HierarchyNode *node) {
     return &node->metadata;
 }
 
-struct SelvaModify_HierarchyMetadata *SelvaModify_HierarchyGetNodeMetadata(
+struct SelvaModify_HierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id) {
     SelvaModify_HierarchyNode *node;
@@ -419,7 +417,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
         rmHead(hierarchy, node);
 
         RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
-        SelvaModify_DestroyNode(node);
+        SelvaModify_DestroyNode(ctx, hierarchy, node);
     }
 
     if (likely(ctx)) {
@@ -982,7 +980,7 @@ int SelvaModify_SetHierarchy(
 
     if (isNewNode) {
         if (unlikely(RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL)) {
-            SelvaModify_DestroyNode(node);
+            SelvaModify_DestroyNode(ctx, hierarchy, node);
 
             return SELVA_HIERARCHY_EEXIST;
         }
@@ -1205,7 +1203,7 @@ int SelvaHierarchy_UpsertNode(
          /*
           * We are being extremely paranoid here as this shouldn't be possible.
           */
-         SelvaModify_DestroyNode(node);
+         SelvaModify_DestroyNode(ctx, hierarchy, node);
 
          if (out) {
              *out = prev_node;
@@ -2151,6 +2149,16 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 #endif
     SelvaModify_Hierarchy *hierarchy = SelvaModify_NewHierarchy(NULL);
 
+    if (encver >= 2) {
+        int err;
+
+        err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
+        if (err) {
+            RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints: %s", getSelvaErrorStr(err));
+            goto error;
+        }
+    }
+
     while (1) {
         int err;
         size_t len = 0;
@@ -2286,10 +2294,12 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
 
     /*
      * Serialization format:
+     * EDGE_CONSTRAINTS
      * NODE_ID1 | METADATA | NR_CHILDREN | CHILD_ID_0,..
      * NODE_ID2 | METADATA | NR_CHILDREN | ...
      * HIERARCHY_RDB_EOF
      */
+    EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
     (void)full_dfs(hierarchy, &cb);
     RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
@@ -2573,7 +2583,7 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     SelvaModify_HierarchyNode *dst;
 
     RedisModule_ReplyWithArray(ctx, 1 + SVector_Size(arcs));
-    RedisModule_ReplyWithLongLong(ctx, edge_field->constraint_id);
+    RedisModule_ReplyWithLongLong(ctx, edge_field->constraint ? edge_field->constraint->constraint_id : EDGE_FIELD_CONSTRAINT_ID_DEFAULT);
 
     SVector_ForeachBegin(&it, arcs);
     while ((dst = SVector_Foreach(&it))) {
@@ -2583,6 +2593,26 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     return REDISMODULE_OK;
 }
 
+static int SelvaVersion_AuxLoad(RedisModuleIO *io, int encver __unused, int when __unused) {
+    selva_db_version_info.created_with = RedisModule_LoadString(io);
+    selva_db_version_info.updated_with = RedisModule_LoadString(io);
+
+    fprintf(stderr, "Selva hierarchy version info created_with: %s updated_with: %s\n",
+            RedisModule_StringPtrLen(selva_db_version_info.created_with, NULL),
+            RedisModule_StringPtrLen(selva_db_version_info.updated_with, NULL));
+
+    return 0;
+}
+
+static void SelvaVersion_AuxSave(RedisModuleIO *io, int when __unused) {
+    if (selva_db_version_info.created_with) {
+        RedisModule_SaveString(io, selva_db_version_info.created_with);
+    } else {
+        RedisModule_SaveStringBuffer(io, selva_version, strlen(selva_version));
+    }
+    RedisModule_SaveStringBuffer(io, selva_version, strlen(selva_version));
+}
+
 static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
     RedisModuleTypeMethods tm = {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
@@ -2590,6 +2620,9 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         .rdb_save = HierarchyTypeRDBSave,
         .aof_rewrite = HierarchyTypeAOFRewrite,
         .free = HierarchyTypeFree,
+        .aux_load = SelvaVersion_AuxLoad,
+        .aux_save = SelvaVersion_AuxSave,
+        .aux_save_triggers = REDISMODULE_AUX_BEFORE_RDB,
     };
 
     HierarchyType = RedisModule_CreateDataType(ctx, "hierarchy", HIERARCHY_ENCODING_VERSION, &tm);

@@ -42,7 +42,7 @@ int SelvaResolve_NodeId(
                 break;
             }
 
-            if (SelvaModify_HierarchyNodeExists(hierarchy, node_id)) {
+            if (SelvaHierarchy_NodeExists(hierarchy, node_id)) {
                 res = SELVA_RESOLVE_NODE_ID;
                 break;
             }
@@ -55,7 +55,7 @@ int SelvaResolve_NodeId(
                 TO_STR(orig);
 
                 Selva_NodeIdCpy(node_id, orig_str);
-                if (SelvaModify_HierarchyNodeExists(hierarchy, node_id)) {
+                if (SelvaHierarchy_NodeExists(hierarchy, node_id)) {
                     res = SELVA_RESOLVE_ALIAS;
                     break;
                 }

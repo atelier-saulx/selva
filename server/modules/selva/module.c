@@ -50,20 +50,6 @@ SET_DECLARE(selva_onload, Selva_Onload);
 SET_DECLARE(selva_onunld, Selva_Onunload);
 
 /*
- * Technically a nodeId is always 10 bytes but sometimes a printable
- * representation without padding zeroes is needed.
- */
-size_t Selva_NodeIdLen(const Selva_NodeId nodeId) {
-    size_t len = SELVA_NODE_ID_SIZE;
-
-    while (len >= 1 && nodeId[len - 1] == '\0') {
-        len--;
-    }
-
-    return len;
-}
-
-/*
  * Replicate the selva.modify command.
  * This function depends on the argument order of selva.modify.
  */
@@ -330,7 +316,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
                     RedisModuleString2Selva_NodeId(nodeId, tmp_id);
 
-                    if (SelvaModify_HierarchyNodeExists(hierarchy, nodeId)) {
+                    if (SelvaHierarchy_NodeExists(hierarchy, nodeId)) {
                         id = tmp_id;
 
                         /*
@@ -404,7 +390,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     const struct SelvaModify_HierarchyMetadata *metadata;
 
-    metadata = SelvaModify_HierarchyGetNodeMetadata(hierarchy, nodeId);
+    metadata = SelvaHierarchy_GetNodeMetadata(hierarchy, nodeId);
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, nodeId, metadata);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {
@@ -872,6 +858,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
+    fprintf(stderr, "Selva version: %s\n", selva_version);
+
     // Register the module itself
     if (RedisModule_Init(ctx, "selva", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
@@ -885,6 +873,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
     RedisModule_SetModuleOptions(ctx, REDISMODULE_OPTIONS_HANDLE_IO_ERRORS);
 #endif
 
+    /* TODO Fix the command creation modes */
     if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }

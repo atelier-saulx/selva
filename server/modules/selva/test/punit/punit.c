@@ -38,6 +38,8 @@
 #include "cdefs.h"
 #include "punit.h"
 
+const char * const selva_version = "unittest";
+
 /* Variables below are documented in punit.h */
 int pu_tests_passed = 0;
 int pu_tests_skipped = 0;

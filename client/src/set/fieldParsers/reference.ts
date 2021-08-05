@@ -2,7 +2,8 @@ import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
 import parseSetObject from '../validate'
 import { SetOptions } from '../types'
-import { Schema, FieldSchemaArrayLike } from '../../schema'
+import { Schema, FieldSchemaReferences } from '../../schema'
+import { getTypeFromId, getNestedSchema } from '../../get/utils'
 import { verifiers } from './simple'
 import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
 
@@ -22,7 +23,7 @@ export default async (
   field: string,
   payload: SetOptions,
   result: (string | Buffer)[],
-  _fields: FieldSchemaArrayLike,
+  fields: FieldSchemaReferences,
   _type: string,
   $lang?: string
 ): Promise<number> => {
@@ -81,6 +82,37 @@ export default async (
     }
 
     id = verifySimple(payload)
+  }
+
+  if (fields.bidirectional) {
+    const fromField = fields.bidirectional.fromField
+    const targetField = getNestedSchema(schema, id, fromField)
+    if (
+      !targetField ||
+      (targetField.type !== 'reference' && targetField.type !== 'references') ||
+      !targetField.bidirectional
+    ) {
+      throw new Error(
+        `Wrong payload for reference ${JSON.stringify(
+          payload
+        )}, bidirectional reference requires a bidirectional target field ${fromField} for id ${id}`
+      )
+    }
+
+    result.push(
+      '5',
+      field,
+      createRecord(setRecordDefCstring, {
+        op_set_type: OPT_SET_TYPE.reference,
+        constraint_id: 2,
+        delete_all: false,
+        $add: '',
+        $delete: '',
+        $value: id.padEnd(10, '\0'),
+      })
+    )
+
+    return
   }
 
   result.push(

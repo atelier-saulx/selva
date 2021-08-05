@@ -2,7 +2,7 @@ import { compile } from 'data-record'
 
 export const doubleDef = compile([{ name: 'd', type: 'double' }])
 
-export const longLongDef = compile([{ name: 'd', type: 'uint64' }])
+export const longLongDef = compile([{ name: 'd', type: 'int64' }])
 
 export const OPT_SET_TYPE = {
   char: 0,

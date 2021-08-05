@@ -35,6 +35,9 @@
  */
 typedef char Selva_NodeId[SELVA_NODE_ID_SIZE];
 
+/**
+ * Type of Selva NodeType.
+ */
 typedef char Selva_NodeType[SELVA_NODE_TYPE_SIZE];
 
 #define SELVA_SUBSCRIPTION_ID_SIZE 32
@@ -50,8 +53,19 @@ typedef int32_t Selva_SubscriptionMarkerId;
 
 #define SELVA_SUBSCRIPTION_MARKER_ID_MIN INT32_MIN
 
+/**
+ * Selva version.
+ */
+extern const char * const selva_version;
+
+/**
+ * Get the length of nodeId ignoring nul bytes at the end of the string.
+ */
 size_t Selva_NodeIdLen(const Selva_NodeId nodeId);
 
+/**
+ * Copy a node id of any length from src to a fixed length Selva_NodeId variable.
+ */
 static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {
 #if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
 #pragma GCC diagnostic push
@@ -62,5 +76,32 @@ static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {
 #pragma GCC diagnostic pop
 #endif
 }
+
+/**
+ * Initialize a string array from a node_id or node type string.
+ */
+#define SELVA_TYPE_INITIALIZER(nodeid_or_type) \
+    { nodeid_or_type[0], nodeid_or_type[1] }
+
+/**
+ * Compare node types.
+ */
+static inline int Selva_CmpNodeType(const char t1[SELVA_NODE_TYPE_SIZE], const char t2[SELVA_NODE_TYPE_SIZE]) {
+    return !(*(unsigned short *)t1 ^ *(unsigned short *)t2);
+}
+
+/**
+ * Compare nodeId to type.
+ */
+static inline int Selva_CmpNodeIdType(const Selva_NodeId nodeId, const char type[SELVA_NODE_TYPE_SIZE]) {
+    return Selva_CmpNodeType(nodeId, type);
+}
+
+/**
+ * Selva subscription ID to hex string.
+ */
+char *Selva_SubscriptionId2str(char dest[SELVA_SUBSCRIPTION_ID_STR_LEN + 1], const Selva_SubscriptionId sub_id);
+
+int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src);
 
 #endif /* _SELVA_ */

@@ -73,7 +73,7 @@ export async function _set(
 
     return !all[0] ? undefined : all[0][0]
   } catch (err) {
-    console.error(err)
+    console.error('Modify failed:', err)
     throw err
   }
 }

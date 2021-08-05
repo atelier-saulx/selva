@@ -6,6 +6,7 @@ SRC-hierarchy_deserialization += ../../module/hierarchy.c
 SRC-hierarchy_deserialization += ../../module/selva_node.c
 SRC-hierarchy_deserialization += ../../module/selva_object.c
 SRC-hierarchy_deserialization += ../../module/selva_set.c
+SRC-hierarchy_deserialization += ../../module/selva_type.c
 SRC-hierarchy_deserialization += ../../rmutil/sds.c
 SRC-hierarchy_deserialization += ../../util/cstrings.c
 SRC-hierarchy_deserialization += ../../util/strnstr.c
