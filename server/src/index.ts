@@ -223,6 +223,12 @@ export async function startPostgresDb(opts: Options) {
   // ready for use
 }
 
+// TODO: make a startTimeseriesWorker function
+// use worker like in subscriptionManager :shrug: -- can also not and just make a connection to $db: 'timeseries'
+// we depend on origin with name 'timeseries' to exist for things to work
+
+// TODO: put all these ^ in the start function below so our "minimum" test setup is more complete
+
 // make a registry, then add origin, then add subs manager
 // backups may be a bit problematic here :/
 // maybe we can put the registry and subs manager in a different db in redis and only back up the "main db"? hmmmmmmmmmmmmm let me see (tony notes)
