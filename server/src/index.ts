@@ -263,6 +263,17 @@ export async function start(opts: Options) {
     },
   })
 
+  const timeseries = await startOrigin({
+    name: 'timeseries',
+    registry,
+    // @ts-ignore
+    dir: opts.dir,
+    pipeRedisLogs: parsedOpts.pipeRedisLogs || {
+      stdout: true,
+      stderr: true,
+    },
+  })
+
   const subs = await startSubscriptionManager({
     registry: {
       port: parsedOpts.port,
@@ -281,6 +292,7 @@ export async function start(opts: Options) {
     // TODO: Remove comment
     // console.log('Close all servers does it work ?')
     await origin.destroy()
+    await timeseries.destroy()
     await subs.destroy()
     await subsRegistry.destroy()
   })
