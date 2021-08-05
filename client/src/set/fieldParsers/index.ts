@@ -45,6 +45,11 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
       }
 
       console.log('HELLO TIMESERIES', JSON.stringify(timeseriesCtx, null, 2))
+      client.redis.lpush(
+        { name: 'timeseries' },
+        'timeseries_inserts',
+        JSON.stringify(timeseriesCtx)
+      )
     }
 
     return fn(client, schema, field, payload, result, fields, type, $lang)

@@ -1,7 +1,7 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
+import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -240,6 +240,17 @@ test.serial('get - basic value types timeseries', async (t) => {
       title: { en: 'nice!' },
       value: 25,
     }
+  )
+
+  await wait(1e3)
+
+  console.log(
+    await client.redis.lrange(
+      { name: 'timeseries' },
+      'timeseries_inserts',
+      0,
+      -1
+    )
   )
 
   // t.deepEqual(
