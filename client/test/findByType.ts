@@ -99,7 +99,7 @@ test.serial('find - by type', async (t) => {
     matches: ['ma1', 'ma2', 'ma3'],
   })
 
-  t.deepEqualIgnoreOrder(
+  t.deepEqual(
     await client.get({
       $id: 'root',
       id: true,
@@ -110,6 +110,7 @@ test.serial('find - by type', async (t) => {
           $find: {
             $recursive: true,
             $traverse: {
+              root: 'children',
               league: 'children',
               $any: false,
             },
@@ -148,6 +149,7 @@ test.serial('find - by type', async (t) => {
           $find: {
             $recursive: true,
             $traverse: {
+              root: 'children',
               league: { $first: ['matches', 'children'] },
               $any: false,
             },

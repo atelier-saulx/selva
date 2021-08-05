@@ -55,7 +55,7 @@ export default function bfsExpr2rpn(
     const rule = t[typeName]
     const valueExpr = expr2rpn(types, rule)
 
-    const typePrefix = types[typeName].prefix
+    const typePrefix = typeName === 'root' ? 'ro' : types[typeName].prefix
     const ternSegment = ` ${valueExpr} "${typePrefix}" e T`
 
     rpn = ternSegment + rpn
