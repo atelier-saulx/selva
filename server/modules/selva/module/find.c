@@ -265,6 +265,36 @@ static int send_node_field(
     return 1;
 }
 
+static int send_all_node_data_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node, struct SelvaObject *obj) {
+    void *iterator;
+    const char *field_name_str;
+    int nr_fields = 0;
+
+    iterator = SelvaObject_ForeachBegin(obj);
+    while ((field_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
+        RedisModuleString *field;
+        int res;
+
+        field = RedisModule_CreateString(ctx, field_name_str, strlen(field_name_str));
+        if (!field) {
+            /*
+             * Resist the devil, and he will flee from you.
+             * We are probably going to crash soon and there is no way out at
+             * this point, so let's just ignore this ever happened.
+             */
+            continue;
+        }
+
+        res = send_node_field(ctx, lang, hierarchy, node, obj, NULL, 0, field);
+        if (res >= 0) {
+            nr_fields += res;
+        }
+        /* RFE errors are ignored for now. */
+    }
+
+    return nr_fields;
+}
+
 static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node, struct SelvaObject *fields) {
     Selva_NodeId nodeId;
     RedisModuleString *id;
@@ -336,14 +366,26 @@ static int send_node_fields(RedisModuleCtx *ctx, RedisModuleString *lang, SelvaM
 
             SVector_ForeachBegin(&it, vec);
             while ((field = SVector_Foreach(&it))) {
+                const char wildcard[] = "*";
+                TO_STR(field);
                 int res;
 
-                res = send_node_field(ctx, lang, hierarchy, node, obj, NULL, 0, field);
-                if (res <= 0) {
-                    continue;
+                if (field_len == sizeof(wildcard) - 1 && !strcmp(field_str, wildcard)) {
+                    res = send_all_node_data_fields(ctx, lang, hierarchy, node, obj);
+                    if (res > 0) {
+                        nr_fields += res;
+                        /*
+                         * An interesting case here is a list like this:
+                         * `title\n*`.
+                         */
+                        break;
+                    }
                 } else {
-                    nr_fields += res;
-                    break; /* Only send one of the fields in the list. */
+                    res = send_node_field(ctx, lang, hierarchy, node, obj, NULL, 0, field);
+                    if (res > 0) {
+                        nr_fields += res;
+                        break; /* Only send one of the fields in the list. */
+                    }
                 }
             }
         }

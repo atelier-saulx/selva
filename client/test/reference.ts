@@ -578,6 +578,7 @@ test.serial.only('list of simple singular reference', async (t) => {
       children: [
         {
           id: 'clA',
+          type: 'club',
           title: 'yesh club',
           specialMatch: { id: 'maA', title: 'yesh match' },
         },

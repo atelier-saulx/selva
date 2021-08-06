@@ -170,8 +170,6 @@ int SelvaObject_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str
 int SelvaObject_GetUserMeta(struct SelvaObject *obj, const struct RedisModuleString *key_name, SelvaObjectMeta_t *meta);
 int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta);
 int SelvaObject_SetUserMeta(struct SelvaObject *obj, const struct RedisModuleString *key_name, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta);
-SelvaObject_Iterator *SelvaObject_ForeachBegin(struct SelvaObject *obj);
-const char *SelvaObject_ForeachKey(struct SelvaObject *obj, SelvaObject_Iterator **iterator);
 int SelvaObject_GetWithWildcardStr(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
@@ -181,6 +179,10 @@ int SelvaObject_GetWithWildcardStr(
         long *resp_count,
         int resp_path_start_idx,
         unsigned int flags);
+
+SelvaObject_Iterator *SelvaObject_ForeachBegin(struct SelvaObject *obj);
+const char *SelvaObject_ForeachKey(struct SelvaObject *obj, SelvaObject_Iterator **iterator);
+
 /**
  * Foreach value of specified type in an object.
  * Visiting all subobjects can be achieved by using
