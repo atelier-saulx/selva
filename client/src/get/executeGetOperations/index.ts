@@ -103,7 +103,6 @@ export function sourceFieldToFindArgs(
   byType?: TraverseByType
 ): [SubscriptionMarker['type'], string?] {
   if (byType) {
-    console.log('heyy', bfsExpr2rpn(schema.types, byType))
     return ['bfs_expression', bfsExpr2rpn(schema.types, byType)]
   }
 
