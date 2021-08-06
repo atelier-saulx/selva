@@ -221,7 +221,7 @@ async function addNodeMarkers(
 
     return count
   } catch (e) {
-    console.error(e)
+    console.error('Adding a marker failed:', e)
     return 0
   }
 }
