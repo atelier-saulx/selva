@@ -454,7 +454,7 @@ test.serial('singular reference inherit reference', async (t) => {
   await client.destroy()
 })
 
-test.serial('list of simple singular reference', async (t) => {
+test.serial.only('list of simple singular reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   // const match1 = await client.set({
@@ -540,7 +540,80 @@ test.serial('list of simple singular reference', async (t) => {
       },
     },
   })
-  //console.dir(result, { depth: null })
+
+  t.deepEqualIgnoreOrder(result, {
+    children: [
+      {
+        id: 'clA',
+        title: 'yesh club',
+        specialMatch: { id: 'maA', title: 'yesh match' },
+      },
+    ],
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      $language: 'en',
+      children: {
+        $all: true,
+        specialMatch: {
+          id: true,
+          title: true,
+        },
+        $list: {
+          $find: {
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'club',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      children: [
+        {
+          id: 'clA',
+          title: 'yesh club',
+          specialMatch: { id: 'maA', title: 'yesh match' },
+        },
+      ],
+    }
+  )
+
+  return
+  console.log(
+    'joojoo',
+    JSON.stringify(
+      await client.get({
+        $id: 'root',
+        $language: 'en',
+        children: {
+          $all: true,
+          specialMatch: {
+            $all: true,
+          },
+          $list: {
+            $find: {
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'club',
+                },
+              ],
+            },
+          },
+        },
+      }),
+      null,
+      2
+    )
+  )
 
   await client.delete('root')
   await client.destroy()
