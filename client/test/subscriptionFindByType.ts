@@ -122,6 +122,7 @@ test.serial('subscription find by type', async (t) => {
       },
     })
     .subscribe((v) => {
+      console.log('v1', v)
       if (cnt1 === 0) {
         t.deepEqual(v, {
           id: 'root',
@@ -168,6 +169,7 @@ test.serial('subscription find by type', async (t) => {
       },
     })
     .subscribe((v) => {
+      console.log('v2', v)
       if (cnt2 === 0) {
         t.deepEqual(v, {
           id: 'root',
@@ -185,6 +187,7 @@ test.serial('subscription find by type', async (t) => {
             { name: 'match 4', nonsense: 'yes' },
           ],
         })
+      } else {
         t.fail()
       }
       cnt2++
