@@ -41,9 +41,9 @@ export default function createGetOperations(
   } else if (props.$list) {
     ops.push(list(client, db, props, id, field))
   } else if (props.$find) {
-    ops.push(find(props.$find, props, id, field, true))
+    ops.push(find(client, db, props.$find, props, id, field, true))
   } else if (props.$aggregate) {
-    ops.push(aggregate(props.$aggregate, props, id, field))
+    ops.push(aggregate(client, db, props.$aggregate, props, id, field))
   } else if (props.$default) {
     ops.push({
       type: 'db',

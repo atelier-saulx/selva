@@ -1,8 +1,11 @@
 import { Find, GetOperationFind, GetOptions, Sort } from '../types'
 import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
-import createAggregateOperation from './aggregate'
+import { getNestedSchema } from '../utils'
+import { SelvaClient } from '../..'
 
 const createFindOperation = (
+  client: SelvaClient,
+  db: string,
   find: Find,
   props: GetOptions,
   id: string,
@@ -13,6 +16,14 @@ const createFindOperation = (
   sort?: Sort | Sort[],
   isNested?: boolean
 ): GetOperationFind => {
+  const fieldSchema = getNestedSchema(
+    client.schemas[db],
+    id,
+    <string>props.$field || field.substr(1)
+  )
+
+  const isTimeseries = fieldSchema && fieldSchema.timeseries
+
   const findOperation: GetOperationFind = {
     type: 'find',
     id,
@@ -27,6 +38,7 @@ const createFindOperation = (
       sort: Array.isArray(sort) ? sort[0] : sort || undefined,
     },
     isNested,
+    isTimeseries,
   }
 
   if (find.$traverse) {
@@ -50,6 +62,8 @@ const createFindOperation = (
     findOperation.options.limit = -1
     findOperation.options.offset = 0
     findOperation.nested = createFindOperation(
+      client,
+      db,
       find.$find,
       props,
       '',

@@ -32,8 +32,9 @@ const list = (
       isTimeseries,
     }
   } else if (props.$list.$find) {
-    // TODO: add isTimeseries
     return find(
+      client,
+      db,
       props.$list.$find,
       props,
       id,
