@@ -1,5 +1,5 @@
 import { SelvaClient } from '../../'
-import { GetOperation, GetResult } from '../types'
+import { GetOperation, GetResult, TraverseByType } from '../types'
 import { FieldSchema } from '../../schema'
 import { setNestedResult, getNestedSchema } from '../utils'
 import resolveId from '../resolveId'
@@ -8,7 +8,7 @@ import { GetOptions } from '../'
 import find from './find'
 import aggregate from './aggregate'
 import inherit from './inherit'
-import { Rpn } from '@saulx/selva-query-ast-parser'
+import { Rpn, bfsExpr2rpn } from '@saulx/selva-query-ast-parser'
 import { FieldSchemaArrayLike, Schema } from '~selva/schema'
 import { ServerDescriptor } from '~selva/types'
 import { makeLangArg } from './util'
@@ -60,9 +60,18 @@ export function adler32(marker: SubscriptionMarker): number {
 }
 
 export function sourceFieldToDir(
+  schema: Schema,
   fieldSchema: FieldSchema,
-  field: string
+  field: string,
+  byType?: TraverseByType
 ): { type: TraversalType; refField?: string } {
+  if (byType) {
+    return {
+      type: 'bfs_expression',
+      refField: bfsExpr2rpn(schema.types, byType),
+    }
+  }
+
   const defaultFields: Array<TraversalType> = [
     'children',
     'parents',
@@ -87,10 +96,16 @@ export function sourceFieldToDir(
 }
 
 export function sourceFieldToFindArgs(
+  schema: Schema,
   fieldSchema: FieldSchema | null,
   sourceField: string,
-  recursive: boolean
+  recursive: boolean,
+  byType?: TraverseByType
 ): [SubscriptionMarker['type'], string?] {
+  if (byType) {
+    return ['bfs_expression', bfsExpr2rpn(schema.types, byType)]
+  }
+
   // if fieldSchema is null it usually means that the caller needs to do an op
   // over multiple nodes and thus it's not possible to determine an optimal
   // hierarchy traversal method. We'll fallback to bfs_expression.
@@ -98,7 +113,7 @@ export function sourceFieldToFindArgs(
     return ['bfs_expression', `{"${sourceField}"}`]
   }
 
-  const t = sourceFieldToDir(fieldSchema, sourceField)
+  const t = sourceFieldToDir(schema, fieldSchema, sourceField, byType)
   return recursive && t.refField
     ? ['bfs_expression', `{"${sourceField}"}`]
     : t.refField

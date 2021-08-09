@@ -58,6 +58,18 @@ export type Fork = {
   isNecessary?: true
 }
 
+export type TraverseByTypeExpression =
+  | false
+  | string
+  | {
+      $first?: TraverseByTypeExpression[]
+      $all?: TraverseByTypeExpression[]
+    }
+
+export type TraverseByType = {
+  $any: TraverseByTypeExpression
+  [k: string]: TraverseByTypeExpression
+}
 export type FieldSubscription = {
   $value: (string | number)[]
   $operator: '=' | '>' | '<' | '..' | 'has' | '!='

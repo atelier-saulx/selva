@@ -6,6 +6,7 @@ import validateFilter from './filter'
 
 import { get } from '..'
 import { addExtraQuery, ExtraQueries } from '.'
+import { isTraverseByType, isTraverseOptions } from '../utils'
 
 // import fetch from 'node-fetch'
 
@@ -146,7 +147,7 @@ export default async function validateFind(
 
   if (find.$traverse) {
     const traverse = find.$traverse
-    if (typeof traverse === 'object' && !Array.isArray(traverse)) {
+    if (isTraverseOptions(traverse)) {
       const result = await get(client, {
         $includeMeta: true,
         $db: traverse.$db,
@@ -165,6 +166,8 @@ export default async function validateFind(
         value: result.traverse,
         path: path + '.$find.$traverse',
       })
+    } else if (isTraverseByType(traverse)) {
+      // FIXME: needs specific validation?
     } else if (
       typeof find.$traverse !== 'string' &&
       !Array.isArray(find.$traverse)

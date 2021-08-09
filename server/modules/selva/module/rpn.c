@@ -130,16 +130,11 @@ __constructor static void init_pool(void) {
 struct rpn_ctx *rpn_init(int nr_reg) {
     struct rpn_ctx * ctx;
 
-    ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
+    ctx = RedisModule_Calloc(1, sizeof(struct rpn_ctx));
     if (unlikely(!ctx)) {
         return NULL;
     }
 
-    ctx->depth = 0;
-    ctx->redis_key = NULL;
-    ctx->obj = NULL;
-    ctx->rms_id = NULL;
-    ctx->rms_field = NULL;
     ctx->nr_reg = nr_reg;
 
     ctx->reg = RedisModule_Calloc(nr_reg, sizeof(struct rpn_operand *));
@@ -1110,13 +1105,13 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
             /*
              * TODO If we are careful we could potentially reuse the original string.
              */
-            s = RedisModule_CreateString(redis_ctx, field_str, field_len);
+            s = RedisModule_CreateString(NULL, field_str, field_len);
             if (!s) {
                 return RPN_ERR_ENOMEM;
             }
 
             /* TODO Handle errors and retain string */
-            SelvaSet_AddRms(result->set, s);
+            SelvaSet_Add(result->set, s);
             break;
         }
     }

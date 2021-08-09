@@ -244,7 +244,13 @@ async function checkForNextRefresh(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
-        sourceField,
+        // TODO: needs byType expression
+        ...sourceFieldToFindArgs(
+          client.schemas[ctx.db],
+          null,
+          sourceField,
+          false
+        ),
         'order',
         f.$field,
         'asc',
@@ -368,7 +374,12 @@ export const findIds = async (
         const schema = client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToDir(sourceFieldSchema, sourceField),
+          ...sourceFieldToDir(
+            schema,
+            sourceFieldSchema,
+            sourceField,
+            op.byType
+          ),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -386,7 +397,7 @@ export const findIds = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(sourceFieldSchema, sourceField),
+        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -405,7 +416,13 @@ export const findIds = async (
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(schema.languages, lang),
       '___selva_hierarchy',
-      ...sourceFieldToFindArgs(sourceFieldSchema, sourceField, op.recursive),
+      ...sourceFieldToFindArgs(
+        client.schemas[ctx.db],
+        sourceFieldSchema,
+        sourceField,
+        op.recursive,
+        op.byType
+      ),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
@@ -532,7 +549,12 @@ const findFields = async (
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
 
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToDir(sourceFieldSchema, sourceField),
+          ...sourceFieldToDir(
+            schema,
+            sourceFieldSchema,
+            sourceField,
+            op.byType
+          ),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -550,7 +572,7 @@ const findFields = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(sourceFieldSchema, sourceField),
+        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -569,7 +591,13 @@ const findFields = async (
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
-      ...sourceFieldToFindArgs(sourceFieldSchema, sourceField, op.recursive),
+      ...sourceFieldToFindArgs(
+        client.schemas[ctx.db],
+        sourceFieldSchema,
+        sourceField,
+        op.recursive,
+        op.byType
+      ),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',

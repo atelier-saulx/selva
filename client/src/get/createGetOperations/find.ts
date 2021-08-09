@@ -1,6 +1,7 @@
 import { Find, GetOperationFind, GetOptions, Sort } from '../types'
 import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
 import createAggregateOperation from './aggregate'
+import { isTraverseByType } from '../utils'
 
 const createFindOperation = (
   find: Find,
@@ -34,6 +35,8 @@ const createFindOperation = (
       findOperation.sourceField = find.$traverse
     } else if (Array.isArray(find.$traverse)) {
       findOperation.inKeys = find.$traverse
+    } else if (isTraverseByType(find.$traverse)) {
+      findOperation.byType = find.$traverse
     }
   }
 

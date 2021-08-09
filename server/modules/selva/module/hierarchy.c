@@ -1694,7 +1694,6 @@ static int bfs_expression(
         struct SelvaSet fields;
         struct SelvaSetElement *field_el;
 
-        /* TODO If we'd have clear function we could reuse the same set. */
         SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
 
         rpn_set_hierarchy_node(rpn_ctx, node);

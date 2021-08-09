@@ -158,8 +158,13 @@ async function checkForNextRefresh(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
-        // TODO proper dir
-        sourceField, //...sourceFieldToFindArgs(sourceFieldSchema, sourceField, false),
+        // TODO proper dir, needs byType
+        ...sourceFieldToFindArgs(
+          client.schemas[ctx.db],
+          null,
+          sourceField,
+          false
+        ),
         'order',
         f.$field,
         'asc',
@@ -346,7 +351,12 @@ const executeAggregateOperation = async (
         const schema = client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToDir(sourceFieldSchema, sourceField),
+          ...sourceFieldToDir(
+            schema,
+            sourceFieldSchema,
+            sourceField,
+            op.byType
+          ),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -364,7 +374,7 @@ const executeAggregateOperation = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(sourceFieldSchema, sourceField),
+        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -384,7 +394,13 @@ const executeAggregateOperation = async (
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       FN_TO_ENUM[op.function.name] || '0',
-      ...sourceFieldToFindArgs(sourceFieldSchema, sourceField, false),
+      ...sourceFieldToFindArgs(
+        client.schemas[ctx.db],
+        sourceFieldSchema,
+        sourceField,
+        false,
+        op.byType
+      ),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
