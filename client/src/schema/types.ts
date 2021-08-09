@@ -7,6 +7,28 @@ export type GetSchemaResult = {
   searchIndexes: SearchIndexes
 }
 
+export const FIELD_TYPES = [
+  'float',
+  'boolean',
+  'number',
+  'int',
+  'string',
+  'text',
+  'id',
+  'digest',
+  'url',
+  'email',
+  'phone',
+  'geo',
+  'type',
+  'timestamp',
+  'reference',
+  'references',
+  'object',
+  'record',
+  'array',
+]
+
 export type FieldType =
   | 'float'
   | 'boolean'

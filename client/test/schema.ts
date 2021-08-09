@@ -296,7 +296,7 @@ test.serial('schemas - basic', async (t) => {
 
   // drop search index in this case (NOT SUPPORTED YET!)
   // throws for now
-  const e = await t.throwsAsync(
+  let e = await t.throwsAsync(
     client.updateSchema({
       types: {
         match: {
@@ -316,6 +316,7 @@ test.serial('schemas - basic', async (t) => {
     })
   )
 
+  console.log(e)
   t.true(
     e.stack.includes(
       'Can not change existing search types for flurpy.snurkels in type match, changing from ["TAG"] to ["TEXT"]. This will be supported in the future.'
@@ -455,6 +456,61 @@ test.serial('schemas - basic', async (t) => {
     $id: 'root',
     value: 9001,
   })
+
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        match: {
+          fields: {
+            // @ts-ignore
+            nonexistentType: { type: 'lolo' },
+          },
+        },
+      },
+    })
+  )
+
+  console.log(e)
+  t.true(e.stack.includes('Field type lolo for type match'))
+
+  // TODO: add new type with wrong field
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        myNewTNype: {
+          fields: {
+            // @ts-ignore
+            nonexistentType: { type: 'lolo' },
+          },
+        },
+      },
+    })
+  )
+
+  console.log(e)
+  t.true(e.stack.includes('Field type lolo for type myNewTNype'))
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        match: {
+          fields: {
+            objThing: {
+              type: 'object',
+              properties: {
+                // @ts-ignore
+                nonexistentType: { type: 'lolo' },
+              },
+            },
+          },
+        },
+      },
+    })
+  )
+
+  console.log(e)
+  t.true(e.stack.includes('Field type lolo for type myNewTNype'))
+
+  // TODO: add nested obj field with wrong field to new type
 
   // add some tests for it
   await client.destroy()

@@ -9,6 +9,7 @@ import {
 } from '.'
 import { ServerSelector } from '../types'
 import { wait } from '../util'
+import { FIELD_TYPES } from './types'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
@@ -121,6 +122,9 @@ function newTypeDefinition(
   }
 
   if (!oldType) {
+    for (const fieldName in newType) {
+      // TODO: recursively check
+    }
     return newType
   } else if (!newType) {
     return oldType
@@ -128,7 +132,7 @@ function newTypeDefinition(
 
   if (oldType.prefix && newType.prefix && oldType.prefix !== newType.prefix) {
     throw new Error(
-      `Type ${typeName} has a changed prefix from ${oldType.prefix} to ${newType.prefix}`
+      `ype ${typeName} has a changed prefix from ${oldType.prefix} to ${newType.prefix}`
     )
   }
 
@@ -146,6 +150,16 @@ function newTypeDefinition(
 
   for (const fieldName in newType.fields) {
     if (oldType.fields && !oldType.fields[fieldName]) {
+      if (!FIELD_TYPES.includes(newType.fields[fieldName].type)) {
+        throw new Error(
+          `Field type ${
+            newType.fields[fieldName].type
+          } for type ${typeName} field ${fieldName} is not supported, has to be one of: ${FIELD_TYPES.join(
+            ', '
+          )}}`
+        )
+      }
+
       typeDef.fields[fieldName] = newType.fields[fieldName]
     }
   }
@@ -185,6 +199,16 @@ function newFieldDefinition(
       if (!oldField.properties[fieldName]) {
         props[fieldName] = (<any>newField).properties[fieldName]
       }
+    }
+
+    if (!FIELD_TYPES.includes(newField.type)) {
+      throw new Error(
+        `Field type ${
+          newField.type
+        } for field ${fieldPath} is not supported, has to be one of: ${FIELD_TYPES.join(
+          ', '
+        )}}`
+      )
     }
 
     const result = <any>{
