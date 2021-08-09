@@ -24,7 +24,10 @@ function parseGetOpts(
   nestedMapping?: Record<string, { targetField?: string[]; default?: any }>
 ): [
   Set<string>,
-  Record<string, { targetField?: string[]; default?: any }>,
+  Record<
+    string,
+    { targetField?: string[]; default?: any; maybeReferenceAll?: true }
+  >,
   boolean
 ] {
   const pathPrefix = path === '' ? '' : path + '.'
@@ -34,6 +37,7 @@ function parseGetOpts(
     {
       targetField?: string[]
       default?: any
+      maybeReferenceAll?: true
     }
   > = nestedMapping || {}
 
@@ -85,9 +89,17 @@ function parseGetOpts(
       } else {
         mapping[path].default = $default
       }
-    } else if (k === '$all') {
+    } else if (path === '' && k === '$all') {
       fields = new Set(['*'])
       hasAll = true
+    } else if (k === '$all') {
+      if (!mapping[path]) {
+        mapping[path] = { maybeReferenceAll: true }
+      } else {
+        mapping[path].maybeReferenceAll = true
+      }
+
+      fields.add(path)
     } else if (k.startsWith('$')) {
       return [fields, mapping, true]
     } else if (typeof props[k] === 'object') {
@@ -719,7 +731,29 @@ const executeFindOperation = async (
         continue
       }
 
-      const targetField = fieldMapping[field]?.targetField
+      const mapping = fieldMapping[field]
+      if (
+        mapping?.maybeReferenceAll &&
+        Array.isArray(value) &&
+        value.length === 1 &&
+        typeof value[0] === 'string'
+      ) {
+        const fieldResults = await executeNestedGetOperations(
+          client,
+          {
+            $db: ctx.db,
+            $id: value[0],
+            $all: true,
+          },
+          lang,
+          ctx
+        )
+        setNestedResult(entryRes, field, fieldResults)
+        usedMappings.add(field)
+        continue
+      }
+
+      const targetField = mapping?.targetField
       const casted = typeCast(value, id, field, schema, lang)
 
       if (targetField) {

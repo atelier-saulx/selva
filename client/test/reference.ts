@@ -540,7 +540,85 @@ test.serial('list of simple singular reference', async (t) => {
       },
     },
   })
-  //console.dir(result, { depth: null })
+
+  t.deepEqualIgnoreOrder(result, {
+    children: [
+      {
+        id: 'clA',
+        title: 'yesh club',
+        specialMatch: { id: 'maA', title: 'yesh match' },
+      },
+    ],
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      $language: 'en',
+      children: {
+        $all: true,
+        specialMatch: {
+          id: true,
+          title: true,
+        },
+        $list: {
+          $find: {
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'club',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      children: [
+        {
+          id: 'clA',
+          type: 'club',
+          title: 'yesh club',
+          specialMatch: { id: 'maA', title: 'yesh match' },
+        },
+      ],
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      $language: 'en',
+      children: {
+        $all: true,
+        specialMatch: {
+          $all: true,
+        },
+        $list: {
+          $find: {
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'club',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      children: [
+        {
+          id: 'clA',
+          type: 'club',
+          title: 'yesh club',
+          specialMatch: { id: 'maA', title: 'yesh match', type: 'match' },
+        },
+      ],
+    }
+  )
 
   await client.delete('root')
   await client.destroy()
