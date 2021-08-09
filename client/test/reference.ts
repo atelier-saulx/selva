@@ -595,7 +595,7 @@ test.serial('list of simple singular reference', async (t) => {
       },
     }),
     {
-      id: 'claA',
+      id: 'clA',
       specialMatch: {
         id: 'maA',
         title: { en: 'yesh match' },
