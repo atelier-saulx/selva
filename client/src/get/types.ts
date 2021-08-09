@@ -174,6 +174,7 @@ export type GetOperationAggregate = GetOperationCommon & {
   recursive?: boolean
   options: { limit: number; offset: number; sort?: Sort | undefined }
   nested?: GetOperationFind
+  isTimeseries?: boolean
 }
 
 export type GetOperationFind = GetOperationCommon & {
@@ -186,6 +187,7 @@ export type GetOperationFind = GetOperationCommon & {
   isNested?: boolean
   recursive?: boolean
   options: { limit: number; offset: number; sort?: Sort | undefined }
+  isTimeseries?: boolean
 }
 
 export type GetOperationInherit = GetOperationCommon & {

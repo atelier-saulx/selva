@@ -16,12 +16,7 @@ const list = (
     <string>props.$field || field.substr(1)
   )
 
-  console.log('FS', fieldSchema, id, field)
-  if (fieldSchema && fieldSchema.timeseries) {
-    console.log('TIMESERIES', fieldSchema)
-    // TODO: return timeseries operation
-    return null
-  }
+  const isTimeseries = fieldSchema && fieldSchema.timeseries
 
   if (props.$list === true) {
     return {
@@ -34,8 +29,10 @@ const list = (
         limit: -1, // no limit
         offset: 0,
       },
+      isTimeseries,
     }
   } else if (props.$list.$find) {
+    // TODO: add isTimeseries
     return find(
       props.$list.$find,
       props,
@@ -60,6 +57,7 @@ const list = (
           ? props.$list.$sort[0]
           : props.$list.$sort || undefined,
       },
+      isTimeseries,
     }
   }
 }

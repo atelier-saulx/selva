@@ -649,9 +649,19 @@ export const executeGetOperation = async (
       })
     )
   } else if (op.type === 'find') {
-    return find(client, op, lang, ctx)
+    if (op.isTimeseries) {
+      console.log('IS TIMESERIES', op)
+      return null
+    } else {
+      return find(client, op, lang, ctx)
+    }
   } else if (op.type === 'aggregate') {
-    return aggregate(client, op, lang, ctx)
+    if (op.isTimeseries) {
+      console.log('IS TIMESERIES', op)
+      return null
+    } else {
+      return aggregate(client, op, lang, ctx)
+    }
   } else if (op.type === 'inherit') {
     return inherit(client, op, lang, ctx)
   } else if (op.type === 'db') {
