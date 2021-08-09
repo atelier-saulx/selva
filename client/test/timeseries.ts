@@ -285,30 +285,20 @@ test.serial('get - basic value types timeseries', async (t) => {
     },
   })
 
-  t.deepEqual(
+  console.log(
     await client.get({
       $id: 'viA',
       id: true,
       title: true,
       value: true,
-    }),
-    {
-      id: 'viA',
-      title: { en: 'nice!' },
-      value: 25,
-    }
+      allValues: {
+        $field: 'value',
+        $list: true,
+      },
+    })
   )
 
   await wait(1e3)
-
-  console.log(
-    await client.redis.lrange(
-      { name: 'timeseries' },
-      'timeseries_inserts',
-      0,
-      -1
-    )
-  )
 
   // t.deepEqual(
   //   await client.get({

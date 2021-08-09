@@ -1,7 +1,28 @@
+import { SelvaClient } from '../..'
 import { GetOperation, GetOptions } from '../types'
+import { getNestedSchema } from '../utils'
 import find from './find'
 
-const list = (props: GetOptions, id: string, field: string): GetOperation => {
+const list = (
+  client: SelvaClient,
+  db: string,
+  props: GetOptions,
+  id: string,
+  field: string
+): GetOperation => {
+  const fieldSchema = getNestedSchema(
+    client.schemas[db],
+    id,
+    <string>props.$field || field.substr(1)
+  )
+
+  console.log('FS', fieldSchema, id, field)
+  if (fieldSchema && fieldSchema.timeseries) {
+    console.log('TIMESERIES', fieldSchema)
+    // TODO: return timeseries operation
+    return null
+  }
+
   if (props.$list === true) {
     return {
       type: 'find',
