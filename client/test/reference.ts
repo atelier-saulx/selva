@@ -588,6 +588,24 @@ test.serial('list of simple singular reference', async (t) => {
 
   t.deepEqual(
     await client.get({
+      $id: 'clA',
+      id: true,
+      specialMatch: {
+        $all: true,
+      },
+    }),
+    {
+      id: 'claA',
+      specialMatch: {
+        id: 'maA',
+        title: { en: 'yesh match' },
+        type: 'match',
+      },
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
       $id: 'root',
       $language: 'en',
       children: {
