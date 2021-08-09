@@ -19,7 +19,7 @@ const createFindOperation = (
   const fieldSchema = getNestedSchema(
     client.schemas[db],
     id,
-    <string>props.$field || field.substr(1)
+    <string>find.$traverse || field.substr(1)
   )
 
   const isTimeseries = fieldSchema && fieldSchema.timeseries

@@ -295,6 +295,24 @@ test.serial('get - basic value types timeseries', async (t) => {
         $field: 'value',
         $list: true,
       },
+      filteredValues: {
+        $list: {
+          $find: {
+            $traverse: 'value',
+            $filter: [
+              {
+                $field: 'value',
+                $operator: '>',
+                $value: 0,
+              },
+            ],
+          },
+          $sort: {
+            $field: 'value',
+            $order: 'asc',
+          },
+        },
+      },
     })
   )
 
