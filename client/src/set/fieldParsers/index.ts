@@ -42,6 +42,7 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
         field,
         fieldSchema: fields,
         payload,
+        ts: Date.now(),
       }
 
       console.log('HELLO TIMESERIES', JSON.stringify(timeseriesCtx, null, 2))
