@@ -249,6 +249,7 @@ export async function updateSchema(
     )
 
     if (updated) {
+      // TODO: also update schema on timeseries data
       client.schemas[selector.name] = JSON.parse(updated)
     }
   } catch (e) {

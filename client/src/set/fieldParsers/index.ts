@@ -50,7 +50,7 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
       client.redis.lpush(
         { name: 'timeseries' },
         'timeseries_inserts',
-        JSON.stringify(timeseriesCtx)
+        JSON.stringify({ type: 'insert', context: timeseriesCtx })
       )
     }
 
