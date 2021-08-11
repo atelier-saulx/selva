@@ -250,6 +250,7 @@ export async function updateSchema(
 
     if (updated) {
       // TODO: also update schema on timeseries data
+      // or should we actually just mark timeseries fields in redis in the lua script
       client.schemas[selector.name] = JSON.parse(updated)
     }
   } catch (e) {
