@@ -1,5 +1,5 @@
 import ProcessManager from './processManager'
-import { spawnSync, ChildProcess } from 'child_process'
+import { spawnSync } from 'child_process'
 
 export default class PostgresManager extends ProcessManager {
   private pgPort: number
