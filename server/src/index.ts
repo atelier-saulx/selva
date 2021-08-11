@@ -2,6 +2,7 @@ import { Client } from 'pg'
 import { Options, ServerOptions } from './types'
 import { SelvaServer, startServer } from './server'
 import PostgresManager from './server/postgresManager'
+import { startTimeseriesWorker } from './server/timeseriesWorker'
 import getPort from 'get-port'
 import chalk from 'chalk'
 import os from 'os'
@@ -221,6 +222,7 @@ export async function startPostgresDb(opts: Options) {
     await sleep(1000)
   }
   // ready for use
+  return db
 }
 
 // TODO: make a startTimeseriesWorker function
@@ -288,6 +290,18 @@ export async function start(opts: Options) {
     },
   })
 
+  const timeseriesPostgres = await startPostgresDb({
+    // TODO: make port configurable
+    port: 5436
+  })
+
+  const timeseriesWorker = await startTimeseriesWorker({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host,
+    },
+  })
+
   registry.on('close', async () => {
     // TODO: Remove comment
     // console.log('Close all servers does it work ?')
@@ -295,6 +309,8 @@ export async function start(opts: Options) {
     await timeseries.destroy()
     await subs.destroy()
     await subsRegistry.destroy()
+    timeseriesPostgres.destroy() // not async
+    await timeseriesWorker.destroy()
   })
 
   return registry
