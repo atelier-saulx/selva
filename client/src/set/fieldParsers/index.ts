@@ -38,6 +38,7 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
   ) => {
     if (fields.timeseries) {
       const timeseriesCtx = {
+        nodeId: (<any>result).$id,
         nodeType: type,
         field,
         fieldSchema: fields,
@@ -45,7 +46,7 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
         ts: Date.now(),
       }
 
-      console.log('HELLO TIMESERIES', JSON.stringify(timeseriesCtx, null, 2))
+      console.log('LPUSH', timeseriesCtx)
       client.redis.lpush(
         { name: 'timeseries' },
         'timeseries_inserts',
