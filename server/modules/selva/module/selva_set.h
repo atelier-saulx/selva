@@ -93,23 +93,25 @@ static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
 int SelvaSet_AddRms(struct SelvaSet *set, struct RedisModuleString *s);
 int SelvaSet_AddDouble(struct SelvaSet *set, double d);
 int SelvaSet_AddLongLong(struct SelvaSet *set, long long l);
-int SelvaSet_AddNodeId(struct SelvaSet *set, Selva_NodeId node_id);
+int SelvaSet_AddNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
 #define SelvaSet_Add(set, x) _Generic((x), \
         struct RedisModuleString *: SelvaSet_AddRms, \
         double: SelvaSet_AddDouble, \
         long long: SelvaSet_AddLongLong, \
-        char *: SelvaSet_AddNodeId \
+        char *: SelvaSet_AddNodeId, \
+        const char *: SelvaSet_AddNodeId \
         )((set), (x))
 
 int SelvaSet_HasRms(struct SelvaSet *set, RedisModuleString *s);
 int SelvaSet_HasDouble(struct SelvaSet *set, double d);
 int SelvaSet_HasLongLong(struct SelvaSet *set, long long ll);
-int SelvaSet_HasNodeId(struct SelvaSet *set, Selva_NodeId node_id);
+int SelvaSet_HasNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
 #define SelvaSet_Has(set, x) _Generic((x), \
         struct RedisModuleString *: SelvaSet_HasRms, \
         double: SelvaSet_HasDouble, \
         long long: SelvaSet_HasLongLong, \
-        char *: SelvaSet_HasNodeId \
+        char *: SelvaSet_HasNodeId, \
+        const char *: SelvaSet_HasNodeId \
         )((set), (x))
 
 struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s);
@@ -120,7 +122,8 @@ struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId
         struct RedisModuleString *: SelvaSet_RemoveRms, \
         double: SelvaSet_RemoveDouble, \
         long long: SelvaSet_RemoveLongLong, \
-        char *: SelvaSet_RemoveNodeId \
+        char *: SelvaSet_RemoveNodeId, \
+        const char *: SelvaSet_RemoveNodeId \
         )((set), (x))
 
 #define SELVA_SET_RMS_FOREACH(el, set) \
