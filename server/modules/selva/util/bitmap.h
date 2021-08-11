@@ -61,4 +61,9 @@ void bitmap_erase(struct bitmap *bitmap);
 
 unsigned int bitmap_popcount(const struct bitmap *bitmap);
 
+/**
+ * Find first set.
+ */
+int bitmap_ffs(const struct bitmap *bitmap);
+
 #endif /* BITMAP_H */
