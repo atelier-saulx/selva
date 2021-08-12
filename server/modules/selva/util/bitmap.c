@@ -110,5 +110,5 @@ int bitmap_ffs(const struct bitmap *bitmap) {
         isset = bitmap_get(bitmap, pos++);
     } while (isset == 0);
 
-    return (isset > 0) ? pos - 1 : -1;
+    return (isset > 0) ? (int)(pos - 1) : -1;
 }
