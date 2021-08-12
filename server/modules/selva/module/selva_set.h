@@ -56,7 +56,7 @@ static inline int SelvaSet_isValidType(enum SelvaSetType type) {
     return type >= 0 && type < SELVA_SET_NR_TYPES;
 }
 
-static inline size_t SelvaSet_Size(struct SelvaSet *set) {
+static inline size_t SelvaSet_Size(const struct SelvaSet *set) {
     return set->size;
 }
 
