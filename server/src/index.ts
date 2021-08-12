@@ -292,15 +292,23 @@ export async function start(opts: Options) {
 
   const timeseriesPostgres = await startPostgresDb({
     // TODO: make port configurable
-    port: 5436
+    port: 5436,
   })
 
-  const timeseriesWorker = await startTimeseriesWorker({
-    registry: {
-      port: parsedOpts.port,
-      host: parsedOpts.host,
+  const timeseriesWorker = await startTimeseriesWorker(
+    {
+      registry: {
+        port: parsedOpts.port,
+        host: parsedOpts.host,
+      },
     },
-  })
+    // TODO: how to really insert this
+    {
+      host: '127.0.0.1',
+      port: 5436,
+      password: 'baratta',
+    }
+  )
 
   registry.on('close', async () => {
     // TODO: Remove comment
