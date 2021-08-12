@@ -285,6 +285,8 @@ test.serial('get - basic value types timeseries', async (t) => {
     },
   })
 
+  console.log('BLABLA', await client.redis.hgetall('___selva_schema'))
+
   console.log(
     await client.get({
       $id: 'viA',

@@ -24,8 +24,10 @@ export type FieldType =
   | 'timestamp'
 
 export type SearchSchema = Record<string, string[]>
+export type TimeSeriesFields = Record<string, FieldSchema>
 
 export type SearchIndexes = Record<string, SearchSchema>
+export type Timeseries = Record<string, TimeSeriesFields> // by type to record of fields that are time series
 
 export type Search =
   | {
