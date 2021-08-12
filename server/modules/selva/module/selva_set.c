@@ -120,7 +120,7 @@ int SelvaSet_AddLongLong(struct SelvaSet *set, long long ll) {
     return 0;
 }
 
-int SelvaSet_AddNodeId(struct SelvaSet *set, Selva_NodeId node_id) {
+int SelvaSet_AddNodeId(struct SelvaSet *set, const Selva_NodeId node_id) {
     struct SelvaSetElement *el;
 
     if (set->type != SELVA_SET_TYPE_NODEID) {
@@ -264,7 +264,7 @@ int SelvaSet_HasLongLong(struct SelvaSet *set, long long ll) {
     return !!RB_FIND(SelvaSetLongLong, &set->head_ll, &find);
 }
 
-int SelvaSet_HasNodeId(struct SelvaSet *set, Selva_NodeId node_id) {
+int SelvaSet_HasNodeId(struct SelvaSet *set, const Selva_NodeId node_id) {
     struct SelvaSetElement find = { 0 };
 
     memcpy(find.value_nodeId, node_id, SELVA_NODE_ID_SIZE);
