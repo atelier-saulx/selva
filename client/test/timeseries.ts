@@ -316,7 +316,7 @@ test.serial('get - basic value types timeseries', async (t) => {
     })
   )
 
-  await wait(5e3)
+  await wait(5000e3)
 
   // t.deepEqual(
   //   await client.get({
