@@ -388,10 +388,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return replyWithSelvaErrorf(ctx, err, "Failed to open the object for id: \"%s\"", id_str);
     }
 
-    const struct SelvaModify_HierarchyMetadata *metadata;
+    struct SelvaModify_HierarchyNode *node;
 
-    metadata = SelvaHierarchy_GetNodeMetadata(hierarchy, nodeId);
-    SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, nodeId, metadata);
+    node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+    SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {
         SelvaNode_ClearFields(ctx, obj);
@@ -776,7 +776,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
          * Hierarchy handles events for parents and children.
          */
         if (strcmp(field_str, "parents") && strcmp(field_str, "children")) {
-            SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, nodeId, metadata, field_str, field_len);
+            SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, field_str, field_len);
         }
 
 #if 0
@@ -840,13 +840,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             if (FISSET_CREATED_AT(flags)) {
                 SelvaObject_SetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, now);
             }
-            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
+            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
         } else {
             /*
              * If nodeId wasn't created by this command call then it was an
              * update.
              */
-            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
+            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
         }
     }
 

@@ -927,7 +927,7 @@ static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn
     OPERAND(ctx, field);
     const char *field_str = OPERAND_GET_S(field);
     const size_t field_len = OPERAND_GET_S_LEN(field);
-    struct SelvaModify_HierarchyNode *node = ctx->node;
+    const struct SelvaModify_HierarchyNode *node = ctx->node;
 
     /*
      * First check if it's a non-empty hierarchy/edge field.
@@ -1079,7 +1079,7 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
     struct SelvaSet *set_a;
     RESULT_OPERAND(result);
     struct SelvaSetElement *el;
-    struct SelvaModify_HierarchyNode *node = ctx->node;
+    const struct SelvaModify_HierarchyNode *node = ctx->node;
 
     if (!node) {
         return RPN_ERR_ILLOPN;
@@ -1124,7 +1124,7 @@ static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, stru
     OPERAND(ctx, a);
     struct SelvaSet *set_a;
     struct SelvaSetElement *el;
-    struct SelvaModify_HierarchyNode *node = ctx->node;
+    const struct SelvaModify_HierarchyNode *node = ctx->node;
 
     if (!node) {
         return RPN_ERR_ILLOPN;
