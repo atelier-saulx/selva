@@ -289,29 +289,35 @@ test.serial('get - basic value types timeseries', async (t) => {
 
   console.log(
     await client.get({
-      $id: 'viA',
-      id: true,
-      title: true,
-      value: true,
-      allValues: {
-        $field: 'value',
-        $list: true,
-      },
-      filteredValues: {
+      things: {
         $list: {
           $find: {
-            $traverse: 'value',
-            $filter: [
-              {
-                $field: 'value',
-                $operator: '>',
-                $value: 0,
-              },
-            ],
+            $traverse: 'descendants',
           },
-          $sort: {
-            $field: 'value',
-            $order: 'asc',
+        },
+        id: true,
+        title: true,
+        value: true,
+        allValues: {
+          $field: 'value',
+          $list: true,
+        },
+        filteredValues: {
+          $list: {
+            $find: {
+              $traverse: 'value',
+              $filter: [
+                {
+                  $field: 'value',
+                  $operator: '>',
+                  $value: 0,
+                },
+              ],
+            },
+            $sort: {
+              $field: 'value',
+              $order: 'asc',
+            },
           },
         },
       },
