@@ -119,7 +119,12 @@ enum Selva_SubscriptionTriggerType {
  * The action function must not hold a pointer to the node after the function
  * returns as the pointer is not guaranteed to be valid after the call.
  */
-typedef void Selva_SubscriptionMarkerAction(struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, unsigned short event_flags, const struct SelvaModify_HierarchyNode *node);
+typedef void Selva_SubscriptionMarkerAction(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct Selva_SubscriptionMarker *marker,
+        unsigned short event_flags,
+        const struct SelvaModify_HierarchyNode *node);
 
 /**
  * Subscription marker.
@@ -236,7 +241,7 @@ int SelvaSubscriptions_RefreshByMarkerId(
 int SelvaSubscriptions_Refresh(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
-        Selva_SubscriptionId sub_id);
+        const Selva_SubscriptionId sub_id);
 
 /**
  * Refresh all subscriptions found in markers SVector.
@@ -260,7 +265,7 @@ void SelvaSubscriptions_Delete(
 int SelvaSubscriptions_DeleteMarker(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id);
 
 /**
@@ -335,6 +340,7 @@ void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaModify_Hierarchy *hier
  * Inherit subscription markers from a parent to child nodes.
  */
 void SelvaSubscriptions_InheritParent(
+        struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         struct SelvaModify_HierarchyMetadata *node_metadata,
@@ -346,6 +352,7 @@ void SelvaSubscriptions_InheritParent(
  * This function makes sense if there are markers traversing upwards.
  */
 void SelvaSubscriptions_InheritChild(
+        struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId node_id,
         struct SelvaModify_HierarchyMetadata *node_metadata,
@@ -357,6 +364,7 @@ void SelvaSubscriptions_InheritChild(
  * @param field_str is a pointer to the name of the source field.
  */
 void SelvaSubscriptions_InheritEdge(
+        struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         struct SelvaModify_HierarchyNode *src_node,
         struct SelvaModify_HierarchyNode *dst_node,
@@ -373,6 +381,7 @@ void SelvaSubscriptions_DeferHierarchyEvents(
         struct SelvaModify_Hierarchy *hierarchy,
         const struct SelvaModify_HierarchyNode *node);
 void SelvaSubscriptions_DeferHierarchyDeletionEvents(
+        struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const struct SelvaModify_HierarchyNode *node);
 void SelvaSubscriptions_FieldChangePrecheck(

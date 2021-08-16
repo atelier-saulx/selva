@@ -405,7 +405,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
     }
 
     removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
-    SelvaSubscriptions_DeferHierarchyDeletionEvents(hierarchy, node);
+    SelvaSubscriptions_DeferHierarchyDeletionEvents(ctx, hierarchy, node);
 
     /*
      * Never delete the root node.
@@ -594,6 +594,7 @@ static int cross_insert_children(
              * Inherit markers from the parent node to the new child.
              */
             SelvaSubscriptions_InheritParent(
+                ctx,
                 hierarchy,
                 child->id, &child->metadata,
                 SVector_Size(&child->children),
@@ -603,6 +604,7 @@ static int cross_insert_children(
              * Inherit markers from the new child to the parent node.
              */
             SelvaSubscriptions_InheritChild(
+                ctx,
                 hierarchy,
                 node->id, &node->metadata,
                 SVector_Size(&node->parents),
@@ -702,6 +704,7 @@ static int cross_insert_parents(
              * Inherit subscription markers from the new parent to the node.
              */
             SelvaSubscriptions_InheritParent(
+                ctx,
                 hierarchy,
                 node->id, &node->metadata,
                 SVector_Size(&node->children),
@@ -711,6 +714,7 @@ static int cross_insert_parents(
              * Inherit subscription markers from the node to the new parent.
              */
             SelvaSubscriptions_InheritChild(
+                ctx,
                 hierarchy,
                 parent->id, &parent->metadata,
                 SVector_Size(&parent->parents),
