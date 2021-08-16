@@ -3327,6 +3327,11 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
+squel@^5.13.0:
+  version "5.13.0"
+  resolved "https://registry.yarnpkg.com/squel/-/squel-5.13.0.tgz#09cc73e91f0d0e326482605ee76e3b7ac881ddf6"
+  integrity sha512-Fzd8zqbuqNwzodO3yO6MkX8qiDoVBuwqAaa3eKNz4idhBf24IQHbatBhLUiHAGGl962eGvPVRxzRuFWZlSf49w==
+
 stack-utils@^2.0.3:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/stack-utils/-/stack-utils-2.0.3.tgz#cd5f030126ff116b78ccb3c027fe302713b61277"
