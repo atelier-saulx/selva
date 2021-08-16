@@ -78,6 +78,14 @@ export default async function execTimeseries(
     .where(toExpr(op.filter))
     .limit(op.options.limit === -1 ? null : op.options.limit)
     .offset(op.options.offset === 0 ? null : op.options.offset)
+    .order(
+      op.options?.sort?.$field || '',
+      op.options?.sort?.$order === 'asc'
+        ? true
+        : op.options?.sort?.$order === 'desc'
+        ? false
+        : null
+    )
     .toParam()
   console.log('SQL', sql)
   return null

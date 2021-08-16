@@ -316,7 +316,8 @@ test.serial('get - basic value types timeseries', async (t) => {
             },
             $sort: {
               $field: 'value',
-              $order: 'asc',
+              // $order: 'asc',
+              $order: 'desc',
             },
           },
         },
