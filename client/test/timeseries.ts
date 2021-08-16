@@ -300,7 +300,7 @@ test.serial('get - basic value types timeseries', async (t) => {
         value: true,
         allValues: {
           $field: 'value',
-          $list: true,
+          $list: { $limit: 10 },
         },
         filteredValues: {
           $list: {
