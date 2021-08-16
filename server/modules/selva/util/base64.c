@@ -12,7 +12,9 @@
 
 static const unsigned char base64_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-size_t base64_encode_s(unsigned char *out, const unsigned char *src, size_t len, size_t line_max) {
+size_t base64_encode_s(char *str_out, const char *str_in, size_t len, size_t line_max) {
+    const unsigned char *src = (const unsigned char *)str_in;
+    unsigned char *dst = (unsigned char *)str_out;
     unsigned char *pos;
     const unsigned char *end, *in;
     int line_len;
@@ -23,7 +25,7 @@ size_t base64_encode_s(unsigned char *out, const unsigned char *src, size_t len,
 
     end = src + len;
     in = src;
-    pos = out;
+    pos = dst;
     line_len = 0;
     while (end - in >= 3) {
         *pos++ = base64_table[in[0] >> 2];
@@ -51,18 +53,18 @@ size_t base64_encode_s(unsigned char *out, const unsigned char *src, size_t len,
         line_len += 4;
     }
 
-    if (line_len) {
+    if (line_len && line_max != SIZE_MAX) {
         *pos++ = '\n';
     }
 
     *pos = '\0';
-    return pos - out;
+    return pos - dst;
 }
 
-unsigned char * base64_encode(const unsigned char *src, size_t len, size_t *out_len)
+char * base64_encode(const char *str_in, size_t len, size_t *out_len)
 {
     const size_t line_max = 72;
-    unsigned char *out;
+    char *out;
     size_t n;
 
     out = RedisModule_Alloc(base64_out_len(len, line_max) + 1);
@@ -70,15 +72,16 @@ unsigned char * base64_encode(const unsigned char *src, size_t len, size_t *out_
         return NULL;
     }
 
-    n = base64_encode_s(out, src, len, line_max);
+    n = base64_encode_s(out, str_in, len, line_max);
     if (out_len) {
         *out_len = n;
     }
     return out;
 }
 
-unsigned char * base64_decode(const unsigned char *src, size_t len, size_t *out_len)
+char * base64_decode(const char *str_in, size_t len, size_t *out_len)
 {
+    const unsigned char *src = (const unsigned char *)str_in;
     unsigned char dtable[256], *out, *pos, block[4], tmp;
     size_t i, count, olen;
     int pad = 0;
@@ -139,5 +142,5 @@ unsigned char * base64_decode(const unsigned char *src, size_t len, size_t *out_
     }
 
     *out_len = pos - out;
-    return out;
+    return (char *)out;
 }
