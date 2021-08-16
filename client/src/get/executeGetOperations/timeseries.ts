@@ -70,7 +70,11 @@ export default async function execTimeseries(
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
 
   const sql = squel
-    .select({ autoQuoteFieldNames: true })
+    .select({
+      autoQuoteFieldNames: true,
+      autoQuoteTableNames: true,
+      autoQuoteAliasNames: true,
+    })
     .from(`${type}_${op.sourceField}`)
     .field('ts')
     .field('payload')
