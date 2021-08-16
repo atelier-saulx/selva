@@ -76,6 +76,8 @@ export default async function execTimeseries(
     .field('payload')
     .where("`nodeId` = '?'", op.id)
     .where(toExpr(op.filter))
+    .limit(op.options.limit === -1 ? null : op.options.limit)
+    .offset(op.options.offset === 0 ? null : op.options.offset)
     .toParam()
   console.log('SQL', sql)
   return null
