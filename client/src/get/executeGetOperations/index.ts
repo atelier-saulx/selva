@@ -8,6 +8,7 @@ import { GetOptions } from '../'
 import find from './find'
 import aggregate from './aggregate'
 import inherit from './inherit'
+import timeseries from './timeseries'
 import { Rpn } from '@saulx/selva-query-ast-parser'
 import { FieldSchemaArrayLike, Schema } from '~selva/schema'
 import { ServerDescriptor } from '~selva/types'
@@ -650,15 +651,13 @@ export const executeGetOperation = async (
     )
   } else if (op.type === 'find') {
     if (op.isTimeseries) {
-      console.log('IS TIMESERIES', JSON.stringify(op, null, 2))
-      return null
+      return timeseries(client, op, lang, ctx)
     } else {
       return find(client, op, lang, ctx)
     }
   } else if (op.type === 'aggregate') {
     if (op.isTimeseries) {
-      console.log('IS TIMESERIES', JSON.stringify(op, null, 2))
-      return null
+      return timeseries(client, op, lang, ctx)
     } else {
       return aggregate(client, op, lang, ctx)
     }
