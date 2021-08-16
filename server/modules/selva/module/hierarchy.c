@@ -594,8 +594,7 @@ static int cross_insert_children(
              * Inherit markers from the parent node to the new child.
              */
             SelvaSubscriptions_InheritParent(
-                ctx,
-                hierarchy,
+                ctx, hierarchy,
                 child->id, &child->metadata,
                 SVector_Size(&child->children),
                 node);
@@ -604,8 +603,7 @@ static int cross_insert_children(
              * Inherit markers from the new child to the parent node.
              */
             SelvaSubscriptions_InheritChild(
-                ctx,
-                hierarchy,
+                ctx, hierarchy,
                 node->id, &node->metadata,
                 SVector_Size(&node->parents),
                 child);
@@ -704,8 +702,7 @@ static int cross_insert_parents(
              * Inherit subscription markers from the new parent to the node.
              */
             SelvaSubscriptions_InheritParent(
-                ctx,
-                hierarchy,
+                ctx, hierarchy,
                 node->id, &node->metadata,
                 SVector_Size(&node->children),
                 parent);
@@ -714,8 +711,7 @@ static int cross_insert_parents(
              * Inherit subscription markers from the node to the new parent.
              */
             SelvaSubscriptions_InheritChild(
-                ctx,
-                hierarchy,
+                ctx, hierarchy,
                 parent->id, &parent->metadata,
                 SVector_Size(&parent->parents),
                 node);
