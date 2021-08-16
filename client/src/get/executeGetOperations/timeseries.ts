@@ -7,7 +7,7 @@ import {
   GetOperationAggregate,
   GetOperationFind,
 } from '../types'
-import { getTypeFromId } from '../utils'
+import { getNestedSchema, getTypeFromId } from '../utils'
 import {
   executeNestedGetOperations,
   ExecContext,
@@ -67,6 +67,13 @@ export default async function execTimeseries(
   ctx: ExecContext
 ): Promise<any> {
   console.log('IS TIMESERIES', JSON.stringify(op, null, 2))
+  const fieldSchema = getNestedSchema(
+    client.schemas[ctx.db],
+    op.id,
+    <string>op.sourceField
+  )
+  // TODO: use the field schema to determine how to treat field path in filters
+  console.log('FIELD SCHEMA', fieldSchema)
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
 
   const sql = squel
