@@ -298,7 +298,7 @@ int Edge_Add(
         }
     }
 
-    SelvaSubscriptions_InheritEdge(hierarchy, src_node, dst_node, field_name_str, field_name_len);
+    SelvaSubscriptions_InheritEdge(ctx, hierarchy, src_node, dst_node, field_name_str, field_name_len);
     /*
      * Note that the regular change events for edges are only sent by the modify
      * command. Therefore we expect we don't need to do anything here.
@@ -401,7 +401,8 @@ static void remove_related_edge_markers(struct RedisModuleCtx *ctx, struct Selva
                 src_marker->sub == dst_marker->sub &&
                 !memcmp(src_marker->node_id, src_node_id, SELVA_NODE_ID_SIZE)) {
                 /* RFE Is it a bit ugly to do this here? */
-                dst_marker->marker_action(hierarchy, dst_marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY, dst_node);
+                /* TODO Should it be dst_node or src_node here? */
+                dst_marker->marker_action(ctx, hierarchy, dst_marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY, dst_node);
 
                 (void)SelvaSubscriptions_DeleteMarkerByPtr(ctx, hierarchy, dst_marker);
             }
