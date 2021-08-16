@@ -72,6 +72,7 @@ export default async function execTimeseries(
   const sql = squel
     .select({ autoQuoteFieldNames: true })
     .from(`${type}_${op.sourceField}`)
+    .field('ts')
     .field('payload')
     .where("`nodeId` = '?'", op.id)
     .where(toExpr(op.filter))
