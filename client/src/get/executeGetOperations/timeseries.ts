@@ -37,11 +37,11 @@ function forkToExpr(filter: Fork): squel.Expression {
 
   if (filter.$and) {
     for (const f of filter.$and) {
-      expr = expr.or(toExpr(f))
+      expr = expr.and(toExpr(f))
     }
   } else {
-    for (const f of filter.$and) {
-      expr = expr.and(toExpr(f))
+    for (const f of filter.$or) {
+      expr = expr.or(toExpr(f))
     }
   }
 

@@ -311,6 +311,16 @@ test.serial('get - basic value types timeseries', async (t) => {
                   $field: 'value',
                   $operator: '>',
                   $value: 0,
+                  $or: {
+                    $field: 'value',
+                    $operator: '=',
+                    $value: 0,
+                  },
+                },
+                {
+                  $field: 'value',
+                  $operator: '<',
+                  $value: 1000,
                 },
               ],
             },
