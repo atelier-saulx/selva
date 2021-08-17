@@ -122,6 +122,9 @@ export default async (
       result.push('F', field, buf)
     }
   } else {
+    // always clear the array first
+    result.push('7', field, '')
+
     const itemsFields = fields.items
     const parser = fieldParsers[itemsFields.type]
     await Promise.all(

@@ -83,7 +83,7 @@ test.serial('should replace array', async (t) => {
 
   await client.set({
     $id: lekker,
-    media: [{ src: 'http://wawa.com/222' }],
+    media: [{ src: 'http://wawa.com/222' }, { src: 'http://wawa.com/333' }],
   })
   t.deepEqualIgnoreOrder(
     await client.get({
@@ -94,7 +94,25 @@ test.serial('should replace array', async (t) => {
     }),
     {
       id: lekker,
-      media: [{ src: 'http://wawa.com/222' }],
+      media: [{ src: 'http://wawa.com/222' }, { src: 'http://wawa.com/333' }],
+    }
+  )
+
+  await client.set({
+    $id: lekker,
+    media: [{ src: 'http://wawa.com/444' }],
+  })
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $id: lekker,
+      id: true,
+      media: true,
+    }),
+    {
+      id: lekker,
+      media: [{ src: 'http://wawa.com/444' }],
     }
   )
 
@@ -112,7 +130,6 @@ test.serial('should replace array', async (t) => {
     }),
     {
       id: lekker,
-      media: [],
     }
   )
 
