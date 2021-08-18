@@ -6,6 +6,7 @@ import {
   Fork,
   GetOperationAggregate,
   GetOperationFind,
+  GetOptions,
 } from '../types'
 import { getNestedSchema, getTypeFromId } from '../utils'
 import {
@@ -29,6 +30,21 @@ function filterToExpr(filter: FilterAST): squel.Expression {
     return squel
       .expr()
       .and(`\`${filter.$field}\` ${filter.$operator} ?`, filter.$value)
+  }
+}
+
+function getFields(path: string, fields: Set<String>, props: GetOptions): void {
+  for (const k in props) {
+    const newPath = path === '' ? k : path + '.' + k
+
+    if (!k.startsWith('$')) {
+      const p = props[k]
+      if (typeof p === 'object') {
+        getFields(newPath, fields, props)
+      } else {
+        fields.add(newPath)
+      }
+    }
   }
 }
 
@@ -76,7 +92,7 @@ export default async function execTimeseries(
   console.log('FIELD SCHEMA', fieldSchema)
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
 
-  const sql = squel
+  let sql = squel
     .select({
       autoQuoteFieldNames: true,
       autoQuoteTableNames: true,
@@ -84,7 +100,6 @@ export default async function execTimeseries(
     })
     .from(`${type}_${op.sourceField}`)
     .field('ts')
-    .field('payload')
     .where("`nodeId` = '?'", op.id)
     .where(toExpr(op.filter))
     .limit(op.options.limit === -1 ? null : op.options.limit)
@@ -97,7 +112,19 @@ export default async function execTimeseries(
         ? false
         : null
     )
-    .toParam()
-  console.log('SQL', sql)
+
+  // TODO: get fields
+  if (['object', 'record'].includes(fieldSchema.type)) {
+    const fields: Set<String> = new Set()
+    getFields('', fields, op.props)
+    console.log('FIELDS', fields)
+    for (const f of fields) {
+      sql = sql.field(`payload.${f}`)
+    }
+  } else {
+    sql = sql.field('payload')
+  }
+
+  console.log('SQL', sql.toParam())
   return null
 }
