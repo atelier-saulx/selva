@@ -770,6 +770,20 @@ static int crossRemove(
         return SELVA_HIERARCHY_ENOMEM;
     }
 #endif
+#if 0
+    fprintf(stderr, "removing %d rels from %.*s:", (int)n, (int)SELVA_NODE_ID_SIZE, node->id);
+    for (size_t i = 0; i < n; i++) {
+        if (pointers) {
+            SelvaModify_HierarchyNode *adjacent;
+
+            memcpy(&adjacent, nodes[i], sizeof(SelvaModify_HierarchyNode *));
+            fprintf(stderr, " %.*s", (int)SELVA_NODE_ID_SIZE, adjacent->id);
+        } else {
+            fprintf(stderr, " %.*s", (int)SELVA_NODE_ID_SIZE, nodes[i]);
+        }
+    }
+    fprintf(stderr, "\n");
+#endif
 
     SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, node);
 
@@ -866,6 +880,7 @@ static int crossRemove(
  * Remove all relationships rel of node.
  */
 static void removeRelationships(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel) {
+    SVector *vec_a;
     size_t offset_a;
     size_t offset_b;
     SVECTOR_AUTOFREE(sub_markers);
@@ -886,6 +901,11 @@ static void removeRelationships(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hier
         return;
     }
 
+    vec_a = (SVector *)((char *)node + offset_a);
+    if (SVector_Size(vec_a) == 0) {
+        return;
+    }
+
     /*
      * Backup the subscription markers so we can refresh them after the
      * operation.
@@ -901,7 +921,6 @@ static void removeRelationships(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hier
 
     struct SVectorIterator it;
     SelvaModify_HierarchyNode *adj;
-    SVector *vec_a = (SVector *)((char *)node + offset_a);
 
     SVector_ForeachBegin(&it, vec_a);
     while ((adj = SVector_Foreach(&it))) {
