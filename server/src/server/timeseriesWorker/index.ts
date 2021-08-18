@@ -2,8 +2,6 @@ import { ServerOptions } from '../../types'
 import { connect, SelvaClient } from '@saulx/selva'
 import { PG } from '../pg'
 
-const START = Date.now()
-
 export type TimeSeriesInsertContext = {
   nodeId: string
   nodeType: string
@@ -78,7 +76,7 @@ export class TimeseriesWorker {
   }
 
   getTableName(context: TimeSeriesInsertContext): string {
-    return `"${context.nodeType}\$${context.field}\$${START}"`
+    return `"${context.nodeType}\$${context.field}"`
   }
 
   async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {
