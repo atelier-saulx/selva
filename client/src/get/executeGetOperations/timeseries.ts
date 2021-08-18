@@ -8,6 +8,7 @@ import {
   GetOperationFind,
   GetOptions,
 } from '../types'
+import { FieldSchema } from '../../schema/types'
 import { getNestedSchema, getTypeFromId } from '../utils'
 import {
   executeNestedGetOperations,
@@ -16,7 +17,13 @@ import {
   addMarker,
 } from './'
 
-function filterToExpr(filter: FilterAST): squel.Expression {
+function filterToExpr(
+  fieldSchema: FieldSchema,
+  filter: FilterAST
+): squel.Expression {
+  const isObj = ['object', 'record'].includes(fieldSchema.type)
+  const f = isObj ? `payload.${filter.$field}` : 'payload'
+
   if (!['=', '!=', '>', '<'].includes(filter.$operator)) {
     return squel.expr()
   }
@@ -24,12 +31,10 @@ function filterToExpr(filter: FilterAST): squel.Expression {
   if (Array.isArray(filter.$value)) {
     let expr = squel.expr()
     for (const v of filter.$value) {
-      expr = expr.or(`\`${filter.$field}\` ${filter.$operator} ?`, v)
+      expr = expr.or(`\`${f}\` ${filter.$operator} ?`, v)
     }
   } else {
-    return squel
-      .expr()
-      .and(`\`${filter.$field}\` ${filter.$operator} ?`, filter.$value)
+    return squel.expr().and(`\`${f}\` ${filter.$operator} ?`, filter.$value)
   }
 }
 
@@ -48,32 +53,35 @@ function getFields(path: string, fields: Set<String>, props: GetOptions): void {
   }
 }
 
-function forkToExpr(filter: Fork): squel.Expression {
+function forkToExpr(fieldSchema: FieldSchema, filter: Fork): squel.Expression {
   let expr = squel.expr()
 
   if (filter.$and) {
     for (const f of filter.$and) {
-      expr = expr.and(toExpr(f))
+      expr = expr.and(toExpr(fieldSchema, f))
     }
   } else {
     for (const f of filter.$or) {
-      expr = expr.or(toExpr(f))
+      expr = expr.or(toExpr(fieldSchema, f))
     }
   }
 
   return expr
 }
 
-function toExpr(filter: Fork | FilterAST): squel.Expression {
+function toExpr(
+  fieldSchema: FieldSchema,
+  filter: Fork | FilterAST
+): squel.Expression {
   if (!filter) {
     return squel.expr()
   }
 
   if (isFork(filter)) {
-    return forkToExpr(filter)
+    return forkToExpr(fieldSchema, filter)
   }
 
-  return filterToExpr(<FilterAST>filter)
+  return filterToExpr(fieldSchema, <FilterAST>filter)
 }
 
 export default async function execTimeseries(
@@ -101,7 +109,7 @@ export default async function execTimeseries(
     .from(`${type}_${op.sourceField}`)
     .field('ts')
     .where("`nodeId` = '?'", op.id)
-    .where(toExpr(op.filter))
+    .where(toExpr(fieldSchema, op.filter))
     .limit(op.options.limit === -1 ? null : op.options.limit)
     .offset(op.options.offset === 0 ? null : op.options.offset)
     .order(
