@@ -2,12 +2,38 @@ import { ServerOptions } from '../../types'
 import { connect, SelvaClient } from '@saulx/selva'
 import { PG } from '../pg'
 
+const START = Date.now()
+
 export type TimeSeriesInsertContext = {
   nodeId: string
   nodeType: string
   field: string
-  fieldSchema: Record<string, unknown>
+  fieldSchema: Record<string, unknown> & { type: string }
   payload: Record<string, unknown>
+  ts: number
+}
+
+export const SELVA_TO_SQL_TYPE = {
+  float: 'DOUBLE PRECISION',
+  boolean: 'BOOLEAN',
+  number: 'DOUBLE PRECISION',
+  int: 'integer',
+  string: 'text',
+  text: 'jsonb', // because of localization
+  json: 'jsonb',
+  id: 'text',
+  digest: 'text',
+  url: 'text',
+  email: 'text',
+  phone: 'text',
+  geo: 'jsonb',
+  type: 'text',
+  timestamp: 'TIMESTAMP',
+  reference: 'test',
+  references: 'JSONB',
+  object: 'JSON',
+  record: 'JSON',
+  array: 'JSON',
 }
 
 export class TimeseriesWorker {
@@ -26,17 +52,6 @@ export class TimeseriesWorker {
     this.postgresClient = new PG({
       connectionString: this.connectionString,
     })
-    await this.postgresClient.execute<void>(
-      `
-CREATE TABLE IF NOT EXISTS demo_events (
-  "nodeId" text,
-  "nodeType" text,
-  field text,
-  "fieldSchema" jsonb,
-  "payload" jsonb
-)`,
-      []
-    )
     this.tick()
   }
 
@@ -50,11 +65,10 @@ CREATE TABLE IF NOT EXISTS demo_events (
         const { type, context } = obj
 
         if (type === 'insert') {
-          await this.insertToTimeseriesDB(context)
+          await this.insertToTimeSeriesDB(context)
         } else {
           console.error(`Unknown schema event ${type} for ${row}`)
         }
-        // TODO: insert to PG
       }
     } catch (e) {
       console.error(e)
@@ -63,12 +77,31 @@ CREATE TABLE IF NOT EXISTS demo_events (
     setTimeout(this.tick.bind(this), 1000)
   }
 
-  // {"type":"insert","context":{"nodeId":"viA","nodeType":"lekkerType","field":"auth","fieldSchema":{"timeseries":true,"type":"json"},"payload":{"role":{"id":["root"],"type":"admin"}},"ts":1628756805739}}
-  async insertToTimeseriesDB(context: TimeSeriesInsertContext) {
+  getTableName(context: TimeSeriesInsertContext): string {
+    return `"${context.nodeType}\$${context.field}\$${START}"`
+  }
+
+  async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {
+    const createTable = `
+    CREATE TABLE IF NOT EXISTS ${this.getTableName(context)} (
+      "nodeId" text,
+      payload ${SELVA_TO_SQL_TYPE[context.fieldSchema.type]},
+      ts TIMESTAMP,
+      "fieldSchema" jsonb
+    );
+    `
+    console.log(`running: ${createTable}`)
+    await this.postgresClient.execute<void>(createTable, [])
+  }
+
+  async insertToTimeSeriesDB(context: TimeSeriesInsertContext) {
     console.log(`Inserting data, postgres at ${this.connectionString}`)
+
+    await this.ensureTableExists(context)
+
     await this.postgresClient.execute(
-      `INSERT INTO demo_events ("nodeId", "nodeType", field, "fieldSchema", payload) VALUES ($1, $2, $3, $4, $5)`,
-      [context.nodeId, context.nodeType, context.field, context.fieldSchema, context.payload]
+      `INSERT INTO ${this.getTableName(context)} ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
+      [context.nodeId, context.payload, new Date(context.ts), context.fieldSchema]
     )
   }
 

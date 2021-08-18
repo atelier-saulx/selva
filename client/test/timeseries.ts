@@ -1,3 +1,4 @@
+
 /*
  * TIMESERIES READS???
 const case1 = {
@@ -263,6 +264,22 @@ test.after(async (t) => {
   await srv.destroy()
   await t.connectionsAreEmpty()
 })
+
+// TODO: this will work once branch schema update valiation is merged: https://github.com/atelier-saulx/selva/blob/schema-update-validation/client/src/schema/types.ts#L10
+// import { FIELD_TYPES } from '../src/schema/types'
+// import { SELVA_TO_SQL_TYPE } from "../../server/src/server/timeseriesWorker"
+//
+// test.serial('ensure type mappings are in sync', async (t) => {
+//   const selvaTypes = new Set(FIELD_TYPES)
+//   const timeseriesTypes = new Set(Object.keys(SELVA_TO_SQL_TYPE))
+//
+//   for (let type of selvaTypes) {
+//     if (!timeseriesTypes.has(type)) {
+//       t.fail(`${type} is missing from the timeseries mapping, this will make us fail to manage timeseries for this type`)
+//     }
+//   }
+//   t.true(selvaTypes.size  <= timeseriesTypes.size)
+// })
 
 test.serial('get - basic value types timeseries', async (t) => {
   const client = connect({ port })

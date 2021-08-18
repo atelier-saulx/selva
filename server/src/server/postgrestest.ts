@@ -118,14 +118,12 @@ async function main() {
     `create foreign table weather_usa  partition of weather_metrics  for values in ('Austin', 'New York', 'San Francisco', 'Princeton') SERVER node2 OPTIONS (schema_name 'public', table_name 'weather_metrics', batch_size '10000');`,
     []
   )
-
   ;('Vienna')
   ;('Pietermaritzburg')
   ;('Lisbon')
   ;('Nairobi')
   ;('Stockholm')
   ;('Toronto')
-
   ;('Austin')
   ;('New York')
   ;('San Francisco')
