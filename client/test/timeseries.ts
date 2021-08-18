@@ -1,4 +1,3 @@
-
 /*
  * TIMESERIES READS???
 const case1 = {
@@ -303,6 +302,8 @@ test.serial('get - basic value types timeseries', async (t) => {
   })
 
   console.log('BLABLA', await client.redis.hgetall('___selva_schema'))
+
+  await wait(4e3)
 
   console.log(
     await client.get({
