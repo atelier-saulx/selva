@@ -129,7 +129,6 @@ export default async function execTimeseries(
         : null
     )
 
-  // TODO: get fields
   if (['object', 'record'].includes(fieldSchema.type)) {
     const fields: Set<String> = new Set()
     getFields('', fields, op.props)
