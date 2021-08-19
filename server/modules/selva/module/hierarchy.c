@@ -15,6 +15,7 @@
 #include "edge.h"
 #include "modify.h"
 #include "rpn.h"
+#include "config.h"
 #include "selva_node.h"
 #include "selva_object.h"
 #include "selva_onload.h"
@@ -288,8 +289,8 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
             (int)SELVA_NODE_ID_SIZE, id);
 #endif
 
-    if (unlikely(!SVector_Init(&node->parents, HIERARCHY_INITIAL_VECTOR_LEN, SVector_HierarchyNode_id_compare) ||
-                 !SVector_Init(&node->children, HIERARCHY_INITIAL_VECTOR_LEN, SVector_HierarchyNode_id_compare))) {
+    if (unlikely(!SVector_Init(&node->parents,  selva_glob_config.hierarchy_initial_vector_len, SVector_HierarchyNode_id_compare) ||
+                 !SVector_Init(&node->children, selva_glob_config.hierarchy_initial_vector_len, SVector_HierarchyNode_id_compare))) {
         SVector_Destroy(&node->parents);
         SVector_Destroy(&node->children);
 #if MEM_DEBUG
@@ -443,7 +444,7 @@ static void updateDepth(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyN
         return;
     }
 
-    if (unlikely(!SVector_Init(&q, HIERARCHY_EXPECTED_RESP_LEN, NULL))) {
+    if (unlikely(!SVector_Init(&q, selva_glob_config.hierarchy_expected_resp_len, NULL))) {
         fprintf(stderr, "%s:%d: Depth update error\n", __FILE__, __LINE__);
         abort();
     }
@@ -1463,7 +1464,7 @@ static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head
     }
 
     SVECTOR_AUTOFREE(stack);
-    if (unlikely(!SVector_Init(&stack, HIERARCHY_EXPECTED_RESP_LEN, NULL))) {
+    if (unlikely(!SVector_Init(&stack, selva_glob_config.hierarchy_expected_resp_len, NULL))) {
         return SELVA_HIERARCHY_ENOMEM;
     }
 
@@ -1516,7 +1517,7 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : HierarchyNode_Callback_Dummy;
     HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : HierarchyNode_ChildCallback_Dummy;
 
-    if (unlikely(!SVector_Init(&stack, HIERARCHY_EXPECTED_RESP_LEN, NULL))) {
+    if (unlikely(!SVector_Init(&stack, selva_glob_config.hierarchy_expected_resp_len, NULL))) {
         return SELVA_HIERARCHY_ENOMEM;
     }
 
@@ -1565,7 +1566,7 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
     HierarchyNode_ChildCallback child_cb = (cb)->child_cb ? (cb)->child_cb : HierarchyNode_ChildCallback_Dummy; \
     \
     SVECTOR_AUTOFREE(q); \
-    if (unlikely(!SVector_Init(&q, HIERARCHY_EXPECTED_RESP_LEN, NULL))) { \
+    if (unlikely(!SVector_Init(&q, selva_glob_config.hierarchy_expected_resp_len, NULL))) { \
         return SELVA_HIERARCHY_ENOMEM; \
     } \
     \

@@ -12,6 +12,7 @@ OBJS := \
 	module/arg_parser.o \
 	module/async_task.o \
 	module/comparator.o \
+	module/config.o \
 	module/edge.o \
 	module/edge_constraint.o \
 	module/errors.o \
