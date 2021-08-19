@@ -340,6 +340,11 @@ test.serial('get - basic value types timeseries', async (t) => {
                   $operator: '<',
                   $value: 1000,
                 },
+                {
+                  $field: 'ts',
+                  $operator: '>',
+                  $value: 'now-5d',
+                },
               ],
             },
             $sort: {

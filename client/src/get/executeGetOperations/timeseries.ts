@@ -1,4 +1,4 @@
-import { isFork } from '@saulx/selva-query-ast-parser'
+import { convertNow, isFork } from '@saulx/selva-query-ast-parser'
 import squel from 'squel'
 import { SelvaClient } from '../../'
 import {
@@ -21,6 +21,14 @@ function filterToExpr(
   fieldSchema: FieldSchema,
   filter: FilterAST
 ): squel.Expression {
+  if (filter.$field === 'ts') {
+    const v =
+      typeof filter.$value === 'string' && filter.$value.startsWith('now')
+        ? convertNow(filter.$value)
+        : filter.$value
+    return squel.expr().and(`\`ts\` ${filter.$operator} ?`, v)
+  }
+
   const isObj = ['object', 'record'].includes(fieldSchema.type)
   const f = isObj ? `payload.${filter.$field}` : 'payload'
 
