@@ -9,7 +9,12 @@ import {
   GetOptions,
 } from '../types'
 import { FieldSchema } from '../../schema/types'
-import { getNestedSchema, getTypeFromId } from '../utils'
+import {
+  getNestedField,
+  getNestedSchema,
+  getTypeFromId,
+  setNestedResult,
+} from '../utils'
 import {
   executeNestedGetOperations,
   ExecContext,
@@ -23,12 +28,13 @@ function filterToExpr(
   fieldSchema: FieldSchema,
   filter: FilterAST
 ): squel.Expression {
+  // TODO: handle values by field schema type
   if (filter.$field === 'ts') {
     const v =
       typeof filter.$value === 'string' && filter.$value.startsWith('now')
         ? convertNow(filter.$value)
         : filter.$value
-    return sq.expr().and(`"ts" ${filter.$operator} ?`, v)
+    return sq.expr().and(`"ts" ${filter.$operator} to_timestamp(${v} / 1000)`)
   }
 
   const isObj = ['object', 'record'].includes(fieldSchema.type)
@@ -123,22 +129,23 @@ export default async function execTimeseries(
     .limit(op.options.limit === -1 ? null : op.options.limit)
     .offset(op.options.offset === 0 ? null : op.options.offset)
 
+  const fields: Set<string> = new Set()
   if (['object', 'record'].includes(fieldSchema.type)) {
-    const fields: Set<string> = new Set()
     getFields('', fields, op.props)
     console.log('FIELDS', fields)
-    for (const f of fields) {
-      // const split = f.split('.').map((part) => "'" + part + "'")
-      // let fieldStr = 'payload->'
-      // for (let i = 0; i < split.length - 1; i++) {
-      //   fieldStr += split[i] + '-> '
-      // }
-      // fieldStr + '->>' + split[split.length - 1]
-      // sql = sql
-      //   .field(fieldStr, f, {
-      //     ignorePeriodsForFieldNameQuotes: true,
-      //   })
-    }
+    // TODO: goddamn json syntax
+    // for (const f of fields) {
+    // const split = f.split('.').map((part) => "'" + part + "'")
+    // let fieldStr = 'payload->'
+    // for (let i = 0; i < split.length - 1; i++) {
+    //   fieldStr += split[i] + '-> '
+    // }
+    // fieldStr + '->>' + split[split.length - 1]
+    // sql = sql
+    //   .field(fieldStr, f, {
+    //     ignorePeriodsForFieldNameQuotes: true,
+    //   })
+    // }
 
     sql = sql
       .field('payload')
@@ -165,10 +172,18 @@ export default async function execTimeseries(
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
   console.log('SQL', params)
-  try {
-    console.log('RESULT', await client.pg.query(params.text, params.values))
-  } catch (e) {
-    console.error('HMM', e)
-  }
-  return null
+  const result = await client.pg.query(params.text, params.values)
+
+  return result.rows.map((row) => {
+    if (fields.size) {
+      const r = {}
+      for (const f of fields) {
+        setNestedResult(r, f, getNestedField(row, `payload.${f}`))
+      }
+
+      return r
+    }
+
+    return row.value
+  })
 }

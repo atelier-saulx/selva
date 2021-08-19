@@ -306,61 +306,66 @@ test.serial('get - basic value types timeseries', async (t) => {
   await wait(4e3)
 
   console.log(
-    await client.get({
-      things: {
-        $list: {
-          $find: {
-            $traverse: 'descendants',
-          },
-        },
-        id: true,
-        title: true,
-        value: true,
-        allValues: {
-          $field: 'value',
-          $list: { $limit: 10 },
-        },
-        filteredValues: {
+    'YESYES',
+    JSON.stringify(
+      await client.get({
+        things: {
           $list: {
             $find: {
-              $traverse: 'value',
-              $filter: [
-                {
-                  $field: 'value',
-                  $operator: '>',
-                  $value: 0,
-                  $or: {
-                    $field: 'value',
-                    $operator: '=',
-                    $value: 0,
-                  },
-                },
-                {
-                  $field: 'value',
-                  $operator: '<',
-                  $value: 1000,
-                },
-                {
-                  $field: 'ts',
-                  $operator: '>',
-                  $value: 'now-5d',
-                },
-              ],
-            },
-            $sort: {
-              $field: 'value',
-              // $order: 'asc',
-              $order: 'desc',
+              $traverse: 'descendants',
             },
           },
+          id: true,
+          title: true,
+          value: true,
+          allValues: {
+            $field: 'value',
+            $list: { $limit: 10 },
+          },
+          filteredValues: {
+            $list: {
+              $find: {
+                $traverse: 'value',
+                $filter: [
+                  {
+                    $field: 'value',
+                    $operator: '>',
+                    $value: 0,
+                    $or: {
+                      $field: 'value',
+                      $operator: '=',
+                      $value: 0,
+                    },
+                  },
+                  {
+                    $field: 'value',
+                    $operator: '<',
+                    $value: 1000,
+                  },
+                  {
+                    $field: 'ts',
+                    $operator: '>',
+                    $value: 'now-5d',
+                  },
+                ],
+              },
+              $sort: {
+                $field: 'value',
+                // $order: 'asc',
+                $order: 'desc',
+              },
+            },
+          },
+          thumbnails: {
+            $field: 'image',
+            thumb: true,
+            $list: true,
+          },
         },
-        thumbnails: {
-          $field: 'image',
-          thumb: true,
-          $list: true,
-        },
-      },
-    })
+      }),
+      null,
+      2
+    )
   )
 
   await wait(5000e3)
