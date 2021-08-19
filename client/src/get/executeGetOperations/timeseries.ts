@@ -26,7 +26,7 @@ function filterToExpr(
       typeof filter.$value === 'string' && filter.$value.startsWith('now')
         ? convertNow(filter.$value)
         : filter.$value
-    return squel.expr().and(`\`ts\` ${filter.$operator} ?`, v)
+    return squel.expr().and(`"ts" ${filter.$operator} ?`, v)
   }
 
   const isObj = ['object', 'record'].includes(fieldSchema.type)
@@ -39,10 +39,10 @@ function filterToExpr(
   if (Array.isArray(filter.$value)) {
     let expr = squel.expr()
     for (const v of filter.$value) {
-      expr = expr.or(`\`${f}\` ${filter.$operator} ?`, v)
+      expr = expr.or(`"${f}" ${filter.$operator} ?`, v)
     }
   } else {
-    return squel.expr().and(`\`${f}\` ${filter.$operator} ?`, filter.$value)
+    return squel.expr().and(`"${f}" ${filter.$operator} ?`, filter.$value)
   }
 }
 
@@ -113,10 +113,11 @@ export default async function execTimeseries(
       autoQuoteFieldNames: true,
       autoQuoteTableNames: true,
       autoQuoteAliasNames: true,
+      nameQuoteCharacter: '"',
     })
     .from(`${type}$${op.sourceField}`)
     .field('ts')
-    .where("`nodeId` = '?'", op.id)
+    .where('"nodeId" = ?', op.id)
     .where(toExpr(fieldSchema, op.filter))
     .limit(op.options.limit === -1 ? null : op.options.limit)
     .offset(op.options.offset === 0 ? null : op.options.offset)
