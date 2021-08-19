@@ -46,7 +46,7 @@ function filterToExpr(
   }
 }
 
-function getFields(path: string, fields: Set<String>, props: GetOptions): void {
+function getFields(path: string, fields: Set<string>, props: GetOptions): void {
   for (const k in props) {
     const newPath = path === '' ? k : path + '.' + k
 
@@ -114,7 +114,7 @@ export default async function execTimeseries(
       autoQuoteTableNames: true,
       autoQuoteAliasNames: true,
     })
-    .from(`${type}_${op.sourceField}`)
+    .from(`${type}$${op.sourceField}`)
     .field('ts')
     .where("`nodeId` = '?'", op.id)
     .where(toExpr(fieldSchema, op.filter))
@@ -130,16 +130,24 @@ export default async function execTimeseries(
     )
 
   if (['object', 'record'].includes(fieldSchema.type)) {
-    const fields: Set<String> = new Set()
+    const fields: Set<string> = new Set()
     getFields('', fields, op.props)
     console.log('FIELDS', fields)
     for (const f of fields) {
-      sql = sql.field(`payload.${f}`)
+      sql = sql.field(`payload.${f}`, f, {
+        ignorePeriodsForFieldNameQuotes: true,
+      })
     }
   } else {
     sql = sql.field('payload')
   }
 
-  console.log('SQL', sql.toParam())
+  const params = sql.toParam()
+  console.log('SQL', params)
+  try {
+    console.log('RESULT', await client.pg.query(params.text, params.values))
+  } catch (e) {
+    console.error('HMM', e)
+  }
   return null
 }
