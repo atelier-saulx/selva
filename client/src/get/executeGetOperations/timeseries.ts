@@ -17,6 +17,8 @@ import {
   addMarker,
 } from './'
 
+const sq = squel.useFlavour('postgres')
+
 function filterToExpr(
   fieldSchema: FieldSchema,
   filter: FilterAST
@@ -26,23 +28,23 @@ function filterToExpr(
       typeof filter.$value === 'string' && filter.$value.startsWith('now')
         ? convertNow(filter.$value)
         : filter.$value
-    return squel.expr().and(`"ts" ${filter.$operator} ?`, v)
+    return sq.expr().and(`"ts" ${filter.$operator} ?`, v)
   }
 
   const isObj = ['object', 'record'].includes(fieldSchema.type)
   const f = isObj ? `payload.${filter.$field}` : 'payload'
 
   if (!['=', '!=', '>', '<'].includes(filter.$operator)) {
-    return squel.expr()
+    return sq.expr()
   }
 
   if (Array.isArray(filter.$value)) {
-    let expr = squel.expr()
+    let expr = sq.expr()
     for (const v of filter.$value) {
       expr = expr.or(`"${f}" ${filter.$operator} ?`, v)
     }
   } else {
-    return squel.expr().and(`"${f}" ${filter.$operator} ?`, filter.$value)
+    return sq.expr().and(`"${f}" ${filter.$operator} ?`, filter.$value)
   }
 }
 
@@ -62,7 +64,7 @@ function getFields(path: string, fields: Set<string>, props: GetOptions): void {
 }
 
 function forkToExpr(fieldSchema: FieldSchema, filter: Fork): squel.Expression {
-  let expr = squel.expr()
+  let expr = sq.expr()
 
   if (filter.$and) {
     for (const f of filter.$and) {
@@ -82,7 +84,7 @@ function toExpr(
   filter: Fork | FilterAST
 ): squel.Expression {
   if (!filter) {
-    return squel.expr()
+    return sq.expr()
   }
 
   if (isFork(filter)) {
@@ -108,9 +110,8 @@ export default async function execTimeseries(
   console.log('FIELD SCHEMA', fieldSchema)
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
 
-  let sql = squel
+  let sql = sq
     .select({
-      autoQuoteFieldNames: true,
       autoQuoteTableNames: true,
       autoQuoteAliasNames: true,
       nameQuoteCharacter: '"',
@@ -121,29 +122,48 @@ export default async function execTimeseries(
     .where(toExpr(fieldSchema, op.filter))
     .limit(op.options.limit === -1 ? null : op.options.limit)
     .offset(op.options.offset === 0 ? null : op.options.offset)
-    .order(
-      op.options?.sort?.$field || '',
-      op.options?.sort?.$order === 'asc'
-        ? true
-        : op.options?.sort?.$order === 'desc'
-        ? false
-        : null
-    )
 
   if (['object', 'record'].includes(fieldSchema.type)) {
     const fields: Set<string> = new Set()
     getFields('', fields, op.props)
     console.log('FIELDS', fields)
     for (const f of fields) {
-      sql = sql.field(`payload.${f}`, f, {
-        ignorePeriodsForFieldNameQuotes: true,
-      })
+      // const split = f.split('.').map((part) => "'" + part + "'")
+      // let fieldStr = 'payload->'
+      // for (let i = 0; i < split.length - 1; i++) {
+      //   fieldStr += split[i] + '-> '
+      // }
+      // fieldStr + '->>' + split[split.length - 1]
+      // sql = sql
+      //   .field(fieldStr, f, {
+      //     ignorePeriodsForFieldNameQuotes: true,
+      //   })
     }
+
+    sql = sql
+      .field('payload')
+      .order(
+        op.options?.sort?.$field || '',
+        op.options?.sort?.$order === 'asc'
+          ? true
+          : op.options?.sort?.$order === 'desc'
+          ? false
+          : null
+      )
   } else {
-    sql = sql.field('payload')
+    sql = sql
+      .field('payload', 'value')
+      .order(
+        op.options?.sort?.$field ? 'payload' : '',
+        op.options?.sort?.$order === 'asc'
+          ? true
+          : op.options?.sort?.$order === 'desc'
+          ? false
+          : null
+      )
   }
 
-  const params = sql.toParam()
+  const params = sql.toParam({ numberedParametersStartAt: 1 })
   console.log('SQL', params)
   try {
     console.log('RESULT', await client.pg.query(params.text, params.values))
