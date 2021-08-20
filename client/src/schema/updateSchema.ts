@@ -40,7 +40,21 @@ export function newSchemaDefinition(
 
   for (const typeName in newSchema.types) {
     if (!oldSchema.types[typeName]) {
-      schema.types[typeName] = newSchema.types[typeName]
+      const newType = newSchema.types[typeName]
+      if (
+        newType.prefix === 'ro' ||
+        (newType.prefix && oldSchema.prefixToTypeMapping[newType.prefix])
+      ) {
+        throw new Error(
+          `Prefix ${newType.prefix} is already in use by type ${
+            newType.prefix === 'ro'
+              ? 'root'
+              : oldSchema.prefixToTypeMapping[newType.prefix]
+          }`
+        )
+      }
+
+      schema.types[typeName] = newType
     }
   }
 

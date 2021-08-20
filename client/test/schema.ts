@@ -296,7 +296,7 @@ test.serial('schemas - basic', async (t) => {
 
   // drop search index in this case (NOT SUPPORTED YET!)
   // throws for now
-  const e = await t.throwsAsync(
+  let e = await t.throwsAsync(
     client.updateSchema({
       types: {
         match: {
@@ -320,6 +320,51 @@ test.serial('schemas - basic', async (t) => {
     e.stack.includes(
       'Can not change existing search types for flurpy.snurkels in type match, changing from ["TAG"] to ["TEXT"]. This will be supported in the future.'
     )
+  )
+
+  // test that you can't set custom types with 'ro' as prefix
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        flurpydurpy: {
+          prefix: 'ro',
+          fields: {
+            niceStrField: { type: 'string' },
+          },
+        },
+      },
+    })
+  )
+
+  t.true(e.stack.includes('Prefix ro is already in use'))
+
+  // test that you can't set custom types with an already used prefix as prefix
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        flurpydurpy: {
+          prefix: 'ma',
+          fields: {
+            niceStrField: { type: 'string' },
+          },
+        },
+      },
+    })
+  )
+
+  t.true(e.stack.includes('Prefix ma is already in use'))
+
+  await t.notThrowsAsync(
+    client.updateSchema({
+      types: {
+        flurpydurpy: {
+          prefix: 'fl',
+          fields: {
+            niceStrField: { type: 'string' },
+          },
+        },
+      },
+    })
   )
 
   // const info2 = await client.redis.command(
