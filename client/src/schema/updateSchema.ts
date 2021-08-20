@@ -16,26 +16,6 @@ export function newSchemaDefinition(
   oldSchema: Schema,
   newSchema: Schema
 ): Schema {
-  if (!oldSchema) {
-    if (!newSchema.languages) {
-      newSchema.languages = []
-    }
-
-    if (!newSchema.types) {
-      newSchema.types = {}
-    }
-
-    newSchema.rootType = {
-      prefix: 'ro',
-      fields: {
-        ...rootDefaultFields,
-        ...((newSchema.rootType && newSchema.rootType.fields) || {}),
-      },
-    }
-
-    return newSchema
-  }
-
   const schema: Schema = {
     sha: oldSchema.sha,
     rootType: oldSchema.rootType,
