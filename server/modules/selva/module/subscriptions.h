@@ -291,8 +291,6 @@ int Selva_AddSubscriptionAliasMarker(
 /**
  * Add a subscription marker with a callback.
  * @param filter is an RPN expression used to determine if the callback should be called for this node.
- * @param dir_expression is an expression for SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION. The expression will be owned and managed by subscriptions and the called must not hold a pointer to it.
- * @param filter is an expression stored in the marker and it can be used by the callback. The expression will be owned and managed by subscriptions and the called must not hold a pointer to it.
  * @param callback is called each time all the marker conditions are met for a node.
  */
 int SelvaSubscriptions_AddCallbackMarker(
@@ -303,10 +301,11 @@ int SelvaSubscriptions_AddCallbackMarker(
         Selva_NodeId node_id,
         enum SelvaTraversal dir,
         const char *dir_field,
-        struct rpn_expression *dir_expression,
-        struct rpn_expression *filter,
+        const char *dir_expression_str,
+        const char *filter_str,
         Selva_SubscriptionMarkerAction *callback,
-        void *owner_ctx);
+        void *owner_ctx
+    );
 
 /**
  * Get a pointer to a subscription marker by subscription and marker id.

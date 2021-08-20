@@ -209,9 +209,6 @@ static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
 #endif
     rpn_destroy(marker->filter_ctx);
 #if MEM_DEBUG
-    if (marker->filter_expression) {
-        memset(marker->filter_expression, 0, sizeof(*marker->filter_expression));
-    }
     if (marker->fields) {
         memset(marker->fields, 0, sizeof(*marker->fields));
     }
@@ -291,7 +288,7 @@ static void do_sub_marker_removal(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hi
     destroy_marker(marker);
 }
 
-int delete_marker(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub, Selva_SubscriptionMarkerId marker_id) {
+static int delete_marker(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, struct Selva_Subscription *sub, Selva_SubscriptionMarkerId marker_id) {
     struct Selva_SubscriptionMarker find = {
         .marker_id = marker_id,
         .sub = sub,
@@ -781,11 +778,13 @@ int SelvaSubscriptions_AddCallbackMarker(
         Selva_NodeId node_id,
         enum SelvaTraversal dir,
         const char *dir_field,
-        struct rpn_expression *dir_expression,
-        struct rpn_expression *filter,
+        const char *dir_expression_str,
+        const char *filter_str,
         Selva_SubscriptionMarkerAction *callback,
         void *owner_ctx
     ) {
+    struct rpn_expression *dir_expression = NULL;
+    struct rpn_expression *filter = NULL;
     struct rpn_ctx *filter_ctx = NULL;
     struct Selva_SubscriptionMarker *marker;
     int err = 0;
@@ -795,34 +794,55 @@ int SelvaSubscriptions_AddCallbackMarker(
         return SELVA_SUBSCRIPTIONS_EEXIST;
     }
 
-    if (filter) {
+    if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && dir_expression_str) {
+        dir_expression = rpn_compile(dir_expression_str);
+        if (!dir_expression) {
+            err = SELVA_RPN_ECOMP;
+            goto out;
+        }
+    }
+
+    if (filter_str) {
+        filter = rpn_compile(filter_str);
+        if (!filter) {
+            err = SELVA_RPN_ECOMP;
+            goto out;
+        }
+
         filter_ctx = rpn_init(1);
         if (!filter_ctx) {
-            return SELVA_ENOMEM;
+            err = SELVA_ENOMEM;
+            goto out;
         }
     }
 
     err = new_marker(hierarchy, sub_id, marker_id, marker_flags, callback, &marker);
     if (err) {
-        rpn_destroy(filter_ctx);
-        return SELVA_ENOMEM;
+        err = SELVA_ENOMEM;
+        goto out;
     }
 
     marker_set_node_id(marker, node_id);
     marker_set_dir(marker, dir);
 
-    if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && dir_expression) {
+    if (dir_expression) {
         marker_set_traversal_expression(marker, dir_expression);
     } else if (dir_field) {
         marker_set_ref_field(marker, dir_field);
     }
-
 
     if (filter) {
         marker_set_filter(marker, filter_ctx, filter);
     }
 
     marker_set_action_owner_ctx(marker, owner_ctx);
+
+out:
+    if (err) {
+        rpn_destroy_expression(dir_expression);
+        rpn_destroy_expression(filter);
+        rpn_destroy(filter_ctx);
+    }
 
     return err;
 }
