@@ -6,11 +6,51 @@ import {
   FieldSchema,
   rootDefaultFields,
   SchemaOptions,
+  FIELD_TYPES,
 } from '.'
 import { ServerSelector } from '../types'
 import { wait } from '../util'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
+
+function validateNewFieldTypes(
+  type: TypeSchema,
+  obj: TypeSchema | FieldSchema,
+  path: string
+) {
+  if ((<any>obj).type) {
+    const field = <FieldSchema>obj
+    if (
+      field.type === 'object' ||
+      (field.type === 'json' && field.properties)
+    ) {
+      for (const propName in field.properties) {
+        validateNewFieldTypes(
+          type,
+          field.properties[propName],
+          `${path}.${propName}`
+        )
+      }
+    } else if (field.type === 'record') {
+      validateNewFieldTypes(type, field.values, `${path}.*`)
+    } else {
+      if (!FIELD_TYPES.includes(field.type)) {
+        throw new Error(
+          `Field ${path} has an unsupported field type ${
+            field.type
+          }, supported types are ${FIELD_TYPES.join(', ')}`
+        )
+      }
+    }
+  } else {
+    const type = <TypeSchema>obj
+    if (type.fields) {
+      for (const fieldName in type.fields) {
+        validateNewFieldTypes(type, type.fields[fieldName], fieldName)
+      }
+    }
+  }
+}
 
 export function newSchemaDefinition(
   oldSchema: Schema,
@@ -39,8 +79,9 @@ export function newSchemaDefinition(
   }
 
   for (const typeName in newSchema.types) {
+    const newType = newSchema.types[typeName]
+
     if (!oldSchema.types[typeName]) {
-      const newType = newSchema.types[typeName]
       if (
         newType.prefix === 'ro' ||
         (newType.prefix && oldSchema.prefixToTypeMapping[newType.prefix])
@@ -53,6 +94,7 @@ export function newSchemaDefinition(
           }`
         )
       }
+      validateNewFieldTypes(newType, newType, '')
 
       schema.types[typeName] = newType
     }
