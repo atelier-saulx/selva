@@ -13,11 +13,7 @@ import { wait } from '../util'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
-function validateNewFieldTypes(
-  type: TypeSchema,
-  obj: TypeSchema | FieldSchema,
-  path: string
-) {
+function validateNewFieldTypes(obj: TypeSchema | FieldSchema, path: string) {
   if ((<any>obj).type) {
     const field = <FieldSchema>obj
     if (
@@ -25,14 +21,10 @@ function validateNewFieldTypes(
       (field.type === 'json' && field.properties)
     ) {
       for (const propName in field.properties) {
-        validateNewFieldTypes(
-          type,
-          field.properties[propName],
-          `${path}.${propName}`
-        )
+        validateNewFieldTypes(field.properties[propName], `${path}.${propName}`)
       }
     } else if (field.type === 'record') {
-      validateNewFieldTypes(type, field.values, `${path}.*`)
+      validateNewFieldTypes(field.values, `${path}.*`)
     } else {
       if (!FIELD_TYPES.includes(field.type)) {
         throw new Error(
@@ -46,7 +38,7 @@ function validateNewFieldTypes(
     const type = <TypeSchema>obj
     if (type.fields) {
       for (const fieldName in type.fields) {
-        validateNewFieldTypes(type, type.fields[fieldName], fieldName)
+        validateNewFieldTypes(type.fields[fieldName], fieldName)
       }
     }
   }
@@ -94,7 +86,7 @@ export function newSchemaDefinition(
           }`
         )
       }
-      validateNewFieldTypes(newType, newType, '')
+      validateNewFieldTypes(newType, '')
 
       schema.types[typeName] = newType
     }
@@ -156,6 +148,7 @@ function newTypeDefinition(
     hierarchy: (newType && newType.hierarchy) || (oldType && oldType.hierarchy),
   }
 
+  // FIXME: I think this code is dead code
   if (!oldType) {
     return newType
   } else if (!newType) {
@@ -182,7 +175,9 @@ function newTypeDefinition(
 
   for (const fieldName in newType.fields) {
     if (oldType.fields && !oldType.fields[fieldName]) {
-      typeDef.fields[fieldName] = newType.fields[fieldName]
+      const newField = newType.fields[fieldName]
+      validateNewFieldTypes(newField, fieldName)
+      typeDef.fields[fieldName] = newField
     }
   }
 

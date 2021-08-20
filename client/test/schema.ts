@@ -382,6 +382,23 @@ test.serial('schemas - basic', async (t) => {
 
   t.true(e.stack.includes(`Field niceStrField has an unsupported field type`))
 
+  // make sure you can't add nonsensical field types on existing type
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        flurpydurpy: {
+          fields: {
+            notSoNiceStrField: { type: <'string'>'strin' },
+          },
+        },
+      },
+    })
+  )
+
+  t.true(
+    e.stack.includes(`Field notSoNiceStrField has an unsupported field type`)
+  )
+
   // const info2 = await client.redis.command(
   //   { name: 'default' },
   //   'FT.INFO',
