@@ -361,6 +361,12 @@ test.serial('schemas - basic', async (t) => {
           prefix: 'fl',
           fields: {
             niceStrField: { type: 'string' },
+            niceObject: {
+              type: 'object',
+              properties: {
+                niceStrField: { type: 'string' },
+              },
+            },
           },
         },
       },
@@ -397,6 +403,28 @@ test.serial('schemas - basic', async (t) => {
 
   t.true(
     e.stack.includes(`Field notSoNiceStrField has an unsupported field type`)
+  )
+
+  // make sure you can't add nonsensical field types on existing type and existing object nested field
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        flurpydurpy: {
+          fields: {
+            niceObject: {
+              type: 'object',
+              properties: {
+                helloBad: { type: <'string'>'strin' },
+              },
+            },
+          },
+        },
+      },
+    })
+  )
+
+  t.true(
+    e.stack.includes(`Field niceObject.helloBad has an unsupported field type`)
   )
 
   // const info2 = await client.redis.command(

@@ -164,7 +164,7 @@ function newTypeDefinition(
   for (const fieldName in oldType.fields) {
     if (newType.fields && newType.fields[fieldName]) {
       typeDef.fields[fieldName] = newFieldDefinition(
-        `${typeName}.${fieldName}`,
+        `${fieldName}`,
         oldType.fields[fieldName],
         newType.fields[fieldName]
       )
@@ -214,7 +214,9 @@ function newFieldDefinition(
 
     for (const fieldName in (<any>newField).properties) {
       if (!oldField.properties[fieldName]) {
-        props[fieldName] = (<any>newField).properties[fieldName]
+        const newProperty = (<any>newField).properties[fieldName]
+        validateNewFieldTypes(newProperty, fieldPath + '.' + fieldName)
+        props[fieldName] = newProperty
       }
     }
 
