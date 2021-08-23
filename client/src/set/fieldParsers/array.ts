@@ -90,7 +90,7 @@ export default async (
     if (payload.$delete === true) {
       result.push('7', field, '')
       return 0
-    } else if (payload.$push) {
+    } else if (payload.$push !== undefined) {
       const itemType = ITEM_TYPES[fields.items.type]
       const content = new Uint32Array([itemType])
       const buf = Buffer.from(content.buffer)
@@ -121,7 +121,7 @@ export default async (
           $lang
         )
       }
-    } else if (payload.$unshift) {
+    } else if (payload.$unshift !== undefined) {
       const itemType = ITEM_TYPES[fields.items.type]
       const content = new Uint32Array([itemType, 0])
       const buf = Buffer.from(content.buffer)
@@ -155,7 +155,7 @@ export default async (
           $lang
         )
       }
-    } else if (payload.$assign) {
+    } else if (payload.$assign !== undefined) {
       const idx = payload.$assign.$idx
       const value = payload.$assign.$value
 
@@ -178,7 +178,7 @@ export default async (
         type,
         $lang
       )
-    } else if (payload.$insert) {
+    } else if (payload.$insert !== undefined) {
       const idx = payload.$insert.$idx
       const itemType = ITEM_TYPES[fields.items.type]
       const content = new Uint32Array([itemType, idx])
@@ -213,7 +213,7 @@ export default async (
           $lang
         )
       }
-    } else if (payload.$remove) {
+    } else if (payload.$remove !== undefined) {
       const content = new Uint32Array([payload.$remove.$idx])
       const buf = Buffer.from(content.buffer)
       result.push('F', field, buf)
