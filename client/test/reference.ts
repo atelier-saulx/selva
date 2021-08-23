@@ -523,6 +523,7 @@ test.serial('list of simple singular reference', async (t) => {
     children: {
       id: true,
       title: true,
+      parents: true,
       specialMatch: {
         id: true,
         title: true,
@@ -541,22 +542,24 @@ test.serial('list of simple singular reference', async (t) => {
     },
   })
 
-  t.deepEqualIgnoreOrder(result, {
+  t.deepEqual(result, {
     children: [
       {
         id: 'clA',
         title: 'yesh club',
+        parents: ['root'],
         specialMatch: { id: 'maA', title: 'yesh match' },
       },
     ],
   })
 
-  t.deepEqualIgnoreOrder(
+  t.deepEqual(
     await client.get({
       $id: 'root',
       $language: 'en',
       children: {
         $all: true,
+        parents: true,
         specialMatch: {
           id: true,
           title: true,
@@ -579,6 +582,7 @@ test.serial('list of simple singular reference', async (t) => {
         {
           id: 'clA',
           type: 'club',
+          parents: ['root'],
           title: 'yesh club',
           specialMatch: { id: 'maA', title: 'yesh match' },
         },

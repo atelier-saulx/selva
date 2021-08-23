@@ -1,23 +1,25 @@
 import { resolve as pathResolve } from 'path'
 import ProcessManager from './processManager'
 import { SelvaClient, ServerType } from '@saulx/selva'
+import { loadScripts } from './attachStatusListeners'
 
 export default class RedisManager extends ProcessManager {
   private redisPort: number
   private redisHost: string
+  private opts: {
+    host: string
+    port: number
+    selvaClient: SelvaClient
+    name: string
+    type: ServerType
+  }
   private selvaClient: SelvaClient
   private type: ServerType
   private name: string
 
   constructor(
     args: string[],
-    {
-      host,
-      port,
-      selvaClient,
-      type,
-      name,
-    }: {
+    opts: {
       host: string
       port: number
       selvaClient: SelvaClient
@@ -25,6 +27,8 @@ export default class RedisManager extends ProcessManager {
       type: ServerType
     }
   ) {
+    const { host, port, selvaClient, type, name } = opts
+
     const platform = process.platform === 'linux' ? 'linux_x64' : 'darwin_x64'
     const command = `${__dirname}/../../modules/binaries/${platform}/redis-server-selva`
     super(command, {
@@ -35,11 +39,15 @@ export default class RedisManager extends ProcessManager {
               REDIS_PORT: port.toString(),
               SERVER_TYPE: type,
               LD_LIBRARY_PATH: `${__dirname}/../../modules/binaries/linux_x64:/usr/local/lib`,
-              LOCPATH: pathResolve(__dirname, '../../modules/binaries/linux_x64/locale'), // MacOS libSystem will ignore this
+              LOCPATH: pathResolve(
+                __dirname,
+                '../../modules/binaries/linux_x64/locale'
+              ), // MacOS libSystem will ignore this
             }
           : { REDIS_PORT: port.toString(), SERVER_TYPE: type },
     })
 
+    this.opts = opts
     this.redisHost = host
     this.redisPort = port
     this.selvaClient = selvaClient
@@ -104,5 +112,9 @@ export default class RedisManager extends ProcessManager {
         isBusy: true,
       }
     }
+  }
+
+  async initializeState() {
+    return loadScripts(this.opts)
   }
 }

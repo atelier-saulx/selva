@@ -269,6 +269,10 @@ export default async (
       const content = new Uint32Array([payload.$remove.$idx])
       const buf = Buffer.from(content.buffer)
       result.push('F', field, buf)
+    } else {
+      throw new Error(
+        `Unknown operator for arrays in ${JSON.stringify(payload)}`
+      )
     }
   } else {
     // always clear the array first

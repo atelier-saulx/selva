@@ -1806,6 +1806,21 @@ test.serial('set - push into array', async (t) => {
     },
   })
 
+  let e = await t.throwsAsync(
+    client.set({
+      $id: id,
+      objRec: {
+        abba: {
+          intArray: {
+            $add: [2, 2],
+          },
+        },
+      },
+    })
+  )
+
+  t.true(e.stack.includes('Unknown operator for arrays'))
+
   await client.set({
     $id: id,
     objRec: {
@@ -2411,8 +2426,8 @@ test.serial('set - insert and set further into array', async (t) => {
               hello: 'yes 3',
               value: 3,
             },
-            null,
-            null,
+            {},
+            {},
             { value: 7 },
           ],
         },
@@ -2464,8 +2479,8 @@ test.serial('set - insert and set further into array', async (t) => {
               hello: 'yes 3',
               value: 3,
             },
-            null,
-            null,
+            {},
+            {},
             { value: 7 },
           ],
         },
