@@ -2273,7 +2273,7 @@ test.serial('get - record with nested wildcard query', async (t) => {
   await client.destroy()
 })
 
-test.serial('get - field with array', async (t) => {
+test.serial.only('get - field with array', async (t) => {
   const client = connect({ port })
   const id = await client.set({
     type: 'lekkerType',
@@ -2644,6 +2644,49 @@ test.serial('get - field with array', async (t) => {
             hello: 'yes 2',
             value: 2,
           },
+        ],
+      },
+    },
+  })
+
+  await client.set({
+    $id: id,
+
+    objRec: {
+      abba: {
+        objArray: {
+          $push: {},
+        },
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: true,
+      },
+    },
+  })
+
+  t.deepEqual(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+          {},
         ],
       },
     },
