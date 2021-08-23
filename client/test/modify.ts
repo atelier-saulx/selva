@@ -2488,5 +2488,96 @@ test.serial('set - insert and set further into array', async (t) => {
     }
   )
 
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        intArray: {
+          $insert: {
+            $idx: 2,
+            $value: [123, 124, 125],
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          floatArray: [1.1, 2.2, 3.3, 4.4, 0, 0, 7.7],
+          intArray: [1, 2, 123, 124, 125, 3, 4, 5, 0, 7],
+          strArray: ['a', 'b', 'c'],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+            {},
+            {},
+            { value: 7 },
+          ],
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        intArray: {
+          $push: [11, 12, 13],
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          floatArray: [1.1, 2.2, 3.3, 4.4, 0, 0, 7.7],
+          intArray: [1, 2, 123, 124, 125, 3, 4, 5, 0, 7, 11, 12, 13],
+          strArray: ['a', 'b', 'c'],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+            {},
+            {},
+            { value: 7 },
+          ],
+        },
+      },
+    }
+  )
+
   client.destroy()
 })
