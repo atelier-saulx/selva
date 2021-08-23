@@ -42,9 +42,11 @@ static int send_edge_field(
         size_t field_prefix_len,
         RedisModuleString *field) {
     struct EdgeField *edge_field;
+    void *p;
     TO_STR(field);
 
-    int off = SelvaObject_GetPointerPartialMatchStr(edges, field_str, field_len, (void **)&edge_field);
+    int off = SelvaObject_GetPointerPartialMatchStr(edges, field_str, field_len, &p);
+    edge_field = p;
     if (off < 0) {
         return off;
     } else if (!edge_field) {
