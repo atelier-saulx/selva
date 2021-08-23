@@ -12,7 +12,7 @@ const ITEM_TYPES: Record<string, number> = {
   record: 4,
 }
 
-function sendPush(
+async function sendPush(
   typeArg: Buffer,
   client: SelvaClient,
   schema: Schema,
@@ -28,7 +28,7 @@ function sendPush(
   const fieldWithIdx = `${field}[-1]`
   const itemsFields = fields.items
   const parser = fieldParsers[itemsFields.type]
-  parser(
+  return parser(
     client,
     schema,
     fieldWithIdx,
@@ -40,7 +40,7 @@ function sendPush(
   )
 }
 
-function sendInsert(
+async function sendInsert(
   typeArg: Buffer,
   idx: number,
   client: SelvaClient,
@@ -63,7 +63,7 @@ function sendInsert(
   const fieldWithIdx = `${field}[${idx}]`
   const itemsFields = fields.items
   const parser = fieldParsers[itemsFields.type]
-  parser(
+  return parser(
     client,
     schema,
     fieldWithIdx,
@@ -96,10 +96,20 @@ export default async (
       const buf = Buffer.from(content.buffer)
       if (Array.isArray(payload.$push)) {
         for (const el of payload.$push) {
-          sendPush(buf, client, schema, field, el, result, fields, type, $lang)
+          await sendPush(
+            buf,
+            client,
+            schema,
+            field,
+            el,
+            result,
+            fields,
+            type,
+            $lang
+          )
         }
       } else {
-        sendPush(
+        await sendPush(
           buf,
           client,
           schema,
@@ -152,7 +162,7 @@ export default async (
       if (Array.isArray(payload.$unshift)) {
         for (let i = payload.$unshift.length - 1; i >= 0; i--) {
           const v = payload[i]
-          sendInsert(
+          await sendInsert(
             buf,
             0,
             client,
@@ -166,7 +176,7 @@ export default async (
           )
         }
       } else {
-        sendInsert(
+        await sendInsert(
           buf,
           0,
           client,
@@ -192,7 +202,7 @@ export default async (
       const fieldWithIdx = `${field}[${idx}]`
       const itemsFields = fields.items
       const parser = fieldParsers[itemsFields.type]
-      parser(
+      await parser(
         client,
         schema,
         fieldWithIdx,
@@ -238,7 +248,7 @@ export default async (
       if (Array.isArray(payload.$insert.$value)) {
         for (let i = payload.$insert.$value.length - 1; i >= 0; i--) {
           const v = payload.$insert.$value[i]
-          sendInsert(
+          await sendInsert(
             buf,
             idx,
             client,
@@ -252,7 +262,7 @@ export default async (
           )
         }
       } else {
-        sendInsert(
+        await sendInsert(
           buf,
           idx,
           client,
@@ -283,7 +293,7 @@ export default async (
     await Promise.all(
       arr.map((payload, index) => {
         const fieldWithIdx = `${field}[${index}]`
-        parser(
+        return parser(
           client,
           schema,
           fieldWithIdx,
