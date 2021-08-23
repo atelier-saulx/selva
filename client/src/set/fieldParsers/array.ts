@@ -121,41 +121,7 @@ export default async (
           $lang
         )
       }
-      // result.push('D', field, buf)
-
-      // const fieldWithIdx = `${field}[-1]`
-      // const itemsFields = fields.items
-      // const parser = fieldParsers[itemsFields.type]
-      // parser(
-      //   client,
-      //   schema,
-      //   fieldWithIdx,
-      //   payload.$push,
-      //   result,
-      //   itemsFields,
-      //   type,
-      //   $lang
-      // )
     } else if (payload.$unshift) {
-      // const itemType = ITEM_TYPES[fields.items.type]
-      // const content = new Uint32Array([itemType, 0])
-      // const buf = Buffer.from(content.buffer)
-      // result.push('E', field, buf)
-
-      // const fieldWithIdx = `${field}[0]`
-      // const itemsFields = fields.items
-      // const parser = fieldParsers[itemsFields.type]
-      // parser(
-      //   client,
-      //   schema,
-      //   fieldWithIdx,
-      //   payload,
-      //   result,
-      //   itemsFields,
-      //   type,
-      //   $lang
-      // )
-
       const itemType = ITEM_TYPES[fields.items.type]
       const content = new Uint32Array([itemType, 0])
       const buf = Buffer.from(content.buffer)
@@ -213,34 +179,6 @@ export default async (
         $lang
       )
     } else if (payload.$insert) {
-      // const idx = payload.$insert.$idx
-      // const value = payload.$insert.$value
-
-      // const itemType = ITEM_TYPES[fields.items.type]
-      // const content = new Uint32Array([itemType, idx])
-      // const buf = Buffer.from(content.buffer)
-      // result.push('E', field, buf)
-
-      // if (!Number.isInteger(idx) || !value) {
-      //   throw new Error(
-      //     `$assign missing $idx or $value property ${JSON.stringify(payload)}`
-      //   )
-      // }
-
-      // const fieldWithIdx = `${field}[${idx}]`
-      // const itemsFields = fields.items
-      // const parser = fieldParsers[itemsFields.type]
-      // parser(
-      //   client,
-      //   schema,
-      //   fieldWithIdx,
-      //   value,
-      //   result,
-      //   itemsFields,
-      //   type,
-      //   $lang
-      // )
-
       const idx = payload.$insert.$idx
       const itemType = ITEM_TYPES[fields.items.type]
       const content = new Uint32Array([itemType, idx])
