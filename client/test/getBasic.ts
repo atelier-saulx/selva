@@ -2273,7 +2273,7 @@ test.serial('get - record with nested wildcard query', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('get - field with array', async (t) => {
+test.serial('get - field with array', async (t) => {
   const client = connect({ port })
   const id = await client.set({
     type: 'lekkerType',
