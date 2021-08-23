@@ -70,6 +70,11 @@ test.before(async (t) => {
       },
       team: {
         prefix: 'te',
+        fields: {
+          updatedAt: {
+            type: 'timestamp'
+          }
+        },
       },
       competition: {
         prefix: 'co',
@@ -92,7 +97,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.only('updatedAt only changes when actually changed', async (t) => {
+test.serial('updatedAt only changes when actually changed', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const team1 = await client.setWithMeta({
@@ -133,7 +138,6 @@ test.serial.only('updatedAt only changes when actually changed', async (t) => {
   let lastUpdatedAt
 
   while (n--) {
-    console.log('stonk start')
     const meta = await client.setWithMeta({
       type: 'match',
       $alias: 'snurkle',
@@ -169,7 +173,6 @@ test.serial.only('updatedAt only changes when actually changed', async (t) => {
       t.deepEqual(meta.updated, false, 'second set should not update')
     }
 
-    console.log('stonk end')
     const { updatedAt } = await client.get({
       $alias: 'snurkle',
       updatedAt: true,
@@ -183,6 +186,42 @@ test.serial.only('updatedAt only changes when actually changed', async (t) => {
 
     await wait(1)
   }
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('Subscribe to updatedAt', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const team1 = await client.set({
+    type: 'team',
+    name: 'team1',
+  })
+
+  t.plan(1)
+  const obs = client.observe({
+    $id: team1,
+    updatedAt: true,
+    //name: true,
+  })
+  let ts = 0;
+  const sub = obs.subscribe((v) => {
+    if (ts === 0) {
+       ts = v.updatedAt
+    } else {
+      t.assert(v.updatedAt > ts, 'updatedAt should have changed')
+    }
+  })
+  await wait(1e2)
+
+  await client.set({
+    $id: team1,
+    name: 'lolteam',
+  })
+  await wait(1e2)
+  sub.unsubscribe()
+  await wait(1e2)
 
   await client.delete('root')
   await client.destroy()
