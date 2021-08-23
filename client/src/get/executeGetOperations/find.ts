@@ -90,8 +90,9 @@ function parseGetOpts(
         mapping[path].default = $default
       }
     } else if (path === '' && k === '$all') {
-      fields = new Set(['*'])
-      hasAll = true
+      // fields = new Set(['*'])
+      fields.add('*')
+      // hasAll = true
     } else if (k === '$all') {
       if (!mapping[path]) {
         mapping[path] = { maybeReferenceAll: true }
