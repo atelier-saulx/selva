@@ -1,9 +1,30 @@
 import updateRegistry from './updateRegistry'
-import { ServerDescriptor } from '@saulx/selva'
+import { SelvaClient, ServerDescriptor, ServerType } from '@saulx/selva'
 import { ServerOptions, Stats } from '../types'
 import { SelvaServer } from './'
 
 import { SCRIPTS } from './scripts'
+
+export const loadScripts = async (opts: {
+  host: string
+  port: number
+  selvaClient: SelvaClient
+  name: string
+  type: ServerType
+}) => {
+  const info: ServerDescriptor = {
+    name: opts.name,
+    type: opts.type,
+    port: opts.port,
+    host: opts.host,
+  }
+
+  return opts.selvaClient.redis.script(
+    info,
+    'LOAD',
+    SCRIPTS['update-schema'].content
+  )
+}
 
 const initHierarchy = (
   server: SelvaServer,
