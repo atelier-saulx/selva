@@ -2571,9 +2571,11 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 
     RedisModuleString *key_name = argv[3];
     struct EdgeField *edge_field;
+    void *p;
     int err;
 
-    err = SelvaObject_GetPointer(obj, key_name, (void **)(&edge_field));
+    err = SelvaObject_GetPointer(obj, key_name, &p);
+    edge_field = p;
     if (err) {
         if (err == SELVA_ENOENT) {
             return RedisModule_ReplyWithNull(ctx);

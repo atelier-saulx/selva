@@ -147,16 +147,23 @@ locale_t SelvaLang_GetLocale(const char *lang_str, size_t lang_len) {
     int err = SELVA_EINVAL;
 
     if (lang_len > 0) {
-        err = SelvaObject_GetPointerStr(langs, lang_str, lang_len, (void **)&slang);
+        void *p;
+
+        err = SelvaObject_GetPointerStr(langs, lang_str, lang_len, &p);
+        slang = p;
     }
     if (err) {
+        void *p;
+
         if (lang_len > 0) {
             fprintf(stderr, "%s:%d: Lang \"%.*s\" not found: %s\n",
                     __FILE__, __LINE__,
                     (int)lang_len, lang_str,
                     getSelvaErrorStr(err));
         }
-        err = SelvaObject_GetPointerStr(langs, FALLBACK_LANG, sizeof(FALLBACK_LANG) - 1, (void **)&slang);
+
+        err = SelvaObject_GetPointerStr(langs, FALLBACK_LANG, sizeof(FALLBACK_LANG) - 1, &p);
+        slang = p;
         if (err) {
             return duplocale(LC_GLOBAL_LOCALE); /* Finally fallback to the global locale. */
         }

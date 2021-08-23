@@ -118,7 +118,9 @@ struct EdgeField *Edge_GetField(const struct SelvaModify_HierarchyNode *src_node
         return NULL;
     }
 
-    err = SelvaObject_GetPointerStr(src_metadata->edge_fields.edges, field_name_str, field_name_len, (void **)(&src_edge_field));
+    void *p;
+    err = SelvaObject_GetPointerStr(src_metadata->edge_fields.edges, field_name_str, field_name_len, &p);
+    src_edge_field = p;
     if (err) {
         return NULL;
     }
