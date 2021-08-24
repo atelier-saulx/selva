@@ -70,8 +70,13 @@ static int getRedisPort(void) {
 }
 
 static void selva_yield(void) {
+    const struct timespec tim = {
+        .tv_sec = 0,
+        .tv_nsec = ASYNC_TASK_PEEK_INTERVAL_NS,
+    };
+
     sched_yield();
-    usleep(ASYNC_TASK_PEEK_INTERVAL_US);
+    nanosleep(&tim, NULL);
 }
 
 #define ASYNC_TASK_LOG(fmt, ...) \
@@ -96,8 +101,13 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
     ctx = redisConnect("127.0.0.1", port);
     if (ctx->err) {
+        const struct timespec tim = {
+            .tv_sec = 0,
+            .tv_nsec = 100000000L,
+        };
+
         ASYNC_TASK_LOG("Error connecting to the redis instance\n");
-        usleep(100000);
+        nanosleep(&tim, NULL);
         goto error;
     }
 
@@ -166,8 +176,13 @@ retry:
 
             ctx = redisConnect("127.0.0.1", port);
             if (ctx->err) {
+                const struct timespec tim = {
+                    .tv_sec = 0,
+                    .tv_nsec = 20000000L,
+                };
+
                 ASYNC_TASK_LOG("Error connecting to the redis instance\n");
-                usleep(20000);
+                nanosleep(&tim, NULL);
                 RETRY;
             }
         }
