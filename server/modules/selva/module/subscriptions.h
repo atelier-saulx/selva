@@ -257,7 +257,7 @@ void SelvaSubscriptions_RefreshByMarker(
 void SelvaSubscriptions_Delete(
         struct RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
-        Selva_SubscriptionId sub_id);
+        const Selva_SubscriptionId sub_id);
 
 /**
  * Delete a single marker from a subscription.
@@ -312,7 +312,7 @@ int SelvaSubscriptions_AddCallbackMarker(
  */
 struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
         struct SelvaModify_Hierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id);
 
 /**
