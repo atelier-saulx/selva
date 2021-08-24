@@ -1663,12 +1663,6 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         /* Detached markers. */
         defer_array_field_change_events(ctx, hierarchy, node, &hierarchy->subs.detached_markers, field_str, field_len);
 
-        /* RFE does this happen anymore? */
-        if (!node) {
-            fprintf(stderr, "%s:%d: Node pointer missing\n", __FILE__, __LINE__);
-            return;
-        }
-
         const struct SelvaModify_HierarchyMetadata *metadata;
         metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 
@@ -1678,12 +1672,6 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         /* Regular field */
         /* Detached markers. */
         defer_field_change_events(ctx, hierarchy, node, &hierarchy->subs.detached_markers, field_str, field_len);
-
-        /* RFE does this happen anymore? */
-        if (!node) {
-            fprintf(stderr, "%s:%d: Node pointer missing\n", __FILE__, __LINE__);
-            return;
-        }
 
         const struct SelvaModify_HierarchyMetadata *metadata;
         metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
@@ -2419,8 +2407,8 @@ int SelvaSubscriptions_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString 
     marker_set_trigger(marker, event_type);
     marker_set_filter(marker, filter_ctx, filter_expression);
 
-    if (err) {
 out:
+    if (err) {
         if (filter_ctx) {
             rpn_destroy(filter_ctx);
             rpn_destroy_expression(filter_expression);
