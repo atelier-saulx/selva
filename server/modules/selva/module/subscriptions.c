@@ -849,7 +849,7 @@ out:
 
 struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
         struct SelvaModify_Hierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id) {
     struct Selva_Subscription *sub;
 
@@ -1088,7 +1088,10 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hi
     }
 }
 
-void SelvaSubscriptions_Delete(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, Selva_SubscriptionId sub_id) {
+void SelvaSubscriptions_Delete(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        const Selva_SubscriptionId sub_id) {
     struct Selva_Subscription *sub;
 
     sub = find_sub(hierarchy, sub_id);

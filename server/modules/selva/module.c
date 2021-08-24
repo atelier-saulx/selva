@@ -388,7 +388,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return replyWithSelvaErrorf(ctx, err, "Failed to open the object for id: \"%s\"", id_str);
     }
 
-    struct SelvaModify_HierarchyNode *node;
+    const struct SelvaModify_HierarchyNode *node;
 
     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
