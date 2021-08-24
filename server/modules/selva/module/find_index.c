@@ -109,7 +109,7 @@ static RedisModuleString *build_name(
 
     /* direction */
     *s++ = '.';
-    *s++ = 'A' + __builtin_ffs(dir);
+    *s++ = 'A' + (char)__builtin_ffs(dir);
     *s++ = '.';
 
     if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && dir_expression_len > 0) {
@@ -390,7 +390,7 @@ static void refresh_index_proc(RedisModuleCtx *ctx, void *data) {
          * Otherwise just a refresh is needed.
          */
         if (!icb->is_active) {
-            RedisModuleString *name = icb->name;
+            const RedisModuleString *name = icb->name;
             TO_STR(name);
 
             err = start_index(hierarchy, icb);
@@ -442,7 +442,6 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
 
     /*
      * Get a deterministic name for indexing this find query.
-     * TODO Isn't filter expression needed too?
      */
     name = build_name(node_id, dir, dir_expression_str, dir_expression_len, filter_str, filter_len);
     if (!name) {
@@ -594,7 +593,7 @@ static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     it = SelvaObject_ForeachBegin(obj);
     while ((p = SelvaObject_ForeachValueType(obj, &it, NULL, &type))) {
         if (type == SELVA_OBJECT_POINTER) {
-            const struct SelvaFindIndexControlBlock *icb = (struct SelvaFindIndexControlBlock *)p;
+            const struct SelvaFindIndexControlBlock *icb = (const struct SelvaFindIndexControlBlock *)p;
 
             n++;
             RedisModule_ReplyWithString(ctx, icb->name);
@@ -655,7 +654,7 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     const int ARGV_OP = 3;
 
     if (argc == 4) {
-        RedisModuleString *op = argv[ARGV_OP];
+        const RedisModuleString *op = argv[ARGV_OP];
         TO_STR(op);
 
         if (op_len == 1 && op_str[0] == '0') {
