@@ -8,42 +8,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include "redismodule.h"
+#include "base64.h"
 
 static const unsigned char base64_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-/**
- * base64_encode - Base64 encode
- * @src: Data to be encoded
- * @len: Length of the data to be encoded
- * @out_len: Pointer to output length variable, or %NULL if not used
- * Returns: Allocated buffer of out_len bytes of encoded data,
- * or %NULL on failure
- *
- * Caller is responsible for freeing the returned buffer. Returned buffer is
- * nul terminated to make it easier to use as a C string. The nul terminator is
- * not included in out_len.
- */
-unsigned char * base64_encode(const unsigned char *src, size_t len, size_t *out_len)
-{
-    unsigned char *out, *pos;
+size_t base64_encode_s(char *str_out, const char *str_in, size_t len, size_t line_max) {
+    const unsigned char *src = (const unsigned char *)str_in;
+    unsigned char *dst = (unsigned char *)str_out;
+    unsigned char *pos;
     const unsigned char *end, *in;
-    size_t olen;
     int line_len;
 
-    olen = len * 4 / 3 + 4; /* 3-byte blocks to 4-byte */
-    olen += olen / 72; /* line feeds */
-    olen++; /* nul termination */
-    if (olen < len) {
-        return NULL; /* integer overflow */
-    }
-    out = RedisModule_Alloc(olen);
-    if (out == NULL) {
-        return NULL;
+    if (line_max == 0) {
+        line_max = SIZE_MAX;
     }
 
     end = src + len;
     in = src;
-    pos = out;
+    pos = dst;
     line_len = 0;
     while (end - in >= 3) {
         *pos++ = base64_table[in[0] >> 2];
@@ -52,7 +34,7 @@ unsigned char * base64_encode(const unsigned char *src, size_t len, size_t *out_
         *pos++ = base64_table[in[2] & 0x3f];
         in += 3;
         line_len += 4;
-        if (line_len >= 72) {
+        if (line_len >= line_max) {
             *pos++ = '\n';
             line_len = 0;
         }
@@ -71,28 +53,35 @@ unsigned char * base64_encode(const unsigned char *src, size_t len, size_t *out_
         line_len += 4;
     }
 
-    if (line_len) {
+    if (line_len && line_max != SIZE_MAX) {
         *pos++ = '\n';
     }
 
     *pos = '\0';
+    return pos - dst;
+}
+
+char * base64_encode(const char *str_in, size_t len, size_t *out_len)
+{
+    const size_t line_max = 72;
+    char *out;
+    size_t n;
+
+    out = RedisModule_Alloc(base64_out_len(len, line_max) + 1);
+    if (out == NULL) {
+        return NULL;
+    }
+
+    n = base64_encode_s(out, str_in, len, line_max);
     if (out_len) {
-        *out_len = pos - out;
+        *out_len = n;
     }
     return out;
 }
 
-
-/**
- * Base64 decode.
- * Caller is responsible for freeing the returned buffer.
- * @param src Data to be decoded
- * @param len Length of the data to be decoded
- * @param out_len Pointer to output length variable
- * @returns Allocated buffer of out_len bytes of decoded data, or %NULL on failure
- */
-unsigned char * base64_decode(const unsigned char *src, size_t len, size_t *out_len)
+char * base64_decode(const char *str_in, size_t len, size_t *out_len)
 {
+    const unsigned char *src = (const unsigned char *)str_in;
     unsigned char dtable[256], *out, *pos, block[4], tmp;
     size_t i, count, olen;
     int pad = 0;
@@ -153,5 +142,5 @@ unsigned char * base64_decode(const unsigned char *src, size_t len, size_t *out_
     }
 
     *out_len = pos - out;
-    return out;
+    return (char *)out;
 }

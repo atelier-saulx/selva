@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva-server",
-  "version": "6.0.0",
+  "version": "7.0.5",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -58,8 +58,7 @@
   },
   "dependencies": {
     "@saulx/diff": "^1.0.0",
-    "@saulx/hash": "^1.0.1",
-    "@saulx/selva": "6.0.0",
+    "@saulx/selva": "7.0.5",
     "aws-sdk": "^2.841.0",
     "before-exit": "^1.0.0",
     "body-parser": "^1.19.0",

@@ -158,7 +158,13 @@ int SelvaHierarchy_NodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_Node
 char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node);
 char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaModify_HierarchyNode *node);
 
-struct SelvaModify_HierarchyMetadata *SelvaHierarchy_GetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
+const struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByConstPtr(const struct SelvaModify_HierarchyNode *node);
+struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
+#define SelvaHierarchy_GetNodeMetadataByPtr(node) _Generic((node), \
+        const struct SelvaModify_HierarchyNode *: _SelvaHierarchy_GetNodeMetadataByConstPtr, \
+        struct SelvaModify_HierarchyNode *: _SelvaHierarchy_GetNodeMetadataByPtr \
+        )(node)
+
 struct SelvaModify_HierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id);
@@ -314,7 +320,7 @@ int SelvaModify_TraverseArray(
         const char *ref_field_str,
         size_t ref_field_len,
         const struct SelvaModify_ArrayObjectCallback *cb);
-int SelvaHierarchy_IsNonEmptyField(struct SelvaModify_HierarchyNode *node, const char *field_str, size_t field_len);
+int SelvaHierarchy_IsNonEmptyField(const struct SelvaModify_HierarchyNode *node, const char *field_str, size_t field_len);
 
 /*
  * hierarchy_reply.c

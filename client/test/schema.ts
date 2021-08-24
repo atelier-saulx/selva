@@ -296,7 +296,7 @@ test.serial('schemas - basic', async (t) => {
 
   // drop search index in this case (NOT SUPPORTED YET!)
   // throws for now
-  const e = await t.throwsAsync(
+  let e = await t.throwsAsync(
     client.updateSchema({
       types: {
         match: {
@@ -320,6 +320,111 @@ test.serial('schemas - basic', async (t) => {
     e.stack.includes(
       'Can not change existing search types for flurpy.snurkels in type match, changing from ["TAG"] to ["TEXT"]. This will be supported in the future.'
     )
+  )
+
+  // test that you can't set custom types with 'ro' as prefix
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        flurpydurpy: {
+          prefix: 'ro',
+          fields: {
+            niceStrField: { type: 'string' },
+          },
+        },
+      },
+    })
+  )
+
+  t.true(e.stack.includes('Prefix ro is already in use'))
+
+  // test that you can't set custom types with an already used prefix as prefix
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        flurpydurpy: {
+          prefix: 'ma',
+          fields: {
+            niceStrField: { type: 'string' },
+          },
+        },
+      },
+    })
+  )
+
+  t.true(e.stack.includes('Prefix ma is already in use'))
+
+  await t.notThrowsAsync(
+    client.updateSchema({
+      types: {
+        flurpydurpy: {
+          prefix: 'fl',
+          fields: {
+            niceStrField: { type: 'string' },
+            niceObject: {
+              type: 'object',
+              properties: {
+                niceStrField: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    })
+  )
+
+  // make sure you can't add nonsensical field types on new type
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        durpyflurpy: {
+          fields: {
+            niceStrField: { type: <'string'>'strin' },
+          },
+        },
+      },
+    })
+  )
+
+  t.true(e.stack.includes(`Field niceStrField has an unsupported field type`))
+
+  // make sure you can't add nonsensical field types on existing type
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        flurpydurpy: {
+          fields: {
+            notSoNiceStrField: { type: <'string'>'strin' },
+          },
+        },
+      },
+    })
+  )
+
+  t.true(
+    e.stack.includes(`Field notSoNiceStrField has an unsupported field type`)
+  )
+
+  // make sure you can't add nonsensical field types on existing type and existing object nested field
+  e = await t.throwsAsync(
+    client.updateSchema({
+      types: {
+        flurpydurpy: {
+          fields: {
+            niceObject: {
+              type: 'object',
+              properties: {
+                helloBad: { type: <'string'>'strin' },
+              },
+            },
+          },
+        },
+      },
+    })
+  )
+
+  t.true(
+    e.stack.includes(`Field niceObject.helloBad has an unsupported field type`)
   )
 
   // const info2 = await client.redis.command(

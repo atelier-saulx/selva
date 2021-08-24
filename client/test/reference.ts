@@ -523,6 +523,7 @@ test.serial('list of simple singular reference', async (t) => {
     children: {
       id: true,
       title: true,
+      parents: true,
       specialMatch: {
         id: true,
         title: true,
@@ -540,7 +541,108 @@ test.serial('list of simple singular reference', async (t) => {
       },
     },
   })
-  //console.dir(result, { depth: null })
+
+  t.deepEqual(result, {
+    children: [
+      {
+        id: 'clA',
+        title: 'yesh club',
+        parents: ['root'],
+        specialMatch: { id: 'maA', title: 'yesh match' },
+      },
+    ],
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      $language: 'en',
+      children: {
+        $all: true,
+        parents: true,
+        specialMatch: {
+          id: true,
+          title: true,
+        },
+        $list: {
+          $find: {
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'club',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      children: [
+        {
+          id: 'clA',
+          type: 'club',
+          parents: ['root'],
+          title: 'yesh club',
+          specialMatch: { id: 'maA', title: 'yesh match' },
+        },
+      ],
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'clA',
+      $all: true,
+      specialMatch: {
+        $all: true,
+      },
+    }),
+    {
+      id: 'clA',
+      type: 'club',
+      title: { en: 'yesh club' },
+      specialMatch: {
+        id: 'maA',
+        title: { en: 'yesh match' },
+        type: 'match',
+      },
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      $language: 'en',
+      children: {
+        $all: true,
+        specialMatch: {
+          $all: true,
+        },
+        $list: {
+          $find: {
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'club',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      children: [
+        {
+          id: 'clA',
+          type: 'club',
+          title: 'yesh club',
+          specialMatch: { id: 'maA', title: 'yesh match', type: 'match' },
+        },
+      ],
+    }
+  )
 
   await client.delete('root')
   await client.destroy()

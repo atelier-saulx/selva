@@ -101,3 +101,14 @@ unsigned int bitmap_popcount(const struct bitmap *bitmap) {
 
     return cnt;
 }
+
+int bitmap_ffs(const struct bitmap *bitmap) {
+    size_t pos = 0;
+    int isset;
+
+    do {
+        isset = bitmap_get(bitmap, pos++);
+    } while (isset == 0);
+
+    return (isset > 0) ? (int)(pos - 1) : -1;
+}

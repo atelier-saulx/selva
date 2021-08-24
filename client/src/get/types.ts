@@ -72,9 +72,28 @@ export type TraverseOptions = {
   // TODO: add $filter, $limit, $offset
 }
 
+export type TraverseByTypeExpression =
+  | false
+  | string
+  | {
+      $first?: TraverseByTypeExpression[]
+      $all?: TraverseByTypeExpression[]
+    }
+
+export type TraverseByType = {
+  $any: TraverseByTypeExpression
+  [k: string]: TraverseByTypeExpression
+}
+
 export type Find = {
   $db?: string
-  $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
+  $traverse?:
+    | 'descendants'
+    | 'ancestors'
+    | string
+    | string[]
+    | TraverseOptions
+    | TraverseByType
   $recursive?: boolean
   $filter?: Filter | Filter[]
   $find?: Find
@@ -82,7 +101,13 @@ export type Find = {
 
 export type Aggregate = {
   $db?: string
-  $traverse?: 'descendants' | 'ancestors' | string | string[] | TraverseOptions
+  $traverse?:
+    | 'descendants'
+    | 'ancestors'
+    | string
+    | string[]
+    | TraverseOptions
+    | TraverseByType
   $filter?: Filter | Filter[]
   $recursive?: boolean
   $function?: string | { $name: string; $args: string[] }
@@ -172,6 +197,7 @@ export type GetOperationAggregate = GetOperationCommon & {
   inKeys?: string[]
   function: { name: string; args?: string[] }
   recursive?: boolean
+  byType?: TraverseByType
   options: { limit: number; offset: number; sort?: Sort | undefined }
   nested?: GetOperationFind
   isTimeseries?: boolean
@@ -186,6 +212,7 @@ export type GetOperationFind = GetOperationCommon & {
   nested?: GetOperationFind
   isNested?: boolean
   recursive?: boolean
+  byType?: TraverseByType
   options: { limit: number; offset: number; sort?: Sort | undefined }
   isTimeseries?: boolean
 }

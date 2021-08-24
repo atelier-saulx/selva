@@ -2,6 +2,7 @@ import { Find, GetOperationFind, GetOptions, Sort } from '../types'
 import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
 import { getNestedSchema } from '../utils'
 import { SelvaClient } from '../..'
+import { isTraverseByType } from '../utils'
 
 const createFindOperation = (
   client: SelvaClient,
@@ -46,6 +47,8 @@ const createFindOperation = (
       findOperation.sourceField = find.$traverse
     } else if (Array.isArray(find.$traverse)) {
       findOperation.inKeys = find.$traverse
+    } else if (isTraverseByType(find.$traverse)) {
+      findOperation.byType = find.$traverse
     }
   }
 

@@ -6,36 +6,48 @@ import {
   FieldSchema,
   rootDefaultFields,
   SchemaOptions,
+  FIELD_TYPES,
 } from '.'
 import { ServerSelector } from '../types'
 import { wait } from '../util'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
+function validateNewFieldTypes(obj: TypeSchema | FieldSchema, path: string) {
+  if ((<any>obj).type) {
+    const field = <FieldSchema>obj
+    if (
+      field.type === 'object' ||
+      (field.type === 'json' && field.properties)
+    ) {
+      for (const propName in field.properties) {
+        validateNewFieldTypes(field.properties[propName], `${path}.${propName}`)
+      }
+    } else if (field.type === 'record') {
+      validateNewFieldTypes(field.values, `${path}.*`)
+    } else {
+      if (!FIELD_TYPES.includes(field.type)) {
+        throw new Error(
+          `Field ${path} has an unsupported field type ${
+            field.type
+          }, supported types are ${FIELD_TYPES.join(', ')}`
+        )
+      }
+    }
+  } else {
+    const type = <TypeSchema>obj
+    if (type.fields) {
+      for (const fieldName in type.fields) {
+        validateNewFieldTypes(type.fields[fieldName], fieldName)
+      }
+    }
+  }
+}
+
 export function newSchemaDefinition(
   oldSchema: Schema,
   newSchema: Schema
 ): Schema {
-  if (!oldSchema) {
-    if (!newSchema.languages) {
-      newSchema.languages = []
-    }
-
-    if (!newSchema.types) {
-      newSchema.types = {}
-    }
-
-    newSchema.rootType = {
-      prefix: 'ro',
-      fields: {
-        ...rootDefaultFields,
-        ...((newSchema.rootType && newSchema.rootType.fields) || {}),
-      },
-    }
-
-    return newSchema
-  }
-
   const schema: Schema = {
     sha: oldSchema.sha,
     rootType: oldSchema.rootType,
@@ -59,8 +71,24 @@ export function newSchemaDefinition(
   }
 
   for (const typeName in newSchema.types) {
+    const newType = newSchema.types[typeName]
+
     if (!oldSchema.types[typeName]) {
-      schema.types[typeName] = newSchema.types[typeName]
+      if (
+        newType.prefix === 'ro' ||
+        (newType.prefix && oldSchema.prefixToTypeMapping[newType.prefix])
+      ) {
+        throw new Error(
+          `Prefix ${newType.prefix} is already in use by type ${
+            newType.prefix === 'ro'
+              ? 'root'
+              : oldSchema.prefixToTypeMapping[newType.prefix]
+          }`
+        )
+      }
+      validateNewFieldTypes(newType, '')
+
+      schema.types[typeName] = newType
     }
   }
 
@@ -120,6 +148,7 @@ function newTypeDefinition(
     hierarchy: (newType && newType.hierarchy) || (oldType && oldType.hierarchy),
   }
 
+  // FIXME: I think this code is dead code
   if (!oldType) {
     return newType
   } else if (!newType) {
@@ -135,7 +164,7 @@ function newTypeDefinition(
   for (const fieldName in oldType.fields) {
     if (newType.fields && newType.fields[fieldName]) {
       typeDef.fields[fieldName] = newFieldDefinition(
-        `${typeName}.${fieldName}`,
+        `${fieldName}`,
         oldType.fields[fieldName],
         newType.fields[fieldName]
       )
@@ -146,7 +175,9 @@ function newTypeDefinition(
 
   for (const fieldName in newType.fields) {
     if (oldType.fields && !oldType.fields[fieldName]) {
-      typeDef.fields[fieldName] = newType.fields[fieldName]
+      const newField = newType.fields[fieldName]
+      validateNewFieldTypes(newField, fieldName)
+      typeDef.fields[fieldName] = newField
     }
   }
 
@@ -183,7 +214,9 @@ function newFieldDefinition(
 
     for (const fieldName in (<any>newField).properties) {
       if (!oldField.properties[fieldName]) {
-        props[fieldName] = (<any>newField).properties[fieldName]
+        const newProperty = (<any>newField).properties[fieldName]
+        validateNewFieldTypes(newProperty, fieldPath + '.' + fieldName)
+        props[fieldName] = newProperty
       }
     }
 

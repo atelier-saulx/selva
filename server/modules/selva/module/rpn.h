@@ -36,7 +36,7 @@ struct rpn_operand;
 struct rpn_ctx {
     int depth;
     int nr_reg;
-    struct SelvaModify_HierarchyNode *node; /*!< A pointer to the current hierarchy node set with rpn_set_hierarchy_node(). */
+    const struct SelvaModify_HierarchyNode *node; /*!< A pointer to the current hierarchy node set with rpn_set_hierarchy_node(). */
     struct RedisModuleKey *redis_key; /*!< Redis key of the current node object. */
     struct SelvaObject *obj; /*!< Selva object of the current node. */
     struct RedisModuleString *rms_id;  /*!< This holds the id of redis_hkey. */
@@ -72,7 +72,7 @@ void rpn_destroy(struct rpn_ctx *ctx);
  * An operand requiring a node pointer will return RPN_ERR_ILLOPN if the pointer
  * is not set.
  */
-static inline void rpn_set_hierarchy_node(struct rpn_ctx *ctx, struct SelvaModify_HierarchyNode *node) {
+static inline void rpn_set_hierarchy_node(struct rpn_ctx *ctx, const struct SelvaModify_HierarchyNode *node) {
     ctx->node = node;
 }
 

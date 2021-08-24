@@ -24,7 +24,10 @@ function parseGetOpts(
   nestedMapping?: Record<string, { targetField?: string[]; default?: any }>
 ): [
   Set<string>,
-  Record<string, { targetField?: string[]; default?: any }>,
+  Record<
+    string,
+    { targetField?: string[]; default?: any; maybeReferenceAll?: true }
+  >,
   boolean
 ] {
   const pathPrefix = path === '' ? '' : path + '.'
@@ -34,6 +37,7 @@ function parseGetOpts(
     {
       targetField?: string[]
       default?: any
+      maybeReferenceAll?: true
     }
   > = nestedMapping || {}
 
@@ -85,9 +89,18 @@ function parseGetOpts(
       } else {
         mapping[path].default = $default
       }
+    } else if (path === '' && k === '$all') {
+      // fields = new Set(['*'])
+      fields.add('*')
+      // hasAll = true
     } else if (k === '$all') {
-      fields = new Set(['*'])
-      hasAll = true
+      if (!mapping[path]) {
+        mapping[path] = { maybeReferenceAll: true }
+      } else {
+        mapping[path].maybeReferenceAll = true
+      }
+
+      fields.add(path)
     } else if (k.startsWith('$')) {
       return [fields, mapping, true]
     } else if (typeof props[k] === 'object') {
@@ -232,7 +245,13 @@ async function checkForNextRefresh(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
-        sourceField,
+        // TODO: needs byType expression
+        ...sourceFieldToFindArgs(
+          client.schemas[ctx.db],
+          null,
+          sourceField,
+          false
+        ),
         'order',
         f.$field,
         'asc',
@@ -356,7 +375,12 @@ export const findIds = async (
         const schema = client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToDir(sourceFieldSchema, sourceField),
+          ...sourceFieldToDir(
+            schema,
+            sourceFieldSchema,
+            sourceField,
+            op.byType
+          ),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -374,7 +398,7 @@ export const findIds = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(sourceFieldSchema, sourceField),
+        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -393,7 +417,13 @@ export const findIds = async (
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(schema.languages, lang),
       '___selva_hierarchy',
-      ...sourceFieldToFindArgs(sourceFieldSchema, sourceField, op.recursive),
+      ...sourceFieldToFindArgs(
+        client.schemas[ctx.db],
+        sourceFieldSchema,
+        sourceField,
+        op.recursive,
+        op.byType
+      ),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
@@ -520,7 +550,12 @@ const findFields = async (
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
 
         const r = await addMarker(client, ctx, {
-          ...sourceFieldToDir(sourceFieldSchema, sourceField),
+          ...sourceFieldToDir(
+            schema,
+            sourceFieldSchema,
+            sourceField,
+            op.byType
+          ),
           id: id,
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
@@ -538,7 +573,7 @@ const findFields = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(sourceFieldSchema, sourceField),
+        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -557,7 +592,13 @@ const findFields = async (
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
-      ...sourceFieldToFindArgs(sourceFieldSchema, sourceField, op.recursive),
+      ...sourceFieldToFindArgs(
+        client.schemas[ctx.db],
+        sourceFieldSchema,
+        sourceField,
+        op.recursive,
+        op.byType
+      ),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
@@ -691,7 +732,29 @@ const executeFindOperation = async (
         continue
       }
 
-      const targetField = fieldMapping[field]?.targetField
+      const mapping = fieldMapping[field]
+      if (
+        mapping?.maybeReferenceAll &&
+        Array.isArray(value) &&
+        value.length === 1 &&
+        typeof value[0] === 'string'
+      ) {
+        const fieldResults = await executeNestedGetOperations(
+          client,
+          {
+            $db: ctx.db,
+            $id: value[0],
+            $all: true,
+          },
+          lang,
+          ctx
+        )
+        setNestedResult(entryRes, field, fieldResults)
+        usedMappings.add(field)
+        continue
+      }
+
+      const targetField = mapping?.targetField
       const casted = typeCast(value, id, field, schema, lang)
 
       if (targetField) {

@@ -8,6 +8,7 @@ import { get } from '..'
 import { addExtraQuery, ExtraQueries } from '.'
 import validateFind from './find'
 import validateSort from './sort'
+import { isTraverseByType, isTraverseOptions } from '../utils'
 
 // import fetch from 'node-fetch'
 
@@ -157,7 +158,7 @@ export default async function validateAggregate(
 
   if (find.$traverse) {
     const traverse = find.$traverse
-    if (typeof traverse === 'object' && !Array.isArray(traverse)) {
+    if (isTraverseOptions(traverse)) {
       const result = await get(client, {
         $includeMeta: true,
         $db: traverse.$db,
@@ -176,6 +177,8 @@ export default async function validateAggregate(
         value: result.traverse,
         path: path + '.$find.$traverse',
       })
+    } else if (isTraverseByType(traverse)) {
+      // FIXME: needs specific validation?
     } else if (
       typeof find.$traverse !== 'string' &&
       !Array.isArray(find.$traverse)

@@ -1,7 +1,7 @@
 #include <math.h>
 #include <time.h>
-
 #include "cdefs.h"
+#include "module/config.h"
 #include "cstrings.h"
 #include "redismodule.h"
 #include "typestr.h"
@@ -388,10 +388,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return replyWithSelvaErrorf(ctx, err, "Failed to open the object for id: \"%s\"", id_str);
     }
 
-    const struct SelvaModify_HierarchyMetadata *metadata;
+    const struct SelvaModify_HierarchyNode *node;
 
-    metadata = SelvaHierarchy_GetNodeMetadata(hierarchy, nodeId);
-    SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, nodeId, metadata);
+    node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+    SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {
         SelvaNode_ClearFields(ctx, obj);
@@ -755,13 +755,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             memcpy(&v, value_str, sizeof(uint32_t));
 
-            if (v >= 0) {
-                err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v);
-                if (err) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",
-                            (int)field_len, field_str);
-                    continue;
-                }
+            err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v);
+            if (err) {
+                replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",
+                        (int)field_len, field_str);
+                continue;
             }
         } else {
             replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid type: \"%c\"", type_code);
@@ -776,7 +774,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
          * Hierarchy handles events for parents and children.
          */
         if (strcmp(field_str, "parents") && strcmp(field_str, "children")) {
-            SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, nodeId, metadata, field_str, field_len);
+            SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, field_str, field_len);
         }
 
 #if 0
@@ -840,13 +838,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             if (FISSET_CREATED_AT(flags)) {
                 SelvaObject_SetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, now);
             }
-            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
+            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
         } else {
             /*
              * If nodeId wasn't created by this command call then it was an
              * update.
              */
-            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, nodeId, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
+            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
         }
     }
 
@@ -857,7 +855,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     return REDISMODULE_OK;
 }
 
-int RedisModule_OnLoad(RedisModuleCtx *ctx) {
+int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    int err;
+
     fprintf(stderr, "Selva version: %s\n", selva_version);
 
     // Register the module itself
@@ -873,6 +873,14 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
     RedisModule_SetModuleOptions(ctx, REDISMODULE_OPTIONS_HANDLE_IO_ERRORS);
 #endif
 
+    err = parse_config_args(argv, argc);
+    if (err) {
+        fprintf(stderr, "%s:%d:%s: Failed to parse config args: %s\n",
+                __FILE__, __LINE__, __func__,
+                getSelvaErrorStr(err));
+        return REDISMODULE_ERR;
+    }
+
     /* TODO Fix the command creation modes */
     if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
@@ -882,7 +890,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
 
     SET_FOREACH(onload_p, selva_onload) {
         Selva_Onload *onload = *onload_p;
-        int err;
 
         err = onload(ctx);
         if (err) {

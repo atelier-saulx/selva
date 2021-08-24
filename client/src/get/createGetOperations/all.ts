@@ -125,6 +125,15 @@ const all = (
         field: field.slice(1),
         sourceField: field.slice(1),
       })
+    } else if (fieldSchema.type === 'reference') {
+      ops.push({
+        type: 'nested_query',
+        id,
+        field: field.slice(1),
+        sourceField: field.slice(1),
+        fromReference: true,
+        props: { $all: true },
+      })
     }
   }
 }

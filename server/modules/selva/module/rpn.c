@@ -130,16 +130,11 @@ __constructor static void init_pool(void) {
 struct rpn_ctx *rpn_init(int nr_reg) {
     struct rpn_ctx * ctx;
 
-    ctx = RedisModule_Alloc(sizeof(struct rpn_ctx));
+    ctx = RedisModule_Calloc(1, sizeof(struct rpn_ctx));
     if (unlikely(!ctx)) {
         return NULL;
     }
 
-    ctx->depth = 0;
-    ctx->redis_key = NULL;
-    ctx->obj = NULL;
-    ctx->rms_id = NULL;
-    ctx->rms_field = NULL;
     ctx->nr_reg = nr_reg;
 
     ctx->reg = RedisModule_Calloc(nr_reg, sizeof(struct rpn_operand *));
@@ -932,7 +927,7 @@ static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn
     OPERAND(ctx, field);
     const char *field_str = OPERAND_GET_S(field);
     const size_t field_len = OPERAND_GET_S_LEN(field);
-    struct SelvaModify_HierarchyNode *node = ctx->node;
+    const struct SelvaModify_HierarchyNode *node = ctx->node;
 
     /*
      * First check if it's a non-empty hierarchy/edge field.
@@ -1084,7 +1079,7 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
     struct SelvaSet *set_a;
     RESULT_OPERAND(result);
     struct SelvaSetElement *el;
-    struct SelvaModify_HierarchyNode *node = ctx->node;
+    const struct SelvaModify_HierarchyNode *node = ctx->node;
 
     if (!node) {
         return RPN_ERR_ILLOPN;
@@ -1110,13 +1105,13 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
             /*
              * TODO If we are careful we could potentially reuse the original string.
              */
-            s = RedisModule_CreateString(redis_ctx, field_str, field_len);
+            s = RedisModule_CreateString(NULL, field_str, field_len);
             if (!s) {
                 return RPN_ERR_ENOMEM;
             }
 
             /* TODO Handle errors and retain string */
-            SelvaSet_AddRms(result->set, s);
+            SelvaSet_Add(result->set, s);
             break;
         }
     }
@@ -1129,7 +1124,7 @@ static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, stru
     OPERAND(ctx, a);
     struct SelvaSet *set_a;
     struct SelvaSetElement *el;
-    struct SelvaModify_HierarchyNode *node = ctx->node;
+    const struct SelvaModify_HierarchyNode *node = ctx->node;
 
     if (!node) {
         return RPN_ERR_ILLOPN;
@@ -1735,18 +1730,20 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
         return RPN_ERR_BADSTK;
     }
 
-    if (!res->set) {
+    if (res->set) {
+        if (res->flags.regist) {
+            SelvaSet_Union(out->type, out, res->set, NULL);
+        } else {
+            /* Safe to move the strings. */
+            SelvaSet_Merge(out, res->set);
+        }
+        free_rpn_operand(&res);
+    } else if (to_bool(res)) {
+        /* However, if res is falsy we interpret it as meaning an empty set. */
         free_rpn_operand(&res);
         return RPN_ERR_TYPE;
     }
 
-    if (res->flags.regist) {
-        SelvaSet_Union(out->type, out, res->set, NULL);
-    } else {
-        /* Safe to move the strings. */
-        SelvaSet_Merge(out, res->set);
-    }
-    free_rpn_operand(&res);
 
     return RPN_ERR_OK;
 }

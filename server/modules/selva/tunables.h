@@ -9,7 +9,7 @@
 /**
  * Debug memory usage.
  * 0 or undefined = Nothing
- * 1 = Clear memory areas before freeing
+ * 1 = Clear some memory areas before freeing
  */
 #define MEM_DEBUG 1
 
@@ -99,7 +99,7 @@
 /**
  * Async task peek interval.
  */
-#define ASYNC_TASK_PEEK_INTERVAL_US     500
+#define ASYNC_TASK_PEEK_INTERVAL_NS     500000L
 
 /**
  * Number of async task workers.

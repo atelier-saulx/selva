@@ -3,6 +3,7 @@ import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
 import createFindOperation from './find'
 import { SelvaClient } from '../..'
 import { getNestedSchema } from '../utils'
+import { isTraverseByType } from '../utils'
 
 const createAggregateOperation = (
   client: SelvaClient,
@@ -48,6 +49,8 @@ const createAggregateOperation = (
       op.sourceField = aggregate.$traverse
     } else if (Array.isArray(aggregate.$traverse)) {
       op.inKeys = aggregate.$traverse
+    } else if (isTraverseByType(aggregate.$traverse)) {
+      op.byType = aggregate.$traverse
     }
   }
 

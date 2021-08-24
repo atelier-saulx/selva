@@ -198,7 +198,14 @@ export default class ProcessManager extends EventEmitter {
     this.childProcess.on('exit', exitHandler)
     this.childProcess.on('close', exitHandler)
 
-    this.startLoadMeasurements()
+    this.initializeState().finally(() => {
+      this.startLoadMeasurements()
+    })
+  }
+
+  async initializeState() {
+    // do nothing unless overwritten
+    return Promise.resolve()
   }
 
   destroy(signal?: NodeJS.Signals) {

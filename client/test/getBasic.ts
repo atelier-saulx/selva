@@ -2649,5 +2649,202 @@ test.serial('get - field with array', async (t) => {
     },
   })
 
+  await client.set({
+    $id: id,
+
+    objRec: {
+      abba: {
+        objArray: {
+          $push: {},
+        },
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: true,
+      },
+    },
+  })
+
+  t.deepEqual(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+          {},
+        ],
+      },
+    },
+  })
+
+  await client.set({
+    $id: id,
+
+    objRec: {
+      abba: {
+        objArray: {
+          $push: [
+            {
+              hello: 'yes 11',
+              value: 11,
+            },
+            {
+              hello: 'yes 12',
+              value: 12,
+            },
+            {
+              hello: 'yes 13',
+              value: 13,
+            },
+          ],
+        },
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: true,
+      },
+    },
+  })
+
+  t.deepEqual(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+          {},
+          {
+            hello: 'yes 11',
+            value: 11,
+          },
+          {
+            hello: 'yes 12',
+            value: 12,
+          },
+
+          {
+            hello: 'yes 13',
+            value: 13,
+          },
+        ],
+      },
+    },
+  })
+
+  await client.set({
+    $id: id,
+
+    objRec: {
+      abba: {
+        objArray: {
+          $insert: {
+            $value: [
+              {
+                hello: 'yes 11',
+                value: 11,
+              },
+              {
+                hello: 'yes 12',
+                value: 12,
+              },
+              {
+                hello: 'yes 13',
+                value: 13,
+              },
+            ],
+            $idx: 0,
+          },
+        },
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: true,
+      },
+    },
+  })
+
+  t.deepEqual(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            hello: 'yes 11',
+            value: 11,
+          },
+          {
+            hello: 'yes 12',
+            value: 12,
+          },
+
+          {
+            hello: 'yes 13',
+            value: 13,
+          },
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+          {},
+          {
+            hello: 'yes 11',
+            value: 11,
+          },
+          {
+            hello: 'yes 12',
+            value: 12,
+          },
+
+          {
+            hello: 'yes 13',
+            value: 13,
+          },
+        ],
+      },
+    },
+  })
+
   client.destroy()
 })

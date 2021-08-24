@@ -139,7 +139,7 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(const struct EdgeFieldConst
  * @param node is a pointer to the node the lookup should be applied to. Can be NULL.
  * @returns A pointer to an EdgeField if node is set and the field is found; Otherwise NULL.
  */
-struct EdgeField *Edge_GetField(struct SelvaModify_HierarchyNode *node, const char *field_name_str, size_t field_name_len);
+struct EdgeField *Edge_GetField(const struct SelvaModify_HierarchyNode *node, const char *field_name_str, size_t field_name_len);
 
 /**
  * Check if an EdgeField has a reference to dst_node.

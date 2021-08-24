@@ -64,7 +64,7 @@ typedef struct SVector {
 
 } SVector;
 
-static inline int SVector_IsInitialized(SVector *vec) {
+static inline int SVector_IsInitialized(const SVector *vec) {
     return vec->vec_mode != SVECTOR_MODE_NONE;
 }
 
