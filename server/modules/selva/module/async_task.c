@@ -66,7 +66,7 @@ static int getRedisPort(void) {
         return 0;
     }
 
-    return strtol(str, NULL, 10);
+    return (int)strtol(str, NULL, 10);
 }
 
 static void selva_yield(void) {
