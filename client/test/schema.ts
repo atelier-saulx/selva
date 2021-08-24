@@ -40,10 +40,6 @@ test.serial('schemas - basic', async (t) => {
     },
     type: {
       type: 'type',
-      search: {
-        index: 'default',
-        type: ['TAG'],
-      },
     },
     title: {
       type: 'text',
@@ -66,10 +62,6 @@ test.serial('schemas - basic', async (t) => {
     },
     name: {
       type: 'string',
-      search: {
-        index: 'default',
-        type: ['TAG'],
-      },
     },
   }
 
@@ -144,7 +136,6 @@ test.serial('schemas - basic', async (t) => {
             properties: {
               snurkels: {
                 type: 'string',
-                search: { type: ['TAG'] },
               },
             },
           },
@@ -159,7 +150,6 @@ test.serial('schemas - basic', async (t) => {
               },
               hls: {
                 type: 'url',
-                search: { index: 'hls', type: ['TEXT'] },
               },
               pano: {
                 type: 'url',
@@ -207,15 +197,6 @@ test.serial('schemas - basic', async (t) => {
     Object.keys(schema.types),
     ['league', 'person', 'video', 'vehicle', 'family', 'match'],
     'correct type map'
-  )
-
-  t.deepEqual(
-    searchIndexes,
-    {
-      default: { type: ['TAG'], 'flurpy.snurkels': ['TAG'], name: ['TAG'] },
-      hls: { 'video.hls': ['TEXT'] },
-    },
-    'searchIndexes are equal'
   )
 
   // t.true(
@@ -294,36 +275,8 @@ test.serial('schemas - basic', async (t) => {
     'can overwrite meta'
   )
 
-  // drop search index in this case (NOT SUPPORTED YET!)
-  // throws for now
-  let e = await t.throwsAsync(
-    client.updateSchema({
-      types: {
-        match: {
-          fields: {
-            flurpy: {
-              type: 'object',
-              properties: {
-                snurkels: {
-                  type: 'string',
-                  search: { type: ['TEXT'] },
-                },
-              },
-            },
-          },
-        },
-      },
-    })
-  )
-
-  t.true(
-    e.stack.includes(
-      'Can not change existing search types for flurpy.snurkels in type match, changing from ["TAG"] to ["TEXT"]. This will be supported in the future.'
-    )
-  )
-
   // test that you can't set custom types with 'ro' as prefix
-  e = await t.throwsAsync(
+  let e = await t.throwsAsync(
     client.updateSchema({
       types: {
         flurpydurpy: {
@@ -454,7 +407,6 @@ test.serial('schemas - basic', async (t) => {
             properties: {
               snurpie: {
                 type: 'string',
-                search: { type: ['TEXT'] },
               },
             },
           },
@@ -488,15 +440,9 @@ test.serial('schemas - basic', async (t) => {
       properties: {
         snurkels: {
           type: 'string',
-          search: {
-            type: ['TAG'],
-          },
         },
         snurpie: {
           type: 'string',
-          search: {
-            type: ['TEXT'],
-          },
         },
       },
     },
