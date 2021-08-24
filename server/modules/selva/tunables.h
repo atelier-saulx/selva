@@ -99,7 +99,7 @@
 /**
  * Async task peek interval.
  */
-#define ASYNC_TASK_PEEK_INTERVAL_US     500
+#define ASYNC_TASK_PEEK_INTERVAL_NS     500000L
 
 /**
  * Number of async task workers.
