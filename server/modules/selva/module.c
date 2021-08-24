@@ -890,7 +890,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     SET_FOREACH(onload_p, selva_onload) {
         Selva_Onload *onload = *onload_p;
-        int err;
 
         err = onload(ctx);
         if (err) {
