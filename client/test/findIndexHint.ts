@@ -17,8 +17,6 @@ test.before(async (t) => {
   })
 
   await wait(100);
-  console.log('lollers')
-  //await wait(60e3);
 })
 
 test.beforeEach(async (t) => {
@@ -152,7 +150,7 @@ test.serial('create and destroy an index', async (t) => {
   )
 })
 
-test.serial.only('add and delete nodes in an index', async (t) => {
+test.serial('add and delete nodes in an index', async (t) => {
   const client = connect({ port })
 
   const ids = await Promise.all([
@@ -208,4 +206,59 @@ test.serial.only('add and delete nodes in an index', async (t) => {
     '81',
     '84',
   ])
+})
+
+test.serial('traversal expression with index', async (t) => {
+  const client = connect({ port })
+  const N = 30;
+  let id;
+
+  for (let i = 0; i < N; i++) {
+    id = await client.set({
+      type: 'match',
+      title: { en: 'a', de: 'b', nl: 'c' },
+      value: i,
+      parents: [
+        {
+          type: 'match',
+          value: i - N,
+        }
+      ],
+      children: [
+        {
+          type: 'match',
+          value: i + N,
+        }
+      ]
+    })
+  }
+  const { value: startIdValue } = await client.get({
+    $id: id,
+    value: true,
+  })
+
+  const expected = ((a, b) => {
+      const arr = [];
+      for (var i = a; i <= b; i++) {
+        if (i % 2 && i !== startIdValue) {
+          arr.push(i);
+        }
+      }
+      return arr;
+  })(-N, 2 * N);
+
+  for (let i = 0; i < 500; i++) {
+    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs_expression', '{"parents","children"}', 'index', '#4 "value" g E', 'order', 'value', 'asc', 'fields', 'value', id, '#2 "value" g E')
+    t.deepEqual(r.map((v) => Number(v[1][1])), expected)
+  }
+  await wait(2e3)
+  for (let i = 0; i < 500; i++) {
+    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs_expression', '{"parents","children"}', 'index', '#4 "value" g E', 'order', 'value', 'asc', 'fields', 'value', id, '#2 "value" g E')
+    t.deepEqual(r.map((v) => Number(v[1][1])), expected)
+  }
+
+  t.deepEqual(
+    await client.redis.selva_index_list('___selva_hierarchy'),
+    [ `${id}.N.eyJwYXJlbnRzIiwiY2hpbGRyZW4ifQ==.IzQgInZhbHVlIiBnIEU=`, 67 ]
+  )
 })
