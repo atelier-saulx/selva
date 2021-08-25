@@ -139,6 +139,12 @@ static int set_marker_id(struct SelvaFindIndexControlBlock *icb) {
     return 0;
 }
 
+/**
+ * Check if this node needs to be skipped.
+ * This is functionally equivalent to the skipping happening in the find
+ * command, meaning that the resulting index set will look similar to a
+ * find result with the same arguments.
+ */
 static int skip_node(const struct SelvaFindIndexControlBlock *icb, const Selva_NodeId node_id) {
     return SelvaTraversal_GetSkip(icb->dir) && !memcmp(node_id, icb->node_id, SELVA_NODE_ID_SIZE);
 }
@@ -149,11 +155,13 @@ static void update_index(
         struct Selva_SubscriptionMarker *marker,
         unsigned short event_flags,
         const struct SelvaModify_HierarchyNode *node) {
+    struct SelvaFindIndexControlBlock *icb;
+
     /*
      * Presumably as long as this function is called the owner_ctx pointer
      * should be always point to a valid icb too.
      */
-    struct SelvaFindIndexControlBlock *icb = (struct SelvaFindIndexControlBlock *)marker->marker_action_owner_ctx;
+    icb = (struct SelvaFindIndexControlBlock *)marker->marker_action_owner_ctx;
 
     if (event_flags & SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY) {
         /* Delete the res to trigger a refresh. */
