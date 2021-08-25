@@ -139,6 +139,10 @@ static int set_marker_id(struct SelvaFindIndexControlBlock *icb) {
     return 0;
 }
 
+static int skip_node(const struct SelvaFindIndexControlBlock *icb, const Selva_NodeId node_id) {
+    return SelvaTraversal_GetSkip(icb->dir) && !memcmp(node_id, icb->node_id, SELVA_NODE_ID_SIZE);
+}
+
 static void update_index(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy __unused,
@@ -189,7 +193,9 @@ static void update_index(
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
-            SelvaSet_Add(&icb->res, node_id);
+            if (!skip_node(icb, node_id)) {
+                SelvaSet_Add(&icb->res, node_id);
+            }
         }
     } else if (event_flags & (SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY | SELVA_SUBSCRIPTION_FLAG_CH_FIELD)) {
         /*
@@ -206,7 +212,9 @@ static void update_index(
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
-            SelvaSet_Add(&icb->res, node_id);
+            if (!skip_node(icb, node_id)) {
+                SelvaSet_Add(&icb->res, node_id);
+            }
         }
     } else {
 #if 0
