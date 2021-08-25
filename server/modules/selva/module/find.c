@@ -1437,7 +1437,9 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     /*
      * Prepare the filter expression if given.
      */
+    RedisModuleString *argv_filter_expr = NULL;
     if (argc >= ARGV_FILTER_EXPR + 1) {
+        argv_filter_expr = argv[ARGV_FILTER_EXPR];
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
 
         rpn_ctx = rpn_init(nr_reg);
@@ -1449,7 +1451,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         /*
          * Compile the filter expression.
          */
-        filter_expression = rpn_compile(RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], NULL));
+        filter_expression = rpn_compile(RedisModule_StringPtrLen(argv_filter_expr, NULL));
         if (!filter_expression) {
             replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
             goto out;
@@ -1545,6 +1547,15 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
         if (ind_out) {
             struct SelvaSetElement *el;
+
+            /*
+             * There is no need to run the filter again if the indexing was
+             * executing the same filter already.
+             */
+            if (argv_filter_expr && !RedisModule_StringCompare(argv_filter_expr, index_hint)) {
+                args.rpn_ctx = NULL;
+                args.filter = NULL;
+            }
 
             SELVA_SET_NODEID_FOREACH(el, ind_out) {
                 struct SelvaModify_HierarchyNode *node;
