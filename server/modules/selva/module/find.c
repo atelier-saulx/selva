@@ -1497,10 +1497,15 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         Selva_NodeIdCpy(nodeId, ids_str + i);
 
         if (index_hint) {
+            RedisModuleString *dir_expr = NULL;
             int ind_err;
 
-            /* TODO Add support for traversal expression. */
-            ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, NULL, nodeId, index_hint, &ind_out);
+            if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+                /* We know it's valid because it was already parsed and compiled once. */
+                dir_expr = argv[ARGV_REF_FIELD];
+            }
+
+            ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hint, &ind_out);
             if (ind_err && ind_err != SELVA_ENOENT) {
                 fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
                         __FILE__, __LINE__,
