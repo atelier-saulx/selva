@@ -1328,7 +1328,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * Parse the indexing hint.
      */
     RedisModuleString *index_hint = NULL;
-    if (!SelvaArgParser_StrOpt(NULL, "index", argv[ARGV_INDEX_TXT], argv[ARGV_INDEX_VAL])) {
+    if (argc > ARGV_INDEX_VAL && !SelvaArgParser_StrOpt(NULL, "index", argv[ARGV_INDEX_TXT], argv[ARGV_INDEX_VAL])) {
         index_hint = argv[ARGV_INDEX_VAL];
         SHIFT_ARGS(2);
     }
