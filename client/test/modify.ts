@@ -37,6 +37,7 @@ test.before(async (t) => {
       match: {
         prefix: 'ma',
         fields: {
+          value: { type: 'number' },
           title: {
             type: 'text',
           },
@@ -45,6 +46,7 @@ test.before(async (t) => {
             properties: {
               hello: { type: 'string' },
               hallo: { type: 'string' },
+              num: { type: 'number' },
             },
           },
           nestedObj: {
@@ -981,6 +983,57 @@ test.serial('$increment, $default', async (t) => {
     'title',
     'does not overwrite if value exists'
   )
+
+  await client.delete('root')
+
+  await client.destroy()
+})
+
+test.serial.only('$default with string and number', async (t) => {
+  const client = connect({
+    port,
+  })
+  await client.set({
+    $id: 'ma1',
+    value: {
+      $default: 99,
+    },
+    obj: {
+      num: {
+        $default: 11,
+      },
+      hello: {
+        $default: 'stringy string',
+      },
+    },
+  })
+
+  await client.set({
+    $id: 'ma1',
+    value: {
+      $default: 10,
+    },
+    obj: {
+      num: {
+        $default: 22,
+      },
+      hello: {
+        $default: 'stringy string',
+      },
+      hallo: {
+        $default: 'stringy stringy string',
+      },
+    },
+  })
+
+  t.deepEqual(await client.get({ $id: 'ma1', value: true, obj: true }), {
+    value: 99,
+    obj: {
+      num: 11,
+      hello: 'stringy string',
+      hallo: 'stringy stringy string',
+    },
+  })
 
   await client.delete('root')
 
