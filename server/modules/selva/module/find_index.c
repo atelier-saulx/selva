@@ -128,7 +128,7 @@ static int set_marker_id(struct SelvaFindIndexControlBlock *icb) {
     int next = bitmap_ffs(find_marker_id_stack);
 
     if (next < 0) {
-        return SELVA_ENOMEM; /* TODO ENORSCH or something? */
+        return SELVA_ENOBUFS;
     }
 
     icb->marker_id = next;
@@ -385,8 +385,9 @@ static void refresh_index_proc(RedisModuleCtx *ctx, void *data) {
 
         err = destroy_index_cb(ctx, hierarchy, icb);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to destroy the index: %s\n",
+            fprintf(stderr, "%s:%d: Failed to destroy the index for \"%s\": %s\n",
                     __FILE__, __LINE__,
+                    RedisModule_StringPtrLen(icb->name, NULL),
                     getSelvaErrorStr(err));
         }
     } else if (selva_glob_config.find_lfu_count_discard != 0 && lfu_count <= selva_glob_config.find_lfu_count_discard) {
@@ -394,8 +395,9 @@ static void refresh_index_proc(RedisModuleCtx *ctx, void *data) {
 
         err = discard_index(ctx, hierarchy, icb);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to discard the index: %s\n",
+            fprintf(stderr, "%s:%d: Failed to discard the index for \"%s\": %s\n",
                     __FILE__, __LINE__,
+                    RedisModule_StringPtrLen(icb->name, NULL),
                     getSelvaErrorStr(err));
         }
     } else if (lfu_count >= selva_glob_config.find_lfu_count_create && !icb->is_valid) {
@@ -429,8 +431,9 @@ static void refresh_index_proc(RedisModuleCtx *ctx, void *data) {
          */
         err = SelvaSubscriptions_RefreshByMarkerId(ctx, hierarchy, find_index_sub_id, icb->marker_id);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to refresh an index: %s\n",
+            fprintf(stderr, "%s:%d: Failed to refresh the index for \"%s\": %s\n",
                     __FILE__, __LINE__,
+                    RedisModule_StringPtrLen(icb->name, NULL),
                     getSelvaErrorStr(err));
             /* Get it cleaned up eventually. */
             icb->lfu_count = -1;
@@ -469,8 +472,9 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
     icb = p;
     if (err) {
         if (err != SELVA_ENOENT) {
-            fprintf(stderr, "%s:%d: Index get ICB failed: %s\n",
+            fprintf(stderr, "%s:%d: Get ICB for \"%s\" failed: %s\n",
                     __FILE__, __LINE__,
+                    RedisModule_StringPtrLen(name, NULL),
                     getSelvaErrorStr(err));
 
             RedisModule_FreeString(NULL, name);
@@ -492,8 +496,10 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
         icb->name = name;
 
         if (set_marker_id(icb)) {
-            fprintf(stderr, "%s:%d: Failed to get a marker id for an index\n",
-                    __FILE__, __LINE__);
+            fprintf(stderr, "%s:%d: Failed to get a marker id for an index \"%s\": %s\n",
+                    __FILE__, __LINE__,
+                    RedisModule_StringPtrLen(icb->name, NULL),
+                    getSelvaErrorStr(err));
 
             destroy_index_cb(ctx, NULL, icb);
             return NULL;
@@ -517,11 +523,9 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
 
         err = SelvaObject_SetPointer(dyn_index, name, icb, NULL);
         if (err) {
-            TO_STR(name);
-
-            fprintf(stderr, "%s:%d: Failed to insert a new ICB at \"%.*s\": %s\n",
+            fprintf(stderr, "%s:%d: Failed to insert a new ICB at \"%s\": %s\n",
                     __FILE__, __LINE__,
-                    (int)name_len, name_str,
+                    RedisModule_StringPtrLen(name, NULL),
                     getSelvaErrorStr(err));
 
             destroy_index_cb(ctx, NULL, icb);
