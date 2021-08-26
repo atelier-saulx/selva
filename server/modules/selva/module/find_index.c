@@ -453,6 +453,7 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
     TO_STR(dir_expression);
     TO_STR(filter);
     RedisModuleString *name;
+    void *p;
     struct SelvaFindIndexControlBlock *icb;
     int err;
 
@@ -464,8 +465,8 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
         return NULL;
     }
 
-    /* RFE Any clever trick to avoid casting? */
-    err = SelvaObject_GetPointer(dyn_index, name, (void **)(&icb));
+    err = SelvaObject_GetPointer(dyn_index, name, &p);
+    icb = p;
     if (err) {
         if (err != SELVA_ENOENT) {
             fprintf(stderr, "%s:%d: Index get ICB failed: %s\n",
@@ -661,6 +662,7 @@ static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
 static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     SelvaModify_Hierarchy *hierarchy;
+    void *p;
     struct SelvaFindIndexControlBlock *icb;
     int discard = 0;
     int err;
@@ -696,7 +698,8 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         return replyWithSelvaError(ctx, SELVA_ENOENT);
     }
 
-    err = SelvaObject_GetPointer(hierarchy->dyn_index, argv[ARGV_INDEX], (void **)(&icb));
+    err = SelvaObject_GetPointer(hierarchy->dyn_index, argv[ARGV_INDEX], &p);
+    icb = p;
     if (err == SELVA_ENOENT) {
         return RedisModule_ReplyWithLongLong(ctx, 0);
     } else if (err) {
