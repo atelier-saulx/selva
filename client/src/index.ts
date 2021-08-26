@@ -156,7 +156,7 @@ export class SelvaClient extends EventEmitter {
 
   async get(getOpts: GetOptions): Promise<GetResult> {
     if (!getOpts) {
-      throw new Error(`Get query expected, got ${JSON.stringify(getOpts)}`)
+      throw new Error(`Get query expected, got ${getOpts}`)
     }
 
     return get(this, getOpts)
@@ -231,7 +231,7 @@ export class SelvaClient extends EventEmitter {
     opts?: ObsSettings
   ): Observable {
     if (!props) {
-      throw new Error(`Get query expected, got ${JSON.stringify(props)}`)
+      throw new Error(`Get query expected, got ${props}`)
     }
 
     if (props.type === 'get' || props.type === 'schema') {

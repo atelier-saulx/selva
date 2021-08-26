@@ -205,7 +205,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.only('get null', async (t) => {
+test.serial('get null', async (t) => {
   const client = connect({ port })
 
   await client.set({
