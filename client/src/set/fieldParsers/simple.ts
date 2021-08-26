@@ -178,7 +178,6 @@ for (const key in verifiers) {
           result.push('7', field, '')
           return 0
         } else if (k === '$default') {
-          console.log('hmm ok', hasKeys)
           // let this be handled below
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
@@ -186,8 +185,21 @@ for (const key in verifiers) {
       }
 
       if (payload.$default) {
+        if (verify(payload.$default)) {
+          if (converter) {
+            value = converter(payload.$default)
+          } else {
+            value = String(payload.$default)
+          }
+        } else {
+          throw new Error(
+            `Incorrect payload for ${field} of type ${key}: ${JSON.stringify(
+              payload
+            )}`
+          )
+        }
+
         const defaultValueType = VALUE_TYPE_TO_DEFAULT_VALUE_TYPE[valueType]
-        console.log('wat', defaultValueType, keyname, value)
         if (defaultValueType) {
           result.push(defaultValueType, keyname, value)
         }

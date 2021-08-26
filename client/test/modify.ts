@@ -989,7 +989,7 @@ test.serial('$increment, $default', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('$default with string and number', async (t) => {
+test.serial('$default with string and number', async (t) => {
   const client = connect({
     port,
   })
