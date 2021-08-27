@@ -193,11 +193,6 @@ export class Observable {
 
   public unsubscribe(): Observable {
     if (this.isDestroyed) {
-      console.warn(
-        chalk.yellow(
-          `Trying to unsubscribe to an observable that is already destroyed ${this.uuid}`
-        )
-      )
       return
     }
     this.subsCounter--
