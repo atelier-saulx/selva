@@ -205,6 +205,21 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
+test.serial('get null', async (t) => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'maTest',
+    title: { en: 'hello' },
+  })
+
+  await t.throwsAsync(client.get(null))
+  t.throws(() => client.observe(null))
+
+  await client.delete('root')
+  await client.destroy()
+})
+
 test.serial('get $value', async (t) => {
   const client = connect({ port })
 
