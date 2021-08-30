@@ -9,6 +9,7 @@ import rimraf from 'rimraf'
 import beforeExit from 'before-exit'
 import { connections } from '@saulx/selva'
 import chalk from 'chalk'
+import { deepCopy } from '@saulx/utils'
 
 declare module 'ava' {
   export interface Assertions {
@@ -86,8 +87,10 @@ Object.assign(Assertions.prototype, {
 
 Object.assign(Assertions.prototype, {
   deepEqualIgnoreOrder(actual, expected, message = '') {
-    deepSort(actual, expected)
-    this.deepEqual(actual, expected, message)
+    const actCopy = deepCopy(actual)
+    const expCopy = deepCopy(expected)
+    deepSort(actCopy, expCopy)
+    this.deepEqual(actCopy, expCopy, message)
   },
 })
 
