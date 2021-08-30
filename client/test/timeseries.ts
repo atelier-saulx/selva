@@ -279,6 +279,9 @@ test.after(async (t) => {
 //   }
 //   t.true(selvaTypes.size  <= timeseriesTypes.size)
 // })
+//
+// TODO: in filters
+//jsonb_extract_path_text(from_json jsonb, VARIADIC path_elems text[])
 
 test.serial('get - basic value types timeseries', async (t) => {
   const client = connect({ port })
@@ -357,9 +360,17 @@ test.serial('get - basic value types timeseries', async (t) => {
             },
           },
           thumbnails: {
-            $field: 'image',
             thumb: true,
-            $list: true,
+            $list: {
+              $find: {
+                $traverse: 'image',
+                $filter: {
+                  $field: 'thumb',
+                  $operator: '=',
+                  $value: 'lol',
+                },
+              },
+            },
           },
         },
       }),

@@ -47,10 +47,28 @@ function filterToExpr(
   if (Array.isArray(filter.$value)) {
     let expr = sq.expr()
     for (const v of filter.$value) {
-      expr = expr.or(`"${f}" ${filter.$operator} ?`, v)
+      if (isObj) {
+        const split = f.split('.')
+        const col = split[0]
+        const path = split.slice(1).map((x) => `'${x}'`)
+        const eStr = `json_extract_path_text(${col}, ${path.join(', ')})`
+
+        expr = expr.or(`${eStr} ${filter.$operator} ?`, v)
+      } else {
+        expr = expr.or(`"${f}" ${filter.$operator} ?`, v)
+      }
     }
   } else {
-    return sq.expr().and(`"${f}" ${filter.$operator} ?`, filter.$value)
+    if (isObj) {
+      const split = f.split('.')
+      const col = split[0]
+      const path = split.slice(1).map((x) => `'${x}'`)
+      const eStr = `json_extract_path_text(${col}, ${path.join(', ')})`
+
+      return sq.expr().and(`${eStr} ${filter.$operator} ?`, filter.$value)
+    } else {
+      return sq.expr().and(`"${f}" ${filter.$operator} ?`, filter.$value)
+    }
   }
 }
 
