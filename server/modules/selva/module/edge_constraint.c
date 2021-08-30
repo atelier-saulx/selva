@@ -117,11 +117,12 @@ int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, struct EdgeFieldDyn
 }
 
 const struct EdgeFieldConstraint *Edge_GetConstraint(const struct EdgeFieldConstraints *data, unsigned constraint_id, Selva_NodeType node_type, const char *field_name_str, size_t field_name_len) {
-    const struct EdgeFieldConstraint *p = NULL;
+    const struct EdgeFieldConstraint *constraint = NULL;
 
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
         const size_t constraint_name_len = DYN_CONSTRAINT_NAME_LEN(field_name_len);
         char constraint_name_str[constraint_name_len];
+        void *p;
         int err;
 
         make_dyn_constraint_name(constraint_name_str, node_type, field_name_str, field_name_len);
@@ -133,11 +134,13 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(const struct EdgeFieldConst
                     (int)field_name_len, field_name_str,
                     getSelvaErrorStr(err));
         }
+
+        constraint = p;
     } else if (constraint_id < num_elem(data->hard_constraints)) {
-        p = &data->hard_constraints[constraint_id];
+        constraint = &data->hard_constraints[constraint_id];
     }
 
-    return p;
+    return constraint;
 }
 
 static void EdgeConstraint_Reply(struct RedisModuleCtx *ctx, void *p) {

@@ -88,6 +88,12 @@ const converters = {
   number: (payload: number): Buffer => createRecord(doubleDef, { d: payload }),
 }
 
+const VALUE_TYPE_TO_DEFAULT_VALUE_TYPE = {
+  3: '8',
+  A: '9',
+  0: '2',
+}
+
 const parsers = {}
 
 for (const key in verifiers) {
@@ -118,11 +124,7 @@ for (const key in verifiers) {
       for (let k in payload) {
         value = payload[k]
         hasKeys = true
-        if (
-          k === '$default' ||
-          k === '$value' ||
-          (isNumber && k === '$increment')
-        ) {
+        if (isNumber && k === '$increment') {
           if (payload[k].$ref) {
             if (typeof payload[k].$ref !== 'string') {
               throw new Error(`Non-string $ref provided for ${key}.${k}`)
@@ -139,37 +141,35 @@ for (const key in verifiers) {
               value = converter(payload[k])
             }
 
-            if (k !== '$value') {
-              //console.log(payload)
-              if (key == 'int') {
-                result.push(
-                  '4',
-                  field,
-                  createRecord(incrementDef, {
-                    $default: isNaN(payload.$default)
-                      ? 0
-                      : Number(payload.$default),
-                    $increment: isNaN(payload.$increment)
-                      ? 0
-                      : Number(payload.$increment),
-                  })
-                )
-              } else {
-                result.push(
-                  'B',
-                  field,
-                  createRecord(incrementDoubleDef, {
-                    $default: isNaN(payload.$default)
-                      ? 0
-                      : Number(payload.$default),
-                    $increment: isNaN(payload.$increment)
-                      ? 0
-                      : Number(payload.$increment),
-                  })
-                )
-              }
-              return 1
+            //console.log(payload)
+            if (key == 'int') {
+              result.push(
+                '4',
+                field,
+                createRecord(incrementDef, {
+                  $default: isNaN(payload.$default)
+                    ? 0
+                    : Number(payload.$default),
+                  $increment: isNaN(payload.$increment)
+                    ? 0
+                    : Number(payload.$increment),
+                })
+              )
+            } else {
+              result.push(
+                'B',
+                field,
+                createRecord(incrementDoubleDef, {
+                  $default: isNaN(payload.$default)
+                    ? 0
+                    : Number(payload.$default),
+                  $increment: isNaN(payload.$increment)
+                    ? 0
+                    : Number(payload.$increment),
+                })
+              )
             }
+            return 1
           }
         } else if (k === '$ref') {
           value = `___selva_$ref:${payload[k]}`
@@ -177,9 +177,34 @@ for (const key in verifiers) {
         } else if (k === '$delete') {
           result.push('7', field, '')
           return 0
+        } else if (k === '$default') {
+          // let this be handled below
         } else {
           throw new Error(`Incorrect payload for ${key} incorrect field ${k}`)
         }
+      }
+
+      if (payload.$default) {
+        if (verify(payload.$default)) {
+          if (converter) {
+            value = converter(payload.$default)
+          } else {
+            value = String(payload.$default)
+          }
+        } else {
+          throw new Error(
+            `Incorrect payload for ${field} of type ${key}: ${JSON.stringify(
+              payload
+            )}`
+          )
+        }
+
+        const defaultValueType = VALUE_TYPE_TO_DEFAULT_VALUE_TYPE[valueType]
+        if (defaultValueType) {
+          result.push(defaultValueType, keyname, value)
+        }
+
+        return 1
       }
 
       if (!hasKeys) {

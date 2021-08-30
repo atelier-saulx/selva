@@ -4,29 +4,27 @@
   "workspaces": [
     "client",
     "server",
-    "api",
     "tools",
     "query-ast-parser"
   ],
   "scripts": {
     "killall": "pkill -9 node && pkill -9 redis",
-    "publish-major": "yarn build && node ./bin/publish.js major && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
-    "publish-minor": "yarn build && node ./bin/publish.js minor && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
-    "publish-patch": "yarn build && node ./bin/publish.js && npm login && cd client && npm publish && cd ../server && npm publish && cd ../api && npm publish",
+    "publish-major": "yarn build && node ./bin/publish.js major && npm login && cd client && npm publish && cd ../server && npm publish",
+    "publish-minor": "yarn build && node ./bin/publish.js minor && npm login && cd client && npm publish && cd ../server && npm publish",
+    "publish-patch": "yarn build && node ./bin/publish.js && npm login && cd client && npm publish && cd ../server && npm publish",
     "clean": "rm -rf node_modules && rm -rf client/node_modules client/dist && rm -rf server/node_modules server/dist",
     "test": "cd client && yarn test",
     "build-c": "cd ./server/modules/selva && make clean && make && cp module.so ../binaries/darwin_x64/selva.so",
     "build-cx": "cd ./server/modules/selva && ./build.sh",
-    "build": "yarn buildAstParser && yarn buildClient && mkdir -p server/dist/lua && cp client/dist/lua/update-schema.lua server/dist/lua/update-schema.lua && yarn buildServer && yarn buildApi",
+    "build": "yarn buildAstParser && yarn buildClient && mkdir -p server/dist/lua && cp client/dist/lua/update-schema.lua server/dist/lua/update-schema.lua && yarn buildServer",
     "buildClient": "cd client && yarn buildLua && yarn build",
     "buildAstParser": "cd query-ast-parser && yarn build",
     "buildLua": "cd client && yarn buildLua",
     "buildServer": "cd server && yarn build",
-    "buildApi": "cd api && yarn build",
     "watchServer": "cd server && yarn watch",
     "watchClientTests": "cd client && yarn watch",
     "watch": "watch",
-    "ncu": "cd api && ncu -u && cd ../api-server && ncu -u && cd ../client && ncu -u && ncu -u && cd ../query-ast-parser && ncu -u && cd ../server && ncu -u && cd ../tools && ncu -u"
+    "ncu": "cd ../client && ncu -u && ncu -u && cd ../query-ast-parser && ncu -u && cd ../server && ncu -u && cd ../tools && ncu -u"
   },
   "lint-staged": {
     "{js,json}": [

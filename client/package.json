@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "7.0.5",
+  "version": "7.0.7",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && node ../tools/script-sha.js && yarn buildTs",
@@ -50,7 +50,7 @@
     ]
   },
   "devDependencies": {
-    "@saulx/selva-server": "7.0.5",
+    "@saulx/selva-server": "7.0.7",
     "@sindresorhus/fnv1a": "^2.0.1",
     "@types/pg": "^8.6.1",
     "@types/redis": "^2.8.28",
