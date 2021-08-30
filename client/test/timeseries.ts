@@ -190,6 +190,7 @@ test.beforeEach(async (t) => {
             properties: {
               thumb: { type: 'string' },
               poster: { type: 'string' },
+              pixels: { type: 'int' },
             },
           },
         },
@@ -209,6 +210,7 @@ test.beforeEach(async (t) => {
             properties: {
               thumb: { type: 'string' },
               poster: { type: 'string' },
+              pixels: { type: 'int' },
             },
           },
         },
@@ -228,6 +230,7 @@ test.beforeEach(async (t) => {
             properties: {
               thumb: { type: 'string' },
               poster: { type: 'string' },
+              pixels: { type: 'int' },
             },
           },
         },
@@ -301,6 +304,7 @@ test.serial('get - basic value types timeseries', async (t) => {
     },
     image: {
       thumb: 'lol',
+      pixels: 2042,
     },
   })
 
@@ -364,11 +368,18 @@ test.serial('get - basic value types timeseries', async (t) => {
             $list: {
               $find: {
                 $traverse: 'image',
-                $filter: {
-                  $field: 'thumb',
-                  $operator: '=',
-                  $value: 'lol',
-                },
+                $filter: [
+                  {
+                    $field: 'thumb',
+                    $operator: '=',
+                    $value: 'lol',
+                  },
+                  {
+                    $field: 'pixels',
+                    $operator: '>',
+                    $value: '1024',
+                  },
+                ],
               },
             },
           },
