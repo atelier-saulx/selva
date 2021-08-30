@@ -103,46 +103,82 @@ test.serial('find index', async (t) => {
     )
   }
 
-  t.deepEqual(await client.redis.selva_index_list('___selva_hierarchy'), [
+  t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
     'root.I.ImxlYWd1ZSIgZQ==',
     'not_active',
   ])
 
   await wait(1e3)
 
-  t.deepEqual(await client.redis.selva_index_list('___selva_hierarchy'), [
+  t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
     'root.I.ImxlYWd1ZSIgZQ==',
-    2,
+    'not_active',
   ])
 
+  for (let i = 0; i < 1000; i++) {
+    await client.set({
+      type: 'league',
+      name: 'league 2',
+      thing: 'yes some value here',
+    })
+  }
+
   for (let i = 0; i < 500; i++) {
-    t.deepEqualIgnoreOrder(
-      await client.get({
-        $id: 'root',
-        id: true,
-        items: {
-          name: true,
-          $list: {
-            $find: {
-              $traverse: 'descendants',
-              $filter: [
-                {
-                  $field: 'type',
-                  $operator: '=',
-                  $value: 'league',
-                },
-                {
-                  $field: 'thing',
-                  $operator: 'exists',
-                },
-              ],
-            },
+    await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league',
+              },
+              {
+                $field: 'thing',
+                $operator: 'exists',
+              },
+            ],
           },
         },
-      }),
-      { id: 'root', items: [{ name: 'league 2' }] }
-    )
+      },
+    })
   }
+  await wait(2e3);
+  for (let i = 0; i < 500; i++) {
+    await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'league',
+              },
+              {
+                $field: 'thing',
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+      },
+    })
+  }
+
+  t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
+    'root.I.ImxlYWd1ZSIgZQ==',
+    1002,
+  ])
 
   await client.delete('root')
   await client.destroy()
