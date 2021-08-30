@@ -103,12 +103,46 @@ test.serial('find index', async (t) => {
     )
   }
 
+  t.deepEqual(await client.redis.selva_index_list('___selva_hierarchy'), [
+    'root.I.ImxlYWd1ZSIgZQ==',
+    'not_active',
+  ])
+
   await wait(1e3)
 
   t.deepEqual(await client.redis.selva_index_list('___selva_hierarchy'), [
     'root.I.ImxlYWd1ZSIgZQ==',
     2,
   ])
+
+  for (let i = 0; i < 500; i++) {
+    t.deepEqualIgnoreOrder(
+      await client.get({
+        $id: 'root',
+        id: true,
+        items: {
+          name: true,
+          $list: {
+            $find: {
+              $traverse: 'descendants',
+              $filter: [
+                {
+                  $field: 'type',
+                  $operator: '=',
+                  $value: 'league',
+                },
+                {
+                  $field: 'thing',
+                  $operator: 'exists',
+                },
+              ],
+            },
+          },
+        },
+      }),
+      { id: 'root', items: [{ name: 'league 2' }] }
+    )
+  }
 
   await client.delete('root')
   await client.destroy()
