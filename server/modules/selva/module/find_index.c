@@ -48,6 +48,11 @@ struct SelvaFindIndexControlBlock {
      * See LFU_COUNT_xxx macros.
      */
     int lfu_count;
+    struct {
+        size_t take_max;
+        size_t tot_max;
+        size_t ind_take_max;
+    } find_acc;
 
     /*
      * Traversal.
@@ -177,6 +182,9 @@ static void update_index(
 
             SelvaSet_Destroy(&icb->res);
             icb->is_valid = 0;
+
+            /* Clear the accounting. */
+            memset(&icb->find_acc, 0, sizeof(icb->find_acc));
         }
     } else if (event_flags & SELVA_SUBSCRIPTION_FLAG_REFRESH) {
         /*
@@ -263,6 +271,9 @@ static int start_index(
 
     icb->is_active = 1;
 
+    /* Clear indexed find accounting. */
+    icb->find_acc.ind_take_max = 0;
+
     return 0;
 }
 
@@ -288,6 +299,9 @@ static int discard_index(
         icb->is_valid = 0;
         SelvaSet_Destroy(&icb->res);
     }
+
+    /* Clear accouting. */
+    memset(&icb->find_acc, 0, sizeof(icb->find_acc));
 
     return 0;
 }
@@ -390,7 +404,8 @@ static void refresh_index_proc(RedisModuleCtx *ctx, void *data) {
                     RedisModule_StringPtrLen(icb->name, NULL),
                     getSelvaErrorStr(err));
         }
-    } else if (selva_glob_config.find_lfu_count_discard != 0 && lfu_count <= selva_glob_config.find_lfu_count_discard) {
+    } else if (selva_glob_config.find_lfu_count_discard != 0 &&
+               lfu_count <= selva_glob_config.find_lfu_count_discard) {
         int err;
 
         err = discard_index(ctx, hierarchy, icb);
@@ -400,7 +415,9 @@ static void refresh_index_proc(RedisModuleCtx *ctx, void *data) {
                     RedisModule_StringPtrLen(icb->name, NULL),
                     getSelvaErrorStr(err));
         }
-    } else if (lfu_count >= selva_glob_config.find_lfu_count_create && !icb->is_valid) {
+    } else if (icb->find_acc.tot_max >= FIND_INDEXING_THRESHOLD &&
+               lfu_count >= selva_glob_config.find_lfu_count_create &&
+               !icb->is_valid) {
         int err;
 
         /*
@@ -564,6 +581,7 @@ int SelvaFind_AutoIndex(
         enum SelvaTraversal dir, RedisModuleString *dir_expression,
         const Selva_NodeId node_id,
         RedisModuleString *filter,
+        struct  SelvaFindIndexControlBlock **icb_out,
         struct SelvaSet **out) {
     struct SelvaFindIndexControlBlock *icb;
     TO_STR(filter);
@@ -597,12 +615,26 @@ int SelvaFind_AutoIndex(
     }
 
     icb = upsert_index_cb(ctx, hierarchy, node_id, dir, dir_expression, filter);
+    *icb_out = icb;
     if (!icb || !icb->is_valid) {
         return SELVA_ENOENT;
     }
 
     *out = &icb->res;
     return 0;
+}
+
+void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take, size_t acc_tot) {
+    if (acc_take > icb->find_acc.take_max || acc_tot > icb->find_acc.tot_max) {
+        icb->find_acc.take_max = acc_take;
+        icb->find_acc.tot_max = acc_tot;
+    }
+}
+
+void SelvaFind_AccIndexed(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take) {
+    if (acc_take > icb->find_acc.ind_take_max) {
+        icb->find_acc.ind_take_max = acc_take;
+    }
 }
 
 static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
@@ -618,6 +650,10 @@ static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
 
             n++;
             RedisModule_ReplyWithString(ctx, icb->name);
+            RedisModule_ReplyWithArray(ctx, 4);
+            RedisModule_ReplyWithLongLong(ctx, icb->find_acc.take_max);
+            RedisModule_ReplyWithLongLong(ctx, icb->find_acc.tot_max);
+            RedisModule_ReplyWithLongLong(ctx, icb->find_acc.ind_take_max);
             if (!icb->is_active) {
                 RedisModule_ReplyWithSimpleString(ctx, "not_active");
             } else if (!icb->is_valid) {

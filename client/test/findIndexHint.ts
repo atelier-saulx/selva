@@ -99,13 +99,13 @@ test.serial('create and destroy an index', async (t) => {
   }
 
   t.deepEqual(
-    await client.redis.selva_index_list('___selva_hierarchy'),
+    (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
     [ 'root.I.InZhbHVlIiBnICM4MCBI', 19 ]
   )
 
   await client.redis.selva_index_del('___selva_hierarchy', 'root.I.InZhbHVlIiBnICM4MCBI')
   t.deepEqual(
-    await client.redis.selva_index_list('___selva_hierarchy'),
+    (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
     []
   )
 
@@ -140,13 +140,13 @@ test.serial('create and destroy an index', async (t) => {
   }
 
   t.deepEqual(
-    await client.redis.selva_index_list('___selva_hierarchy'),
+    (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
     [ 'root.I.InZhbHVlIiBnICM4MCBI', 19 ]
   )
 
   await client.redis.selva_index_del('___selva_hierarchy', 'root.I.InZhbHVlIiBnICM4MCBI', 1)
   t.deepEqual(
-    await client.redis.selva_index_list('___selva_hierarchy'),
+    (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
     [ 'root.I.InZhbHVlIiBnICM4MCBI', 'not_active' ]
   )
 })
@@ -211,7 +211,7 @@ test.serial('add and delete nodes in an index', async (t) => {
 
 test.serial('traversal expression with index', async (t) => {
   const client = connect({ port })
-  const N = 30;
+  const N = 300;
   let id;
 
   for (let i = 0; i < N; i++) {
@@ -259,8 +259,8 @@ test.serial('traversal expression with index', async (t) => {
   }
 
   t.deepEqual(
-    await client.redis.selva_index_list('___selva_hierarchy'),
-    [ `${id}.N.eyJwYXJlbnRzIiwiY2hpbGRyZW4ifQ==.IzQgInZhbHVlIiBnIEU=`, 67 ]
+    (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
+    [ `${id}.N.eyJwYXJlbnRzIiwiY2hpbGRyZW4ifQ==.IzQgInZhbHVlIiBnIEU=`, 674 ]
   )
 })
 
@@ -315,9 +315,10 @@ test.serial('slow traversal and fast index', async (t) => {
   const indexTime = indexEnd - indexStart
 
   t.deepEqual(
-    await client.redis.selva_index_list('___selva_hierarchy'),
+    (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
     [ 'root.I.IzEwICJ2YWx1ZSIgZyBFIEw=', expected.length ]
   )
+  console.log(await client.redis.selva_index_list('___selva_hierarchy'));
 
   t.assert(NoIndexTime > 2 * indexTime, 'find from index is at least twice as fast')
 })

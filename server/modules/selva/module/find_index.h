@@ -6,6 +6,7 @@ struct RedisModuleCtx;
 struct RedisModuleString;
 struct SelvaModify_Hierarchy;
 struct SelvaSet;
+struct SelvaFindIndexControlBlock;
 
 /**
  * Check if an index exists for this query, update it, and get the indexing result set.
@@ -17,6 +18,9 @@ int SelvaFind_AutoIndex(
         enum SelvaTraversal dir, struct RedisModuleString *dir_expression_str,
         const Selva_NodeId node_id,
         RedisModuleString *filter,
+        struct SelvaFindIndexControlBlock **icb_out,
         struct SelvaSet **out);
+void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take, size_t acc_tot);
+void SelvaFind_AccIndexed(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take);
 
 #endif /* _FIND_INDEX_H_ */
