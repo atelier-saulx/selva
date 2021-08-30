@@ -1203,18 +1203,19 @@ static size_t FindCommand_PrintOrderedArrayResult(
 
 /**
  * Find node(s) matching the query.
- * SELVA.HIERARCHY.find lang REDIS_KEY dir [field_name] [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
- *                                     |   |            |                      |             |            |            |                    |        |            |
- * Traversal method/direction --------/    |            |                      |             |            |            |                    |        |            |
- * Traversed field -----------------------/             |                      |             |            |            |                    |        |            |
- * Sort order of the results --------------------------/                       |             |            |            |                    |        |            |
- * Skip the first 1234 - 1 results -------------------------------------------/              |            |            |                    |        |            |
- * Limit the number of results (Optional) --------------------------------------------------/             |            |                    |        |            |
- * Merge fields. fields option must be set. -------------------------------------------------------------/             |                    |        |            |
- * Return field values instead of node names -------------------------------------------------------------------------/                     |        |            |
- * One or more node IDs concatenated (10 chars per ID) ------------------------------------------------------------------------------------/         |            |
- * RPN filter expression ---------------------------------------------------------------------------------------------------------------------------/             |
- * Register arguments for the RPN filter ------------------------------------------------------------------------------------------------------------------------/
+ * SELVA.HIERARCHY.find lang REDIS_KEY dir [field_name/expr] [index dir [expr]] [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
+ *                                     |   |                 |                  |                      |             |            |            |                    |        |            |
+ * Traversal method/direction --------/    |                 |                  |                      |             |            |            |                    |        |            |
+ * Traversed field or expression ---------/                  |                  |                      |             |            |            |                    |        |            |
+ * Indexing hint -------------------------------------------/                   |                      |             |            |            |                    |        |            |
+ * Sort order of the results --------------------------------------------------/                       |             |            |            |                    |        |            |
+ * Skip the first 1234 - 1 results -------------------------------------------------------------------/              |            |            |                    |        |            |
+ * Limit the number of results (Optional) --------------------------------------------------------------------------/             |            |                    |        |            |
+ * Merge fields. fields option must be set. -------------------------------------------------------------------------------------/             |                    |        |            |
+ * Return field values instead of node names -------------------------------------------------------------------------------------------------/                     |        |            |
+ * One or more node IDs concatenated (10 chars per ID) ------------------------------------------------------------------------------------------------------------/         |            |
+ * RPN filter expression ---------------------------------------------------------------------------------------------------------------------------------------------------/             |
+ * Register arguments for the RPN filter ------------------------------------------------------------------------------------------------------------------------------------------------/
  *
  * The traversed field is typically either ancestors or descendants but it can
  * be any hierarchy or edge field.
