@@ -106,7 +106,7 @@ test.serial('find - numeric exists field', async (t) => {
   await client.destroy()
 })
 
-test.serial('find - string field only exists indexed', async (t) => {
+test.serial('find - string field only exists', async (t) => {
   // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
   await client.set({
