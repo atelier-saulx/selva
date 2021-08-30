@@ -18,6 +18,38 @@ import { padId, joinIds } from '../utils'
 import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 
+function mkIndex(op: GetOperationFind): string[] {
+  if (op.id && op.id !== 'root') {
+    return []
+  }
+
+  if (!op.filter || !op.filter.$and) {
+    return []
+  }
+
+  if (op.sourceField !== 'descendants') {
+    return []
+  }
+
+  const typeFilter = op.filter.$and.find((f: Fork | FilterAST) => {
+    if (isFork(f)) {
+      return false
+    }
+
+    if (f.$field === 'type' && f.$operator === '=') {
+      return true
+    }
+
+    return false
+  })
+
+  if (!typeFilter) {
+    return []
+  }
+
+  return ['index', `"${(<FilterAST>typeFilter).$value}" e`]
+}
+
 function parseGetOpts(
   props: GetOptions,
   path: string,
@@ -252,6 +284,7 @@ async function checkForNextRefresh(
           sourceField,
           false
         ),
+        // TODO: needs indexing
         'order',
         f.$field,
         'asc',
@@ -424,6 +457,7 @@ export const findIds = async (
         op.recursive,
         op.byType
       ),
+      ...mkIndex(op),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
@@ -599,6 +633,7 @@ const findFields = async (
         op.recursive,
         op.byType
       ),
+      ...mkIndex(op),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
