@@ -1,7 +1,7 @@
 import { SelvaClient } from '../../'
 import { GetOperation, GetResult, TraverseByType } from '../types'
 import { FieldSchema } from '../../schema'
-import { setNestedResult, getNestedSchema } from '../utils'
+import { setNestedResult, getNestedSchema, getNestedField } from '../utils'
 import resolveId from '../resolveId'
 import createGetOperations from '../createGetOperations'
 import { GetOptions } from '../'
@@ -12,7 +12,7 @@ import { Rpn, bfsExpr2rpn } from '@saulx/selva-query-ast-parser'
 import { FieldSchemaArrayLike, Schema } from '~selva/schema'
 import { ServerDescriptor } from '~selva/types'
 import { makeLangArg } from './util'
-import { deepCopy } from '@saulx/utils'
+import { deepCopy, deepMerge } from '@saulx/utils'
 
 export type ExecContext = {
   db: string
@@ -167,7 +167,16 @@ export async function addMarker(
     ...markerType,
     marker.id,
     'fields',
-    marker.fields.join('\n'),
+    marker.fields
+      .map((f) => {
+        const idx = f.indexOf('.*.')
+        if (idx > 0) {
+          return f.slice(0, idx)
+        }
+
+        return f
+      })
+      .join('\n'),
     ...(marker.rpn ? marker.rpn : [])
   )
 
@@ -768,11 +777,9 @@ export default async function executeGetOperations(
       Object.assign(o, r)
     } else if (r !== null && r !== undefined) {
       if (ops[i].field.includes('.*.')) {
-        setNestedResult(
-          o,
-          ops[i].field.substr(0, ops[i].field.indexOf('*') - 1),
-          r
-        )
+        const f = ops[i].field.substr(0, ops[i].field.indexOf('*') - 1)
+        const current = getNestedField(o, f)
+        setNestedResult(o, f, deepMerge({}, current, r))
       } else {
         setNestedResult(o, ops[i].field, r)
       }
