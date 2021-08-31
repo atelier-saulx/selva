@@ -11,6 +11,7 @@
 #include "hierarchy.h"
 #include "rpn.h"
 #include "selva.h"
+#include "config.h"
 #include "selva_lang.h"
 #include "selva_node.h"
 #include "selva_object.h"
@@ -1503,7 +1504,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
         Selva_NodeIdCpy(nodeId, ids_str + i);
 
-        if (index_hint) {
+        if (index_hint && selva_glob_config.find_lfu_count_init > 0) {
             RedisModuleString *dir_expr = NULL;
             int ind_err;
 

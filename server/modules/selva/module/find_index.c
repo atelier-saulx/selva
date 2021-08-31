@@ -588,7 +588,7 @@ int SelvaFind_AutoIndex(
     TO_STR(filter);
     filter_str;
 
-    if (!filter || filter_len == 0) {
+    if (!filter || filter_len == 0 || FIND_INDICES_MAX == 0) {
         return SELVA_EINVAL;
     }
 
@@ -626,14 +626,14 @@ int SelvaFind_AutoIndex(
 }
 
 void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take, size_t acc_tot) {
-    if (acc_take > icb->find_acc.take_max || acc_tot > icb->find_acc.tot_max) {
+    if (FIND_INDICES_MAX && (acc_take > icb->find_acc.take_max || acc_tot > icb->find_acc.tot_max)) {
         icb->find_acc.take_max = acc_take;
         icb->find_acc.tot_max = acc_tot;
     }
 }
 
 void SelvaFind_AccIndexed(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take) {
-    if (acc_take > icb->find_acc.ind_take_max) {
+    if (FIND_INDICES_MAX && (acc_take > icb->find_acc.ind_take_max)) {
         icb->find_acc.ind_take_max = acc_take;
     }
 }
@@ -760,6 +760,10 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
 }
 
 static int FindIndex_OnLoad(RedisModuleCtx *ctx __unused) {
+    if (FIND_INDICES_MAX == 0) {
+        return REDISMODULE_ERR;
+    }
+
     find_marker_id_stack = RedisModule_Alloc(BITMAP_ALLOC_SIZE(FIND_INDICES_MAX));
     if (!find_marker_id_stack) {
         return REDISMODULE_ERR;
