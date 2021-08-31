@@ -17,7 +17,7 @@ int SelvaFind_AutoIndex(
         struct SelvaModify_Hierarchy *hierarchy,
         enum SelvaTraversal dir, struct RedisModuleString *dir_expression_str,
         const Selva_NodeId node_id,
-        RedisModuleString *filter,
+        struct RedisModuleString *filter,
         struct SelvaFindIndexControlBlock **icb_out,
         struct SelvaSet **out);
 void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take, size_t acc_tot);

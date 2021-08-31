@@ -582,7 +582,7 @@ int SelvaFind_AutoIndex(
         enum SelvaTraversal dir, RedisModuleString *dir_expression,
         const Selva_NodeId node_id,
         RedisModuleString *filter,
-        struct  SelvaFindIndexControlBlock **icb_out,
+        struct SelvaFindIndexControlBlock **icb_out,
         struct SelvaSet **out) {
     struct SelvaFindIndexControlBlock *icb;
     TO_STR(filter);
@@ -701,6 +701,74 @@ static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **a
     return REDISMODULE_OK;
 }
 
+static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    SelvaModify_Hierarchy *hierarchy;
+    enum SelvaTraversal dir;
+    RedisModuleString *dir_expression;
+    const RedisModuleString *rms_node_id;
+    Selva_NodeId node_id;
+    RedisModuleString *filter;
+    struct SelvaFindIndexControlBlock *icb;
+    struct SelvaSet *set;
+    int err;
+
+    if (argc != 6) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_DIRECTION = 2;
+    const int ARGV_REF_FIELD = 3;
+    const int ARGV_NODE_ID = 4;
+    const int ARGV_FILTER = 5;
+
+    /*
+     * Open the Redis key.
+     */
+    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
+    if (!hierarchy) {
+        /* Do not send redis messages here. */
+        return REDISMODULE_OK;
+    }
+    if (!hierarchy->dyn_index) {
+        return replyWithSelvaError(ctx, SELVA_ENOENT);
+    }
+
+    err = SelvaTraversal_ParseDir2(&dir, argv[ARGV_DIRECTION]);
+    if (err) {
+        return replyWithSelvaErrorf(ctx, err, "Traversal argument");
+    }
+
+    if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+        dir_expression = argv[ARGV_REF_FIELD];
+    } else {
+        dir_expression = NULL;
+    }
+
+    rms_node_id = argv[ARGV_NODE_ID];
+    TO_STR(rms_node_id);
+    if (rms_node_id_len <= SELVA_NODE_TYPE_SIZE || rms_node_id_len > SELVA_NODE_ID_SIZE) {
+        return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "node_id");
+    }
+    Selva_NodeIdCpy(node_id, rms_node_id_str);
+
+    /* TODO Validate */
+    filter = argv[ARGV_FILTER];
+
+    err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expression, node_id, filter, &icb, &set);
+    if ((err && err != SELVA_ENOENT) || !icb) {
+        return replyWithSelvaErrorf(ctx, err, "Failed to create an index");
+    }
+
+    /*
+     * Make sure that an index will be created.
+     */
+    icb->find_acc.tot_max = FIND_INDEXING_THRESHOLD + 1;
+    icb->lfu_count = selva_glob_config.find_lfu_count_create + 10;
+
+    return RedisModule_ReplyWithLongLong(ctx, 1);
+}
+
 static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     SelvaModify_Hierarchy *hierarchy;
     void *p;
@@ -775,6 +843,7 @@ static int FindIndex_OnLoad(RedisModuleCtx *ctx __unused) {
     }
 
     if (RedisModule_CreateCommand(ctx, "selva.index.list", SelvaFindIndex_ListCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.index.new", SelvaFindIndex_NewCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.index.del", SelvaFindIndex_DelCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
