@@ -207,21 +207,67 @@ export async function startPostgresDb(opts: Options) {
   db.start()
 
   let ctr = 0
+  let client: Client
   while (ctr < 1000) {
     ++ctr
     try {
-      const client = new Client({
+      client = new Client({
         connectionString: `postgres://postgres:${password}@127.0.0.1:${parsedOpts.port}`,
       })
       await client.connect()
       await client.query(`select 1`, [])
-      await client.end()
       break
     } catch (e) {
       // nop
     }
     await sleep(1000)
   }
+
+  const tick = () => {
+    setTimeout(() => {
+      const tableQ = `
+SELECT tablename
+FROM pg_catalog.pg_tables
+WHERE schemaname != 'pg_catalog' AND 
+      schemaname != 'information_schema';`
+      const sizeQ = `SELECT pg_table_size(quote_ident($1)), pg_total_relation_size(quote_ident($2));`
+
+      client
+        .query(tableQ, [])
+        .then((r) => {
+          return r.rows.filter(({ tablename }) => tablename.includes('$'))
+        })
+        .then((rows) => {
+          return Promise.all(
+            rows.map(async ({ tablename }) => {
+              const r = await client.query(sizeQ, [tablename, tablename])
+              return {
+                tablename,
+                tableSizeBytes: Number(r.rows[0].pg_table_size),
+                relationSizeBytes: Number(r.rows[0].pg_total_relation_size),
+              }
+            })
+          )
+        })
+        .then((result) => {
+          return result.reduce((acc, x) => {
+            return { ...acc, ...{ [x.tablename]: x } }
+          }, {})
+        })
+        .then((result) => {
+          // TODO
+          console.log('DO SOMETHING WITH THIS', result)
+        })
+        .catch((e) => {
+          console.error('PG TABLE META TICK ERROR', e)
+        })
+        .finally(() => {
+          tick()
+        })
+    }, 1e3) // run this say every 5-10 minutes or whatever
+  }
+
+  tick()
   // ready for use
   // db.on('stats', (rawStats) => {
   //   if (rawStats.runtimeInfo) {
