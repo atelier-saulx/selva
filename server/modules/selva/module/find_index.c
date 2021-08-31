@@ -43,16 +43,17 @@ struct SelvaFindIndexControlBlock {
      * Timer refreshing this index control block.
      */
     RedisModuleTimerID timer_id;
-    /**
-     * LFU counter.
-     * See LFU_COUNT_xxx macros.
-     */
-    int lfu_count;
     struct {
         size_t take_max;
         size_t tot_max;
         size_t ind_take_max;
     } find_acc;
+
+    /**
+     * LFU counter.
+     * See LFU_COUNT_xxx macros.
+     */
+    int lfu_count;
 
     /*
      * Traversal.
