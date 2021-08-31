@@ -32,15 +32,15 @@ function mkIndex(op: GetOperationFind): string[] {
   }
 
   const typeFilters = op.filter.$and.filter((f: Fork | FilterAST) => !isFork(f)).sort((a: FilterAST, b: FilterAST) => {
-    if (a.$field === b.$field) {
+    if (a.$operator === b.$operator) {
       return a.$field.localeCompare(b.$field)
-    } else if (a.$field == 'type') {
+    } else if (a.$field === 'type') {
       return -1
-    } else if (b.$field == 'type') {
+    } else if (b.$field === 'type') {
       return 1
-    } else if (a.$operator == '=') {
+    } else if (a.$operator === '=') {
       return -1
-    } else if (b.$operator == '=') {
+    } else if (b.$operator === '=') {
       return 1
     } else if (a.$operator === 'has') {
       return -1
@@ -52,16 +52,15 @@ function mkIndex(op: GetOperationFind): string[] {
   })
 
   const typeFilter = typeFilters.find((f: Fork | FilterAST) => {
-    if (isFork(f) || typeof f.$value !== 'string') {
+    if (isFork(f)) {
       return false
     }
 
     if (f.$field === 'type' && f.$operator === '=') {
-      return true
-    }
-
-    if (["=", "has"].includes(f.$operator)) {
-      return true
+      return typeof f.$value === 'string'
+    } else if (["=", "has"].includes(f.$operator)) {
+      // TODO Support array of values
+      return ['boolean', 'float', 'int', 'number', 'string'].includes(typeof f.$value)
     }
 
     return false
@@ -73,14 +72,22 @@ function mkIndex(op: GetOperationFind): string[] {
 
   const f = <FilterAST>typeFilter
   if (f.$field === 'type') {
-    return ['index', `"${(<FilterAST>typeFilter).$value}" e`]
+    return ['index', `"${f.$value}" e`]
   } else if (f.$operator == '=') {
-    return ['index', `"${f.$field}" f "${f.$value}" c`]
+    if (typeof f.$value === 'string') {
+      return ['index', `"${f.$field}" f "${f.$value}" c`]
+    } else { // numeric
+      return ['index', `"${f.$field}" g #${f.$value} F`]
+    }
   } else if (f.$operator == 'has') {
-    return ['index', `"${f.$value}" "${f.$field}" a`]
-  } else {
-    return []
+    if (typeof f.$value === 'string') {
+      return ['index', `"${f.$value}" "${f.$field}" a`]
+    } else { // numeric
+      return ['index', `"${f.$value}" #${f.$field} a`]
+    }
   }
+
+  return []
 }
 
 function parseGetOpts(
