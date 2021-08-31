@@ -62,6 +62,7 @@ const selva_commands = [
   'selva.subscriptions.listmissing',
   'selva.subscriptions.refresh',
   'selva.index.list',
+  'selva.index.new',
   'selva.index.del',
 ]
 

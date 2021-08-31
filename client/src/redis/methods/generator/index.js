@@ -71,6 +71,7 @@ redis.add_command('selva.subscriptions.list')
 redis.add_command('selva.subscriptions.listMissing')
 redis.add_command('selva.subscriptions.refresh')
 redis.add_command('selva.index.list')
+redis.add_command('selva.index.new')
 redis.add_command('selva.index.del')
 const proto = redis.RedisClient.prototype
 for (const key in redis.RedisClient.prototype) {
