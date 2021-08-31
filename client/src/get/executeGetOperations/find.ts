@@ -40,6 +40,10 @@ function mkIndex(op: GetOperationFind): string[] {
       return true
     }
 
+    if (typeof f.$value === 'string' && ["=", "has"].includes(f.$operator)) {
+      return true
+    }
+
     return false
   })
 
@@ -47,7 +51,16 @@ function mkIndex(op: GetOperationFind): string[] {
     return []
   }
 
-  return ['index', `"${(<FilterAST>typeFilter).$value}" e`]
+  const f = <FilterAST>typeFilter
+  if (f.$field === 'type') {
+    return ['index', `"${(<FilterAST>typeFilter).$value}" e`]
+  } else if (f.$operator == '=') {
+    return ['index', `"${f.$field}" f "${f.$value}" c`]
+  } else if (f.$operator == 'has') {
+    return ['index', `"${f.$value}" "${f.$field}" a`]
+  } else {
+    return []
+  }
 }
 
 function parseGetOpts(
