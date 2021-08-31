@@ -31,8 +31,28 @@ function mkIndex(op: GetOperationFind): string[] {
     return []
   }
 
-  const typeFilter = op.filter.$and.find((f: Fork | FilterAST) => {
-    if (isFork(f)) {
+  const typeFilters = op.filter.$and.filter((f: Fork | FilterAST) => !isFork(f)).sort((a: FilterAST, b: FilterAST) => {
+    if (a.$field === b.$field) {
+      return a.$field.localeCompare(b.$field)
+    } else if (a.$field == 'type') {
+      return -1
+    } else if (b.$field == 'type') {
+      return 1
+    } else if (a.$operator == '=') {
+      return -1
+    } else if (b.$operator == '=') {
+      return 1
+    } else if (a.$operator === 'has') {
+      return -1
+    } else if (b.$operator === 'has') {
+      return 1
+    } else {
+      return a.$operator.localeCompare(b.$operator)
+    }
+  })
+
+  const typeFilter = typeFilters.find((f: Fork | FilterAST) => {
+    if (isFork(f) || typeof f.$value !== 'string') {
       return false
     }
 
@@ -40,7 +60,7 @@ function mkIndex(op: GetOperationFind): string[] {
       return true
     }
 
-    if (typeof f.$value === 'string' && ["=", "has"].includes(f.$operator)) {
+    if (["=", "has"].includes(f.$operator)) {
       return true
     }
 

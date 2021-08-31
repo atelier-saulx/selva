@@ -29,6 +29,7 @@ test.beforeEach(async (t) => {
         fields: {
           name: { type: 'string', search: { type: ['TAG'] } },
           thing: { type: 'string', search: { type: ['EXISTS'] } },
+          things: { type: 'set', items: { type: 'string' } },
         },
       },
       match: {
@@ -232,6 +233,86 @@ test.serial('find index strings', async (t) => {
   t.deepEqual(
     await client.redis.selva_index_list('___selva_hierarchy'),
     ['root.I.Im5hbWUiIGYgImxlYWd1ZSAwIiBj', [ 0, 101, 1667, 3334 ]]
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+
+test.serial.only('find index string sets', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  for (let i = 0; i < 1000; i++) {
+    await client.set({
+      type: 'league',
+      name: `League ${i}`,
+      thing: 'abc',
+      things: i % 100 != 0 ? ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'] : ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'],
+    })
+  }
+
+  await client.redis.selva_index_new('___selva_hierarchy', 'descendants', '', 'root', '"g" "things" a')
+  await client.redis.selva_index_new('___selva_hierarchy', 'descendants', '', 'root', '"thing" f "abc" c')
+  await wait(2e3)
+  for (let i = 0; i < 500; i++) {
+    const r = await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'things',
+                $operator: 'has',
+                $value: 'g',
+              },
+            ],
+          },
+        },
+      },
+    })
+  }
+  await wait(1e3)
+  for (let i = 0; i < 500; i++) {
+    const r = await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'things',
+                $operator: 'has',
+                $value: 'g',
+              },
+              {
+                $field: 'thing',
+                $operator: '=',
+                $value: 'abc',
+              },
+            ],
+          },
+        },
+      },
+    })
+  }
+  await wait(2e3)
+
+  t.deepEqual(
+    await client.redis.selva_index_list('___selva_hierarchy'),
+    [
+      'root.I.ImciICJ0aGluZ3MiIGE=',
+      [ 0, 101, 10, 10 ],
+      'root.I.InRoaW5nIiBmICJhYmMiIGM=',
+      [ 0, 101, 10, 1000 ]
+    ]
   )
 
   await client.delete('root')
