@@ -308,7 +308,13 @@ test.serial('get - basic value types timeseries', async (t) => {
     },
   })
 
-  console.log('BLABLA', await client.redis.hgetall('___selva_schema'))
+  const servers = await client.redis.smembers({ type: 'registry' }, 'servers')
+  const serverData = await Promise.all(
+    servers.map((server) => {
+      return client.redis.hgetall({ type: 'registry' }, server)
+    })
+  )
+  console.log('BLABLA', serverData)
 
   await wait(4e3)
 

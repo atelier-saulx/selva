@@ -10,6 +10,7 @@ import { join } from 'path'
 import fs from 'fs'
 import { TextServer } from './server/text'
 import mkdirp from 'mkdirp'
+import updateRegistry from './server/updateRegistry'
 
 export * as s3Backups from './backup-plugins/s3'
 
@@ -222,6 +223,26 @@ export async function startPostgresDb(opts: Options) {
     await sleep(1000)
   }
   // ready for use
+  // db.on('stats', (rawStats) => {
+  //   if (rawStats.runtimeInfo) {
+  //     const stats = {
+  //       cpu: rawStats.runtimeInfo.cpu,
+  //       activeChannels: Number(rawStats.redisInfo.pubsub_channels),
+  //       opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
+  //       timestamp: rawStats.runtimeInfo.timestamp,
+  //     }
+
+  //     updateRegistry(
+  //       server,
+  //       Object.assign(
+  //         {
+  //           stats,
+  //         },
+  //         info
+  //       )
+  //     )
+  //   }
+  // })
   return db
 }
 
