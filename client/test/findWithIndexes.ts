@@ -183,3 +183,57 @@ test.serial('find index', async (t) => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial('find index strings', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  for (let i = 0; i < 10000; i++) {
+    const le = {
+      type: 'league',
+      name: `league ${i % 3}`,
+      thing: 'yeeeesssshhh',
+    }
+
+    if (i % 2 == 0) {
+      delete le.thing
+    }
+
+    await client.set(le)
+  }
+
+  await client.redis.selva_index_new('___selva_hierarchy', 'descendants', '', 'root', '"name" f "league 0" c')
+  await wait(2e3)
+  for (let i = 0; i < 500; i++) {
+    const r = await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'name',
+                $operator: '=',
+                $value: 'league 0',
+              },
+              {
+                $field: 'thing',
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+      },
+    })
+  }
+
+  t.deepEqual(
+    await client.redis.selva_index_list('___selva_hierarchy'),
+    ['root.I.Im5hbWUiIGYgImxlYWd1ZSAwIiBj', [ 0, 101, 1667, 3334 ]]
+  )
+
+  await client.delete('root')
+  await client.destroy()
+})

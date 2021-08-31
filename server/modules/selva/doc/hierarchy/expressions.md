@@ -158,6 +158,7 @@ Therefore, neither of these yields the expected result.
 | Operator | Arguments         | Description                           | Example (expr => result) |
 | -------- | ----------------- | ------------------------------------- | ------------------------ |
 | `a`      | `set has a`       | `has` function for SelvaSets.         | `"c" ["a", "b"] a => 0`  |
+|          |                   |                                       | `"c" "field" a => 0`     |
 | `b`      | `id`              | Returns the type of a node id.        | `"xy123" b => "xy"`      |
 | `c`      | `!strcmp(s1, s2)` | Compare strings.                      | `$1 "hello" c => 1`      |
 | `d`      | `!cmp(id1, id2)`  | Compare node IDs.                     | `$1 $0 d => 1`           |
