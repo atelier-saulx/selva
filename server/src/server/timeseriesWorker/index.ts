@@ -56,7 +56,10 @@ export class TimeseriesWorker {
   async tick() {
     console.log('timeseries tick')
     try {
-      const row = await this.client.redis.rpop({ name: 'timeseries' }, 'timeseries_inserts')
+      const row = await this.client.redis.rpop(
+        { name: 'timeseries' },
+        'timeseries_inserts'
+      )
       if (row) {
         console.log(row)
         const obj = JSON.parse(row)
@@ -90,6 +93,13 @@ export class TimeseriesWorker {
     `
     console.log(`running: ${createTable}`)
     await this.postgresClient.execute<void>(createTable, [])
+
+    const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${this.getTableName(
+      context
+    ).slice(1, -1)}_node_id_idx" ON ${this.getTableName(context)} ("nodeId");`
+
+    console.log(`running: ${createNodeIdIndex}`)
+    await this.postgresClient.execute<void>(createNodeIdIndex, [])
   }
 
   async insertToTimeSeriesDB(context: TimeSeriesInsertContext) {
@@ -98,8 +108,15 @@ export class TimeseriesWorker {
     await this.ensureTableExists(context)
 
     await this.postgresClient.execute(
-      `INSERT INTO ${this.getTableName(context)} ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
-      [context.nodeId, context.payload, new Date(context.ts), context.fieldSchema]
+      `INSERT INTO ${this.getTableName(
+        context
+      )} ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
+      [
+        context.nodeId,
+        context.payload,
+        new Date(context.ts),
+        context.fieldSchema,
+      ]
     )
   }
 
