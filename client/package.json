@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "7.0.7",
+  "version": "7.0.8",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && node ../tools/script-sha.js && yarn buildTs",
@@ -50,14 +50,14 @@
     ]
   },
   "devDependencies": {
-    "@saulx/selva-server": "7.0.7",
+    "@saulx/selva-server": "7.0.8",
+    "before-exit": "1.0.0",
+    "async-exec": "^1.1.0",
     "@sindresorhus/fnv1a": "^2.0.1",
     "@types/pg": "^8.6.1",
     "@types/redis": "^2.8.28",
-    "async-exec": "^1.1.0",
     "async-sema": "^3.1.0",
     "ava": "3.15.0",
-    "before-exit": "1.0.0",
     "cli-spinners": "^2.5.0",
     "get-port": "^5.1.1",
     "husky": "^5.0.9",
