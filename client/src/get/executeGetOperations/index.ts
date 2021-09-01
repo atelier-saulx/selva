@@ -106,6 +106,10 @@ export function sourceFieldToFindArgs(
     return ['bfs_expression', bfsExpr2rpn(schema.types, byType)]
   }
 
+  if (['ancestors', 'descendants'].includes(sourceField)) {
+    return [ <SubscriptionMarker['type']>sourceField ]
+  }
+
   // if fieldSchema is null it usually means that the caller needs to do an op
   // over multiple nodes and thus it's not possible to determine an optimal
   // hierarchy traversal method. We'll fallback to bfs_expression.
