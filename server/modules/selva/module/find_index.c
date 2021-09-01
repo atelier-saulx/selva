@@ -710,7 +710,7 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     const RedisModuleString *rms_node_id;
     Selva_NodeId node_id;
     RedisModuleString *filter;
-    struct SelvaFindIndexControlBlock *icb;
+    struct SelvaFindIndexControlBlock *icb = NULL;
     struct SelvaSet *set;
     int err;
 
