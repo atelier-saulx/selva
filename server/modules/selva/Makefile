@@ -1,7 +1,7 @@
 # find the OS
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
-SELVA_VERSION := $(shell sh -c 'git describe')
+SELVA_VERSION := $(shell sh -c 'git rev-parse --verify HEAD')
 INCLUDE_DIR := ./include ./util
 RMUTIL_LIBDIR := rmutil
 UTIL_LIBDIR := util
