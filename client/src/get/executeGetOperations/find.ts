@@ -1,4 +1,4 @@
-import { SelvaClient } from '../../'
+import { Schema, SelvaClient } from '../../'
 import { GetOperationFind, GetResult, GetOptions } from '../types'
 import { sourceFieldToFindArgs, typeCast } from './'
 import {
@@ -18,7 +18,7 @@ import { padId, joinIds } from '../utils'
 import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 
-function mkIndex(op: GetOperationFind): string[] {
+function mkIndex(schema: Schema, op: GetOperationFind): string[] {
   if (op.id && op.id !== 'root') {
     return []
   }
@@ -62,7 +62,12 @@ function mkIndex(op: GetOperationFind): string[] {
   }
 
   if (f.$field === 'type') {
-    return ['index', `"${f.$value}" e`]
+    const prefix = f.$value === 'root' ? 'ro' : schema?.types[<string>f.$value]?.prefix
+    if (!prefix) {
+      return []
+    }
+
+    return ['index', `"${prefix}" e`]
   } else if (f.$operator === '=') {
     if (typeof f.$value === 'string') {
       return ['index', `"${f.$field}" f "${f.$value}" c`]
@@ -485,13 +490,13 @@ export const findIds = async (
       makeLangArg(schema.languages, lang),
       '___selva_hierarchy',
       ...sourceFieldToFindArgs(
-        client.schemas[ctx.db],
+        schema,
         sourceFieldSchema,
         sourceField,
         op.recursive,
         op.byType
       ),
-      ...mkIndex(op),
+      ...mkIndex(schema, op),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
@@ -661,13 +666,13 @@ const findFields = async (
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       ...sourceFieldToFindArgs(
-        client.schemas[ctx.db],
+        schema,
         sourceFieldSchema,
         sourceField,
         op.recursive,
         op.byType
       ),
-      ...mkIndex(op),
+      ...mkIndex(schema, op),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
