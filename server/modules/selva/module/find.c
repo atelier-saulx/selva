@@ -1504,6 +1504,10 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
         Selva_NodeIdCpy(nodeId, ids_str + i);
 
+        if (nodeId[0] == '\0') {
+            continue;
+        }
+
         if (index_hint && selva_glob_config.find_lfu_count_init > 0) {
             RedisModuleString *dir_expr = NULL;
             int ind_err;
