@@ -106,14 +106,14 @@ test.serial('find index', async (t) => {
   }
 
   t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
-    'root.I.ImxlYWd1ZSIgZQ==',
+    'root.I.ImxlIiBl',
     'not_active',
   ])
 
   await wait(1e3)
 
   t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
-    'root.I.ImxlYWd1ZSIgZQ==',
+    'root.I.ImxlIiBl',
     'not_active',
   ])
 
@@ -178,7 +178,7 @@ test.serial('find index', async (t) => {
   }
 
   t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
-    'root.I.ImxlYWd1ZSIgZQ==',
+    'root.I.ImxlIiBl',
     1002,
   ])
 
