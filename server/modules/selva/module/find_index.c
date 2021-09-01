@@ -320,13 +320,15 @@ static int destroy_index_cb(
     fprintf(stderr, "Destroying icb for %s\n", RedisModule_StringPtrLen(icb->name, NULL));
 #endif
 
-    err = discard_index(ctx, hierarchy, icb);
-    if (err) {
-        fprintf(stderr, "%s:%d: Failed to discard an index for \"%s\": %s\n",
-                __FILE__, __LINE__,
-                RedisModule_StringPtrLen(icb->name, NULL),
-                getSelvaErrorStr(err));
-        return err;
+    if (hierarchy) {
+        err = discard_index(ctx, hierarchy, icb);
+        if (err) {
+            fprintf(stderr, "%s:%d: Failed to discard an index for \"%s\": %s\n",
+                    __FILE__, __LINE__,
+                    RedisModule_StringPtrLen(icb->name, NULL),
+                    getSelvaErrorStr(err));
+            return err;
+        }
     }
 
     if (hierarchy && hierarchy->dyn_index) {
