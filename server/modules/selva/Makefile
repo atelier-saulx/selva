@@ -64,7 +64,7 @@ CC ?= gcc
 all: module.so
 
 version.c: FORCE
-	echo $(SELVA_VERSION)
+	@echo selva_version $(SELVA_VERSION)
 	echo "const char * const selva_version = \"$(SELVA_VERSION)\";" > version.c
 
 $(RMUTIL_LIBDIR)/librmutil.a: FORCE
