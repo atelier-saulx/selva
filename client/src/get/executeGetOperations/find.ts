@@ -31,60 +31,54 @@ function mkIndex(op: GetOperationFind): string[] {
     return []
   }
 
-  const typeFilters = op.filter.$and.filter((f: Fork | FilterAST) => !isFork(f)).sort((a: FilterAST, b: FilterAST) => {
-    if (a.$operator === b.$operator) {
-      return a.$field.localeCompare(b.$field)
-    } else if (a.$field === 'type') {
-      return -1
-    } else if (b.$field === 'type') {
-      return 1
-    } else if (a.$operator === '=') {
-      return -1
-    } else if (b.$operator === '=') {
-      return 1
-    } else if (a.$operator === 'has') {
-      return -1
-    } else if (b.$operator === 'has') {
-      return 1
-    } else {
-      return a.$operator.localeCompare(b.$operator)
-    }
-  })
+  const f = <FilterAST>op.filter.$and.filter((f: Fork | FilterAST) => !isFork(f)).sort((a: FilterAST, b: FilterAST) => {
+    const operatorCmp = (op: typeof a.$operator) => (({
+      '=': 1,
+      'exists': 2,
+      'notExists': 3,
+      'has': 4,
+    })[op] || 5) - 1
+    const fieldCmp = (field: string | string[]) => (field === 'type') ? 0 : 1
 
-  const typeFilter = typeFilters.find((f: Fork | FilterAST) => {
-    if (isFork(f)) {
-      return false
-    }
-
+    return (operatorCmp(a.$operator) - operatorCmp(b.$operator)) ||
+           (fieldCmp(a.$field) - fieldCmp(b.$field)) ||
+           a.$operator.localeCompare(b.$operator) ||
+           a.$field.localeCompare(b.$field)
+  }).find((f: FilterAST) => {
     if (f.$field === 'type' && f.$operator === '=') {
       return typeof f.$value === 'string'
     } else if (["=", "has"].includes(f.$operator)) {
       // TODO Support array of values
       return ['boolean', 'float', 'int', 'number', 'string'].includes(typeof f.$value)
+    } else if (['exists', 'notExists'].includes(f.$operator)) {
+      return true
+    } else {
+      return false
     }
-
-    return false
   })
 
-  if (!typeFilter) {
+  if (!f) {
     return []
   }
 
-  const f = <FilterAST>typeFilter
   if (f.$field === 'type') {
     return ['index', `"${f.$value}" e`]
-  } else if (f.$operator == '=') {
+  } else if (f.$operator === '=') {
     if (typeof f.$value === 'string') {
       return ['index', `"${f.$field}" f "${f.$value}" c`]
     } else { // numeric
       return ['index', `"${f.$field}" g #${f.$value} F`]
     }
-  } else if (f.$operator == 'has') {
+  } else if (f.$operator === 'has') {
     if (typeof f.$value === 'string') {
       return ['index', `"${f.$value}" "${f.$field}" a`]
     } else { // numeric
       return ['index', `"${f.$value}" #${f.$field} a`]
     }
+  } else if (f.$operator === 'exists') {
+    return ['index', `"${f.$field}" h`]
+  } else if (f.$operator === 'notExists') {
+    return ['index', `"${f.$field}" h L`]
   }
 
   return []
