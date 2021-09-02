@@ -898,7 +898,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
  * something.
  */
 __attribute__((destructor))
-int _Selva_OnUnload() {
+int _Selva_OnUnload(void) {
     Selva_Onunload **onunload_p;
 
     SET_FOREACH(onunload_p, selva_onunld) {
