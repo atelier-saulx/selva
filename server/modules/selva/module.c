@@ -449,8 +449,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 }
             }
 
-            if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
-                //  TODO: handle default
+            if (type_code == SELVA_MODIFY_ARG_STRING) {
                 if (active_insert_idx == idx) {
                     err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
                     active_insert_idx = -1;
@@ -464,8 +463,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 }
 
                 RedisModule_RetainString(ctx, value);
-            } else if (type_code == SELVA_MODIFY_ARG_DOUBLE || type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
-                //  TODO: handle default
+            } else if (type_code == SELVA_MODIFY_ARG_DOUBLE) {
                 union {
                     char s[sizeof(double)];
                     double d;
@@ -492,8 +490,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                     replyWithSelvaErrorf(ctx, err, "Failed to set a double value");
                     continue;
                 }
-            } else if (type_code == SELVA_MODIFY_ARG_LONGLONG || type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
-                //  TODO: handle default
+            } else if (type_code == SELVA_MODIFY_ARG_LONGLONG) {
                 union {
                     char s[sizeof(double)];
                     long long ll;
