@@ -33,7 +33,7 @@ struct SelvaObject;
 #define EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC          0x04 /*!< Lookup from dynamic constraints by node type and field_name. */
 
 struct EdgeFieldDynConstraintParams {
-    unsigned flags;
+    unsigned char flags;
     Selva_NodeType fwd_node_type;
     struct RedisModuleString *fwd_field_name;
     struct RedisModuleString *bck_field_name;
