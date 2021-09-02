@@ -36,7 +36,7 @@ RB_HEAD(SelvaSetNodeId, SelvaSetElement);
 
 struct SelvaSet {
     enum SelvaSetType type;
-    size_t size;
+    unsigned int size;
     union {
         struct SelvaSetRms head_rms;
         struct SelvaSetDouble head_d;
@@ -56,7 +56,7 @@ static inline int SelvaSet_isValidType(enum SelvaSetType type) {
     return type >= 0 && type < SELVA_SET_NR_TYPES;
 }
 
-static inline size_t SelvaSet_Size(const struct SelvaSet *set) {
+static inline unsigned int SelvaSet_Size(const struct SelvaSet *set) {
     return set->size;
 }
 

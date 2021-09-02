@@ -95,6 +95,14 @@ test.serial('find - by type', async (t) => {
   })
 
   await client.set({
+    $id: 'ma4',
+    parents: ['le1'],
+    type: 'match',
+    name: 'match 4',
+    value: 12312,
+  })
+
+  await client.set({
     $id: 'le1',
     matches: ['ma1', 'ma2', 'ma3'],
   })
@@ -133,6 +141,7 @@ test.serial('find - by type', async (t) => {
       id: 'root',
       items: [
         { name: 'match 1', nonsense: 'yes' },
+        { name: 'match 4', nonsense: 'yes' },
         // { name: 'match 2', nonsense: 'yes' },
       ],
     }
@@ -173,6 +182,46 @@ test.serial('find - by type', async (t) => {
       items: [
         { name: 'match 1', nonsense: 'yes' },
         { name: 'match 2', nonsense: 'yes' },
+      ],
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        nonsense: { $default: 'yes' },
+        $list: {
+          $find: {
+            $recursive: true,
+            $traverse: {
+              root: 'children',
+              league: { $all: ['matches', 'children'] },
+              $any: false,
+            },
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match',
+              },
+              {
+                $field: 'value',
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      id: 'root',
+      items: [
+        { name: 'match 1', nonsense: 'yes' },
+        { name: 'match 2', nonsense: 'yes' },
+        { name: 'match 4', nonsense: 'yes' },
       ],
     }
   )

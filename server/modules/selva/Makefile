@@ -1,7 +1,7 @@
 # find the OS
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
-SELVA_VERSION := $(shell sh -c 'git describe')
+SELVA_VERSION := $(shell sh -c 'git rev-parse --verify HEAD')
 INCLUDE_DIR := ./include ./util
 RMUTIL_LIBDIR := rmutil
 UTIL_LIBDIR := util
@@ -17,6 +17,7 @@ OBJS := \
 	module/edge_constraint.o \
 	module/errors.o \
 	module/find.o \
+	module/find_index.o \
 	module/aggregate.o \
 	module/traversal.o \
 	module/hierarchy.o \
@@ -35,12 +36,20 @@ OBJS := \
 
 IDIR := $(patsubst %,-I%, $(INCLUDE_DIR))
 
+CFLAGS := $(IDIR) -include tunables.h \
+	-std=gnu99 -fPIC \
+	-Wall -Wextra -Wno-unused-value -Wno-zero-length-array -Wno-c11-extensions \
+	-ggdb -O2 \
+	-fno-strict-aliasing \
+	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2 \
+	-D REDISMODULE_EXPERIMENTAL_API=1
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
 	SHOBJ_CFLAGS ?= -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Bsymbolic
 	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
 else ifeq ($(shell test `sw_vers -productVersion|cut -c1-2` -ge 11; echo $$?),0)
+#	CFLAGS += -Wpadded
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup -L /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib
 	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
@@ -49,19 +58,13 @@ else
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
 	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
 endif
-CFLAGS := $(IDIR) -include tunables.h \
-	-std=gnu99 -fPIC \
-	-Wall -Wextra -Wno-unused-value -Wno-zero-length-array -Wno-c11-extensions \
-	-ggdb -O2 \
-	-fno-strict-aliasing \
-	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2
 CC ?= gcc
 
 
 all: module.so
 
 version.c: FORCE
-	echo $(SELVA_VERSION)
+	@echo selva_version $(SELVA_VERSION)
 	echo "const char * const selva_version = \"$(SELVA_VERSION)\";" > version.c
 
 $(RMUTIL_LIBDIR)/librmutil.a: FORCE

@@ -1,4 +1,4 @@
-import { SelvaClient } from '../../'
+import { Schema, SelvaClient } from '../../'
 import { GetOperationFind, GetResult, GetOptions } from '../types'
 import { sourceFieldToFindArgs, typeCast } from './'
 import {
@@ -17,6 +17,77 @@ import {
 import { padId, joinIds } from '../utils'
 import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
+
+function mkIndex(schema: Schema, op: GetOperationFind): string[] {
+  if (op.id && op.id !== 'root') {
+    return []
+  }
+
+  if (!op.filter || !op.filter.$and) {
+    return []
+  }
+
+  if (op.sourceField !== 'descendants') {
+    return []
+  }
+
+  const f = <FilterAST>op.filter.$and.filter((f: Fork | FilterAST) => !isFork(f)).sort((a: FilterAST, b: FilterAST) => {
+    const operatorCmp = (op: typeof a.$operator) => (({
+      '=': 1,
+      'exists': 2,
+      'notExists': 3,
+      'has': 4,
+    })[op] || 5) - 1
+    const fieldCmp = (field: string | string[]) => (field === 'type') ? 0 : 1
+
+    return (operatorCmp(a.$operator) - operatorCmp(b.$operator)) ||
+           (fieldCmp(a.$field) - fieldCmp(b.$field)) ||
+           a.$operator.localeCompare(b.$operator) ||
+           a.$field.localeCompare(b.$field)
+  }).find((f: FilterAST) => {
+    if (f.$field === 'type' && f.$operator === '=') {
+      return typeof f.$value === 'string'
+    } else if (["=", "has"].includes(f.$operator)) {
+      // TODO Support array of values
+      return ['boolean', 'float', 'int', 'number', 'string'].includes(typeof f.$value)
+    } else if (['exists', 'notExists'].includes(f.$operator)) {
+      return true
+    } else {
+      return false
+    }
+  })
+
+  if (!f) {
+    return []
+  }
+
+  if (f.$field === 'type') {
+    const prefix = f.$value === 'root' ? 'ro' : schema?.types[<string>f.$value]?.prefix
+    if (!prefix) {
+      return []
+    }
+
+    return ['index', `"${prefix}" e`]
+  } else if (f.$operator === '=') {
+    if (typeof f.$value === 'string') {
+      return ['index', `"${f.$field}" f "${f.$value}" c`]
+    } else { // numeric
+      return ['index', `"${f.$field}" g #${f.$value} F`]
+    }
+  } else if (f.$operator === 'has') {
+    if (typeof f.$value === 'string') {
+      return ['index', `"${f.$value}" "${f.$field}" a`]
+    } else { // numeric
+      return ['index', `"${f.$value}" #${f.$field} a`]
+    }
+  } else if (f.$operator === 'exists') {
+    return ['index', `"${f.$field}" h`]
+  } else if (f.$operator === 'notExists') {
+    return ['index', `"${f.$field}" h L`]
+  }
+
+  return []
+}
 
 function parseGetOpts(
   props: GetOptions,
@@ -252,6 +323,7 @@ async function checkForNextRefresh(
           sourceField,
           false
         ),
+        // TODO: needs indexing
         'order',
         f.$field,
         'asc',
@@ -418,12 +490,13 @@ export const findIds = async (
       makeLangArg(schema.languages, lang),
       '___selva_hierarchy',
       ...sourceFieldToFindArgs(
-        client.schemas[ctx.db],
+        schema,
         sourceFieldSchema,
         sourceField,
         op.recursive,
         op.byType
       ),
+      ...mkIndex(schema, op),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',
@@ -593,12 +666,13 @@ const findFields = async (
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
       ...sourceFieldToFindArgs(
-        client.schemas[ctx.db],
+        schema,
         sourceFieldSchema,
         sourceField,
         op.recursive,
         op.byType
       ),
+      ...mkIndex(schema, op),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'asc',

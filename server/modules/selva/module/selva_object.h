@@ -181,7 +181,7 @@ int SelvaObject_GetWithWildcardStr(
         unsigned int flags);
 
 SelvaObject_Iterator *SelvaObject_ForeachBegin(struct SelvaObject *obj);
-const char *SelvaObject_ForeachKey(struct SelvaObject *obj, SelvaObject_Iterator **iterator);
+const char *SelvaObject_ForeachKey(const struct SelvaObject *obj, SelvaObject_Iterator **iterator);
 
 /**
  * Foreach value of specified type in an object.
@@ -191,7 +191,7 @@ const char *SelvaObject_ForeachKey(struct SelvaObject *obj, SelvaObject_Iterator
  * @param name_out is a direct pointer to the name and it will be rendered invalid if the key is deleted.
  */
 const void *SelvaObject_ForeachValue(
-        struct SelvaObject *obj,
+        const struct SelvaObject *obj,
         SelvaObject_Iterator **iterator,
         const char **name_out,
         enum SelvaObjectType type);
@@ -201,7 +201,11 @@ const void *SelvaObject_ForeachValue(
  * @param name_out is set to the name of the key found.
  * @param type_out is set to the type of the returned value.
  */
-const void *SelvaObject_ForeachValueType(struct SelvaObject *obj, void **iterator, const char **name_out, enum SelvaObjectType *type_out);
+const void *SelvaObject_ForeachValueType(
+        const struct SelvaObject *obj,
+        void **iterator,
+        const char **name_out,
+        enum SelvaObjectType *type_out);
 
 /**
  * Get a string name of a SelvaObjectType.

@@ -441,7 +441,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             int new_len = get_array_field_start_idx(field_str, field_len);
 
             if (idx == -1) {
-                size_t ary_len = SelvaObject_GetArrayLenStr(obj, field_str, new_len);
+                const int ary_len = (int)SelvaObject_GetArrayLenStr(obj, field_str, new_len);
+
                 idx = ary_len - 1 + has_push;
                 if (idx < 0) {
                     replyWithSelvaErrorf(ctx, err, "Unable to set value to array index %d", idx);
@@ -449,8 +450,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 }
             }
 
-            if (type_code == SELVA_MODIFY_ARG_STRING || type_code == SELVA_MODIFY_ARG_DEFAULT_STRING) {
-                //  TODO: handle default
+            if (type_code == SELVA_MODIFY_ARG_STRING) {
                 if (active_insert_idx == idx) {
                     err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
                     active_insert_idx = -1;
@@ -464,8 +464,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 }
 
                 RedisModule_RetainString(ctx, value);
-            } else if (type_code == SELVA_MODIFY_ARG_DOUBLE || type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
-                //  TODO: handle default
+            } else if (type_code == SELVA_MODIFY_ARG_DOUBLE) {
                 union {
                     char s[sizeof(double)];
                     double d;
@@ -492,8 +491,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                     replyWithSelvaErrorf(ctx, err, "Failed to set a double value");
                     continue;
                 }
-            } else if (type_code == SELVA_MODIFY_ARG_LONGLONG || type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
-                //  TODO: handle default
+            } else if (type_code == SELVA_MODIFY_ARG_LONGLONG) {
                 union {
                     char s[sizeof(double)];
                     long long ll;
@@ -851,7 +849,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     fprintf(stderr, "Selva version: %s\n", selva_version);
 
-    // Register the module itself
+    /* Register the module itself */
     if (RedisModule_Init(ctx, "selva", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
@@ -900,7 +898,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
  * something.
  */
 __attribute__((destructor))
-int _Selva_OnUnload() {
+int _Selva_OnUnload(void) {
     Selva_Onunload **onunload_p;
 
     SET_FOREACH(onunload_p, selva_onunld) {

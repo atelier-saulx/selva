@@ -33,7 +33,7 @@ struct SelvaObject;
 #define EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC          0x04 /*!< Lookup from dynamic constraints by node type and field_name. */
 
 struct EdgeFieldDynConstraintParams {
-    unsigned flags;
+    unsigned char flags;
     Selva_NodeType fwd_node_type;
     struct RedisModuleString *fwd_field_name;
     struct RedisModuleString *bck_field_name;
@@ -50,7 +50,7 @@ struct EdgeFieldConstraint {
     /**
      * Constraint flags controlling the behaviour.
      */
-    unsigned flags;
+    unsigned char flags;
 
     Selva_NodeType node_type;
 
@@ -93,8 +93,8 @@ struct EdgeFieldConstraints {
  */
 struct EdgeField {
     const struct EdgeFieldConstraint *constraint; /*!< A pointer to the constraint of this edge field. */
-    Selva_NodeId src_node_id; /*!< Source/owner nodeId of this edge field. */
     struct SVector arcs; /*!< Pointers to hierarchy nodes. */
+    Selva_NodeId src_node_id; /*!< Source/owner nodeId of this edge field. */
 };
 
 /*

@@ -68,9 +68,9 @@ static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
         if (field_type == SELVA_OBJECT_LONGLONG) {
             long long lv = 0;
+
             SelvaObject_GetLongLong(obj, field, &lv);
             args->aggregation_result_double += (double)lv;
-
             args->item_count++;
             break;
         } else if (field_type == SELVA_OBJECT_DOUBLE) {
@@ -106,15 +106,19 @@ static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     while ((field = SVector_Foreach(&it))) {
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
         if (field_type == SELVA_OBJECT_LONGLONG) {
-            long long lv = 0;
+            long long lv;
+            double dv = 0.0;
+
             SelvaObject_GetLongLong(obj, field, &lv);
-            if (lv < args->aggregation_result_double) {
-                args->aggregation_result_double = lv;
+            dv = (double)lv;
+            if (dv < args->aggregation_result_double) {
+                args->aggregation_result_double = dv;
             }
 
             break;
         } else if (field_type == SELVA_OBJECT_DOUBLE) {
             double dv = 0;
+
             SelvaObject_GetDouble(obj, field, &dv);
             if (dv < args->aggregation_result_double) {
                 args->aggregation_result_double = dv;
@@ -143,15 +147,18 @@ static int agg_fn_max_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     while ((field = SVector_Foreach(&it))) {
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
         if (field_type == SELVA_OBJECT_LONGLONG) {
-            long long lv = 0;
+            long long lv;
+            double dv = 0.0;
+
             SelvaObject_GetLongLong(obj, field, &lv);
-            if (lv > args->aggregation_result_double) {
-                args->aggregation_result_double = lv;
+            if (dv > args->aggregation_result_double) {
+                args->aggregation_result_double = dv;
             }
 
             break;
         } else if (field_type == SELVA_OBJECT_DOUBLE) {
             double dv = 0;
+
             SelvaObject_GetDouble(obj, field, &dv);
             if (dv > args->aggregation_result_double) {
                 args->aggregation_result_double = dv;
@@ -454,7 +461,7 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
     return len;
 }
 
-static size_t AggregateCommand_PrintAggregateResult(RedisModuleCtx *ctx, struct AggregateCommand_Args *args) {
+static size_t AggregateCommand_PrintAggregateResult(RedisModuleCtx *ctx, const struct AggregateCommand_Args *args) {
     switch (args->aggregate_type) {
     case SELVA_AGGREGATE_TYPE_COUNT_NODE:
         RedisModule_ReplyWithLongLong(ctx, args->item_count);
@@ -571,7 +578,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         SHIFT_ARGS(1);
     }
 
-    RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
+    const RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
     TO_STR(agg_fn_rms);
     const char agg_fn_val = agg_fn_rms_str[0];
     double initial_double_val = 0;
@@ -690,11 +697,13 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         goto out;
     }
 
-    RedisModuleString *ids = argv[ARGV_NODE_IDS];
+    const RedisModuleString *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, SelvaTraversal_GetOrderFunc(order))) {
+        const size_t resp_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
+
+        if (!SVector_Init(&order_result, resp_len, SelvaTraversal_GetOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
             goto out;
         }
@@ -870,7 +879,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return REDISMODULE_OK;
     }
 
-    RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
+    const RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
     TO_STR(agg_fn_rms);
     const char agg_fn_val = agg_fn_rms_str[0];
     double initial_double_val = 0;
@@ -989,11 +998,13 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         goto out;
     }
 
-    RedisModuleString *ids = argv[ARGV_NODE_IDS];
+    const RedisModuleString *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, SelvaTraversal_GetOrderFunc(order))) {
+        const size_t resp_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
+
+        if (!SVector_Init(&order_result, resp_len, SelvaTraversal_GetOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
             goto out;
         }

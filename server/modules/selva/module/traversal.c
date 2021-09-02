@@ -303,7 +303,7 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(RedisModuleCtx *c
     RedisModuleKey *key;
     struct FindCommand_OrderedItem *item = NULL;
     double d = 0.0;
-    char data_lang[8];
+    char data_lang[LANG_MAX];
     const char *data = NULL;
     size_t data_len = 0;
     enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
@@ -319,7 +319,6 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(RedisModuleCtx *c
     key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
     if (key) {
         struct SelvaObject *obj;
-        RedisModuleString *value = NULL;
         int err;
 
         err = SelvaObject_Key2Obj(key, &obj);
@@ -329,6 +328,8 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(RedisModuleCtx *c
             obj_type = SelvaObject_GetType(obj, order_field);
 
             if (obj_type == SELVA_OBJECT_STRING) {
+                RedisModuleString *value = NULL;
+
                 err = SelvaObject_GetString(obj, order_field, &value);
                 if (!err && value) {
                     data = RedisModule_StringPtrLen(value, &data_len);
@@ -366,7 +367,6 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(RedisModuleCtx *c
                             TO_STR(raw_value);
 
                             if (raw_value_len) {
-                                value = raw_value;
                                 strncpy(data_lang, token, sizeof(data_lang) - 1);
                                 data_lang[sizeof(data_lang) - 1] = '\0';
                                 data = raw_value_str;
@@ -418,7 +418,7 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(RedisModuleCtx *c
     if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         strxfrm_l(item->data, data, final_data_len + 1, locale);
     }
-    item->data_len = data_len;
+    item->data_len = final_data_len;
     item->d = d;
 
 cleanup:
@@ -429,21 +429,21 @@ cleanup:
 struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *order_field) {
     struct FindCommand_OrderedItem *item = NULL;
     double d = 0.0;
-    char data_lang[8];
+    char data_lang[LANG_MAX];
     const char *data = NULL;
     size_t data_len = 0;
+    enum SelvaObjectType obj_type;
     enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
+    int err;
 
     memset(data_lang, '\0', sizeof(data_lang));
 
-    RedisModuleString *value = NULL;
-    int err;
-
-    enum SelvaObjectType obj_type;
 
     obj_type = SelvaObject_GetType(obj, order_field);
 
     if (obj_type == SELVA_OBJECT_STRING) {
+        RedisModuleString *value = NULL;
+
         err = SelvaObject_GetString(obj, order_field, &value);
         if (!err && value) {
             data = RedisModule_StringPtrLen(value, &data_len);
@@ -481,7 +481,6 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(RedisM
                     TO_STR(raw_value);
 
                     if (raw_value_len) {
-                        value = raw_value;
                         strncpy(data_lang, token, sizeof(data_lang) - 1);
                         data_lang[sizeof(data_lang) - 1] = '\0';
                         data = raw_value_str;
@@ -531,7 +530,7 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(RedisM
     if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         strxfrm_l(item->data, data, final_data_len + 1, locale);
     }
-    item->data_len = data_len;
+    item->data_len = final_data_len;
     item->d = d;
     item->data_obj = obj;
 

@@ -1,6 +1,7 @@
 TEST_SRC += test-hierarchy_deserialization.c
 SRC-hierarchy_deserialization += ../redis-alloc.c ../redis-rdb.c ../hierarchy-utils.c ../rpn-mock.c ../edge-mock.c ../subscriptions-mock.c ../errors-mock.c
 SRC-hierarchy_deserialization += ../../module/alias.c
+SRC-hierarchy_deserialization += ../../module/config.c
 SRC-hierarchy_deserialization += ../../module/errors.c
 SRC-hierarchy_deserialization += ../../module/hierarchy.c
 SRC-hierarchy_deserialization += ../../module/selva_node.c

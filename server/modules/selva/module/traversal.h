@@ -110,6 +110,10 @@ struct FindCommand_Args {
     SVector *order_result; /*!< Results of the find wrapped in FindCommand_OrderedItem structs. Only used if sorting is requested. */
 
     struct Selva_SubscriptionMarker *marker; /*!< Used by FindInSub. */
+
+    /* Accounting */
+    size_t acc_take; /*!< Numer of nodes selected during the traversal. */
+    size_t acc_tot; /*!< Total number of nodes visited during the traversal. */
 };
 
 int SelvaTraversal_ParseOrder(
