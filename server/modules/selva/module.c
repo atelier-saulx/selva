@@ -851,7 +851,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     fprintf(stderr, "Selva version: %s\n", selva_version);
 
-    // Register the module itself
+    /* Register the module itself */
     if (RedisModule_Init(ctx, "selva", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
