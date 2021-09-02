@@ -418,7 +418,7 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(RedisModuleCtx *c
     if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         strxfrm_l(item->data, data, final_data_len + 1, locale);
     }
-    item->data_len = data_len;
+    item->data_len = final_data_len;
     item->d = d;
 
 cleanup:
@@ -530,7 +530,7 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(RedisM
     if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         strxfrm_l(item->data, data, final_data_len + 1, locale);
     }
-    item->data_len = data_len;
+    item->data_len = final_data_len;
     item->d = d;
     item->data_obj = obj;
 
