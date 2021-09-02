@@ -68,9 +68,9 @@ static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
         if (field_type == SELVA_OBJECT_LONGLONG) {
             long long lv = 0;
+
             SelvaObject_GetLongLong(obj, field, &lv);
             args->aggregation_result_double += (double)lv;
-
             args->item_count++;
             break;
         } else if (field_type == SELVA_OBJECT_DOUBLE) {
@@ -106,15 +106,19 @@ static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     while ((field = SVector_Foreach(&it))) {
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
         if (field_type == SELVA_OBJECT_LONGLONG) {
-            long long lv = 0;
+            long long lv;
+            double dv = 0.0;
+
             SelvaObject_GetLongLong(obj, field, &lv);
-            if (lv < args->aggregation_result_double) {
-                args->aggregation_result_double = lv;
+            dv = (double)lv;
+            if (dv < args->aggregation_result_double) {
+                args->aggregation_result_double = dv;
             }
 
             break;
         } else if (field_type == SELVA_OBJECT_DOUBLE) {
             double dv = 0;
+
             SelvaObject_GetDouble(obj, field, &dv);
             if (dv < args->aggregation_result_double) {
                 args->aggregation_result_double = dv;
@@ -143,15 +147,18 @@ static int agg_fn_max_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     while ((field = SVector_Foreach(&it))) {
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
         if (field_type == SELVA_OBJECT_LONGLONG) {
-            long long lv = 0;
+            long long lv;
+            double dv = 0.0;
+
             SelvaObject_GetLongLong(obj, field, &lv);
-            if (lv > args->aggregation_result_double) {
-                args->aggregation_result_double = lv;
+            if (dv > args->aggregation_result_double) {
+                args->aggregation_result_double = dv;
             }
 
             break;
         } else if (field_type == SELVA_OBJECT_DOUBLE) {
             double dv = 0;
+
             SelvaObject_GetDouble(obj, field, &dv);
             if (dv > args->aggregation_result_double) {
                 args->aggregation_result_double = dv;
