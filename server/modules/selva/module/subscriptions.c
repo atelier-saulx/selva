@@ -502,11 +502,11 @@ static void clear_marker(struct Selva_SubscriptionMarkers *sub_markers, struct S
  * Set a marker to a node metadata.
  */
 static int set_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *arg) {
-    struct SelvaModify_HierarchyMetadata *metadata;
     struct set_node_marker_data *data = (struct set_node_marker_data *)arg;
     RedisModuleCtx *ctx = data->ctx;
     SelvaModify_Hierarchy *hierarchy = data->hierarchy;
     struct Selva_SubscriptionMarker *marker = data->marker;
+    struct SelvaModify_HierarchyMetadata *metadata;
 
     if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_REF) {
         Selva_NodeId node_id;
@@ -521,7 +521,6 @@ static int set_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *arg)
         }
     }
 
-    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 #if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
     Selva_NodeId node_id;
@@ -533,6 +532,8 @@ static int set_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *arg)
             marker->marker_id,
             (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
+
+    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
     set_marker(&metadata->sub_markers, marker);
 
     if (marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_REFRESH) {
@@ -559,6 +560,7 @@ static int clear_node_marker_cb(struct SelvaModify_HierarchyNode *node, void *ar
             (int)SELVA_NODE_ID_SIZE, id,
             SVector_Size(&metadata->sub_markers.vec));
 #endif
+
     clear_marker(&metadata->sub_markers, marker);
 
     return 0;
@@ -1401,16 +1403,6 @@ static void defer_event_for_traversing_markers(RedisModuleCtx *ctx, struct Selva
     /* Detached markers. */
     defer_traversing(ctx, hierarchy, node, &hierarchy->subs.detached_markers);
 
-    /* RFE Is this necessary? */
-    if (!node) {
-        Selva_NodeId node_id;
-
-        SelvaHierarchy_GetNodeId(node_id, node);
-        fprintf(stderr, "%s:%d: Node pointer missing %.*s\n",
-                __FILE__, __LINE__, (int)SELVA_NODE_ID_SIZE, node_id);
-        return;
-    }
-
     /* Markers on the node. */
     defer_traversing(ctx, hierarchy, node, &SelvaHierarchy_GetNodeMetadataByPtr(node)->sub_markers);
 }
@@ -1443,19 +1435,8 @@ void SelvaSubscriptions_DeferHierarchyEvents(
     /* Detached markers. */
     defer_hierarchy_events(ctx, hierarchy, node, &hierarchy->subs.detached_markers);
 
-    /* RFE is this still needed? */
-    if (!node) {
-        Selva_NodeId node_id;
-
-        SelvaHierarchy_GetNodeId(node_id, node);
-        fprintf(stderr, "%s:%d: Node pointer missing %.*s\n",
-                __FILE__, __LINE__, (int)SELVA_NODE_ID_SIZE, node_id);
-        return;
-    }
-
-    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
-
     /* Markers on the node. */
+    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
     defer_hierarchy_events(ctx, hierarchy, node, &metadata->sub_markers);
 }
 
@@ -1490,19 +1471,8 @@ void SelvaSubscriptions_DeferHierarchyDeletionEvents(
     /* Detached markers. */
     defer_hierarchy_deletion_events(ctx, hierarchy, node, &hierarchy->subs.detached_markers);
 
-    /* RFE is this still needed? */
-    if (!node) {
-        Selva_NodeId node_id;
-
-        SelvaHierarchy_GetNodeId(node_id, node);
-        fprintf(stderr, "%s:%d: Node pointer missing %.*s\n",
-                __FILE__, __LINE__, (int)SELVA_NODE_ID_SIZE, node_id);
-        return;
-    }
-
-    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
-
     /* Markers on the node. */
+    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
     defer_hierarchy_deletion_events(ctx, hierarchy, node, &metadata->sub_markers);
 }
 
@@ -1573,19 +1543,13 @@ void SelvaSubscriptions_FieldChangePrecheck(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const struct SelvaModify_HierarchyNode *node) {
-
     const struct SelvaModify_HierarchyMetadata *metadata;
-    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 
     /* Detached markers. */
     field_change_precheck(ctx, node, &hierarchy->subs.detached_markers);
 
-    if (!metadata) {
-        fprintf(stderr, "%s:%d: Node metadata missing\n", __FILE__, __LINE__);
-        return;
-    }
-
     /* Markers on the node. */
+    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
     field_change_precheck(ctx, node, &metadata->sub_markers);
 }
 
@@ -1710,6 +1674,7 @@ void Selva_Subscriptions_DeferAliasChangeEvents(
     if (err < 0) {
         return;
     }
+
     orig_metadata = SelvaHierarchy_GetNodeMetadata(hierarchy, orig_node_id);
     if (!orig_metadata) {
         fprintf(stderr, "%s:%d: Failed to get metadata for node: \"%.*s\"\n",
@@ -2593,9 +2558,9 @@ int SelvaSubscriptions_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             markers = &hierarchy->subs.detached_markers.vec;
         } else {
             Selva_NodeId node_id;
+            struct SelvaModify_HierarchyMetadata *metadata;
 
             Selva_NodeIdCpy(node_id, id_str);
-            struct SelvaModify_HierarchyMetadata *metadata;
 
             metadata = SelvaHierarchy_GetNodeMetadata(hierarchy, node_id);
             if (!metadata) {
