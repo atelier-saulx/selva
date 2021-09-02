@@ -461,7 +461,7 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
     return len;
 }
 
-static size_t AggregateCommand_PrintAggregateResult(RedisModuleCtx *ctx, struct AggregateCommand_Args *args) {
+static size_t AggregateCommand_PrintAggregateResult(RedisModuleCtx *ctx, const struct AggregateCommand_Args *args) {
     switch (args->aggregate_type) {
     case SELVA_AGGREGATE_TYPE_COUNT_NODE:
         RedisModule_ReplyWithLongLong(ctx, args->item_count);
@@ -578,7 +578,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         SHIFT_ARGS(1);
     }
 
-    RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
+    const RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
     TO_STR(agg_fn_rms);
     const char agg_fn_val = agg_fn_rms_str[0];
     double initial_double_val = 0;
@@ -697,11 +697,13 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         goto out;
     }
 
-    RedisModuleString *ids = argv[ARGV_NODE_IDS];
+    const RedisModuleString *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, SelvaTraversal_GetOrderFunc(order))) {
+        const size_t resp_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
+
+        if (!SVector_Init(&order_result, resp_len, SelvaTraversal_GetOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
             goto out;
         }
@@ -877,7 +879,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return REDISMODULE_OK;
     }
 
-    RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
+    const RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
     TO_STR(agg_fn_rms);
     const char agg_fn_val = agg_fn_rms_str[0];
     double initial_double_val = 0;
@@ -996,11 +998,13 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         goto out;
     }
 
-    RedisModuleString *ids = argv[ARGV_NODE_IDS];
+    const RedisModuleString *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, SelvaTraversal_GetOrderFunc(order))) {
+        const size_t resp_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
+
+        if (!SVector_Init(&order_result, resp_len, SelvaTraversal_GetOrderFunc(order))) {
             replyWithSelvaError(ctx, SELVA_ENOMEM);
             goto out;
         }
