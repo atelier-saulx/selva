@@ -441,7 +441,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             int new_len = get_array_field_start_idx(field_str, field_len);
 
             if (idx == -1) {
-                size_t ary_len = SelvaObject_GetArrayLenStr(obj, field_str, new_len);
+                const int ary_len = (int)SelvaObject_GetArrayLenStr(obj, field_str, new_len);
+
                 idx = ary_len - 1 + has_push;
                 if (idx < 0) {
                     replyWithSelvaErrorf(ctx, err, "Unable to set value to array index %d", idx);
