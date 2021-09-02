@@ -53,9 +53,6 @@
     apply(uk, uk_UA) \
     apply(zh, zh_CN)
 
-#define LANG_NAME_MAX 4ul
-#define LANG_TERRITORY_MAX 4ul
-
 struct SelvaLang {
     char name[LANG_NAME_MAX]; /* Not nul-terminated. */
     char territory[LANG_NAME_MAX]; /* Not nul-terminated. */

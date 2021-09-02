@@ -374,7 +374,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
         char new_s[new_len + 1];
         if (new_len > 0) {
-            strncpy(new_s, s, new_len);
+            memcpy(new_s, s, new_len);
             new_s[new_len] = '\0';
 
             s = new_s;
