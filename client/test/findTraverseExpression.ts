@@ -87,14 +87,17 @@ test.beforeEach(async (t) => {
 
   const alexandria = await client.set({
     type: 'publisher',
+    $id: 'pb08523c44',
     name: 'The Great Library of Alexandria in Alexandria',
   })
   const agrippina = await client.set({
     type: 'author',
+    $id: 'aud11d986e',
     name: 'Agrippina the Younger',
   })
   const democritus = await client.set({
     type: 'author',
+    $id: 'au3c163ed6',
     name: 'Democritus',
   })
 
@@ -108,24 +111,28 @@ test.beforeEach(async (t) => {
     books: [
       {
         type: 'book',
+        $id: 'bk5b0985b0',
         name: 'Septuagint',
         publisher: alexandria,
         publishedAt: date.setFullYear(-305),
       },
       {
         type: 'book',
+        $id: 'bkcbbde08f',
         name: 'Geometrical Reality',
         author: democritus,
         publishedAt: date.setFullYear(-460),
       },
       {
         type: 'book',
+        $id: 'bkcfcc6a0d',
         name: 'Geometrical Reality',
         author: democritus,
         publishedAt: date.setFullYear(-460),
       },
       {
         type: 'book',
+        $id: 'bkf38955bb',
         name: 'Casus Suorum',
         author: agrippina,
         publisher: alexandria,
@@ -145,7 +152,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('find - raw find', async (t) => {
+test.serial('find - traverse expression', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   const traversal =
