@@ -796,7 +796,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        struct AggregateCommand_Args args = {
+        struct AggregateCommand_Args ord_args = {
             .aggregate_type = agg_fn_val,
             .aggregation_result_int = 0,
             .aggregation_result_double = initial_double_val,
@@ -809,16 +809,13 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         };
 
         nr_nodes = (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY)
-            ? AggregateCommand_AggregateOrderedArrayResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result)
-            : AggregateCommand_AggregateOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result);
+            ? AggregateCommand_AggregateOrderedArrayResult(ctx, lang, &ord_args, hierarchy, offset, limit, fields, &order_result)
+            : AggregateCommand_AggregateOrderedResult(ctx, lang, &ord_args, hierarchy, offset, limit, fields, &order_result);
 
-        AggregateCommand_PrintAggregateResult(ctx, &args);
+        AggregateCommand_PrintAggregateResult(ctx, &ord_args);
     } else {
         AggregateCommand_PrintAggregateResult(ctx, &args);
     }
-
-    /* nr_nodes is never negative at this point so we can safely cast it. */
-    // RedisModule_ReplySetArrayLength(ctx, (size_t)nr_nodes);
 
 out:
     if (traversal_rpn_ctx) {
@@ -1057,7 +1054,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        struct AggregateCommand_Args args = {
+        struct AggregateCommand_Args ord_args = {
             .aggregate_type = agg_fn_val,
             .aggregation_result_int = 0,
             .aggregation_result_double = initial_double_val,
@@ -1069,8 +1066,8 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             }
         };
 
-        AggregateCommand_AggregateOrderedResult(ctx, lang, &args, hierarchy, offset, limit, fields, &order_result);
-        AggregateCommand_PrintAggregateResult(ctx, &args);
+        AggregateCommand_AggregateOrderedResult(ctx, lang, &ord_args, hierarchy, offset, limit, fields, &order_result);
+        AggregateCommand_PrintAggregateResult(ctx, &ord_args);
     } else {
         AggregateCommand_PrintAggregateResult(ctx, &args);
     }
