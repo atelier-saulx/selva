@@ -1531,7 +1531,7 @@ static void field_change_precheck(
 
         SVector_ForeachBegin(&it, &sub_markers->vec);
         while ((marker = SVector_Foreach(&it))) {
-            if (((marker->marker_flags & flags) == flags)) {
+            if ((marker->marker_flags & flags) == flags) {
                 /*
                  * Store the filter result before any changes to the node.
                  * We assume that SelvaSubscriptions_DeferFieldChangeEvents()
