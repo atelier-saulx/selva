@@ -182,7 +182,7 @@ int SelvaTraversal_ParseDir(
     return err;
 }
 
-int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, RedisModuleString *arg) {
+int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const RedisModuleString *arg) {
     TO_STR(arg);
 
     if (!strcmp("none", arg_str)) {

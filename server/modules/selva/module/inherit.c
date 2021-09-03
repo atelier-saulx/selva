@@ -83,7 +83,7 @@ static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id
 
 static int deref_single_ref(
         RedisModuleCtx *ctx,
-        struct EdgeField *edge_field,
+        const struct EdgeField *edge_field,
         Selva_NodeId node_id_out,
         RedisModuleKey **key_out,
         struct SelvaObject **obj_out) {

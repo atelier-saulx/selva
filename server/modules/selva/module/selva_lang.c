@@ -72,7 +72,7 @@ static struct SelvaObject *langs;
 
 static void get_territory(char dst[4], const char *locale_name) {
     char *lang;
-    char *territory_str;
+    const char *territory_str;
     size_t territory_len;
 
     lang = strchr(locale_name, '_');
@@ -81,7 +81,7 @@ static void get_territory(char dst[4], const char *locale_name) {
     }
 
     territory_str = lang + 1;
-    char *s = strchr(territory_str, '.');
+    const char *s = strchr(territory_str, '.');
     territory_len = s ? (size_t)(s - territory_str) : strnlen(territory_str, LANG_TERRITORY_MAX);
 
     memcpy(dst, territory_str, min(territory_len, LANG_NAME_MAX));
@@ -194,7 +194,7 @@ int SelvaLang_ListCommand(RedisModuleCtx *ctx, RedisModuleString **argv __unused
 }
 
 static void SelvaLang_Reply(struct RedisModuleCtx *ctx, void *p) {
-    struct SelvaLang *slang = (struct SelvaLang *)p;
+    const struct SelvaLang *slang = (struct SelvaLang *)p;
 
     RedisModule_ReplyWithArray(ctx, 2);
     RedisModule_ReplyWithStringBuffer(ctx, slang->name, strnlen(slang->name, LANG_NAME_MAX));

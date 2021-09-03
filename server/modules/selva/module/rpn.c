@@ -317,7 +317,7 @@ static void free_rpn_operand(void *p) {
 }
 
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
-	if (unlikely(ctx->depth >= RPN_MAX_D)) {
+    if (unlikely(ctx->depth >= RPN_MAX_D)) {
         fprintf(stderr, "%s:%d: Stack overflow\n", __FILE__, __LINE__);
         return RPN_ERR_BADSTK;
     }
@@ -443,7 +443,7 @@ static int to_bool(struct rpn_operand *v) {
 
             return obj && SelvaObject_LenStr(obj, NULL, 0);
         } else if (v->flags.slvset) {
-            struct SelvaSet *set = OPERAND_GET_SET(v);
+            const struct SelvaSet *set = OPERAND_GET_SET(v);
 
             return set && set->size > 0;
         }

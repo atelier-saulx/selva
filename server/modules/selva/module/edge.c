@@ -251,7 +251,7 @@ static int get_or_create_EdgeField(
     return 0;
 }
 
-int Edge_Has(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst_node) {
+int Edge_Has(const struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst_node) {
     return SVector_SearchIndex(&edge_field->arcs, dst_node) >= 0;
 }
 
@@ -585,7 +585,7 @@ int Edge_DeleteField(
         const char *field_name_str,
         size_t field_name_len) {
     Selva_NodeType src_node_type;
-    struct EdgeField *src_edge_field;
+    const struct EdgeField *src_edge_field;
     int res;
 
     SelvaHierarchy_GetNodeType(src_node_type, src_node);

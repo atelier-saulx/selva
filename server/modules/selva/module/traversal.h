@@ -130,7 +130,7 @@ int SelvaTraversal_ParseDir(
         Selva_NodeId nodeId,
         enum SelvaTraversalAlgo algo,
         const struct RedisModuleString *field_name);
-int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, struct RedisModuleString *arg);
+int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct RedisModuleString *arg);
 orderFunc SelvaTraversal_GetOrderFunc(enum SelvaResultOrder order);
 struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(
         struct RedisModuleCtx *ctx,

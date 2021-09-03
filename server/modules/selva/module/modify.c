@@ -44,9 +44,9 @@ static ssize_t string2rms(RedisModuleCtx *ctx, int8_t type, const char *s, Redis
 static int update_hierarchy(
     RedisModuleCtx *ctx,
     SelvaModify_Hierarchy *hierarchy,
-    Selva_NodeId node_id,
+    const Selva_NodeId node_id,
     const char *field_str,
-    struct SelvaModify_OpSet *setOpts
+    const struct SelvaModify_OpSet *setOpts
 ) {
     /*
      * If the field starts with 'p' we assume "parents"; Otherwise "children".
@@ -159,9 +159,9 @@ static int update_hierarchy(
 static int update_edge(
     RedisModuleCtx *ctx,
     SelvaModify_Hierarchy *hierarchy,
-    Selva_NodeId node_id,
+    const Selva_NodeId node_id,
     const RedisModuleString *field,
-    struct SelvaModify_OpSet *setOpts
+    const struct SelvaModify_OpSet *setOpts
 ) {
     struct SelvaModify_HierarchyNode *node;
     const unsigned constraint_id = setOpts->edge_constraint_id;
@@ -683,7 +683,7 @@ static int update_set(
     struct SelvaObject *obj,
     RedisModuleString *id,
     const RedisModuleString *field,
-    struct SelvaModify_OpSet *setOpts
+    const struct SelvaModify_OpSet *setOpts
 ) {
     TO_STR(field);
     RedisModuleKey *alias_key = NULL;

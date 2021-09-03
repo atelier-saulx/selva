@@ -25,7 +25,6 @@ enum rpn_error {
     RPN_ERR_LAST,
 };
 
-struct rpn_operand;
 struct RedisModuleCtx;
 struct RedisModuleKey;
 struct RedisModuleString;

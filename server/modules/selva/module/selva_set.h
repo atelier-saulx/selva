@@ -117,7 +117,7 @@ int SelvaSet_HasNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
 struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s);
 struct SelvaSetElement *SelvaSet_RemoveDouble(struct SelvaSet *set, double d);
 struct SelvaSetElement *SelvaSet_RemoveLongLong(struct SelvaSet *set, long long ll);
-struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId node_id);
+struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
 #define SelvaSet_Remove(set, x) _Generic((x), \
         struct RedisModuleString *: SelvaSet_RemoveRms, \
         double: SelvaSet_RemoveDouble, \
