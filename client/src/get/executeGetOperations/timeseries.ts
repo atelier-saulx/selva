@@ -125,6 +125,13 @@ export default async function execTimeseries(
   ctx: ExecContext
 ): Promise<any> {
   console.log('IS TIMESERIES', JSON.stringify(op, null, 2))
+
+  if (!ctx.firstEval) {
+    console.log('NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE')
+    // TODO
+    return
+  }
+
   const fieldSchema = getNestedSchema(
     client.schemas[ctx.db],
     op.id,

@@ -23,6 +23,7 @@ const sendUpdate = async (
   // }
 
   const channel = subscription.channel
+  const currentVersion = subscription.version
   const { client, selector } = subscriptionManager
   const redis = client.redis
 
@@ -37,6 +38,9 @@ const sendUpdate = async (
   getOptions.$includeMeta = true
   getOptions.$subscription = subscription.channel
   getOptions.$originDescriptors = subscription.originDescriptors
+  if (!currentVersion) {
+    getOptions.$firstEval = true
+  }
 
   if (nodeId) {
     if (inProgressTriggers.has(subscription.channel + ':' + nodeId)) {
@@ -108,7 +112,6 @@ const sendUpdate = async (
 
   const resultStr = JSON.stringify({ type: 'update', payload })
 
-  const currentVersion = subscription.version
   const q = []
 
   // if sub is removed

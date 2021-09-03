@@ -93,6 +93,7 @@ async function get(
 
   const db = props.$db || 'default'
   let subId = props.$subscription || (ctx && ctx.subId)
+  let firstEval = props.$firstEval || (ctx && ctx.firstEval)
 
   let originDescriptors: Record<string, ServerDescriptor> = {}
   if (subId) {
@@ -178,6 +179,7 @@ async function get(
     subId,
     meta: resultMeta,
     originDescriptors,
+    firstEval: !!firstEval,
   }
 
   const getResult = await executeGetOperations(

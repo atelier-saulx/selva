@@ -244,6 +244,9 @@ export default async function validateTopLevel(
       } else if (field === '$originDescriptors') {
         // internal option
         continue
+      } else if (field === '$firstEval') {
+        // internal option
+        continue
       } else if (field === '$alias') {
         if (typeof props.$alias !== 'string' && !Array.isArray(props.$alias)) {
           throw new Error(
