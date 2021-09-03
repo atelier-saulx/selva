@@ -209,7 +209,13 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_Hie
     }
 }
 
-static int get_or_create_EdgeField(const struct EdgeFieldConstraints *constraints, struct SelvaModify_HierarchyNode *node, const char *field_name_str, size_t field_name_len, unsigned constraint_id, struct EdgeField **out) {
+static int get_or_create_EdgeField(
+        const struct EdgeFieldConstraints *constraints,
+        struct SelvaModify_HierarchyNode *node,
+        const char *field_name_str,
+        size_t field_name_len,
+        unsigned constraint_id,
+        struct EdgeField **out) {
     Selva_NodeType node_type;
     const struct EdgeFieldConstraint *constraint;
     struct EdgeField *edge_field;

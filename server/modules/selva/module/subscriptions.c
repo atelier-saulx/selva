@@ -80,8 +80,18 @@ static int subscription_rb_compare(const struct Selva_Subscription *a, const str
 RB_PROTOTYPE_STATIC(hierarchy_subscriptions_tree, Selva_Subscription, _sub_index_entry, subscription_rb_compare)
 RB_GENERATE_STATIC(hierarchy_subscriptions_tree, Selva_Subscription, _sub_index_entry, subscription_rb_compare)
 
-static void defer_update_event(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, unsigned short event_flags, const struct SelvaModify_HierarchyNode *node);
-static void defer_trigger_event(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, unsigned short event_flags, const struct SelvaModify_HierarchyNode *node);
+static void defer_update_event(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct Selva_SubscriptionMarker *marker,
+        unsigned short event_flags,
+        const struct SelvaModify_HierarchyNode *node);
+static void defer_trigger_event(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct Selva_SubscriptionMarker *marker,
+        unsigned short event_flags,
+        const struct SelvaModify_HierarchyNode *node);
 static void defer_event_for_traversing_markers(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, const struct SelvaModify_HierarchyNode *node);
 
 /**

@@ -33,8 +33,14 @@ struct SelvaModify_HierarchyMetadata {
     struct EdgeFieldContainer edge_fields;
 };
 
-typedef void SelvaModify_HierarchyMetadataConstructorHook(const Selva_NodeId id, struct SelvaModify_HierarchyMetadata *metadata);
-typedef void SelvaModify_HierarchyMetadataDestructorHook(struct RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node, struct SelvaModify_HierarchyMetadata *metadata);
+typedef void SelvaModify_HierarchyMetadataConstructorHook(
+        const Selva_NodeId id,
+        struct SelvaModify_HierarchyMetadata *metadata);
+typedef void SelvaModify_HierarchyMetadataDestructorHook(
+        struct RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *node,
+        struct SelvaModify_HierarchyMetadata *metadata);
 
 #define SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(fun) \
     DATA_SET(selva_HMCtor, fun)
