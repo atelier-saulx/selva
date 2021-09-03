@@ -124,9 +124,9 @@ export default async function execTimeseries(
   lang: string,
   ctx: ExecContext
 ): Promise<any> {
-  console.log('IS TIMESERIES', JSON.stringify(op, null, 2))
+  console.log('IS TIMESERIES', ctx, JSON.stringify(op, null, 2))
 
-  if (!ctx.firstEval) {
+  if (ctx.subId && !ctx.firstEval) {
     console.log('NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE')
     // TODO
     return
