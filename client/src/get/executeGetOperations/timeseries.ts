@@ -20,6 +20,7 @@ import {
   ExecContext,
   sourceFieldToDir,
   addMarker,
+  executeGetOperation,
 } from './'
 
 const sq = squel.useFlavour('postgres')
@@ -126,12 +127,6 @@ export default async function execTimeseries(
 ): Promise<any> {
   console.log('IS TIMESERIES', ctx, JSON.stringify(op, null, 2))
 
-  if (ctx.subId && !ctx.firstEval) {
-    console.log('NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE')
-    // TODO
-    return
-  }
-
   const fieldSchema = getNestedSchema(
     client.schemas[ctx.db],
     op.id,
@@ -147,6 +142,17 @@ export default async function execTimeseries(
     id: op.id,
     fields: [<string>op.sourceField],
   })
+
+  if (ctx.subId && !ctx.firstEval) {
+    console.log('NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE')
+    return executeGetOperation(
+      client,
+      lang,
+      ctx,
+      { type: 'db', id: op.id, sourceField: op.sourceField, field: op.field },
+      true
+    )
+  }
 
   console.log('FIELD SCHEMA', fieldSchema)
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
