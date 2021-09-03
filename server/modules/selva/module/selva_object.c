@@ -1101,7 +1101,13 @@ struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleSt
     return SelvaObject_GetSetStr(obj, key_name_str, key_name_len);
 }
 
-static int SelvaObject_GetArrayIndex(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, enum SelvaObjectType subtype, void **out) {
+static int SelvaObject_GetArrayIndex(
+        struct SelvaObject *obj,
+        const char *key_name_str,
+        size_t key_name_len,
+        size_t idx,
+        enum SelvaObjectType subtype,
+        void **out) {
     SVector *array;
     enum SelvaObjectType array_type;
     int err = SelvaObject_GetArrayStr(obj, key_name_str, key_name_len, &array_type, &array);
@@ -2037,7 +2043,10 @@ int SelvaObject_GetWithWildcardStr(
 
             if (strnstr(new_field, ".*.", new_field_len)) {
                 /* Recurse for nested wildcards while keeping the resolved path. */
-                SelvaObject_GetWithWildcardStr(ctx, lang, obj, new_field, new_field_len, resp_count, resp_path_start_idx == -1 ? idx : resp_path_start_idx, flags);
+                SelvaObject_GetWithWildcardStr(ctx, lang, obj, new_field, new_field_len,
+                                               resp_count,
+                                               resp_path_start_idx == -1 ? idx : resp_path_start_idx,
+                                               flags);
                 continue;
             }
 
@@ -2048,11 +2057,11 @@ int SelvaObject_GetWithWildcardStr(
                  * This is an unlikely event because the field is known to exist,
                  * but if it happens we must skip to avoid segfaulting.
                  */
-                /*
+#if 0
                 fprintf(stderr, "%s:%d: Failed to get value for \"%.*s\"\n",
                         __FILE__, __LINE__,
                         (int)new_field_len, new_field);
-                */
+#endif
                 continue;
             }
 

@@ -311,7 +311,11 @@ static int delete_marker(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, 
     return 0;
 }
 
-int SelvaSubscriptions_DeleteMarker(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, const Selva_SubscriptionId sub_id, Selva_SubscriptionMarkerId marker_id) {
+int SelvaSubscriptions_DeleteMarker(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_SubscriptionId sub_id,
+        Selva_SubscriptionMarkerId marker_id) {
     struct Selva_Subscription *sub;
 
     sub = find_sub(hierarchy, sub_id);
@@ -877,7 +881,11 @@ struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
     return find_sub_marker(sub, marker_id);
 }
 
-int SelvaSubscriptions_TraverseMarker(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const struct SelvaModify_HierarchyCallback *cb) {
+int SelvaSubscriptions_TraverseMarker(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct Selva_SubscriptionMarker *marker,
+        const struct SelvaModify_HierarchyCallback *cb) {
     int err;
     typeof(marker->dir) dir = marker->dir;
 

@@ -890,7 +890,11 @@ static int crossRemove(
 /**
  * Remove all relationships rel of node.
  */
-static void removeRelationships(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node, enum SelvaModify_HierarchyNode_Relationship rel) {
+static void removeRelationships(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        SelvaModify_HierarchyNode *node,
+        enum SelvaModify_HierarchyNode_Relationship rel) {
     SVector *vec_a;
     size_t offset_a;
     size_t offset_b;
@@ -1480,7 +1484,11 @@ static void HierarchyNode_ChildCallback_Dummy(SelvaModify_HierarchyNode *parent,
 /**
  * DFS from a given head node towards its descendants or ancestors.
  */
-static int dfs(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head, enum SelvaModify_HierarchyNode_Relationship dir, const TraversalCallback * restrict cb) {
+static int dfs(
+        SelvaModify_Hierarchy *hierarchy,
+        SelvaModify_HierarchyNode *head,
+        enum SelvaModify_HierarchyNode_Relationship dir,
+        const TraversalCallback * restrict cb) {
     size_t offset;
     HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : &HierarchyNode_HeadCallback_Dummy;
     HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
