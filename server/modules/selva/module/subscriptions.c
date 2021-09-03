@@ -258,7 +258,7 @@ static void remove_sub_missing_accessor_markers(SelvaModify_Hierarchy *hierarchy
     Selva_SubscriptionId2str(sub_id, sub->sub_id);
 
     it_missing = SelvaObject_ForeachBegin(missing);
-    while ((subs = (struct SelvaObject *)SelvaObject_ForeachValue(missing, &it_missing, &nodeIdOrAlias, SELVA_OBJECT_OBJECT))) {
+    while ((subs = SelvaObject_ForeachValue(missing, &it_missing, &nodeIdOrAlias, SELVA_OBJECT_OBJECT))) {
         /* Delete this subscription stored under nodeIdOrAlias. */
         SelvaObject_DelKeyStr(subs, sub_id, SELVA_SUBSCRIPTION_ID_STR_LEN);
 
@@ -1371,7 +1371,7 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaModify_Hierarchy 
 
     /* Defer event for each subscription. */
     it = SelvaObject_ForeachBegin(obj);
-    while ((sub = (struct Selva_Subscription *)SelvaObject_ForeachValue(obj, &it, NULL, SELVA_OBJECT_POINTER))) {
+    while ((sub = SelvaObject_ForeachValue(obj, &it, NULL, SELVA_OBJECT_POINTER))) {
         /*
          * These are a bit special because we have no marker structs but the
          * markers are pointers to the subscription in a SelvaObject.

@@ -62,7 +62,7 @@ static void deinit_node_metadata_edge(
         const char *src_node_id;
 
         obj_it = SelvaObject_ForeachBegin(origins);
-        while ((edge_fields = (SVector *)SelvaObject_ForeachValue(origins, &obj_it, &src_node_id, SELVA_OBJECT_ARRAY))) {
+        while ((edge_fields = SelvaObject_ForeachValue(origins, &obj_it, &src_node_id, SELVA_OBJECT_ARRAY))) {
             struct SVectorIterator vec_it;
             struct EdgeField *src_field;
 
@@ -536,7 +536,7 @@ static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy 
     void *p;
 
     it = SelvaObject_ForeachBegin(obj);
-    while ((p = (void *)SelvaObject_ForeachValueType(obj, &it, NULL, &type))) {
+    while ((p = SelvaObject_ForeachValueType(obj, &it, NULL, &type))) {
         if (type == SELVA_OBJECT_POINTER) {
             clear_field(ctx, hierarchy, node, p);
         } else if (type == SELVA_OBJECT_OBJECT) {

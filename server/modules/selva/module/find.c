@@ -704,7 +704,7 @@ static ssize_t send_named_merge(
     TO_STR(obj_path);
 
     iterator = SelvaObject_ForeachBegin(fields);
-    while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, &field_index, SELVA_OBJECT_ARRAY))) {
+    while ((vec = SelvaObject_ForeachValue(fields, &iterator, &field_index, SELVA_OBJECT_ARRAY))) {
         struct SVectorIterator it;
         RedisModuleString *field;
 

@@ -551,7 +551,7 @@ int SelvaTraversal_FieldsContains(struct SelvaObject *fields, const char *field_
     const SVector *vec;
 
     iterator = SelvaObject_ForeachBegin(fields);
-    while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
+    while ((vec = SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
         struct SVectorIterator it;
         const RedisModuleString *s;
 
