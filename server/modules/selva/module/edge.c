@@ -780,10 +780,10 @@ int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hi
  * Custom RDB save function for saving EdgeFields.
  */
 static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused void *save_data) {
-    struct EdgeField *edgeField = (struct EdgeField *)value;
+    const struct EdgeField *edgeField = (struct EdgeField *)value;
     unsigned constraint_id = edgeField->constraint ? edgeField->constraint->constraint_id : EDGE_FIELD_CONSTRAINT_ID_DEFAULT;
     struct SVectorIterator vec_it;
-    struct SelvaModify_HierarchyNode *dst_node;
+    const struct SelvaModify_HierarchyNode *dst_node;
 
     RedisModule_SaveUnsigned(io, constraint_id);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {

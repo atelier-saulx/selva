@@ -129,7 +129,7 @@ static int send_edge_field(
     if (field_prefix_str) {
         const char *s = strnstr(field_str, ".", field_len);
         const int n = s ? (int)(s - field_str) + 1 : (int)field_len;
-        RedisModuleString *next_prefix;
+        const RedisModuleString *next_prefix;
 
         next_prefix = RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, n, field_str);
         next_prefix_str = RedisModule_StringPtrLen(next_prefix, &next_prefix_len);
@@ -648,12 +648,6 @@ static ssize_t send_merge_all(
             continue;
         }
 
-        RedisModuleString *key_name;
-        key_name = RedisModule_CreateString(ctx, key_name_str, key_name_len);
-        if (!key_name) {
-            return SELVA_ENOMEM;
-        }
-
         ++*nr_fields_out;
 
         RedisModuleString *full_field_path;
@@ -671,7 +665,7 @@ static ssize_t send_merge_all(
         RedisModule_ReplyWithArray(ctx, 3);
         RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
         RedisModule_ReplyWithString(ctx, full_field_path);
-        err = SelvaObject_ReplyWithObject(ctx, lang, obj, key_name);
+        err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len);
         if (err) {
             TO_STR(obj_path);
 
@@ -684,7 +678,7 @@ static ssize_t send_merge_all(
         }
 
         /* Mark the key as sent. */
-        (void)SelvaObject_SetLongLong(fields, key_name, 1);
+        (void)SelvaObject_SetLongLongStr(fields, key_name_str, key_name_len, 1);
     }
 
     return 0;
@@ -699,14 +693,14 @@ static ssize_t send_named_merge(
         RedisModuleString *obj_path,
         size_t *nr_fields_out) {
     void *iterator;
-    SVector *vec;
+    const SVector *vec;
     const char *field_index;
     TO_STR(obj_path);
 
     iterator = SelvaObject_ForeachBegin(fields);
     while ((vec = SelvaObject_ForeachValue(fields, &iterator, &field_index, SELVA_OBJECT_ARRAY))) {
         struct SVectorIterator it;
-        RedisModuleString *field;
+        const RedisModuleString *field;
 
         SVector_ForeachBegin(&it, vec);
         while ((field = SVector_Foreach(&it))) {
@@ -1436,7 +1430,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * Parse fields.
      */
     if (argc > ARGV_FIELDS_VAL) {
-		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+        err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             if (merge_strategy == MERGE_STRATEGY_ALL) {
                 /* Having fields set turns a regular merge into a named merge. */
@@ -1500,7 +1494,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         goto out;
     }
 
-    RedisModuleString *ids = argv[ARGV_NODE_IDS];
+    const RedisModuleString *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {

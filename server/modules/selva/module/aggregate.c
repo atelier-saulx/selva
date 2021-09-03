@@ -34,7 +34,9 @@ enum SelvaHierarchy_AggregateType {
 struct AggregateCommand_Args {
     struct FindCommand_Args find_args;
 
-    // aggregation state
+    /*
+     * Aggregation state.
+     */
     enum SelvaHierarchy_AggregateType aggregate_type;
     long long int aggregation_result_int;
     double aggregation_result_double;
@@ -136,7 +138,7 @@ static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
 static int agg_fn_max_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     struct SelvaObject *fields_obj = args->find_args.fields;
     SVector *fields = NULL;
-    RedisModuleString *field;
+    const RedisModuleString *field;
     int err;
 
     err = SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
@@ -645,7 +647,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * Parse fields.
      */
     if (argc > ARGV_FIELDS_VAL) {
-		err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+        err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             if (SelvaObject_Len(fields, NULL) > 1) {
                 replyWithSelvaErrorf(ctx, err, "fields");
@@ -802,7 +804,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             .aggregation_result_double = initial_double_val,
             .item_count = 0,
             .find_args = {
-                // we always need context
+                /* we always need context. */
                 .ctx = ctx,
                 .fields = fields
             }
@@ -1060,7 +1062,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .aggregation_result_double = initial_double_val,
             .item_count = 0,
             .find_args = {
-                // we always need context
+                /* we always need context */
                 .ctx = ctx,
                 .fields = fields
             }

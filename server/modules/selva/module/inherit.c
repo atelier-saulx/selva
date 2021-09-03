@@ -88,7 +88,7 @@ static int deref_single_ref(
         RedisModuleKey **key_out,
         struct SelvaObject **obj_out) {
     const struct EdgeFieldConstraint *constraint = edge_field->constraint;
-    struct SelvaModify_HierarchyNode *node;
+    const struct SelvaModify_HierarchyNode *node;
 
     if (constraint) {
         if (!(constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
@@ -139,7 +139,7 @@ static int send_edge_field_deref_value(
         RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
         SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
     } else {
-        struct SelvaModify_HierarchyNode *node;
+        const struct SelvaModify_HierarchyNode *node;
 
         node = SelvaHierarchy_FindNode(hierarchy, nodeId);
         if (!node) {

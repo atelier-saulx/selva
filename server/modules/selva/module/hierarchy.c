@@ -183,9 +183,9 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
     SelvaModify_HierarchyNode *node;
     SelvaModify_HierarchyNode *next;
 
-	for (node = RB_MIN(hierarchy_index_tree, &hierarchy->index_head); node != NULL; node = next) {
-		next = RB_NEXT(hierarchy_index_tree, &hierarchy->index_head, node);
-		RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
+    for (node = RB_MIN(hierarchy_index_tree, &hierarchy->index_head); node != NULL; node = next) {
+        next = RB_NEXT(hierarchy_index_tree, &hierarchy->index_head, node);
+        RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
         SelvaModify_DestroyNode(NULL, hierarchy, node);
     }
 
@@ -1447,7 +1447,7 @@ int SelvaModify_DelHierarchyNode(
  */
 ssize_t SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId **res) {
     struct SVectorIterator it;
-    SelvaModify_HierarchyNode *node;
+    const SelvaModify_HierarchyNode *node;
     Selva_NodeId *list = NodeList_New(1);
     ssize_t nr_nodes = 0;
 
@@ -1753,7 +1753,7 @@ static int bfs_expression(
         BFS_VISIT_NODE();
 
         SELVA_SET_RMS_FOREACH(field_el, &fields) {
-            RedisModuleString *field = field_el->value_rms;
+            const RedisModuleString *field = field_el->value_rms;
             const SVector *adj_vec;
 
             adj_vec = get_adj_vec(node, field);
@@ -2017,7 +2017,7 @@ int SelvaModify_TraverseHierarchyField(
         const char *field_name_str,
         size_t field_name_len,
         const struct SelvaModify_HierarchyCallback *cb) {
-    SelvaModify_HierarchyNode *head;
+    const SelvaModify_HierarchyNode *head;
 
     head = SelvaHierarchy_FindNode(hierarchy, id);
     if (!head) {
@@ -2072,7 +2072,7 @@ int SelvaModify_TraverseArray(
         const char *ref_field_str,
         size_t ref_field_len,
         const struct SelvaModify_ArrayObjectCallback *cb) {
-    SelvaModify_HierarchyNode *head;
+    const SelvaModify_HierarchyNode *head;
 
     head = SelvaHierarchy_FindNode(hierarchy, id);
     if (!head) {
@@ -2084,7 +2084,7 @@ int SelvaModify_TraverseArray(
 
 static int dfs_make_list_node_cb(SelvaModify_HierarchyNode *node, void *arg) {
     void **args = (void **)arg;
-    SelvaModify_HierarchyNode *head = (SelvaModify_HierarchyNode *)args[0];
+    const SelvaModify_HierarchyNode *head = (SelvaModify_HierarchyNode *)args[0];
     ssize_t *nr_nodes = (ssize_t *)args[1];
     Selva_NodeId **list = (Selva_NodeId **)args[2];
 
@@ -2450,7 +2450,7 @@ int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString 
     Selva_NodeId nodeId;
 
     RMString2NodeId(nodeId, argv[2]);
-    SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+    const SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
     }
@@ -2502,7 +2502,7 @@ int SelvaModify_Hierarchy_ChildrenCommand(RedisModuleCtx *ctx, RedisModuleString
     Selva_NodeId nodeId;
 
     RMString2NodeId(nodeId, argv[2]);
-    SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+    const SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
     }
@@ -2611,7 +2611,7 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     }
 
     const RedisModuleString *key_name = argv[3];
-    struct EdgeField *edge_field;
+    const struct EdgeField *edge_field;
     void *p;
     int err;
 
@@ -2627,7 +2627,7 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 
     const struct SVector *arcs = &edge_field->arcs;
     struct SVectorIterator it;
-    SelvaModify_HierarchyNode *dst;
+    const SelvaModify_HierarchyNode *dst;
 
     RedisModule_ReplyWithArray(ctx, 1 + SVector_Size(arcs));
     RedisModule_ReplyWithLongLong(ctx, edge_field->constraint ? edge_field->constraint->constraint_id : EDGE_FIELD_CONSTRAINT_ID_DEFAULT);
