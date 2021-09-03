@@ -141,7 +141,6 @@ export default async function execTimeseries(
     fields: [<string>op.sourceField],
   })
 
-  // TODO: use the field schema to determine how to treat field path in filters
   console.log('FIELD SCHEMA', fieldSchema)
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
 
