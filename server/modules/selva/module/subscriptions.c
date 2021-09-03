@@ -248,38 +248,25 @@ static void remove_sub_missing_accessor_markers(SelvaModify_Hierarchy *hierarchy
     struct SelvaObject *missing = hierarchy->subs.missing;
     SelvaObject_Iterator *it_missing;
     struct SelvaObject *subs;
-    const char *id;
-    char sub_id_str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
-    RedisModuleString *sub_id;
+    const char *nodeIdOrAlias;
+    char sub_id[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
     if (!sub || !missing) {
         return;
     }
 
-    sub_id = RedisModule_CreateString(NULL, Selva_SubscriptionId2str(sub_id_str, sub->sub_id), SELVA_SUBSCRIPTION_ID_STR_LEN);
-    if (!sub_id) {
-        fprintf(stderr, "%s:%d: Out of memory while removing missing markers", __FILE__, __LINE__);
-        return;
-    }
+    Selva_SubscriptionId2str(sub_id, sub->sub_id);
 
     it_missing = SelvaObject_ForeachBegin(missing);
-    while ((subs = (struct SelvaObject *)SelvaObject_ForeachValue(missing, &it_missing, &id, SELVA_OBJECT_OBJECT))) {
-        SelvaObject_Iterator *it_subs;
-        struct Selva_Subscription *sub_p;
-
-        /* Delete all keys of this subscription stored under id. */
-        it_subs = SelvaObject_ForeachBegin(subs);
-        while ((sub_p = (struct Selva_Subscription *)SelvaObject_ForeachValue(subs, &it_subs, NULL, SELVA_OBJECT_POINTER))) {
-            SelvaObject_DelKey(subs, sub_id);
-        }
+    while ((subs = (struct SelvaObject *)SelvaObject_ForeachValue(missing, &it_missing, &nodeIdOrAlias, SELVA_OBJECT_OBJECT))) {
+        /* Delete this subscription stored under nodeIdOrAlias. */
+        SelvaObject_DelKeyStr(subs, sub_id, SELVA_SUBSCRIPTION_ID_STR_LEN);
 
         /* Delete the id key if the object is now empty. */
         if (SelvaObject_Len(subs, NULL) == 0) {
-            SelvaObject_DelKeyStr(missing, id, strlen(id));
+            SelvaObject_DelKeyStr(missing, nodeIdOrAlias, strlen(nodeIdOrAlias));
         }
     }
-
-    RedisModule_FreeString(NULL, sub_id);
 }
 
 /**
