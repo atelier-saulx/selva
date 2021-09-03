@@ -17,7 +17,7 @@ size_t base64_encode_s(char *str_out, const char *str_in, size_t len, size_t lin
     unsigned char *dst = (unsigned char *)str_out;
     unsigned char *pos;
     const unsigned char *end, *in;
-    int line_len;
+    size_t line_len;
 
     if (line_max == 0) {
         line_max = SIZE_MAX;

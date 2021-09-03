@@ -82,18 +82,18 @@ void bitmap_erase(struct bitmap *bitmap) {
     memset(bitmap->d, 0, BITMAP_SIZE(bitmap->nbits));
 }
 
-static inline unsigned int popcnt_u128(__uint128_t n)
+static inline long long popcnt_u128(__uint128_t n)
 {
     const uint64_t n_hi = n >> 64;
-    const uint64_t n_lo = n;
+    const uint64_t n_lo = (uint64_t)n;
 
     return _mm_popcnt_u64(n_hi) + _mm_popcnt_u64(n_lo);
 }
 
-unsigned int bitmap_popcount(const struct bitmap *bitmap) {
+long long bitmap_popcount(const struct bitmap *bitmap) {
     const size_t nbits = bitmap->nbits;
     const bitmap_t *d = bitmap->d;
-    unsigned int cnt = 0;
+    long long cnt = 0;
 
     for (size_t i = 0; i < BITMAP_SIZE(nbits) / sizeof(bitmap_t); i++) {
         cnt += popcnt_u128(*d++);
