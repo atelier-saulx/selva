@@ -54,18 +54,19 @@ static int agg_fn_count_uniq_obj(struct SelvaObject *obj __unused, struct Aggreg
 static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     struct SelvaObject *fields_obj = args->find_args.fields;
     SVector *fields;
-    SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
+    const RedisModuleString *field;
+    int err;
 
-    if (!fields) {
+    err = SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
+    if (err || !fields) {
         return 0;
     }
 
     struct SVectorIterator it;
     SVector_ForeachBegin(&it, fields);
-
-    const RedisModuleString *field;
     while ((field = SVector_Foreach(&it))) {
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
+
         if (field_type == SELVA_OBJECT_LONGLONG) {
             long long lv = 0;
 
@@ -92,19 +93,20 @@ static int agg_fn_avg_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
 
 static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     struct SelvaObject *fields_obj = args->find_args.fields;
-    SVector *fields;
-    SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
+    SVector *fields = NULL;
+    const RedisModuleString *field;
+    int err;
 
-    if (!fields) {
+    err = SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
+    if (err || !fields) {
         return 0;
     }
 
     struct SVectorIterator it;
     SVector_ForeachBegin(&it, fields);
-
-    RedisModuleString *field;
     while ((field = SVector_Foreach(&it))) {
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
+
         if (field_type == SELVA_OBJECT_LONGLONG) {
             long long lv;
             double dv = 0.0;
@@ -133,19 +135,20 @@ static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
 
 static int agg_fn_max_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     struct SelvaObject *fields_obj = args->find_args.fields;
-    SVector *fields;
-    SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
+    SVector *fields = NULL;
+    RedisModuleString *field;
+    int err;
 
-    if (!fields) {
+    err = SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
+    if (err || !fields) {
         return 0;
     }
 
     struct SVectorIterator it;
     SVector_ForeachBegin(&it, fields);
-
-    RedisModuleString *field;
     while ((field = SVector_Foreach(&it))) {
         enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
+
         if (field_type == SELVA_OBJECT_LONGLONG) {
             long long lv;
             double dv = 0.0;
