@@ -8,6 +8,7 @@ sonar-scanner \
     -Dsonar.organization=atelier-saulx \
     -Dsonar.projectKey=atelier-saulx_selva \
     -Dsonar.sources=server/modules/selva \
+    -Dsonar.exclusions=server/modules/selva/rmutil \
     -Dsonar.cfamily.gcov.reportsPath=server/modules/selva/gcov/reports \
     -Dsonar.cfamily.build-wrapper-output=bw-output \
     -Dsonar.cfamily.threads=4 \
