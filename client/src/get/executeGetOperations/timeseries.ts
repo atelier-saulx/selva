@@ -130,6 +130,17 @@ export default async function execTimeseries(
     op.id,
     <string>op.sourceField
   )
+
+  if (!fieldSchema) {
+    return
+  }
+
+  addMarker(client, ctx, {
+    type: 'node',
+    id: op.id,
+    fields: [<string>op.sourceField],
+  })
+
   // TODO: use the field schema to determine how to treat field path in filters
   console.log('FIELD SCHEMA', fieldSchema)
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
