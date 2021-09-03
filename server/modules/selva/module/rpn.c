@@ -174,7 +174,7 @@ void rpn_destroy(struct rpn_ctx *ctx) {
  * and when as nan_undefined. Once that is done we can also start utilizing it
  * better.
  */
-static double nan_undefined() {
+static double nan_undefined(void) {
     return nan("1");
 }
 
