@@ -84,9 +84,9 @@ struct SelvaModify_Hierarchy {
          * Subscription markers for missing accessors (nodeIds and aliases).
          *
          * These are single-shot markers that will be deleted once the
-         * condition is met.
+         * condition is met. The markers are stored only in this object in
+         * the following format:
          *
-         * These are stored only in this object in the following format:
          * ```
          * {
          *   nodeIdOrAlias.subId => struct Selva_Subscription *
