@@ -643,7 +643,7 @@ void SelvaFind_AccIndexed(struct SelvaFindIndexControlBlock * restrict icb, size
 static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     SelvaObject_Iterator *it;
     enum SelvaObjectType type;
-    const void *p;
+    void *p;
     int n = 0;
 
     it = SelvaObject_ForeachBegin(obj);
