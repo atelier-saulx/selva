@@ -297,7 +297,11 @@ static orderFunc order_functions[] = {
 
 GENERATE_FUNMAP(SelvaTraversal_GetOrderFunc, order_functions, enum SelvaResultOrder, HIERARCHY_RESULT_ORDER_NONE);
 
-struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaModify_HierarchyNode *node, const RedisModuleString *order_field) {
+struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        struct SelvaModify_HierarchyNode *node,
+        const RedisModuleString *order_field) {
     Selva_NodeId nodeId;
     RedisModuleString *id;
     RedisModuleKey *key;
@@ -426,7 +430,11 @@ cleanup:
     return item;
 }
 
-struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *order_field) {
+struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        struct SelvaObject *obj,
+        const RedisModuleString *order_field) {
     struct FindCommand_OrderedItem *item = NULL;
     double d = 0.0;
     char data_lang[LANG_MAX];

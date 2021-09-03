@@ -33,8 +33,14 @@ struct SelvaModify_HierarchyMetadata {
     struct EdgeFieldContainer edge_fields;
 };
 
-typedef void SelvaModify_HierarchyMetadataConstructorHook(const Selva_NodeId id, struct SelvaModify_HierarchyMetadata *metadata);
-typedef void SelvaModify_HierarchyMetadataDestructorHook(struct RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node, struct SelvaModify_HierarchyMetadata *metadata);
+typedef void SelvaModify_HierarchyMetadataConstructorHook(
+        const Selva_NodeId id,
+        struct SelvaModify_HierarchyMetadata *metadata);
+typedef void SelvaModify_HierarchyMetadataDestructorHook(
+        struct RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *node,
+        struct SelvaModify_HierarchyMetadata *metadata);
 
 #define SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(fun) \
     DATA_SET(selva_HMCtor, fun)
@@ -78,9 +84,9 @@ struct SelvaModify_Hierarchy {
          * Subscription markers for missing accessors (nodeIds and aliases).
          *
          * These are single-shot markers that will be deleted once the
-         * condition is met.
+         * condition is met. The markers are stored only in this object in
+         * the following format:
          *
-         * These are stored only in this object in the following format:
          * ```
          * {
          *   nodeIdOrAlias.subId => struct Selva_Subscription *

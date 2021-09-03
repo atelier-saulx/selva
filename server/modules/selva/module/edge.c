@@ -140,7 +140,11 @@ struct EdgeField *Edge_GetField(const struct SelvaModify_HierarchyNode *src_node
 /**
  * Create a new edge field and store it on the hierarchy node.
  */
-static struct EdgeField *Edge_NewField(struct SelvaModify_HierarchyNode *node, const char *field_name_str, size_t field_name_len, const struct EdgeFieldConstraint *constraint) {
+static struct EdgeField *Edge_NewField(
+        struct SelvaModify_HierarchyNode *node,
+        const char *field_name_str,
+        size_t field_name_len,
+        const struct EdgeFieldConstraint *constraint) {
     Selva_NodeId node_id;
     struct SelvaModify_HierarchyMetadata *node_metadata;
     struct SelvaObject *edges;
@@ -200,7 +204,9 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_Hie
             abort();
         }
     }
-    err = SelvaObject_AddArrayStr(dst_node_metadata->edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, SELVA_OBJECT_POINTER, src_edge_field);
+    err = SelvaObject_AddArrayStr(dst_node_metadata->edge_fields.origins,
+                                  src_edge_field->src_node_id, SELVA_NODE_ID_SIZE,
+                                  SELVA_OBJECT_POINTER, src_edge_field);
     if (err) {
         fprintf(stderr, "%s:%d: Edge origin update failed: %s\n",
                 __FILE__, __LINE__,
@@ -209,7 +215,13 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaModify_Hie
     }
 }
 
-static int get_or_create_EdgeField(const struct EdgeFieldConstraints *constraints, struct SelvaModify_HierarchyNode *node, const char *field_name_str, size_t field_name_len, unsigned constraint_id, struct EdgeField **out) {
+static int get_or_create_EdgeField(
+        const struct EdgeFieldConstraints *constraints,
+        struct SelvaModify_HierarchyNode *node,
+        const char *field_name_str,
+        size_t field_name_len,
+        unsigned constraint_id,
+        struct EdgeField **out) {
     Selva_NodeType node_type;
     const struct EdgeFieldConstraint *constraint;
     struct EdgeField *edge_field;
@@ -363,7 +375,11 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaModif
  * removed. A related marker is one that has the same subscription id as the
  * marker on the destination node and it starts from the source node.
  */
-static void remove_related_edge_markers(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, struct SelvaModify_HierarchyNode *dst_node) {
+static void remove_related_edge_markers(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *src_node,
+        struct SelvaModify_HierarchyNode *dst_node) {
     SVECTOR_AUTOFREE(sub_markers);
     struct SVectorIterator dst_it;
     struct Selva_SubscriptionMarker *dst_marker;
@@ -511,7 +527,7 @@ static int clear_field(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierar
         }
     }
 
-    return SVector_Size(&arcs);
+    return (int)SVector_Size(&arcs);
 }
 
 static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node, struct SelvaObject *obj) {
@@ -539,7 +555,12 @@ static void clear_all_fields(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *
     _clear_all_fields(ctx, hierarchy, node, obj);
 }
 
-int Edge_ClearField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, const char *field_name_str, size_t field_name_len) {
+int Edge_ClearField(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *src_node,
+        const char *field_name_str,
+        size_t field_name_len) {
     Selva_NodeType node_type;
     struct EdgeField *src_edge_field;
 
@@ -557,7 +578,12 @@ int Edge_ClearField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy
     return clear_field(ctx, hierarchy, src_node, src_edge_field);
 }
 
-int Edge_DeleteField(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, const char *field_name_str, size_t field_name_len) {
+int Edge_DeleteField(
+        RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *src_node,
+        const char *field_name_str,
+        size_t field_name_len) {
     Selva_NodeType src_node_type;
     struct EdgeField *src_edge_field;
     int res;

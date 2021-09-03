@@ -116,7 +116,12 @@ int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, struct EdgeFieldDyn
     return SelvaObject_SetPointerStr(data->dyn_constraints, constraint_name_str, constraint_name_len, p, &obj_opts);
 }
 
-const struct EdgeFieldConstraint *Edge_GetConstraint(const struct EdgeFieldConstraints *data, unsigned constraint_id, Selva_NodeType node_type, const char *field_name_str, size_t field_name_len) {
+const struct EdgeFieldConstraint *Edge_GetConstraint(
+        const struct EdgeFieldConstraints *data,
+        unsigned constraint_id,
+        Selva_NodeType node_type,
+        const char *field_name_str,
+        size_t field_name_len) {
     const struct EdgeFieldConstraint *constraint = NULL;
 
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
@@ -253,7 +258,7 @@ int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     }
 
     struct EdgeFieldDynConstraintParams params = {
-        .flags = flags,
+        .flags = (unsigned char)flags,
         .fwd_node_type = SELVA_TYPE_INITIALIZER(fwd_type),
         .fwd_field_name = argv[ARGV_FWD_FIELD],
         .bck_field_name = argv[ARGV_BCK_FIELD],

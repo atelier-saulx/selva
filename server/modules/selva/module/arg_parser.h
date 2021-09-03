@@ -8,6 +8,8 @@ struct RedisModuleCtx;
 struct RedisModuleString;
 struct SelvaObject;
 
+typedef struct RedisModuleString ** RedisModuleStringList;
+
 struct SelvaArgParser_EnumType {
     char *name;
     int id;
@@ -33,7 +35,7 @@ int SelvaArgParser_StrOpt(
         const struct RedisModuleString *arg_val);
 int SelvaArgsParser_StringList(
         struct RedisModuleCtx *ctx,
-        struct RedisModuleString ***out,
+        RedisModuleStringList *out,
         const char *name,
         const struct RedisModuleString *arg_key,
         const struct RedisModuleString *arg_val);

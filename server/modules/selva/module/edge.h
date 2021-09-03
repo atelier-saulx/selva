@@ -130,7 +130,12 @@ struct EdgeFieldContainer {
 
 void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data);
 int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, struct EdgeFieldDynConstraintParams *params);
-const struct EdgeFieldConstraint *Edge_GetConstraint(const struct EdgeFieldConstraints *data, unsigned constraint_id, Selva_NodeType node_type, const char *field_name_str, size_t field_name_len);
+const struct EdgeFieldConstraint *Edge_GetConstraint(
+        const struct EdgeFieldConstraints *data,
+        unsigned constraint_id,
+        Selva_NodeType node_type,
+        const char *field_name_str,
+        size_t field_name_len);
 
 /**
  * Get a pointer to an EdgeField.
@@ -173,8 +178,18 @@ int Edge_Delete(
  * Delete all edges of a field.
  * @returns The number of deleted edges; Otherwise a selva error is returned.
  */
-int Edge_ClearField(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, const char *field_name_str, size_t field_name_len);
-int Edge_DeleteField(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *src_node, const char *field_name_str, size_t field_name_len);
+int Edge_ClearField(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *src_node,
+        const char *field_name_str,
+        size_t field_name_len);
+int Edge_DeleteField(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *src_node,
+        const char *field_name_str,
+        size_t field_name_len);
 
 /**
  * Get the number of nodes pointing to this nodes from edge fields.

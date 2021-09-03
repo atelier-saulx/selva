@@ -37,7 +37,12 @@ int SelvaArgParser_StrOpt(const char **value, const char *name, const RedisModul
     return 0;
 }
 
-int SelvaArgsParser_StringList(RedisModuleCtx *ctx, RedisModuleString ***out, const char *name, const RedisModuleString *arg_key, const RedisModuleString *arg_val) {
+int SelvaArgsParser_StringList(
+        RedisModuleCtx *ctx,
+        RedisModuleStringList *out,
+        const char *name,
+        const RedisModuleString *arg_key,
+        const RedisModuleString *arg_val) {
     const char *cur;
     RedisModuleString **list = NULL;
     size_t n = 1;

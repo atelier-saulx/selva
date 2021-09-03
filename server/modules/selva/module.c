@@ -209,7 +209,12 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
     }
 }
 
-enum selva_op_repl_state handle_modify_arg_op_obj_meta(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct SelvaObject *obj, const RedisModuleString *field, const RedisModuleString *value) {
+enum selva_op_repl_state handle_modify_arg_op_obj_meta(
+        RedisModuleCtx *ctx,
+        Selva_NodeId nodeId,
+        struct SelvaObject *obj,
+        const RedisModuleString *field,
+        const RedisModuleString *value) {
     TO_STR(value);
     SelvaObjectMeta_t new_user_meta;
     SelvaObjectMeta_t old_user_meta;

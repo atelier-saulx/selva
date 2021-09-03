@@ -1166,7 +1166,7 @@ static enum rpn_error rpn_op_get_clock_realtime(struct RedisModuleCtx *redis_ctx
         return RPN_ERR_NOTSUP; /* RFE New error code? */
     }
 
-    ts = t.tv_sec * 1000 + lround(t.tv_nsec / 1.0e6);
+    ts = t.tv_sec * 1000 + lround((double)t.tv_nsec / 1.0e6);
 
     return push_int_result(ctx, ts);
 }
