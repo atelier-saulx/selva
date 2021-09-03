@@ -806,7 +806,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             if (err < 0) {
                 TO_STR(id);
 
-                /* Since we are already at the end of the command, it's next to
+                /*
+                 * Since we are already at the end of the command, it's next to
                  * impossible to rollback the command, so we'll just log any
                  * errors received here.
                  */
