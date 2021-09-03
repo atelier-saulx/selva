@@ -2099,7 +2099,11 @@ static int dfs_make_list_node_cb(SelvaModify_HierarchyNode *node, void *arg) {
     return 0;
 }
 
-static ssize_t SelvaModify_FindDir(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, enum SelvaModify_HierarchyNode_Relationship dir, Selva_NodeId **res) {
+static ssize_t SelvaModify_FindDir(
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        enum SelvaModify_HierarchyNode_Relationship dir,
+        Selva_NodeId **res) {
     SelvaModify_HierarchyNode *head = SelvaHierarchy_FindNode(hierarchy, id);
     if (!head) {
         return SELVA_HIERARCHY_ENOENT;

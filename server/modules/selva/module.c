@@ -54,7 +54,7 @@ SET_DECLARE(selva_onunld, Selva_Onunload);
  * This function depends on the argument order of selva.modify.
  */
 void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisModuleString **orig_argv) {
-    unsigned int count = bitmap_popcount(replset);
+    long long count = bitmap_popcount(replset);
 
     /*
      * TODO REDISMODULE_CTX_FLAGS_REPLICATED would be more appropriate here but it's
@@ -73,7 +73,7 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
     const int leading_args = 3; /* [cmd_name, key, flags] */
     RedisModuleString **argv;
 
-    argv = RedisModule_PoolAlloc(ctx, ((size_t)leading_args + count) * sizeof(RedisModuleString *));
+    argv = RedisModule_PoolAlloc(ctx, ((size_t)((long long)leading_args + count)) * sizeof(RedisModuleString *));
     if (!argv) {
         fprintf(stderr, "%s:%d: Replication error: %s\n",
                 __FILE__, __LINE__,

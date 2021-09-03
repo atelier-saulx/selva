@@ -59,7 +59,7 @@ int bitmap_clear(struct bitmap *bitmap, size_t pos);
  */
 void bitmap_erase(struct bitmap *bitmap);
 
-unsigned int bitmap_popcount(const struct bitmap *bitmap);
+long long bitmap_popcount(const struct bitmap *bitmap);
 
 /**
  * Find first set.
