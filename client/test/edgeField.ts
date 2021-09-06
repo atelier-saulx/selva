@@ -58,11 +58,12 @@ test.beforeEach(async (t) => {
   await client.destroy()
 })
 
-test.after(async (_t) => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('basic edge ops', async (t) => {
@@ -808,5 +809,57 @@ test.serial('bidirectional edge fields', async (t) => {
     ['team', [
       ]
     ]
+  )
+})
+
+test.serial('wildcard find with edge fields', async (t) => {
+  const client = connect({ port })
+
+  // Create nodes
+  t.deepEqual(
+    await client.redis.selva_modify('root', '', '0', 'name', 'hello'),
+    ['root', 'UPDATED']
+  )
+  t.deepEqual(
+    await client.redis.selva_modify('ma1', '', '0', 'ding', 'dong', '0', 'dong', 'ding'),
+    ['ma1', 'UPDATED', 'UPDATED']
+  )
+
+  const rec = createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 1,
+    $add: toCArr(['ma1']),
+    $delete: null,
+    $value: null,
+  })
+
+  t.deepEqual(
+    await client.redis.selva_modify('root', '', '5', 'things', rec),
+    ['root', 'UPDATED']
+  )
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'things.ding', 'root'),
+    [[ 'root', [ 'things.ding', 'dong' ]]]
+  )
+  t.deepEqual(
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'things.*', 'root'),
+      [
+        [
+          "root",
+          [
+            "things",
+            [
+              "ding",
+              "dong",
+              "dong",
+              "ding",
+              "id",
+              "ma1"
+            ]
+          ]
+        ]
+      ]
   )
 })
