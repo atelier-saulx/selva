@@ -64,7 +64,7 @@ CC ?= gcc
 all: module.so
 
 version.c: FORCE
-ifeq ($(uname_S),Linux)
+ifeq ($(SELVA_IS_DOCKER),1)
 	@echo "Using existing version.c: $(cat version.c)"
 else
 	@echo selva_version $(SELVA_VERSION)
