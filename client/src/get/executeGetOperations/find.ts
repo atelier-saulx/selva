@@ -31,38 +31,47 @@ function mkIndex(schema: Schema, op: GetOperationFind): string[] {
     return []
   }
 
-  const f = <FilterAST>op.filter.$and.filter((f: Fork | FilterAST) => !isFork(f)).sort((a: FilterAST, b: FilterAST) => {
-    const operatorCmp = (op: typeof a.$operator) => (({
-      '=': 1,
-      'exists': 2,
-      'notExists': 3,
-      'has': 4,
-    })[op] || 5) - 1
-    const fieldCmp = (field: string | string[]) => (field === 'type') ? 0 : 1
+  const f = <FilterAST>op.filter.$and
+    .filter((f: Fork | FilterAST) => !isFork(f))
+    .sort((a: FilterAST, b: FilterAST) => {
+      const operatorCmp = (op: typeof a.$operator) =>
+        (({
+          '=': 1,
+          exists: 2,
+          notExists: 3,
+          has: 4,
+        }[op] || 5) - 1)
+      const fieldCmp = (field: string | string[]) => (field === 'type' ? 0 : 1)
 
-    return (operatorCmp(a.$operator) - operatorCmp(b.$operator)) ||
-           (fieldCmp(a.$field) - fieldCmp(b.$field)) ||
-           a.$operator.localeCompare(b.$operator) ||
-           a.$field.localeCompare(b.$field)
-  }).find((f: FilterAST) => {
-    if (f.$field === 'type' && f.$operator === '=') {
-      return typeof f.$value === 'string'
-    } else if (["=", "has"].includes(f.$operator)) {
-      // TODO Support array of values
-      return ['boolean', 'float', 'int', 'number', 'string'].includes(typeof f.$value)
-    } else if (['exists', 'notExists'].includes(f.$operator)) {
-      return true
-    } else {
-      return false
-    }
-  })
+      return (
+        operatorCmp(a.$operator) - operatorCmp(b.$operator) ||
+        fieldCmp(a.$field) - fieldCmp(b.$field) ||
+        a.$operator.localeCompare(b.$operator) ||
+        a.$field.localeCompare(b.$field)
+      )
+    })
+    .find((f: FilterAST) => {
+      if (f.$field === 'type' && f.$operator === '=') {
+        return typeof f.$value === 'string'
+      } else if (['=', 'has'].includes(f.$operator)) {
+        // TODO Support array of values
+        return ['boolean', 'float', 'int', 'number', 'string'].includes(
+          typeof f.$value
+        )
+      } else if (['exists', 'notExists'].includes(f.$operator)) {
+        return true
+      } else {
+        return false
+      }
+    })
 
   if (!f) {
     return []
   }
 
   if (f.$field === 'type') {
-    const prefix = f.$value === 'root' ? 'ro' : schema?.types[<string>f.$value]?.prefix
+    const prefix =
+      f.$value === 'root' ? 'ro' : schema?.types[<string>f.$value]?.prefix
     if (!prefix) {
       return []
     }
@@ -71,13 +80,15 @@ function mkIndex(schema: Schema, op: GetOperationFind): string[] {
   } else if (f.$operator === '=') {
     if (typeof f.$value === 'string') {
       return ['index', `"${f.$field}" f "${f.$value}" c`]
-    } else { // numeric
+    } else {
+      // numeric
       return ['index', `"${f.$field}" g #${f.$value} F`]
     }
   } else if (f.$operator === 'has') {
     if (typeof f.$value === 'string') {
       return ['index', `"${f.$value}" "${f.$field}" a`]
-    } else { // numeric
+    } else {
+      // numeric
       return ['index', `"${f.$value}" #${f.$field} a`]
     }
   } else if (f.$operator === 'exists') {
@@ -95,10 +106,7 @@ function parseGetOpts(
   nestedMapping?: Record<string, { targetField?: string[]; default?: any }>
 ): [
   Set<string>,
-  Record<
-    string,
-    { targetField?: string[]; default?: any; maybeReferenceAll?: true }
-  >,
+  Record<string, { targetField?: string[]; default?: any }>,
   boolean
 ] {
   const pathPrefix = path === '' ? '' : path + '.'
@@ -108,7 +116,6 @@ function parseGetOpts(
     {
       targetField?: string[]
       default?: any
-      maybeReferenceAll?: true
     }
   > = nestedMapping || {}
 
@@ -165,13 +172,7 @@ function parseGetOpts(
       fields.add('*')
       // hasAll = true
     } else if (k === '$all') {
-      if (!mapping[path]) {
-        mapping[path] = { maybeReferenceAll: true }
-      } else {
-        mapping[path].maybeReferenceAll = true
-      }
-
-      fields.add(path)
+      fields.add(path + '.*')
     } else if (k.startsWith('$')) {
       return [fields, mapping, true]
     } else if (typeof props[k] === 'object') {
@@ -807,27 +808,6 @@ const executeFindOperation = async (
       }
 
       const mapping = fieldMapping[field]
-      if (
-        mapping?.maybeReferenceAll &&
-        Array.isArray(value) &&
-        value.length === 1 &&
-        typeof value[0] === 'string'
-      ) {
-        const fieldResults = await executeNestedGetOperations(
-          client,
-          {
-            $db: ctx.db,
-            $id: value[0],
-            $all: true,
-          },
-          lang,
-          ctx
-        )
-        setNestedResult(entryRes, field, fieldResults)
-        usedMappings.add(field)
-        continue
-      }
-
       const targetField = mapping?.targetField
       const casted = typeCast(value, id, field, schema, lang)
 

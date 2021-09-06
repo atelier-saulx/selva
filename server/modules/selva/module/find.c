@@ -34,6 +34,14 @@ static int send_node_field(
         const char *field_prefix_str,
         size_t field_prefix_len,
         RedisModuleString *field);
+static int send_all_node_data_fields(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *node,
+        struct SelvaObject *obj,
+        const char *field_prefix_str,
+        size_t field_prefix_len);
 
 static int send_edge_field(
         RedisModuleCtx *ctx,
@@ -139,7 +147,22 @@ static int send_edge_field(
     }
 
     /* TODO could close the key */
-    return (send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field) == 0) ? SELVA_ENOENT : 0;
+    if (next_field_len == 1 && next_field_str[0] == '*') {
+        int res;
+
+        RedisModule_ReplyWithStringBuffer(ctx, next_prefix_str, next_prefix_len - 1);
+        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+
+        res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, dst_obj, NULL, 0);
+        if (res < 0) {
+            res = 0;
+        }
+
+        RedisModule_ReplySetArrayLength(ctx, 2 * res);
+        return 0;
+    } else {
+        return (send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field) == 0) ? SELVA_ENOENT : 0;
+    }
 }
 
 static int send_node_field(
@@ -221,11 +244,14 @@ static int send_node_field(
 
         if (edges) {
             err = send_edge_field(ctx, lang, hierarchy, node, edges, field_prefix_str, field_prefix_len, field);
-            if (!err) {
-                return 1;
+            if (err == 0) {
+               return 1;
+            } else if (err && err != SELVA_ENOENT) {
+                return 0;
             }
         }
     }
+#undef SEND_FIELD_NAME
 
     /*
      * Check if we have a wildcard in the middle of the field name
@@ -248,7 +274,10 @@ static int send_node_field(
     /*
      * Finally check if the field name is a key on the node object.
      */
-    if (SelvaObject_Exists(obj, field)) {
+
+    if (field_len >= 2 && field_str[field_len - 2] == '.' && field_str[field_len - 1] == '*') {
+        field_len -= 2;
+    } else if (SelvaObject_Exists(obj, field)) {
         /* Field didn't exist in the node. */
         return 0;
     }
@@ -256,12 +285,12 @@ static int send_node_field(
     /*
      * Send the reply.
      */
-    SEND_FIELD_NAME();
-    err = SelvaObject_ReplyWithObject(ctx, lang, obj, field);
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str));
+    err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len);
     if (err) {
-        fprintf(stderr, "%s:%d: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
+        fprintf(stderr, "%s:%d: Failed to send the field (%.*s) for node_id: \"%.*s\" err: \"%s\"\n",
                 __FILE__, __LINE__,
-                field_str,
+                (int)field_len, field_str,
                 (int)SELVA_NODE_ID_SIZE, nodeId,
                 getSelvaErrorStr(err));
         RedisModule_ReplyWithNull(ctx);
@@ -275,7 +304,9 @@ static int send_all_node_data_fields(
         RedisModuleString *lang,
         SelvaModify_Hierarchy *hierarchy,
         struct SelvaModify_HierarchyNode *node,
-        struct SelvaObject *obj) {
+        struct SelvaObject *obj,
+        const char *field_prefix_str,
+        size_t field_prefix_len) {
     void *iterator;
     const char *field_name_str;
     int nr_fields = 0;
@@ -295,7 +326,7 @@ static int send_all_node_data_fields(
             continue;
         }
 
-        res = send_node_field(ctx, lang, hierarchy, node, obj, NULL, 0, field);
+        res = send_node_field(ctx, lang, hierarchy, node, obj, field_prefix_str, field_prefix_len, field);
         if (res >= 0) {
             nr_fields += res;
         }
@@ -386,7 +417,7 @@ static int send_node_fields(
                 int res;
 
                 if (field_len == sizeof(wildcard) - 1 && !strcmp(field_str, wildcard)) {
-                    res = send_all_node_data_fields(ctx, lang, hierarchy, node, obj);
+                    res = send_all_node_data_fields(ctx, lang, hierarchy, node, obj, NULL, 0);
                     if (res > 0) {
                         nr_fields += res;
                         /*

@@ -107,7 +107,7 @@ export function sourceFieldToFindArgs(
   }
 
   if (['ancestors', 'descendants'].includes(sourceField)) {
-    return [ <SubscriptionMarker['type']>sourceField ]
+    return [<SubscriptionMarker['type']>sourceField]
   }
 
   // if fieldSchema is null it usually means that the caller needs to do an op
@@ -263,7 +263,25 @@ export const TYPE_CASTS: Record<
   int: Number,
   boolean: (x: any) => !!Number(x),
   json: (x: any) => JSON.parse(x),
-  reference: (r: any) => (Array.isArray(r) ? r[0] : r),
+  reference: (r: any, _id: string, _field: string, schema, lang) => {
+    if (Array.isArray(r) && r.length > 1) {
+      const idIdx = r.findIndex((x) => x === 'id')
+      const refId = r[idIdx + 1]
+
+      const totalResult = {}
+      for (let i = 0; i < r.length; i += 2) {
+        const field = r[i]
+        const value = r[i + 1]
+
+        const fieldResult = typeCast(value, refId, field, schema, lang)
+        setNestedResult(totalResult, field, fieldResult)
+      }
+
+      return totalResult
+    }
+
+    return Array.isArray(r) ? r[0] : r
+  },
   // array: (x: any) => JSON.parse(x),
   array: (x: any, id: string, field: string, schema, lang) => {
     const fieldSchema = <FieldSchemaArrayLike>getNestedSchema(schema, id, field)
