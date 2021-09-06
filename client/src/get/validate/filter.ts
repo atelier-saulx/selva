@@ -1,6 +1,6 @@
 import { Filter } from '../types'
 import { SelvaClient } from '../..'
-import { validateFilterField } from '../../util'
+import { validateFieldPath } from '../../util'
 
 import checkAllowed from './checkAllowed'
 
@@ -59,7 +59,7 @@ export default function validateFilter(
     )
   }
 
-  validateFilterField(filter.$field)
+  validateFieldPath(filter.$field)
 
   if (
     filter.$operator !== '=' &&

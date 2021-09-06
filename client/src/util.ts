@@ -34,7 +34,7 @@ export function validateFieldName(path: string, fieldName: string) {
   }
 }
 
-export function validateFilterField(fieldName: string) {
+export function validateFieldPath(fieldName: string) {
   if (!FILTER_FIELD_REGEX.test(fieldName)) {
     throw new Error(
       `${fieldName} contains unsupported characters for field names, supported characters are a-z, A-Z, 0-9, - and _`

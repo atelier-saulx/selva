@@ -8,7 +8,7 @@ import validateInherit from './inherit'
 import validateList from './list'
 import validateFind from './find'
 import validateAggregate from './aggregate'
-import { validateFilterField } from '../../util'
+import { validateFieldPath } from '../../util'
 
 export type TextSearchExtraQuery = {
   type: 'text_search'
@@ -108,7 +108,7 @@ async function validateNested(
   path: string
 ): Promise<void> {
   if (fieldName && fieldName !== '*') {
-    validateFilterField(fieldName)
+    validateFieldPath(fieldName)
   }
 
   if (props === true) {
