@@ -64,8 +64,12 @@ CC ?= gcc
 all: module.so
 
 version.c: FORCE
+ifeq ($(uname_S),Linux)
+	@echo "Using existing version.c: $(cat version.c)"
+else
 	@echo selva_version $(SELVA_VERSION)
 	echo "const char * const selva_version = \"$(SELVA_VERSION)\";" > version.c
+endif
 
 $(RMUTIL_LIBDIR)/librmutil.a: FORCE
 	$(MAKE) -C $(RMUTIL_LIBDIR)
