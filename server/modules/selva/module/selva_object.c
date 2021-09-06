@@ -2018,7 +2018,7 @@ int SelvaObject_GetWithWildcardStr(
     int err;
 
     err = get_key(obj, before, before_len, 0, &key);
-    if (!err && (key->type != SELVA_OBJECT_OBJECT || key->user_meta != 1)) {
+    if (!err && (key->type != SELVA_OBJECT_OBJECT || key->user_meta != SELVA_OBJECT_META_SUBTYPE_RECORD)) {
         err = SELVA_ENOENT;
     } else if (!err) {
         void *it = SelvaObject_ForeachBegin(key->value);
@@ -2131,33 +2131,40 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     }
 
     for (int i = ARGV_OKEY; i < argc; i++) {
-        int is_wildcard = 0;
         const RedisModuleString *okey = argv[i];
         TO_STR(okey);
 
         int err = 0;
 
         if (strstr(okey_str, ".*.")) {
-            is_wildcard = 1;
-
             long resp_count = 0;
+
             RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
             err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, okey_str, okey_len, &resp_count, -1, 1);
+            if (err == SELVA_ENOENT) {
+                /* Keep looking. */
+                RedisModule_ReplySetArrayLength(ctx, resp_count);
+                continue;
+            } else if (err) {
+                replyWithSelvaErrorf(ctx, err, "get_key");
+                RedisModule_ReplySetArrayLength(ctx, resp_count + 1);
+
+                return REDISMODULE_OK;
+            }
+
             RedisModule_ReplySetArrayLength(ctx, resp_count);
         } else {
             err = get_key(obj, okey_str, okey_len, 0, &key);
-        }
+            if (err == SELVA_ENOENT) {
+                /* Keep looking. */
+                continue;
+            } else if (err) {
+                return replyWithSelvaErrorf(ctx, err, "get_key");
+            }
 
-        if (err == SELVA_ENOENT) {
-            /* Keep looking. */
-            continue;
-        } else if (err) {
-            return replyWithSelvaErrorf(ctx, err, "get_key");
-        }
-
-        if (!is_wildcard) {
             replyWithKeyValue(ctx, lang, key);
         }
+
         return REDISMODULE_OK;
     }
 
