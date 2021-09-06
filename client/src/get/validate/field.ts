@@ -1,6 +1,7 @@
 import { GetOptions } from '../types'
 import { SelvaClient } from '../..'
 import validateTopLevel, { ExtraQueries } from '.'
+import { validateFilterField } from '../../util'
 
 import checkAllowed from './checkAllowed'
 
@@ -11,11 +12,14 @@ export default async function validateField(
   path: string
 ): Promise<void> {
   if (typeof field === 'string') {
-    return
+    return validateFilterField(field)
   }
 
   if (typeof field === 'object') {
     if (Array.isArray(field)) {
+      for (const f of field) {
+        validateFilterField(f)
+      }
       return
     }
 

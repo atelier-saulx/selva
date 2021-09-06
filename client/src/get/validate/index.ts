@@ -8,6 +8,7 @@ import validateInherit from './inherit'
 import validateList from './list'
 import validateFind from './find'
 import validateAggregate from './aggregate'
+import { validateFilterField } from '../../util'
 
 export type TextSearchExtraQuery = {
   type: 'text_search'
@@ -102,9 +103,14 @@ async function transformDb(
 async function validateNested(
   extraQueries: ExtraQueries,
   client: SelvaClient,
+  fieldName: string,
   props: GetOptions | true,
   path: string
 ): Promise<void> {
+  if (fieldName && fieldName !== '*') {
+    validateFilterField(fieldName)
+  }
+
   if (props === true) {
     return
   }
@@ -122,6 +128,7 @@ async function validateNested(
       await validateNested(
         extraQueries,
         client,
+        undefined,
         props[i],
         path + '.' + String(i)
       )
@@ -187,6 +194,7 @@ async function validateNested(
       await validateNested(
         extraQueries,
         client,
+        field,
         props[field],
         path + '.' + field
       )
@@ -318,6 +326,7 @@ export default async function validateTopLevel(
       await validateNested(
         extraQueries,
         client,
+        field,
         props[field],
         path + '.' + field
       )
