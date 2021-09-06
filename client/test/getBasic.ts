@@ -517,6 +517,30 @@ test.serial('get - basic', async (t) => {
   //   'get role nested'
   // )
 
+  let err = await t.throwsAsync(
+    client.get({
+      $id: 'viA',
+      _illegalField: true,
+    })
+  )
+  t.assert(err.stack.includes('contains unsupported characters'))
+
+  err = await t.throwsAsync(
+    client.get({
+      $id: 'viA',
+      illegal$Field: true,
+    })
+  )
+  t.assert(err.stack.includes('contains unsupported characters'))
+
+  err = await t.throwsAsync(
+    client.get({
+      $id: 'viA',
+      'illegal*Field': true,
+    })
+  )
+  t.assert(err.stack.includes('contains unsupported characters'))
+
   await client.delete('root')
 
   await client.destroy()

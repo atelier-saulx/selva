@@ -9,11 +9,11 @@ import {
   FIELD_TYPES,
 } from '.'
 import { ServerSelector } from '../types'
-import { wait } from '../util'
+import { wait, validateFieldName } from '../util'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
-function validateNewFieldTypes(obj: TypeSchema | FieldSchema, path: string) {
+function validateNewFields(obj: TypeSchema | FieldSchema, path: string) {
   if ((<any>obj).type) {
     const field = <FieldSchema>obj
     if (
@@ -21,10 +21,11 @@ function validateNewFieldTypes(obj: TypeSchema | FieldSchema, path: string) {
       (field.type === 'json' && field.properties)
     ) {
       for (const propName in field.properties) {
-        validateNewFieldTypes(field.properties[propName], `${path}.${propName}`)
+        validateFieldName(path, propName)
+        validateNewFields(field.properties[propName], `${path}.${propName}`)
       }
     } else if (field.type === 'record') {
-      validateNewFieldTypes(field.values, `${path}.*`)
+      validateNewFields(field.values, `${path}.*`)
     } else {
       if (!FIELD_TYPES.includes(field.type)) {
         throw new Error(
@@ -38,7 +39,8 @@ function validateNewFieldTypes(obj: TypeSchema | FieldSchema, path: string) {
     const type = <TypeSchema>obj
     if (type.fields) {
       for (const fieldName in type.fields) {
-        validateNewFieldTypes(type.fields[fieldName], fieldName)
+        validateFieldName(path, fieldName)
+        validateNewFields(type.fields[fieldName], fieldName)
       }
     }
   }
@@ -86,7 +88,7 @@ export function newSchemaDefinition(
           }`
         )
       }
-      validateNewFieldTypes(newType, '')
+      validateNewFields(newType, '')
 
       schema.types[typeName] = newType
     }
@@ -176,7 +178,7 @@ function newTypeDefinition(
   for (const fieldName in newType.fields) {
     if (oldType.fields && !oldType.fields[fieldName]) {
       const newField = newType.fields[fieldName]
-      validateNewFieldTypes(newField, fieldName)
+      validateNewFields(newField, fieldName)
       typeDef.fields[fieldName] = newField
     }
   }
@@ -215,7 +217,7 @@ function newFieldDefinition(
     for (const fieldName in (<any>newField).properties) {
       if (!oldField.properties[fieldName]) {
         const newProperty = (<any>newField).properties[fieldName]
-        validateNewFieldTypes(newProperty, fieldPath + '.' + fieldName)
+        validateNewFields(newProperty, fieldPath + '.' + fieldName)
         props[fieldName] = newProperty
       }
     }

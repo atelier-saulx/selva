@@ -341,6 +341,56 @@ test.serial('simple aggregate', async (t) => {
     { id: 'root', value: 13 }
   )
 
+  let err = await t.throwsAsync(
+    client.get({
+      $id: 'root',
+      id: true,
+      value: {
+        $aggregate: {
+          $function: { $name: 'max', $args: ['value'] },
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type$',
+              $operator: '=',
+              $value: 'match',
+            },
+            {
+              $field: 'value',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    })
+  )
+  t.assert(err.stack.includes('contains unsupported characters'))
+
+  err = await t.throwsAsync(
+    client.get({
+      $id: 'root',
+      id: true,
+      value: {
+        $aggregate: {
+          $function: { $name: 'max', $args: ['value'] },
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match',
+            },
+            {
+              $field: '_value',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    })
+  )
+  t.assert(err.stack.includes('contains unsupported characters'))
+
   await client.delete('root')
   await client.destroy()
 })
