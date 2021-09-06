@@ -244,11 +244,14 @@ static int send_node_field(
 
         if (edges) {
             err = send_edge_field(ctx, lang, hierarchy, node, edges, field_prefix_str, field_prefix_len, field);
-            if (!err) {
-                return 1;
+            if (err == 0) {
+               return 1;
+            } else if (err && err != SELVA_ENOENT) {
+                return 0;
             }
         }
     }
+#undef SEND_FIELD_NAME
 
     /*
      * Check if we have a wildcard in the middle of the field name
@@ -271,7 +274,10 @@ static int send_node_field(
     /*
      * Finally check if the field name is a key on the node object.
      */
-    if (SelvaObject_Exists(obj, field)) {
+
+    if (field_len >= 2 && field_str[field_len - 2] == '.' && field_str[field_len - 1] == '*') {
+        field_len -= 2;
+    } else if (SelvaObject_Exists(obj, field)) {
         /* Field didn't exist in the node. */
         return 0;
     }
@@ -279,12 +285,12 @@ static int send_node_field(
     /*
      * Send the reply.
      */
-    SEND_FIELD_NAME();
-    err = SelvaObject_ReplyWithObject(ctx, lang, obj, field);
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str));
+    err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len);
     if (err) {
-        fprintf(stderr, "%s:%d: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
+        fprintf(stderr, "%s:%d: Failed to send the field (%.*s) for node_id: \"%.*s\" err: \"%s\"\n",
                 __FILE__, __LINE__,
-                field_str,
+                (int)field_len, field_str,
                 (int)SELVA_NODE_ID_SIZE, nodeId,
                 getSelvaErrorStr(err));
         RedisModule_ReplyWithNull(ctx);
