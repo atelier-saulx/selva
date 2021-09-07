@@ -127,13 +127,31 @@ is added in the graph, etc.
 
 A Trigger marker will trigger an event based on its trigger type and conditions.
 
+## Indexing
+
+Traversals over the hierarchy can be long and complex and additional RPN
+expression filtering can make it slow. Often subscriptions require a new
+traversal to be executed every time something changes in the subscription.
+To help speeding up the most complex and frequent traversals, there is a
+built-in indexing support, that can be utilized by providing indexing hints
+when executing a find query. For efficient indexing, an indexing hint should
+form a proper super set of the normal find query result.
+
+See [Indexing](hierarchy/indexing.md).
+
 ## Commands
 
 ### Find Commands
 
-See [find.c](../module/find.c).
+See
+
+- [find.c](../module/find.c),
+- [aggregate.c](../module/aggregate.c),
+- [inherit.c](../module/inherit.c).
 
 ### Hierarchy Commands
+
+Direct hierarchy manipulation.
 
 See [hierarchy.c](../module/hierarchy.c).
 
@@ -147,10 +165,8 @@ Create or update Selva nodes.
 
 See [modify.c](../module/modify.c).
 
-### Inherit
-
-See [inherit.c](../module/inherit.c).
-
 ### Selva Objects
+
+Direct SelvaObject manipulation for objects backed by a Redis key.
 
 See [selva_object](../module/selva_object.c).
