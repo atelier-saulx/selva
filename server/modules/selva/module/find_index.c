@@ -264,7 +264,8 @@ static int start_index(
 
     err = SelvaSubscriptions_AddCallbackMarker(
             hierarchy, find_index_sub_id, icb->marker_id, marker_flags,
-            icb->node_id, icb->dir, dir_field, dir_expression, RedisModule_StringPtrLen(icb->filter, NULL), update_index,
+            icb->node_id, icb->dir, dir_field, dir_expression, RedisModule_StringPtrLen(icb->filter, NULL),
+            update_index,
             icb);
     if (err) {
         return err;
