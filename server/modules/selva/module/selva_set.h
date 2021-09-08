@@ -180,6 +180,6 @@ int SelvaSet_Union(struct SelvaSet *res, ...);
  * @param res should be an empty set initialized with the right type.
  *            `res` must not be a pointer to one of the source sets.
  */
-int SelvaSet_Union(enum SelvaSetType type, struct SelvaSet *res, ...);
+int SelvaSet_Intersection(struct SelvaSet *res, ...);
 
 #endif /* _SELVA_SET_H_ */
