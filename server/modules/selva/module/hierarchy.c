@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 #include "redismodule.h"
+#include "auto_free.h"
 #include "alias.h"
 #include "async_task.h"
 #include "cdefs.h"
@@ -134,15 +135,6 @@ static int SelvaModify_HierarchyNode_Compare(const SelvaModify_HierarchyNode *a,
 }
 
 RB_GENERATE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
-
-/**
- * Wrap RedisModule_Free().
- */
-static void wrapFree(void *p) {
-    void **pp = (void **)p;
-
-    RedisModule_Free(*pp);
-}
 
 static inline void RMString2NodeId(Selva_NodeId nodeId, const RedisModuleString *rmStr) {
     Selva_NodeIdCpy(nodeId, RedisModule_StringPtrLen(rmStr, NULL));
@@ -2213,7 +2205,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
     while (1) {
         int err;
         size_t len = 0;
-        char *node_id __attribute__((cleanup(wrapFree))) = NULL;
+        char *node_id __auto_free = NULL;
 
         node_id = RedisModule_LoadStringBuffer(io, &len);
         if (!node_id || len != SELVA_NODE_ID_SIZE) {
@@ -2246,7 +2238,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
         }
 
         uint64_t nr_children = RedisModule_LoadUnsigned(io);
-        Selva_NodeId *children __attribute__((cleanup(wrapFree))) = NULL;
+        Selva_NodeId *children __auto_free = NULL;
 
         if (nr_children > 0) {
             children = RedisModule_Calloc(nr_children, SELVA_NODE_ID_SIZE);
@@ -2256,7 +2248,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
             /* Create/Update children */
             for (uint64_t i = 0; i < nr_children; i++) {
-                char *child_id __attribute__((cleanup(wrapFree))) = NULL;
+                char *child_id __auto_free = NULL;
 
                 child_id = RedisModule_LoadStringBuffer(io, &len);
                 if (len != SELVA_NODE_ID_SIZE) {
