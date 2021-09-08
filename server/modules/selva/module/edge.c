@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include "redismodule.h"
+#include "auto_free.h"
 #include "errors.h"
 #include "svector.h"
 #include "edge.h"
@@ -34,15 +35,6 @@ static void init_node_metadata_edge(
     metadata->edge_fields.origins = NULL;
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_edge);
-
-/**
- * Wrap RedisModule_Free().
- */
-static void wrapFree(void *p) {
-    void **pp = (void **)p;
-
-    RedisModule_Free(*pp);
-}
 
 static void deinit_node_metadata_edge(
         RedisModuleCtx *ctx,
@@ -692,8 +684,8 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
     constraint_id = RedisModule_LoadUnsigned(io);
 
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
-        char *node_type __attribute__((cleanup(wrapFree))) = NULL;
-        char *field_name_str __attribute__((cleanup(wrapFree))) = NULL;
+        char *node_type __auto_free = NULL;
+        char *field_name_str __auto_free = NULL;
         size_t field_name_len;
 
         node_type = RedisModule_LoadStringBuffer(io, NULL);
@@ -712,7 +704,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
     }
 
     for (size_t i = 0; i < nr_edges; i++) {
-        char *dst_id_str __attribute__((cleanup(wrapFree))) = NULL;
+        char *dst_id_str __auto_free = NULL;
         size_t dst_id_len;
         struct SelvaModify_HierarchyNode *dst_node;
         int err;
