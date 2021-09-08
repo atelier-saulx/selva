@@ -488,3 +488,164 @@ out:
     va_end(argp);
     return err;
 }
+
+/*
+ * This could be externed too if seen useful.
+ * A variadic version is a bit harder to create because type undergoes default
+ * argument promotion.
+ */
+static struct SelvaSet *SelvaSet_VMinCard(const enum SelvaSetType type, va_list *ap) {
+    va_list argp;
+    struct SelvaSet *set;
+    struct SelvaSet *res = NULL;
+
+    va_copy(argp, *ap);
+
+    while ((set = va_arg(argp, struct SelvaSet *))) {
+        if (set->type == type && (!res || (res->size > set->size))) {
+            res = set;
+        }
+    }
+
+    va_end(argp);
+    return res;
+}
+
+int SelvaSet_Intersection(struct SelvaSet *res, ...) {
+    const enum SelvaSetType type = res->type;
+    struct SelvaSet *candidate;
+    va_list argp;
+    int err = 0;
+
+    /*
+     * Pick the set_n with the smallest cardinality:
+     * smallest(set[]) =>
+     *   res := set[0]
+     *   foreach S in set + 1 do
+     *     res := (if |S| > |res|) ? S : res
+     *   return res
+     *
+     * SvS-style intersection of n sets:
+     * f(res, set[]) =>
+     *   res := smallest(set)
+     *   if |res| == 0 => return res
+     *
+     *   foreach S in set do
+     *     foreach element x in res do
+     *       if x not in S => delete x from res
+     *       if |res| == 0 => return res
+     *   return res
+     */
+
+    va_start(argp, res);
+
+    /*
+     * We only accept empty sets for the result set.
+     */
+    if (!res || res->size > 0) {
+        err = SELVA_EINVAL;
+        goto out;
+    }
+
+    /* The smallest set is the best candidate. */
+    candidate = SelvaSet_VMinCard(res->type, &argp);
+    if (!candidate) {
+        err = SELVA_EINVAL;
+        goto out;
+    }
+
+    err = SelvaSet_Union(res, candidate, NULL);
+    if (err) {
+        goto out;
+    }
+
+    /* If the size of res is 0 then the intersection is necessarily empty. */
+    if (res->size == 0) {
+        err = 0;
+        goto out;
+    }
+
+    if (type == SELVA_SET_TYPE_RMSTRING) {
+        struct SelvaSet *set;
+
+        while ((set = va_arg(argp, struct SelvaSet *))) {
+            struct SelvaSetElement *el;
+            struct SelvaSetElement *tmp;
+
+            if (set == candidate) {
+                continue;
+            }
+
+            SELVA_SET_RMS_FOREACH_SAFE(el, res, tmp) {
+                RedisModuleString *rms = el->value_rms;
+
+                if (!SelvaSet_Has(set, rms)) {
+                    SelvaSet_Remove(res, rms);
+                }
+            }
+        }
+    } else if (type == SELVA_SET_TYPE_DOUBLE) {
+        struct SelvaSet *set;
+
+        while ((set = va_arg(argp, struct SelvaSet *))) {
+            struct SelvaSetElement *el;
+            struct SelvaSetElement *tmp;
+
+            if (set == candidate) {
+                continue;
+            }
+
+            SELVA_SET_RMS_FOREACH_SAFE(el, res, tmp) {
+                double d = el->value_d;
+
+                if (!SelvaSet_Has(set, d)) {
+                    SelvaSet_Remove(res, d);
+                }
+            }
+        }
+    } else if (type == SELVA_SET_TYPE_LONGLONG) {
+        struct SelvaSet *set;
+
+        while ((set = va_arg(argp, struct SelvaSet *))) {
+            struct SelvaSetElement *el;
+            struct SelvaSetElement *tmp;
+
+            if (set == candidate) {
+                continue;
+            }
+
+            SELVA_SET_RMS_FOREACH_SAFE(el, res, tmp) {
+                long long ll = el->value_ll;
+
+                if (!SelvaSet_Has(set, ll)) {
+                    SelvaSet_Remove(res, ll);
+                }
+            }
+        }
+    } else if (type == SELVA_SET_TYPE_NODEID) {
+        struct SelvaSet *set;
+
+        while ((set = va_arg(argp, struct SelvaSet *))) {
+            struct SelvaSetElement *el;
+            struct SelvaSetElement *tmp;
+
+            if (set == candidate) {
+                continue;
+            }
+
+            SELVA_SET_RMS_FOREACH_SAFE(el, res, tmp) {
+                Selva_NodeId nodeId;
+
+                memcpy(nodeId, el->value_nodeId, SELVA_NODE_ID_SIZE);
+
+                if (!SelvaSet_Has(set, nodeId)) {
+                    SelvaSet_Remove(res, nodeId);
+                }
+            }
+        }
+    }
+
+out:
+    va_end(argp);
+    return err;
+}
