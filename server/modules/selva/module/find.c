@@ -6,6 +6,7 @@
 #include <string.h>
 #include <strings.h>
 #include "redismodule.h"
+#include "auto_free.h"
 #include "arg_parser.h"
 #include "errors.h"
 #include "hierarchy.h"
@@ -1199,6 +1200,16 @@ static size_t FindCommand_PrintOrderedArrayResult(
     return len;
 }
 
+static int rms_match_any(RedisModuleString *rms, RedisModuleString **list, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        if (!RedisModule_StringCompare(rms, list[i])) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 /**
  * Find node(s) matching the query.
  * SELVA.HIERARCHY.find lang REDIS_KEY dir [field_name/expr] [index [expr]] [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
@@ -1271,6 +1282,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     struct rpn_expression *traversal_expression = NULL;
     struct rpn_ctx *rpn_ctx = NULL;
     struct rpn_expression *filter_expression = NULL;
+    RedisModuleString **index_hints __auto_free = NULL;
+    int nr_index_hints = 0;
 
     /*
      * Open the Redis key.
@@ -1326,10 +1339,12 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     /*
      * Parse the indexing hint.
      */
-    RedisModuleString *index_hint = NULL;
-    if (argc > ARGV_INDEX_VAL && !SelvaArgParser_StrOpt(NULL, "index", argv[ARGV_INDEX_TXT], argv[ARGV_INDEX_VAL])) {
-        index_hint = argv[ARGV_INDEX_VAL];
-        SHIFT_ARGS(2);
+    nr_index_hints  = SelvaArgParser_IndexHints(&index_hints, argv + ARGV_INDEX_TXT, argc - ARGV_INDEX_TXT);
+    if (nr_index_hints < 0) {
+        replyWithSelvaError(ctx, SELVA_ENOMEM);
+        goto out;
+    } else if (nr_index_hints > 0) {
+        SHIFT_ARGS(2 * nr_index_hints);
     }
 
     /*
@@ -1502,20 +1517,58 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             continue;
         }
 
-        if (index_hint && selva_glob_config.find_lfu_count_init > 0) {
+        if (index_hints && selva_glob_config.find_lfu_count_init > 0) {
             RedisModuleString *dir_expr = NULL;
-            int ind_err;
+            const int max_intersection = 10; /* TODO move to tunables. */
+            struct SelvaSet *results[max_intersection];
+            int j = 0;
 
             if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
                 /* We know it's valid because it was already parsed and compiled once. */
                 dir_expr = argv[ARGV_REF_FIELD];
             }
 
-            ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hint, &icb, &ind_out);
-            if (ind_err && ind_err != SELVA_ENOENT) {
-                fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
-                        __FILE__, __LINE__,
-                        getSelvaErrorStr(ind_err));
+            for (int i = 0; i < nr_index_hints && j < max_intersection; i++) {
+                RedisModuleString *index_hint = index_hints[i];
+                struct SelvaSet *tmp;
+                int ind_err;
+
+                ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hint, &icb, &tmp);
+                if (ind_err && ind_err != SELVA_ENOENT) {
+                    fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
+                            __FILE__, __LINE__,
+                            getSelvaErrorStr(ind_err));
+                } else if (ind_err == 0) {
+                    results[j++] = tmp;
+                }
+            }
+
+            if (j == 1) {
+                ind_out = results[0];
+            } else if (j > 1) {
+                ind_out = RedisModule_PoolAlloc(ctx, sizeof(struct SelvaSet));
+                if (!ind_out) {
+                    replyWithSelvaError(ctx, SELVA_ENOMEM);
+                    goto out;
+                }
+
+                SelvaSet_Init(ind_out, SELVA_SET_TYPE_NODEID);
+
+                /*
+                 * TODO Would be nice if we could pass the array here but C doesn't support it for variadic functions.
+                 */
+                SelvaSet_Intersection(ind_out,
+                                      results[0],
+                                      results[1],
+                                      results[2],
+                                      results[3],
+                                      results[4],
+                                      results[5],
+                                      results[6],
+                                      results[7],
+                                      results[8],
+                                      results[9],
+                                      NULL);
             }
         }
 
@@ -1558,7 +1611,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
              * There is no need to run the filter again if the indexing was
              * executing the same filter already.
              */
-            if (argv_filter_expr && !RedisModule_StringCompare(argv_filter_expr, index_hint)) {
+            if (argv_filter_expr && rms_match_any(argv_filter_expr, index_hints, nr_index_hints)) {
                 args.rpn_ctx = NULL;
                 args.filter = NULL;
             }
@@ -1591,7 +1644,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         } else {
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
         }
-        if (index_hint && icb) {
+        if (index_hints && icb) {
             if (ind_out) {
                 SelvaFind_AccIndexed(icb, args.acc_take);
             } else {
