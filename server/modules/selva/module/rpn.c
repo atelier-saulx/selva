@@ -1190,9 +1190,10 @@ static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, st
         return RPN_ERR_ENOMEM;
     }
 
-    err = SelvaSet_Union(set_a->type, res->set, set_a, set_b, NULL);
+    err = SelvaSet_Union(res->set, set_a, set_b, NULL);
     if (err) {
         /* TODO We just return ENOMEM regardless of the real error for now. */
+        /* TODO Make sure we don't leak memory with the res. */
         return RPN_ERR_ENOMEM;
     }
 
@@ -1734,10 +1735,12 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
 
     if (res->set) {
         if (res->flags.regist) {
-            SelvaSet_Union(out->type, out, res->set, NULL);
+            SelvaSet_Union(out, res->set, NULL);
+            /* TODO handle errors. */
         } else {
             /* Safe to move the strings. */
             SelvaSet_Merge(out, res->set);
+            /* TODO Handle errors. */
         }
         free_rpn_operand(&res);
     } else if (to_bool(res)) {
@@ -1745,7 +1748,6 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
         free_rpn_operand(&res);
         return RPN_ERR_TYPE;
     }
-
 
     return RPN_ERR_OK;
 }
