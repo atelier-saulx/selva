@@ -1205,7 +1205,7 @@ static size_t FindCommand_PrintOrderedArrayResult(
  *                                     |   |                 |              |                      |             |            |            |                    |        |            |
  * Traversal method/direction --------/    |                 |              |                      |             |            |            |                    |        |            |
  * Traversed field or expression ---------/                  |              |                      |             |            |            |                    |        |            |
- * Indexing hint -------------------------------------------/               |                      |             |            |            |                    |        |            |
+ * Indexing hints ------------------------------------------/               |                      |             |            |            |                    |        |            |
  * Sort order of the results ----------------------------------------------/                       |             |            |            |                    |        |            |
  * Skip the first 1234 - 1 results ---------------------------------------------------------------/              |            |            |                    |        |            |
  * Limit the number of results (Optional) ----------------------------------------------------------------------/             |            |                    |        |            |
