@@ -147,13 +147,6 @@ static char * set_union_longlong(void)
 
 static char * set_intersection_longlong(void)
 {
-    /*
-     * 1. D = A n B n C
-     * 2. check size of A, B, and C
-     * 3. check size of D
-     * 4. check Has of D
-     * 5. check foreach of D
-     */
     struct SelvaSet setA;
     struct SelvaSet setB;
     struct SelvaSet setC;
@@ -198,6 +191,30 @@ static char * set_intersection_longlong(void)
     return NULL;
 }
 
+static char * set_intersection_longlong_single(void)
+{
+    struct SelvaSet setA;
+    struct SelvaSet setB;
+    struct SelvaSetElement *el;
+    int err, res;
+
+    SelvaSet_Init(&setA, SELVA_SET_TYPE_LONGLONG);
+    SelvaSet_Init(&setB, SELVA_SET_TYPE_LONGLONG);
+    SelvaSet_Add(&setA, 1ll);
+    SelvaSet_Add(&setA, 2ll);
+    SelvaSet_Add(&setA, 4ll);
+
+    /* TODO Currently it doesn't fail */
+    err = SelvaSet_Intersection(&setB, &setA, NULL);
+    pu_assert_equal("intersection", err, SELVA_EINVAL);
+    pu_assert_equal("resulting set size", SelvaSet_Size(&setB), 0);
+
+    SelvaSet_Destroy(&setA);
+    SelvaSet_Destroy(&setB);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(set_add_longlong, PU_RUN);
@@ -205,4 +222,5 @@ void all_tests(void)
     pu_def_test(set_merge_longlong, PU_RUN);
     pu_def_test(set_union_longlong, PU_RUN);
     pu_def_test(set_intersection_longlong, PU_RUN);
+    pu_def_test(set_intersection_longlong_single, PU_SKIP);
 }
