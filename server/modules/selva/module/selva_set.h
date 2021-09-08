@@ -64,15 +64,20 @@ static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
     set->type = type;
     set->size = 0;
 
-    if (type == SELVA_SET_TYPE_RMSTRING) {
+    switch (type) {
+    case SELVA_SET_TYPE_RMSTRING:
         RB_INIT(&set->head_rms);
-    } else if (type == SELVA_SET_TYPE_DOUBLE) {
+        break;
+    case SELVA_SET_TYPE_DOUBLE:
         RB_INIT(&set->head_d);
-    } else if (type == SELVA_SET_TYPE_LONGLONG) {
+        break;
+    case SELVA_SET_TYPE_LONGLONG:
         RB_INIT(&set->head_ll);
-    } else if (type == SELVA_SET_TYPE_NODEID) {
+        break;
+    case SELVA_SET_TYPE_NODEID:
         RB_INIT(&set->head_nodeId);
-    } else {
+        break;
+    default:
         /*
          * This should never happen and there is no sane way to recover from an
          * insanely dumb bug, so it's better to abort and fix the bug rather
@@ -153,12 +158,27 @@ struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, const Selva_
 /**
  * Move elements from src to dst.
  * Only elements that are currently missing from dst are moved.
+ * @param res should be an empty set initialized with the right type.
  */
 int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src);
 
-/*
+/**
  * Take an union of the given sets.
- * The last argument must be NULL.
+ * The elements are cloned and RedisModuleStrings are refcounted by calling
+ * RedisModule_HoldString().
+ * The last argument of this function must be NULL.
+ * @param res should be an empty set initialized with the right type.
+ *            `res` must not be a pointer to one of the source sets.
+ */
+int SelvaSet_Union(struct SelvaSet *res, ...);
+
+/**
+ * Take an intersection of the given sets.
+ * The elements are cloned and RedisModuleStrings are refcounted by calling
+ * RedisModule_HoldString().
+ * The last argument of this function must be NULL.
+ * @param res should be an empty set initialized with the right type.
+ *            `res` must not be a pointer to one of the source sets.
  */
 int SelvaSet_Union(enum SelvaSetType type, struct SelvaSet *res, ...);
 
