@@ -14,10 +14,10 @@ on some occasions the result set must be rebuilt and during those times the
 index is unusable.
 
 The indexing result sets can be used by find queries to speed up finding the
-result of the query. A find query can include an optional indexing hint
-filter that can be used to form an index. The hints are cached in a
-`SelvaObject` and the ones that are seen frequently are turned into an actual
-indexing entry with a result set.
+result of the query. A find query may include an optional indexing hint
+filter (see [RPN expression](expressions.md)) that can be used to form an
+index. The hints are cached in a `SelvaObject` and the ones that are seen
+frequently are turned into an actual indexing entry with a result set.
 
 Formally, the index is a map from the tuple
 `(node_id, direction[, dir_expression], indexing_clause)` to a set of
