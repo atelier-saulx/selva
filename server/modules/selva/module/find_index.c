@@ -493,7 +493,7 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
     icb = p;
     if (err) {
         if (err != SELVA_ENOENT) {
-            fprintf(stderr, "%s:%d: Get ICB for \"%s\" failed: %s\n",
+            fprintf(stderr, "%s:%d: Failed to get the ICB for \"%s\": %s\n",
                     __FILE__, __LINE__,
                     RedisModule_StringPtrLen(name, NULL),
                     getSelvaErrorStr(err));
@@ -564,7 +564,7 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
 
             /* Handle overflow. */
             if (icb->lfu_count < orig_lfu_count) {
-                icb->lfu_count = selva_glob_config.find_lfu_count_init;
+                icb->lfu_count = selva_glob_config.find_lfu_count_create + 10;
             }
         }
     }
@@ -629,15 +629,15 @@ int SelvaFind_AutoIndex(
 }
 
 void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take, size_t acc_tot) {
-    if (FIND_INDICES_MAX && (acc_take > icb->find_acc.take_max || acc_tot > icb->find_acc.tot_max)) {
-        icb->find_acc.take_max = acc_take;
-        icb->find_acc.tot_max = acc_tot;
-    }
-}
-
-void SelvaFind_AccIndexed(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take) {
-    if (FIND_INDICES_MAX && (acc_take > icb->find_acc.ind_take_max)) {
-        icb->find_acc.ind_take_max = acc_take;
+    if (icb->is_valid) {
+        if (FIND_INDICES_MAX && (acc_take > icb->find_acc.ind_take_max)) {
+            icb->find_acc.ind_take_max = acc_take;
+        }
+    } else {
+        if (FIND_INDICES_MAX && (acc_take > icb->find_acc.take_max || acc_tot > icb->find_acc.tot_max)) {
+            icb->find_acc.take_max = acc_take;
+            icb->find_acc.tot_max = acc_tot;
+        }
     }
 }
 

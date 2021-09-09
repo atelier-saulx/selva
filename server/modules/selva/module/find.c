@@ -1507,9 +1507,10 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     ssize_t nr_nodes = 0;
     size_t merge_nr_fields = 0;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
-        Selva_NodeId nodeId;
-        struct SelvaFindIndexControlBlock *icb = NULL;
+        const int max_intersection = 10; /* TODO move to tunables. */
+        struct SelvaFindIndexControlBlock *icbs[max_intersection] = {NULL};
         struct SelvaSet *ind_out = NULL;
+        Selva_NodeId nodeId;
 
         Selva_NodeIdCpy(nodeId, ids_str + i);
 
@@ -1519,7 +1520,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
         if (index_hints && selva_glob_config.find_lfu_count_init > 0) {
             RedisModuleString *dir_expr = NULL;
-            const int max_intersection = 10; /* TODO move to tunables. */
             struct SelvaSet *results[max_intersection];
             int j = 0;
 
@@ -1528,12 +1528,16 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 dir_expr = argv[ARGV_REF_FIELD];
             }
 
-            for (int i = 0; i < nr_index_hints && j < max_intersection; i++) {
+            for (int i = 0, k = 0; i < nr_index_hints && j < max_intersection; i++) {
                 RedisModuleString *index_hint = index_hints[i];
+                struct SelvaFindIndexControlBlock *icb = NULL;
                 struct SelvaSet *tmp;
                 int ind_err;
 
                 ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hint, &icb, &tmp);
+                if (icb) {
+                    icbs[k++] = icb;
+                }
                 if (ind_err && ind_err != SELVA_ENOENT) {
                     fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
                             __FILE__, __LINE__,
@@ -1557,6 +1561,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 /*
                  * TODO Would be nice if we could pass the array here but C doesn't support it for variadic functions.
                  */
+                results[j] = NULL;
                 SelvaSet_Intersection(ind_out,
                                       results[0],
                                       results[1],
@@ -1644,10 +1649,19 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         } else {
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
         }
-        if (index_hints && icb) {
-            if (ind_out) {
-                SelvaFind_AccIndexed(icb, args.acc_take);
-            } else {
+        if (index_hints) {
+            for (size_t i = 0; i < max_intersection; i++) {
+                struct SelvaFindIndexControlBlock *icb = icbs[i];
+
+                if (!icb) {
+                    break;
+                }
+
+                /*
+                 * Currently there is on way to provide accurate accounting
+                 * information per each result set as we are only counting
+                 * matches on the intersection.
+                 */
                 SelvaFind_Acc(icb, args.acc_take, args.acc_tot);
             }
         }
