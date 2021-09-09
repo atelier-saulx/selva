@@ -1567,7 +1567,9 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
                 node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
                 if (node) {
-                    (void)FindCommand_NodeCb(node, &args);
+                    if (FindCommand_NodeCb(node, &args)) {
+                        break;
+                    }
                 }
             }
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
