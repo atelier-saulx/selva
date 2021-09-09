@@ -1487,6 +1487,17 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
     /*
+     * An index result set together with limit may yield different order than
+     * the node order in the hierarchy, so we skip the indexing when a limit
+     * is given. However, if an order is given together with the limit, then
+     * we can use indexing because the final result is sorted and limited after
+     * the node filtering.
+     */
+    if (index_hint && limit != -1 && order == HIERARCHY_RESULT_ORDER_NONE) {
+        index_hint = NULL;
+    }
+
+    /*
      * Run for each NODE_ID.
      */
     ssize_t nr_nodes = 0;
@@ -1568,9 +1579,12 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
                 node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
                 if (node) {
-                    if (FindCommand_NodeCb(node, &args)) {
-                        break;
-                    }
+                    /*
+                     * Note that we don't break here on limit because limit and
+                     * indexing aren't compatible, unless limit is used together
+                     * with order.
+                     */
+                    (void)FindCommand_NodeCb(node, &args);
                 }
             }
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
