@@ -90,7 +90,7 @@ static const char * const excluded_fields[] = {
     NULL
 };
 
-int SelvaNode_ClearFields(RedisModuleCtx *ctx, struct SelvaObject *obj) {
+int SelvaNode_ClearFields(struct SelvaObject *obj) {
     SelvaObject_Clear(obj, excluded_fields);
 
     return 0;
