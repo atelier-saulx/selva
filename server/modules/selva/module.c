@@ -127,6 +127,10 @@ static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, const RedisModul
 static const char *sztok(const char *s, size_t size, size_t * restrict i) {
     const char *r = NULL;
 
+    if (size == 0) {
+        return NULL;
+    }
+
     if (*i < size - 1) {
         r = s + *i;
         *i = *i + strnlen(r, size) + 1;
