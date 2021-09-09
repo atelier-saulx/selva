@@ -106,7 +106,9 @@ export function sourceFieldToFindArgs(
     return ['bfs_expression', bfsExpr2rpn(schema.types, byType)]
   }
 
-  if (['ancestors', 'descendants'].includes(sourceField)) {
+  if (
+    ['ancestors', 'descendants', 'children', 'parents'].includes(sourceField)
+  ) {
     return [<SubscriptionMarker['type']>sourceField]
   }
 
