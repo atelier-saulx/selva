@@ -322,3 +322,116 @@ test.serial('slow traversal and fast index', async (t) => {
 
   t.assert(NoIndexTime > 2 * indexTime, 'find from index is at least twice as fast')
 })
+
+test.serial('traversal expression with intersected indices', async (t) => {
+  const client = connect({ port })
+  const N = 300;
+  let id;
+
+  for (let i = 0; i < N; i++) {
+    id = await client.set({
+      type: 'match',
+      title: { en: 'a', de: 'b', nl: 'c' },
+      value: i,
+      children: [
+        {
+          type: 'match',
+          value: i + N,
+        },
+        {
+          type: 'match',
+          title: { en: 'nice' },
+          value: i + N,
+        }
+      ]
+    })
+  }
+
+  for (let i = 0; i < 1000; i++) {
+    const r = await client.redis.selva_hierarchy_find('en', '___selva_hierarchy',
+      'descendants',
+      'index', '#2 "value" g E',
+      'index', '"title.en" f "nice" c',
+      'order', 'value', 'asc',
+      'fields', 'value\ntitle',
+      'root')
+
+      if (i == 500) {
+        await wait(2e3)
+      }
+
+      const list = await client.redis.selva_index_list('___selva_hierarchy')
+      if (list.length > 0 && list[1][3] == '300') {
+        // The index won't be there immediately
+        if (i > 510) {
+          t.deepEqual(r.length, 150);
+        }
+      } else {
+        t.deepEqual(r.length, 900);
+      }
+  }
+
+  t.deepEqual(
+    (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
+    [
+      'root.I.InRpdGxlLmVuIiBmICJuaWNlIiBj', 300,
+      'root.I.IzIgInZhbHVlIiBnIEU=', 450,
+    ]
+  )
+})
+
+test.serial.only('traversal expression with intersected indices is fast', async (t) => {
+  const client = connect({ port })
+  const N = 100000;
+  const K = 1000;
+  let id;
+
+  for (let i = 0; i < N; i++) {
+    id = await client.set({
+      type: 'match',
+      title: { en: 'a', de: 'b', nl: 'c' },
+      value: i,
+      children: [
+        {
+          type: 'match',
+          value: i + N,
+        },
+        {
+          type: 'match',
+          title: { en: 'nice' },
+          value: i + N,
+        }
+      ]
+    })
+  }
+
+  const q = [
+      'en', '___selva_hierarchy',
+      'descendants',
+      'index', `#${K} "value" g E L`,
+      'index', '"title.en" f "nice" c',
+      'order', 'value', 'asc',
+      'fields', 'value\ntitle',
+      'root',
+      `#${K} "value" g E L "title.en" f "nice" c M`
+  ]
+
+  const noIndexStart = performance.now()
+  for (let i = 0; i < 1000; i++) {
+    await client.redis.selva_hierarchy_find(...q)
+  }
+  const noIndexEnd = performance.now()
+  const noIndexTime = noIndexEnd - noIndexStart
+
+  await wait(2e3);
+
+  const withIndexStart = performance.now()
+  for (let i = 0; i < 1000; i++) {
+    await client.redis.selva_hierarchy_find(...q)
+  }
+  const withIndexEnd = performance.now()
+  const withIndexTime = withIndexEnd - withIndexStart
+
+  console.log('no index', noIndexTime);
+  console.log('with index', withIndexTime);
+})
