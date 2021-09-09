@@ -83,38 +83,15 @@ int SelvaNode_Delete(RedisModuleCtx *ctx, RedisModuleString *id) {
     return 0;
 }
 
+static const char * const excluded_fields[] = {
+    SELVA_ID_FIELD,
+    SELVA_CREATED_AT_FIELD,
+    SELVA_ALIASES_FIELD,
+    NULL
+};
+
 int SelvaNode_ClearFields(RedisModuleCtx *ctx, struct SelvaObject *obj) {
-    RedisModuleString *id;
-    long long createdAt;
-    int createdAtSet;
-    int err;
-
-    /* Preserve the id string. */
-    err = SelvaObject_GetStringStr(obj, SELVA_ID_FIELD, sizeof(SELVA_ID_FIELD) - 1, &id);
-    if (err) {
-        return err;
-    }
-    RedisModule_RetainString(ctx, id);
-
-    /* Preserve the createdAt field value. */
-    createdAtSet = !SelvaObject_GetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, &createdAt);
-
-    /* Clear all the keys in the object. */
-    SelvaObject_Clear(obj);
-
-    /* Restore the id. */
-    err = SelvaObject_SetStringStr(obj, SELVA_ID_FIELD, sizeof(SELVA_ID_FIELD) - 1, id);
-    if (err) {
-        return err;
-    }
-
-    /* Restore createdAt if it was set before this op. */
-    if (createdAtSet) {
-        err = SelvaObject_SetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, createdAt);
-        if (err) {
-            return err;
-        }
-    }
+    SelvaObject_Clear(obj, excluded_fields);
 
     return 0;
 }
