@@ -340,6 +340,43 @@ struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, const Selva_
     return el;
 }
 
+/*
+ * This could be externed too if seen useful.
+ * A variadic version is a bit harder to create because type undergoes default
+ * argument promotion.
+ */
+static struct SelvaSet *SelvaSet_VMinCard(const enum SelvaSetType type, va_list *ap) {
+    va_list argp;
+    struct SelvaSet *set;
+    struct SelvaSet *res = NULL;
+
+    va_copy(argp, *ap);
+
+    while ((set = va_arg(argp, struct SelvaSet *))) {
+        if (set->type == type && (!res || (res->size > set->size))) {
+            res = set;
+        }
+    }
+
+    va_end(argp);
+    return res;
+}
+
+struct SelvaSet *SelvaSet_MinCard(struct SelvaSet **sets, size_t n) {
+    va_list argp;
+    struct SelvaSet *res = NULL;
+
+    for (size_t i = 0; i < n; i++) {
+        struct SelvaSet *set = sets[i];
+
+        if (!res || (res->size > set->size)) {
+            res = set;
+        }
+    }
+
+    return res;
+}
+
 int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src) {
     enum SelvaSetType type = src->type;
     struct SelvaSetElement *tmp;
@@ -487,28 +524,6 @@ int SelvaSet_Union(struct SelvaSet *res, ...) {
 out:
     va_end(argp);
     return err;
-}
-
-/*
- * This could be externed too if seen useful.
- * A variadic version is a bit harder to create because type undergoes default
- * argument promotion.
- */
-static struct SelvaSet *SelvaSet_VMinCard(const enum SelvaSetType type, va_list *ap) {
-    va_list argp;
-    struct SelvaSet *set;
-    struct SelvaSet *res = NULL;
-
-    va_copy(argp, *ap);
-
-    while ((set = va_arg(argp, struct SelvaSet *))) {
-        if (set->type == type && (!res || (res->size > set->size))) {
-            res = set;
-        }
-    }
-
-    va_end(argp);
-    return res;
 }
 
 int SelvaSet_Intersection(struct SelvaSet *res, ...) {

@@ -1509,7 +1509,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
         const int max_intersection = 10; /* TODO move to tunables. */
         struct SelvaFindIndexControlBlock *icbs[max_intersection] = {NULL};
-        struct SelvaSet *ind_out = NULL;
+        struct SelvaSet *ind_results[max_intersection];
+        size_t nr_ind_results = 0;
         Selva_NodeId nodeId;
 
         Selva_NodeIdCpy(nodeId, ids_str + i);
@@ -1520,7 +1521,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
         if (index_hints && selva_glob_config.find_lfu_count_init > 0) {
             RedisModuleString *dir_expr = NULL;
-            struct SelvaSet *results[max_intersection];
             int j = 0;
 
             if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
@@ -1531,10 +1531,10 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             for (int i = 0, k = 0; i < nr_index_hints && j < max_intersection; i++) {
                 RedisModuleString *index_hint = index_hints[i];
                 struct SelvaFindIndexControlBlock *icb = NULL;
-                struct SelvaSet *tmp;
+                struct SelvaSet *res;
                 int ind_err;
 
-                ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hint, &icb, &tmp);
+                ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hint, &icb, &res);
                 if (icb) {
                     icbs[k++] = icb;
                 }
@@ -1543,45 +1543,17 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                             __FILE__, __LINE__,
                             getSelvaErrorStr(ind_err));
                 } else if (ind_err == 0) {
-                    results[j++] = tmp;
+                    ind_results[j++] = res;
                 }
             }
-
-            if (j == 1) {
-                ind_out = results[0];
-            } else if (j > 1) {
-                ind_out = RedisModule_PoolAlloc(ctx, sizeof(struct SelvaSet));
-                if (!ind_out) {
-                    replyWithSelvaError(ctx, SELVA_ENOMEM);
-                    goto out;
-                }
-
-                SelvaSet_Init(ind_out, SELVA_SET_TYPE_NODEID);
-
-                /*
-                 * TODO Would be nice if we could pass the array here but C doesn't support it for variadic functions.
-                 */
-                results[j] = NULL;
-                SelvaSet_Intersection(ind_out,
-                                      results[0],
-                                      results[1],
-                                      results[2],
-                                      results[3],
-                                      results[4],
-                                      results[5],
-                                      results[6],
-                                      results[7],
-                                      results[8],
-                                      results[9],
-                                      NULL);
-            }
+            nr_ind_results = j;
         }
 
         /*
          * Run BFS/DFS.
          */
         ssize_t tmp_limit = -1;
-        const size_t skip = ind_out ? 0 : SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
+        const size_t skip = nr_ind_results > 0 ? 0 : SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
         struct FindCommand_Args args = {
             .ctx = ctx,
             .lang = lang,
@@ -1609,7 +1581,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             break;
         }
 
-        if (ind_out) {
+        if (nr_ind_results > 0) {
+            struct SelvaSet *candidate;
             struct SelvaSetElement *el;
 
             /*
@@ -1621,12 +1594,25 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 args.filter = NULL;
             }
 
-            SELVA_SET_NODEID_FOREACH(el, ind_out) {
+            candidate = SelvaSet_MinCard(ind_results, nr_ind_results);
+            SELVA_SET_NODEID_FOREACH(el, candidate) {
                 struct SelvaModify_HierarchyNode *node;
+                int pick = 1;
 
-                node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
-                if (node) {
-                    (void)FindCommand_NodeCb(node, &args);
+                for (int i = 1; i < nr_ind_results; i++) {
+                    struct SelvaSet *set = ind_results[i];
+
+                    if (set != candidate && !SelvaSet_Has(set, el->value_nodeId)) {
+                        pick = 0;
+                        break;
+                    }
+                }
+
+                if (pick) {
+                    node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
+                    if (node) {
+                        (void)FindCommand_NodeCb(node, &args);
+                    }
                 }
             }
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {

@@ -155,6 +155,8 @@ struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, const Selva_
 #define SELVA_SET_NODEID_FOREACH_SAFE(el, set, tmp) \
     RB_FOREACH_SAFE(el, SelvaSetNodeId, &(set)->head_nodeId, tmp)
 
+struct SelvaSet *SelvaSet_MinCard(struct SelvaSet **sets, size_t n);
+
 /**
  * Move elements from src to dst.
  * Only elements that are currently missing from dst are moved.
