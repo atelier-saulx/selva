@@ -1200,16 +1200,6 @@ static size_t FindCommand_PrintOrderedArrayResult(
     return len;
 }
 
-static int rms_match_any(RedisModuleString *rms, RedisModuleString **list, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        if (!RedisModule_StringCompare(rms, list[i])) {
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
 /**
  * Find node(s) matching the query.
  * SELVA.HIERARCHY.find lang REDIS_KEY dir [field_name/expr] [index [expr]] [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
@@ -1502,15 +1492,27 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
     /*
+     * An index result set together with limit may yield different order than
+     * the node order in the hierarchy, so we skip the indexing when a limit
+     * is given. However, if an order is given together with the limit, then
+     * we can use indexing because the final result is sorted and limited after
+     * the node filtering.
+     */
+    if (selva_glob_config.find_lfu_count_init == 0 ||
+        (nr_index_hints > 0 && limit != -1 && order == HIERARCHY_RESULT_ORDER_NONE)) {
+        nr_index_hints = 0;
+    }
+
+    /*
      * Run for each NODE_ID.
      */
     ssize_t nr_nodes = 0;
     size_t merge_nr_fields = 0;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
-        const int max_intersection = 10; /* TODO move to tunables. */
+        const int max_intersection = 2; /* TODO move to tunables. */
         struct SelvaFindIndexControlBlock *icbs[max_intersection] = {NULL};
         struct SelvaSet *ind_results[max_intersection];
-        size_t nr_ind_results = 0;
+        int nr_ind_results = 0;
         Selva_NodeId nodeId;
 
         Selva_NodeIdCpy(nodeId, ids_str + i);
@@ -1519,16 +1521,15 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             continue;
         }
 
-        if (index_hints && selva_glob_config.find_lfu_count_init > 0) {
+        if (nr_index_hints > 0) {
             RedisModuleString *dir_expr = NULL;
-            int j = 0;
 
             if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
                 /* We know it's valid because it was already parsed and compiled once. */
                 dir_expr = argv[ARGV_REF_FIELD];
             }
 
-            for (int i = 0, k = 0; i < nr_index_hints && j < max_intersection; i++) {
+            for (int i = 0, k = 0; i < nr_index_hints && nr_ind_results < max_intersection; i++) {
                 RedisModuleString *index_hint = index_hints[i];
                 struct SelvaFindIndexControlBlock *icb = NULL;
                 struct SelvaSet *res;
@@ -1543,10 +1544,9 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                             __FILE__, __LINE__,
                             getSelvaErrorStr(ind_err));
                 } else if (ind_err == 0) {
-                    ind_results[j++] = res;
+                    ind_results[nr_ind_results++] = res;
                 }
             }
-            nr_ind_results = j;
         }
 
         /*
@@ -1582,36 +1582,65 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         }
 
         if (nr_ind_results > 0) {
-            struct SelvaSet *candidate;
             struct SelvaSetElement *el;
 
-            /*
-             * There is no need to run the filter again if the indexing was
-             * executing the same filter already.
-             */
-            if (argv_filter_expr && rms_match_any(argv_filter_expr, index_hints, nr_index_hints)) {
-                args.rpn_ctx = NULL;
-                args.filter = NULL;
-            }
+            if (nr_ind_results == 1) { /* No intersection. */
+                struct SelvaSet *set;
 
-            candidate = SelvaSet_MinCard(ind_results, nr_ind_results);
-            SELVA_SET_NODEID_FOREACH(el, candidate) {
-                struct SelvaModify_HierarchyNode *node;
-                int pick = 1;
-
-                for (int i = 1; i < nr_ind_results; i++) {
-                    struct SelvaSet *set = ind_results[i];
-
-                    if (set != candidate && !SelvaSet_Has(set, el->value_nodeId)) {
-                        pick = 0;
-                        break;
-                    }
+                /*
+                 * There is no need to run the filter again if the indexing was
+                 * executing the same filter already.
+                 */
+                if (nr_index_hints == 1 && argv_filter_expr &&
+                    !RedisModule_StringCompare(argv_filter_expr, index_hints[0])) {
+                    args.rpn_ctx = NULL;
+                    args.filter = NULL;
                 }
 
-                if (pick) {
+                set = ind_results[0];
+                SELVA_SET_NODEID_FOREACH(el, set) {
+                    struct SelvaModify_HierarchyNode *node;
+
                     node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
                     if (node) {
+                        /*
+                         * Note that we don't break here on limit because limit and
+                         * indexing aren't compatible, unless limit is used together
+                         * with order.
+                         */
                         (void)FindCommand_NodeCb(node, &args);
+                    }
+                }
+            } else { /* Intersection of indices. */
+                struct SelvaSet *candidate;
+
+                candidate = SelvaSet_MinCard(ind_results, nr_ind_results);
+                SELVA_SET_NODEID_FOREACH(el, candidate) {
+                    struct SelvaModify_HierarchyNode *node;
+                    int pick = 1;
+
+                    /*
+                     * Check for intersection.
+                     */
+                    for (int i = 1; i < nr_ind_results; i++) {
+                        struct SelvaSet *set = ind_results[i];
+
+                        if (set != candidate && !SelvaSet_Has(set, el->value_nodeId)) {
+                            pick = 0;
+                            break;
+                        }
+                    }
+
+                    if (pick) {
+                        node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
+                        if (node) {
+                            /*
+                             * Note that we don't break here on limit because limit and
+                             * indexing aren't compatible, unless limit is used together
+                             * with order.
+                             */
+                            (void)FindCommand_NodeCb(node, &args);
+                        }
                     }
                 }
             }
