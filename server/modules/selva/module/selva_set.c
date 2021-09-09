@@ -363,7 +363,6 @@ static struct SelvaSet *SelvaSet_VMinCard(const enum SelvaSetType type, va_list 
 }
 
 struct SelvaSet *SelvaSet_MinCard(struct SelvaSet **sets, size_t n) {
-    va_list argp;
     struct SelvaSet *res = NULL;
 
     for (size_t i = 0; i < n; i++) {
