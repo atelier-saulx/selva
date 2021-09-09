@@ -383,7 +383,8 @@ test.serial('traversal expression with intersected indices', async (t) => {
 test.serial.only('traversal expression with intersected indices is fast', async (t) => {
   const client = connect({ port })
   const N = 100000;
-  const K = 1000;
+  const K = 10000;
+  const TIMES = 50;
   let id;
 
   for (let i = 0; i < N; i++) {
@@ -394,6 +395,7 @@ test.serial.only('traversal expression with intersected indices is fast', async 
       children: [
         {
           type: 'match',
+          title: { en: 'nic3' },
           value: i + N,
         },
         {
@@ -405,33 +407,73 @@ test.serial.only('traversal expression with intersected indices is fast', async 
     })
   }
 
-  const q = [
-      'en', '___selva_hierarchy',
-      'descendants',
-      'index', `#${K} "value" g E L`,
-      'index', '"title.en" f "nice" c',
-      'order', 'value', 'asc',
-      'fields', 'value\ntitle',
-      'root',
-      `#${K} "value" g E L "title.en" f "nice" c M`
+  const q1 = [
+    'en', '___selva_hierarchy',
+    'descendants',
+    'order', 'value', 'asc',
+    'fields', 'value\ntitle',
+    'root',
+    `#${K} "value" g E L "title.en" f "nice" c M`
+  ]
+  const q2 = [
+    'en', '___selva_hierarchy',
+    'descendants',
+    'index', `#${K} "value" g E L`,
+    'order', 'value', 'asc',
+    'fields', 'value\ntitle',
+    'root',
+    `#${K} "value" g E L "title.en" f "nice" c M`
+  ]
+  const q3 = [
+    'en', '___selva_hierarchy',
+    'descendants',
+    'index', `#${K} "value" g E L`,
+    'index', '"title.en" f "nice" c',
+    'order', 'value', 'asc',
+    'fields', 'value\ntitle',
+    'root',
+    `#${K} "value" g E L "title.en" f "nice" c M`
   ]
 
+  console.log('test without indexing');
   const noIndexStart = performance.now()
-  for (let i = 0; i < 1000; i++) {
-    await client.redis.selva_hierarchy_find(...q)
+  for (let i = 0; i < TIMES; i++) {
+    await client.redis.selva_hierarchy_find(...q1)
   }
   const noIndexEnd = performance.now()
   const noIndexTime = noIndexEnd - noIndexStart
 
+  // Create index
+  console.log('Creating 1st index')
+  for (let i = 0; i < 500; i++) {
+    await client.redis.selva_hierarchy_find(...q2)
+  }
   await wait(2e3);
 
-  const withIndexStart = performance.now()
-  for (let i = 0; i < 1000; i++) {
-    await client.redis.selva_hierarchy_find(...q)
+  console.log('test with one index');
+  const with1IndexStart = performance.now()
+  for (let i = 0; i < TIMES; i++) {
+    await client.redis.selva_hierarchy_find(...q2)
   }
-  const withIndexEnd = performance.now()
-  const withIndexTime = withIndexEnd - withIndexStart
+  const with1IndexEnd = performance.now()
+  const with1IndexTime = with1IndexEnd - with1IndexStart
 
-  console.log('no index', noIndexTime);
-  console.log('with index', withIndexTime);
+  // Create 2nd index
+  console.log('Creating 2nd index')
+  for (let i = 0; i < 500; i++) {
+    await client.redis.selva_hierarchy_find(...q3)
+  }
+  await wait(2e3);
+
+  console.log('test with 2 indices')
+  const with2IndexStart = performance.now()
+  for (let i = 0; i < TIMES; i++) {
+    await client.redis.selva_hierarchy_find(...q2)
+  }
+  const with2IndexEnd = performance.now()
+  const with2IndexTime = with2IndexEnd - with2IndexStart
+
+  console.log('no index', noIndexTime)
+  console.log('with 1st index', with1IndexTime)
+  console.log('with 2nd index', with2IndexTime)
 })
