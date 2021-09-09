@@ -596,7 +596,51 @@ test.serial('delete all aliases of a node', async (t) => {
     }
   )
 
-  t.deepEqualIgnoreOrder(await client.redis.hgetall('___selva_aliases'), null)
+  t.deepEqual(await client.redis.hgetall('___selva_aliases'), null)
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('alias and merge = false', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const match1 = await client.set({
+    type: 'match',
+    title: { en: 'yesh' },
+    description: { en: 'lol' },
+    aliases: { $add: ['nice_match'] },
+  })
+  const match2 = await client.set({
+    type: 'match',
+    title: { en: 'noh' },
+    aliases: { $add: ['nicer_match'] },
+  })
+
+  await client.set({
+    $id: match1,
+    $merge: false,
+    title: { en: 'lol' },
+    //aliases: { $delete: true },
+    //aliases: [],
+  })
+
+  t.deepEqual(
+    await client.redis.hgetall('___selva_aliases'),
+    { nice_match: match1, nicer_match: match2 });
+  t.deepEqual(
+    await client.redis.selva_object_get('', match1),
+    [
+      'aliases',
+      [ 'nice_match' ],
+      'id',
+      match1,
+      'title',
+      [ 'en', 'lol' ],
+      'type',
+      'match'
+    ]
+  )
 
   await client.delete('root')
   await client.destroy()

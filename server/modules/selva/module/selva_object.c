@@ -199,25 +199,39 @@ static int clear_key_value(struct SelvaObjectKey *key) {
     return 0;
 }
 
-void SelvaObject_Clear(struct SelvaObject *obj) {
+void SelvaObject_Clear(struct SelvaObject *obj, const char * const exclude[]) {
     struct SelvaObjectKey *next;
 
     for (struct SelvaObjectKey *key = RB_MIN(SelvaObjectKeys, &obj->keys_head); key != NULL; key = next) {
-        next = RB_NEXT(SelvaObjectKeys, &obj->keys_head, key);
-        RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
-        obj->obj_size--;
+        int clear = 1;
 
-        /* Clear and free the key. */
-        (void)clear_key_value(key);
+        next = RB_NEXT(SelvaObjectKeys, &obj->keys_head, key);
+
+        if (exclude) {
+            for (const char * const * skip = exclude; *skip != NULL; skip++) {
+                if (!strcmp(key->name, *skip)) {
+                    clear = 0;
+                    break;
+                }
+            }
+        }
+
+        if (clear) {
+            RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
+            obj->obj_size--;
+
+            /* Clear and free the key. */
+            (void)clear_key_value(key);
 #if MEM_DEBUG
-        memset(key, 0, sizeof(*key));
+            memset(key, 0, sizeof(*key));
 #endif
-        RedisModule_Free(key);
+            RedisModule_Free(key);
+        }
     }
 }
 
 void SelvaObject_Destroy(struct SelvaObject *obj) {
-    SelvaObject_Clear(obj);
+    SelvaObject_Clear(obj, NULL);
 #if MEM_DEBUG
     memset(obj, 0, sizeof(*obj));
 #endif

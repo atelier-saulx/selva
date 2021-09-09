@@ -79,7 +79,7 @@ struct SelvaObjectPointerOpts {
 #define selvaobject_autofree __attribute__((cleanup(_cleanup_SelvaObject_Destroy)))
 
 struct SelvaObject *SelvaObject_New(void);
-void SelvaObject_Clear(struct SelvaObject *obj);
+void SelvaObject_Clear(struct SelvaObject *obj, const char * const exclude[]);
 void SelvaObject_Destroy(struct SelvaObject *obj);
 void _cleanup_SelvaObject_Destroy(struct SelvaObject **obj);
 int SelvaObject_Key2Obj(struct RedisModuleKey *key, struct SelvaObject **out);
