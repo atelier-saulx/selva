@@ -126,21 +126,23 @@ export default async (
       field,
       createRecord(setRecordDef, {
         op_set_type: opSetType,
-        delete_all: r.delete_all,
+        delete_all: r.delete_all || (!r.$add && !r.$delete),
         $add: toCArr(r.$add) || null,
         $delete: toCArr(r.$delete) || null,
         $value: null,
       })
     )
   } else {
+    const value = await verifySimple(payload, verify)
     result.push(
       '5',
       field,
       createRecord(setRecordDef, {
         op_set_type: opSetType,
+        delete_all: !value || !value.length,
         $add: null,
         $delete: null,
-        $value: toCArr(await verifySimple(payload, verify)),
+        $value: toCArr(value),
       })
     )
   }
