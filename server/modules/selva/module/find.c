@@ -24,7 +24,6 @@
 #include "traversal.h"
 #include "find_index.h"
 
-/* TODO MOVE this */
 static int send_node_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
