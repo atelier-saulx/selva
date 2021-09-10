@@ -38,15 +38,15 @@ enum SelvaMergeStrategy {
     MERGE_STRATEGY_DEEP,
 };
 
-enum FindCommand_OrderedItemType {
+enum TraversalOrderedItemType {
     ORDERED_ITEM_TYPE_EMPTY,
     ORDERED_ITEM_TYPE_TEXT,
     ORDERED_ITEM_TYPE_DOUBLE,
 };
 
-struct FindCommand_OrderedItem {
+struct TraversalOrderedItem {
     Selva_NodeId id;
-    enum FindCommand_OrderedItemType type;
+    enum TraversalOrderedItemType type;
     struct SelvaObject *data_obj;
     double d;
     size_t data_len;
@@ -107,7 +107,8 @@ struct FindCommand_Args {
     struct SelvaObject *fields;
 
     const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
-    SVector *order_result; /*!< Results of the find wrapped in FindCommand_OrderedItem structs. Only used if sorting is requested. */
+    SVector *order_result; /*!< Results of the find wrapped in TraversalOrderedItem structs.
+                            *   Only used if sorting is requested. */
 
     struct Selva_SubscriptionMarker *marker; /*!< Used by FindInSub. */
 
@@ -132,12 +133,12 @@ int SelvaTraversal_ParseDir(
         const struct RedisModuleString *field_name);
 int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct RedisModuleString *arg);
 orderFunc SelvaTraversal_GetOrderFunc(enum SelvaResultOrder order);
-struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(
+struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
         struct SelvaModify_HierarchyNode *node,
         const struct RedisModuleString *order_field);
-struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
+struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
         struct SelvaObject *obj,

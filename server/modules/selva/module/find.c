@@ -985,7 +985,7 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
                 return 1;
             }
         } else {
-            struct FindCommand_OrderedItem *item;
+            struct TraversalOrderedItem *item;
 
             item = SelvaTraversal_CreateOrderItem(args->ctx, args->lang, node, args->order_field);
             if (item) {
@@ -1063,7 +1063,7 @@ static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
                 return 1;
             }
         } else {
-            struct FindCommand_OrderedItem *item;
+            struct TraversalOrderedItem *item;
             item = SelvaTraversal_CreateObjectBasedOrderItem(args->ctx, args->lang, obj, args->order_field);
             if (item) {
                 SVector_InsertFast(args->order_result, item);
@@ -1097,7 +1097,7 @@ static size_t FindCommand_PrintOrderedResult(
         struct SelvaObject *fields,
         SVector *order_result,
         size_t *nr_fields_out) {
-    struct FindCommand_OrderedItem *item;
+    struct TraversalOrderedItem *item;
     struct SVectorIterator it;
     size_t len = 0;
 
@@ -1156,7 +1156,7 @@ static size_t FindCommand_PrintOrderedArrayResult(
         ssize_t limit,
         struct SelvaObject *fields,
         SVector *order_result) {
-    struct FindCommand_OrderedItem *item;
+    struct TraversalOrderedItem *item;
     struct SVectorIterator it;
     size_t len = 0;
 
