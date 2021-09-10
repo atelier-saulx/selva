@@ -391,20 +391,22 @@ static size_t AggregateCommand_AggregateOrderedResult(
      */
     SVector_ForeachBegin(&it, order_result);
     while ((item = SVector_Foreach(&it))) {
+        struct SelvaModify_HierarchyNode *node = item->node;
         int err;
+
         if (limit-- == 0) {
             break;
         }
 
-        struct SelvaModify_HierarchyNode *node;
-
-        /* TODO Consider if having hierarchy node pointers here would be better. */
-        node = SelvaHierarchy_FindNode(hierarchy, item->id);
-        err = apply_agg_fn(node, args);
+        if (node) {
+            err = apply_agg_fn(node, args);
+        } else {
+            err = SELVA_HIERARCHY_ENOENT;
+        }
         if (err) {
             fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                     __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, item->id,
+                    (int)SELVA_NODE_ID_SIZE, item->node_id,
                     getSelvaErrorStr(err));
             continue;
         }
@@ -457,7 +459,7 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
             RedisModule_ReplyWithNull(ctx);
             fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                     __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, item->id,
+                    (int)SELVA_NODE_ID_SIZE, item->node_id,
                     getSelvaErrorStr(err));
         }
 

@@ -1120,26 +1120,24 @@ static size_t FindCommand_PrintOrderedResult(
         }
 
         if (merge_strategy != MERGE_STRATEGY_NONE) {
-            err = send_node_object_merge(ctx, lang, item->id, merge_strategy, merge_path, fields, nr_fields_out);
+            err = send_node_object_merge(ctx, lang, item->node_id, merge_strategy, merge_path, fields, nr_fields_out);
         } else if (fields) {
-            struct SelvaModify_HierarchyNode *node;
+            struct SelvaModify_HierarchyNode *node = item->node;
 
-            /* TODO Consider if having hierarchy node pointers here would be better. */
-            node = SelvaHierarchy_FindNode(hierarchy, item->id);
             if (node) {
                 err = send_node_fields(ctx, lang, hierarchy, node, fields);
             } else {
                 err = SELVA_HIERARCHY_ENOENT;
             }
         } else {
-            RedisModule_ReplyWithStringBuffer(ctx, item->id, Selva_NodeIdLen(item->id));
+            RedisModule_ReplyWithStringBuffer(ctx, item->node_id, Selva_NodeIdLen(item->node_id));
             err = 0;
         }
         if (err) {
             RedisModule_ReplyWithNull(ctx);
             fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                     __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, item->id,
+                    (int)SELVA_NODE_ID_SIZE, item->node_id,
                     getSelvaErrorStr(err));
         }
 
@@ -1188,7 +1186,7 @@ static size_t FindCommand_PrintOrderedArrayResult(
             RedisModule_ReplyWithNull(ctx);
             fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                     __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, item->id,
+                    (int)SELVA_NODE_ID_SIZE, item->node_id,
                     getSelvaErrorStr(err));
         }
 

@@ -45,8 +45,9 @@ enum TraversalOrderedItemType {
 };
 
 struct TraversalOrderedItem {
-    Selva_NodeId id;
     enum TraversalOrderedItemType type;
+    Selva_NodeId node_id;
+    struct SelvaModify_HierarchyNode *node;
     struct SelvaObject *data_obj;
     double d;
     size_t data_len;
