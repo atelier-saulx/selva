@@ -282,7 +282,7 @@ int SelvaTraversal_CompareAsc(const void ** restrict a_raw, const void ** restri
         }
     }
 
-    return memcmp(a->id, b->id, SELVA_NODE_ID_SIZE);
+    return memcmp(a->node_id, b->node_id, SELVA_NODE_ID_SIZE);
 }
 
 int SelvaTraversal_CompareDesc(const void ** restrict a_raw, const void ** restrict b_raw) {
@@ -417,8 +417,9 @@ struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
         return NULL;
     }
 
-    memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
     item->type = type;
+    memcpy(item->node_id, nodeId, SELVA_NODE_ID_SIZE);
+    item->node = node;
     if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         strxfrm_l(item->data, data, final_data_len + 1, locale);
     }
@@ -533,8 +534,9 @@ struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
         return NULL;
     }
 
-    memcpy(item->id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
     item->type = type;
+    memcpy(item->node_id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
+    item->node = NULL;
     if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         strxfrm_l(item->data, data, final_data_len + 1, locale);
     }
