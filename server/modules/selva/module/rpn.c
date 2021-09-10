@@ -1057,9 +1057,8 @@ static enum rpn_error rpn_op_cidcmp(struct RedisModuleCtx *redis_ctx __unused, s
     /*
      * Note the the allocated string is always large enough,
      * so the comparison is safe.
-     * TODO Could use Selva_CmpNodeType() here
      */
-    return push_int_result(ctx, !memcmp(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_TYPE_SIZE));
+    return push_int_result(ctx, !Selva_CmpNodeType(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0])));
 }
 
 static enum rpn_error rpn_op_getsfld(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
