@@ -87,7 +87,14 @@ static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {
  * Compare node types.
  */
 static inline int Selva_CmpNodeType(const char t1[SELVA_NODE_TYPE_SIZE], const char t2[SELVA_NODE_TYPE_SIZE]) {
-    return !(*(unsigned short *)t1 ^ *(unsigned short *)t2);
+    unsigned short a, b;
+
+    _Static_assert(SELVA_NODE_TYPE_SIZE == sizeof(a), "type size matches the cmp variable");
+
+    memcpy(&a, t1, SELVA_NODE_TYPE_SIZE);
+    memcpy(&b, t2, SELVA_NODE_TYPE_SIZE);
+
+    return a ^ b;
 }
 
 /**
