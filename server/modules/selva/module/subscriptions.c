@@ -402,21 +402,23 @@ int Selva_Subscriptions_InitHierarchy(SelvaModify_Hierarchy *hierarchy) {
 
     hierarchy->subs.missing = SelvaObject_New();
     if (!hierarchy->subs.missing) {
-        err = SELVA_ENOMEM;
+        err = SELVA_SUBSCRIPTIONS_ENOMEM;
+        goto fail;
     }
 
-    if (SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers)) {
-        err = SELVA_ENOMEM;
-    }
-
-    if (SelvaSubscriptions_InitDeferredEvents(hierarchy)) {
-        err = SELVA_ENOMEM;
-    }
-
+    err = SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers);
     if (err) {
-        SelvaSubscriptions_DestroyAll(NULL, hierarchy);
+        goto fail;
     }
 
+    err = SelvaSubscriptions_InitDeferredEvents(hierarchy);
+    if (err) {
+        goto fail;
+    }
+
+    return 0;
+fail:
+    SelvaSubscriptions_DestroyAll(NULL, hierarchy);
     return err;
 }
 
@@ -440,8 +442,16 @@ void SelvaSubscriptions_DestroyAll(RedisModuleCtx *ctx, SelvaModify_Hierarchy *h
 static void init_node_metadata_subs(
         Selva_NodeId id __unused,
         struct SelvaModify_HierarchyMetadata *metadata) {
-    /* TODO Should we handle ENOMEM? */
-    SelvaSubscriptions_InitMarkersStruct(&metadata->sub_markers);
+    int err;
+
+    err = SelvaSubscriptions_InitMarkersStruct(&metadata->sub_markers);
+    if (err) {
+        /* RFE Would be nicer to not crash here on OOM. */
+        fprintf(stderr, "%s:%d: %s\n",
+                __FILE__, __LINE__,
+                getSelvaErrorStr(err));
+        abort();
+    }
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_subs);
 
