@@ -24,6 +24,7 @@ function makeFieldsString(fields: Set<string>): string {
   for (const f of fields) {
     if (f === '*') {
       hasWildcard = true
+      continue
     }
 
     str += f + '\n'
