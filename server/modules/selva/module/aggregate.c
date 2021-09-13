@@ -648,7 +648,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * Parse fields.
      */
     if (argc > ARGV_FIELDS_VAL) {
-        err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+        err = SelvaArgsParser_StringSetList(ctx, &fields, NULL, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             if (SelvaObject_Len(fields, NULL) > 1) {
                 replyWithSelvaErrorf(ctx, err, "fields");
@@ -748,6 +748,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
             .fields = fields,
+            .excluded_fields = NULL,
             .merge_nr_fields = &merge_nr_fields,
             .order_field = order_by_field,
             .order_result = &order_result,
@@ -944,7 +945,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
      */
     selvaobject_autofree struct SelvaObject *fields = NULL;
     if (argc > ARGV_FIELDS_VAL) {
-        err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+        err = SelvaArgsParser_StringSetList(ctx, &fields, NULL, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             if (SelvaObject_Len(fields, NULL) > 1) {
                 return replyWithSelvaErrorf(ctx, err, "fields");
@@ -1040,6 +1041,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .merge_path = NULL,
             .merge_nr_fields = 0,
             .fields = fields,
+            .excluded_fields = NULL,
             .order_field = order_by_field,
             .order_result = &order_result,
         };
@@ -1065,7 +1067,8 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .find_args = {
                 /* we always need context */
                 .ctx = ctx,
-                .fields = fields
+                .fields = fields,
+                .excluded_fields = NULL,
             }
         };
 

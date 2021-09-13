@@ -32,7 +32,8 @@ static int send_node_field(
         struct SelvaObject *obj,
         const char *field_prefix_str,
         size_t field_prefix_len,
-        RedisModuleString *field);
+        RedisModuleString *field,
+        RedisModuleString *excluded_fields);
 static int send_all_node_data_fields(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
@@ -40,7 +41,8 @@ static int send_all_node_data_fields(
         struct SelvaModify_HierarchyNode *node,
         struct SelvaObject *obj,
         const char *field_prefix_str,
-        size_t field_prefix_len);
+        size_t field_prefix_len,
+        RedisModuleString *excluded_fields);
 
 static int send_edge_field(
         RedisModuleCtx *ctx,
@@ -50,7 +52,8 @@ static int send_edge_field(
         struct SelvaObject *edges,
         const char *field_prefix_str,
         size_t field_prefix_len,
-        RedisModuleString *field) {
+        RedisModuleString *field,
+        RedisModuleString *excluded_fields) {
     struct EdgeField *edge_field;
     void *p;
     TO_STR(field);
@@ -152,7 +155,7 @@ static int send_edge_field(
         RedisModule_ReplyWithStringBuffer(ctx, next_prefix_str, next_prefix_len - 1);
         RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-        res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, dst_obj, NULL, 0);
+        res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, dst_obj, NULL, 0, excluded_fields);
         if (res < 0) {
             res = 0;
         }
@@ -160,8 +163,28 @@ static int send_edge_field(
         RedisModule_ReplySetArrayLength(ctx, 2 * res);
         return 0;
     } else {
-        return (send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field) == 0) ? SELVA_ENOENT : 0;
+        return (send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field, excluded_fields) == 0) ? SELVA_ENOENT : 0;
     }
+}
+
+static int is_excluded_field(RedisModuleString *excluded_fields, RedisModuleString *field_name) {
+    TO_STR(excluded_fields, field_name);
+    const char *r;
+
+    /* RMS always ends with '\0', so let's utilize that. */
+    r = memmem(excluded_fields_str, excluded_fields_len, field_name_str, field_name_len + 1);
+
+#if 0
+    fprintf(stderr, "Excluded: %p '%s'\nexcluded_fields: '", r, field_name_str);
+    for (size_t i = 0; i < excluded_fields_len; i++) {
+        const char c = excluded_fields_str[i];
+        fprintf(stderr, "%c", c == '\0' ? '|' : c);
+    }
+    fprintf(stderr, "'\n");
+#endif
+
+    /* The list is made in a way that each element is delimited by '\0' from beginning and end. */
+    return r && *(r - 1) == '\0';
 }
 
 static int send_node_field(
@@ -172,7 +195,8 @@ static int send_node_field(
         struct SelvaObject *obj,
         const char *field_prefix_str,
         size_t field_prefix_len,
-        RedisModuleString *field) {
+        RedisModuleString *field,
+        RedisModuleString *excluded_fields) {
     TO_STR(field);
     Selva_NodeId nodeId;
     int err;
@@ -188,6 +212,14 @@ static int send_node_field(
     } else {
         full_field_name = field;
     }
+
+    if (excluded_fields && is_excluded_field(excluded_fields, full_field_name)) {
+        /*
+         * This field should be excluded from the results.
+         */
+        return 0;
+    }
+
 #define SEND_FIELD_NAME() RedisModule_ReplyWithString(ctx, full_field_name)
 
     /*
@@ -242,7 +274,7 @@ static int send_node_field(
         struct SelvaObject *edges = metadata->edge_fields.edges;
 
         if (edges) {
-            err = send_edge_field(ctx, lang, hierarchy, node, edges, field_prefix_str, field_prefix_len, field);
+            err = send_edge_field(ctx, lang, hierarchy, node, edges, field_prefix_str, field_prefix_len, field, excluded_fields);
             if (err == 0) {
                return 1;
             } else if (err && err != SELVA_ENOENT) {
@@ -305,17 +337,19 @@ static int send_all_node_data_fields(
         struct SelvaModify_HierarchyNode *node,
         struct SelvaObject *obj,
         const char *field_prefix_str,
-        size_t field_prefix_len) {
+        size_t field_prefix_len,
+        RedisModuleString *excluded_fields) {
     void *iterator;
     const char *field_name_str;
     int nr_fields = 0;
 
     iterator = SelvaObject_ForeachBegin(obj);
     while ((field_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
+        size_t field_name_len = strlen(field_name_str);
         RedisModuleString *field;
         int res;
 
-        field = RedisModule_CreateString(ctx, field_name_str, strlen(field_name_str));
+        field = RedisModule_CreateString(ctx, field_name_str, field_name_len);
         if (!field) {
             /*
              * Resist the devil, and he will flee from you.
@@ -325,7 +359,7 @@ static int send_all_node_data_fields(
             continue;
         }
 
-        res = send_node_field(ctx, lang, hierarchy, node, obj, field_prefix_str, field_prefix_len, field);
+        res = send_node_field(ctx, lang, hierarchy, node, obj, field_prefix_str, field_prefix_len, field, excluded_fields);
         if (res >= 0) {
             nr_fields += res;
         }
@@ -340,7 +374,9 @@ static int send_node_fields(
         RedisModuleString *lang,
         SelvaModify_Hierarchy *hierarchy,
         struct SelvaModify_HierarchyNode *node,
-        struct SelvaObject *fields) {
+        struct SelvaObject *fields,
+        RedisModuleString *excluded_fields) {
+    const char wildcard[] = "*";
     Selva_NodeId nodeId;
     RedisModuleString *id;
     int err;
@@ -390,7 +426,8 @@ static int send_node_fields(
         RedisModule_CloseKey(key);
 
         return fields_len;
-    } else if (fields_len == 1 && SelvaTraversal_FieldsContains(fields, "*", 1)) { /* '*' is a wildcard */
+    } else if (!excluded_fields && fields_len == 1 &&
+               SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
         err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
         if (err) {
             fprintf(stderr, "%s:%d: Failed to send all fields for node_id: \"%.*s\"\n",
@@ -411,22 +448,22 @@ static int send_node_fields(
 
             SVector_ForeachBegin(&it, vec);
             while ((field = SVector_Foreach(&it))) {
-                const char wildcard[] = "*";
                 TO_STR(field);
                 int res;
 
                 if (field_len == sizeof(wildcard) - 1 && !strcmp(field_str, wildcard)) {
-                    res = send_all_node_data_fields(ctx, lang, hierarchy, node, obj, NULL, 0);
+                    res = send_all_node_data_fields(ctx, lang, hierarchy, node, obj, NULL, 0, excluded_fields);
                     if (res > 0) {
                         nr_fields += res;
                         /*
                          * An interesting case here is a list like this:
-                         * `title\n*`.
+                         * `title\n*`
+                         * that would send the same field twice.
                          */
                         break;
                     }
                 } else {
-                    res = send_node_field(ctx, lang, hierarchy, node, obj, NULL, 0, field);
+                    res = send_node_field(ctx, lang, hierarchy, node, obj, NULL, 0, field, excluded_fields);
                     if (res > 0) {
                         nr_fields += res;
                         break; /* Only send one of the fields in the list. */
@@ -965,7 +1002,7 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
             if (args->merge_strategy != MERGE_STRATEGY_NONE) {
                 err = send_node_object_merge(args->ctx, args->lang, nodeId, args->merge_strategy, args->merge_path, args->fields, args->merge_nr_fields);
             } else if (args->fields) {
-                err = send_node_fields(args->ctx, args->lang, args->hierarchy, node, args->fields);
+                err = send_node_fields(args->ctx, args->lang, args->hierarchy, node, args->fields, args->excluded_fields);
             } else {
                 RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
                 err = 0;
@@ -1095,6 +1132,7 @@ static size_t FindCommand_PrintOrderedResult(
         enum SelvaMergeStrategy merge_strategy,
         RedisModuleString *merge_path,
         struct SelvaObject *fields,
+        RedisModuleString *excluded_fields,
         SVector *order_result,
         size_t *nr_fields_out) {
     struct TraversalOrderedItem *item;
@@ -1125,7 +1163,7 @@ static size_t FindCommand_PrintOrderedResult(
             struct SelvaModify_HierarchyNode *node = item->node;
 
             if (node) {
-                err = send_node_fields(ctx, lang, hierarchy, node, fields);
+                err = send_node_fields(ctx, lang, hierarchy, node, fields, excluded_fields);
             } else {
                 err = SELVA_HIERARCHY_ENOENT;
             }
@@ -1264,6 +1302,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     RedisModuleString *lang = argv[ARGV_LANG];
     SVECTOR_AUTOFREE(order_result); /*!< for ordered result. */
     selvaobject_autofree struct SelvaObject *fields = NULL;
+    RedisModuleString *excluded_fields = NULL;
     struct rpn_ctx *traversal_rpn_ctx = NULL;
     struct rpn_expression *traversal_expression = NULL;
     struct rpn_ctx *rpn_ctx = NULL;
@@ -1407,7 +1446,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * Parse fields.
      */
     if (argc > ARGV_FIELDS_VAL) {
-        err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+        err = SelvaArgsParser_StringSetList(ctx, &fields, &excluded_fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             if (merge_strategy == MERGE_STRATEGY_ALL) {
                 /* Having fields set turns a regular merge into a named merge. */
@@ -1545,6 +1584,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .merge_path = merge_path,
             .merge_nr_fields = &merge_nr_fields,
             .fields = fields,
+            .excluded_fields = excluded_fields,
             .order_field = order_by_field,
             .order_result = &order_result,
             .acc_tot = 0,
@@ -1631,7 +1671,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
         nr_nodes = (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY)
             ? FindCommand_PrintOrderedArrayResult(ctx, lang, offset, limit, fields, &order_result)
-            : FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, merge_strategy, merge_path, fields, &order_result, &merge_nr_fields);
+            : FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, merge_strategy, merge_path,
+                                             fields, excluded_fields, &order_result, &merge_nr_fields);
     }
 
     /* nr_nodes is never negative at this point so we can safely cast it. */
@@ -1745,8 +1786,9 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * Parse fields.
      */
     selvaobject_autofree struct SelvaObject *fields = NULL;
+    RedisModuleString *excluded_fields = NULL;
     if (argc > ARGV_FIELDS_VAL) {
-        err = SelvaArgsParser_StringSetList(ctx, &fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+        err = SelvaArgsParser_StringSetList(ctx, &fields, &excluded_fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
@@ -1814,6 +1856,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             .merge_path = NULL,
             .merge_nr_fields = 0,
             .fields = fields,
+            .excluded_fields = excluded_fields,
             .order_field = order_by_field,
             .order_result = &order_result,
             .acc_take = 0,
@@ -1831,7 +1874,8 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        array_len = FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, MERGE_STRATEGY_NONE, NULL, fields, &order_result, NULL);
+        array_len = FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, MERGE_STRATEGY_NONE, NULL,
+                                                   fields, excluded_fields, &order_result, NULL);
     }
 
     RedisModule_ReplySetArrayLength(ctx, array_len);

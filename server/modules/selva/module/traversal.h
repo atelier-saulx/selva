@@ -106,6 +106,14 @@ struct FindCommand_Args {
      * fields have been already sent.
      */
     struct SelvaObject *fields;
+    /**
+     * Fields that should be excluded when `fields` contains a wildcard.
+     * The list should delimit the excluded fields in the following way:
+     * ```
+     * \0field1\0field2\0
+     * ```
+     */
+    struct RedisModuleString *excluded_fields;
 
     const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
     SVector *order_result; /*!< Results of the find wrapped in TraversalOrderedItem structs.
