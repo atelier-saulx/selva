@@ -367,7 +367,6 @@ static size_t AggregateCommand_AggregateOrderedResult(
         RedisModuleCtx *ctx __unused,
         RedisModuleString *lang __unused,
         void *arg,
-        SelvaModify_Hierarchy *hierarchy,
         ssize_t offset,
         ssize_t limit,
         struct SelvaObject *fields __unused,
@@ -814,7 +813,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
 
         nr_nodes = (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY)
             ? AggregateCommand_AggregateOrderedArrayResult(ctx, lang, &ord_args, hierarchy, offset, limit, fields, &order_result)
-            : AggregateCommand_AggregateOrderedResult(ctx, lang, &ord_args, hierarchy, offset, limit, fields, &order_result);
+            : AggregateCommand_AggregateOrderedResult(ctx, lang, &ord_args, offset, limit, fields, &order_result);
 
         AggregateCommand_PrintAggregateResult(ctx, &ord_args);
     } else {
@@ -1070,7 +1069,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             }
         };
 
-        AggregateCommand_AggregateOrderedResult(ctx, lang, &ord_args, hierarchy, offset, limit, fields, &order_result);
+        AggregateCommand_AggregateOrderedResult(ctx, lang, &ord_args, offset, limit, fields, &order_result);
         AggregateCommand_PrintAggregateResult(ctx, &ord_args);
     } else {
         AggregateCommand_PrintAggregateResult(ctx, &args);
