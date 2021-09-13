@@ -178,7 +178,7 @@ test.serial('get nested results with $all', async (t) => {
     children: matches,
   })
 
-  const result = await client.get({
+  let result = await client.get({
     items: {
       $all: true,
       teams: {
@@ -218,6 +218,54 @@ test.serial('get nested results with $all', async (t) => {
 
   t.is(result.items.length, 10, 'items length')
   t.is(result.items[0].teams.length, 2, 'has teams')
+
+  result = await client.get({
+    items: {
+      $all: true,
+      teams: {
+        $all: true,
+        status: false,
+        $list: {
+          $find: {
+            $traverse: 'ancestors',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'team',
+              },
+              {
+                $field: 'value',
+                $operator: '!=',
+                $value: 2,
+              },
+            ],
+          },
+        },
+      },
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match',
+            },
+          ],
+        },
+      },
+    },
+  })
+
+  t.is(result.items.length, 10, 'items length')
+  t.is(result.items[0].teams.length, 2, 'has teams')
+  console.log('RESULT', result)
+  t.assert(
+    (<any[]>result.items).every((r) => {
+      return typeof r.status === 'undefined'
+    })
+  )
 
   await wait(1e3)
   await client.delete('root')
