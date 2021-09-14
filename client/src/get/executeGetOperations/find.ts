@@ -18,6 +18,27 @@ import { padId, joinIds } from '../utils'
 import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 
+function makeFieldsString(fields: Set<string>): string {
+  let str = ''
+  let hasWildcard = false
+  for (const f of fields) {
+    if (f === '*') {
+      hasWildcard = true
+      continue
+    }
+
+    str += f + '\n'
+  }
+
+  if (hasWildcard) {
+    str += '*'
+  } else {
+    str = str.slice(0, -1)
+  }
+
+  return str
+}
+
 function mkIndex(schema: Schema, op: GetOperationFind): string[] {
   if (op.id && op.id !== 'root') {
     return []
@@ -129,7 +150,7 @@ function parseGetOpts(
     } else if (!hasAll && !k.startsWith('$') && props[k] === true) {
       fields.add(pathPrefix + k)
     } else if (props[k] === false) {
-      // ignore
+      fields.add(`!${pathPrefix + k}`)
     } else if (k === '$field') {
       const $field = props[k]
       if (Array.isArray($field)) {
@@ -564,7 +585,10 @@ const findFields = async (
           const r = await addMarker(client, ctx, {
             type: 'node',
             id: id,
-            fields: op.props.$all === true ? [] : [...fieldsOpt.values()],
+            fields:
+              op.props.$all === true
+                ? []
+                : [...fieldsOpt.values()].filter((f) => !f.startsWith('!')),
             rpn: args,
           })
 
@@ -589,7 +613,7 @@ const findFields = async (
       'limit',
       op.options.limit,
       'fields',
-      [...fieldsOpt.values()].join('\n'),
+      makeFieldsString(fieldsOpt),
       joinIds(op.inKeys),
       ...args
     )
@@ -682,7 +706,7 @@ const findFields = async (
       'limit',
       op.options.limit,
       'fields',
-      [...fieldsOpt.values()].join('\n'), // TODO Probably shouldn't pass $ names?
+      makeFieldsString(fieldsOpt),
       padId(op.id),
       ...args
     )
