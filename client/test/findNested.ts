@@ -222,27 +222,7 @@ test.serial('get nested results with $all', async (t) => {
   result = await client.get({
     items: {
       $all: true,
-      teams: {
-        $all: true,
-        status: false,
-        $list: {
-          $find: {
-            $traverse: 'ancestors',
-            $filter: [
-              {
-                $field: 'type',
-                $operator: '=',
-                $value: 'team',
-              },
-              {
-                $field: 'value',
-                $operator: '!=',
-                $value: 2,
-              },
-            ],
-          },
-        },
-      },
+      status: false,
       $list: {
         $find: {
           $traverse: 'descendants',
@@ -259,7 +239,6 @@ test.serial('get nested results with $all', async (t) => {
   })
 
   t.is(result.items.length, 10, 'items length')
-  t.is(result.items[0].teams.length, 2, 'has teams')
   console.log('RESULT', result)
   t.assert(
     (<any[]>result.items).every((r) => {
