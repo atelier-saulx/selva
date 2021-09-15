@@ -93,14 +93,14 @@ export function sourceFieldToDir(
     return {
       type: field as TraversalType,
     }
-  } else if (fieldSchema.type === 'array') {
+  } else if (fieldSchema && fieldSchema.type === 'array') {
     return {
       type: 'array',
       refField: field,
     }
   } else {
     return {
-      type: fieldSchema.type === 'string' ? 'ref' : 'edge_field',
+      type: fieldSchema && fieldSchema.type === 'string' ? 'ref' : 'edge_field',
       refField: field,
     }
   }
