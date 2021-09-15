@@ -217,7 +217,7 @@ test.serial('get - simple $list with $field of one field', async (t) => {
   await client.destroy()
 })
 
-test.serial.only(
+test.serial(
   'get - simple $list with $field of two field entries',
   async (t) => {
     const client = connect({ port })
