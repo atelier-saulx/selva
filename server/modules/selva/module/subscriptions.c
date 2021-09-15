@@ -898,19 +898,20 @@ int SelvaSubscriptions_TraverseMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         struct Selva_SubscriptionMarker *marker,
         const struct SelvaModify_HierarchyCallback *cb) {
-    int err;
+    int err = 0;
     typeof(marker->dir) dir = marker->dir;
 
     /*
-     * Execute the traversal.
+     * Some traversals don't visit the head node but the marker system must
+     * always visit it.
      */
-    err = 0;
     if (dir &
         (SELVA_HIERARCHY_TRAVERSAL_REF |
          SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
          SELVA_HIERARCHY_TRAVERSAL_PARENTS |
          SELVA_HIERARCHY_TRAVERSAL_CHILDREN |
-         SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
+         SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
+         SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         /*
          * This could be implemented with a head callback but it's not
          * currently implemented for the traverse API. Therefore we do a
@@ -929,9 +930,8 @@ int SelvaSubscriptions_TraverseMarker(
                  SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                  SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))) {
         err = SelvaModify_TraverseHierarchyField(ctx, hierarchy, marker->node_id, dir, marker->ref_field, strlen(marker->ref_field), cb);
-    } else if (dir &
-               (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
-                SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) && marker->traversal_expression) {
+    } else if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION | SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) &&
+               marker->traversal_expression) {
         struct rpn_ctx *rpn_ctx;
 
         rpn_ctx = rpn_init(1);
