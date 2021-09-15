@@ -416,9 +416,8 @@ export const findIds = async (
     )
 
     op.inKeys = res.result
-  } else if (Array.isArray(op.sourceField)) {
-    sourceField = op.sourceField.join('\n')
   }
+
   const args = op.filter
     ? ast2rpn(client.schemas[ctx.db].types, op.filter, lang)
     : ['#1']
@@ -576,8 +575,6 @@ const findFields = async (
     )
 
     op.inKeys = res.result
-  } else if (Array.isArray(op.sourceField)) {
-    sourceField = op.sourceField.join('\n')
   }
 
   const args = op.filter
