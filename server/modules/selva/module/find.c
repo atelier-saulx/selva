@@ -1646,11 +1646,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
         }
         if (index_hint && icb) {
-            if (ind_out) {
-                SelvaFind_AccIndexed(icb, args.acc_take);
-            } else {
-                SelvaFind_Acc(icb, args.acc_take, args.acc_tot);
-            }
+            SelvaFind_Acc(icb, args.acc_take, args.acc_tot);
         }
         if (err != 0) {
             /*

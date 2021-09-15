@@ -629,15 +629,20 @@ int SelvaFind_AutoIndex(
 }
 
 void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take, size_t acc_tot) {
-    if (FIND_INDICES_MAX && (acc_take > icb->find_acc.take_max || acc_tot > icb->find_acc.tot_max)) {
-        icb->find_acc.take_max = acc_take;
-        icb->find_acc.tot_max = acc_tot;
+    if (!FIND_INDICES_MAX) {
+        /* If indexing is disabled then the rest of the function will be optimized out. */
+        return;
     }
-}
 
-void SelvaFind_AccIndexed(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take) {
-    if (FIND_INDICES_MAX && (acc_take > icb->find_acc.ind_take_max)) {
-        icb->find_acc.ind_take_max = acc_take;
+    if (icb->is_valid) {
+        if (acc_take > icb->find_acc.ind_take_max) {
+            icb->find_acc.ind_take_max = acc_take;
+        }
+    } else {
+        if (acc_take > icb->find_acc.take_max || acc_tot > icb->find_acc.tot_max) {
+            icb->find_acc.take_max = acc_take;
+            icb->find_acc.tot_max = acc_tot;
+        }
     }
 }
 
