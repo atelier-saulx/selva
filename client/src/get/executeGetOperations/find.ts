@@ -416,9 +416,8 @@ export const findIds = async (
     )
 
     op.inKeys = res.result
-  } else if (Array.isArray(op.sourceField)) {
-    sourceField = op.sourceField.join('\n')
   }
+
   const args = op.filter
     ? ast2rpn(client.schemas[ctx.db].types, op.filter, lang)
     : ['#1']
@@ -473,6 +472,7 @@ export const findIds = async (
             schema,
             sourceFieldSchema,
             sourceField,
+            op.recursive,
             op.byType
           ),
           id: id,
@@ -492,7 +492,13 @@ export const findIds = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
+        ...sourceFieldToDir(
+          schema,
+          sourceFieldSchema,
+          sourceField,
+          op.recursive,
+          op.byType
+        ),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -569,8 +575,6 @@ const findFields = async (
     )
 
     op.inKeys = res.result
-  } else if (Array.isArray(op.sourceField)) {
-    sourceField = op.sourceField.join('\n')
   }
 
   const args = op.filter
@@ -652,6 +656,7 @@ const findFields = async (
             schema,
             sourceFieldSchema,
             sourceField,
+            op.recursive,
             op.byType
           ),
           id: id,
@@ -671,7 +676,13 @@ const findFields = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
+        ...sourceFieldToDir(
+          schema,
+          sourceFieldSchema,
+          sourceField,
+          op.recursive,
+          op.byType
+        ),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,

@@ -2046,6 +2046,70 @@ int SelvaHierarchy_TraverseExpression(
         struct rpn_ctx *rpn_ctx,
         struct rpn_expression *rpn_expr,
         const struct SelvaModify_HierarchyCallback *cb) {
+    SelvaModify_HierarchyNode *head;
+    struct trx trx_cur;
+    enum rpn_error rpn_err;
+    struct SelvaSet fields;
+    struct SelvaSetElement *field_el;
+
+    head = SelvaHierarchy_FindNode(hierarchy, id);
+    if (!head) {
+        return SELVA_HIERARCHY_ENOENT;
+    }
+
+    if (Trx_Begin(&(hierarchy)->trx_state, &trx_cur)) {
+        return SELVA_HIERARCHY_ETRMAX;
+    }
+
+    SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
+
+    rpn_set_hierarchy_node(rpn_ctx, head);
+    rpn_set_reg(rpn_ctx, 0, head->id, SELVA_NODE_ID_SIZE, 0);
+    rpn_err = rpn_selvaset(ctx, rpn_ctx, rpn_expr, &fields);
+    if (rpn_err) {
+        fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, head->id,
+                rpn_str_error[rpn_err]);
+        return SELVA_HIERARCHY_EINVAL;
+    }
+
+    /* For each field in the set. */
+    SELVA_SET_RMS_FOREACH(field_el, &fields) {
+        const RedisModuleString *field = field_el->value_rms;
+        const SVector *adj_vec;
+        struct SVectorIterator it;
+        SelvaModify_HierarchyNode *adj;
+
+        /* Get an SVector for the field. */
+        adj_vec = get_adj_vec(head, field);
+        if (!adj_vec) {
+            continue;
+        }
+
+        /* Visit each node in this field. */
+        SVector_ForeachBegin(&it, adj_vec);
+        while((adj = SVector_Foreach(&it))) {
+            if (Trx_Visit(&trx_cur, &adj->trx_label)) {
+                if (cb->node_cb(adj, cb->node_arg)) {
+                    Trx_End(&hierarchy->trx_state, &trx_cur);
+                    return 0;
+                }
+            }
+        }
+    }
+
+    Trx_End(&hierarchy->trx_state, &trx_cur);
+    return 0;
+}
+
+int SelvaHierarchy_TraverseExpressionBfs(
+        struct RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        struct rpn_ctx *rpn_ctx,
+        struct rpn_expression *rpn_expr,
+        const struct SelvaModify_HierarchyCallback *cb) {
     const TraversalCallback tcb = {
         .head_cb = NULL,
         .head_arg = NULL,

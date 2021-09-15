@@ -556,7 +556,8 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
                 SELVA_HIERARCHY_TRAVERSAL_REF |
                 SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                 SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
-                SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION))) {
+                SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                SELVA_HIERARCHY_TRAVERSAL_EXPRESSION))) {
         RedisModule_WrongArity(ctx);
         goto out;
     }
@@ -566,7 +567,8 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
                SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
         ref_field = argv[ARGV_REF_FIELD];
         SHIFT_ARGS(1);
-    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+    } else if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                      SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         const RedisModuleString *input = argv[ARGV_REF_FIELD];
         TO_STR(input);
 
@@ -779,7 +781,9 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             TO_STR(ref_field);
 
             err = SelvaModify_TraverseHierarchyField(ctx, hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
-        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && traversal_expression) {
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+            err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) {
             err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
         } else {
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);

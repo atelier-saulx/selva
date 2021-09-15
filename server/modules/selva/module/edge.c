@@ -397,7 +397,8 @@ static void remove_related_edge_markers(
         if ((dst_marker->dir &
              (SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
               SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
-              SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION)) &&
+              SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+              SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) &&
             !memcmp(dst_marker->node_id, src_node_id, SELVA_NODE_ID_SIZE)) {
             /*
              * Skip markers that are fixable with a clear & refresh,
@@ -416,7 +417,8 @@ static void remove_related_edge_markers(
             if ((src_marker->dir &
                  (SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                   SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
-                  SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION)) &&
+                  SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                  SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) &&
                 src_marker->sub == dst_marker->sub &&
                 !memcmp(src_marker->node_id, src_node_id, SELVA_NODE_ID_SIZE)) {
                 /* RFE Is it a bit ugly to do this here? */

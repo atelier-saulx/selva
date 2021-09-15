@@ -234,7 +234,8 @@ static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
     }
     memset(marker, 0, sizeof(*marker));
 #endif
-    if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+    if (marker->dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                       SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         rpn_destroy_expression(marker->traversal_expression);
     } else {
         RedisModule_Free(marker->ref_field);
@@ -702,7 +703,8 @@ static int marker_set_ref_field(struct Selva_SubscriptionMarker *marker, const c
 }
 
 static void marker_set_traversal_expression(struct Selva_SubscriptionMarker *marker, struct rpn_expression *traversal_expression) {
-    assert(marker->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION);
+    assert(marker->dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                          SELVA_HIERARCHY_TRAVERSAL_EXPRESSION));
 
     marker->traversal_expression = traversal_expression;
 }
@@ -817,7 +819,7 @@ int SelvaSubscriptions_AddCallbackMarker(
         return SELVA_SUBSCRIPTIONS_EEXIST;
     }
 
-    if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && dir_expression_str) {
+    if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION | SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) && dir_expression_str) {
         dir_expression = rpn_compile(dir_expression_str);
         if (!dir_expression) {
             err = SELVA_RPN_ECOMP;
@@ -896,19 +898,20 @@ int SelvaSubscriptions_TraverseMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         struct Selva_SubscriptionMarker *marker,
         const struct SelvaModify_HierarchyCallback *cb) {
-    int err;
+    int err = 0;
     typeof(marker->dir) dir = marker->dir;
 
     /*
-     * Execute the traversal.
+     * Some traversals don't visit the head node but the marker system must
+     * always visit it.
      */
-    err = 0;
     if (dir &
         (SELVA_HIERARCHY_TRAVERSAL_REF |
          SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
          SELVA_HIERARCHY_TRAVERSAL_PARENTS |
          SELVA_HIERARCHY_TRAVERSAL_CHILDREN |
-         SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
+         SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
+         SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         /*
          * This could be implemented with a head callback but it's not
          * currently implemented for the traverse API. Therefore we do a
@@ -927,12 +930,17 @@ int SelvaSubscriptions_TraverseMarker(
                  SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                  SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))) {
         err = SelvaModify_TraverseHierarchyField(ctx, hierarchy, marker->node_id, dir, marker->ref_field, strlen(marker->ref_field), cb);
-    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && marker->traversal_expression) {
+    } else if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION | SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) &&
+               marker->traversal_expression) {
         struct rpn_ctx *rpn_ctx;
 
         rpn_ctx = rpn_init(1);
         if (rpn_ctx) {
-            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
+            if (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+                err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
+            } else {
+                err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
+            }
             rpn_destroy(rpn_ctx);
         } else {
             err = SELVA_ENOMEM;
@@ -1086,7 +1094,9 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hi
         size_t ref_field_len = strlen(ref_field_str);
 
         (void)SelvaModify_TraverseHierarchyField(ctx, hierarchy, node_id, dir, ref_field_str, ref_field_len, &cb);
-    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+    } else if (dir &
+               (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         struct rpn_ctx *rpn_ctx;
         int err;
 #if 0
@@ -1101,7 +1111,11 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hi
 
         rpn_ctx = rpn_init(1);
         if (rpn_ctx) {
-            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
+            if (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+                err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
+            } else {
+                err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
+            }
             rpn_destroy(rpn_ctx);
         } else {
             err = SELVA_ENOMEM;
@@ -1871,7 +1885,7 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
           (SELVA_HIERARCHY_TRAVERSAL_NONE | SELVA_HIERARCHY_TRAVERSAL_NODE | SELVA_HIERARCHY_TRAVERSAL_CHILDREN |
            SELVA_HIERARCHY_TRAVERSAL_PARENTS | SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS | SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS |
            SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
-           SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION)
+           SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION | SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)
         )) {
         return replyWithSelvaErrorf(ctx, err, "Traversal argument");
     }
@@ -1884,7 +1898,7 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
     struct rpn_expression *traversal_expression = NULL;
     struct rpn_ctx *filter_ctx = NULL;
     struct rpn_expression *filter_expression = NULL;
-    if (sub_dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+    if (sub_dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION | SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         const RedisModuleString *input = argv[ARGV_REF_FIELD];
         TO_STR(input);
 

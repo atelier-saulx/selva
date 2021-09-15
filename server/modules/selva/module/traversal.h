@@ -29,6 +29,7 @@ enum SelvaTraversal {
     SELVA_HIERARCHY_TRAVERSAL_DFS_FULL =        0x0400, /*!< Full DFS traversal of the whole hierarchy. */
     SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD =  0x0800, /*!< Traverse an edge field according to its constraints using BFS. */
     SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION =  0x1000, /*!< Traverse with an expression returning a set of field names. */
+    SELVA_HIERARCHY_TRAVERSAL_EXPRESSION =      0x2000, /*!< Visit fields with an expression returning a set of field names. */
 };
 
 enum SelvaMergeStrategy {

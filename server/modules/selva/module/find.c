@@ -1332,7 +1332,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 SELVA_HIERARCHY_TRAVERSAL_REF |
                 SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                 SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
-                SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION))) {
+                SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                SELVA_HIERARCHY_TRAVERSAL_EXPRESSION))) {
         RedisModule_WrongArity(ctx);
         goto out;
     }
@@ -1342,7 +1343,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
         ref_field = argv[ARGV_REF_FIELD];
         SHIFT_ARGS(1);
-    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+    } else if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                      SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         const RedisModuleString *input = argv[ARGV_REF_FIELD];
         TO_STR(input);
 
@@ -1554,7 +1556,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             RedisModuleString *dir_expr = NULL;
             int ind_err;
 
-            if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+            if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                       SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
                 /* We know it's valid because it was already parsed and compiled once. */
                 dir_expr = argv[ARGV_REF_FIELD];
             }
@@ -1640,7 +1643,9 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             TO_STR(ref_field);
 
             err = SelvaModify_TraverseHierarchyField(ctx, hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
-        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && traversal_expression) {
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+            err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) {
             err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
         } else {
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);

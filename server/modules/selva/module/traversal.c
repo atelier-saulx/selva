@@ -207,6 +207,8 @@ int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const RedisModuleString *
         *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD;
     } else if (!strcmp("bfs_expression", arg_str)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION;
+    } else if (!strcmp("expression", arg_str)) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_EXPRESSION;
     } else {
         return SELVA_SUBSCRIPTIONS_EINVAL;
     }
@@ -618,6 +620,8 @@ const char *SelvaTraversal_Dir2str(enum SelvaTraversal dir) {
         return (const char *)"bfs_edge_field";
     case SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION:
         return (const char *)"bfs_expression";
+    case SELVA_HIERARCHY_TRAVERSAL_EXPRESSION:
+        return (const char *)"expression";
     default:
         return "invalid";
     }
