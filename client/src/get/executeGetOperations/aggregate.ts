@@ -355,6 +355,7 @@ const executeAggregateOperation = async (
             schema,
             sourceFieldSchema,
             sourceField,
+            op.recursive,
             op.byType
           ),
           id: id,
@@ -374,7 +375,13 @@ const executeAggregateOperation = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
+        ...sourceFieldToDir(
+          schema,
+          sourceFieldSchema,
+          sourceField,
+          op.recursive,
+          op.byType
+        ),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
