@@ -927,12 +927,18 @@ int SelvaSubscriptions_TraverseMarker(
                  SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                  SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))) {
         err = SelvaModify_TraverseHierarchyField(ctx, hierarchy, marker->node_id, dir, marker->ref_field, strlen(marker->ref_field), cb);
-    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && marker->traversal_expression) {
+    } else if (dir &
+               (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) && marker->traversal_expression) {
         struct rpn_ctx *rpn_ctx;
 
         rpn_ctx = rpn_init(1);
         if (rpn_ctx) {
-            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
+            if (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+                err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
+            } else {
+                err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
+            }
             rpn_destroy(rpn_ctx);
         } else {
             err = SELVA_ENOMEM;
@@ -1086,7 +1092,9 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hi
         size_t ref_field_len = strlen(ref_field_str);
 
         (void)SelvaModify_TraverseHierarchyField(ctx, hierarchy, node_id, dir, ref_field_str, ref_field_len, &cb);
-    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+    } else if (dir &
+               (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         struct rpn_ctx *rpn_ctx;
         int err;
 #if 0
@@ -1101,7 +1109,11 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hi
 
         rpn_ctx = rpn_init(1);
         if (rpn_ctx) {
-            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
+            if (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+                err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
+            } else {
+                err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
+            }
             rpn_destroy(rpn_ctx);
         } else {
             err = SELVA_ENOMEM;
