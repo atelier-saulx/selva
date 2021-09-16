@@ -606,7 +606,8 @@ int SelvaFind_AutoIndex(
         SELVA_HIERARCHY_TRAVERSAL_PARENTS | /* (2) */
         SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS | /* (3) */
         SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS | /* (3) */
-        SELVA_HIERARCHY_TRAVERSAL_DFS_FULL /* (3) */
+        SELVA_HIERARCHY_TRAVERSAL_DFS_FULL | /* (3) */
+        SELVA_HIERARCHY_TRAVERSAL_EXPRESSION /* (2) */
         )) {
         /*
          * Legends:
