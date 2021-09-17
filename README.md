@@ -1,16 +1,20 @@
-# Selva
+# Based-db
 
 ## About
 
-Selva is a realtime acyclic graph database.
+Based-db is a real time acyclic graph database.
 
-It was built to handle massively scalable data structures with complex hierarchies and taxonomies, with real-time updates, transparent subscriptions, and powerful queries.
+It's built to handle massively scalable data structures with complex hierarchies and taxonomies, with real-time updates, transparent subscriptions, and powerful queries.
 
 Documents or graph vertices can have any number or combination of parents and children. Field values can be augmented with data from other members of its hierarchy allowing for efficient inheritance of data.
 
 Here are some of its features:
 
 - Real-time engine and subscription model
+
+- Supports server-side functions (a la Amazon Lambda)
+
+- Save and execute jobs from web hooks
 
 - Schemas enforce data types with built-in validation
 
@@ -29,7 +33,8 @@ Here are some of its features:
 ## Documentation
 
 Selva is composed of two main modules - @saulx/selva client and @saulx/selva-server.
-Documentation for its API as well as the two main concepts: the schemas and its query DSL can be viewed in the links below.
+
+Documentation for its API as well as the two main concepts: the schemas, and its query DSL can be viewed in the links below.
 
 - [API](docs/api.md)
 - [Schema definition](docs/schemas.md)
