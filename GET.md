@@ -14,7 +14,7 @@ const { data: myItem } = await db.get({
 
 const { data: myItem } = await db.get({
   $id: 'mydingdong',
-  $language: 'de', // gets [de] fields if available
+  $language: 'de', // gets [de] fields if available.
   id: true,
   title: { $default: 'my smurfypants' }
 })
