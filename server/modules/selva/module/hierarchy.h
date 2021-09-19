@@ -9,6 +9,7 @@
 #include "trx.h"
 #include "edge.h"
 #include "subscriptions.h"
+#include "poptop.h"
 
 #define HIERARCHY_ENCODING_VERSION  2
 
@@ -119,7 +120,14 @@ struct SelvaModify_Hierarchy {
         struct SelvaSubscriptions_DeferredEvents deferred_events;
     } subs;
 
-    struct SelvaObject *dyn_index;
+    struct {
+        int nr_indices; /*!< Total number of active indices. */
+        struct bitmap *find_marker_id_stack;
+        struct poptop top_indices; /*!< A list of top requested indices. */
+
+        struct indexing_timer_args *indexing_timer_args;
+        struct SelvaObject *index_map;
+    } dyn_index;
 };
 
 /**

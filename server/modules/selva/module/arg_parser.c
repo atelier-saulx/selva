@@ -327,6 +327,10 @@ int SelvaArgParser_IndexHints(RedisModuleStringList *out, RedisModuleString **ar
     for (int i = 0; i < argc; i += 2) {
         RedisModuleString **new_list;
 
+        if (n > FIND_INDICES_MAX_HINTS_FIND) {
+            return SELVA_ENOBUFS;
+        }
+
         if (i + 1 >= argc || strcmp("index", RedisModule_StringPtrLen(argv[i], NULL))) {
             break;
         }

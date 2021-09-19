@@ -1548,39 +1548,50 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     size_t merge_nr_fields = 0;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
         Selva_NodeId nodeId;
+
+        Selva_NodeIdCpy(nodeId, ids_str + i);
+        if (nodeId[0] == '\0') {
+            /* Just skip empty IDs. */
+            continue;
+        }
+
         /*
-         * TODO Limit max nr_index_hints
+         * Note that SelvaArgParser_IndexHints() limits the nr_index_hints to
+         * FIND_INDICES_MAX_HINTS_FIND
          */
         struct SelvaFindIndexControlBlock *ind_icb[nr_index_hints];
         struct SelvaSet *ind_out[nr_index_hints];
         int ind_select = -1; /* Selected index. The smallest of all found. */
 
-        Selva_NodeIdCpy(nodeId, ids_str + i);
-
-        if (nodeId[0] == '\0') {
-            continue;
-        }
-
         memset(ind_icb, 0, nr_index_hints * sizeof(struct SelvaFindIndexControlBlock *));
         memset(ind_out, 0, nr_index_hints * sizeof(struct SelvaSet *));
 
-        if (nr_index_hints > 0 && selva_glob_config.find_lfu_count_init > 0) {
+        /* find_indices_max == 0 => indexing disabled */
+        if (nr_index_hints > 0 && selva_glob_config.find_indices_max > 0) {
             RedisModuleString *dir_expr = NULL;
             int ind_err;
 
             if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
                        SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
-                /* We know it's valid because it was already parsed and compiled once. */
+                /*
+                 * We know it's valid because it was already parsed and compiled once.
+                 * However, the indexing subsystem can't use the already compiled
+                 * expression because its lifetime is unpredictable and it's not easy
+                 * to change that.
+                 */
                 dir_expr = argv[ARGV_REF_FIELD];
             }
 
+            /*
+             * Select the best index res set.
+             */
             for (int i = 0; i < nr_index_hints; i++) {
-                struct SelvaFindIndexControlBlock *icb;
-                struct SelvaSet *set;
+                struct SelvaFindIndexControlBlock *icb = NULL;
+                struct SelvaSet *set = NULL;
 
                 ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hints[i], &icb, &set);
+                ind_icb[i] = icb;
                 if (!ind_err) {
-                    ind_icb[i] = icb;
                     ind_out[i] = set;
 
                     if (ind_select < 0 || SelvaSet_Size(set) < SelvaSet_Size(ind_out[ind_select])) {
@@ -1682,6 +1693,9 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             }
 
             if (i == ind_select) {
+                SelvaFind_Acc(icb, args.acc_take, args.acc_tot);
+            } else if (ind_select == -1) {
+                /* No index was selected so all will get the same take. */
                 SelvaFind_Acc(icb, args.acc_take, args.acc_tot);
             } else {
                 /* Nothing taken from this index. */

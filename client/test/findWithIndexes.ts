@@ -12,6 +12,7 @@ test.before(async (t) => {
   port = await getPort()
   srv = await start({
     port,
+    selvaOptions: ['FIND_INDEXING_INTERVAL', '500', 'FIND_INDEXING_ICB_UPDATE_INTERVAL', '1000'],
   })
 
   await wait(500)
@@ -65,42 +66,44 @@ test.after(async (t) => {
 test.serial('find index', async (t) => {
   // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
+
   await client.set({
     type: 'league',
     name: 'league 1',
   })
-
   await client.set({
     type: 'league',
     name: 'league 2',
     thing: 'yes some value here',
   })
 
+  const q = {
+    $id: 'root',
+    id: true,
+    items: {
+      name: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league',
+            },
+            {
+              $field: 'thing',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    },
+  }
+
   for (let i = 0; i < 500; i++) {
     t.deepEqualIgnoreOrder(
-      await client.get({
-        $id: 'root',
-        id: true,
-        items: {
-          name: true,
-          $list: {
-            $find: {
-              $traverse: 'descendants',
-              $filter: [
-                {
-                  $field: 'type',
-                  $operator: '=',
-                  $value: 'league',
-                },
-                {
-                  $field: 'thing',
-                  $operator: 'exists',
-                },
-              ],
-            },
-          },
-        },
-      }),
+      await client.get(q),
       { id: 'root', items: [{ name: 'league 2' }] }
     )
   }
@@ -109,9 +112,7 @@ test.serial('find index', async (t) => {
     'root.I.ImxlIiBl',
     'not_active',
   ])
-
   await wait(1e3)
-
   t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
     'root.I.ImxlIiBl',
     'not_active',
@@ -124,62 +125,25 @@ test.serial('find index', async (t) => {
       thing: 'yes some value here',
     })
   }
-
-  for (let i = 0; i < 500; i++) {
-    await client.get({
-      $id: 'root',
-      id: true,
-      items: {
-        name: true,
-        $list: {
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $field: 'type',
-                $operator: '=',
-                $value: 'league',
-              },
-              {
-                $field: 'thing',
-                $operator: 'exists',
-              },
-            ],
-          },
-        },
-      },
-    })
-  }
-  await wait(2e3);
-  for (let i = 0; i < 500; i++) {
-    await client.get({
-      $id: 'root',
-      id: true,
-      items: {
-        name: true,
-        $list: {
-          $find: {
-            $traverse: 'descendants',
-            $filter: [
-              {
-                $field: 'type',
-                $operator: '=',
-                $value: 'league',
-              },
-              {
-                $field: 'thing',
-                $operator: 'exists',
-              },
-            ],
-          },
-        },
-      },
+  for (let i = 0; i < 2000; i++) {
+    await client.set({
+      type: 'league',
+      name: 'league 3',
     })
   }
 
-  t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
+  for (let i = 0; i < 500; i++) {
+    await client.get(q)
+  }
+  await wait(1e3);
+  for (let i = 0; i < 500; i++) {
+    await client.get(q)
+  }
+
+  const indices = await client.redis.selva_index_list('___selva_hierarchy')
+  t.deepEqual(indices.map((v, i) => i % 2 === 0 ? v : v[3]), [
     'root.I.ImxlIiBl',
-    1002,
+    3002,
   ])
 
   await client.delete('root')
@@ -233,7 +197,7 @@ test.serial('find index strings', async (t) => {
 
   t.deepEqual(
     await client.redis.selva_index_list('___selva_hierarchy'),
-    ['root.I.Im5hbWUiIGYgImxlYWd1ZSAwIiBj', [ 0, 101, 1667, 3334 ]]
+    ['root.I.Im5hbWUiIGYgImxlYWd1ZSAwIiBj', [ 101, 101, 1667, 3334 ]]
   )
 
   await client.delete('root')
@@ -254,7 +218,7 @@ test.serial('find index string sets', async (t) => {
 
   await client.redis.selva_index_new('___selva_hierarchy', 'descendants', '', 'root', '"g" "things" a')
   await client.redis.selva_index_new('___selva_hierarchy', 'descendants', '', 'root', '"thing" f "abc" c')
-  await wait(2e3)
+  await wait(1e3)
   for (let i = 0; i < 500; i++) {
     const r = await client.get({
       $id: 'root',
@@ -276,7 +240,7 @@ test.serial('find index string sets', async (t) => {
       },
     })
   }
-  await wait(1e3)
+  await wait(500)
   for (let i = 0; i < 500; i++) {
     const r = await client.get({
       $id: 'root',
@@ -305,15 +269,13 @@ test.serial('find index string sets', async (t) => {
   }
   await wait(2e3)
 
-  t.deepEqual(
-    await client.redis.selva_index_list('___selva_hierarchy'),
-    [
-      'root.I.ImciICJ0aGluZ3MiIGE=',
-      [ 0, 101, 10, 10 ],
-      'root.I.InRoaW5nIiBmICJhYmMiIGM=',
-      [ 0, 101, 10, 1000 ]
-    ]
-  )
+  const indices = await client.redis.selva_index_list('___selva_hierarchy')
+  t.deepEqual(indices[0], 'root.I.ImciICJ0aGluZ3MiIGE=')
+  t.deepEqual(indices[1][2], 10)
+  t.deepEqual(indices[1][3], 10)
+  t.deepEqual(indices[2], 'root.I.InRoaW5nIiBmICJhYmMiIGM=')
+  t.deepEqual(indices[3][2], 10)
+  t.deepEqual(indices[3][3], 1000)
 
   await client.delete('root')
   await client.destroy()
