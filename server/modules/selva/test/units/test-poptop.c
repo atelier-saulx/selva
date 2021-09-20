@@ -25,7 +25,7 @@ static char * test_add_rm(void)
 {
     const size_t max_size = 10;
     const int initial_cut = 0;
-    int score = 5;
+    float score = 5.0;
     struct my_data d = {
         .v = 42,
     };
@@ -36,7 +36,7 @@ static char * test_add_rm(void)
     pu_assert_equal("initialized", err, 0);
 
     poptop_maybe_add(&l, score, &d);
-    score = 6;
+    score = 6.0;
     poptop_maybe_add(&l, score, &d);
 
     POPTOP_FOREACH(el, &l) {
@@ -48,7 +48,7 @@ static char * test_add_rm(void)
         }
 
         pu_assert_equal("found right elem", pd->v, 42);
-        pu_assert_equal("score was updated", el->score, 6);
+        pu_assert_equal("score was updated", el->score, 6.0);
     }
 
     poptop_remove(&l, &d);
@@ -102,7 +102,7 @@ static char * test_add_too_many(void) {
     pu_assert_equal("initialized", err, 0);
 
     for (int i = 0; i < num_elem(d); i++) {
-        poptop_maybe_add(&l, i, d + i);
+        poptop_maybe_add(&l, (float)i, d + i);
     }
 
     POPTOP_FOREACH(el, &l) {
@@ -158,7 +158,7 @@ static char * test_foreach(void) {
     pu_assert_equal("initialized", err, 0);
 
     for (int i = 0; i < num_elem(d); i++) {
-        poptop_maybe_add(&l, i, d + i);
+        poptop_maybe_add(&l, (float)i, d + i);
     }
 
     POPTOP_FOREACH(el, &l) {
@@ -170,7 +170,7 @@ static char * test_foreach(void) {
 
         switch (pd->v) {
         case 15 ... 19:
-            pu_assert_equal("expected score", pd->v - 10, el->score);
+            pu_assert_equal("expected score", pd->v - 10, (int)el->score);
             break; /* NOP */
         default:
             pu_assert_fail("this elem shouldn't be in the list");
@@ -191,7 +191,7 @@ static char * test_foreach(void) {
             pu_assert_fail("17 shouldn't be in the list anymore");
         case 10 ... 16:
         case 18 ... 19:
-            pu_assert_equal("expected score", pd->v - 10, el->score);
+            pu_assert_equal("expected score", pd->v - 10, (int)el->score);
             break; /* NOP */
         default:
             pu_assert_fail("this elem shouldn't be in the list");
@@ -242,12 +242,12 @@ static char * test_maintenance(void) {
     pu_assert_equal("initialized", err, 0);
 
     for (int i = 0; i < num_elem(d); i++) {
-        poptop_maybe_add(&l, i, d + i);
+        poptop_maybe_add(&l, (float)i, d + i);
     }
 
     poptop_maintenance(&l);
 
-    pu_assert_equal("new cut_limit is set", l.cut_limit, 4);
+    pu_assert_equal("new cut_limit is set", l.cut_limit, 4.0);
 
     while ((dp = poptop_maintenance_drop(&l))) {
         pu_assert("expected drop", dp->v < 14);

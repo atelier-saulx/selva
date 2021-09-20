@@ -1,5 +1,7 @@
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
+#include <tgmath.h>
 #include "redismodule.h"
 #include "poptop.h"
 
@@ -8,7 +10,7 @@ struct poptop_loc {
     struct poptop_list_el *next_free;
 };
 
-int poptop_init(struct poptop *l, size_t max_size, int initial_cut) {
+int poptop_init(struct poptop *l, size_t max_size, float initial_cut) {
     l->max_size = max_size;
     l->cut_limit = initial_cut;
     l->list = RedisModule_Calloc(max_size, sizeof(struct poptop_list_el));
@@ -47,7 +49,7 @@ static struct poptop_loc poptop_find(struct poptop * restrict l, void * restrict
     };
 }
 
-void poptop_maybe_add(struct poptop * restrict l, int score, void * restrict p) {
+void poptop_maybe_add(struct poptop * restrict l, float score, void * restrict p) {
     struct poptop_loc loc = poptop_find(l, p);
 
     if (loc.found) {
@@ -78,7 +80,7 @@ static int poptop_list_el_compare(const void *a, const void *b) {
     } else if (!el_b->p) {
         return -1;
     } else {
-        return el_a->score - el_b->score;
+        return round(el_a->score - el_b->score);
     }
 }
 
@@ -106,12 +108,12 @@ static size_t poptop_find_last(const struct poptop *l) {
  * Get the median score from a sorted poptop list.
  */
 static int poptop_median_score(const struct poptop *l, size_t last) {
-    int median;
+    float median;
 
     if (last & 1) { /* The number of elements (last + 1) is even. */
         size_t i = (last + 1) >> 1;
 
-        median = (l->list[i].score + l->list[i - 1].score) >> 1;
+        median = (l->list[i].score + l->list[i - 1].score) / 2.0;
     } else { /* The number of elements is odd. */
         median = l->list[last >> 1].score;
     }
