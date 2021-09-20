@@ -1,5 +1,5 @@
 {
-  "name": "@saulx/selva-server",
+  "name": "@sporttotaltv/selva-server",
   "version": "2.0.17",
   "main": "./dist/index.js",
   "scripts": {

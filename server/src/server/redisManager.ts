@@ -61,7 +61,6 @@ export default class RedisManager extends ProcessManager {
       if (info && typeof info === 'string') {
         const infoLines = info.split('\r\n')
 
-
         const redisInfo = infoLines.reduce((acc, line) => {
           if (line.startsWith('#')) {
             return acc
@@ -83,6 +82,12 @@ export default class RedisManager extends ProcessManager {
         return { isBusy: true, runtimeInfo }
       }
     } catch (err) {
+      try {
+        //kill any long running scripts.
+        await this.selvaClient.redis.script('KILL')
+      } catch (e) {
+        console.error(e)
+      }
       // this.emit('error', err)
       return {
         redisInfo: {},
