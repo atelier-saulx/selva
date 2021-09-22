@@ -11,6 +11,7 @@ OBJS := \
 	base64.o \
 	bitmap.o \
 	cstrings.o \
+	lpf.o \
 	mempool.o \
 	poptop.o \
 	queue_r.o \
