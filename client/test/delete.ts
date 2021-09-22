@@ -160,3 +160,78 @@ test.serial('can delete a set', async (t) => {
 
   // That's it, there is nothing more to check as sets are embedded in SelvaObjects
 })
+
+test.serial('recursive delete', async (t) => {
+  const client = connect(
+    {
+      port,
+    },
+    { loglevel: 'info' }
+  )
+
+  const league = await client.set({
+    type: 'league',
+    children: [
+      {
+        type: 'match',
+        children: [
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' }
+        ],
+      },
+      {
+        type: 'match',
+        children: [
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' }
+        ],
+      },
+    ]
+  })
+
+  const res1 = await client.get({
+    $id: 'root',
+    things: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+        },
+      },
+    }
+  })
+  t.deepEqual(res1.things.length, 25, 'found all children')
+
+  await client.delete(league)
+
+  const res2 = await client.get({
+    $id: 'root',
+    things: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+        },
+      },
+    }
+  })
+  t.deepEqual(res2.things.length, 0)
+})
