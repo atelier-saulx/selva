@@ -322,7 +322,6 @@ test.serial('get - basic value types timeseries', async (t) => {
     $id: 'viA',
     image: {
       thumb: 'lol 2',
-      pixels: 3000,
     },
   })
 

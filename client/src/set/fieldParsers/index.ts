@@ -11,6 +11,8 @@ import json from './json'
 import object from './object'
 import record from './record'
 import array from './array'
+import { deepCopy, deepMerge } from '@saulx/utils'
+import { getNestedField, setNestedResult } from '../../get/utils'
 
 type FieldParserFn = (
   client: SelvaClient,
@@ -26,7 +28,7 @@ type FieldParserFn = (
 const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
   fn: FieldParserFn
 ) => {
-  return (
+  return async (
     client: SelvaClient,
     schema: Schema,
     field: string,
@@ -37,12 +39,28 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
     $lang?: string
   ) => {
     if (fields.timeseries) {
+      let tsPayload = payload
+
+      if (
+        payload.$merge !== false &&
+        ['object', 'record'].includes(fields.type)
+      ) {
+        const getOpts = {
+          $id: (<any>result).$id,
+        }
+        setNestedResult(getOpts, field, true)
+
+        const prevResult = await client.get(getOpts)
+        const prevValue = getNestedField(prevResult, field) || {}
+        tsPayload = deepMerge(prevValue, payload)
+      }
+
       const timeseriesCtx = {
         nodeId: (<any>result).$id,
         nodeType: type,
         field,
         fieldSchema: fields,
-        payload,
+        payload: tsPayload,
         ts: Date.now(),
       }
 
