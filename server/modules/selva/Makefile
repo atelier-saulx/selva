@@ -37,6 +37,7 @@ IDIR := $(patsubst %,-I%, $(INCLUDE_DIR))
 
 CFLAGS += $(IDIR) -include tunables.h \
 	-O2 \
+	-fPIC \
 	-fno-strict-aliasing \
 	-D REDISMODULE_EXPERIMENTAL_API=1
 # Compile flags for linux / osx
