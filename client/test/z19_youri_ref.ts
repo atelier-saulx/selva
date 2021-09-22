@@ -35,7 +35,7 @@ test.after(async (t) => {
   await srv.destroy()
 })
 
-test.serial('do pages with refs', async (t) => {
+test.serial('do things with refs', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await wait(100)
   const a = await client.set({
@@ -77,10 +77,7 @@ test.serial('do pages with refs', async (t) => {
     await wait(100)
   }
 
-  await wait(2e3)
-
   t.pass()
 
-  await client.destroy()
   await client.destroy()
 })
