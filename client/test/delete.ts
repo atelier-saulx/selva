@@ -169,23 +169,26 @@ test.serial('recursive delete', async (t) => {
     { loglevel: 'info' }
   )
 
+  const thing = await client.set({
+    type: 'someTestThing',
+  })
   const league = await client.set({
     type: 'league',
     children: [
       {
         type: 'match',
         children: [
-          { type: 'person' },
-          { type: 'person' },
-          { type: 'person' },
-          { type: 'person' },
-          { type: 'person' },
-          { type: 'person' },
-          { type: 'person' },
-          { type: 'person' },
-          { type: 'person' },
-          { type: 'person' },
-          { type: 'person' }
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] }
         ],
       },
       {
@@ -218,7 +221,7 @@ test.serial('recursive delete', async (t) => {
       },
     }
   })
-  t.deepEqual(res1.things.length, 25, 'found all children')
+  t.deepEqual(res1.things.length, 26, 'found all children')
 
   await client.delete(league)
 
@@ -233,5 +236,5 @@ test.serial('recursive delete', async (t) => {
       },
     }
   })
-  t.deepEqual(res2.things.length, 0)
+  t.deepEqual(res2.things.length, 12, 'children that have other parents were preserved')
 })
