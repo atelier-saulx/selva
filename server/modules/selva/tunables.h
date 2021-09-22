@@ -76,14 +76,13 @@
  * Dynamic Find Query Index Tunables.
  */
 
+#define FIND_INDICES_MAX_HINTS   500  /*!< Maximum number of indexing hints tracked. */
 #define FIND_INDICES_MAX         100  /*!< Maximum number of indices. 0 = disable indexing. */
 #define FIND_INDEXING_THRESHOLD  100  /*!< A candidate for indexing must have at least this many visits per traversal. */
-#define FIND_LFU_PERIOD          1000 /*!< Refresh period [ms] */
-#define FIND_LFU_COUNT_INIT      500  /*!< Initial value for a new control block. 0 = no indexing. */
-#define FIND_LFU_COUNT_INCR      100  /*!< Increment when the index is used. */
+#define FIND_PROC_INTERVAL       1000 /*!< ICB refresh interval [ms] */
+#define FIND_INDEXING_INTERVAL   60000 /*! How often the set of active indices is decided. */
+/* TODO RENAME */
 #define FIND_LFU_COUNT_CREATE    1000 /*!< The count required to create an index. */
-#define FIND_LFU_COUNT_DISCARD   100  /*!< The count when the index is discarded; 0 = never. */
-#define FIND_LFU_COUNT_DESTROY   0    /*!< The count when the control block is destroyed. */
 
 /*
  * Async_task Tunables.

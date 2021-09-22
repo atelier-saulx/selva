@@ -7,10 +7,7 @@ struct RedisModuleString;
 struct selva_glob_config {
     size_t hierarchy_initial_vector_len;
     size_t hierarchy_expected_resp_len;
-    int find_lfu_count_init;
-    int find_lfu_count_incr;
-    int find_lfu_count_create;
-    int find_lfu_count_discard;
+    int find_pop_count_ave_create;
 };
 
 extern struct selva_glob_config selva_glob_config;

@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stddef.h>
+#include <limits.h>
 #include "redismodule.h"
 #include "config.h"
 #include "base64.h"
 #include "bitmap.h"
+#include "lpf.h"
+#include "poptop.h"
 #include "errors.h"
 #include "hierarchy.h"
 #include "selva.h"
@@ -12,8 +15,14 @@
 #include "selva_set.h"
 #include "find_index.h"
 
+/* TODO Maybe tunable */
+#define POP_AVE_PERIOD 216000 /* sec */
+
+static int nr_indices; /*!< Total number of active indices. */
 static Selva_SubscriptionId find_index_sub_id; /* zeroes */
 static struct bitmap *find_marker_id_stack;
+static float pop_ave_a; /*!< Popularity count average dampening coefficient. */
+static struct poptop top_indices; /*!< A list of top requested indices. */
 
 /**
  * Indexing hint accounting and indices.
@@ -50,10 +59,12 @@ struct SelvaFindIndexControlBlock {
     } find_acc;
 
     /**
-     * LFU counter.
-     * See LFU_COUNT_xxx macros.
+     * Hint popularity counter.
      */
-    int lfu_count;
+    struct {
+        int cur; /*!< Times the hint has been seen during current period. */
+        float ave; /*!< Average times seen over a period of time. */
+    } pop_count;
 
     /*
      * Traversal.
@@ -80,6 +91,7 @@ struct SelvaFindIndexControlBlock {
 };
 
 static void create_index_cb_timer(RedisModuleCtx *ctx, struct SelvaFindIndexControlBlock *icb);
+static void create_indexing_timer(RedisModuleCtx *ctx);
 
 static size_t calc_name_len(enum SelvaTraversal dir, size_t dir_expression_len, const Selva_NodeId node_id, size_t filter_len) {
     size_t n;
@@ -99,7 +111,7 @@ static size_t calc_name_len(enum SelvaTraversal dir, size_t dir_expression_len, 
 
 /**
  * Create a deterministic name for an index.
- * node_id.<direction>[.<dir expression>].H(<indexing clause>) = { lfu_count, SelvaSet<node_id> }
+ * node_id.<direction>[.<dir expression>].H(<indexing clause>)
  */
 static RedisModuleString *build_name(
         const Selva_NodeId node_id,
@@ -276,6 +288,8 @@ static int start_index(
     /* Clear indexed find accounting. */
     icb->find_acc.ind_take_max = 0;
 
+    nr_indices++;
+
     return 0;
 }
 
@@ -295,9 +309,12 @@ static int discard_index(
         }
     }
 
+    if (icb->is_active) { /* Should be true right? */
+        icb->is_active = 0;
+        nr_indices--;
+    }
     if (icb->is_valid) {
         /* Destroy the index but not the control block. */
-        icb->is_active = 0;
         icb->is_valid = 0;
         SelvaSet_Destroy(&icb->res);
     }
@@ -371,58 +388,74 @@ static int destroy_index_cb(
     return 0;
 }
 
-static void refresh_index_proc(RedisModuleCtx *ctx, void *data) {
-    struct SelvaFindIndexControlBlock *icb = (struct SelvaFindIndexControlBlock *)data;
+/* TODO */
+static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data __unused) {
     SelvaModify_Hierarchy *hierarchy;
-    int lfu_count;
+    struct poptop_list_el *el;
 
-    icb->is_valid_timer_id = 0;
+    create_indexing_timer(ctx);
 
     hierarchy = SelvaModify_OpenHierarchy(ctx,
                                           RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1),
                                           REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
-        fprintf(stderr, "%s:%d: Hierarchy not found, not registering a new timer\n",
-                __FILE__, __LINE__);
+        /* TODO Discard current indices. */
         return;
     }
 
-    /* Recreate the timer. */
-    create_index_cb_timer(ctx, icb);
+    poptop_maintenance(&top_indices);
 
-    lfu_count = --icb->lfu_count;
-    if (lfu_count <= FIND_LFU_COUNT_DESTROY) {
-        int err;
+    /*
+     * First discard indices that are no longer relevant.
+     */
+    while ((el = poptop_maintenance_drop(&top_indices))) {
+        struct SelvaFindIndexControlBlock *icb = (struct SelvaFindIndexControlBlock *)el->p;
 
-        /*
-         * Currently ICBs are mostly destroyed lazily by this mechanism and
-         * specifically never when a node is deleted. This is fairly ok
-         * because the overhead of this system is minimal and much smaller
-         * than actively checking if a deleted node was a part of an ICB.
-         */
+        if (el->score > 10.0f /* TODO Discard */) {
+            int err;
 
-        err = destroy_index_cb(ctx, hierarchy, icb);
-        if (err) {
-            fprintf(stderr, "%s:%d: Failed to destroy the index for \"%s\": %s\n",
-                    __FILE__, __LINE__,
-                    RedisModule_StringPtrLen(icb->name, NULL),
-                    getSelvaErrorStr(err));
+            err = discard_index(ctx, hierarchy, icb);
+            if (err) {
+                fprintf(stderr, "%s:%d: Failed to discard the index for \"%s\": %s\n",
+                        __FILE__, __LINE__,
+                        RedisModule_StringPtrLen(icb->name, NULL),
+                        getSelvaErrorStr(err));
+            }
+        } else { /* Destroy. */
+            int err;
+
+            /*
+             * Currently ICBs are mostly destroyed lazily by this mechanism and
+             * specifically never when a node is deleted. This is fairly ok
+             * because the overhead of this system is minimal and much smaller
+             * than actively checking if a deleted node was a part of an ICB.
+             */
+
+            err = destroy_index_cb(ctx, hierarchy, icb);
+            if (err) {
+                fprintf(stderr, "%s:%d: Failed to destroy the index for \"%s\": %s\n",
+                        __FILE__, __LINE__,
+                        RedisModule_StringPtrLen(icb->name, NULL),
+                        getSelvaErrorStr(err));
+            }
         }
-    } else if (selva_glob_config.find_lfu_count_discard != 0 &&
-               lfu_count <= selva_glob_config.find_lfu_count_discard) {
+    }
+
+    /*
+     * Finally make sure the top most ICBs are indexed.
+     */
+    POPTOP_FOREACH(el, &top_indices) {
+        struct SelvaFindIndexControlBlock *icb = (struct SelvaFindIndexControlBlock *)el->p;
         int err;
 
-        err = discard_index(ctx, hierarchy, icb);
-        if (err) {
-            fprintf(stderr, "%s:%d: Failed to discard the index for \"%s\": %s\n",
-                    __FILE__, __LINE__,
-                    RedisModule_StringPtrLen(icb->name, NULL),
-                    getSelvaErrorStr(err));
+        if (icb->is_valid) {
+            continue; /* Already created and valid. */
         }
-    } else if (icb->find_acc.tot_max >= FIND_INDEXING_THRESHOLD &&
-               lfu_count >= selva_glob_config.find_lfu_count_create &&
-               !icb->is_valid) {
-        int err;
+
+        if (!icb->is_active && nr_indices >= FIND_INDICES_MAX) {
+            /* Max reached but we may need to still refresh other indices. */
+            continue;
+        }
 
         /*
          * Only call start_index() if the index is not currently valid.
@@ -456,11 +489,37 @@ static void refresh_index_proc(RedisModuleCtx *ctx, void *data) {
                     __FILE__, __LINE__,
                     RedisModule_StringPtrLen(icb->name, NULL),
                     getSelvaErrorStr(err));
-            /* Get it cleaned up eventually. */
-            icb->lfu_count = -1;
+            /* TODO Have it cleaned up eventually. */
             return;
         }
     }
+}
+
+static void icb_proc(RedisModuleCtx *ctx, void *data) {
+    struct SelvaFindIndexControlBlock *icb = (struct SelvaFindIndexControlBlock *)data;
+
+    icb->is_valid_timer_id = 0;
+
+    /* Recreate the timer. */
+    create_index_cb_timer(ctx, icb);
+
+    /*
+     * Calculate the average popularity of the associated hint.
+     */
+    icb->pop_count.ave = lpf_calc_next(pop_ave_a, icb->pop_count.ave, icb->pop_count.cur);
+    icb->pop_count.cur = 0; /* Reset the counting. */
+
+    /*
+     * Calculate the score for this icb.
+     * TODO
+     */
+    float score = 0;
+
+    /*
+     * insert the icb into the poptop list, maybe, and it
+     * might get indexed in the near future.
+     */
+    poptop_maybe_add(&top_indices, score, icb);
 }
 
 /**
@@ -526,7 +585,13 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
             return NULL;
         }
 
-        icb->lfu_count = selva_glob_config.find_lfu_count_init;
+        /*
+         * Initialize the popularity count average.
+         * We give a fairly large initial value for the count to make sure the
+         * icb will stay active for some time but doesn't get turned into an
+         * index immediately.
+         */
+        icb->pop_count.ave = (float)selva_glob_config.find_pop_count_ave_create / 2.0f;
 
         /*
          * Set traversal params.
@@ -542,6 +607,9 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
         RedisModule_RetainString(ctx, filter);
         icb->filter = filter;
 
+        /*
+         * Map the newly created icb into the dyn_index SelvaObject.
+         */
         err = SelvaObject_SetPointer(dyn_index, name, icb, NULL);
         if (err) {
             fprintf(stderr, "%s:%d: Failed to insert a new ICB at \"%s\": %s\n",
@@ -553,7 +621,7 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
             return NULL;
         }
 
-        /* Finally create a timer. */
+        /* Finally create a proc timer. */
         create_index_cb_timer(ctx, icb);
     }
 
@@ -561,10 +629,16 @@ static struct SelvaFindIndexControlBlock *upsert_index_cb(
 }
 
 static void create_index_cb_timer(RedisModuleCtx *ctx, struct SelvaFindIndexControlBlock *icb) {
-    const mstime_t period = FIND_LFU_PERIOD;
+    const mstime_t period = FIND_PROC_INTERVAL;
 
-    icb->timer_id = RedisModule_CreateTimer(ctx, period, refresh_index_proc, icb);
+    icb->timer_id = RedisModule_CreateTimer(ctx, period, icb_proc, icb);
     icb->is_valid_timer_id = 1;
+}
+
+static void create_indexing_timer(RedisModuleCtx *ctx) {
+    const mstime_t period = FIND_INDEXING_INTERVAL;
+
+    (void)RedisModule_CreateTimer(ctx, period, make_indexing_decission_proc, NULL);
 }
 
 int SelvaFind_AutoIndex(
@@ -618,33 +692,19 @@ int SelvaFind_AutoIndex(
     return 0;
 }
 
-static void update_lfu_count(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take) {
-    typeof(icb->lfu_count) orig_lfu_count = icb->lfu_count;
-
-    /* Never increment if it's negative. */
-    if (orig_lfu_count >= 0) {
-        /*
-         * Give double increment for the index that was used.
-         * TODO This is not accurate because the find command could have
-         * actually returned an empty set, in which case the index result set
-         * was still actually useful.
-         */
-        icb->lfu_count += selva_glob_config.find_lfu_count_incr << !!acc_take;
-
-        /* Handle overflow. */
-        if (icb->lfu_count < orig_lfu_count) {
-            icb->lfu_count = selva_glob_config.find_lfu_count_init;
-        }
-    }
-}
-
 void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take, size_t acc_tot) {
     if (!FIND_INDICES_MAX) {
         /* If indexing is disabled then the rest of the function will be optimized out. */
         return;
     }
 
-    update_lfu_count(icb, acc_take);
+    /* Increment popularity counter. */
+    if (icb->pop_count.cur < INT_MAX) {
+        /*
+         * TODO Remove selva_glob_config.find_lfu_count_incr
+         */
+        icb->pop_count.cur++;
+    }
 
     /*
      * Result set size accounting.
@@ -787,7 +847,10 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
      * Make sure that an index will be created.
      */
     icb->find_acc.tot_max = FIND_INDEXING_THRESHOLD + 1;
+    /* TODO */
+#if 0
     icb->lfu_count = selva_glob_config.find_lfu_count_create + 10;
+#endif
 
     return RedisModule_ReplyWithLongLong(ctx, 1);
 }
@@ -855,15 +918,31 @@ static int FindIndex_OnLoad(RedisModuleCtx *ctx __unused) {
         return REDISMODULE_ERR;
     }
 
-    find_marker_id_stack = RedisModule_Alloc(BITMAP_ALLOC_SIZE(FIND_INDICES_MAX));
+    find_marker_id_stack = RedisModule_Alloc(BITMAP_ALLOC_SIZE(FIND_INDICES_MAX_HINTS));
     if (!find_marker_id_stack) {
         return REDISMODULE_ERR;
     }
 
-    find_marker_id_stack->nbits = FIND_INDICES_MAX;
-    for (size_t i = 0; i < FIND_INDICES_MAX; i++) {
+    find_marker_id_stack->nbits = FIND_INDICES_MAX_HINTS;
+    for (size_t i = 0; i < FIND_INDICES_MAX_HINTS; i++) {
         bitmap_set(find_marker_id_stack, i);
     }
+
+    pop_ave_a = lpf_geta(FIND_PROC_INTERVAL, POP_AVE_PERIOD);
+
+    /*
+     * TODO tunables for these
+     * We allow a max of 2 * FIND_INDICES_MAX so we always have more to choose
+     * from than we'll be able to create, and knowing that poptop will
+     * periodically drop about half of the list, we want to avoid oscillating
+     * too much.
+     */
+    poptop_init(&top_indices, 2 * FIND_INDICES_MAX, 0);
+
+    /*
+     * Timer for deciding the indices.
+     */
+    create_indexing_timer(ctx);
 
     if (RedisModule_CreateCommand(ctx, "selva.index.list", SelvaFindIndex_ListCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.index.new", SelvaFindIndex_NewCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||

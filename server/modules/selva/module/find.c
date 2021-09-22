@@ -1564,7 +1564,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         memset(ind_icb, 0, nr_index_hints * sizeof(struct SelvaFindIndexControlBlock *));
         memset(ind_out, 0, nr_index_hints * sizeof(struct SelvaSet *));
 
-        if (nr_index_hints > 0 && selva_glob_config.find_lfu_count_init > 0) {
+        /* TODO a way to disable indexing dynamically. */
+        if (nr_index_hints > 0 /* && selva_glob_config.find_lfu_count_init > 0 */) {
             RedisModuleString *dir_expr = NULL;
             int ind_err;
 
