@@ -264,7 +264,8 @@ static int start_index(
 
     err = SelvaSubscriptions_AddCallbackMarker(
             hierarchy, find_index_sub_id, icb->marker_id, marker_flags,
-            icb->node_id, icb->dir, dir_field, dir_expression, RedisModule_StringPtrLen(icb->filter, NULL), update_index,
+            icb->node_id, icb->dir, dir_field, dir_expression, RedisModule_StringPtrLen(icb->filter, NULL),
+            update_index,
             icb);
     if (err) {
         return err;
@@ -605,7 +606,8 @@ int SelvaFind_AutoIndex(
         SELVA_HIERARCHY_TRAVERSAL_PARENTS | /* (2) */
         SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS | /* (3) */
         SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS | /* (3) */
-        SELVA_HIERARCHY_TRAVERSAL_DFS_FULL /* (3) */
+        SELVA_HIERARCHY_TRAVERSAL_DFS_FULL | /* (3) */
+        SELVA_HIERARCHY_TRAVERSAL_EXPRESSION /* (2) */
         )) {
         /*
          * Legends:
@@ -628,22 +630,27 @@ int SelvaFind_AutoIndex(
 }
 
 void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take, size_t acc_tot) {
-    if (FIND_INDICES_MAX && (acc_take > icb->find_acc.take_max || acc_tot > icb->find_acc.tot_max)) {
-        icb->find_acc.take_max = acc_take;
-        icb->find_acc.tot_max = acc_tot;
+    if (!FIND_INDICES_MAX) {
+        /* If indexing is disabled then the rest of the function will be optimized out. */
+        return;
     }
-}
 
-void SelvaFind_AccIndexed(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take) {
-    if (FIND_INDICES_MAX && (acc_take > icb->find_acc.ind_take_max)) {
-        icb->find_acc.ind_take_max = acc_take;
+    if (icb->is_valid) {
+        if (acc_take > icb->find_acc.ind_take_max) {
+            icb->find_acc.ind_take_max = acc_take;
+        }
+    } else {
+        if (acc_take > icb->find_acc.take_max || acc_tot > icb->find_acc.tot_max) {
+            icb->find_acc.take_max = acc_take;
+            icb->find_acc.tot_max = acc_tot;
+        }
     }
 }
 
 static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     SelvaObject_Iterator *it;
     enum SelvaObjectType type;
-    const void *p;
+    void *p;
     int n = 0;
 
     it = SelvaObject_ForeachBegin(obj);

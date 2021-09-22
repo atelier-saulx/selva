@@ -1,2 +1,3 @@
 ./module.so
 ./module.o
+*.o

@@ -29,6 +29,7 @@ enum SelvaTraversal {
     SELVA_HIERARCHY_TRAVERSAL_DFS_FULL =        0x0400, /*!< Full DFS traversal of the whole hierarchy. */
     SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD =  0x0800, /*!< Traverse an edge field according to its constraints using BFS. */
     SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION =  0x1000, /*!< Traverse with an expression returning a set of field names. */
+    SELVA_HIERARCHY_TRAVERSAL_EXPRESSION =      0x2000, /*!< Visit fields with an expression returning a set of field names. */
 };
 
 enum SelvaMergeStrategy {
@@ -38,15 +39,16 @@ enum SelvaMergeStrategy {
     MERGE_STRATEGY_DEEP,
 };
 
-enum FindCommand_OrderedItemType {
+enum TraversalOrderedItemType {
     ORDERED_ITEM_TYPE_EMPTY,
     ORDERED_ITEM_TYPE_TEXT,
     ORDERED_ITEM_TYPE_DOUBLE,
 };
 
-struct FindCommand_OrderedItem {
-    Selva_NodeId id;
-    enum FindCommand_OrderedItemType type;
+struct TraversalOrderedItem {
+    enum TraversalOrderedItemType type;
+    Selva_NodeId node_id;
+    struct SelvaModify_HierarchyNode *node;
     struct SelvaObject *data_obj;
     double d;
     size_t data_len;
@@ -105,9 +107,18 @@ struct FindCommand_Args {
      * fields have been already sent.
      */
     struct SelvaObject *fields;
+    /**
+     * Fields that should be excluded when `fields` contains a wildcard.
+     * The list should delimit the excluded fields in the following way:
+     * ```
+     * \0field1\0field2\0
+     * ```
+     */
+    struct RedisModuleString *excluded_fields;
 
     const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
-    SVector *order_result; /*!< Results of the find wrapped in FindCommand_OrderedItem structs. Only used if sorting is requested. */
+    SVector *order_result; /*!< Results of the find wrapped in TraversalOrderedItem structs.
+                            *   Only used if sorting is requested. */
 
     struct Selva_SubscriptionMarker *marker; /*!< Used by FindInSub. */
 
@@ -130,14 +141,14 @@ int SelvaTraversal_ParseDir(
         Selva_NodeId nodeId,
         enum SelvaTraversalAlgo algo,
         const struct RedisModuleString *field_name);
-int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, struct RedisModuleString *arg);
+int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct RedisModuleString *arg);
 orderFunc SelvaTraversal_GetOrderFunc(enum SelvaResultOrder order);
-struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(
+struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
         struct SelvaModify_HierarchyNode *node,
         const struct RedisModuleString *order_field);
-struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
+struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
         struct SelvaObject *obj,

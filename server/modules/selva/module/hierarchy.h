@@ -321,6 +321,13 @@ int SelvaHierarchy_TraverseExpression(
         struct rpn_ctx *rpn_ctx,
         struct rpn_expression *rpn_expr,
         const struct SelvaModify_HierarchyCallback *cb);
+int SelvaHierarchy_TraverseExpressionBfs(
+        struct RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId id,
+        struct rpn_ctx *rpn_ctx,
+        struct rpn_expression *rpn_expr,
+        const struct SelvaModify_HierarchyCallback *cb);
 int SelvaModify_TraverseArray(
         struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,

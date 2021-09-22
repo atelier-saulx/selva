@@ -174,7 +174,7 @@ void rpn_destroy(struct rpn_ctx *ctx) {
  * and when as nan_undefined. Once that is done we can also start utilizing it
  * better.
  */
-static double nan_undefined() {
+static double nan_undefined(void) {
     return nan("1");
 }
 
@@ -317,7 +317,7 @@ static void free_rpn_operand(void *p) {
 }
 
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
-	if (unlikely(ctx->depth >= RPN_MAX_D)) {
+    if (unlikely(ctx->depth >= RPN_MAX_D)) {
         fprintf(stderr, "%s:%d: Stack overflow\n", __FILE__, __LINE__);
         return RPN_ERR_BADSTK;
     }
@@ -443,7 +443,7 @@ static int to_bool(struct rpn_operand *v) {
 
             return obj && SelvaObject_LenStr(obj, NULL, 0);
         } else if (v->flags.slvset) {
-            struct SelvaSet *set = OPERAND_GET_SET(v);
+            const struct SelvaSet *set = OPERAND_GET_SET(v);
 
             return set && set->size > 0;
         }
@@ -1057,9 +1057,8 @@ static enum rpn_error rpn_op_cidcmp(struct RedisModuleCtx *redis_ctx __unused, s
     /*
      * Note the the allocated string is always large enough,
      * so the comparison is safe.
-     * TODO Could use Selva_CmpNodeType() here
      */
-    return push_int_result(ctx, !memcmp(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0]), SELVA_NODE_TYPE_SIZE));
+    return push_int_result(ctx, !Selva_CmpNodeType(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0])));
 }
 
 static enum rpn_error rpn_op_getsfld(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
@@ -1190,9 +1189,10 @@ static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, st
         return RPN_ERR_ENOMEM;
     }
 
-    err = SelvaSet_Union(set_a->type, res->set, set_a, set_b, NULL);
+    err = SelvaSet_Union(res->set, set_a, set_b, NULL);
     if (err) {
         /* TODO We just return ENOMEM regardless of the real error for now. */
+        /* TODO Make sure we don't leak memory with the res. */
         return RPN_ERR_ENOMEM;
     }
 
@@ -1734,10 +1734,12 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
 
     if (res->set) {
         if (res->flags.regist) {
-            SelvaSet_Union(out->type, out, res->set, NULL);
+            SelvaSet_Union(out, res->set, NULL);
+            /* TODO handle errors. */
         } else {
             /* Safe to move the strings. */
             SelvaSet_Merge(out, res->set);
+            /* TODO Handle errors. */
         }
         free_rpn_operand(&res);
     } else if (to_bool(res)) {
@@ -1745,7 +1747,6 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
         free_rpn_operand(&res);
         return RPN_ERR_TYPE;
     }
-
 
     return RPN_ERR_OK;
 }

@@ -127,6 +127,10 @@ static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, const RedisModul
 static const char *sztok(const char *s, size_t size, size_t * restrict i) {
     const char *r = NULL;
 
+    if (size == 0) {
+        return NULL;
+    }
+
     if (*i < size - 1) {
         r = s + *i;
         *i = *i + strnlen(r, size) + 1;
@@ -381,7 +385,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         trigger_created = 1;
     } else if (FISSET_CREATE(flags)) {
-        // if the specified id exists but $operation: 'insert' specified
+        /* if the specified id exists but $operation: 'insert' specified. */
         RedisModule_ReplyWithNull(ctx);
         return REDISMODULE_OK;
     }
@@ -399,7 +403,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {
-        SelvaNode_ClearFields(ctx, obj);
+        SelvaNode_ClearFields(obj);
     }
 
     /*
@@ -719,7 +723,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             memcpy(&insert_idx, value_str + sizeof(uint32_t), sizeof(uint32_t));
 
             if (item_type == SELVA_OBJECT_OBJECT) {
-                // object
+                /* object */
                 struct SelvaObject *new_obj = SelvaObject_New();
                 if (!new_obj) {
                     replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
@@ -806,7 +810,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             if (err < 0) {
                 TO_STR(id);
 
-                /* Since we are already at the end of the command, it's next to
+                /*
+                 * Since we are already at the end of the command, it's next to
                  * impossible to rollback the command, so we'll just log any
                  * errors received here.
                  */
@@ -894,7 +899,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     return REDISMODULE_OK;
 }
 
-//int RedisModule_OnUnload(RedisModuleCtx *ctx) {
 /*
  * Here we could use RedisModule_OnUnload() if it was called on exit, but it
  * isn't. Therefore, we use the destructor attribute that is almost always

@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include "redismodule.h"
+#include "auto_free.h"
 #include "errors.h"
 #include "svector.h"
 #include "edge.h"
@@ -35,15 +36,6 @@ static void init_node_metadata_edge(
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_edge);
 
-/**
- * Wrap RedisModule_Free().
- */
-static void wrapFree(void *p) {
-    void **pp = (void **)p;
-
-    RedisModule_Free(*pp);
-}
-
 static void deinit_node_metadata_edge(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
@@ -62,7 +54,7 @@ static void deinit_node_metadata_edge(
         const char *src_node_id;
 
         obj_it = SelvaObject_ForeachBegin(origins);
-        while ((edge_fields = (SVector *)SelvaObject_ForeachValue(origins, &obj_it, &src_node_id, SELVA_OBJECT_ARRAY))) {
+        while ((edge_fields = SelvaObject_ForeachValue(origins, &obj_it, &src_node_id, SELVA_OBJECT_ARRAY))) {
             struct SVectorIterator vec_it;
             struct EdgeField *src_field;
 
@@ -251,7 +243,7 @@ static int get_or_create_EdgeField(
     return 0;
 }
 
-int Edge_Has(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst_node) {
+int Edge_Has(const struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst_node) {
     return SVector_SearchIndex(&edge_field->arcs, dst_node) >= 0;
 }
 
@@ -405,7 +397,8 @@ static void remove_related_edge_markers(
         if ((dst_marker->dir &
              (SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
               SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
-              SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION)) &&
+              SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+              SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) &&
             !memcmp(dst_marker->node_id, src_node_id, SELVA_NODE_ID_SIZE)) {
             /*
              * Skip markers that are fixable with a clear & refresh,
@@ -424,7 +417,8 @@ static void remove_related_edge_markers(
             if ((src_marker->dir &
                  (SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                   SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
-                  SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION)) &&
+                  SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                  SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) &&
                 src_marker->sub == dst_marker->sub &&
                 !memcmp(src_marker->node_id, src_node_id, SELVA_NODE_ID_SIZE)) {
                 /* RFE Is it a bit ugly to do this here? */
@@ -536,7 +530,7 @@ static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy 
     void *p;
 
     it = SelvaObject_ForeachBegin(obj);
-    while ((p = (void *)SelvaObject_ForeachValueType(obj, &it, NULL, &type))) {
+    while ((p = SelvaObject_ForeachValueType(obj, &it, NULL, &type))) {
         if (type == SELVA_OBJECT_POINTER) {
             clear_field(ctx, hierarchy, node, p);
         } else if (type == SELVA_OBJECT_OBJECT) {
@@ -585,7 +579,7 @@ int Edge_DeleteField(
         const char *field_name_str,
         size_t field_name_len) {
     Selva_NodeType src_node_type;
-    struct EdgeField *src_edge_field;
+    const struct EdgeField *src_edge_field;
     int res;
 
     SelvaHierarchy_GetNodeType(src_node_type, src_node);
@@ -692,8 +686,8 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
     constraint_id = RedisModule_LoadUnsigned(io);
 
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
-        char *node_type __attribute__((cleanup(wrapFree))) = NULL;
-        char *field_name_str __attribute__((cleanup(wrapFree))) = NULL;
+        char *node_type __auto_free = NULL;
+        char *field_name_str __auto_free = NULL;
         size_t field_name_len;
 
         node_type = RedisModule_LoadStringBuffer(io, NULL);
@@ -712,7 +706,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
     }
 
     for (size_t i = 0; i < nr_edges; i++) {
-        char *dst_id_str __attribute__((cleanup(wrapFree))) = NULL;
+        char *dst_id_str __auto_free = NULL;
         size_t dst_id_len;
         struct SelvaModify_HierarchyNode *dst_node;
         int err;
@@ -780,10 +774,10 @@ int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hi
  * Custom RDB save function for saving EdgeFields.
  */
 static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused void *save_data) {
-    struct EdgeField *edgeField = (struct EdgeField *)value;
+    const struct EdgeField *edgeField = (struct EdgeField *)value;
     unsigned constraint_id = edgeField->constraint ? edgeField->constraint->constraint_id : EDGE_FIELD_CONSTRAINT_ID_DEFAULT;
     struct SVectorIterator vec_it;
-    struct SelvaModify_HierarchyNode *dst_node;
+    const struct SelvaModify_HierarchyNode *dst_node;
 
     RedisModule_SaveUnsigned(io, constraint_id);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {

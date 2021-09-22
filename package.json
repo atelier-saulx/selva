@@ -16,6 +16,7 @@
     "test": "cd client && yarn test",
     "build-c": "cd ./server/modules/selva && make clean && make && cp module.so ../binaries/darwin_x64/selva.so",
     "build-cx": "cd ./server/modules/selva && ./build.sh",
+    "build-redis": "cd ./server/redis && ./build.sh",
     "build": "yarn buildAstParser && yarn buildClient && mkdir -p server/dist/lua && cp client/dist/lua/update-schema.lua server/dist/lua/update-schema.lua && yarn buildServer",
     "buildClient": "cd client && yarn buildLua && yarn build",
     "buildAstParser": "cd query-ast-parser && yarn build",

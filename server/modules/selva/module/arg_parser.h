@@ -39,12 +39,22 @@ int SelvaArgsParser_StringList(
         const char *name,
         const struct RedisModuleString *arg_key,
         const struct RedisModuleString *arg_val);
+
+/**
+ * Parse a set of lists containing strings.
+ * Exclusion prefix: '!'
+ * Set separator: '\n'
+ * List separator: '|'
+ * Enf of sets: '\0'
+ */
 int SelvaArgsParser_StringSetList(
         struct RedisModuleCtx *ctx,
-        struct SelvaObject **out,
+        struct SelvaObject **list_out,
+        struct RedisModuleString **excluded_out,
         const char *name,
         const struct RedisModuleString *arg_key,
         const struct RedisModuleString *arg_val);
+
 int SelvaArgParser_Enum(
         const struct SelvaArgParser_EnumType types[],
         const struct RedisModuleString *arg);

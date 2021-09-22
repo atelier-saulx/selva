@@ -1,5 +1,6 @@
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <tgmath.h>
 #include "redismodule.h"
 #include "arg_parser.h"
 #include "cdefs.h"
@@ -105,21 +106,22 @@ int SelvaArgsParser_StringList(
     return 0;
 }
 
-/**
- * Parse a set of lists containing strings.
- * Set separator: '\n'
- * List separator: '|'
- * Enf of sets: '\0'
- */
 int SelvaArgsParser_StringSetList(
         RedisModuleCtx *ctx,
-        struct SelvaObject **out,
+        struct SelvaObject **list_out,
+        RedisModuleString **excluded_out,
         const char *name,
         const RedisModuleString *arg_key,
         const RedisModuleString *arg_val) {
+    const char excl_prefix = '!';
+    const char set_separator = '\n';
+    const char list_separator = '|';
+    const char eos = '\0';
     struct SelvaObject *obj;
+    RedisModuleString *excl = NULL;
     const char *cur;
     size_t n = 0;
+    size_t nr_excl = 0;
     int err;
 
     err = SelvaArgParser_StrOpt(&cur, name, arg_key, arg_val);
@@ -129,22 +131,32 @@ int SelvaArgsParser_StringSetList(
 
     obj = SelvaObject_New();
     if (!obj) {
-        return SELVA_ENOMEM;
+        goto fail;
     }
 
-    if (cur[0] != '\0') {
+    if (excluded_out) {
+        excl = RedisModule_CreateString(ctx, "", 1);
+        if (!excl) {
+            goto fail;
+        }
+    }
+
+    if (cur[0] != eos) {
         do {
-            const RedisModuleString *key;
+            const size_t key_len = (size_t)(log10(n + 1)) + 1;
+            char key_str[key_len + 1];
             const char *next;
 #if 0
             size_t len;
 #endif
 
+            snprintf(key_str, key_len + 1, "%zu", n);
+
             /*
              * Find the separator between the current and the next field name list.
              */
             next = cur;
-            while (*next != '\0' && *next != '\n') {
+            while (*next != eos && *next != set_separator) {
                 next++;
             }
             /*
@@ -157,17 +169,11 @@ int SelvaArgsParser_StringSetList(
 #endif
 
             /*
-             * Create the strings
+             * Create the set elements.
              */
-            key = RedisModule_CreateStringPrintf(ctx, "%zu", n++);
-            if (!key) {
-                SelvaObject_Destroy(obj);
-                return SELVA_ENOMEM;
-            }
-
+            size_t nr_el = 0;
             const char *cur_el = cur;
             do {
-                RedisModuleString *el;
                 const char *next_el;
                 size_t el_len;
 
@@ -175,37 +181,76 @@ int SelvaArgsParser_StringSetList(
                  * Find the separator between the current and the next field name.
                  */
                 next_el = cur_el;
-                while (*next_el != '\0' && *next_el != '|' && *next_el != '\n') {
+                while (*next_el != eos && *next_el != list_separator && *next_el != set_separator) {
                     next_el++;
                 }
                 el_len = (size_t)((ptrdiff_t)next_el - (ptrdiff_t)cur_el);
 
-                el = RedisModule_CreateString(NULL, cur_el, el_len);
-                if (!key || !el) {
-                    SelvaObject_Destroy(obj);
-                    return SELVA_ENOMEM;
+                if (el_len > 0) { /* Skip empty elements. */
+                    if (excl && cur_el[0] == excl_prefix) {
+                        if (el_len > 1) {
+                            if (RedisModule_StringAppendBuffer(ctx, excl, cur_el + 1, el_len - 1) ||
+                                RedisModule_StringAppendBuffer(ctx, excl, "", 1)) {
+                                goto fail;
+                            }
+                            nr_excl++;
+                        }
+                        /* Otherwise we ignore the empty element. */
+                    } else {
+                        RedisModuleString *el;
+
+                        el = RedisModule_CreateString(NULL, cur_el, el_len);
+                        if (!el) {
+                            goto fail;
+                        }
+
+                        /*
+                         * Add to the list.
+                         */
+                        SelvaObject_AddArrayStr(obj, key_str, key_len, SELVA_OBJECT_STRING, el);
+                        nr_el++;
+                    }
                 }
 
-                /*
-                 * Add to the list.
-                 */
-                SelvaObject_AddArray(obj, key, SELVA_OBJECT_STRING, el);
-
-                if (*next_el == '\0' || *next_el == '\n') {
+                if (*next_el == eos || *next_el == set_separator) {
                     break;
                 }
                 cur_el = next_el + 1;
-            } while (*cur_el != '\0');
+            } while (*cur_el != eos);
 
-            if (*next == '\0') {
+            /*
+             * Increment the set index only if elements were inserted at the
+             * index.
+             */
+            if (nr_el > 0) {
+                n++;
+            }
+
+            if (*next == eos) {
                 break;
             }
             cur = next + 1;
-        } while (*cur != '\0');
+        } while (*cur != eos);
     }
 
-    *out = obj;
+    *list_out = obj;
+    if (excluded_out && nr_excl > 0) {
+        *excluded_out = excl;
+    } else if (excluded_out) {
+        *excluded_out = NULL;
+        RedisModule_FreeString(ctx, excl);
+    } else {
+        RedisModule_FreeString(ctx, excl);
+    }
     return 0;
+fail:
+    if (obj) {
+        SelvaObject_Destroy(obj);
+    }
+    if (excl) {
+        RedisModule_FreeString(ctx, excl);
+    }
+    return SELVA_ENOMEM;
 }
 
 int SelvaArgParser_Enum(

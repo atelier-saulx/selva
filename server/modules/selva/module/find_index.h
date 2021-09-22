@@ -21,6 +21,5 @@ int SelvaFind_AutoIndex(
         struct SelvaFindIndexControlBlock **icb_out,
         struct SelvaSet **out);
 void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take, size_t acc_tot);
-void SelvaFind_AccIndexed(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take);
 
 #endif /* _FIND_INDEX_H_ */

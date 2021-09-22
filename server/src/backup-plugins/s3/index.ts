@@ -20,7 +20,7 @@ async function cleanUpOldBackups(
   const objects = await s3.listObjects(bucketName)
   const oldBackups = objects.filter((object) => {
     const validSince = new Date(
-      Date.now() - 1000 * 60 * 60 * 12 * retentionInDays
+      Date.now() - 1000 * 60 * 60 * 24 * retentionInDays
     )
     return new Date(object.Key) < validSince
   })

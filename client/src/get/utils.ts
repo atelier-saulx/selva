@@ -53,7 +53,7 @@ export function getNestedSchema(
   id: string,
   field: string
 ): FieldSchema | null {
-  if (!field || field === '') {
+  if (!field || field === '' || typeof field !== 'string') {
     return null
   }
 

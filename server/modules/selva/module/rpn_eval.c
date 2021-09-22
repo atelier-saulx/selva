@@ -105,7 +105,6 @@ fail:
     }
 
     return REDISMODULE_OK;
-#undef SHIFT_ARGS
 }
 
 

@@ -234,7 +234,8 @@ static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
     }
     memset(marker, 0, sizeof(*marker));
 #endif
-    if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+    if (marker->dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                       SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         rpn_destroy_expression(marker->traversal_expression);
     } else {
         RedisModule_Free(marker->ref_field);
@@ -258,7 +259,7 @@ static void remove_sub_missing_accessor_markers(SelvaModify_Hierarchy *hierarchy
     Selva_SubscriptionId2str(sub_id, sub->sub_id);
 
     it_missing = SelvaObject_ForeachBegin(missing);
-    while ((subs = (struct SelvaObject *)SelvaObject_ForeachValue(missing, &it_missing, &nodeIdOrAlias, SELVA_OBJECT_OBJECT))) {
+    while ((subs = SelvaObject_ForeachValue(missing, &it_missing, &nodeIdOrAlias, SELVA_OBJECT_OBJECT))) {
         /* Delete this subscription stored under nodeIdOrAlias. */
         SelvaObject_DelKeyStr(subs, sub_id, SELVA_SUBSCRIPTION_ID_STR_LEN);
 
@@ -402,21 +403,23 @@ int Selva_Subscriptions_InitHierarchy(SelvaModify_Hierarchy *hierarchy) {
 
     hierarchy->subs.missing = SelvaObject_New();
     if (!hierarchy->subs.missing) {
-        err = SELVA_ENOMEM;
+        err = SELVA_SUBSCRIPTIONS_ENOMEM;
+        goto fail;
     }
 
-    if (SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers)) {
-        err = SELVA_ENOMEM;
-    }
-
-    if (SelvaSubscriptions_InitDeferredEvents(hierarchy)) {
-        err = SELVA_ENOMEM;
-    }
-
+    err = SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers);
     if (err) {
-        SelvaSubscriptions_DestroyAll(NULL, hierarchy);
+        goto fail;
     }
 
+    err = SelvaSubscriptions_InitDeferredEvents(hierarchy);
+    if (err) {
+        goto fail;
+    }
+
+    return 0;
+fail:
+    SelvaSubscriptions_DestroyAll(NULL, hierarchy);
     return err;
 }
 
@@ -440,8 +443,16 @@ void SelvaSubscriptions_DestroyAll(RedisModuleCtx *ctx, SelvaModify_Hierarchy *h
 static void init_node_metadata_subs(
         Selva_NodeId id __unused,
         struct SelvaModify_HierarchyMetadata *metadata) {
-    /* TODO Should we handle ENOMEM? */
-    SelvaSubscriptions_InitMarkersStruct(&metadata->sub_markers);
+    int err;
+
+    err = SelvaSubscriptions_InitMarkersStruct(&metadata->sub_markers);
+    if (err) {
+        /* RFE Would be nicer to not crash here on OOM. */
+        fprintf(stderr, "%s:%d: %s\n",
+                __FILE__, __LINE__,
+                getSelvaErrorStr(err));
+        abort();
+    }
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_subs);
 
@@ -692,7 +703,8 @@ static int marker_set_ref_field(struct Selva_SubscriptionMarker *marker, const c
 }
 
 static void marker_set_traversal_expression(struct Selva_SubscriptionMarker *marker, struct rpn_expression *traversal_expression) {
-    assert(marker->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION);
+    assert(marker->dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                          SELVA_HIERARCHY_TRAVERSAL_EXPRESSION));
 
     marker->traversal_expression = traversal_expression;
 }
@@ -807,7 +819,7 @@ int SelvaSubscriptions_AddCallbackMarker(
         return SELVA_SUBSCRIPTIONS_EEXIST;
     }
 
-    if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && dir_expression_str) {
+    if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION | SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) && dir_expression_str) {
         dir_expression = rpn_compile(dir_expression_str);
         if (!dir_expression) {
             err = SELVA_RPN_ECOMP;
@@ -886,19 +898,20 @@ int SelvaSubscriptions_TraverseMarker(
         struct SelvaModify_Hierarchy *hierarchy,
         struct Selva_SubscriptionMarker *marker,
         const struct SelvaModify_HierarchyCallback *cb) {
-    int err;
+    int err = 0;
     typeof(marker->dir) dir = marker->dir;
 
     /*
-     * Execute the traversal.
+     * Some traversals don't visit the head node but the marker system must
+     * always visit it.
      */
-    err = 0;
     if (dir &
         (SELVA_HIERARCHY_TRAVERSAL_REF |
          SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
          SELVA_HIERARCHY_TRAVERSAL_PARENTS |
          SELVA_HIERARCHY_TRAVERSAL_CHILDREN |
-         SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
+         SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
+         SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         /*
          * This could be implemented with a head callback but it's not
          * currently implemented for the traverse API. Therefore we do a
@@ -917,12 +930,17 @@ int SelvaSubscriptions_TraverseMarker(
                  SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                  SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))) {
         err = SelvaModify_TraverseHierarchyField(ctx, hierarchy, marker->node_id, dir, marker->ref_field, strlen(marker->ref_field), cb);
-    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && marker->traversal_expression) {
+    } else if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION | SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) &&
+               marker->traversal_expression) {
         struct rpn_ctx *rpn_ctx;
 
         rpn_ctx = rpn_init(1);
         if (rpn_ctx) {
-            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
+            if (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+                err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
+            } else {
+                err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
+            }
             rpn_destroy(rpn_ctx);
         } else {
             err = SELVA_ENOMEM;
@@ -1076,7 +1094,9 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hi
         size_t ref_field_len = strlen(ref_field_str);
 
         (void)SelvaModify_TraverseHierarchyField(ctx, hierarchy, node_id, dir, ref_field_str, ref_field_len, &cb);
-    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+    } else if (dir &
+               (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         struct rpn_ctx *rpn_ctx;
         int err;
 #if 0
@@ -1091,7 +1111,11 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hi
 
         rpn_ctx = rpn_init(1);
         if (rpn_ctx) {
-            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
+            if (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+                err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
+            } else {
+                err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
+            }
             rpn_destroy(rpn_ctx);
         } else {
             err = SELVA_ENOMEM;
@@ -1371,7 +1395,7 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaModify_Hierarchy 
 
     /* Defer event for each subscription. */
     it = SelvaObject_ForeachBegin(obj);
-    while ((sub = (struct Selva_Subscription *)SelvaObject_ForeachValue(obj, &it, NULL, SELVA_OBJECT_POINTER))) {
+    while ((sub = SelvaObject_ForeachValue(obj, &it, NULL, SELVA_OBJECT_POINTER))) {
         /*
          * These are a bit special because we have no marker structs but the
          * markers are pointers to the subscription in a SelvaObject.
@@ -1531,7 +1555,7 @@ static void field_change_precheck(
 
         SVector_ForeachBegin(&it, &sub_markers->vec);
         while ((marker = SVector_Foreach(&it))) {
-            if (((marker->marker_flags & flags) == flags)) {
+            if ((marker->marker_flags & flags) == flags) {
                 /*
                  * Store the filter result before any changes to the node.
                  * We assume that SelvaSubscriptions_DeferFieldChangeEvents()
@@ -1861,7 +1885,7 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
           (SELVA_HIERARCHY_TRAVERSAL_NONE | SELVA_HIERARCHY_TRAVERSAL_NODE | SELVA_HIERARCHY_TRAVERSAL_CHILDREN |
            SELVA_HIERARCHY_TRAVERSAL_PARENTS | SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS | SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS |
            SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
-           SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION)
+           SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION | SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)
         )) {
         return replyWithSelvaErrorf(ctx, err, "Traversal argument");
     }
@@ -1874,7 +1898,7 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
     struct rpn_expression *traversal_expression = NULL;
     struct rpn_ctx *filter_ctx = NULL;
     struct rpn_expression *filter_expression = NULL;
-    if (sub_dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+    if (sub_dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION | SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         const RedisModuleString *input = argv[ARGV_REF_FIELD];
         TO_STR(input);
 

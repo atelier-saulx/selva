@@ -129,7 +129,7 @@ struct EdgeFieldContainer {
 };
 
 void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data);
-int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, struct EdgeFieldDynConstraintParams *params);
+int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, const struct EdgeFieldDynConstraintParams *params);
 const struct EdgeFieldConstraint *Edge_GetConstraint(
         const struct EdgeFieldConstraints *data,
         unsigned constraint_id,
@@ -151,7 +151,7 @@ struct EdgeField *Edge_GetField(const struct SelvaModify_HierarchyNode *node, co
  * @returns 0 = not found;
  *          1 = found.
  */
-int Edge_Has(struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst_node);
+int Edge_Has(const struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst_node);
 
 /**
  * Add a new edge.

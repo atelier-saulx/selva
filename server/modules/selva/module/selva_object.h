@@ -79,7 +79,7 @@ struct SelvaObjectPointerOpts {
 #define selvaobject_autofree __attribute__((cleanup(_cleanup_SelvaObject_Destroy)))
 
 struct SelvaObject *SelvaObject_New(void);
-void SelvaObject_Clear(struct SelvaObject *obj);
+void SelvaObject_Clear(struct SelvaObject *obj, const char * const exclude[]);
 void SelvaObject_Destroy(struct SelvaObject *obj);
 void _cleanup_SelvaObject_Destroy(struct SelvaObject **obj);
 int SelvaObject_Key2Obj(struct RedisModuleKey *key, struct SelvaObject **out);
@@ -190,7 +190,7 @@ const char *SelvaObject_ForeachKey(const struct SelvaObject *obj, SelvaObject_It
  * found.
  * @param name_out is a direct pointer to the name and it will be rendered invalid if the key is deleted.
  */
-const void *SelvaObject_ForeachValue(
+void *SelvaObject_ForeachValue(
         const struct SelvaObject *obj,
         SelvaObject_Iterator **iterator,
         const char **name_out,
@@ -201,7 +201,7 @@ const void *SelvaObject_ForeachValue(
  * @param name_out is set to the name of the key found.
  * @param type_out is set to the type of the returned value.
  */
-const void *SelvaObject_ForeachValueType(
+void *SelvaObject_ForeachValueType(
         const struct SelvaObject *obj,
         void **iterator,
         const char **name_out,

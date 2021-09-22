@@ -315,6 +315,62 @@ test.serial('find - text exists field', async (t) => {
     { id: 'root', items: [{ description: 'match 1' }] }
   )
 
+  let err = await t.throwsAsync(
+    client.get({
+      $language: 'en',
+      $id: 'root',
+      id: true,
+      items: {
+        description: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type$',
+                $operator: '=',
+                $value: 'match',
+              },
+              {
+                $field: 'description',
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+      },
+    })
+  )
+  t.assert(err.stack.includes('contains unsupported characters'))
+
+  err = await t.throwsAsync(
+    client.get({
+      $language: 'en',
+      $id: 'root',
+      id: true,
+      items: {
+        description: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'match',
+              },
+              {
+                $field: '_description',
+                $operator: 'exists',
+              },
+            ],
+          },
+        },
+      },
+    })
+  )
+  t.assert(err.stack.includes('contains unsupported characters'))
+
   await client.delete('root')
   await client.destroy()
 })

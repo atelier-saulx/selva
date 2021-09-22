@@ -93,7 +93,7 @@ static struct EdgeFieldConstraint *create_constraint(const struct EdgeFieldDynCo
     return p;
 }
 
-int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, struct EdgeFieldDynConstraintParams *params) {
+int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, const struct EdgeFieldDynConstraintParams *params) {
     size_t fwd_field_name_len;
     const char *fwd_field_name_str = RedisModule_StringPtrLen(params->fwd_field_name, &fwd_field_name_len);
     const size_t constraint_name_len = DYN_CONSTRAINT_NAME_LEN(fwd_field_name_len);

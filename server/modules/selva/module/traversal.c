@@ -182,7 +182,7 @@ int SelvaTraversal_ParseDir(
     return err;
 }
 
-int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, RedisModuleString *arg) {
+int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const RedisModuleString *arg) {
     TO_STR(arg);
 
     if (!strcmp("none", arg_str)) {
@@ -207,6 +207,8 @@ int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, RedisModuleString *arg) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD;
     } else if (!strcmp("bfs_expression", arg_str)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION;
+    } else if (!strcmp("expression", arg_str)) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_EXPRESSION;
     } else {
         return SELVA_SUBSCRIPTIONS_EINVAL;
     }
@@ -259,8 +261,8 @@ int SelvaTraversal_CompareNone(const void ** restrict a_raw __unused, const void
 }
 
 int SelvaTraversal_CompareAsc(const void ** restrict a_raw, const void ** restrict b_raw) {
-    const struct FindCommand_OrderedItem *a = *(const struct FindCommand_OrderedItem **)a_raw;
-    const struct FindCommand_OrderedItem *b = *(const struct FindCommand_OrderedItem **)b_raw;
+    const struct TraversalOrderedItem *a = *(const struct TraversalOrderedItem **)a_raw;
+    const struct TraversalOrderedItem *b = *(const struct TraversalOrderedItem **)b_raw;
     const char *aStr = a->data;
     const char *bStr = b->data;
 
@@ -282,7 +284,7 @@ int SelvaTraversal_CompareAsc(const void ** restrict a_raw, const void ** restri
         }
     }
 
-    return memcmp(a->id, b->id, SELVA_NODE_ID_SIZE);
+    return memcmp(a->node_id, b->node_id, SELVA_NODE_ID_SIZE);
 }
 
 int SelvaTraversal_CompareDesc(const void ** restrict a_raw, const void ** restrict b_raw) {
@@ -297,7 +299,7 @@ static orderFunc order_functions[] = {
 
 GENERATE_FUNMAP(SelvaTraversal_GetOrderFunc, order_functions, enum SelvaResultOrder, HIERARCHY_RESULT_ORDER_NONE);
 
-struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(
+struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         struct SelvaModify_HierarchyNode *node,
@@ -305,12 +307,12 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(
     Selva_NodeId nodeId;
     RedisModuleString *id;
     RedisModuleKey *key;
-    struct FindCommand_OrderedItem *item = NULL;
+    struct TraversalOrderedItem *item = NULL;
     double d = 0.0;
     char data_lang[LANG_MAX];
     const char *data = NULL;
     size_t data_len = 0;
-    enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
+    enum TraversalOrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
 
     memset(data_lang, '\0', sizeof(data_lang));
     SelvaHierarchy_GetNodeId(nodeId, node);
@@ -406,7 +408,7 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(
         final_data_len = strxfrm_l(NULL, data, 0, locale);
     }
 
-    item = RedisModule_PoolAlloc(ctx, sizeof(struct FindCommand_OrderedItem) + final_data_len + 1);
+    item = RedisModule_PoolAlloc(ctx, sizeof(struct TraversalOrderedItem) + final_data_len + 1);
     if (!item) {
         /*
          * Returning NULL in case of ENOMEM here should be fairly ok as we can
@@ -417,8 +419,9 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateOrderItem(
         return NULL;
     }
 
-    memcpy(item->id, nodeId, SELVA_NODE_ID_SIZE);
     item->type = type;
+    memcpy(item->node_id, nodeId, SELVA_NODE_ID_SIZE);
+    item->node = node;
     if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         strxfrm_l(item->data, data, final_data_len + 1, locale);
     }
@@ -430,18 +433,18 @@ cleanup:
     return item;
 }
 
-struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
+struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         struct SelvaObject *obj,
         const RedisModuleString *order_field) {
-    struct FindCommand_OrderedItem *item = NULL;
+    struct TraversalOrderedItem *item = NULL;
     double d = 0.0;
     char data_lang[LANG_MAX];
     const char *data = NULL;
     size_t data_len = 0;
     enum SelvaObjectType obj_type;
-    enum FindCommand_OrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
+    enum TraversalOrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
     int err;
 
     memset(data_lang, '\0', sizeof(data_lang));
@@ -522,7 +525,7 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
         final_data_len = strxfrm_l(NULL, data, 0, locale);
     }
 
-    item = RedisModule_PoolAlloc(ctx, sizeof(struct FindCommand_OrderedItem) + final_data_len + 1);
+    item = RedisModule_PoolAlloc(ctx, sizeof(struct TraversalOrderedItem) + final_data_len + 1);
     if (!item) {
         /*
          * Returning NULL in case of ENOMEM here should be fairly ok as we can
@@ -533,8 +536,9 @@ struct FindCommand_OrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
         return NULL;
     }
 
-    memcpy(item->id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
     item->type = type;
+    memcpy(item->node_id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
+    item->node = NULL;
     if (type == ORDERED_ITEM_TYPE_TEXT && data_len > 0) {
         strxfrm_l(item->data, data, final_data_len + 1, locale);
     }
@@ -551,7 +555,7 @@ int SelvaTraversal_FieldsContains(struct SelvaObject *fields, const char *field_
     const SVector *vec;
 
     iterator = SelvaObject_ForeachBegin(fields);
-    while ((vec = (SVector *)SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
+    while ((vec = SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
         struct SVectorIterator it;
         const RedisModuleString *s;
 
@@ -616,6 +620,8 @@ const char *SelvaTraversal_Dir2str(enum SelvaTraversal dir) {
         return (const char *)"bfs_edge_field";
     case SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION:
         return (const char *)"bfs_expression";
+    case SELVA_HIERARCHY_TRAVERSAL_EXPRESSION:
+        return (const char *)"expression";
     default:
         return "invalid";
     }

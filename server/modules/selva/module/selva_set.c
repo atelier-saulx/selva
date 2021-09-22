@@ -157,9 +157,9 @@ static void SelvaSet_DestroyRms(struct SelvaSet *set) {
     struct SelvaSetElement *el;
     struct SelvaSetElement *next;
 
-	for (el = RB_MIN(SelvaSetRms, head); el != NULL; el = next) {
-		next = RB_NEXT(SelvaSetRms, head, el);
-		RB_REMOVE(SelvaSetRms, head, el);
+    for (el = RB_MIN(SelvaSetRms, head); el != NULL; el = next) {
+        next = RB_NEXT(SelvaSetRms, head, el);
+        RB_REMOVE(SelvaSetRms, head, el);
 
         RedisModule_FreeString(NULL, el->value_rms);
         SelvaSet_DestroyElement(el);
@@ -324,7 +324,7 @@ struct SelvaSetElement *SelvaSet_RemoveLongLong(struct SelvaSet *set, long long 
     return el;
 }
 
-struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, Selva_NodeId node_id) {
+struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, const Selva_NodeId node_id) {
     struct SelvaSetElement find = { 0 };
     struct SelvaSetElement *el = NULL;
 
@@ -390,18 +390,20 @@ int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src) {
     return 0;
 }
 
-int SelvaSet_Union(enum SelvaSetType type, struct SelvaSet *res, ...) {
+int SelvaSet_Union(struct SelvaSet *res, ...) {
+    const enum SelvaSetType type = res->type;
     va_list argp;
     int err = 0;
 
     va_start(argp, res);
 
-    if (!res) {
+    /*
+     * We only accept empty set for the result set.
+     */
+    if (!res || res->size > 0) {
         err = SELVA_EINVAL;
         goto out;
     }
-
-    SelvaSet_Init(res, type);
 
     if (type == SELVA_SET_TYPE_RMSTRING) {
         struct SelvaSet *set;

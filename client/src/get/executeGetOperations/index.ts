@@ -36,6 +36,7 @@ export type TraversalType =
   | 'edge_field'
   | 'bfs_edge_field'
   | 'bfs_expression'
+  | 'expression'
 export type SubscriptionMarker = {
   type: TraversalType
   refField?: string
@@ -64,13 +65,23 @@ export function adler32(marker: SubscriptionMarker): number {
 export function sourceFieldToDir(
   schema: Schema,
   fieldSchema: FieldSchema,
-  field: string,
+  field: string | string[],
+  recursive: boolean,
   byType?: TraverseByType
 ): { type: TraversalType; refField?: string } {
   if (byType) {
     return {
-      type: 'bfs_expression',
+      type: recursive ? 'bfs_expression' : 'expression',
       refField: bfsExpr2rpn(schema.types, byType),
+    }
+  }
+
+  if (Array.isArray(field)) {
+    return {
+      type: recursive ? 'bfs_expression' : 'expression',
+      refField: bfsExpr2rpn(schema.types, {
+        $any: { $first: field },
+      }),
     }
   }
 
@@ -84,14 +95,14 @@ export function sourceFieldToDir(
     return {
       type: field as TraversalType,
     }
-  } else if (fieldSchema.type === 'array') {
+  } else if (fieldSchema && fieldSchema.type === 'array') {
     return {
       type: 'array',
       refField: field,
     }
   } else {
     return {
-      type: fieldSchema.type === 'string' ? 'ref' : 'edge_field',
+      type: fieldSchema && fieldSchema.type === 'string' ? 'ref' : 'edge_field',
       refField: field,
     }
   }
@@ -100,15 +111,29 @@ export function sourceFieldToDir(
 export function sourceFieldToFindArgs(
   schema: Schema,
   fieldSchema: FieldSchema | null,
-  sourceField: string,
+  sourceField: string | string[],
   recursive: boolean,
   byType?: TraverseByType
 ): [SubscriptionMarker['type'], string?] {
   if (byType) {
-    return ['bfs_expression', bfsExpr2rpn(schema.types, byType)]
+    return [
+      recursive ? 'bfs_expression' : 'expression',
+      bfsExpr2rpn(schema.types, byType),
+    ]
   }
 
-  if (['ancestors', 'descendants'].includes(sourceField)) {
+  if (Array.isArray(sourceField)) {
+    return [
+      recursive ? 'bfs_expression' : 'expression',
+      bfsExpr2rpn(schema.types, {
+        $any: { $first: sourceField },
+      }),
+    ]
+  }
+
+  if (
+    ['ancestors', 'descendants', 'children', 'parents'].includes(sourceField)
+  ) {
     return [<SubscriptionMarker['type']>sourceField]
   }
 
@@ -119,7 +144,13 @@ export function sourceFieldToFindArgs(
     return ['bfs_expression', `{"${sourceField}"}`]
   }
 
-  const t = sourceFieldToDir(schema, fieldSchema, sourceField, byType)
+  const t = sourceFieldToDir(
+    schema,
+    fieldSchema,
+    sourceField,
+    recursive,
+    byType
+  )
   return recursive && t.refField
     ? ['bfs_expression', `{"${sourceField}"}`]
     : t.refField
@@ -265,7 +296,25 @@ export const TYPE_CASTS: Record<
   int: Number,
   boolean: (x: any) => !!Number(x),
   json: (x: any) => JSON.parse(x),
-  reference: (r: any) => (Array.isArray(r) ? r[0] : r),
+  reference: (r: any, _id: string, _field: string, schema, lang) => {
+    if (Array.isArray(r) && r.length > 1) {
+      const idIdx = r.findIndex((x) => x === 'id')
+      const refId = r[idIdx + 1]
+
+      const totalResult = {}
+      for (let i = 0; i < r.length; i += 2) {
+        const field = r[i]
+        const value = r[i + 1]
+
+        const fieldResult = typeCast(value, refId, field, schema, lang)
+        setNestedResult(totalResult, field, fieldResult)
+      }
+
+      return totalResult
+    }
+
+    return Array.isArray(r) ? r[0] : r
+  },
   // array: (x: any) => JSON.parse(x),
   array: (x: any, id: string, field: string, schema, lang) => {
     const fieldSchema = <FieldSchemaArrayLike>getNestedSchema(schema, id, field)

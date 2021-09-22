@@ -18,6 +18,27 @@ import { padId, joinIds } from '../utils'
 import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 
+function makeFieldsString(fields: Set<string>): string {
+  let str = ''
+  let hasWildcard = false
+  for (const f of fields) {
+    if (f === '*') {
+      hasWildcard = true
+      continue
+    }
+
+    str += f + '\n'
+  }
+
+  if (hasWildcard) {
+    str += '*'
+  } else {
+    str = str.slice(0, -1)
+  }
+
+  return str
+}
+
 function mkIndex(schema: Schema, op: GetOperationFind): string[] {
   if (op.id && op.id !== 'root') {
     return []
@@ -31,38 +52,47 @@ function mkIndex(schema: Schema, op: GetOperationFind): string[] {
     return []
   }
 
-  const f = <FilterAST>op.filter.$and.filter((f: Fork | FilterAST) => !isFork(f)).sort((a: FilterAST, b: FilterAST) => {
-    const operatorCmp = (op: typeof a.$operator) => (({
-      '=': 1,
-      'exists': 2,
-      'notExists': 3,
-      'has': 4,
-    })[op] || 5) - 1
-    const fieldCmp = (field: string | string[]) => (field === 'type') ? 0 : 1
+  const f = <FilterAST>op.filter.$and
+    .filter((f: Fork | FilterAST) => !isFork(f))
+    .sort((a: FilterAST, b: FilterAST) => {
+      const operatorCmp = (op: typeof a.$operator) =>
+        (({
+          '=': 1,
+          exists: 2,
+          notExists: 3,
+          has: 4,
+        }[op] || 5) - 1)
+      const fieldCmp = (field: string | string[]) => (field === 'type' ? 0 : 1)
 
-    return (operatorCmp(a.$operator) - operatorCmp(b.$operator)) ||
-           (fieldCmp(a.$field) - fieldCmp(b.$field)) ||
-           a.$operator.localeCompare(b.$operator) ||
-           a.$field.localeCompare(b.$field)
-  }).find((f: FilterAST) => {
-    if (f.$field === 'type' && f.$operator === '=') {
-      return typeof f.$value === 'string'
-    } else if (["=", "has"].includes(f.$operator)) {
-      // TODO Support array of values
-      return ['boolean', 'float', 'int', 'number', 'string'].includes(typeof f.$value)
-    } else if (['exists', 'notExists'].includes(f.$operator)) {
-      return true
-    } else {
-      return false
-    }
-  })
+      return (
+        operatorCmp(a.$operator) - operatorCmp(b.$operator) ||
+        fieldCmp(a.$field) - fieldCmp(b.$field) ||
+        a.$operator.localeCompare(b.$operator) ||
+        a.$field.localeCompare(b.$field)
+      )
+    })
+    .find((f: FilterAST) => {
+      if (f.$field === 'type' && f.$operator === '=') {
+        return typeof f.$value === 'string'
+      } else if (['=', 'has'].includes(f.$operator)) {
+        // TODO Support array of values
+        return ['boolean', 'float', 'int', 'number', 'string'].includes(
+          typeof f.$value
+        )
+      } else if (['exists', 'notExists'].includes(f.$operator)) {
+        return true
+      } else {
+        return false
+      }
+    })
 
   if (!f) {
     return []
   }
 
   if (f.$field === 'type') {
-    const prefix = f.$value === 'root' ? 'ro' : schema?.types[<string>f.$value]?.prefix
+    const prefix =
+      f.$value === 'root' ? 'ro' : schema?.types[<string>f.$value]?.prefix
     if (!prefix) {
       return []
     }
@@ -71,13 +101,15 @@ function mkIndex(schema: Schema, op: GetOperationFind): string[] {
   } else if (f.$operator === '=') {
     if (typeof f.$value === 'string') {
       return ['index', `"${f.$field}" f "${f.$value}" c`]
-    } else { // numeric
+    } else {
+      // numeric
       return ['index', `"${f.$field}" g #${f.$value} F`]
     }
   } else if (f.$operator === 'has') {
     if (typeof f.$value === 'string') {
       return ['index', `"${f.$value}" "${f.$field}" a`]
-    } else { // numeric
+    } else {
+      // numeric
       return ['index', `"${f.$value}" #${f.$field} a`]
     }
   } else if (f.$operator === 'exists') {
@@ -95,10 +127,7 @@ function parseGetOpts(
   nestedMapping?: Record<string, { targetField?: string[]; default?: any }>
 ): [
   Set<string>,
-  Record<
-    string,
-    { targetField?: string[]; default?: any; maybeReferenceAll?: true }
-  >,
+  Record<string, { targetField?: string[]; default?: any }>,
   boolean
 ] {
   const pathPrefix = path === '' ? '' : path + '.'
@@ -108,7 +137,6 @@ function parseGetOpts(
     {
       targetField?: string[]
       default?: any
-      maybeReferenceAll?: true
     }
   > = nestedMapping || {}
 
@@ -122,7 +150,7 @@ function parseGetOpts(
     } else if (!hasAll && !k.startsWith('$') && props[k] === true) {
       fields.add(pathPrefix + k)
     } else if (props[k] === false) {
-      // ignore
+      fields.add(`!${pathPrefix + k}`)
     } else if (k === '$field') {
       const $field = props[k]
       if (Array.isArray($field)) {
@@ -165,13 +193,7 @@ function parseGetOpts(
       fields.add('*')
       // hasAll = true
     } else if (k === '$all') {
-      if (!mapping[path]) {
-        mapping[path] = { maybeReferenceAll: true }
-      } else {
-        mapping[path].maybeReferenceAll = true
-      }
-
-      fields.add(path)
+      fields.add(path + '.*')
     } else if (k.startsWith('$')) {
       return [fields, mapping, true]
     } else if (typeof props[k] === 'object') {
@@ -394,9 +416,8 @@ export const findIds = async (
     )
 
     op.inKeys = res.result
-  } else if (Array.isArray(op.sourceField)) {
-    sourceField = op.sourceField.join('\n')
   }
+
   const args = op.filter
     ? ast2rpn(client.schemas[ctx.db].types, op.filter, lang)
     : ['#1']
@@ -451,6 +472,7 @@ export const findIds = async (
             schema,
             sourceFieldSchema,
             sourceField,
+            op.recursive,
             op.byType
           ),
           id: id,
@@ -470,7 +492,13 @@ export const findIds = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
+        ...sourceFieldToDir(
+          schema,
+          sourceFieldSchema,
+          sourceField,
+          op.recursive,
+          op.byType
+        ),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -547,8 +575,6 @@ const findFields = async (
     )
 
     op.inKeys = res.result
-  } else if (Array.isArray(op.sourceField)) {
-    sourceField = op.sourceField.join('\n')
   }
 
   const args = op.filter
@@ -563,7 +589,10 @@ const findFields = async (
           const r = await addMarker(client, ctx, {
             type: 'node',
             id: id,
-            fields: op.props.$all === true ? [] : [...fieldsOpt.values()],
+            fields:
+              op.props.$all === true
+                ? []
+                : [...fieldsOpt.values()].filter((f) => !f.startsWith('!')),
             rpn: args,
           })
 
@@ -588,7 +617,7 @@ const findFields = async (
       'limit',
       op.options.limit,
       'fields',
-      [...fieldsOpt.values()].join('\n'),
+      makeFieldsString(fieldsOpt),
       joinIds(op.inKeys),
       ...args
     )
@@ -627,6 +656,7 @@ const findFields = async (
             schema,
             sourceFieldSchema,
             sourceField,
+            op.recursive,
             op.byType
           ),
           id: id,
@@ -646,7 +676,13 @@ const findFields = async (
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(schema, sourceFieldSchema, sourceField, op.byType),
+        ...sourceFieldToDir(
+          schema,
+          sourceFieldSchema,
+          sourceField,
+          op.recursive,
+          op.byType
+        ),
         id: op.id,
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
@@ -681,7 +717,7 @@ const findFields = async (
       'limit',
       op.options.limit,
       'fields',
-      [...fieldsOpt.values()].join('\n'), // TODO Probably shouldn't pass $ names?
+      makeFieldsString(fieldsOpt),
       padId(op.id),
       ...args
     )
@@ -807,27 +843,6 @@ const executeFindOperation = async (
       }
 
       const mapping = fieldMapping[field]
-      if (
-        mapping?.maybeReferenceAll &&
-        Array.isArray(value) &&
-        value.length === 1 &&
-        typeof value[0] === 'string'
-      ) {
-        const fieldResults = await executeNestedGetOperations(
-          client,
-          {
-            $db: ctx.db,
-            $id: value[0],
-            $all: true,
-          },
-          lang,
-          ctx
-        )
-        setNestedResult(entryRes, field, fieldResults)
-        usedMappings.add(field)
-        continue
-      }
-
       const targetField = mapping?.targetField
       const casted = typeCast(value, id, field, schema, lang)
 
