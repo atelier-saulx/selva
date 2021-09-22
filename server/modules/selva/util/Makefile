@@ -12,6 +12,7 @@ OBJS := \
 	bitmap.o \
 	cstrings.o \
 	mempool.o \
+	poptop.o \
 	queue_r.o \
 	strnstr.o \
 	svector.o \
