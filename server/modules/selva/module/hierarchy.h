@@ -273,11 +273,14 @@ int SelvaModify_DelHierarchy(
 
 /**
  * Delete a node from the hierarchy.
+ * @param force if non-zero the even children that have other relationships will
+ *              be deleted.
  */
 int SelvaModify_DelHierarchyNode(
         struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
-        const Selva_NodeId id);
+        const Selva_NodeId id,
+        int force);
 
 /**
  * Get an opaque pointer to a hierarchy node.

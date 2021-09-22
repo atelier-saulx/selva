@@ -1366,7 +1366,8 @@ static Selva_NodeId *getNodeIds(const SVector *adjacent_nodes, size_t * nr_ids) 
 static int SelvaModify_DelHierarchyNodeP(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
-        SelvaModify_HierarchyNode *node) {
+        SelvaModify_HierarchyNode *node,
+        int force) {
     Selva_NodeId *ids;
     size_t nr_ids;
 
@@ -1413,8 +1414,8 @@ static int SelvaModify_DelHierarchyNodeP(
          * Recursively delete the child and its children if its parents field is
          * empty and no edge fields are pointing to it.
          */
-        if (SVector_Size(&child->parents) == 0 && Edge_Refcount(child) == 0) {
-            err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child);
+        if (force || (SVector_Size(&child->parents) == 0 && Edge_Refcount(child) == 0)) {
+            err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child, force);
             if (err) {
                 return err;
             }
@@ -1430,7 +1431,8 @@ static int SelvaModify_DelHierarchyNodeP(
 int SelvaModify_DelHierarchyNode(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
-        const Selva_NodeId id) {
+        const Selva_NodeId id,
+        int force) {
     SelvaModify_HierarchyNode *node;
 
     node = SelvaHierarchy_FindNode(hierarchy, id);
@@ -1438,7 +1440,7 @@ int SelvaModify_DelHierarchyNode(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    return SelvaModify_DelHierarchyNodeP(ctx, hierarchy, node);
+    return SelvaModify_DelHierarchyNodeP(ctx, hierarchy, node, force);
 }
 
 /*
@@ -2456,13 +2458,13 @@ void HierarchyTypeFree(void *value) {
 }
 
 /*
- * SELVA.HIERARCHY.DEL HIERARCHY_KEY [NODE_ID1[, NODE_ID2, ...]]
+ * SELVA.HIERARCHY.DEL HIERARCHY_KEY FLAGS [NODE_ID1[, NODE_ID2, ...]]
  * If no NODE_IDs are given then nothing will be deleted.
  */
 int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
-    if (argc < 2) {
+    if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -2474,13 +2476,15 @@ int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
         return REDISMODULE_OK;
     }
 
+    const char *flags = RedisModule_StringPtrLen(argv[2], NULL);
+
     long long nr_deleted = 0;
-    for (int i = 2; i < argc; i++) {
+    for (int i = 3; i < argc; i++) {
         Selva_NodeId nodeId;
 
         RMString2NodeId(nodeId, argv[i]);
 
-        if (!SelvaModify_DelHierarchyNode(ctx, hierarchy, nodeId)) {
+        if (!SelvaModify_DelHierarchyNode(ctx, hierarchy, nodeId, flags[0] == 'F')) {
             nr_deleted++;
         }
     }
