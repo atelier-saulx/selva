@@ -29,9 +29,9 @@ export const SELVA_TO_SQL_TYPE = {
   timestamp: 'TIMESTAMP',
   reference: 'test',
   references: 'JSONB',
-  object: 'JSON',
-  record: 'JSON',
-  array: 'JSON',
+  object: 'JSONB',
+  record: 'JSONB',
+  array: 'JSONB',
 }
 
 export class TimeseriesWorker {

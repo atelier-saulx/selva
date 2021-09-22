@@ -318,6 +318,14 @@ test.serial('get - basic value types timeseries', async (t) => {
 
   await wait(4e3)
 
+  await client.set({
+    $id: 'viA',
+    image: {
+      thumb: 'lol 2',
+      pixels: 3000,
+    },
+  })
+
   console.log(
     'YESYES',
     JSON.stringify(
@@ -378,7 +386,7 @@ test.serial('get - basic value types timeseries', async (t) => {
                   {
                     $field: 'thumb',
                     $operator: '=',
-                    $value: 'lol',
+                    $value: ['lol', 'lol 2'],
                   },
                   {
                     $field: 'pixels',

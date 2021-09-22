@@ -51,20 +51,24 @@ function filterToExpr(
       if (isObj) {
         const split = f.split('.')
         const col = split[0]
-        const path = split.slice(1).map((x) => `'${x}'`)
-        const eStr = `json_extract_path_text(${col}, ${path.join(', ')})`
+        const path = split.slice(1).map((x) => `'${x}'::text`)
+        const eStr = `jsonb_extract_path_text(${col}::jsonb, ${path.join(
+          ', '
+        )})`
 
         expr = expr.or(`${eStr} ${filter.$operator} ?`, v)
       } else {
         expr = expr.or(`"${f}" ${filter.$operator} ?`, v)
       }
     }
+
+    return expr
   } else {
     if (isObj) {
       const split = f.split('.')
       const col = split[0]
-      const path = split.slice(1).map((x) => `'${x}'`)
-      const eStr = `json_extract_path_text(${col}, ${path.join(', ')})`
+      const path = split.slice(1).map((x) => `'${x}'::text`)
+      const eStr = `jsonb_extract_path_text(${col}::jsonb, ${path.join(', ')})`
 
       return sq.expr().and(`${eStr} ${filter.$operator} ?`, filter.$value)
     } else {
@@ -117,6 +121,35 @@ function toExpr(
   }
 
   return filterToExpr(fieldSchema, <FilterAST>filter)
+}
+
+async function getInsertQueue(
+  client: SelvaClient,
+  type: string,
+  id: string,
+  field: string
+): Promise<any[]> {
+  try {
+    return (
+      await client.redis.lrange(
+        { name: 'timeseries' },
+        'timeseries_inserts',
+        0,
+        -1
+      )
+    )
+      .map((e) => JSON.parse(e))
+      .filter((e) => {
+        return (
+          e.type === 'insert' &&
+          e.context.nodeId === id &&
+          e.context.nodeType === type &&
+          e.context.field === field
+        )
+      })
+  } catch (_e) {
+    return []
+  }
 }
 
 export default async function execTimeseries(
@@ -211,8 +244,46 @@ export default async function execTimeseries(
       )
   }
 
+  const insertQueue = await getInsertQueue(
+    client,
+    type,
+    op.id,
+    <string>op.sourceField
+  )
+
+  if (insertQueue.length > 0) {
+    const insertQueueSqlValues = insertQueue.map((e) => {
+      if (['object', 'record'].includes(e.context.fieldSchema.type)) {
+        return `(to_timestamp(${e.context.ts} / 1000.0), '${JSON.stringify(
+          e.context.payload
+        )}'::jsonb)`
+      } else if (e.context.fieldSchema.type === 'string') {
+        return `(to_timestamp(${e.context.ts} / 1000.0), '${e.context.payload}')`
+      } else {
+        return `(to_timestamp(${e.context.ts} / 1000.0), ${e.context.payload})`
+      }
+    })
+
+    let qSql = sq
+      .select({
+        autoQuoteTableNames: false,
+        autoQuoteAliasNames: true,
+        nameQuoteCharacter: '"',
+      })
+      .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
+      .field('ts')
+      .where(toExpr(fieldSchema, op.filter))
+
+    if (['object', 'record'].includes(fieldSchema.type)) {
+      qSql = qSql.field('payload')
+    } else {
+      qSql = qSql.field('payload', 'value')
+    }
+
+    sql = sql.union_all(qSql)
+  }
+
   const params = sql.toParam({ numberedParametersStartAt: 1 })
-  console.log('SQL', params)
   const result = await client.pg.query(params.text, params.values)
 
   return result.rows.map((row) => {
