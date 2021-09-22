@@ -3,4 +3,5 @@ export type DeleteOptions =
   | {
       $db?: string
       $id: string
+      $recursive?: boolean
     }

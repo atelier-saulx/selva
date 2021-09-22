@@ -137,7 +137,7 @@ test.serial('basic edge ops', async (t) => {
   )
 
   // Delete ma3
-  await client.redis.selva_hierarchy_del('___selva_hierarchy', 'ma3'),
+  await client.redis.selva_hierarchy_del('___selva_hierarchy', '', 'ma3'),
 
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'ma2', 'a.b'),
@@ -550,7 +550,7 @@ test.serial('edge modify `add` and `delete` values diff', async (t) => {
   )
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_del('___selva_hierarchy', 'ma1'),
+    await client.redis.selva_hierarchy_del('___selva_hierarchy', '', 'ma1'),
     1
   )
 })
