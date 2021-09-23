@@ -61,14 +61,6 @@ export default async function updateRegistry(
     return
   }
 
-  if (info.stats) {
-    client.redis.publish(
-      { type: 'timeseriesRegistry' },
-      constants.TS_REGISTRY_UPDATE_STATS,
-      id
-    )
-  }
-
   if (isNew) {
     // better codes
     client.redis.publish(
@@ -77,6 +69,21 @@ export default async function updateRegistry(
       // maybe not nessecary to send all (?)
       JSON.stringify({
         event: 'new',
+        server: {
+          port: info.port,
+          name: info.name,
+          host: info.host,
+          type: info.type,
+        },
+      })
+    )
+  } else {
+    client.redis.publish(
+      { type: 'timeseriesRegistry' },
+      constants.TS_REGISTRY_UPDATE,
+      // maybe not nessecary to send all (?)
+      JSON.stringify({
+        event: 'update',
         server: {
           port: info.port,
           name: info.name,
