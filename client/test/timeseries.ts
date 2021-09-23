@@ -76,6 +76,9 @@ test.before(async (t) => {
 
 test.beforeEach(async (t) => {
   const client = connect({ port })
+  // TODO: removet his manual step
+  await client.timeseriesCache.subscribe()
+
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
@@ -407,6 +410,11 @@ test.serial('get - basic value types timeseries', async (t) => {
     console.log(
       'HELLO TIMESERIES META',
       await client.redis.hgetall({ type: 'timeseriesRegistry' }, 'servers')
+    )
+
+    console.log(
+      'HELLO REAL REAL REALTIMESERIES META',
+      client.timeseriesCache.index
     )
   }, 2e3)
 

@@ -3,7 +3,7 @@ import { spawnSync } from 'child_process'
 import { Client as PgClient } from 'pg'
 
 // TODO: increase this? and make the worker update it when it creates new tables
-const TABLE_META_COLLECT_INTERVAL = 1 * 60 * 1e3
+const TABLE_META_COLLECT_INTERVAL = 0.3 * 60 * 1e3
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))

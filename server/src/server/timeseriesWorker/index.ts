@@ -79,7 +79,7 @@ export class TimeseriesWorker {
   }
 
   getTableName(context: TimeSeriesInsertContext): string {
-    return `"${context.nodeType}\$${context.field}"`
+    return `"${context.nodeType}\$${context.field}$0"`
   }
 
   async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {

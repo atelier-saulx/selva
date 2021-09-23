@@ -196,7 +196,7 @@ export default async function execTimeseries(
       autoQuoteAliasNames: true,
       nameQuoteCharacter: '"',
     })
-    .from(`${type}$${op.sourceField}`)
+    .from(`${type}$${op.sourceField}$0`)
     .field('ts')
     .where('"nodeId" = ?', op.id)
     .where(toExpr(fieldSchema, op.filter))

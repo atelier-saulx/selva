@@ -1,10 +1,11 @@
 import { constants, SelvaClient, ServerDescriptor } from '..'
 
-const INDEX_REFRESH_TIMEOUT = 1e3 * 60 * 1
+// TODO: increase
+const INDEX_REFRESH_TIMEOUT = 1e3 * 60 * 0.5
 
 class TimeseriesCache {
   private client: SelvaClient
-  private index: {
+  public index: {
     [timeseriesName: string]: {
       [timestamp: number]: { descriptor: ServerDescriptor; meta: any }
     }
@@ -17,19 +18,29 @@ class TimeseriesCache {
   }
 
   async refreshIndex() {
-    const current = await this.client.redis.hgetall(
-      { type: 'timeseriesRegistry' },
-      'servers'
-    )
+    console.log('REFRESHING INDEX')
+    try {
+      const current = await this.client.redis.hgetall(
+        { type: 'timeseriesRegistry' },
+        'servers'
+      )
+      console.log('CURRENT', current)
 
-    this.index = {}
-    for (const id in current) {
-      this.updateIndexByInstance(id, JSON.parse(current[id]))
+      if (!current) {
+        throw new Error()
+      }
+
+      this.index = {}
+      for (const id in current) {
+        this.updateIndexByInstance(id, JSON.parse(current[id]))
+      }
+    } catch (e) {
+      console.error('HEYOO ERROR', e)
+    } finally {
+      this.refreshTimer = setTimeout(() => {
+        this.refreshIndex()
+      }, INDEX_REFRESH_TIMEOUT)
     }
-
-    this.refreshTimer = setTimeout(() => {
-      this.refreshIndex()
-    }, INDEX_REFRESH_TIMEOUT)
   }
 
   updateIndexByInstance(id: string, payload: any) {
@@ -69,12 +80,15 @@ class TimeseriesCache {
           type: 'timeseries',
         },
       }
+
+      console.log('table things', tableName, timeseries)
     }
   }
 
   async subscribe() {
     await this.refreshIndex()
 
+    console.log('subscribing.......................')
     this.client.redis.subscribe(
       { type: 'timeseriesRegistry' },
       constants.TS_REGISTRY_UPDATE
@@ -84,10 +98,12 @@ class TimeseriesCache {
       { type: 'timeseriesRegistry' },
       'message',
       (channel, msg) => {
+        console.log('WHAT IS THIS', channel, msg)
         if (channel !== constants.TS_REGISTRY_UPDATE) {
           return
         }
 
+        console.log('HELLO GOT EVENT', channel, msg)
         let obj
         try {
           obj = JSON.parse(msg)
