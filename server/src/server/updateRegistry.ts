@@ -1,6 +1,13 @@
 import { SelvaClient, constants } from '@saulx/selva'
 import { RegistryInfo } from '../types'
 import { SelvaServer } from './'
+import ProcessManager from './processManager'
+
+type RegisterableServer = {
+  selvaClient: SelvaClient
+  pm: ProcessManager
+  isDestroyed?: boolean
+}
 
 export async function removeFromRegistry(client: SelvaClient) {
   const redis = client.redis
@@ -21,13 +28,13 @@ export async function removeFromRegistry(client: SelvaClient) {
   )
 }
 
-const block = (server: SelvaServer): boolean => {
+const block = (server: RegisterableServer): boolean => {
   const isBlocked = !server.pm || server.pm.isDestroyed || server.isDestroyed
   return isBlocked
 }
 
 export default async function updateRegistry(
-  server: SelvaServer,
+  server: RegisterableServer,
   info: RegistryInfo
 ) {
   if (block(server)) {

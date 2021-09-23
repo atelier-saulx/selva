@@ -11,6 +11,7 @@ import fs from 'fs'
 import { TextServer } from './server/text'
 import mkdirp from 'mkdirp'
 import updateRegistry from './server/updateRegistry'
+import { connect } from '@saulx/selva'
 
 export * as s3Backups from './backup-plugins/s3'
 
@@ -268,6 +269,12 @@ WHERE schemaname != 'pg_catalog' AND
   }
 
   tick()
+
+  const selvaClient = connect(parsedOpts.registry)
+  db.on('stats', (stats) => {
+    console.log('HELLO POSTGRES STATS', stats)
+  })
+
   // ready for use
   // db.on('stats', (rawStats) => {
   //   if (rawStats.runtimeInfo) {
@@ -289,6 +296,7 @@ WHERE schemaname != 'pg_catalog' AND
   //     )
   //   }
   // })
+
   return db
 }
 
@@ -358,6 +366,10 @@ export async function start(opts: Options) {
   })
 
   const timeseriesPostgres = await startPostgresDb({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host,
+    },
     // TODO: make port configurable
     port: 5436,
   })
