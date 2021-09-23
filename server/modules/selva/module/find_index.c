@@ -367,6 +367,7 @@ static int destroy_index_cb(
     }
 
     memset(icb, 0, sizeof(*icb));
+    RedisModule_Free(icb);
 
     return 0;
 }
