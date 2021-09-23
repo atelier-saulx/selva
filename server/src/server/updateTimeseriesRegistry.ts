@@ -68,7 +68,8 @@ export default async function updateRegistry(
       constants.TS_REGISTRY_UPDATE,
       // maybe not nessecary to send all (?)
       JSON.stringify({
-        event: 'new',
+        event: 'new_server',
+        ts: Date.now(),
         server: {
           port: info.port,
           name: info.name,
@@ -83,7 +84,8 @@ export default async function updateRegistry(
       constants.TS_REGISTRY_UPDATE,
       // maybe not nessecary to send all (?)
       JSON.stringify({
-        event: 'update',
+        event: 'stats_update',
+        ts: Date.now(),
         server: {
           port: info.port,
           name: info.name,
