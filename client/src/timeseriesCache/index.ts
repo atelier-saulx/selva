@@ -1,5 +1,7 @@
 import { constants, SelvaClient, ServerDescriptor } from '..'
 
+const INDEX_REFRESH_TIMEOUT = 1e3 * 60 * 1
+
 class TimeseriesCache {
   private client: SelvaClient
   private index: {
@@ -7,10 +9,27 @@ class TimeseriesCache {
       [timestamp: number]: { descriptor: ServerDescriptor; meta: any }
     }
   }
+  private refreshTimer: NodeJS.Timeout
 
   constructor(client: SelvaClient) {
     this.client = client
     this.index = {}
+  }
+
+  async refreshIndex() {
+    const current = await this.client.redis.hgetall(
+      { type: 'timeseriesRegistry' },
+      'servers'
+    )
+
+    this.index = {}
+    for (const id in current) {
+      this.updateIndexByInstance(id, JSON.parse(current[id]))
+    }
+
+    this.refreshTimer = setTimeout(() => {
+      this.refreshIndex()
+    }, INDEX_REFRESH_TIMEOUT)
   }
 
   updateIndexByInstance(id: string, payload: any) {
@@ -54,14 +73,7 @@ class TimeseriesCache {
   }
 
   async subscribe() {
-    const current = await this.client.redis.hgetall(
-      { type: 'timeseriesRegistry' },
-      'servers'
-    )
-
-    for (const id in current) {
-      this.updateIndexByInstance(id, JSON.parse(current[id]))
-    }
+    await this.refreshIndex()
 
     this.client.redis.subscribe(
       { type: 'timeseriesRegistry' },
@@ -94,6 +106,9 @@ class TimeseriesCache {
   }
 
   unsubscribe() {
+    clearTimeout(this.refreshTimer)
+    this.refreshTimer = undefined
+
     this.client.redis.unsubscribe(
       { type: 'timeseriesRegistry' },
       constants.TS_REGISTRY_UPDATE
