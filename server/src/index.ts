@@ -11,7 +11,7 @@ import fs from 'fs'
 import { TextServer } from './server/text'
 import mkdirp from 'mkdirp'
 import updateRegistry from './server/updateRegistry'
-import { connect } from '@saulx/selva'
+import { connect, ServerDescriptor } from '@saulx/selva'
 
 export * as s3Backups from './backup-plugins/s3'
 
@@ -197,7 +197,7 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export async function startPostgresDb(opts: Options) {
+export async function startTimeseries(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
   const password = `baratta`
   const db = new PostgresManager({
@@ -208,8 +208,40 @@ export async function startPostgresDb(opts: Options) {
   db.start()
 
   const selvaClient = connect(parsedOpts.registry)
-  db.on('stats', (stats) => {
-    console.log('HELLO POSTGRES STATS', stats)
+
+  const tsServer = {
+    isDestroyed: false,
+    pm: db,
+    selvaClient,
+  }
+
+  const info: ServerDescriptor = {
+    name: 'default',
+    type: 'timeseries',
+    port: parsedOpts.port,
+    host: parsedOpts.host,
+  }
+
+  db.on('stats', (rawStats) => {
+    if (rawStats.runtimeInfo) {
+      const stats = {
+        cpu: rawStats.runtimeInfo.cpu,
+        timestamp: rawStats.runtimeInfo.timestamp,
+        // TODO: table meta needs to go to timeseriesRegistry
+        // tableMeta: rawStats.pgInfo,
+      }
+      console.log('HELLO POSTGRES STATS', stats, info)
+
+      updateRegistry(
+        tsServer,
+        Object.assign(
+          {
+            stats,
+          },
+          info
+        )
+      )
+    }
   })
 
   // ready for use
@@ -302,7 +334,7 @@ export async function start(opts: Options) {
     },
   })
 
-  const timeseriesPostgres = await startPostgresDb({
+  const timeseriesPostgres = await startTimeseries({
     registry: {
       port: parsedOpts.port,
       host: parsedOpts.host,
