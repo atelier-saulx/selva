@@ -66,30 +66,22 @@ export default async function updateRegistry(
     client.redis.publish(
       { type: 'timeseriesRegistry' },
       constants.TS_REGISTRY_UPDATE,
-      // maybe not nessecary to send all (?)
       JSON.stringify({
         event: 'new_server',
         ts: Date.now(),
-        server: {
-          port: info.port,
-          host: info.host,
-          type: info.type,
-        },
+        id: id,
+        data: info,
       })
     )
   } else {
     client.redis.publish(
       { type: 'timeseriesRegistry' },
       constants.TS_REGISTRY_UPDATE,
-      // maybe not nessecary to send all (?)
       JSON.stringify({
         event: 'stats_update',
         ts: Date.now(),
-        server: {
-          port: info.port,
-          host: info.host,
-          type: info.type,
-        },
+        id: id,
+        data: info,
       })
     )
   }
