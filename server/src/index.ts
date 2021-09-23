@@ -260,7 +260,6 @@ export async function startTimeseries(opts: Options) {
   }
 
   const info: ServerDescriptor = {
-    name: 'default',
     type: 'timeseries',
     port: parsedOpts.port,
     host: parsedOpts.host,
@@ -287,28 +286,6 @@ export async function startTimeseries(opts: Options) {
       )
     }
   })
-
-  // ready for use
-  // db.on('stats', (rawStats) => {
-  //   if (rawStats.runtimeInfo) {
-  //     const stats = {
-  //       cpu: rawStats.runtimeInfo.cpu,
-  //       activeChannels: Number(rawStats.redisInfo.pubsub_channels),
-  //       opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
-  //       timestamp: rawStats.runtimeInfo.timestamp,
-  //     }
-
-  //     updateRegistry(
-  //       server,
-  //       Object.assign(
-  //         {
-  //           stats,
-  //         },
-  //         info
-  //       )
-  //     )
-  //   }
-  // })
 
   return db
 }
