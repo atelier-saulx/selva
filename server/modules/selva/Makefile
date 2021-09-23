@@ -1,5 +1,4 @@
-# find the OS
-uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+include common.mk
 
 SELVA_VERSION := $(shell sh -c 'git rev-parse --verify HEAD')
 INCLUDE_DIR := ./include ./util
@@ -36,12 +35,10 @@ OBJS := \
 
 IDIR := $(patsubst %,-I%, $(INCLUDE_DIR))
 
-CFLAGS := $(IDIR) -include tunables.h \
-	-std=gnu99 -fPIC \
-	-Wall -Wextra -Wno-unused-value -Wno-zero-length-array -Wno-c11-extensions \
-	-ggdb -O2 \
+CFLAGS += $(IDIR) -include tunables.h \
+	-O2 \
+	-fPIC \
 	-fno-strict-aliasing \
-	-march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2 \
 	-D REDISMODULE_EXPERIMENTAL_API=1
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
