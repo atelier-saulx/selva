@@ -10,11 +10,12 @@ const getServer = (
   selectionOptions?: ServerSelectOptions // channel for subscriptions
 ): void => {
   if (selector.host && selector.port) {
+    // eslint-disable-next-line
     cb({ ...selector, host: selector.host, port: selector.port })
   } else {
     let { type, name } = selector
     if (!selvaClient.registryConnection) {
-      console.log(
+      console.info(
         'registry connection not created, add once listener on selvaClient.connect (means registry is connected) '
       )
       selvaClient.addServerUpdateListeners.push(() =>
@@ -29,7 +30,8 @@ const getServer = (
       }
 
       if (type === 'subscriptionRegistry') {
-        // just get first for now
+        // just get first for now - never had more then one yet...
+        // eslint-disable-next-line
         for (let k in selvaClient.servers.subRegisters) {
           server = selvaClient.servers.subRegisters[k]
           break
@@ -61,6 +63,7 @@ const getServer = (
                   if (s.host === host && s.port === port) {
                     return true
                   }
+                  return false
                 })
                 if (server) {
                   cb(server)

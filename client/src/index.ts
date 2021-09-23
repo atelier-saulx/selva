@@ -79,12 +79,17 @@ export class SelvaClient extends EventEmitter {
     origins: { [key: string]: ServerDescriptor }
 
     subRegisters: { [key: string]: ServerDescriptor }
+
+    timeseries: { [key: string]: ServerDescriptor }
+    tsRegisters: { [key: string]: ServerDescriptor }
   } = {
     ids: new Set(),
     origins: {},
     subsManagers: [],
     replicas: {},
     subRegisters: {},
+    timeseries: {},
+    tsRegisters: {},
   }
 
   public registryConnection?: Connection
@@ -297,8 +302,8 @@ export class SelvaClient extends EventEmitter {
     opts: ServerSelector,
     selectOptions?: ServerSelectOptions
   ): Promise<ServerDescriptor> {
-    return new Promise((r) => {
-      getServer(this, r, opts, selectOptions)
+    return new Promise((resolve) => {
+      getServer(this, resolve, opts, selectOptions)
     })
   }
 

@@ -1,23 +1,13 @@
 import { SelvaClient, ConnectOptions, ServerDescriptor } from '..'
 import { Connect } from '../types'
 import { createConnection, connections } from '../connection'
-import { REGISTRY_UPDATE, REGISTRY_MOVE_SUBSCRIPTION } from '../constants'
+import { REGISTRY_UPDATE } from '../constants'
 import getInitialRegistryServers from './getInitialRegistryServers'
 import addServer from './addServer'
 import removeServer from './removeServer'
 import { serverId } from '../util'
 import moveReplicas from './moveReplicas'
 import moveSubscriptionManager from './moveSubscriptionManager'
-
-/*
- registry-update
-  events
-  'new-server'
-  'remove-server'
-  'move-subscription'
-  registry-server-info
-    sends updates of all info objects (make this specific as well)
-*/
 
 const updateServerListeners = (selvaClient: SelvaClient) => {
   if (selvaClient.addServerUpdateListeners.length) {
@@ -125,6 +115,8 @@ const connectRegistry = (
           subsManagers: [],
           replicas: {},
           subRegisters: {},
+          timeseries: {},
+          tsRegisters: {},
         }
         selvaClient.emit('removed-servers', { event: '*' })
       }
@@ -162,9 +154,9 @@ const connectRegistry = (
                 selvaClient.emit('removed-servers', payload)
               }
             } else if (event === 'move-sub') {
-              // from server to server
-              console.log('MOVE SUBSCRIPTION')
-            } else if ('update-index') {
+              // from server to server - still needs to be implmented ?
+              console.info('MOVE SUBSCRIPTION')
+            } else if (event === 'update-index') {
               // now we are going to move them!
               // can be either a subs manager update of index or replica
               const { type, move } = payload

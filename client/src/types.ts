@@ -7,6 +7,8 @@ export type ServerType =
   | 'subscriptionRegistry'
   | 'replica'
   | 'registry'
+  | 'timeseries'
+  | 'timeseriesRegistry'
 
 // port and host is allways the registry!
 export type Connect = {
@@ -27,6 +29,7 @@ export type ServerSelector = {
   strict?: boolean
   port?: number
   subscription?: string
+  // special timeseries selection criteria - like a qeury
 }
 
 export type ServerSelectOptions = { subscription?: string; strict?: true }
