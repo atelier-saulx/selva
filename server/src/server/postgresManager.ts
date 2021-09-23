@@ -2,7 +2,8 @@ import ProcessManager from './processManager'
 import { spawnSync } from 'child_process'
 import { Client as PgClient } from 'pg'
 
-const TABLE_META_COLLECT_INTERVAL = 2 * 60 * 1e3
+// TODO: increase this? and make the worker update it when it creates new tables
+const TABLE_META_COLLECT_INTERVAL = 1 * 60 * 1e3
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -77,12 +78,11 @@ export default class PostgresManager extends ProcessManager {
 
         return { pgInfo: info, runtimeInfo }
       } else {
-        return { pgInfo: {}, runtimeInfo }
+        return { runtimeInfo }
       }
     } catch (err) {
       // this.emit('error', err)
       return {
-        redisInfo: {},
         runtimeInfo,
         err: err.message,
         isBusy: true,

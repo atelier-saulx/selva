@@ -403,30 +403,14 @@ test.serial('get - basic value types timeseries', async (t) => {
     )
   )
 
+  setInterval(async () => {
+    console.log(
+      'HELLO TIMESERIES META',
+      await client.redis.hgetall({ type: 'timeseriesRegistry' }, 'servers')
+    )
+  }, 2e3)
+
   await wait(5000e3)
-
-  // t.deepEqual(
-  //   await client.get({
-  //     $id: 'viA',
-  //     auth: true,
-  //   }),
-  //   {
-  //     auth: { role: { id: ['root'], type: 'admin' } },
-  //   },
-  //   'get role'
-  // )
-
-  // not supported without 'properties'
-  // t.deepEqual(
-  //   await client.get({
-  //     $id: 'viA',
-  //     auth: { role: { id: true } }
-  //   }),
-  //   {
-  //     auth: { role: { id: ['root'] } }
-  //   },
-  //   'get role nested'
-  // )
 
   await client.delete('root')
 

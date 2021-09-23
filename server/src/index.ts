@@ -11,6 +11,7 @@ import fs from 'fs'
 import { TextServer } from './server/text'
 import mkdirp from 'mkdirp'
 import updateRegistry from './server/updateRegistry'
+import updateTimeseriesRegistry from './server/updateTimeseriesRegistry'
 import { connect, ServerDescriptor } from '@saulx/selva'
 
 export * as s3Backups from './backup-plugins/s3'
@@ -270,12 +271,29 @@ export async function startTimeseries(opts: Options) {
       const stats = {
         cpu: rawStats.runtimeInfo.cpu,
         timestamp: rawStats.runtimeInfo.timestamp,
-        // TODO: table meta needs to go to timeseriesRegistry
-        // tableMeta: rawStats.pgInfo,
+      }
+
+      updateRegistry(
+        tsServer,
+        Object.assign(
+          {
+            stats,
+          },
+          info
+        )
+      )
+    }
+
+    if (rawStats.pgInfo) {
+      const stats = {
+        cpu: rawStats.runtimeInfo.cpu,
+        memory: rawStats.runtimeInfo.cpu,
+        timestamp: rawStats.runtimeInfo.timestamp,
+        tableMeta: rawStats.pgInfo,
       }
       console.log('HELLO POSTGRES STATS', stats, info)
 
-      updateRegistry(
+      updateTimeseriesRegistry(
         tsServer,
         Object.assign(
           {
@@ -354,6 +372,13 @@ export async function start(opts: Options) {
     },
   })
 
+  const tsRegistry = await startTimeseriesRegistry({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host,
+    },
+  })
+
   const timeseriesPostgres = await startTimeseries({
     registry: {
       port: parsedOpts.port,
@@ -385,6 +410,7 @@ export async function start(opts: Options) {
     await timeseries.destroy()
     await subs.destroy()
     await subsRegistry.destroy()
+    await tsRegistry.destroy()
     timeseriesPostgres.destroy() // not async
     await timeseriesWorker.destroy()
   })
