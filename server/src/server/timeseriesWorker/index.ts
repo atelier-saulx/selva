@@ -124,6 +124,7 @@ export class TimeseriesWorker {
     await this.client.destroy()
   }
 }
+
 export async function startTimeseriesWorker(
   opts: ServerOptions,
   timeseriesDbInfo: { password: string; host: string; port: number }
