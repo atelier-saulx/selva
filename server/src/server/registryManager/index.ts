@@ -79,6 +79,8 @@ const orderServers = (
   return q
 }
 
+// here we add removeServer from timeseriesRegistry
+
 const removeServerFromSubsRegistry = async (
   client: SelvaClient,
   server: ServerDescriptor
@@ -121,7 +123,7 @@ export const registryManager = (server: SelvaServer) => {
       // got all of them
       // console.log('initial servers')
     } else {
-      console.log(
+      console.info(
         chalk.green('Server is added to registry'),
         server.name,
         server.type,
@@ -138,16 +140,18 @@ export const registryManager = (server: SelvaServer) => {
         // got all of them
         // console.log('remove all servers')
       } else {
-        console.log(
+        console.info(
           chalk.red('Server is removed from registry'),
           server.name,
           server.type,
           server.host,
           server.port
         )
+        // if server.type === 'timeseries' DO SOMETHING
+
         if (server.type === 'subscriptionManager') {
           removeServerFromSubsRegistry(client, server).then(() => {
-            console.log(
+            console.info(
               chalk.gray(
                 'Succesfully removed subsmanager from subscription-registry'
               )
