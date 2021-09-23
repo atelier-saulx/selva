@@ -33,6 +33,7 @@ test.after(async (t) => {
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('do things with refs', async (t) => {
