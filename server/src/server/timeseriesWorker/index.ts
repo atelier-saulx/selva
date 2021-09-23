@@ -57,7 +57,7 @@ export class TimeseriesWorker {
     console.log('timeseries tick')
     try {
       const row = await this.client.redis.rpop(
-        { name: 'timeseries' },
+        { type: 'timeseriesQueue' },
         'timeseries_inserts'
       )
       if (row) {

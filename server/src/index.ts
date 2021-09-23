@@ -1,4 +1,4 @@
-import { Client } from 'pg'
+import { Client as PgClient } from 'pg'
 import { Options, ServerOptions } from './types'
 import { SelvaServer, startServer } from './server'
 import PostgresManager from './server/postgresManager'
@@ -221,13 +221,35 @@ export async function startTimeseriesRegistry(opts: Options) {
 
 export async function startTimeseries(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
-  const password = `baratta`
+
+  // TODO
+  const password = 'baratta'
+  const host = '127.0.0.1'
+
   const db = new PostgresManager({
     port: parsedOpts.port,
     password,
     name: `main`,
   })
   db.start()
+
+  // client ready check
+  let ctr = 0
+  while (ctr < 1000) {
+    ++ctr
+    try {
+      const client = new PgClient({
+        connectionString: `postgres://postgres:${password}@${host}:${parsedOpts.port}`,
+      })
+      await client.connect()
+      await client.query(`select 1`, [])
+      client.end()
+      break
+    } catch (e) {
+      // nop
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
 
   const selvaClient = connect(parsedOpts.registry)
 
@@ -331,8 +353,7 @@ export async function start(opts: Options) {
     },
   })
 
-  const timeseries = await startOrigin({
-    name: 'timeseries',
+  const timeseries = await startTimeseriesQueue({
     registry,
     // @ts-ignore
     dir: opts.dir,

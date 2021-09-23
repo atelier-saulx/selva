@@ -132,7 +132,7 @@ async function getInsertQueue(
   try {
     return (
       await client.redis.lrange(
-        { name: 'timeseries' },
+        { type: 'timeseriesQueue' },
         'timeseries_inserts',
         0,
         -1
@@ -284,6 +284,7 @@ export default async function execTimeseries(
   }
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
+  console.log('SQL', params)
   const result = await client.pg.query(params.text, params.values)
 
   return result.rows.map((row) => {
