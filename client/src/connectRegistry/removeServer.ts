@@ -13,6 +13,7 @@ const removeServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
       if (replicas) {
         for (let i = 0; i < replicas.length; i++) {
           const replica = replicas[i]
+          // eslint-disable-next-line
           if (replica.host === server.host && replica.port == server.port) {
             replicas.splice(i, 1)
             break
@@ -28,6 +29,7 @@ const removeServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
         const subscriptionManager = subsManagers[i]
         if (
           subscriptionManager.host === server.host &&
+          // eslint-disable-next-line
           subscriptionManager.port == server.port
         ) {
           subsManagers.splice(i, 1)
@@ -36,6 +38,10 @@ const removeServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
       }
     } else if (type === 'subscriptionRegistry') {
       delete selvaClient.servers.subRegisters[id]
+    } else if (type === 'timeseriesRegistry') {
+      delete selvaClient.servers.tsRegisters[id]
+    } else if (type === 'timeseries') {
+      delete selvaClient.servers.timeseries[id]
     }
     return true
   } else {

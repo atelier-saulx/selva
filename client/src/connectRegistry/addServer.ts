@@ -7,9 +7,6 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
     selvaClient.servers.ids.add(id)
     if (type === 'origin') {
       selvaClient.servers.origins[server.name] = server
-    } else if (type === 'timeseries') {
-      // different then sub managers scince you just want to use the tsReg to see where to connect to
-      selvaClient.servers.timeseries[server.name] = server
     } else if (type === 'replica') {
       if (!selvaClient.servers.replicas[server.name]) {
         selvaClient.servers.replicas[server.name] = []
@@ -30,6 +27,9 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
       selvaClient.servers.subRegisters[id] = server
     } else if (type === 'timeseriesRegistry') {
       selvaClient.servers.tsRegisters[id] = server
+    } else if (type === 'timeseries') {
+      // different then sub managers scince you just want to use the tsReg to see where to connect to
+      selvaClient.servers.timeseries[id] = server
     }
     return true
   } else {
