@@ -122,9 +122,9 @@ const getServer = (
       }
 
       // for now only subscription
-      if (selectionOptions) {
-        // console.log('if selection options')
-      }
+      // if (selectionOptions) {
+      // console.log('if selection options')
+      // }
 
       if (!server) {
         selvaClient.addServerUpdateListeners.push(() => {
