@@ -1,4 +1,4 @@
-import { SelvaClient, RedisCommand, connect } from '.'
+import { SelvaClient, RedisCommand } from '.'
 import { ServerSelector } from './types'
 import getServer from './getServer'
 import { createConnection } from './connection'

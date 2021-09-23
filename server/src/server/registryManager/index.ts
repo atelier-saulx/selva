@@ -12,9 +12,9 @@ type ServerIndex = {
 }
 
 const insert = (array: ServerIndex[], target: ServerIndex): void => {
-  var l: number = 0
-  var h: number = array.length - 1
-  var m: number
+  let l: number = 0
+  let h: number = array.length - 1
+  let m: number
   while (l <= h) {
     m = (l + h) >>> 1
     const a = array[m].weight
