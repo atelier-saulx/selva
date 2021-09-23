@@ -1,4 +1,4 @@
-import { Client } from 'pg'
+import { Client as PgClient } from 'pg'
 import { Options, ServerOptions } from './types'
 import { SelvaServer, startServer } from './server'
 import PostgresManager from './server/postgresManager'
@@ -11,6 +11,7 @@ import fs from 'fs'
 import { TextServer } from './server/text'
 import mkdirp from 'mkdirp'
 import updateRegistry from './server/updateRegistry'
+import updateTimeseriesRegistry from './server/updateTimeseriesRegistry'
 import { connect, ServerDescriptor } from '@saulx/selva'
 
 export * as s3Backups from './backup-plugins/s3'
@@ -221,13 +222,35 @@ export async function startTimeseriesRegistry(opts: Options) {
 
 export async function startTimeseries(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
-  const password = `baratta`
+
+  // TODO
+  const password = 'baratta'
+  const host = '127.0.0.1'
+
   const db = new PostgresManager({
     port: parsedOpts.port,
     password,
     name: `main`,
   })
   db.start()
+
+  // client ready check
+  let ctr = 0
+  while (ctr < 1000) {
+    ++ctr
+    try {
+      const client = new PgClient({
+        connectionString: `postgres://postgres:${password}@${host}:${parsedOpts.port}`,
+      })
+      await client.connect()
+      await client.query(`select 1`, [])
+      client.end()
+      break
+    } catch (e) {
+      // nop
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
 
   const selvaClient = connect(parsedOpts.registry)
 
@@ -238,7 +261,6 @@ export async function startTimeseries(opts: Options) {
   }
 
   const info: ServerDescriptor = {
-    name: 'default',
     type: 'timeseries',
     port: parsedOpts.port,
     host: parsedOpts.host,
@@ -249,10 +271,7 @@ export async function startTimeseries(opts: Options) {
       const stats = {
         cpu: rawStats.runtimeInfo.cpu,
         timestamp: rawStats.runtimeInfo.timestamp,
-        // TODO: table meta needs to go to timeseriesRegistry
-        // tableMeta: rawStats.pgInfo,
       }
-      console.log('HELLO POSTGRES STATS', stats, info)
 
       updateRegistry(
         tsServer,
@@ -264,29 +283,27 @@ export async function startTimeseries(opts: Options) {
         )
       )
     }
+
+    if (rawStats.pgInfo) {
+      const stats = {
+        cpu: rawStats.runtimeInfo.cpu,
+        memory: rawStats.runtimeInfo.cpu,
+        timestamp: rawStats.runtimeInfo.timestamp,
+        tableMeta: rawStats.pgInfo,
+      }
+      console.log('HELLO POSTGRES STATS', stats, info)
+
+      updateTimeseriesRegistry(
+        tsServer,
+        Object.assign(
+          {
+            stats,
+          },
+          info
+        )
+      )
+    }
   })
-
-  // ready for use
-  // db.on('stats', (rawStats) => {
-  //   if (rawStats.runtimeInfo) {
-  //     const stats = {
-  //       cpu: rawStats.runtimeInfo.cpu,
-  //       activeChannels: Number(rawStats.redisInfo.pubsub_channels),
-  //       opsPerSecond: Number(rawStats.redisInfo.instantaneous_ops_per_sec),
-  //       timestamp: rawStats.runtimeInfo.timestamp,
-  //     }
-
-  //     updateRegistry(
-  //       server,
-  //       Object.assign(
-  //         {
-  //           stats,
-  //         },
-  //         info
-  //       )
-  //     )
-  //   }
-  // })
 
   return db
 }
@@ -331,8 +348,7 @@ export async function start(opts: Options) {
     },
   })
 
-  const timeseries = await startOrigin({
-    name: 'timeseries',
+  const timeseries = await startTimeseriesQueue({
     registry,
     // @ts-ignore
     dir: opts.dir,
@@ -350,6 +366,13 @@ export async function start(opts: Options) {
   })
 
   const subsRegistry = await startSubscriptionRegistry({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host,
+    },
+  })
+
+  const tsRegistry = await startTimeseriesRegistry({
     registry: {
       port: parsedOpts.port,
       host: parsedOpts.host,
@@ -387,6 +410,7 @@ export async function start(opts: Options) {
     await timeseries.destroy()
     await subs.destroy()
     await subsRegistry.destroy()
+    await tsRegistry.destroy()
     timeseriesPostgres.destroy() // not async
     await timeseriesWorker.destroy()
   })

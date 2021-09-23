@@ -76,6 +76,9 @@ test.before(async (t) => {
 
 test.beforeEach(async (t) => {
   const client = connect({ port })
+  // TODO: removet his manual step
+  await client.timeseriesCache.subscribe()
+
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
@@ -403,30 +406,19 @@ test.serial('get - basic value types timeseries', async (t) => {
     )
   )
 
+  setInterval(async () => {
+    console.log(
+      'HELLO TIMESERIES META',
+      await client.redis.hgetall({ type: 'timeseriesRegistry' }, 'servers')
+    )
+
+    console.log(
+      'HELLO REAL REAL REALTIMESERIES META',
+      client.timeseriesCache.index
+    )
+  }, 2e3)
+
   await wait(5000e3)
-
-  // t.deepEqual(
-  //   await client.get({
-  //     $id: 'viA',
-  //     auth: true,
-  //   }),
-  //   {
-  //     auth: { role: { id: ['root'], type: 'admin' } },
-  //   },
-  //   'get role'
-  // )
-
-  // not supported without 'properties'
-  // t.deepEqual(
-  //   await client.get({
-  //     $id: 'viA',
-  //     auth: { role: { id: true } }
-  //   }),
-  //   {
-  //     auth: { role: { id: ['root'] } }
-  //   },
-  //   'get role nested'
-  // )
 
   await client.delete('root')
 

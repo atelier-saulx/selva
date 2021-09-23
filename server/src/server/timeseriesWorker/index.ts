@@ -57,7 +57,7 @@ export class TimeseriesWorker {
     console.log('timeseries tick')
     try {
       const row = await this.client.redis.rpop(
-        { name: 'timeseries' },
+        { type: 'timeseriesQueue' },
         'timeseries_inserts'
       )
       if (row) {
@@ -79,7 +79,7 @@ export class TimeseriesWorker {
   }
 
   getTableName(context: TimeSeriesInsertContext): string {
-    return `"${context.nodeType}\$${context.field}"`
+    return `"${context.nodeType}\$${context.field}$0"`
   }
 
   async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {
@@ -124,11 +124,11 @@ export class TimeseriesWorker {
     await this.client.destroy()
   }
 }
+
 export async function startTimeseriesWorker(
   opts: ServerOptions,
   timeseriesDbInfo: { password: string; host: string; port: number }
 ): Promise<TimeseriesWorker> {
-  console.log('aaaaaa')
   const connectionString = `postgres://postgres:${timeseriesDbInfo.password}@${timeseriesDbInfo.host}:${timeseriesDbInfo.port}`
   const worker = new TimeseriesWorker(opts, connectionString)
   await worker.start()
