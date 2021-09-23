@@ -77,9 +77,8 @@ export class SelvaClient extends EventEmitter {
     replicas: { [key: string]: ServerDescriptor[] }
     // origins by name
     origins: { [key: string]: ServerDescriptor }
-
     subRegisters: { [key: string]: ServerDescriptor }
-
+    timeseriesQueues: { [key: string]: ServerDescriptor }
     timeseries: { [key: string]: ServerDescriptor }
     tsRegisters: { [key: string]: ServerDescriptor }
   } = {
@@ -90,6 +89,7 @@ export class SelvaClient extends EventEmitter {
     subRegisters: {},
     timeseries: {},
     tsRegisters: {},
+    timeseriesQueues: {},
   }
 
   public registryConnection?: Connection

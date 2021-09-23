@@ -42,6 +42,8 @@ const removeServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
       delete selvaClient.servers.tsRegisters[id]
     } else if (type === 'timeseries') {
       delete selvaClient.servers.timeseries[id]
+    } else if (type === 'timeseriesQueue') {
+      delete selvaClient.servers.timeseriesQueues[id]
     }
     return true
   } else {

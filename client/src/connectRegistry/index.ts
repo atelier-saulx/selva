@@ -117,6 +117,7 @@ const connectRegistry = (
           subRegisters: {},
           timeseries: {},
           tsRegisters: {},
+          timeseriesQueues: {},
         }
         selvaClient.emit('removed-servers', { event: '*' })
       }

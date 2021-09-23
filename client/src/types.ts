@@ -9,6 +9,7 @@ export type ServerType =
   | 'registry'
   | 'timeseries'
   | 'timeseriesRegistry'
+  | 'timeseriesQueue'
 
 // port and host is allways the registry!
 export type Connect = {

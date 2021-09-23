@@ -29,7 +29,21 @@ const getServer = (
         type = 'replica'
       }
 
-      if (type === 'subscriptionRegistry') {
+      if (type === 'timeseriesRegistry') {
+        // just get first for now - never had more then one yet...
+        // eslint-disable-next-line
+        for (let k in selvaClient.servers.tsRegisters) {
+          server = selvaClient.servers.tsRegisters[k]
+          break
+        }
+      } else if (type === 'timeseriesQueue') {
+        // just get first for now - never had more then one yet...
+        // eslint-disable-next-line
+        for (let k in selvaClient.servers.timeseriesQueues) {
+          server = selvaClient.servers.timeseriesQueues[k]
+          break
+        }
+      } else if (type === 'subscriptionRegistry') {
         // just get first for now - never had more then one yet...
         // eslint-disable-next-line
         for (let k in selvaClient.servers.subRegisters) {

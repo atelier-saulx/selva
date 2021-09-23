@@ -193,8 +193,30 @@ export async function startSubscriptionRegistry(opts: Options) {
   return startServer('subscriptionRegistry', parsedOpts)
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+export async function startTimeseriesQueue(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+  const err = validate(parsedOpts, ['registry'], ['name', 'default', 'backups'])
+  parsedOpts.name = 'timeseriesQueue'
+  if (err) {
+    console.error(
+      `Error starting timeseriesQueue selva server ${chalk.red(err)}`
+    )
+    throw new Error(err)
+  }
+  return startServer('timeseriesQueue', parsedOpts)
+}
+
+export async function startTimeseriesRegistry(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+  const err = validate(parsedOpts, ['registry'], ['name', 'default', 'backups'])
+  parsedOpts.name = 'timeseriesRegistry'
+  if (err) {
+    console.error(
+      `Error starting timeseries Registry selva server ${chalk.red(err)}`
+    )
+    throw new Error(err)
+  }
+  return startServer('timeseriesRegistry', parsedOpts)
 }
 
 export async function startTimeseries(opts: Options) {

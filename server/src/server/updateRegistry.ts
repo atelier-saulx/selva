@@ -1,6 +1,5 @@
 import { SelvaClient, constants } from '@saulx/selva'
 import { RegistryInfo } from '../types'
-import { SelvaServer } from './'
 import ProcessManager from './processManager'
 
 type RegisterableServer = {
@@ -47,7 +46,7 @@ export default async function updateRegistry(
 
   // just remove subscriptions from this
 
-  for (let key in info) {
+  for (const key in info) {
     if (key === 'stats') {
       args.push(key, JSON.stringify(info[key]))
     } else {

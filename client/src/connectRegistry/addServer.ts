@@ -25,6 +25,8 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
       )
     } else if (type === 'subscriptionRegistry') {
       selvaClient.servers.subRegisters[id] = server
+    } else if (type === 'timeseriesQueue') {
+      selvaClient.servers.timeseriesQueues[id] = server
     } else if (type === 'timeseriesRegistry') {
       selvaClient.servers.tsRegisters[id] = server
     } else if (type === 'timeseries') {
