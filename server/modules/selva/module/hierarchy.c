@@ -1374,6 +1374,8 @@ static int SelvaModify_DelHierarchyNodeP(
     assert(("hierarchy must be set", hierarchy));
     assert(("node must be set", node));
 
+    SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, node);
+
     ids = getNodeIds(&node->children, &nr_ids);
     if (unlikely(!ids)) {
         return SELVA_HIERARCHY_ENOMEM;
