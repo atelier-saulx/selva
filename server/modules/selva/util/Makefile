@@ -1,7 +1,8 @@
+include ../common.mk
+
 RM_INCLUDE_DIR := ../include
 
-CFLAGS ?= -g -fPIC -O3 -std=gnu99 -Wall -Wextra -Wno-unused-function -Wno-unused-value -fno-strict-aliasing
-CFLAGS += -march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2
+CFLAGS += -fPIC -O2 -Wno-unused-function -fno-strict-aliasing
 CFLAGS += -I$(RM_INCLUDE_DIR)
 CC=gcc
 

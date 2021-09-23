@@ -160,3 +160,128 @@ test.serial('can delete a set', async (t) => {
 
   // That's it, there is nothing more to check as sets are embedded in SelvaObjects
 })
+
+test.serial('tree delete', async (t) => {
+  const client = connect(
+    {
+      port,
+    },
+    { loglevel: 'info' }
+  )
+
+  const thing = await client.set({
+    type: 'someTestThing',
+  })
+  const league = await client.set({
+    type: 'league',
+    children: [
+      {
+        type: 'match',
+        children: [
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] },
+          { type: 'person', parents: [ { $id: thing } ] }
+        ],
+      },
+      {
+        type: 'match',
+        children: [
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' },
+          { type: 'person' }
+        ],
+      },
+    ]
+  })
+
+  const res1 = await client.get({
+    $id: 'root',
+    things: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+        },
+      },
+    }
+  })
+  t.deepEqual(res1.things.length, 26, 'found all children')
+
+  await client.delete(league)
+
+  const res2 = await client.get({
+    $id: 'root',
+    things: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+        },
+      },
+    }
+  })
+  t.deepEqual(res2.things.length, 12, 'children that have other parents were preserved')
+})
+
+test.serial('recursive delete', async (t) => {
+  const client = connect(
+    {
+      port,
+    },
+    { loglevel: 'info' }
+  )
+
+  const a = await client.set({
+    type: 'someTestThing',
+    title: { en: 'a' },
+  })
+  const b = await client.set({
+    type: 'someTestThing',
+    title: { en: 'b' },
+  })
+  const x = await client.set({
+    type: 'someTestThing',
+    title: { en: 'x' },
+    parents: [ a ],
+  })
+  const y = await client.set({
+    type: 'someTestThing',
+    title: { en: 'y' },
+    parents: [a, b],
+  })
+
+  await client.delete({
+    $id: a,
+    $recursive: true,
+  })
+
+  const res2 = await client.get({
+    $id: 'root',
+    $language: 'en',
+    things: {
+      title: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+        },
+      },
+    }
+  })
+  t.deepEqualIgnoreOrder(res2, { things: [ { title: 'b' } ] })
+})
