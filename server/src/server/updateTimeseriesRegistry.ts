@@ -72,7 +72,6 @@ export default async function updateRegistry(
         ts: Date.now(),
         server: {
           port: info.port,
-          name: info.name,
           host: info.host,
           type: info.type,
         },
@@ -88,7 +87,6 @@ export default async function updateRegistry(
         ts: Date.now(),
         server: {
           port: info.port,
-          name: info.name,
           host: info.host,
           type: info.type,
         },
