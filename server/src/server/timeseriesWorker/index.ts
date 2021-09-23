@@ -128,7 +128,6 @@ export async function startTimeseriesWorker(
   opts: ServerOptions,
   timeseriesDbInfo: { password: string; host: string; port: number }
 ): Promise<TimeseriesWorker> {
-  console.log('aaaaaa')
   const connectionString = `postgres://postgres:${timeseriesDbInfo.password}@${timeseriesDbInfo.host}:${timeseriesDbInfo.port}`
   const worker = new TimeseriesWorker(opts, connectionString)
   await worker.start()
