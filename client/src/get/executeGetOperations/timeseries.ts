@@ -287,9 +287,15 @@ export default async function execTimeseries(
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
   console.log('SQL', params)
-  const result: QueryResult<any> = await client.pg.execute(
+  // const result: QueryResult<any> = await client.pg.execute(
+  //   // TODO: get startTime and endTime from filters
+  //   { nodeType: type, field: <string>op.sourceField },
+  //   params.text,
+  //   params.values
+  // )
+  const result: QueryResult<any> = await client.pg.pg.execute(
     // TODO: get startTime and endTime from filters
-    { nodeType: type, field: <string>op.sourceField },
+    '127.0.0.1:5436',
     params.text,
     params.values
   )

@@ -10,11 +10,15 @@ class TimeseriesCache {
       [timestamp: number]: { descriptor: ServerDescriptor; meta: any }
     }
   }
+  public instances: {
+    [instanceId: string]: { descriptor: ServerDescriptor; meta: any }
+  }
   private refreshTimer: NodeJS.Timeout
 
   constructor(client: SelvaClient) {
     this.client = client
     this.index = {}
+    this.instances = {}
   }
 
   async refreshIndex() {
@@ -52,9 +56,12 @@ class TimeseriesCache {
       return
     }
 
+    const { cpu, memory, timestamp } = payload.stats
+
+    let totalTableSizeBytes = 0
+    let totalRelationSizeBytes = 0
     for (const tableName in tableMeta) {
       const { tableSizeBytes, relationSizeBytes } = tableMeta[tableName]
-      const { cpu, memory, timestamp } = payload.stats
 
       const [nodeType, fieldName, startTimeStr] = tableName.split('$')
       const timeSeriesName = `${nodeType}$${fieldName}`
@@ -82,6 +89,24 @@ class TimeseriesCache {
       }
 
       console.log('table things', tableName, timeseries)
+      totalTableSizeBytes += tableSizeBytes
+      totalRelationSizeBytes += relationSizeBytes
+    }
+
+    this.instances[id] = {
+      meta: {
+        size: { totalTableSizeBytes, totalRelationSizeBytes },
+        resources: {
+          cpu,
+          memory,
+        },
+        timestamp,
+      },
+      descriptor: {
+        host,
+        port,
+        type: 'timeseries',
+      },
     }
   }
 

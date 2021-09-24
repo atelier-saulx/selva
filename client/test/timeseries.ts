@@ -410,7 +410,8 @@ test.serial('get - basic value types timeseries', async (t) => {
     console.log('SERVERS YO', client.servers)
     console.log(
       'HELLO REAL REAL REALTIMESERIES META',
-      client.timeseriesCache.index
+      JSON.stringify(client.pg.tsCache.index, null, 2),
+      JSON.stringify(client.pg.tsCache.instances, null, 2)
     )
   }, 2e3)
 
