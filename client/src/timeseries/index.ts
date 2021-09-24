@@ -21,7 +21,7 @@ export class TimeseriesClient {
     // TODO: credentials
     this.client = client
     this.pg = new PGConnection({ user: 'postgres', password: 'baratta' })
-    this.tsCache = new TimeseriesCache(client)
+    this.tsCache = new TimeseriesCache(this.client)
   }
 
   async connect() {
@@ -29,7 +29,6 @@ export class TimeseriesClient {
       return
     }
 
-    console.log('TIMESERIES CONNECT')
     await this.tsCache.subscribe()
     this.isConnected = true
   }
