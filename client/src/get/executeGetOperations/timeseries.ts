@@ -289,7 +289,7 @@ export default async function execTimeseries(
   console.log('SQL', params)
   // const result: QueryResult<any> = await client.pg.execute(
   //   // TODO: get startTime and endTime from filters
-  //   { operation: 'select', nodeType: type, field: <string>op.sourceField },
+  //   { nodeType: type, field: <string>op.sourceField },
   //   params.text,
   //   params.values
   // )

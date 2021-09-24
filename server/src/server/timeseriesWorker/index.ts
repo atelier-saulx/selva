@@ -85,6 +85,8 @@ export class TimeseriesWorker {
   }
 
   async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {
+    // TODO: use getMinInstance from client.pg
+    // after creating the timeseries send event
     const createTable = `
     CREATE TABLE IF NOT EXISTS ${this.getTableName(context)} (
       "nodeId" text,

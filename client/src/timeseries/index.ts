@@ -5,7 +5,6 @@ import PGConnection from '../connection/pg'
 import TimeseriesCache from './timeseriesCache'
 
 export type TimeseriesContext = {
-  operation: 'select' | 'insert' | 'create'
   nodeType: string
   field: string
   fieldSchema?: FieldSchema
@@ -45,14 +44,10 @@ export class TimeseriesClient {
     this.isConnected = false
   }
 
-  private executeCreate<T>(
-    _selector: TimeseriesContext,
-    query: string,
-    params: unknown[]
-  ) {
+  public getMinInstance() {
     const instances = Object.keys(this.tsCache.instances)
     if (!instances.length) {
-      throw new Error(`No instance available to run query ${query}`)
+      return null
     }
 
     let minId = instances[0]
@@ -68,7 +63,7 @@ export class TimeseriesClient {
       }
     }
 
-    return this.pg.execute<T>(minId, query, params)
+    return minId
   }
 
   public async execute<T>(
@@ -76,10 +71,6 @@ export class TimeseriesClient {
     query: string,
     params: unknown[]
   ): Promise<QueryResult<T>> {
-    if (selector.operation === 'create') {
-      return this.executeCreate<T>(selector, query, params)
-    }
-
     // TODO: real logic for selecting shard
     const tsName = `${selector.nodeType}$${selector.field}`
     const shards = this.tsCache.index[tsName]
