@@ -4,6 +4,7 @@ import path from 'path'
 import fs from 'fs'
 import { execSync } from 'child_process'
 import RedisManager from './redisManager'
+import killBlockingScripts from './killBlockingScripts'
 
 // this is only for the 'raw' redis
 // no handling of registry, no different types, no subscriptions stuff
@@ -63,6 +64,8 @@ export default (server: SelvaServer, opts: ServerOptions) => {
     type: server.type,
     selvaClient: server.selvaClient
   })
+
+  killBlockingScripts(host, port)
 
   server.pm.start()
   server.pm.on('error', err => server.emit('error', err))

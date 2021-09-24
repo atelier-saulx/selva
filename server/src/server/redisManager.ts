@@ -1,5 +1,6 @@
 import ProcessManager from './processManager'
 import { SelvaClient, ServerType } from '@saulx/selva'
+import { createClient } from 'redis'
 
 export default class RedisManager extends ProcessManager {
   private redisPort: number
@@ -82,12 +83,6 @@ export default class RedisManager extends ProcessManager {
         return { isBusy: true, runtimeInfo }
       }
     } catch (err) {
-      try {
-        //kill any long running scripts.
-        await this.selvaClient.redis.script('KILL')
-      } catch (e) {
-        console.error(e)
-      }
       // this.emit('error', err)
       return {
         redisInfo: {},
