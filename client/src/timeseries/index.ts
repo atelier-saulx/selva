@@ -53,7 +53,7 @@ export class TimeseriesClient {
     // TODO: real logic for selecting shard
     const tsName = `${selector.nodeType}$${selector.field}`
     const shards = this.tsCache.index[tsName]
-    if (!shards[0]) {
+    if (!shards || !shards[0]) {
       // TODO: implicitly create? or error and create it in the catch?
       throw new Error(`Timeseries ${tsName} does not exist`)
     }
