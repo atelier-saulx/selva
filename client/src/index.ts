@@ -20,7 +20,7 @@ import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
 import conformToSchema from './schema/conformToSchema'
 import initializeSchema from './schema/initializeSchema'
-import { Client as PgClient } from 'pg'
+import PgClient from './connection/pg'
 import { GetOptions, ObserveEventOptions, GetResult, get } from './get'
 import { SetOptions, set, setWithMeta } from './set'
 import { IdOptions } from 'lua/src/id'
@@ -46,7 +46,7 @@ import { v4 as uuidv4 } from 'uuid'
 import getServer from './getServer'
 import { ObservableOptions, ObsSettings } from './observable/types'
 import { SetMetaResponse } from './set/types'
-import TimeseriesCache from './timeseriesCache'
+import TimeseriesCache from './timeseries/timeseriesCache'
 
 export * as constants from './constants'
 
@@ -141,12 +141,7 @@ export class SelvaClient extends EventEmitter {
     this.pg = new PgClient({
       user: 'postgres',
       password: 'baratta',
-      port: 5436,
-      host: '127.0.0.1',
     }) // TODO: connect options
-    this.pg.connect().catch((e) => {
-      console.error('CONNECT ERROR', e)
-    })
 
     this.timeseriesCache = new TimeseriesCache(this)
   }
