@@ -138,6 +138,5 @@ export async function startTimeseriesWorker(
 }
 
 // TODO:
-// here we want to  subscribe on the TimeseriesCache
 // we want to create a new nodeType$field$0 table if the timeseries doesn't exist when inserting
 // if it exists, check if it's getting full and create a new shard with Date.now()
