@@ -51,7 +51,7 @@ export class TimeseriesWorker {
       connectionString: this.connectionString,
     })
 
-    await this.client.timeseriesCache.subscribe()
+    await this.client.pg.connect()
     this.tick()
   }
 
