@@ -50,6 +50,8 @@ export class TimeseriesWorker {
     this.postgresClient = new PG({
       connectionString: this.connectionString,
     })
+
+    await this.client.timeseriesCache.subscribe()
     this.tick()
   }
 
