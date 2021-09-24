@@ -1,5 +1,8 @@
+import { isMainThread } from 'worker_threads'
 import { native, QueryResult, Pool } from 'pg'
-const PgPool = native.Pool // or use pool if native deps are an issue
+
+// TODO: why is this broken in worker_threads
+const PgPool = isMainThread ? native.Pool : Pool
 
 export class PG {
   protected pool: Pool
