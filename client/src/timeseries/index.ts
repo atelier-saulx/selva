@@ -13,7 +13,7 @@ export type TimeseriesContext = {
 export class TimeseriesClient {
   private client: SelvaClient
   private pg: PGConnection
-  private tsCache: TimeseriesCache
+  public tsCache: TimeseriesCache
 
   private isConnected: boolean = false
 

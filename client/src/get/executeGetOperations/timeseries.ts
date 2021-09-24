@@ -160,6 +160,7 @@ export default async function execTimeseries(
   ctx: ExecContext
 ): Promise<any> {
   console.log('IS TIMESERIES', ctx, JSON.stringify(op, null, 2))
+  await client.pg.connect()
 
   const fieldSchema = getNestedSchema(
     client.schemas[ctx.db],
