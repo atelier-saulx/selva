@@ -1,6 +1,5 @@
-import { native, QueryResult, Pool } from "pg"
+import { native, QueryResult, Pool } from 'pg'
 const PgPool = native.Pool // or use pool if native deps are an issue
-
 
 export class PG {
   protected pool: Pool
@@ -9,14 +8,14 @@ export class PG {
   public constructor({ connectionString }: { connectionString: string }) {
     this.pool = new PgPool({ connectionString: connectionString })
 
-    this.pool.on(`error`, (err: Error ) => {
-      console.error(`PGPoolUnexpected error on idle client`, err)
+    this.pool.on('error', (err: Error) => {
+      console.error('PGPoolUnexpected error on idle client', err)
     })
   }
 
   public async execute<T>(
     query: string,
-    params: unknown[],
+    params: unknown[]
   ): Promise<QueryResult<T>> {
     const client = await this.pool.connect()
 
