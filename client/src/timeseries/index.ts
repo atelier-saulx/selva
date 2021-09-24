@@ -1,11 +1,14 @@
 import { QueryResult } from 'pg'
+import { FieldSchema } from '../schema'
 import { SelvaClient } from '..'
 import PGConnection from '../connection/pg'
 import TimeseriesCache from './timeseriesCache'
 
 export type TimeseriesContext = {
+  operation: 'select' | 'insert' | 'create_table'
   nodeType: string
   field: string
+  fieldSchema?: FieldSchema
   startTime?: number
   endTime?: number
 }
