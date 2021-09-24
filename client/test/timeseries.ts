@@ -290,7 +290,7 @@ test.serial('get - basic value types timeseries', async (t) => {
   const client = connect({ port })
 
   // TODO: removet his manual step
-  await client.timeseriesCache.subscribe()
+  await client.pg.connect()
 
   await client.set({
     $id: 'viA',

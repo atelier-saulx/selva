@@ -1,3 +1,4 @@
+import { QueryResult } from 'pg'
 import { convertNow, isFork } from '@saulx/selva-query-ast-parser'
 import squel from 'squel'
 import { SelvaClient } from '../../'
@@ -285,7 +286,12 @@ export default async function execTimeseries(
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
   console.log('SQL', params)
-  const result = await client.pg.query(params.text, params.values)
+  const result: QueryResult<any> = await client.pg.execute(
+    // TODO: get startTime and endTime from filters
+    { nodeType: type, field: <string>op.sourceField },
+    params.text,
+    params.values
+  )
 
   return result.rows.map((row) => {
     if (fields.size) {

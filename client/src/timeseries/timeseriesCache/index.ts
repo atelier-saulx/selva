@@ -1,4 +1,4 @@
-import { constants, SelvaClient, ServerDescriptor } from '..'
+import { constants, SelvaClient, ServerDescriptor } from '../..'
 
 // TODO: increase
 const INDEX_REFRESH_TIMEOUT = 1e3 * 60 * 0.5
