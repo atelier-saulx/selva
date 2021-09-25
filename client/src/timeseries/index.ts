@@ -40,6 +40,7 @@ export class TimeseriesClient {
   }
 
   disconnect() {
+    // TODO disconnect automatically after a while?
     if (!this.isConnected) {
       return
     }
