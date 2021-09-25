@@ -148,7 +148,6 @@ async function getInsertQueue(
   id: string,
   field: string
 ): Promise<any[]> {
-  // TODO: use exprCtx to filter by time
   try {
     return (
       await client.redis.lrange(
@@ -164,7 +163,9 @@ async function getInsertQueue(
           e.type === 'insert' &&
           e.context.nodeId === id &&
           e.context.nodeType === type &&
-          e.context.field === field
+          e.context.field === field &&
+          (!exprCtx.minTs ? true : e.context.ts >= exprCtx.minTs) &&
+          (!exprCtx.maxTs ? true : e.context.ts <= exprCtx.maxTs)
         )
       })
   } catch (_e) {
