@@ -191,7 +191,8 @@ async function execTimeseries(
   tsCtx: TimeseriesContext,
   client: SelvaClient,
   op: GetOperationFind | GetOperationAggregate,
-  filterExpr: squel.Expression
+  filterExpr: squel.Expression,
+  shard: number
 ): Promise<any> {
   const { fieldSchema, nodeType } = tsCtx
   await this.connect()
@@ -291,15 +292,9 @@ async function execTimeseries(
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
   console.log('SQL', params, 'SELECTOR', tsCtx)
-  // TODO
-  const result: QueryResult<any> = await client.pg.insert(
-    // TODO: get startTime and endTime from filters
-    {
-      nodeType: tsCtx.nodeType,
-      field: <string>op.sourceField,
-      startTime: tsCtx.startTime,
-      endTime: tsCtx.endTime,
-    },
+
+  const result: QueryResult<any> = await client.pg.execute(
+    `${tsCtx.nodeType}${tsCtx.field}$${shard}`,
     params.text,
     params.values
   )
@@ -378,6 +373,22 @@ export class TimeseriesClient {
     return !!this.tsCache.index[tsName]
   }
 
+  public async execute<T>(
+    selector: string, // nodeType$field$shard
+    query: string,
+    params: unknown[]
+  ): Promise<QueryResult<T>> {
+    const [type, field, shard] = selector.split('$')
+
+    const shards = this.tsCache.index[`${type}$${field}`]
+    if (!shards || !shards[0]) {
+      throw new Error(`Timeseries shard ${selector} does not exist`)
+    }
+
+    const pgInstance = shards[shard].descriptor
+    return this.pg.execute(pgInstance, query, params)
+  }
+
   public async insert<T>(
     selector: TimeseriesContext,
     query: string,
@@ -398,8 +409,7 @@ export class TimeseriesClient {
   // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
   public async select<T>(
     selector: TimeseriesContext,
-    query: string,
-    params: unknown[]
+    op: GetOperationFind | GetOperationAggregate
   ): Promise<QueryResult<T>> {
     // TODO: real logic for selecting shard
     const tsName = `${selector.nodeType}$${selector.field}`
@@ -409,9 +419,7 @@ export class TimeseriesClient {
       throw new Error(`Timeseries ${tsName} does not exist`)
     }
 
-    const pgInstance = shards[0].descriptor
-    return this.pg.execute(pgInstance, query, params)
-
-    // toExpr(tsCtx, fieldSchema, op.filter) // pass this to exec func
+    const where = toExpr(selector, selector.fieldSchema, op.filter) // pass this to exec func
+    return execTimeseries(selector, this.client, op, where, 0)
   }
 }
