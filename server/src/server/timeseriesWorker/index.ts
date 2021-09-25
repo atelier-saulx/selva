@@ -85,8 +85,11 @@ export class TimeseriesWorker {
       return
     }
 
+    const tsName = `${context.nodeType}$${context.field}`
+    const tableName = `${tsName}$0`
+
     const createTable = `
-    CREATE TABLE IF NOT EXISTS ${this.getTableName(context)} (
+    CREATE TABLE IF NOT EXISTS "${tableName}" (
       "nodeId" text,
       payload ${SELVA_TO_SQL_TYPE[context.fieldSchema.type]},
       ts TIMESTAMP,
@@ -97,9 +100,7 @@ export class TimeseriesWorker {
     const pg = this.client.pg.getMinInstance()
     await pg.execute<void>(createTable, [])
 
-    const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${this.getTableName(
-      context
-    ).slice(1, -1)}_node_id_idx" ON ${this.getTableName(context)} ("nodeId");`
+    const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${tableName}_node_id_idx" ON "${tableName}" ("nodeId");`
 
     console.log(`running: ${createNodeIdIndex}`)
     await pg.execute<void>(createNodeIdIndex, [])
@@ -110,8 +111,8 @@ export class TimeseriesWorker {
       memory: current.memory,
       timestamp: Date.now(),
       tableMeta: {
-        [this.getTableName(context).slice(1, -1)]: {
-          tableName: this.getTableName(context),
+        [tableName]: {
+          tableName,
           tableSizeBytes: 0,
           relationSizeBytes: 0,
         },
