@@ -358,7 +358,7 @@ export class Observable {
     if (this.isDestroyed) {
       return
     }
-    if (this.connection.removeClient(this)) {
+    if (this.connection && this.connection.removeClient(this)) {
       this.connection.removeConnectionState(
         this.connection.getConnectionState(this.id)
       )
