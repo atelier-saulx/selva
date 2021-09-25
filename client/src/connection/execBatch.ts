@@ -40,7 +40,7 @@ export default function execBatch(
       })
       batch.exec((err: Error, reply: any[]) => {
         if (err) {
-          console.log('ERROR FROM BATCH', err)
+          console.info('ERROR FROM BATCH', err)
 
           reject(err)
         } else {
