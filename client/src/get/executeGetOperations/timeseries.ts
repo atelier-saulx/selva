@@ -24,19 +24,31 @@ import {
   executeGetOperation,
 } from './'
 
+type ExprCtx = { minTs?: number; maxTs?: number }
+
 const sq = squel.useFlavour('postgres')
 
 function filterToExpr(
+  exprCtx: ExprCtx,
   fieldSchema: FieldSchema,
   filter: FilterAST
 ): squel.Expression {
   // TODO: handle values by field schema type
   if (filter.$field === 'ts') {
-    const v =
+    const v: number =
       typeof filter.$value === 'string' && filter.$value.startsWith('now')
         ? convertNow(filter.$value)
-        : filter.$value
-    return sq.expr().and(`"ts" ${filter.$operator} to_timestamp(${v} / 1000)`)
+        : <number>filter.$value
+
+    if (filter.$value !== 'now') {
+      if (filter.$operator === '>') {
+        exprCtx.minTs = !exprCtx.minTs ? v : Math.min(v, exprCtx.minTs)
+      } else if (filter.$operator === '<') {
+        exprCtx.maxTs = !exprCtx.maxTs ? v : Math.max(v, exprCtx.maxTs)
+      }
+    }
+
+    return sq.expr().and(`"ts" ${filter.$operator} to_timestamp(${v} / 1000.0)`)
   }
 
   const isObj = ['object', 'record'].includes(fieldSchema.type)
@@ -93,16 +105,20 @@ function getFields(path: string, fields: Set<string>, props: GetOptions): void {
   }
 }
 
-function forkToExpr(fieldSchema: FieldSchema, filter: Fork): squel.Expression {
+function forkToExpr(
+  exprCtx: ExprCtx,
+  fieldSchema: FieldSchema,
+  filter: Fork
+): squel.Expression {
   let expr = sq.expr()
 
   if (filter.$and) {
     for (const f of filter.$and) {
-      expr = expr.and(toExpr(fieldSchema, f))
+      expr = expr.and(toExpr(exprCtx, fieldSchema, f))
     }
   } else {
     for (const f of filter.$or) {
-      expr = expr.or(toExpr(fieldSchema, f))
+      expr = expr.or(toExpr(exprCtx, fieldSchema, f))
     }
   }
 
@@ -110,6 +126,7 @@ function forkToExpr(fieldSchema: FieldSchema, filter: Fork): squel.Expression {
 }
 
 function toExpr(
+  exprCtx: ExprCtx,
   fieldSchema: FieldSchema,
   filter: Fork | FilterAST
 ): squel.Expression {
@@ -118,18 +135,20 @@ function toExpr(
   }
 
   if (isFork(filter)) {
-    return forkToExpr(fieldSchema, filter)
+    return forkToExpr(exprCtx, fieldSchema, filter)
   }
 
-  return filterToExpr(fieldSchema, <FilterAST>filter)
+  return filterToExpr(exprCtx, fieldSchema, <FilterAST>filter)
 }
 
 async function getInsertQueue(
   client: SelvaClient,
+  exprCtx: ExprCtx,
   type: string,
   id: string,
   field: string
 ): Promise<any[]> {
+  // TODO: use exprCtx to filter by time
   try {
     return (
       await client.redis.lrange(
@@ -190,6 +209,7 @@ export default async function execTimeseries(
 
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
 
+  const exprCtx: ExprCtx = {}
   let sql = sq
     .select({
       autoQuoteTableNames: true,
@@ -199,7 +219,7 @@ export default async function execTimeseries(
     .from(`${type}$${op.sourceField}$0`)
     .field('ts')
     .where('"nodeId" = ?', op.id)
-    .where(toExpr(fieldSchema, op.filter))
+    .where(toExpr(exprCtx, fieldSchema, op.filter))
     .limit(op.options.limit === -1 ? null : op.options.limit)
     .offset(op.options.offset === 0 ? null : op.options.offset)
 
@@ -227,9 +247,9 @@ export default async function execTimeseries(
     sql = sql.field('payload', 'value')
   }
 
-  // TODO: filter insert queue by time range
   const insertQueue = await getInsertQueue(
     client,
+    exprCtx,
     type,
     op.id,
     <string>op.sourceField
@@ -256,7 +276,7 @@ export default async function execTimeseries(
       })
       .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
       .field('ts')
-      .where(toExpr(fieldSchema, op.filter))
+      .where(toExpr({}, fieldSchema, op.filter))
 
     if (['object', 'record'].includes(fieldSchema.type)) {
       qSql = qSql.field('payload')
@@ -294,10 +314,20 @@ export default async function execTimeseries(
   }
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
-  console.log('SQL', params)
+  console.log('SQL', params, 'SELECTOR', {
+    nodeType: type,
+    field: <string>op.sourceField,
+    startTime: exprCtx.minTs,
+    endTime: exprCtx.maxTs,
+  })
   const result: QueryResult<any> = await client.pg.execute(
     // TODO: get startTime and endTime from filters
-    { nodeType: type, field: <string>op.sourceField },
+    {
+      nodeType: type,
+      field: <string>op.sourceField,
+      startTime: exprCtx.minTs,
+      endTime: exprCtx.maxTs,
+    },
     params.text,
     params.values
   )
