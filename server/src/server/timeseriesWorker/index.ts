@@ -75,6 +75,7 @@ export class TimeseriesWorker {
   }
 
   getTableName(context: TimeSeriesInsertContext): string {
+    // TODO: use tsCache to figure out last shard
     return `"${context.nodeType}\$${context.field}$0"`
   }
 
