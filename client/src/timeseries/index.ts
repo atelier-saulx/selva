@@ -195,7 +195,6 @@ async function execTimeseries(
   shard: number
 ): Promise<any> {
   const { fieldSchema, nodeType } = tsCtx
-  await this.connect()
 
   let sql = sq
     .select({
@@ -203,7 +202,7 @@ async function execTimeseries(
       autoQuoteAliasNames: true,
       nameQuoteCharacter: '"',
     })
-    .from(`${tsCtx.nodeType}$${op.sourceField}$0`)
+    .from(`${nodeType}$${op.sourceField}$0`)
     .field('ts')
     .where('"nodeId" = ?', op.id)
     .where(filterExpr)
@@ -294,7 +293,7 @@ async function execTimeseries(
   console.log('SQL', params, 'SELECTOR', tsCtx)
 
   const result: QueryResult<any> = await client.pg.execute(
-    `${tsCtx.nodeType}${tsCtx.field}$${shard}`,
+    `${nodeType}$${tsCtx.field}$${shard}`,
     params.text,
     params.values
   )
@@ -399,7 +398,8 @@ export class TimeseriesClient {
     const shards = this.tsCache.index[tsName]
     if (!shards || !shards[0]) {
       // TODO: implicitly create? or error and create it in the catch?
-      throw new Error(`Timeseries ${tsName} does not exist`)
+      console.log('HELLO', JSON.stringify(this.tsCache.index, null, 2))
+      throw new Error(`INSERT: Timeseries ${tsName} does not exist`)
     }
 
     const pgInstance = shards[0].descriptor
@@ -416,7 +416,7 @@ export class TimeseriesClient {
     const shards = this.tsCache.index[tsName]
     if (!shards || !shards[0]) {
       // TODO: implicitly create? or error and create it in the catch?
-      throw new Error(`Timeseries ${tsName} does not exist`)
+      throw new Error(`SELECT: Timeseries ${tsName} does not exist`)
     }
 
     const where = toExpr(selector, selector.fieldSchema, op.filter) // pass this to exec func

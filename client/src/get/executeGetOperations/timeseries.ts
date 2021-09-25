@@ -181,6 +181,10 @@ export default async function execTimeseries(
   ctx: ExecContext
 ): Promise<any> {
   await client.pg.connect()
+  console.log(
+    'MAKIN TIMESERIES',
+    JSON.stringify(client.pg.tsCache.index, null, 2)
+  )
 
   const fieldSchema = getNestedSchema(
     client.schemas[ctx.db],
@@ -214,139 +218,142 @@ export default async function execTimeseries(
   const exprCtx: TimeseriesContext = {
     nodeType: type,
     field: <string>op.sourceField,
+    fieldSchema,
     order: op.options?.sort?.$order || 'asc',
   }
 
-  let sql = sq
-    .select({
-      autoQuoteTableNames: true,
-      autoQuoteAliasNames: true,
-      nameQuoteCharacter: '"',
-    })
-    .from(`${type}$${op.sourceField}$0`)
-    .field('ts')
-    .where('"nodeId" = ?', op.id)
-    .where(toExpr(exprCtx, fieldSchema, op.filter))
-    .limit(op.options.limit === -1 ? null : op.options.limit)
-    .offset(op.options.offset === 0 ? null : op.options.offset)
+  return client.pg.select(exprCtx, op)
 
-  const fields: Set<string> = new Set()
-  let isObj = false
-  if (['object', 'record'].includes(fieldSchema.type)) {
-    isObj = true
-    getFields('', fields, op.props)
-    // TODO: goddamn json syntax
-    // for (const f of fields) {
-    // const split = f.split('.').map((part) => "'" + part + "'")
-    // let fieldStr = 'payload->'
-    // for (let i = 0; i < split.length - 1; i++) {
-    //   fieldStr += split[i] + '-> '
-    // }
-    // fieldStr + '->>' + split[split.length - 1]
-    // sql = sql
-    //   .field(fieldStr, f, {
-    //     ignorePeriodsForFieldNameQuotes: true,
-    //   })
-    // }
+  // let sql = sq
+  //   .select({
+  //     autoQuoteTableNames: true,
+  //     autoQuoteAliasNames: true,
+  //     nameQuoteCharacter: '"',
+  //   })
+  //   .from(`${type}$${op.sourceField}$0`)
+  //   .field('ts')
+  //   .where('"nodeId" = ?', op.id)
+  //   .where(toExpr(exprCtx, fieldSchema, op.filter))
+  //   .limit(op.options.limit === -1 ? null : op.options.limit)
+  //   .offset(op.options.offset === 0 ? null : op.options.offset)
 
-    sql = sql.field('payload')
-  } else {
-    sql = sql.field('payload', 'value')
-  }
+  // const fields: Set<string> = new Set()
+  // let isObj = false
+  // if (['object', 'record'].includes(fieldSchema.type)) {
+  //   isObj = true
+  //   getFields('', fields, op.props)
+  //   // TODO: goddamn json syntax
+  //   // for (const f of fields) {
+  //   // const split = f.split('.').map((part) => "'" + part + "'")
+  //   // let fieldStr = 'payload->'
+  //   // for (let i = 0; i < split.length - 1; i++) {
+  //   //   fieldStr += split[i] + '-> '
+  //   // }
+  //   // fieldStr + '->>' + split[split.length - 1]
+  //   // sql = sql
+  //   //   .field(fieldStr, f, {
+  //   //     ignorePeriodsForFieldNameQuotes: true,
+  //   //   })
+  //   // }
 
-  const insertQueue = await getInsertQueue(
-    client,
-    exprCtx,
-    type,
-    op.id,
-    <string>op.sourceField
-  )
+  //   sql = sql.field('payload')
+  // } else {
+  //   sql = sql.field('payload', 'value')
+  // }
 
-  if (insertQueue.length > 0) {
-    const insertQueueSqlValues = insertQueue.map((e) => {
-      if (['object', 'record'].includes(e.context.fieldSchema.type)) {
-        return `(to_timestamp(${e.context.ts} / 1000.0), '${JSON.stringify(
-          e.context.payload
-        )}'::jsonb)`
-      } else if (e.context.fieldSchema.type === 'string') {
-        return `(to_timestamp(${e.context.ts} / 1000.0), '${e.context.payload}')`
-      } else {
-        return `(to_timestamp(${e.context.ts} / 1000.0), ${e.context.payload})`
-      }
-    })
+  // const insertQueue = await getInsertQueue(
+  //   client,
+  //   exprCtx,
+  //   type,
+  //   op.id,
+  //   <string>op.sourceField
+  // )
 
-    let qSql = sq
-      .select({
-        autoQuoteTableNames: false,
-        autoQuoteAliasNames: true,
-        nameQuoteCharacter: '"',
-      })
-      .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
-      .field('ts')
-      .where(
-        toExpr(
-          { nodeType: type, field: <string>op.sourceField },
-          fieldSchema,
-          op.filter
-        )
-      )
+  // if (insertQueue.length > 0) {
+  //   const insertQueueSqlValues = insertQueue.map((e) => {
+  //     if (['object', 'record'].includes(e.context.fieldSchema.type)) {
+  //       return `(to_timestamp(${e.context.ts} / 1000.0), '${JSON.stringify(
+  //         e.context.payload
+  //       )}'::jsonb)`
+  //     } else if (e.context.fieldSchema.type === 'string') {
+  //       return `(to_timestamp(${e.context.ts} / 1000.0), '${e.context.payload}')`
+  //     } else {
+  //       return `(to_timestamp(${e.context.ts} / 1000.0), ${e.context.payload})`
+  //     }
+  //   })
 
-    if (['object', 'record'].includes(fieldSchema.type)) {
-      qSql = qSql.field('payload')
-    } else {
-      qSql = qSql.field('payload', 'value')
-    }
+  //   let qSql = sq
+  //     .select({
+  //       autoQuoteTableNames: false,
+  //       autoQuoteAliasNames: true,
+  //       nameQuoteCharacter: '"',
+  //     })
+  //     .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
+  //     .field('ts')
+  //     .where(
+  //       toExpr(
+  //         { nodeType: type, field: <string>op.sourceField },
+  //         fieldSchema,
+  //         op.filter
+  //       )
+  //     )
 
-    qSql = qSql.order(
-      // TODO
-      // isObj
-      //   ? op.options?.sort?.$field || 'ts'
-      //   : op.options?.sort?.$field
-      //   ? 'payload'
-      //   : 'ts',
-      'ts',
-      exprCtx.order === 'asc'
-    )
+  //   if (['object', 'record'].includes(fieldSchema.type)) {
+  //     qSql = qSql.field('payload')
+  //   } else {
+  //     qSql = qSql.field('payload', 'value')
+  //   }
 
-    sql = sql.union_all(qSql)
-  } else {
-    sql = sql.order(
-      // TODO
-      // isObj
-      //   ? op.options?.sort?.$field || 'ts'
-      //   : op.options?.sort?.$field
-      //   ? 'payload'
-      //   : 'ts',
-      'ts',
-      exprCtx.order === 'asc'
-    )
-  }
+  //   qSql = qSql.order(
+  //     // TODO
+  //     // isObj
+  //     //   ? op.options?.sort?.$field || 'ts'
+  //     //   : op.options?.sort?.$field
+  //     //   ? 'payload'
+  //     //   : 'ts',
+  //     'ts',
+  //     exprCtx.order === 'asc'
+  //   )
 
-  const params = sql.toParam({ numberedParametersStartAt: 1 })
-  console.log('SQL', params, 'SELECTOR', exprCtx)
-  // TODO: this needs to call select with op
-  const result: QueryResult<any> = await client.pg.insert(
-    // TODO: get startTime and endTime from filters
-    {
-      nodeType: type,
-      field: <string>op.sourceField,
-      startTime: exprCtx.startTime,
-      endTime: exprCtx.endTime,
-    },
-    params.text,
-    params.values
-  )
+  //   sql = sql.union_all(qSql)
+  // } else {
+  //   sql = sql.order(
+  //     // TODO
+  //     // isObj
+  //     //   ? op.options?.sort?.$field || 'ts'
+  //     //   : op.options?.sort?.$field
+  //     //   ? 'payload'
+  //     //   : 'ts',
+  //     'ts',
+  //     exprCtx.order === 'asc'
+  //   )
+  // }
 
-  return result.rows.map((row) => {
-    if (fields.size) {
-      const r = {}
-      for (const f of fields) {
-        setNestedResult(r, f, getNestedField(row, `payload.${f}`))
-      }
+  // const params = sql.toParam({ numberedParametersStartAt: 1 })
+  // console.log('SQL', params, 'SELECTOR', exprCtx)
+  // // TODO: this needs to call select with op
+  // const result: QueryResult<any> = await client.pg.insert(
+  //   // TODO: get startTime and endTime from filters
+  //   {
+  //     nodeType: type,
+  //     field: <string>op.sourceField,
+  //     startTime: exprCtx.startTime,
+  //     endTime: exprCtx.endTime,
+  //   },
+  //   params.text,
+  //   params.values
+  // )
 
-      return r
-    }
+  // return result.rows.map((row) => {
+  //   if (fields.size) {
+  //     const r = {}
+  //     for (const f of fields) {
+  //       setNestedResult(r, f, getNestedField(row, `payload.${f}`))
+  //     }
 
-    return row.value
-  })
+  //     return r
+  //   }
+
+  //   return row.value
+  // })
 }

@@ -348,6 +348,22 @@ export async function start(opts: Options) {
     },
   })
 
+  const tsRegistry = await startTimeseriesRegistry({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host,
+    },
+  })
+
+  const timeseriesPostgres = await startTimeseries({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host,
+    },
+    // TODO: make port configurable
+    port: 5436,
+  })
+
   const timeseries = await startTimeseriesQueue({
     registry,
     // @ts-ignore
@@ -370,22 +386,6 @@ export async function start(opts: Options) {
       port: parsedOpts.port,
       host: parsedOpts.host,
     },
-  })
-
-  const tsRegistry = await startTimeseriesRegistry({
-    registry: {
-      port: parsedOpts.port,
-      host: parsedOpts.host,
-    },
-  })
-
-  const timeseriesPostgres = await startTimeseries({
-    registry: {
-      port: parsedOpts.port,
-      host: parsedOpts.host,
-    },
-    // TODO: make port configurable
-    port: 5436,
   })
 
   const timeseriesWorker = await startTimeseriesWorker(
