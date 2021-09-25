@@ -227,6 +227,7 @@ export default async function execTimeseries(
     sql = sql.field('payload', 'value')
   }
 
+  // TODO: filter insert queue by time range
   const insertQueue = await getInsertQueue(
     client,
     type,
