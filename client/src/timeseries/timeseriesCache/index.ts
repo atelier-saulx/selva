@@ -88,7 +88,6 @@ class TimeseriesCache {
         },
       }
 
-      console.log('table things', tableName, timeseries)
       totalTableSizeBytes += tableSizeBytes
       totalRelationSizeBytes += relationSizeBytes
     }
@@ -113,7 +112,6 @@ class TimeseriesCache {
   async subscribe() {
     await this.refreshIndex()
 
-    console.log('subscribing.......................')
     this.client.redis.subscribe(
       { type: 'timeseriesRegistry' },
       constants.TS_REGISTRY_UPDATE
@@ -123,12 +121,10 @@ class TimeseriesCache {
       { type: 'timeseriesRegistry' },
       'message',
       (channel, msg) => {
-        console.log('WHAT IS THIS', channel, msg)
         if (channel !== constants.TS_REGISTRY_UPDATE) {
           return
         }
 
-        console.log('HELLO GOT EVENT', channel, msg)
         let obj
         try {
           obj = JSON.parse(msg)

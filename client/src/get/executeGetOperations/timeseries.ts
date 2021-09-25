@@ -159,7 +159,6 @@ export default async function execTimeseries(
   lang: string,
   ctx: ExecContext
 ): Promise<any> {
-  console.log('IS TIMESERIES', ctx, JSON.stringify(op, null, 2))
   await client.pg.connect()
 
   const fieldSchema = getNestedSchema(
@@ -189,7 +188,6 @@ export default async function execTimeseries(
     )
   }
 
-  console.log('FIELD SCHEMA', fieldSchema)
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
 
   let sql = sq
@@ -208,7 +206,6 @@ export default async function execTimeseries(
   const fields: Set<string> = new Set()
   if (['object', 'record'].includes(fieldSchema.type)) {
     getFields('', fields, op.props)
-    console.log('FIELDS', fields)
     // TODO: goddamn json syntax
     // for (const f of fields) {
     // const split = f.split('.').map((part) => "'" + part + "'")

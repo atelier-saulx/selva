@@ -81,6 +81,7 @@ export class TimeseriesWorker {
 
   async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {
     if (this.client.pg.hasTimeseries(context)) {
+      console.log('ALREADY EXISTS', context)
       return
     }
 
