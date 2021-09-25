@@ -38,7 +38,6 @@ export class TimeseriesWorker {
   private opts: ServerOptions
   private client: SelvaClient
   private connectionString: string
-  private postgresClient: PG
 
   constructor(opts: ServerOptions, connectionString: string) {
     this.opts = opts
@@ -47,10 +46,6 @@ export class TimeseriesWorker {
 
   async start() {
     this.client = connect(this.opts.registry)
-    this.postgresClient = new PG({
-      connectionString: this.connectionString,
-    })
-
     await this.client.pg.connect()
     this.tick()
   }
@@ -85,6 +80,10 @@ export class TimeseriesWorker {
   }
 
   async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {
+    if (this.client.pg.tsCache.index[`${context.nodeType}$${context.field}`]) {
+      return
+    }
+
     // TODO: use getMinInstance from client.pg
     // after creating the timeseries send event
     const createTable = `
@@ -96,14 +95,15 @@ export class TimeseriesWorker {
     );
     `
     console.log(`running: ${createTable}`)
-    await this.postgresClient.execute<void>(createTable, [])
+    const instanceId = this.client.pg.getMinInstance()
+    await this.client.pg.pg.execute<void>(instanceId, createTable, [])
 
     const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${this.getTableName(
       context
     ).slice(1, -1)}_node_id_idx" ON ${this.getTableName(context)} ("nodeId");`
 
     console.log(`running: ${createNodeIdIndex}`)
-    await this.postgresClient.execute<void>(createNodeIdIndex, [])
+    await this.client.pg.pg.execute<void>(instanceId, createNodeIdIndex, [])
   }
 
   async insertToTimeSeriesDB(context: TimeSeriesInsertContext) {
@@ -111,7 +111,9 @@ export class TimeseriesWorker {
 
     await this.ensureTableExists(context)
 
-    await this.postgresClient.execute(
+    // TODO: actual selection
+    await this.client.pg.pg.execute<void>(
+      '127.0.0.1:5436',
       `INSERT INTO ${this.getTableName(
         context
       )} ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
