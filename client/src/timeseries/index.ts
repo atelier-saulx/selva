@@ -190,7 +190,8 @@ async function getInsertQueue(
 async function execTimeseries(
   tsCtx: TimeseriesContext,
   client: SelvaClient,
-  op: GetOperationFind | GetOperationAggregate
+  op: GetOperationFind | GetOperationAggregate,
+  filterExpr: squel.Expression
 ): Promise<any> {
   const { fieldSchema, nodeType } = tsCtx
   await this.connect()
@@ -204,7 +205,7 @@ async function execTimeseries(
     .from(`${tsCtx.nodeType}$${op.sourceField}$0`)
     .field('ts')
     .where('"nodeId" = ?', op.id)
-    .where(toExpr(tsCtx, fieldSchema, op.filter))
+    .where(filterExpr)
     .limit(op.options.limit === -1 ? null : op.options.limit)
     .offset(op.options.offset === 0 ? null : op.options.offset)
 
@@ -255,13 +256,7 @@ async function execTimeseries(
       })
       .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
       .field('ts')
-      .where(
-        toExpr(
-          { nodeType: tsCtx.nodeType, field: <string>op.sourceField },
-          fieldSchema,
-          op.filter
-        )
-      )
+      .where(filterExpr)
 
     if (['object', 'record'].includes(fieldSchema.type)) {
       qSql = qSql.field('payload')
@@ -395,6 +390,8 @@ export class TimeseriesClient {
       // TODO: implicitly create? or error and create it in the catch?
       throw new Error(`Timeseries ${tsName} does not exist`)
     }
+
+    // toExpr(tsCtx, fieldSchema, op.filter) // pass this to exec func
 
     const pgInstance = shards[0].descriptor
     return this.pg.execute(pgInstance, query, params)
