@@ -436,11 +436,13 @@ export class Observable {
       if (incomingChannel === REGISTRY_MOVE_SUBSCRIPTION) {
         const [moveChannel, newServer] = JSON.parse(msg)
         if (channel === moveChannel) {
-          console.info(
-            chalk.gray(
-              `Receive move command in observable from ${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port} to ${newServer} (channel: ${this.uuid})`
+          if (this.connection?.serverDescriptor) {
+            console.info(
+              chalk.gray(
+                `Receive move command in observable from ${this.connection?.serverDescriptor?.host}:${this.connection?.serverDescriptor?.port} to ${newServer} (channel: ${this.uuid})`
+              )
             )
-          )
+          }
           const [host, port] = newServer.split(':')
           this.moveToServer({
             type: 'subscriptionManager',
