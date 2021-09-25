@@ -117,6 +117,7 @@ export class TimeseriesWorker {
       },
     }
 
+    this.client.pg.tsCache.updateIndexByInstance(pg.id, { stats })
     this.client.redis.publish(
       { type: 'timeseriesRegistry' },
       constants.TS_REGISTRY_UPDATE,
@@ -127,8 +128,6 @@ export class TimeseriesWorker {
         data: { stats },
       })
     )
-
-    this.client.pg.tsCache.updateIndexByInstance(pg.id, { stats })
   }
 
   async insertToTimeSeriesDB(context: TimeSeriesInsertContext) {
