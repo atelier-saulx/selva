@@ -136,9 +136,8 @@ export class TimeseriesWorker {
 
     await this.ensureTableExists(context)
 
-    // TODO: actual selection
-    await this.client.pg.pg.execute<void>(
-      '127.0.0.1:5436',
+    await this.client.pg.execute<void>(
+      context,
       `INSERT INTO ${this.getTableName(
         context
       )} ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
