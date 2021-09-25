@@ -20,7 +20,7 @@ import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
 import conformToSchema from './schema/conformToSchema'
 import initializeSchema from './schema/initializeSchema'
-import { Client as PgClient } from 'pg'
+import { TimeseriesClient } from './timeseries'
 import { GetOptions, ObserveEventOptions, GetResult, get } from './get'
 import { SetOptions, set, setWithMeta } from './set'
 import { IdOptions } from 'lua/src/id'
@@ -46,7 +46,6 @@ import { v4 as uuidv4 } from 'uuid'
 import getServer from './getServer'
 import { ObservableOptions, ObsSettings } from './observable/types'
 import { SetMetaResponse } from './set/types'
-import TimeseriesCache from './timeseriesCache'
 
 export * as constants from './constants'
 
@@ -54,7 +53,7 @@ let clientId = 0
 
 export class SelvaClient extends EventEmitter {
   public redis: Redis
-  public pg: PgClient
+  public pg: TimeseriesClient
 
   public selvaId: string
 
@@ -68,8 +67,6 @@ export class SelvaClient extends EventEmitter {
   public schemas: Record<string, Schema> = {}
 
   public server: ServerDescriptor
-
-  public timeseriesCache: TimeseriesCache
 
   public addServerUpdateListeners: (() => void)[] = []
 
@@ -138,17 +135,7 @@ export class SelvaClient extends EventEmitter {
     this.selvaId = ++clientId + ''
     this.redis = new Redis(this)
     connectRegistry(this, opts)
-    this.pg = new PgClient({
-      user: 'postgres',
-      password: 'baratta',
-      port: 5436,
-      host: '127.0.0.1',
-    }) // TODO: connect options
-    this.pg.connect().catch((e) => {
-      console.error('CONNECT ERROR', e)
-    })
-
-    this.timeseriesCache = new TimeseriesCache(this)
+    this.pg = new TimeseriesClient(this)
   }
 
   connect(opts: ConnectOptions) {

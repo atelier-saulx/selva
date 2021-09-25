@@ -76,9 +76,6 @@ test.before(async (t) => {
 
 test.beforeEach(async (t) => {
   const client = connect({ port })
-  // TODO: removet his manual step
-  await client.timeseriesCache.subscribe()
-
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
     rootType: {
@@ -292,6 +289,9 @@ test.after(async (t) => {
 test.serial('get - basic value types timeseries', async (t) => {
   const client = connect({ port })
 
+  // TODO: removet his manual step
+  await client.pg.connect()
+
   await client.set({
     $id: 'viA',
     title: {
@@ -407,14 +407,11 @@ test.serial('get - basic value types timeseries', async (t) => {
   )
 
   setInterval(async () => {
-    console.log(
-      'HELLO TIMESERIES META',
-      await client.redis.hgetall({ type: 'timeseriesRegistry' }, 'servers')
-    )
-
+    console.log('SERVERS YO', client.servers)
     console.log(
       'HELLO REAL REAL REALTIMESERIES META',
-      client.timeseriesCache.index
+      JSON.stringify(client.pg.tsCache.index, null, 2),
+      JSON.stringify(client.pg.tsCache.instances, null, 2)
     )
   }, 2e3)
 

@@ -1,12 +1,11 @@
 import { ServerOptions } from '../../types'
-import { connect, SelvaClient } from '@saulx/selva'
-import { PG } from '../pg'
+import { connect, SelvaClient, constants } from '@saulx/selva'
 
 export type TimeSeriesInsertContext = {
   nodeId: string
   nodeType: string
   field: string
-  fieldSchema: Record<string, unknown> & { type: string }
+  fieldSchema: any
   payload: Record<string, unknown>
   ts: number
 }
@@ -38,7 +37,6 @@ export class TimeseriesWorker {
   private opts: ServerOptions
   private client: SelvaClient
   private connectionString: string
-  private postgresClient: PG
 
   constructor(opts: ServerOptions, connectionString: string) {
     this.opts = opts
@@ -47,9 +45,7 @@ export class TimeseriesWorker {
 
   async start() {
     this.client = connect(this.opts.registry)
-    this.postgresClient = new PG({
-      connectionString: this.connectionString,
-    })
+    await this.client.pg.connect()
     this.tick()
   }
 
@@ -79,12 +75,21 @@ export class TimeseriesWorker {
   }
 
   getTableName(context: TimeSeriesInsertContext): string {
+    // TODO: use tsCache to figure out last shard
     return `"${context.nodeType}\$${context.field}$0"`
   }
 
   async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {
+    if (this.client.pg.hasTimeseries(context)) {
+      console.log('ALREADY EXISTS', context)
+      return
+    }
+
+    const tsName = `${context.nodeType}$${context.field}`
+    const tableName = `${tsName}$0`
+
     const createTable = `
-    CREATE TABLE IF NOT EXISTS ${this.getTableName(context)} (
+    CREATE TABLE IF NOT EXISTS "${tableName}" (
       "nodeId" text,
       payload ${SELVA_TO_SQL_TYPE[context.fieldSchema.type]},
       ts TIMESTAMP,
@@ -92,14 +97,39 @@ export class TimeseriesWorker {
     );
     `
     console.log(`running: ${createTable}`)
-    await this.postgresClient.execute<void>(createTable, [])
+    const pg = this.client.pg.getMinInstance()
+    await pg.execute<void>(createTable, [])
 
-    const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${this.getTableName(
-      context
-    ).slice(1, -1)}_node_id_idx" ON ${this.getTableName(context)} ("nodeId");`
+    const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${tableName}_node_id_idx" ON "${tableName}" ("nodeId");`
 
     console.log(`running: ${createNodeIdIndex}`)
-    await this.postgresClient.execute<void>(createNodeIdIndex, [])
+    await pg.execute<void>(createNodeIdIndex, [])
+
+    const { meta: current } = this.client.pg.tsCache.instances[pg.id]
+    const stats = {
+      cpu: current.cpu,
+      memory: current.memory,
+      timestamp: Date.now(),
+      tableMeta: {
+        [tableName]: {
+          tableName,
+          tableSizeBytes: 0,
+          relationSizeBytes: 0,
+        },
+      },
+    }
+
+    this.client.pg.tsCache.updateIndexByInstance(pg.id, { stats })
+    this.client.redis.publish(
+      { type: 'timeseriesRegistry' },
+      constants.TS_REGISTRY_UPDATE,
+      JSON.stringify({
+        event: 'new_shard',
+        ts: Date.now(),
+        id: pg.id,
+        data: { stats },
+      })
+    )
   }
 
   async insertToTimeSeriesDB(context: TimeSeriesInsertContext) {
@@ -107,7 +137,8 @@ export class TimeseriesWorker {
 
     await this.ensureTableExists(context)
 
-    await this.postgresClient.execute(
+    await this.client.pg.insert<void>(
+      context,
       `INSERT INTO ${this.getTableName(
         context
       )} ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
@@ -134,3 +165,6 @@ export async function startTimeseriesWorker(
   await worker.start()
   return worker
 }
+
+// TODO:
+// create new shard if current is full

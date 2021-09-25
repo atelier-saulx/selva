@@ -1,29 +1,43 @@
 import { QueryResult } from 'pg'
+import PGConnection from '../connection/pg'
+import TimeseriesCache from './timeseriesCache'
+import { PG } from '../connection/pg/client'
+
 import { convertNow, isFork } from '@saulx/selva-query-ast-parser'
 import squel from 'squel'
-import { SelvaClient } from '../../'
+import { SelvaClient } from '..'
 import {
   FilterAST,
   Fork,
   GetOperationAggregate,
   GetOperationFind,
   GetOptions,
-} from '../types'
-import { FieldSchema } from '../../schema/types'
+} from '../get/types'
+import { FieldSchema } from '../schema/types'
 import {
   getNestedField,
   getNestedSchema,
   getTypeFromId,
   setNestedResult,
-} from '../utils'
+} from '../get/utils'
 import {
   executeNestedGetOperations,
   ExecContext,
   sourceFieldToDir,
   addMarker,
   executeGetOperation,
-} from './'
-import { TimeseriesContext } from '../../timeseries'
+} from '../get/executeGetOperations'
+
+export type TimeseriesContext = {
+  nodeType: string
+  field: string
+  fieldSchema?: FieldSchema
+  startTime?: number
+  endTime?: number
+  order?: 'asc' | 'desc'
+  limit?: number
+  offset?: number
+}
 
 const sq = squel.useFlavour('postgres')
 
@@ -145,7 +159,6 @@ function toExpr(
 async function getInsertQueue(
   client: SelvaClient,
   exprCtx: TimeseriesContext,
-  type: string,
   id: string,
   field: string
 ): Promise<any[]> {
@@ -163,7 +176,7 @@ async function getInsertQueue(
         return (
           e.type === 'insert' &&
           e.context.nodeId === id &&
-          e.context.nodeType === type &&
+          e.context.nodeType === exprCtx.nodeType &&
           e.context.field === field &&
           (!exprCtx.startTime ? true : e.context.ts >= exprCtx.startTime) &&
           (!exprCtx.endTime ? true : e.context.ts <= exprCtx.endTime)
@@ -174,48 +187,15 @@ async function getInsertQueue(
   }
 }
 
-export default async function execTimeseries(
+async function execTimeseries(
+  tsCtx: TimeseriesContext,
   client: SelvaClient,
   op: GetOperationFind | GetOperationAggregate,
-  lang: string,
-  ctx: ExecContext
+  filterExpr: squel.Expression,
+  shard: number
 ): Promise<any> {
-  await client.pg.connect()
-
-  const fieldSchema = getNestedSchema(
-    client.schemas[ctx.db],
-    op.id,
-    <string>op.sourceField
-  )
-
-  if (!fieldSchema) {
-    return
-  }
-
-  addMarker(client, ctx, {
-    type: 'node',
-    id: op.id,
-    fields: [<string>op.sourceField],
-  })
-
-  if (ctx.subId && !ctx.firstEval) {
-    console.log('NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE')
-    return executeGetOperation(
-      client,
-      lang,
-      ctx,
-      { type: 'db', id: op.id, sourceField: op.sourceField, field: op.field },
-      true
-    )
-  }
-
-  const type = getTypeFromId(client.schemas[ctx.db], op.id)
-
-  const exprCtx: TimeseriesContext = {
-    nodeType: type,
-    field: <string>op.sourceField,
-    order: op.options?.sort?.$order || 'asc',
-  }
+  const { fieldSchema, nodeType } = tsCtx
+  await this.connect()
 
   let sql = sq
     .select({
@@ -223,10 +203,10 @@ export default async function execTimeseries(
       autoQuoteAliasNames: true,
       nameQuoteCharacter: '"',
     })
-    .from(`${type}$${op.sourceField}$0`)
+    .from(`${tsCtx.nodeType}$${op.sourceField}$0`)
     .field('ts')
     .where('"nodeId" = ?', op.id)
-    .where(toExpr(exprCtx, fieldSchema, op.filter))
+    .where(filterExpr)
     .limit(op.options.limit === -1 ? null : op.options.limit)
     .offset(op.options.offset === 0 ? null : op.options.offset)
 
@@ -254,13 +234,7 @@ export default async function execTimeseries(
     sql = sql.field('payload', 'value')
   }
 
-  const insertQueue = await getInsertQueue(
-    client,
-    exprCtx,
-    type,
-    op.id,
-    <string>op.sourceField
-  )
+  const insertQueue = await getInsertQueue(client, tsCtx, op.id, tsCtx.field)
 
   if (insertQueue.length > 0) {
     const insertQueueSqlValues = insertQueue.map((e) => {
@@ -283,13 +257,7 @@ export default async function execTimeseries(
       })
       .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
       .field('ts')
-      .where(
-        toExpr(
-          { nodeType: type, field: <string>op.sourceField },
-          fieldSchema,
-          op.filter
-        )
-      )
+      .where(filterExpr)
 
     if (['object', 'record'].includes(fieldSchema.type)) {
       qSql = qSql.field('payload')
@@ -305,7 +273,7 @@ export default async function execTimeseries(
       //   ? 'payload'
       //   : 'ts',
       'ts',
-      exprCtx.order === 'asc'
+      tsCtx.order === 'asc'
     )
 
     sql = sql.union_all(qSql)
@@ -318,21 +286,15 @@ export default async function execTimeseries(
       //   ? 'payload'
       //   : 'ts',
       'ts',
-      exprCtx.order === 'asc'
+      tsCtx.order === 'asc'
     )
   }
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
-  console.log('SQL', params, 'SELECTOR', exprCtx)
-  // TODO: this needs to call select with op
-  const result: QueryResult<any> = await client.pg.insert(
-    // TODO: get startTime and endTime from filters
-    {
-      nodeType: type,
-      field: <string>op.sourceField,
-      startTime: exprCtx.startTime,
-      endTime: exprCtx.endTime,
-    },
+  console.log('SQL', params, 'SELECTOR', tsCtx)
+
+  const result: QueryResult<any> = await client.pg.execute(
+    `${tsCtx.nodeType}${tsCtx.field}$${shard}`,
     params.text,
     params.values
   )
@@ -349,4 +311,115 @@ export default async function execTimeseries(
 
     return row.value
   })
+}
+
+export class TimeseriesClient {
+  private client: SelvaClient
+  public pg: PGConnection
+  public tsCache: TimeseriesCache
+
+  private isConnected: boolean = false
+
+  constructor(client: SelvaClient) {
+    // TODO: credentials
+    this.client = client
+    this.pg = new PGConnection({ user: 'postgres', password: 'baratta' })
+    this.tsCache = new TimeseriesCache(this.client)
+  }
+
+  async connect() {
+    if (this.isConnected) {
+      return
+    }
+
+    await this.tsCache.subscribe()
+    this.isConnected = true
+  }
+
+  disconnect() {
+    // TODO disconnect automatically after a while?
+    if (!this.isConnected) {
+      return
+    }
+
+    this.tsCache.unsubscribe()
+    this.isConnected = false
+  }
+
+  public getMinInstance(): PG {
+    const instances = Object.keys(this.tsCache.instances)
+    if (!instances.length) {
+      return null
+    }
+
+    let minId = instances[0]
+    let minVal = this.tsCache.instances[instances[0]].meta
+      .totalRelationSizeBytes
+    for (let i = 1; i < instances.length; i++) {
+      const id = instances[i]
+      const { meta } = this.tsCache.instances[id]
+
+      if (meta.totalRelationSizeBytes < minVal) {
+        minId = id
+        minVal = meta.totalRelationSizeBytes
+      }
+    }
+
+    return this.pg.getClient(minId)
+  }
+
+  public hasTimeseries(selector: TimeseriesContext): boolean {
+    const tsName = `${selector.nodeType}$${selector.field}`
+    return !!this.tsCache.index[tsName]
+  }
+
+  public async execute<T>(
+    selector: string, // nodeType$field$shard
+    query: string,
+    params: unknown[]
+  ): Promise<QueryResult<T>> {
+    const [type, field, shard] = selector.split('$')
+
+    const shards = this.tsCache.index[`${type}$${field}`]
+    if (!shards || !shards[0]) {
+      throw new Error(`Timeseries shard ${selector} does not exist`)
+    }
+
+    const pgInstance = shards[shard].descriptor
+    return this.pg.execute(pgInstance, query, params)
+  }
+
+  public async insert<T>(
+    selector: TimeseriesContext,
+    query: string,
+    params: unknown[]
+  ): Promise<QueryResult<T>> {
+    // TODO: real logic for selecting shard
+    const tsName = `${selector.nodeType}$${selector.field}`
+    const shards = this.tsCache.index[tsName]
+    if (!shards || !shards[0]) {
+      // TODO: implicitly create? or error and create it in the catch?
+      throw new Error(`Timeseries ${tsName} does not exist`)
+    }
+
+    const pgInstance = shards[0].descriptor
+    return this.pg.execute(pgInstance, query, params)
+  }
+
+  // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
+  public async select<T>(
+    selector: TimeseriesContext,
+    op: GetOperationFind | GetOperationAggregate
+  ): Promise<QueryResult<T>> {
+    // TODO: real logic for selecting shard
+    const tsName = `${selector.nodeType}$${selector.field}`
+    const shards = this.tsCache.index[tsName]
+    if (!shards || !shards[0]) {
+      // TODO: implicitly create? or error and create it in the catch?
+      throw new Error(`Timeseries ${tsName} does not exist`)
+    }
+
+    const where = toExpr(selector, selector.fieldSchema, op.filter) // pass this to exec func
+    return execTimeseries(selector, this.client, op, where, 0)
+  }
 }
