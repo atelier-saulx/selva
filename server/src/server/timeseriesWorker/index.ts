@@ -1,6 +1,5 @@
 import { ServerOptions } from '../../types'
 import { connect, SelvaClient, constants } from '@saulx/selva'
-import { PG } from '../pg'
 
 export type TimeSeriesInsertContext = {
   nodeId: string
