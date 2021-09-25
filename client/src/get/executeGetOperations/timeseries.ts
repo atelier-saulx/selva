@@ -204,7 +204,9 @@ export default async function execTimeseries(
     .offset(op.options.offset === 0 ? null : op.options.offset)
 
   const fields: Set<string> = new Set()
+  let isObj = false
   if (['object', 'record'].includes(fieldSchema.type)) {
+    isObj = true
     getFields('', fields, op.props)
     // TODO: goddamn json syntax
     // for (const f of fields) {
@@ -220,27 +222,9 @@ export default async function execTimeseries(
     //   })
     // }
 
-    sql = sql
-      .field('payload')
-      .order(
-        op.options?.sort?.$field || '',
-        op.options?.sort?.$order === 'asc'
-          ? true
-          : op.options?.sort?.$order === 'desc'
-          ? false
-          : null
-      )
+    sql = sql.field('payload')
   } else {
-    sql = sql
-      .field('payload', 'value')
-      .order(
-        op.options?.sort?.$field ? 'payload' : '',
-        op.options?.sort?.$order === 'asc'
-          ? true
-          : op.options?.sort?.$order === 'desc'
-          ? false
-          : null
-      )
+    sql = sql.field('payload', 'value')
   }
 
   const insertQueue = await getInsertQueue(
@@ -279,7 +263,33 @@ export default async function execTimeseries(
       qSql = qSql.field('payload', 'value')
     }
 
+    qSql = qSql.order(
+      isObj
+        ? op.options?.sort?.$field || 'ts'
+        : op.options?.sort?.$field
+        ? 'payload'
+        : 'ts',
+      op.options?.sort?.$order === 'asc'
+        ? true
+        : op.options?.sort?.$order === 'desc'
+        ? false
+        : null
+    )
+
     sql = sql.union_all(qSql)
+  } else {
+    sql = sql.order(
+      isObj
+        ? op.options?.sort?.$field || 'ts'
+        : op.options?.sort?.$field
+        ? 'payload'
+        : 'ts',
+      op.options?.sort?.$order === 'asc'
+        ? true
+        : op.options?.sort?.$order === 'desc'
+        ? false
+        : null
+    )
   }
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
