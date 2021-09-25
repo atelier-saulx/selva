@@ -5,10 +5,18 @@ import { native, QueryResult, Pool } from 'pg'
 const PgPool = isMainThread ? native.Pool : Pool
 
 export class PG {
+  public id: string
   protected pool: Pool
   protected ctr: number
 
-  public constructor({ connectionString }: { connectionString: string }) {
+  public constructor({
+    id,
+    connectionString,
+  }: {
+    id: string
+    connectionString: string
+  }) {
+    this.id = id
     this.pool = new PgPool({ connectionString: connectionString })
 
     this.pool.on('error', (err: Error) => {

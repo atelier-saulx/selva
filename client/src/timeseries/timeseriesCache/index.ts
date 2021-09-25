@@ -140,7 +140,7 @@ class TimeseriesCache {
         if (['new_server', 'stats_update'].includes(obj.event)) {
           this.updateIndexByInstance(obj.id, obj.data)
         } else if (obj.event === 'new_shard') {
-          // TODO: this should be sent by timeseriesWorker if it creates a new shard based on current allocation
+          this.updateIndexByInstance(obj.id, obj.data)
         }
       }
     )

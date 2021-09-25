@@ -46,7 +46,6 @@ import { v4 as uuidv4 } from 'uuid'
 import getServer from './getServer'
 import { ObservableOptions, ObsSettings } from './observable/types'
 import { SetMetaResponse } from './set/types'
-import TimeseriesCache from './timeseries/timeseriesCache'
 
 export * as constants from './constants'
 
@@ -68,8 +67,6 @@ export class SelvaClient extends EventEmitter {
   public schemas: Record<string, Schema> = {}
 
   public server: ServerDescriptor
-
-  public timeseriesCache: TimeseriesCache
 
   public addServerUpdateListeners: (() => void)[] = []
 

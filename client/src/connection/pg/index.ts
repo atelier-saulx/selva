@@ -37,6 +37,7 @@ class PGConnection {
     if (!this.clients[id]) {
       const connectionString = `postgres://${this.opts.user}:${this.opts.password}@${id}`
       this.clients[id] = new PG({
+        id,
         connectionString,
       })
     }

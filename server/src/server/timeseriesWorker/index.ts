@@ -1,5 +1,5 @@
 import { ServerOptions } from '../../types'
-import { connect, SelvaClient } from '@saulx/selva'
+import { connect, SelvaClient, constants } from '@saulx/selva'
 import { PG } from '../pg'
 
 export type TimeSeriesInsertContext = {
@@ -102,6 +102,33 @@ export class TimeseriesWorker {
 
     console.log(`running: ${createNodeIdIndex}`)
     await pg.execute<void>(createNodeIdIndex, [])
+
+    const { meta: current } = this.client.pg.tsCache.instances[pg.id]
+    const stats = {
+      cpu: current.cpu,
+      memory: current.memory,
+      timestamp: Date.now(),
+      tableMeta: {
+        [this.getTableName(context).slice(1, -1)]: {
+          tableName: this.getTableName(context),
+          tableSizeBytes: 0,
+          relationSizeBytes: 0,
+        },
+      },
+    }
+
+    this.client.redis.publish(
+      { type: 'timeseriesRegistry' },
+      constants.TS_REGISTRY_UPDATE,
+      JSON.stringify({
+        event: 'new_shard',
+        ts: Date.now(),
+        id: pg.id,
+        data: { stats },
+      })
+    )
+
+    this.client.pg.tsCache.updateIndexByInstance(pg.id, { stats })
   }
 
   async insertToTimeSeriesDB(context: TimeSeriesInsertContext) {
