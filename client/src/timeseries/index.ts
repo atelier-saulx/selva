@@ -11,6 +11,9 @@ export type TimeseriesContext = {
   fieldSchema?: FieldSchema
   startTime?: number
   endTime?: number
+  order?: 'asc' | 'desc'
+  limit?: number
+  offset?: number
 }
 
 export class TimeseriesClient {

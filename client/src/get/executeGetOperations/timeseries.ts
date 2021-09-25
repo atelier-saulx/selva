@@ -23,13 +23,12 @@ import {
   addMarker,
   executeGetOperation,
 } from './'
-
-type ExprCtx = { minTs?: number; maxTs?: number }
+import { TimeseriesContext } from '../../timeseries'
 
 const sq = squel.useFlavour('postgres')
 
 function filterToExpr(
-  exprCtx: ExprCtx,
+  exprCtx: TimeseriesContext,
   fieldSchema: FieldSchema,
   filter: FilterAST
 ): squel.Expression {
@@ -42,9 +41,11 @@ function filterToExpr(
 
     if (filter.$value !== 'now') {
       if (filter.$operator === '>') {
-        exprCtx.minTs = !exprCtx.minTs ? v : Math.min(v, exprCtx.minTs)
+        exprCtx.startTime = !exprCtx.startTime
+          ? v
+          : Math.min(v, exprCtx.startTime)
       } else if (filter.$operator === '<') {
-        exprCtx.maxTs = !exprCtx.maxTs ? v : Math.max(v, exprCtx.maxTs)
+        exprCtx.endTime = !exprCtx.endTime ? v : Math.max(v, exprCtx.endTime)
       }
     }
 
@@ -106,7 +107,7 @@ function getFields(path: string, fields: Set<string>, props: GetOptions): void {
 }
 
 function forkToExpr(
-  exprCtx: ExprCtx,
+  exprCtx: TimeseriesContext,
   fieldSchema: FieldSchema,
   filter: Fork
 ): squel.Expression {
@@ -126,7 +127,7 @@ function forkToExpr(
 }
 
 function toExpr(
-  exprCtx: ExprCtx,
+  exprCtx: TimeseriesContext,
   fieldSchema: FieldSchema,
   filter: Fork | FilterAST
 ): squel.Expression {
@@ -143,7 +144,7 @@ function toExpr(
 
 async function getInsertQueue(
   client: SelvaClient,
-  exprCtx: ExprCtx,
+  exprCtx: TimeseriesContext,
   type: string,
   id: string,
   field: string
@@ -164,8 +165,8 @@ async function getInsertQueue(
           e.context.nodeId === id &&
           e.context.nodeType === type &&
           e.context.field === field &&
-          (!exprCtx.minTs ? true : e.context.ts >= exprCtx.minTs) &&
-          (!exprCtx.maxTs ? true : e.context.ts <= exprCtx.maxTs)
+          (!exprCtx.startTime ? true : e.context.ts >= exprCtx.startTime) &&
+          (!exprCtx.endTime ? true : e.context.ts <= exprCtx.endTime)
         )
       })
   } catch (_e) {
@@ -210,7 +211,12 @@ export default async function execTimeseries(
 
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
 
-  const exprCtx: ExprCtx = {}
+  const exprCtx: TimeseriesContext = {
+    nodeType: type,
+    field: <string>op.sourceField,
+    order: op.options?.sort?.$order || 'asc',
+  }
+
   let sql = sq
     .select({
       autoQuoteTableNames: true,
@@ -277,7 +283,13 @@ export default async function execTimeseries(
       })
       .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
       .field('ts')
-      .where(toExpr({}, fieldSchema, op.filter))
+      .where(
+        toExpr(
+          { nodeType: type, field: <string>op.sourceField },
+          fieldSchema,
+          op.filter
+        )
+      )
 
     if (['object', 'record'].includes(fieldSchema.type)) {
       qSql = qSql.field('payload')
@@ -293,11 +305,7 @@ export default async function execTimeseries(
       //   ? 'payload'
       //   : 'ts',
       'ts',
-      op.options?.sort?.$order === 'asc'
-        ? true
-        : op.options?.sort?.$order === 'desc'
-        ? false
-        : null
+      exprCtx.order === 'asc'
     )
 
     sql = sql.union_all(qSql)
@@ -310,28 +318,19 @@ export default async function execTimeseries(
       //   ? 'payload'
       //   : 'ts',
       'ts',
-      op.options?.sort?.$order === 'asc'
-        ? true
-        : op.options?.sort?.$order === 'desc'
-        ? false
-        : null
+      exprCtx.order === 'asc'
     )
   }
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
-  console.log('SQL', params, 'SELECTOR', {
-    nodeType: type,
-    field: <string>op.sourceField,
-    startTime: exprCtx.minTs,
-    endTime: exprCtx.maxTs,
-  })
+  console.log('SQL', params, 'SELECTOR', exprCtx)
   const result: QueryResult<any> = await client.pg.execute(
     // TODO: get startTime and endTime from filters
     {
       nodeType: type,
       field: <string>op.sourceField,
-      startTime: exprCtx.minTs,
-      endTime: exprCtx.maxTs,
+      startTime: exprCtx.startTime,
+      endTime: exprCtx.endTime,
     },
     params.text,
     params.values
