@@ -286,11 +286,13 @@ export default async function execTimeseries(
     }
 
     qSql = qSql.order(
-      isObj
-        ? op.options?.sort?.$field || 'ts'
-        : op.options?.sort?.$field
-        ? 'payload'
-        : 'ts',
+      // TODO
+      // isObj
+      //   ? op.options?.sort?.$field || 'ts'
+      //   : op.options?.sort?.$field
+      //   ? 'payload'
+      //   : 'ts',
+      'ts',
       op.options?.sort?.$order === 'asc'
         ? true
         : op.options?.sort?.$order === 'desc'
@@ -301,11 +303,13 @@ export default async function execTimeseries(
     sql = sql.union_all(qSql)
   } else {
     sql = sql.order(
-      isObj
-        ? op.options?.sort?.$field || 'ts'
-        : op.options?.sort?.$field
-        ? 'payload'
-        : 'ts',
+      // TODO
+      // isObj
+      //   ? op.options?.sort?.$field || 'ts'
+      //   : op.options?.sort?.$field
+      //   ? 'payload'
+      //   : 'ts',
+      'ts',
       op.options?.sort?.$order === 'asc'
         ? true
         : op.options?.sort?.$order === 'desc'
