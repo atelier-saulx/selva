@@ -76,6 +76,7 @@ export class TimeseriesClient {
     return !!this.tsCache.index[tsName]
   }
 
+  // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
   public async execute<T>(
     selector: TimeseriesContext,
     query: string,
