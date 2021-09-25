@@ -291,7 +291,8 @@ async function execTimeseries(
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
   console.log('SQL', params, 'SELECTOR', tsCtx)
-  const result: QueryResult<any> = await client.pg.execute(
+  // TODO
+  const result: QueryResult<any> = await client.pg.insert(
     // TODO: get startTime and endTime from filters
     {
       nodeType: tsCtx.nodeType,
@@ -377,8 +378,7 @@ export class TimeseriesClient {
     return !!this.tsCache.index[tsName]
   }
 
-  // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
-  public async execute<T>(
+  public async insert<T>(
     selector: TimeseriesContext,
     query: string,
     params: unknown[]
@@ -391,9 +391,27 @@ export class TimeseriesClient {
       throw new Error(`Timeseries ${tsName} does not exist`)
     }
 
-    // toExpr(tsCtx, fieldSchema, op.filter) // pass this to exec func
+    const pgInstance = shards[0].descriptor
+    return this.pg.execute(pgInstance, query, params)
+  }
+
+  // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
+  public async select<T>(
+    selector: TimeseriesContext,
+    query: string,
+    params: unknown[]
+  ): Promise<QueryResult<T>> {
+    // TODO: real logic for selecting shard
+    const tsName = `${selector.nodeType}$${selector.field}`
+    const shards = this.tsCache.index[tsName]
+    if (!shards || !shards[0]) {
+      // TODO: implicitly create? or error and create it in the catch?
+      throw new Error(`Timeseries ${tsName} does not exist`)
+    }
 
     const pgInstance = shards[0].descriptor
     return this.pg.execute(pgInstance, query, params)
+
+    // toExpr(tsCtx, fieldSchema, op.filter) // pass this to exec func
   }
 }

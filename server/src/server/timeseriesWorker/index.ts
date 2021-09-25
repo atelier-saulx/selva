@@ -137,7 +137,7 @@ export class TimeseriesWorker {
 
     await this.ensureTableExists(context)
 
-    await this.client.pg.execute<void>(
+    await this.client.pg.insert<void>(
       context,
       `INSERT INTO ${this.getTableName(
         context

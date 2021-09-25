@@ -324,7 +324,8 @@ export default async function execTimeseries(
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
   console.log('SQL', params, 'SELECTOR', exprCtx)
-  const result: QueryResult<any> = await client.pg.execute(
+  // TODO: this needs to call select with op
+  const result: QueryResult<any> = await client.pg.insert(
     // TODO: get startTime and endTime from filters
     {
       nodeType: type,
