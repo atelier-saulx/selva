@@ -166,6 +166,4 @@ export async function startTimeseriesWorker(
 }
 
 // TODO:
-// we want to create a new nodeType$field$0 table if the timeseries doesn't exist when inserting
-// if it exists, check if it's getting full and create a new shard with Date.now()
-// then send event so clients update without delay
+// create new shard if current is full
