@@ -3,6 +3,7 @@ import { FieldSchema } from '../schema'
 import { SelvaClient } from '..'
 import PGConnection from '../connection/pg'
 import TimeseriesCache from './timeseriesCache'
+import { PG } from '../connection/pg/client'
 
 export type TimeseriesContext = {
   nodeType: string
@@ -44,7 +45,7 @@ export class TimeseriesClient {
     this.isConnected = false
   }
 
-  public getMinInstance() {
+  public getMinInstance(): PG {
     const instances = Object.keys(this.tsCache.instances)
     if (!instances.length) {
       return null
@@ -63,7 +64,7 @@ export class TimeseriesClient {
       }
     }
 
-    return minId
+    return this.pg.getClient(minId)
   }
 
   public async execute<T>(

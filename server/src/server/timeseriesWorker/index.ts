@@ -95,15 +95,15 @@ export class TimeseriesWorker {
     );
     `
     console.log(`running: ${createTable}`)
-    const instanceId = this.client.pg.getMinInstance()
-    await this.client.pg.pg.execute<void>(instanceId, createTable, [])
+    const pg = this.client.pg.getMinInstance()
+    await pg.execute<void>(createTable, [])
 
     const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${this.getTableName(
       context
     ).slice(1, -1)}_node_id_idx" ON ${this.getTableName(context)} ("nodeId");`
 
     console.log(`running: ${createNodeIdIndex}`)
-    await this.client.pg.pg.execute<void>(instanceId, createNodeIdIndex, [])
+    await pg.execute<void>(createNodeIdIndex, [])
   }
 
   async insertToTimeSeriesDB(context: TimeSeriesInsertContext) {

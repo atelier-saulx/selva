@@ -31,7 +31,7 @@ class PGConnection {
     this.lastUsed = {}
   }
 
-  private getClient(selector: PGSelector) {
+  public getClient(selector: PGSelector) {
     const id = selectorToId(selector)
 
     if (!this.clients[id]) {
