@@ -6,7 +6,7 @@ export type TimeSeriesInsertContext = {
   nodeId: string
   nodeType: string
   field: string
-  fieldSchema: Record<string, unknown> & { type: string }
+  fieldSchema: any
   payload: Record<string, unknown>
   ts: number
 }
@@ -80,7 +80,7 @@ export class TimeseriesWorker {
   }
 
   async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {
-    if (this.client.pg.tsCache.index[`${context.nodeType}$${context.field}`]) {
+    if (this.client.pg.hasTimeseries(context)) {
       return
     }
 

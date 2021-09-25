@@ -67,6 +67,11 @@ export class TimeseriesClient {
     return this.pg.getClient(minId)
   }
 
+  public hasTimeseries(selector: TimeseriesContext): boolean {
+    const tsName = `${selector.nodeType}$${selector.field}`
+    return !!this.tsCache.index[tsName]
+  }
+
   public async execute<T>(
     selector: TimeseriesContext,
     query: string,
