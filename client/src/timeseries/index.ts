@@ -408,7 +408,7 @@ export class TimeseriesClient {
       throw new Error(`SELECT: Timeseries ${tsName} does not exist`)
     }
 
-    const where = toExpr(selector, selector.fieldSchema, op.filter) // pass this to exec func
+    const where = toExpr(selector, selector.fieldSchema, op.filter)
 
     // TODO: real logic for selecting shard
     const { result, fields } = await execTimeseries(
