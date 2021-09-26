@@ -111,19 +111,13 @@ export class Observable {
     // just call start again
 
     if (this.isStarting) {
-      console.warn('hard dc while starting observable')
+      console.warn('Hard dc while starting observable', this.getOptions)
       await this.isStarted
     }
 
     this.isStarted = false
-    const prevServer = `${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port}`
+    // const prevServer = `${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port}`
     delete this.connection
-    console.info(
-      chalk.yellow(
-        `Hard disconnection event on observable ${this.uuid} ${prevServer}`
-      )
-    )
-
     await this.start()
   }
 
