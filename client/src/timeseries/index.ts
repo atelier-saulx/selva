@@ -182,19 +182,67 @@ async function runSelect<T>(
   op: GetOperationFind | GetOperationAggregate,
   where: squel.Expression
 ): Promise<QueryResult<T>> {
-  // TODO: real logic
+  let limit = tsCtx.limit
+  let offset = tsCtx.offset
+  let hasLimit = limit > 0
+
   const result = await execTimeseries(shards[0].descriptor, tsCtx, client, op, {
     shard: shards[0].ts,
     where,
-    limit: op.options.limit,
-    offset: op.options.offset,
+    limit: limit,
+    offset: offset,
   })
 
-  // TODO: combine resuls of several shards
-  // remember when running on several shards that limit/offset parameters need to be
-  // adjusted by shard (only first shard as them, or adjust on amount of rows returned
-  // always query shards in order based on order options (asc/desc)
+  if (!result.rows.length) {
+    // TODO: do count to handle offset ugh
+  } else {
+    offset = 0
+  }
+
+  limit -= result.rows.length
+
+  for (let i = 1; i < shards.length; i++) {
+    const shard = shards[i]
+
+    const res = await execTimeseries(shards[0].descriptor, tsCtx, client, op, {
+      shard: shard.ts,
+      where,
+      limit: limit,
+      offset: offset,
+    })
+
+    if (!res.rows.length) {
+      // TODO: do count to handle offset ugh
+      continue
+    }
+
+    offset = 0
+    limit -= res.rows.length
+
+    for (const row of res.rows) {
+      result.rows.push(row)
+    }
+
+    if (hasLimit && limit <= 0) {
+      continue
+    }
+  }
+
   return result
+
+  // TODO: real logic
+  // const result = await execTimeseries(shards[0].descriptor, tsCtx, client, op, {
+  //   shard: shards[0].ts,
+  //   where,
+  //   limit: op.options.limit,
+  //   offset: op.options.offset,
+  // })
+
+  // // TODO: combine resuls of several shards
+  // // remember when running on several shards that limit/offset parameters need to be
+  // // adjusted by shard (only first shard as them, or adjust on amount of rows returned
+  // // always query shards in order based on order options (asc/desc)
+  // return result
 }
 
 async function queryInsertQueue(
@@ -280,8 +328,8 @@ async function execTimeseries(
     .field('ts')
     .where('"nodeId" = ?', op.id)
     .where(queryOptions.where)
-    .limit(queryOptions.limit === -1 ? null : queryOptions.limit)
-    .offset(queryOptions.offset === 0 ? null : queryOptions.offset)
+    .limit(queryOptions.limit <= 0 ? null : queryOptions.limit)
+    .offset(queryOptions.offset <= 0 ? null : queryOptions.offset)
 
   let isObj = false
   if (['object', 'record'].includes(fieldSchema.type)) {
