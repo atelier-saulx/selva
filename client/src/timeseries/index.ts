@@ -189,6 +189,45 @@ async function getInsertQueue(
   }
 }
 
+async function runSelect(
+  tsCtx: TimeseriesContext,
+  shards: { ts: number; descriptor: ServerDescriptor }[],
+  client: SelvaClient,
+  op: GetOperationFind | GetOperationAggregate,
+  where: squel.Expression
+) {
+  // TODO: real logic
+  const { result, fields } = await execTimeseries(
+    shards[0].descriptor,
+    tsCtx,
+    client,
+    op,
+    {
+      shard: shards[0].ts,
+      where,
+      limit: op.options.limit,
+      offset: op.options.offset,
+    }
+  )
+
+  // TODO: combine resuls of several shards
+  // remember when running on several shards that limit/offset parameters need to be
+  // adjusted by shard (only first shard as them, or adjust on amount of rows returned
+  // always query shards in order based on order options (asc/desc)
+  return result.rows.map((row) => {
+    if (fields.size) {
+      const r = {}
+      for (const f of fields) {
+        setNestedResult(r, f, getNestedField(row, `payload.${f}`))
+      }
+
+      return r
+    }
+
+    return row.value
+  })
+}
+
 async function execTimeseries(
   pgDescriptor: string | ServerDescriptor,
   tsCtx: TimeseriesContext,
@@ -279,7 +318,7 @@ async function execTimeseries(
   }
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
-  console.log('SQL', params, 'SELECTOR', tsCtx)
+  console.log('SQL', params, 'tsCtx', tsCtx)
 
   const result: QueryResult<any> = await client.pg.pg.execute(
     pgDescriptor,
@@ -345,24 +384,24 @@ export class TimeseriesClient {
     return this.pg.getClient(minId)
   }
 
-  public hasTimeseries(selector: TimeseriesContext): boolean {
-    const tsName = `${selector.nodeType}$${selector.field}`
+  public hasTimeseries(tsCtx: TimeseriesContext): boolean {
+    const tsName = `${tsCtx.nodeType}$${tsCtx.field}`
     return !!this.tsCache.index[tsName]
   }
 
   public async execute<T>(
-    selector: string,
+    tsCtx: string,
     query: string,
     params: unknown[]
   ): Promise<QueryResult<T>> {
-    const [nodeType, field, shard] = selector.split('$')
+    const [nodeType, field, shard] = tsCtx.split('$')
 
     const { descriptor } = this.getShards({ nodeType, field })[shard]
     return this.pg.execute(descriptor, query, params)
   }
 
-  private getShards(selector: TimeseriesContext) {
-    const tsName = `${selector.nodeType}$${selector.field}`
+  private getShards(tsCtx: TimeseriesContext) {
+    const tsName = `${tsCtx.nodeType}$${tsCtx.field}`
     const shards = this.tsCache.index[tsName]
     if (!shards || !shards[0]) {
       throw new Error(`Timeseries ${tsName} does not exist`)
@@ -379,44 +418,44 @@ export class TimeseriesClient {
   }
 
   public async insert<T>(
-    selector: TimeseriesContext,
+    tsCtx: TimeseriesContext,
     query: string,
     params: unknown[]
   ): Promise<QueryResult<T>> {
-    const shards = this.getShards(selector)
+    const shards = this.getShards(tsCtx)
     const pgInstance = shards[shards.length - 1].descriptor
     return this.pg.execute(pgInstance, query, params)
   }
 
   private selectShards(
-    selector: TimeseriesContext
+    tsCtx: TimeseriesContext
   ): { ts: number; descriptor: ServerDescriptor }[] {
     // if we have a startTime, start iterating from beginning to find the shard to start
     // if we have an endTime, keep iterating till you go over
     //
     // if we only have endTime then iterate from the end to find where to end
 
-    let shards = this.getShards(selector)
+    let shards = this.getShards(tsCtx)
 
-    if (selector.startTime) {
+    if (tsCtx.startTime) {
       let startIdx = 0
       let endIdx = shards.length - 1
       for (let i = 1; i < shards.length; i++) {
         const shard = shards[i]
 
-        if (shard.ts > selector.startTime) {
+        if (shard.ts > tsCtx.startTime) {
           break
         }
 
         startIdx = i
       }
 
-      if (selector.endTime) {
+      if (tsCtx.endTime) {
         endIdx = startIdx
         for (let i = startIdx + 1; i++; i < shards.length) {
           const shard = shards[i]
 
-          if (shard.ts > selector.endTime) {
+          if (shard.ts > tsCtx.endTime) {
             break
           }
 
@@ -426,18 +465,18 @@ export class TimeseriesClient {
 
       shards = shards.slice(startIdx, endIdx + 1)
       // FIXME: ?
-      // if (selector.order === 'desc') {
+      // if (tsCtx.order === 'desc') {
       //   shards.reverse()
       // } else {
       //   // timestamp between two values makes sense in default ascending order
-      //   selector.order = 'asc'
+      //   tsCtx.order = 'asc'
       // }
-    } else if (selector.endTime) {
+    } else if (tsCtx.endTime) {
       let endIdx = shards.length - 1
 
       for (let i = shards.length - 1; i >= 0; i--) {
         const shard = shards[i]
-        if (selector.endTime > shard.ts) {
+        if (tsCtx.endTime > shard.ts) {
           break
         }
 
@@ -447,7 +486,7 @@ export class TimeseriesClient {
       shards = shards.slice(0, endIdx + 1)
     }
 
-    if (selector.order === 'desc') {
+    if (tsCtx.order === 'desc') {
       shards.reverse()
     }
 
@@ -456,46 +495,18 @@ export class TimeseriesClient {
 
   // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
   public async select<T>(
-    selector: TimeseriesContext,
+    tsCtx: TimeseriesContext,
     op: GetOperationFind | GetOperationAggregate
   ): Promise<QueryResult<T>> {
-    const shards = this.selectShards(selector)
-    const where = toExpr(selector, selector.fieldSchema, op.filter)
+    // order is important
+    const where = toExpr(tsCtx, tsCtx.fieldSchema, op.filter)
+    const shards = this.selectShards(tsCtx)
 
     // apply context defaults for limiting result set size
-    if (!(selector.startTime && selector.endTime) && selector.limit === -1) {
-      selector.limit = DEFAULT_QUERY_LIMIT
+    if (!(tsCtx.startTime && tsCtx.endTime) && tsCtx.limit === -1) {
+      tsCtx.limit = DEFAULT_QUERY_LIMIT
     }
 
-    // TODO: real logic for selecting shard
-    const { result, fields } = await execTimeseries(
-      shards[0].descriptor,
-      selector,
-      this.client,
-      op,
-      {
-        shard: shards[0].ts,
-        where,
-        limit: op.options.limit,
-        offset: op.options.offset,
-      }
-    )
-
-    // TODO: combine resuls of several shards
-    // remember when running on several shards that limit/offset parameters need to be
-    // adjusted by shard (only first shard as them, or adjust on amount of rows returned
-    // always query shards in order based on order options (asc/desc)
-    return result.rows.map((row) => {
-      if (fields.size) {
-        const r = {}
-        for (const f of fields) {
-          setNestedResult(r, f, getNestedField(row, `payload.${f}`))
-        }
-
-        return r
-      }
-
-      return row.value
-    })
+    return runSelect(tsCtx, shards, this.client, op, where)
   }
 }
