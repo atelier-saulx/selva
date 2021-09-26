@@ -398,6 +398,11 @@ export class TimeseriesClient {
       .map((k) => Number(k))
       .sort((a, b) => a - b)
 
+    // if we have a startTime, start iterating from beginning to find the shard to start
+    // if we have an endTime, keep iterating till you go over
+    //
+    // if we only have endTime then iterate from the end to find where to end
+
     return [{ ts: 0, descriptor: shards[0].descriptor }]
   }
 
@@ -410,7 +415,7 @@ export class TimeseriesClient {
     const where = toExpr(selector, selector.fieldSchema, op.filter)
 
     // apply context defaults for limiting result set size
-    if (!selector.startTime && !selector.endTime && selector.limit === -1) {
+    if (!(selector.startTime && selector.endTime) && selector.limit === -1) {
       selector.limit = DEFAULT_QUERY_LIMIT
     }
 
