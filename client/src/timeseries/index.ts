@@ -370,7 +370,7 @@ export class TimeseriesClient {
     const tsName = `${selector.nodeType}$${selector.field}`
     const shards = this.tsCache.index[tsName]
     if (!shards || !shards[0]) {
-      throw new Error(`SELECT: Timeseries ${tsName} does not exist`)
+      throw new Error(`Timeseries ${tsName} does not exist`)
     }
 
     let shardList = Object.keys(shards)
