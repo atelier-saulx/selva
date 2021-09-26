@@ -3,6 +3,7 @@ import PGConnection from '../connection/pg'
 import TimeseriesCache from './timeseriesCache'
 import { PG } from '../connection/pg/client'
 
+import { FieldSchema } from '../schema/types'
 import { convertNow, isFork } from '@saulx/selva-query-ast-parser'
 import squel from 'squel'
 import { SelvaClient, ServerDescriptor } from '..'
@@ -11,22 +12,7 @@ import {
   Fork,
   GetOperationAggregate,
   GetOperationFind,
-  GetOptions,
 } from '../get/types'
-import { FieldSchema } from '../schema/types'
-import {
-  getNestedField,
-  getNestedSchema,
-  getTypeFromId,
-  setNestedResult,
-} from '../get/utils'
-import {
-  executeNestedGetOperations,
-  ExecContext,
-  sourceFieldToDir,
-  addMarker,
-  executeGetOperation,
-} from '../get/executeGetOperations'
 
 export type TimeseriesContext = {
   nodeType: string
