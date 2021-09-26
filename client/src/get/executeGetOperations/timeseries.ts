@@ -1,8 +1,28 @@
 import { SelvaClient } from '../../'
-import { GetOperationAggregate, GetOperationFind } from '../types'
-import { getNestedSchema, getTypeFromId } from '../utils'
+import { GetOperationAggregate, GetOperationFind, GetOptions } from '../types'
+import {
+  getNestedField,
+  getNestedSchema,
+  getTypeFromId,
+  setNestedResult,
+} from '../utils'
 import { ExecContext, addMarker, executeGetOperation } from './'
 import { TimeseriesContext } from '../../timeseries'
+
+function getFields(path: string, fields: Set<string>, props: GetOptions): void {
+  for (const k in props) {
+    const newPath = path === '' ? k : path + '.' + k
+
+    if (!k.startsWith('$')) {
+      const p = props[k]
+      if (typeof p === 'object') {
+        getFields(newPath, fields, props)
+      } else {
+        fields.add(newPath)
+      }
+    }
+  }
+}
 
 export default async function execTimeseries(
   client: SelvaClient,
@@ -54,5 +74,36 @@ export default async function execTimeseries(
     offset: op.options.offset || 0,
   }
 
-  return client.pg.select(exprCtx, op)
+  const fields: Set<string> = new Set()
+  if (['object', 'record'].includes(fieldSchema.type)) {
+    getFields('', fields, op.props)
+    exprCtx.selectFields = fields
+    // TODO: goddamn json syntax
+    // for (const f of fields) {
+    // const split = f.split('.').map((part) => "'" + part + "'")
+    // let fieldStr = 'payload->'
+    // for (let i = 0; i < split.length - 1; i++) {
+    //   fieldStr += split[i] + '-> '
+    // }
+    // fieldStr + '->>' + split[split.length - 1]
+    // sql = sql
+    //   .field(fieldStr, f, {
+    //     ignorePeriodsForFieldNameQuotes: true,
+    //   })
+    // }
+  }
+
+  const result: any = await client.pg.select(exprCtx, op)
+  return result.rows.map((row) => {
+    if (fields.size) {
+      const r = {}
+      for (const f of fields) {
+        setNestedResult(r, f, getNestedField(row, `payload.${f}`))
+      }
+
+      return r
+    }
+
+    return row.value
+  })
 }

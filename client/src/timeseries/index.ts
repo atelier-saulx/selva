@@ -31,6 +31,7 @@ import {
 export type TimeseriesContext = {
   nodeType: string
   field: string
+  selectFields?: Set<string>
   fieldSchema?: FieldSchema
   startTime?: number
   endTime?: number
@@ -107,21 +108,6 @@ function filterToExpr(
   }
 }
 
-function getFields(path: string, fields: Set<string>, props: GetOptions): void {
-  for (const k in props) {
-    const newPath = path === '' ? k : path + '.' + k
-
-    if (!k.startsWith('$')) {
-      const p = props[k]
-      if (typeof p === 'object') {
-        getFields(newPath, fields, props)
-      } else {
-        fields.add(newPath)
-      }
-    }
-  }
-}
-
 function forkToExpr(
   exprCtx: TimeseriesContext,
   fieldSchema: FieldSchema,
@@ -189,43 +175,26 @@ async function getInsertQueue(
   }
 }
 
-async function runSelect(
+async function runSelect<T>(
   tsCtx: TimeseriesContext,
   shards: { ts: number; descriptor: ServerDescriptor }[],
   client: SelvaClient,
   op: GetOperationFind | GetOperationAggregate,
   where: squel.Expression
-) {
+): Promise<QueryResult<T>> {
   // TODO: real logic
-  const { result, fields } = await execTimeseries(
-    shards[0].descriptor,
-    tsCtx,
-    client,
-    op,
-    {
-      shard: shards[0].ts,
-      where,
-      limit: op.options.limit,
-      offset: op.options.offset,
-    }
-  )
+  const result = await execTimeseries(shards[0].descriptor, tsCtx, client, op, {
+    shard: shards[0].ts,
+    where,
+    limit: op.options.limit,
+    offset: op.options.offset,
+  })
 
   // TODO: combine resuls of several shards
   // remember when running on several shards that limit/offset parameters need to be
   // adjusted by shard (only first shard as them, or adjust on amount of rows returned
   // always query shards in order based on order options (asc/desc)
-  return result.rows.map((row) => {
-    if (fields.size) {
-      const r = {}
-      for (const f of fields) {
-        setNestedResult(r, f, getNestedField(row, `payload.${f}`))
-      }
-
-      return r
-    }
-
-    return row.value
-  })
+  return result
 }
 
 async function execTimeseries(
@@ -255,13 +224,11 @@ async function execTimeseries(
     .limit(queryOptions.limit === -1 ? null : queryOptions.limit)
     .offset(queryOptions.offset === 0 ? null : queryOptions.offset)
 
-  const fields: Set<string> = new Set()
   let isObj = false
   if (['object', 'record'].includes(fieldSchema.type)) {
     isObj = true
-    getFields('', fields, op.props)
     // TODO: goddamn json syntax
-    // for (const f of fields) {
+    // for (const f of tsCtx.selectFields) {
     // const split = f.split('.').map((part) => "'" + part + "'")
     // let fieldStr = 'payload->'
     // for (let i = 0; i < split.length - 1; i++) {
@@ -326,7 +293,7 @@ async function execTimeseries(
     params.values
   )
 
-  return { fields, result }
+  return result
 }
 
 export class TimeseriesClient {
@@ -507,6 +474,6 @@ export class TimeseriesClient {
       tsCtx.limit = DEFAULT_QUERY_LIMIT
     }
 
-    return runSelect(tsCtx, shards, this.client, op, where)
+    return runSelect<T>(tsCtx, shards, this.client, op, where)
   }
 }
