@@ -49,7 +49,7 @@ export default async function execTimeseries(
     nodeType: type,
     field: <string>op.sourceField,
     fieldSchema,
-    order: op.options?.sort?.$order,
+    order: op.options?.sort?.$order || 'desc',
     limit: op.options.limit || -1,
     offset: op.options.offset || 0,
   }
