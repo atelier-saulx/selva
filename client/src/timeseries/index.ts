@@ -433,17 +433,14 @@ export class TimeseriesClient {
       }
 
       shardList = shardList.slice(startIdx, endIdx + 1)
-      if (selector.order === 'desc') {
-        shardList.reverse()
-      } else {
-        // timestamp between two values makes sense in default ascending order
-        selector.order = 'asc'
-      }
-
-      return shardList
-    }
-
-    if (selector.endTime) {
+      // FIXME: ?
+      // if (selector.order === 'desc') {
+      //   shardList.reverse()
+      // } else {
+      //   // timestamp between two values makes sense in default ascending order
+      //   selector.order = 'asc'
+      // }
+    } else if (selector.endTime) {
       let endIdx = shardList.length - 1
 
       for (let i = shardList.length - 1; i >= 0; i--) {
