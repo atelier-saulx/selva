@@ -18,7 +18,7 @@ import { applyPatch } from '@saulx/diff'
 // import { unzip as unzipCb } from 'zlib'
 // import { promisify } from 'util'
 
-import { deepCopy } from '@saulx/utils'
+import { deepCopy, deepEqual } from '@saulx/utils'
 
 // const unzip = promisify(unzipCb)
 
@@ -87,6 +87,10 @@ export class Observable {
 
   public selvaClient: SelvaClient
 
+  public isMoving: ServerSelector | null
+
+  public isStarting: Promise<void> | null
+
   public id: string
 
   public uuid: string // hash of getoptions
@@ -105,6 +109,12 @@ export class Observable {
 
   public async hardDisconnect() {
     // just call start again
+
+    if (this.isStarting) {
+      console.warn('hard dc while starting observable')
+      await this.isStarted
+    }
+
     this.isStarted = false
     const prevServer = `${this.connection.serverDescriptor.host}:${this.connection.serverDescriptor.port}`
     delete this.connection
@@ -147,9 +157,9 @@ export class Observable {
     }
   }
 
+  // public start
+
   public subscribe(
-    // needs an iff for the type of things
-    // how to do?
     // TODO: make this type based on the Observable options (type schema or type get for now)
     onNext: UpdateCallback,
     onError?: (err: Error) => void,
@@ -184,7 +194,9 @@ export class Observable {
     }
 
     if (!this.isStarted) {
+      // --------------
       this.start()
+      // everywhere where we call start we want to store the promise
     } else {
       this.geValueSingleListener(onNext, onError)
     }
@@ -306,11 +318,13 @@ export class Observable {
                 }
                 this.emitUpdate(data, version, patch)
               } else {
+                // need more info why this happens all the time
                 console.error(
                   'Mismatching versions from diff!',
                   this.version,
                   fromVersion,
-                  versions
+                  versions,
+                  JSON.stringify(this.getOptions, null, 2)
                 )
                 this.getValue()
               }
@@ -358,6 +372,21 @@ export class Observable {
     if (this.isDestroyed) {
       return
     }
+
+    // if in progress stop it
+
+    if (this.isMoving && deepEqual(this.isMoving, selector)) {
+      console.warn(
+        'trying to move observable to a moving in progress',
+        selector
+      )
+      return
+    }
+
+    if (this.connection && this.isStarting) {
+      await this.isStarting
+    }
+
     if (this.connection && this.connection.removeClient(this)) {
       this.connection.removeConnectionState(
         this.connection.getConnectionState(this.id)
@@ -365,10 +394,26 @@ export class Observable {
     }
     delete this.connection
     this.isStarted = false
+    this.isMoving = selector
     await this.start(selector)
+    this.isMoving = null
   }
 
   public async start(selector?: ServerSelector) {
+    if (!this.isStarting) {
+      // double check if its the same
+      this.isStarting = this.startInner(selector)
+    } else {
+      console.warn(
+        'Starting an observable thats in the progress of being started'
+      )
+    }
+    await this.isStarting
+    this.isStarting = null
+  }
+
+  // --------
+  public async startInner(selector?: ServerSelector) {
     if (this.isStarted) {
       console.warn(
         chalk.yellow(
@@ -395,12 +440,17 @@ export class Observable {
     // is 1 second maybe too much?
     // keep a timer with in the same tick for selecting subs managers - use this to determine delay
     // await wait(~~(Math.random() * 1000))
+
+    // this needs to be cached
     const server = await this.selvaClient.getServer(
       selector || {
         type: 'subscriptionManager',
       },
       { subscription: channel }
     )
+
+    //  if (!this.connection) {
+
     const connection = (this.connection = createConnection(server))
     const id = this.selvaId
 
@@ -442,7 +492,16 @@ export class Observable {
                 `Receive move command in observable from ${this.connection?.serverDescriptor?.host}:${this.connection?.serverDescriptor?.port} to ${newServer} (channel: ${this.uuid})`
               )
             )
+          } else {
+            console.warn(
+              chalk.yellow(
+                `Receive move command in observable from to ${newServer} but no connection`
+              )
+            )
           }
+
+          // ! have to check if sever is actualy different
+
           const [host, port] = newServer.split(':')
           this.moveToServer({
             type: 'subscriptionManager',
