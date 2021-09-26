@@ -394,9 +394,47 @@ export class TimeseriesClient {
       throw new Error(`SELECT: Timeseries ${tsName} does not exist`)
     }
 
-    const shardKeys = Object.keys(shards)
+    let shardList = Object.keys(shards)
       .map((k) => Number(k))
       .sort((a, b) => a - b)
+      .map((ts) => {
+        return { ts, descriptor: shards[ts].descriptor }
+      })
+
+    if (selector.startTime) {
+      let startIdx = 0
+      let endIdx = shardList.length - 1
+      for (let i = 1; i < shardList.length; i++) {
+        const shard = shardList[i]
+
+        if (shard.ts > selector.startTime) {
+          break
+        }
+
+        startIdx = i
+      }
+
+      if (selector.endTime) {
+        endIdx = startIdx
+        for (let i = startIdx + 1; i++; i < shardList.length) {
+          const shard = shardList[i]
+
+          if (shard.ts > selector.endTime) {
+            break
+          }
+        }
+      }
+
+      shardList = shardList.slice(startIdx, endIdx + 1)
+      if (selector.order === 'desc') {
+        shardList.reverse()
+      } else {
+        // timestamp between two values makes sense in default ascending order
+        selector.order = 'asc'
+      }
+
+      return shardList
+    }
 
     // if we have a startTime, start iterating from beginning to find the shard to start
     // if we have an endTime, keep iterating till you go over
