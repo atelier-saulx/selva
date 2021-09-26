@@ -298,18 +298,7 @@ async function execTimeseries(
     params.values
   )
 
-  return result.rows.map((row) => {
-    if (fields.size) {
-      const r = {}
-      for (const f of fields) {
-        setNestedResult(r, f, getNestedField(row, `payload.${f}`))
-      }
-
-      return r
-    }
-
-    return row.value
-  })
+  return { fields, result }
 }
 
 export class TimeseriesClient {
@@ -420,6 +409,25 @@ export class TimeseriesClient {
     }
 
     const where = toExpr(selector, selector.fieldSchema, op.filter) // pass this to exec func
-    return execTimeseries(selector, this.client, op, where, 0)
+    const { result, fields } = await execTimeseries(
+      selector,
+      this.client,
+      op,
+      where,
+      0
+    )
+
+    return result.rows.map((row) => {
+      if (fields.size) {
+        const r = {}
+        for (const f of fields) {
+          setNestedResult(r, f, getNestedField(row, `payload.${f}`))
+        }
+
+        return r
+      }
+
+      return row.value
+    })
   }
 }
