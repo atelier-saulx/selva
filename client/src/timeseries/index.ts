@@ -366,32 +366,7 @@ export class TimeseriesClient {
     return this.pg.execute(pgInstance, query, params)
   }
 
-  public async insert<T>(
-    selector: TimeseriesContext,
-    query: string,
-    params: unknown[]
-  ): Promise<QueryResult<T>> {
-    // TODO: real logic for selecting shard
-    const tsName = `${selector.nodeType}$${selector.field}`
-    const shards = this.tsCache.index[tsName]
-    if (!shards || !shards[0]) {
-      // TODO: implicitly create? or error and create it in the catch?
-      console.log('HELLO', JSON.stringify(this.tsCache.index, null, 2))
-      throw new Error(`INSERT: Timeseries ${tsName} does not exist`)
-    }
-
-    const pgInstance = shards[0].descriptor
-    return this.pg.execute(pgInstance, query, params)
-  }
-
-  private selectShards(
-    selector: TimeseriesContext
-  ): { ts: number; descriptor: ServerDescriptor }[] {
-    // if we have a startTime, start iterating from beginning to find the shard to start
-    // if we have an endTime, keep iterating till you go over
-    //
-    // if we only have endTime then iterate from the end to find where to end
-
+  private getShards(selector: TimeseriesContext) {
     const tsName = `${selector.nodeType}$${selector.field}`
     const shards = this.tsCache.index[tsName]
     if (!shards || !shards[0]) {
@@ -406,11 +381,34 @@ export class TimeseriesClient {
         return { ts, descriptor: shards[ts].descriptor }
       })
 
+    return shardList
+  }
+
+  public async insert<T>(
+    selector: TimeseriesContext,
+    query: string,
+    params: unknown[]
+  ): Promise<QueryResult<T>> {
+    const shards = this.getShards(selector)
+    const pgInstance = shards[shards.length - 1].descriptor
+    return this.pg.execute(pgInstance, query, params)
+  }
+
+  private selectShards(
+    selector: TimeseriesContext
+  ): { ts: number; descriptor: ServerDescriptor }[] {
+    // if we have a startTime, start iterating from beginning to find the shard to start
+    // if we have an endTime, keep iterating till you go over
+    //
+    // if we only have endTime then iterate from the end to find where to end
+
+    let shards = this.getShards(selector)
+
     if (selector.startTime) {
       let startIdx = 0
-      let endIdx = shardList.length - 1
-      for (let i = 1; i < shardList.length; i++) {
-        const shard = shardList[i]
+      let endIdx = shards.length - 1
+      for (let i = 1; i < shards.length; i++) {
+        const shard = shards[i]
 
         if (shard.ts > selector.startTime) {
           break
@@ -421,8 +419,8 @@ export class TimeseriesClient {
 
       if (selector.endTime) {
         endIdx = startIdx
-        for (let i = startIdx + 1; i++; i < shardList.length) {
-          const shard = shardList[i]
+        for (let i = startIdx + 1; i++; i < shards.length) {
+          const shard = shards[i]
 
           if (shard.ts > selector.endTime) {
             break
@@ -432,19 +430,19 @@ export class TimeseriesClient {
         }
       }
 
-      shardList = shardList.slice(startIdx, endIdx + 1)
+      shards = shards.slice(startIdx, endIdx + 1)
       // FIXME: ?
       // if (selector.order === 'desc') {
-      //   shardList.reverse()
+      //   shards.reverse()
       // } else {
       //   // timestamp between two values makes sense in default ascending order
       //   selector.order = 'asc'
       // }
     } else if (selector.endTime) {
-      let endIdx = shardList.length - 1
+      let endIdx = shards.length - 1
 
-      for (let i = shardList.length - 1; i >= 0; i--) {
-        const shard = shardList[i]
+      for (let i = shards.length - 1; i >= 0; i--) {
+        const shard = shards[i]
         if (selector.endTime > shard.ts) {
           break
         }
@@ -452,14 +450,14 @@ export class TimeseriesClient {
         endIdx = i
       }
 
-      shardList = shardList.slice(0, endIdx + 1)
+      shards = shards.slice(0, endIdx + 1)
     }
 
     if (selector.order === 'desc') {
-      shardList.reverse()
+      shards.reverse()
     }
 
-    return shardList
+    return shards
   }
 
   // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
