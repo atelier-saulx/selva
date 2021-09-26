@@ -355,15 +355,10 @@ export class TimeseriesClient {
     query: string,
     params: unknown[]
   ): Promise<QueryResult<T>> {
-    const [type, field, shard] = selector.split('$')
+    const [nodeType, field, shard] = selector.split('$')
 
-    const shards = this.tsCache.index[`${type}$${field}`]
-    if (!shards || !shards[0]) {
-      throw new Error(`Timeseries shard ${selector} does not exist`)
-    }
-
-    const pgInstance = shards[shard].descriptor
-    return this.pg.execute(pgInstance, query, params)
+    const { descriptor } = this.getShards({ nodeType, field })[shard]
+    return this.pg.execute(descriptor, query, params)
   }
 
   private getShards(selector: TimeseriesContext) {
