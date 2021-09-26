@@ -229,20 +229,6 @@ async function runSelect<T>(
   }
 
   return result
-
-  // TODO: real logic
-  // const result = await execTimeseries(shards[0].descriptor, tsCtx, client, op, {
-  //   shard: shards[0].ts,
-  //   where,
-  //   limit: op.options.limit,
-  //   offset: op.options.offset,
-  // })
-
-  // // TODO: combine resuls of several shards
-  // // remember when running on several shards that limit/offset parameters need to be
-  // // adjusted by shard (only first shard as them, or adjust on amount of rows returned
-  // // always query shards in order based on order options (asc/desc)
-  // return result
 }
 
 async function queryInsertQueue(
