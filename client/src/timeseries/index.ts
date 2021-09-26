@@ -246,43 +246,44 @@ async function execTimeseries(
     sql = sql.field('payload', 'value')
   }
 
-  const insertQueue = await getInsertQueue(client, tsCtx, op.id, tsCtx.field)
+  // TODO: handle insertQueue with a separate SQL query in the runSelect function -- it breaks sorting currently and doesn't work like this multi-shard
+  // const insertQueue = await getInsertQueue(client, tsCtx, op.id, tsCtx.field)
+  // if (insertQueue.length > 0) {
+  //   const insertQueueSqlValues = insertQueue.map((e) => {
+  //     if (['object', 'record'].includes(e.context.fieldSchema.type)) {
+  //       return `(to_timestamp(${e.context.ts} / 1000.0), '${JSON.stringify(
+  //         e.context.payload
+  //       )}'::jsonb)`
+  //     } else if (e.context.fieldSchema.type === 'string') {
+  //       return `(to_timestamp(${e.context.ts} / 1000.0), '${e.context.payload}')`
+  //     } else {
+  //       return `(to_timestamp(${e.context.ts} / 1000.0), ${e.context.payload})`
+  //     }
+  //   })
 
-  if (insertQueue.length > 0) {
-    const insertQueueSqlValues = insertQueue.map((e) => {
-      if (['object', 'record'].includes(e.context.fieldSchema.type)) {
-        return `(to_timestamp(${e.context.ts} / 1000.0), '${JSON.stringify(
-          e.context.payload
-        )}'::jsonb)`
-      } else if (e.context.fieldSchema.type === 'string') {
-        return `(to_timestamp(${e.context.ts} / 1000.0), '${e.context.payload}')`
-      } else {
-        return `(to_timestamp(${e.context.ts} / 1000.0), ${e.context.payload})`
-      }
-    })
+  //   let qSql = sq
+  //     .select({
+  //       autoQuoteTableNames: false,
+  //       autoQuoteAliasNames: true,
+  //       nameQuoteCharacter: '"',
+  //     })
+  //     .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
+  //     .field('ts')
+  //     .where(queryOptions.where)
 
-    let qSql = sq
-      .select({
-        autoQuoteTableNames: false,
-        autoQuoteAliasNames: true,
-        nameQuoteCharacter: '"',
-      })
-      .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
-      .field('ts')
-      .where(queryOptions.where)
+  //   if (['object', 'record'].includes(fieldSchema.type)) {
+  //     qSql = qSql.field('payload')
+  //   } else {
+  //     qSql = qSql.field('payload', 'value')
+  //   }
 
-    if (['object', 'record'].includes(fieldSchema.type)) {
-      qSql = qSql.field('payload')
-    } else {
-      qSql = qSql.field('payload', 'value')
-    }
+  //   qSql = qSql.order('ts', tsCtx.order === 'asc')
 
-    qSql = qSql.order('ts', tsCtx.order === 'asc')
-
-    sql = sql.union_all(qSql)
-  } else {
-    sql = sql.order('ts', tsCtx.order === 'asc')
-  }
+  //   sql = sql.union_all(qSql)
+  // } else {
+  //   sql = sql.order('ts', tsCtx.order === 'asc')
+  // }
+  sql = sql.order('ts', tsCtx.order === 'asc')
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
   console.log('SQL', params, 'tsCtx', tsCtx)
