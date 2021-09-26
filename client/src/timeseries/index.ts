@@ -186,12 +186,25 @@ async function runSelect<T>(
   let offset = tsCtx.offset
   let hasLimit = limit > 0
 
-  const result = await execTimeseries(shards[0].descriptor, tsCtx, client, op, {
-    shard: shards[0].ts,
-    where,
-    limit: limit,
-    offset: offset,
-  })
+  let i = 0
+
+  let result: QueryResult<T>
+  if (tsCtx.order === 'desc') {
+    result = await queryInsertQueue(shards[0].descriptor, tsCtx, client, op, {
+      shard: shards[0].ts,
+      where,
+      limit: limit,
+      offset: offset,
+    })
+  } else {
+    i = 1
+    result = await execTimeseries(shards[0].descriptor, tsCtx, client, op, {
+      shard: shards[0].ts,
+      where,
+      limit: limit,
+      offset: offset,
+    })
+  }
 
   if (!result.rows.length) {
     // TODO: do count to handle offset ugh
@@ -201,37 +214,54 @@ async function runSelect<T>(
 
   limit -= result.rows.length
 
-  for (let i = 1; i < shards.length; i++) {
-    const shard = shards[i]
+  for (; i < shards.length; i++) {
+    const { ts, descriptor } = shards[i]
 
-    const res = await execTimeseries(shards[0].descriptor, tsCtx, client, op, {
-      shard: shard.ts,
+    const res = await execTimeseries(descriptor, tsCtx, client, op, {
+      shard: ts,
       where,
       limit: limit,
       offset: offset,
     })
 
-    if (!res.rows.length) {
-      // TODO: do count to handle offset ugh
-      continue
-    }
+    for (const row of res.rows) {
+      result.rows.push(row)
+      limit--
 
-    offset = 0
-    limit -= res.rows.length
+      if (hasLimit && limit <= 0) {
+        break
+      }
+    }
+  }
+
+  if (tsCtx.order === 'asc' && i >= shards.length) {
+    const res = await queryInsertQueue(
+      shards[0].descriptor,
+      tsCtx,
+      client,
+      op,
+      {
+        shard: shards[0].ts,
+        where,
+        limit: limit,
+        offset: offset,
+      }
+    )
 
     for (const row of res.rows) {
       result.rows.push(row)
-    }
+      limit--
 
-    if (hasLimit && limit <= 0) {
-      continue
+      if (hasLimit && limit <= 0) {
+        break
+      }
     }
   }
 
   return result
 }
 
-async function queryInsertQueue(
+async function queryInsertQueue<T>(
   pgDescriptor: string | ServerDescriptor,
   tsCtx: TimeseriesContext,
   client: SelvaClient,
@@ -281,7 +311,7 @@ async function queryInsertQueue(
   const params = sql.toParam({ numberedParametersStartAt: 1 })
   console.log('SQL', params, 'tsCtx', tsCtx)
 
-  const result: QueryResult<any> = await client.pg.pg.execute(
+  const result: QueryResult<T> = await client.pg.pg.execute(
     pgDescriptor,
     params.text,
     params.values
