@@ -480,7 +480,7 @@ export class TimeseriesClient {
       this.client,
       op,
       {
-        shard: 0,
+        shard: shards[0].ts,
         where,
         limit: op.options.limit,
         offset: op.options.offset,
