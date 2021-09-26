@@ -191,6 +191,10 @@ async function execTimeseries(
   tsCtx: TimeseriesContext,
   client: SelvaClient,
   op: GetOperationFind | GetOperationAggregate,
+  queryOptions: {
+    limit: number
+    offset: number
+  },
   filterExpr: squel.Expression,
   shard: number,
   pgDescriptor: string | ServerDescriptor
@@ -207,8 +211,8 @@ async function execTimeseries(
     .field('ts')
     .where('"nodeId" = ?', op.id)
     .where(filterExpr)
-    .limit(op.options.limit === -1 ? null : op.options.limit)
-    .offset(op.options.offset === 0 ? null : op.options.offset)
+    .limit(queryOptions.limit === -1 ? null : queryOptions.limit)
+    .offset(queryOptions.offset === 0 ? null : queryOptions.offset)
 
   const fields: Set<string> = new Set()
   let isObj = false
@@ -265,29 +269,11 @@ async function execTimeseries(
       qSql = qSql.field('payload', 'value')
     }
 
-    qSql = qSql.order(
-      // TODO
-      // isObj
-      //   ? op.options?.sort?.$field || 'ts'
-      //   : op.options?.sort?.$field
-      //   ? 'payload'
-      //   : 'ts',
-      'ts',
-      tsCtx.order === 'asc'
-    )
+    qSql = qSql.order('ts', tsCtx.order === 'asc')
 
     sql = sql.union_all(qSql)
   } else {
-    sql = sql.order(
-      // TODO
-      // isObj
-      //   ? op.options?.sort?.$field || 'ts'
-      //   : op.options?.sort?.$field
-      //   ? 'payload'
-      //   : 'ts',
-      'ts',
-      tsCtx.order === 'asc'
-    )
+    sql = sql.order('ts', tsCtx.order === 'asc')
   }
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
@@ -415,6 +401,10 @@ export class TimeseriesClient {
       selector,
       this.client,
       op,
+      {
+        limit: op.options.limit,
+        offset: op.options.offset,
+      },
       where,
       0,
       shards[0].descriptor
