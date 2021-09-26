@@ -387,6 +387,11 @@ export class TimeseriesClient {
   private selectShards(
     selector: TimeseriesContext
   ): { ts: number; descriptor: ServerDescriptor }[] {
+    // if we have a startTime, start iterating from beginning to find the shard to start
+    // if we have an endTime, keep iterating till you go over
+    //
+    // if we only have endTime then iterate from the end to find where to end
+
     const tsName = `${selector.nodeType}$${selector.field}`
     const shards = this.tsCache.index[tsName]
     if (!shards || !shards[0]) {
@@ -422,6 +427,8 @@ export class TimeseriesClient {
           if (shard.ts > selector.endTime) {
             break
           }
+
+          endIdx = i
         }
       }
 
@@ -436,12 +443,26 @@ export class TimeseriesClient {
       return shardList
     }
 
-    // if we have a startTime, start iterating from beginning to find the shard to start
-    // if we have an endTime, keep iterating till you go over
-    //
-    // if we only have endTime then iterate from the end to find where to end
+    if (selector.endTime) {
+      let endIdx = shardList.length - 1
 
-    return [{ ts: 0, descriptor: shards[0].descriptor }]
+      for (let i = shardList.length - 1; i >= 0; i--) {
+        const shard = shardList[i]
+        if (selector.endTime > shard.ts) {
+          break
+        }
+
+        endIdx = i
+      }
+
+      shardList = shardList.slice(0, endIdx + 1)
+    }
+
+    if (selector.order === 'desc') {
+      shardList.reverse()
+    }
+
+    return shardList
   }
 
   // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
