@@ -384,11 +384,9 @@ export class TimeseriesClient {
     return this.pg.execute(pgInstance, query, params)
   }
 
-  // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
-  public async select<T>(
-    selector: TimeseriesContext,
-    op: GetOperationFind | GetOperationAggregate
-  ): Promise<QueryResult<T>> {
+  private selectShards(
+    selector: TimeseriesContext
+  ): { ts: number; descriptor: ServerDescriptor }[] {
     const tsName = `${selector.nodeType}$${selector.field}`
     const shards = this.tsCache.index[tsName]
     if (!shards || !shards[0]) {
@@ -396,6 +394,19 @@ export class TimeseriesClient {
       throw new Error(`SELECT: Timeseries ${tsName} does not exist`)
     }
 
+    const shardKeys = Object.keys(shards)
+      .map((k) => Number(k))
+      .sort((a, b) => a - b)
+
+    return [{ ts: 0, descriptor: shards[0].descriptor }]
+  }
+
+  // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
+  public async select<T>(
+    selector: TimeseriesContext,
+    op: GetOperationFind | GetOperationAggregate
+  ): Promise<QueryResult<T>> {
+    const shards = this.selectShards(selector)
     const where = toExpr(selector, selector.fieldSchema, op.filter)
 
     // apply context defaults for limiting result set size
