@@ -400,7 +400,6 @@ export class TimeseriesClient {
     selector: TimeseriesContext,
     op: GetOperationFind | GetOperationAggregate
   ): Promise<QueryResult<T>> {
-    // TODO: real logic for selecting shard
     const tsName = `${selector.nodeType}$${selector.field}`
     const shards = this.tsCache.index[tsName]
     if (!shards || !shards[0]) {
@@ -409,6 +408,8 @@ export class TimeseriesClient {
     }
 
     const where = toExpr(selector, selector.fieldSchema, op.filter) // pass this to exec func
+
+    // TODO: real logic for selecting shard
     const { result, fields } = await execTimeseries(
       selector,
       this.client,
@@ -417,6 +418,10 @@ export class TimeseriesClient {
       0
     )
 
+    // TODO: combine resuls of several shards
+    // remember when running on several shards that limit/offset parameters need to be
+    // adjusted by shard (only first shard as them, or adjust on amount of rows returned
+    // always query shards in order based on order options (asc/desc)
     return result.rows.map((row) => {
       if (fields.size) {
         const r = {}
