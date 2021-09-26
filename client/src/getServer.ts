@@ -15,9 +15,9 @@ const getServer = (
   } else {
     let { type, name } = selector
     if (!selvaClient.registryConnection) {
-      console.info(
-        'registry connection not created, add once listener on selvaClient.connect (means registry is connected) '
-      )
+      // console.log(
+      //   'registry connection not created, add once listener on selvaClient.connect (means registry is connected) '
+      // )
       selvaClient.addServerUpdateListeners.push(() =>
         getServer(selvaClient, cb, selector, selectionOptions)
       )

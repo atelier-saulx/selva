@@ -27,7 +27,7 @@ async function cleanUpOldBackups(
 
   await Promise.all(
     oldBackups.map((object) => {
-      console.log(`Deleting object ${object.Key}`)
+      // console.log(`Deleting object ${object.Key}`)
       // return s3.deleteObject(bucketName, object.Key)
     })
   )
