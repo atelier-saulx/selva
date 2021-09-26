@@ -183,7 +183,8 @@ async function runSelect<T>(
   where: squel.Expression
 ): Promise<QueryResult<T>> {
   let limit = tsCtx.limit
-  let offset = tsCtx.offset
+  // TODO: offset
+  // let offset = tsCtx.offset
   let hasLimit = limit > 0
 
   let i = 0
@@ -194,7 +195,7 @@ async function runSelect<T>(
       shard: shards[0].ts,
       where,
       limit: limit,
-      offset: offset,
+      offset: 0,
     })
   } else {
     i = 1
@@ -202,17 +203,16 @@ async function runSelect<T>(
       shard: shards[0].ts,
       where,
       limit: limit,
-      offset: offset,
+      offset: 0,
     })
   }
 
-  if (!result.rows.length) {
-    // TODO: do count to handle offset ugh
-  } else {
-    offset = 0
-  }
-
   limit -= result.rows.length
+
+  if (limit < 0) {
+    result.rows = result.rows.slice(0, limit)
+    return result
+  }
 
   for (; i < shards.length; i++) {
     const { ts, descriptor } = shards[i]
@@ -221,7 +221,7 @@ async function runSelect<T>(
       shard: ts,
       where,
       limit: limit,
-      offset: offset,
+      offset: 0,
     })
 
     for (const row of res.rows) {
@@ -244,7 +244,7 @@ async function runSelect<T>(
         shard: shards[0].ts,
         where,
         limit: limit,
-        offset: offset,
+        offset: 0,
       }
     )
 
