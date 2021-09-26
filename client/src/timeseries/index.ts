@@ -5,7 +5,7 @@ import { PG } from '../connection/pg/client'
 
 import { convertNow, isFork } from '@saulx/selva-query-ast-parser'
 import squel from 'squel'
-import { SelvaClient } from '..'
+import { SelvaClient, ServerDescriptor } from '..'
 import {
   FilterAST,
   Fork,
@@ -192,7 +192,8 @@ async function execTimeseries(
   client: SelvaClient,
   op: GetOperationFind | GetOperationAggregate,
   filterExpr: squel.Expression,
-  shard: number
+  shard: number,
+  pgDescriptor: string | ServerDescriptor
 ): Promise<any> {
   const { fieldSchema, nodeType } = tsCtx
 
@@ -292,8 +293,8 @@ async function execTimeseries(
   const params = sql.toParam({ numberedParametersStartAt: 1 })
   console.log('SQL', params, 'SELECTOR', tsCtx)
 
-  const result: QueryResult<any> = await client.pg.execute(
-    `${nodeType}$${tsCtx.field}$${shard}`,
+  const result: QueryResult<any> = await client.pg.pg.execute(
+    pgDescriptor,
     params.text,
     params.values
   )
@@ -415,7 +416,8 @@ export class TimeseriesClient {
       this.client,
       op,
       where,
-      0
+      0,
+      shards[0].descriptor
     )
 
     // TODO: combine resuls of several shards
