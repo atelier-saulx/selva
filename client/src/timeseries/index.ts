@@ -188,16 +188,16 @@ async function getInsertQueue(
 }
 
 async function execTimeseries(
+  pgDescriptor: string | ServerDescriptor,
   tsCtx: TimeseriesContext,
   client: SelvaClient,
   op: GetOperationFind | GetOperationAggregate,
   queryOptions: {
+    where: squel.Expression
+    shard: number | string
     limit: number
     offset: number
-  },
-  filterExpr: squel.Expression,
-  shard: number,
-  pgDescriptor: string | ServerDescriptor
+  }
 ): Promise<any> {
   const { fieldSchema, nodeType } = tsCtx
 
@@ -210,7 +210,7 @@ async function execTimeseries(
     .from(`${nodeType}$${op.sourceField}$0`)
     .field('ts')
     .where('"nodeId" = ?', op.id)
-    .where(filterExpr)
+    .where(queryOptions.where)
     .limit(queryOptions.limit === -1 ? null : queryOptions.limit)
     .offset(queryOptions.offset === 0 ? null : queryOptions.offset)
 
@@ -261,7 +261,7 @@ async function execTimeseries(
       })
       .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
       .field('ts')
-      .where(filterExpr)
+      .where(queryOptions.where)
 
     if (['object', 'record'].includes(fieldSchema.type)) {
       qSql = qSql.field('payload')
@@ -349,7 +349,7 @@ export class TimeseriesClient {
   }
 
   public async execute<T>(
-    selector: string, // nodeType$field$shard
+    selector: string,
     query: string,
     params: unknown[]
   ): Promise<QueryResult<T>> {
@@ -398,16 +398,16 @@ export class TimeseriesClient {
 
     // TODO: real logic for selecting shard
     const { result, fields } = await execTimeseries(
+      shards[0].descriptor,
       selector,
       this.client,
       op,
       {
+        shard: 0,
+        where,
         limit: op.options.limit,
         offset: op.options.offset,
-      },
-      where,
-      0,
-      shards[0].descriptor
+      }
     )
 
     // TODO: combine resuls of several shards
