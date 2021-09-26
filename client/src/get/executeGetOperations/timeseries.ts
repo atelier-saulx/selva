@@ -50,6 +50,8 @@ export default async function execTimeseries(
     field: <string>op.sourceField,
     fieldSchema,
     order: op.options?.sort?.$order || 'asc',
+    limit: op.options.limit || -1,
+    offset: op.options.offset || 0,
   }
 
   return client.pg.select(exprCtx, op)

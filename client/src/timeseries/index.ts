@@ -39,6 +39,8 @@ export type TimeseriesContext = {
   offset?: number
 }
 
+const DEFAULT_QUERY_LIMIT = 500
+
 const sq = squel.useFlavour('postgres')
 
 function filterToExpr(
@@ -395,6 +397,11 @@ export class TimeseriesClient {
     }
 
     const where = toExpr(selector, selector.fieldSchema, op.filter)
+
+    // apply context defaults for limiting result set size
+    if (!selector.startTime && !selector.endTime && selector.limit === -1) {
+      selector.limit = DEFAULT_QUERY_LIMIT
+    }
 
     // TODO: real logic for selecting shard
     const { result, fields } = await execTimeseries(
