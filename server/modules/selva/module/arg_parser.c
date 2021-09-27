@@ -239,8 +239,6 @@ int SelvaArgsParser_StringSetList(
     } else if (excluded_out) {
         *excluded_out = NULL;
         RedisModule_FreeString(ctx, excl);
-    } else {
-        RedisModule_FreeString(ctx, excl);
     }
     return 0;
 fail:
