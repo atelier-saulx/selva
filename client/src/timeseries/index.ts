@@ -513,12 +513,10 @@ export class TimeseriesClient {
     `
     console.log(`running: ${createTable}`)
     const pg = this.client.pg.getMinInstance()
-    await pg.execute<void>(createTable, [])
 
     const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${tableName}_node_id_idx" ON "${tableName}" ("nodeId");`
 
     console.log(`running: ${createNodeIdIndex}`)
-    await pg.execute<void>(createNodeIdIndex, [])
 
     const { meta: current } = this.client.pg.tsCache.instances[pg.id]
     const stats = {
@@ -545,6 +543,9 @@ export class TimeseriesClient {
         data: { stats },
       })
     )
+
+    await pg.execute<void>(createTable, [])
+    await pg.execute<void>(createNodeIdIndex, [])
   }
 
   private async insertShard(
