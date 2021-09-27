@@ -592,11 +592,6 @@ export class TimeseriesClient {
   }
 
   private selectShards(tsCtx: TimeseriesContext): Shard[] {
-    // if we have a startTime, start iterating from beginning to find the shard to start
-    // if we have an endTime, keep iterating till you go over
-    //
-    // if we only have endTime then iterate from the end to find where to end
-
     let shards = this.getShards(tsCtx)
 
     if (tsCtx.startTime) {
@@ -626,13 +621,6 @@ export class TimeseriesClient {
       }
 
       shards = shards.slice(startIdx, endIdx + 1)
-      // FIXME: ?
-      // if (tsCtx.order === 'desc') {
-      //   shards.reverse()
-      // } else {
-      //   // timestamp between two values makes sense in default ascending order
-      //   tsCtx.order = 'asc'
-      // }
     } else if (tsCtx.endTime) {
       let endIdx = shards.length - 1
 
@@ -655,7 +643,6 @@ export class TimeseriesClient {
     return shards
   }
 
-  // TODO: the query here needs to be a higher level consruct than SQL, because we need to adjust query contents based on shard targeted
   public async select<T>(
     tsCtx: TimeseriesContext,
     op: GetOperationFind | GetOperationAggregate

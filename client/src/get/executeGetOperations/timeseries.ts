@@ -95,15 +95,16 @@ export default async function execTimeseries(
 
   const result: any = await client.pg.select(exprCtx, op)
   return result.rows.map((row) => {
+    // TODO: get rid of this in query generation
     if (fields.size) {
       const r = {}
       for (const f of fields) {
         setNestedResult(r, f, getNestedField(row, `payload.${f}`))
       }
 
-      return r
+      return { ts: new Date(row.ts).getTime(), value: r }
     }
 
-    return row.value
+    return { ts: new Date(row.ts).getTime(), value: row.value }
   })
 }
