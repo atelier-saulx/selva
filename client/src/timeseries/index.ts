@@ -547,21 +547,31 @@ export class TimeseriesClient {
     )
   }
 
-  private async insertShard(tsCtx: TimeseriesContext): Promise<Shard> {
+  private async insertShard(
+    tsCtx: TimeseriesContext,
+    ts: number
+  ): Promise<Shard> {
     const shards = this.getShards(tsCtx)
     if (!shards.length) {
       await this.ensureTableExists(tsCtx)
-      return this.insertShard(tsCtx)
+      return this.insertShard(tsCtx, ts)
     }
 
-    return shards[shards.length - 1]
+    let i = shards.length - 1
+    for (; i >= 0; i--) {
+      if (ts > shards[i].ts) {
+        break
+      }
+    }
+
+    return shards[i]
   }
 
   public async insert<T>(
     tsCtx: TimeseriesContext,
     entry: { nodeId: string; ts: number; payload: any }
   ): Promise<QueryResult<T>> {
-    const shard = await this.insertShard(tsCtx)
+    const shard = await this.insertShard(tsCtx, entry.ts)
     const tableName = `${tsCtx.nodeType}$${tsCtx.field}$${shard.ts}`
 
     const { nodeId, ts, payload } = entry
