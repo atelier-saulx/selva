@@ -327,7 +327,6 @@ async function queryInsertQueue<T>(
   sql = sql.order('ts', tsCtx.order === 'asc')
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
-  console.log('SQL', params, 'tsCtx', tsCtx)
 
   const result: QueryResult<T> = await client.pg.pg.execute(
     pgDescriptor,
@@ -544,22 +543,22 @@ export class TimeseriesClient {
 
   public async insert<T>(
     tsCtx: TimeseriesContext,
-    query: string,
-    params: unknown[]
+    entry: { nodeId: string; ts: number; payload: any }
   ): Promise<QueryResult<T>> {
     const shards = this.getShards(tsCtx)
     if (!shards.length) {
       await this.ensureTableExists(tsCtx)
-      return this.insert(tsCtx, query, params)
+      return this.insert(tsCtx, entry)
     }
 
     const shard = shards[shards.length - 1]
-    const tableName = `"${tsCtx.nodeType}$${tsCtx.field}$${shard.ts}"`
+    const tableName = `${tsCtx.nodeType}$${tsCtx.field}$${shard.ts}`
 
+    const { nodeId, ts, payload } = entry
     return this.pg.execute(
       shard.descriptor,
-      query.replace('$table_name', tableName),
-      params
+      `INSERT INTO "${tableName}" ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
+      [nodeId, payload, new Date(ts), tsCtx.fieldSchema]
     )
   }
 

@@ -51,6 +51,7 @@ class PGConnection {
     query: string,
     params: unknown[]
   ): Promise<QueryResult<T>> {
+    console.log('SQL', query, params)
     const client = this.getClient(selector)
     return client.execute(query, params)
   }

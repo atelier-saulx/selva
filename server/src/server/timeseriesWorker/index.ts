@@ -35,11 +35,15 @@ export class TimeseriesWorker {
       )
       if (row) {
         console.log(row)
-        const obj = JSON.parse(row)
+        const obj: {
+          type: string
+          context: TimeSeriesInsertContext
+        } = JSON.parse(row)
         const { type, context } = obj
 
         if (type === 'insert') {
-          await this.insertToTimeSeriesDB(context)
+          console.log(`Inserting data, postgres at ${this.connectionString}`)
+          await this.client.pg.insert<void>(context, context)
         } else {
           console.error(`Unknown schema event ${type} for ${row}`)
         }
@@ -49,22 +53,6 @@ export class TimeseriesWorker {
       //nop
     }
     setTimeout(this.tick.bind(this), 1000)
-  }
-
-  async insertToTimeSeriesDB(context: TimeSeriesInsertContext) {
-    console.log(`Inserting data, postgres at ${this.connectionString}`)
-
-    // TODO: no need to send boring query like this
-    await this.client.pg.insert<void>(
-      context,
-      `INSERT INTO $table_name ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
-      [
-        context.nodeId,
-        context.payload,
-        new Date(context.ts),
-        context.fieldSchema,
-      ]
-    )
   }
 
   async destroy() {
