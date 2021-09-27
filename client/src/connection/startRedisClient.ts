@@ -1,6 +1,6 @@
-import { Connection, connections } from '.'
+import { Connection } from '.'
 import { RedisClient } from 'redis'
-import { SERVER_HEARTBEAT, LOG } from '../constants'
+import { SERVER_HEARTBEAT } from '../constants'
 import './redisClientExtensions'
 import chalk from 'chalk'
 import { SelvaClient } from '..'

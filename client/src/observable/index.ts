@@ -443,8 +443,6 @@ export class Observable {
       { subscription: channel }
     )
 
-    //  if (!this.connection) {
-
     const connection = (this.connection = createConnection(server))
     const id = this.selvaId
 

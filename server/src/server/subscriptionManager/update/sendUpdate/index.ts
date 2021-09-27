@@ -3,11 +3,11 @@ import { hashObjectIgnoreKeyOrder } from '@saulx/hash'
 import { Subscription, SubscriptionManager } from '../../types'
 import { wait } from '../../../../util'
 import diff from '@saulx/diff'
-import { gzip as zipCb } from 'zlib'
-import { promisify } from 'util'
+// import { gzip as zipCb } from 'zlib'
+// import { promisify } from 'util'
 import chalk from 'chalk'
 import { removeRefreshMeta, addRefreshMeta } from '../../updateRefresh'
-const gzip = promisify(zipCb)
+// const gzip = promisify(zipCb)
 
 const { CACHE } = constants
 
@@ -83,7 +83,7 @@ const sendUpdate = async (
     if (t > 300) {
       console.log('\n----------------------------------------------------')
       console.log('Get subscription took', t, 'ms')
-      console.dir(getOptions, { depth: 2 })
+      console.dir(getOptions, { depth: 4 })
       console.log('----------------------------------------------------')
     }
   } catch (err) {
