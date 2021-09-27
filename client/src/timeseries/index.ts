@@ -14,7 +14,11 @@ import {
   GetOperationFind,
 } from '../get/types'
 
-export type Shard = { ts: number; descriptor: ServerDescriptor }
+export type Shard = {
+  ts: number
+  descriptor: ServerDescriptor
+  size: { relationSizeBytes: number; tableSizeBytes: number }
+}
 
 export type TimeseriesContext = {
   nodeType: string
@@ -482,7 +486,11 @@ export class TimeseriesClient {
       .map((k) => Number(k))
       .sort((a, b) => a - b)
       .map((ts) => {
-        return { ts, descriptor: shards[ts].descriptor }
+        return {
+          ts,
+          descriptor: shards[ts].descriptor,
+          size: shards[ts].meta.size,
+        }
       })
 
     return shardList
