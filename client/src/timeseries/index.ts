@@ -325,7 +325,10 @@ async function queryInsertQueue<T>(
     .where(queryOptions.where)
 
   let isObj = false
-  if (['object', 'record'].includes(fieldSchema.type)) {
+  if (
+    tsCtx?.selectFields?.size &&
+    ['object', 'record'].includes(fieldSchema.type)
+  ) {
     isObj = true
     for (const f of tsCtx.selectFields) {
       const split = f.split('.')
@@ -378,7 +381,10 @@ async function execTimeseries(
     .offset(queryOptions.offset <= 0 ? null : queryOptions.offset)
 
   let isObj = false
-  if (['object', 'record'].includes(fieldSchema.type)) {
+  if (
+    tsCtx?.selectFields?.size &&
+    ['object', 'record'].includes(fieldSchema.type)
+  ) {
     isObj = true
     for (const f of tsCtx.selectFields) {
       const split = f.split('.')
