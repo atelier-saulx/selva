@@ -569,7 +569,7 @@ export class TimeseriesClient {
       shards[i].size.relationSizeBytes > MAX_SHARD_SIZE_BYTES
     ) {
       // the new shard becomes valid in 2 minutes
-      this.ensureTableExists(tsCtx, Date.now() + 2 * 60 * 1e3)
+      await this.ensureTableExists(tsCtx, Date.now() + 2 * 60 * 1e3)
     }
 
     return shards[i]
