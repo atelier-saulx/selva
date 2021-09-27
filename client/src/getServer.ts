@@ -10,6 +10,7 @@ const getServer = (
   selectionOptions?: ServerSelectOptions // channel for subscriptions
 ): void => {
   if (selector.host && selector.port) {
+    //  eslint-disable-next-line
     cb({ ...selector, host: selector.host, port: selector.port })
   } else {
     let { type, name } = selector
