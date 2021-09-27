@@ -404,18 +404,6 @@ test.serial('get - basic value types timeseries', async (t) => {
             $list: {
               $find: {
                 $traverse: 'image',
-                $filter: [
-                  {
-                    $field: 'thumb',
-                    $operator: '=',
-                    $value: ['lol', 'lol 2'],
-                  },
-                  {
-                    $field: 'pixels',
-                    $operator: '>',
-                    $value: '1024',
-                  },
-                ],
               },
             },
           },
