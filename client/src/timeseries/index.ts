@@ -56,7 +56,7 @@ export const SELVA_TO_SQL_TYPE = {
 }
 
 // const MAX_SHARD_SIZE_BYTES = 1e9 // 1 GB
-const MAX_SHARD_SIZE_BYTES = 1
+const MAX_SHARD_SIZE_BYTES = -1
 
 const mkNewShard = () => {
   return Date.now() + 2 * 60 * 1e3 // 2 minutes in the future
@@ -562,6 +562,14 @@ export class TimeseriesClient {
       if (ts > shards[i].ts) {
         break
       }
+    }
+
+    if (
+      i === shards.length - 1 &&
+      shards[i].size.relationSizeBytes > MAX_SHARD_SIZE_BYTES
+    ) {
+      // the new shard becomes valid in 2 minutes
+      this.ensureTableExists(tsCtx, Date.now() + 2 * 60 * 1e3)
     }
 
     return shards[i]
