@@ -315,9 +315,14 @@ export class Observable {
                 // need more info why this happens all the time
                 console.error(
                   'Mismatching versions from diff!',
+                  'Current Observable version',
                   this.version,
+                  'Patch from version from sub cache',
                   fromVersion,
+                  'Received from event',
                   versions,
+                  'Current version on sub manager cache',
+                  version,
                   JSON.stringify(this.getOptions, null, 2)
                 )
                 this.getValue()
