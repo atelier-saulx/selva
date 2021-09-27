@@ -78,33 +78,23 @@ export default async function execTimeseries(
   if (['object', 'record'].includes(fieldSchema.type)) {
     getFields('', fields, op.props)
     exprCtx.selectFields = fields
-    // TODO: goddamn json syntax
-    // for (const f of fields) {
-    // const split = f.split('.').map((part) => "'" + part + "'")
-    // let fieldStr = 'payload->'
-    // for (let i = 0; i < split.length - 1; i++) {
-    //   fieldStr += split[i] + '-> '
-    // }
-    // fieldStr + '->>' + split[split.length - 1]
-    // sql = sql
-    //   .field(fieldStr, f, {
-    //     ignorePeriodsForFieldNameQuotes: true,
-    //   })
-    // }
   }
 
   const result: any = await client.pg.select(exprCtx, op)
   return result.rows.map((row) => {
-    // TODO: get rid of this in query generation
     if (fields.size) {
-      const r = {}
-      for (const f of fields) {
-        setNestedResult(r, f, getNestedField(row, `payload.${f}`))
+      const r: any = { value: {} }
+      for (const f in row) {
+        if (f === '_ts') {
+          r.ts = new Date(row._ts).getTime()
+        } else {
+          r.value[f] = row[f]
+        }
       }
 
-      return { ts: new Date(row.ts).getTime(), value: r }
+      return r
     }
 
-    return { ts: new Date(row.ts).getTime(), value: row.value }
+    return { ts: new Date(row._ts).getTime(), value: row.value }
   })
 }

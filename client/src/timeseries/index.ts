@@ -321,13 +321,22 @@ async function queryInsertQueue<T>(
       nameQuoteCharacter: '"',
     })
     .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
-    .field('ts')
+    .field('ts', '_ts')
     .where(queryOptions.where)
+
+  let isObj = false
   if (['object', 'record'].includes(fieldSchema.type)) {
-    sql = sql.field('payload')
+    isObj = true
+    for (const f of tsCtx.selectFields) {
+      const split = f.split('.')
+      const path = split.map((x) => `'${x}'::text`)
+      const eStr = `jsonb_extract_path_text(payload::jsonb, ${path.join(', ')})`
+      sql = sql.field(eStr, f)
+    }
   } else {
     sql = sql.field('payload', 'value')
   }
+
   sql = sql.order('ts', tsCtx.order === 'asc')
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
@@ -362,7 +371,7 @@ async function execTimeseries(
       nameQuoteCharacter: '"',
     })
     .from(`${nodeType}$${op.sourceField}$${queryOptions.shard}`)
-    .field('ts')
+    .field('ts', '_ts')
     .where('"nodeId" = ?', op.id)
     .where(queryOptions.where)
     .limit(queryOptions.limit <= 0 ? null : queryOptions.limit)
@@ -371,21 +380,12 @@ async function execTimeseries(
   let isObj = false
   if (['object', 'record'].includes(fieldSchema.type)) {
     isObj = true
-    // TODO: goddamn json syntax
-    // for (const f of tsCtx.selectFields) {
-    // const split = f.split('.').map((part) => "'" + part + "'")
-    // let fieldStr = 'payload->'
-    // for (let i = 0; i < split.length - 1; i++) {
-    //   fieldStr += split[i] + '-> '
-    // }
-    // fieldStr + '->>' + split[split.length - 1]
-    // sql = sql
-    //   .field(fieldStr, f, {
-    //     ignorePeriodsForFieldNameQuotes: true,
-    //   })
-    // }
-
-    sql = sql.field('payload')
+    for (const f of tsCtx.selectFields) {
+      const split = f.split('.')
+      const path = split.map((x) => `'${x}'::text`)
+      const eStr = `jsonb_extract_path_text(payload::jsonb, ${path.join(', ')})`
+      sql = sql.field(eStr, f)
+    }
   } else {
     sql = sql.field('payload', 'value')
   }
