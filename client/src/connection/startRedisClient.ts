@@ -85,6 +85,9 @@ const startClient = (
       connection.clients.forEach((c) => {
         if (c instanceof SelvaClient) {
           c.emit('reconnect', connection.serverDescriptor)
+        } else {
+          // maybe?
+          c.reconnect(connection.serverDescriptor)
         }
       })
     }
