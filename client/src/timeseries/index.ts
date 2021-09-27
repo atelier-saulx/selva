@@ -55,13 +55,8 @@ export const SELVA_TO_SQL_TYPE = {
   array: 'JSONB',
 }
 
-// const MAX_SHARD_SIZE_BYTES = 1e9 // 1 GB
-const MAX_SHARD_SIZE_BYTES = -1
-
-const mkNewShard = () => {
-  return Date.now() + 2 * 60 * 1e3 // 2 minutes in the future
-}
-
+const MAX_SHARD_SIZE_BYTES = 1e9 // 1 GB
+// const MAX_SHARD_SIZE_BYTES = -1
 const DEFAULT_QUERY_LIMIT = 500
 
 const sq = squel.useFlavour('postgres')

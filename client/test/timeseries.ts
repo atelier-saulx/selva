@@ -414,13 +414,41 @@ test.serial('get - basic value types timeseries', async (t) => {
     )
   )
 
+  let i = 3
   setInterval(async () => {
-    console.log('SERVERS YO', client.servers)
+    await client.set({
+      $id: 'viA',
+      value: 25 + i,
+      image: {
+        thumb: `lol ${i}`,
+      },
+    })
+
     console.log(
-      'HELLO REAL REAL REALTIMESERIES META',
-      JSON.stringify(client.pg.tsCache.index, null, 2),
-      JSON.stringify(client.pg.tsCache.instances, null, 2)
+      'HMMHMM',
+      JSON.stringify(
+        await client.get({
+          $id: 'viA',
+          values: {
+            $field: 'value',
+            $list: { $limit: 5 },
+          },
+          thumbnails2: {
+            $all: true,
+            $list: {
+              $find: {
+                $traverse: 'image',
+              },
+              $limit: 5,
+            },
+          },
+        }),
+        null,
+        2
+      )
     )
+
+    i++
   }, 2e3)
 
   await wait(5000e3)
