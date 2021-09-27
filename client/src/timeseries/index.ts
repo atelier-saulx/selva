@@ -249,7 +249,7 @@ async function runSelect<T>(
 
     for (const row of res.rows) {
       result.rows.push(row)
-      limit--
+      --limit
 
       if (hasLimit && limit <= 0) {
         return result
@@ -273,7 +273,7 @@ async function runSelect<T>(
 
     for (const row of res.rows) {
       result.rows.push(row)
-      limit--
+      --limit
 
       if (hasLimit && limit <= 0) {
         break
