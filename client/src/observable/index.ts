@@ -399,7 +399,7 @@ export class Observable {
   }
 
   public reconnect(x) {
-    console.log('RECONN', x)
+    console.info('RECONN', x)
   }
 
   public async start(selector?: ServerSelector) {

@@ -35,6 +35,7 @@ const startClient = (
 
   const retryStrategy = () => {
     tries++
+
     if (tries > 30) {
       if (!connection.isDestroyed) {
         log(
@@ -71,11 +72,21 @@ const startClient = (
     tries = 0
 
     connection.clientsConnected[type] = true
+
+    // console.info('READY', '------------------------', type)
+
     for (const t in connection.clientsConnected) {
+      // console.info(
+      //   connection.serverDescriptor.type,
+      //   t,
+      //   connection.clientsConnected[t]
+      // )
+
       if (connection.clientsConnected[t] === false) {
         return
       }
     }
+
     connection.connected = true
     clearTimeout(connection.startClientTimer)
     connection.startClientTimer = null
