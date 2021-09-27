@@ -73,6 +73,7 @@ const getServer = (
                     if (s.host === host && s.port === port) {
                       return true
                     }
+                    return false
                   })
                   if (server) {
                     cb(server)
