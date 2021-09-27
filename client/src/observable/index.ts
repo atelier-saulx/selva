@@ -398,10 +398,6 @@ export class Observable {
     this.isMoving = null
   }
 
-  public reconnect(x) {
-    console.info('RECONN', x)
-  }
-
   public async start(selector?: ServerSelector) {
     if (!this.isStarting) {
       // double check if its the same
