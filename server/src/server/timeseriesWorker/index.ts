@@ -1,9 +1,6 @@
 import { ServerOptions } from '../../types'
 import { connect, SelvaClient, constants } from '@saulx/selva'
 
-// const MAX_SHARD_SIZE_BYTES = 1e9 // 1 GB
-const MAX_SHARD_SIZE_BYTES = 1
-
 export type TimeSeriesInsertContext = {
   nodeId: string
   nodeType: string
@@ -11,29 +8,6 @@ export type TimeSeriesInsertContext = {
   fieldSchema: any
   payload: Record<string, unknown>
   ts: number
-}
-
-export const SELVA_TO_SQL_TYPE = {
-  float: 'DOUBLE PRECISION',
-  boolean: 'BOOLEAN',
-  number: 'DOUBLE PRECISION',
-  int: 'integer',
-  string: 'text',
-  text: 'jsonb', // because of localization
-  json: 'jsonb',
-  id: 'text',
-  digest: 'text',
-  url: 'text',
-  email: 'text',
-  phone: 'text',
-  geo: 'jsonb',
-  type: 'text',
-  timestamp: 'TIMESTAMP',
-  reference: 'test',
-  references: 'JSONB',
-  object: 'JSONB',
-  record: 'JSONB',
-  array: 'JSONB',
 }
 
 export class TimeseriesWorker {
@@ -77,64 +51,10 @@ export class TimeseriesWorker {
     setTimeout(this.tick.bind(this), 1000)
   }
 
-  async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {
-    if (this.client.pg.hasTimeseries(context)) {
-      console.log('ALREADY EXISTS', context)
-      return
-    }
-
-    const tsName = `${context.nodeType}$${context.field}`
-    const tableName = `${tsName}$0`
-
-    const createTable = `
-    CREATE TABLE IF NOT EXISTS "${tableName}" (
-      "nodeId" text,
-      payload ${SELVA_TO_SQL_TYPE[context.fieldSchema.type]},
-      ts TIMESTAMP,
-      "fieldSchema" jsonb
-    );
-    `
-    console.log(`running: ${createTable}`)
-    const pg = this.client.pg.getMinInstance()
-    await pg.execute<void>(createTable, [])
-
-    const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${tableName}_node_id_idx" ON "${tableName}" ("nodeId");`
-
-    console.log(`running: ${createNodeIdIndex}`)
-    await pg.execute<void>(createNodeIdIndex, [])
-
-    const { meta: current } = this.client.pg.tsCache.instances[pg.id]
-    const stats = {
-      cpu: current.cpu,
-      memory: current.memory,
-      timestamp: Date.now(),
-      tableMeta: {
-        [tableName]: {
-          tableName,
-          tableSizeBytes: 0,
-          relationSizeBytes: 0,
-        },
-      },
-    }
-
-    this.client.pg.tsCache.updateIndexByInstance(pg.id, { stats })
-    this.client.redis.publish(
-      { type: 'timeseriesRegistry' },
-      constants.TS_REGISTRY_UPDATE,
-      JSON.stringify({
-        event: 'new_shard',
-        ts: Date.now(),
-        id: pg.id,
-        data: { stats },
-      })
-    )
-  }
-
   async insertToTimeSeriesDB(context: TimeSeriesInsertContext) {
     console.log(`Inserting data, postgres at ${this.connectionString}`)
 
-    await this.ensureTableExists(context)
-
+    // TODO: no need to send boring query like this
     await this.client.pg.insert<void>(
       context,
       `INSERT INTO $table_name ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,

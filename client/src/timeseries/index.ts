@@ -6,13 +6,15 @@ import { PG } from '../connection/pg/client'
 import { FieldSchema } from '../schema/types'
 import { convertNow, isFork } from '@saulx/selva-query-ast-parser'
 import squel from 'squel'
-import { SelvaClient, ServerDescriptor } from '..'
+import { constants, SelvaClient, ServerDescriptor } from '..'
 import {
   FilterAST,
   Fork,
   GetOperationAggregate,
   GetOperationFind,
 } from '../get/types'
+
+export type Shard = { ts: number; descriptor: ServerDescriptor }
 
 export type TimeseriesContext = {
   nodeType: string
@@ -24,6 +26,36 @@ export type TimeseriesContext = {
   order?: 'asc' | 'desc'
   limit?: number
   offset?: number
+}
+
+export const SELVA_TO_SQL_TYPE = {
+  float: 'DOUBLE PRECISION',
+  boolean: 'BOOLEAN',
+  number: 'DOUBLE PRECISION',
+  int: 'integer',
+  string: 'text',
+  text: 'jsonb', // because of localization
+  json: 'jsonb',
+  id: 'text',
+  digest: 'text',
+  url: 'text',
+  email: 'text',
+  phone: 'text',
+  geo: 'jsonb',
+  type: 'text',
+  timestamp: 'TIMESTAMP',
+  reference: 'test',
+  references: 'JSONB',
+  object: 'JSONB',
+  record: 'JSONB',
+  array: 'JSONB',
+}
+
+// const MAX_SHARD_SIZE_BYTES = 1e9 // 1 GB
+const MAX_SHARD_SIZE_BYTES = 1
+
+const mkNewShard = () => {
+  return Date.now() + 2 * 60 * 1e3 // 2 minutes in the future
 }
 
 const DEFAULT_QUERY_LIMIT = 500
@@ -163,7 +195,7 @@ async function getInsertQueue(
 
 async function runSelect<T>(
   tsCtx: TimeseriesContext,
-  shards: { ts: number; descriptor: ServerDescriptor }[],
+  shards: Shard[],
   client: SelvaClient,
   op: GetOperationFind | GetOperationAggregate,
   where: squel.Expression
@@ -440,11 +472,11 @@ export class TimeseriesClient {
     return this.pg.execute(descriptor, query, params)
   }
 
-  private getShards(tsCtx: TimeseriesContext) {
+  private getShards(tsCtx: TimeseriesContext): Shard[] {
     const tsName = `${tsCtx.nodeType}$${tsCtx.field}`
     const shards = this.tsCache.index[tsName]
     if (!shards || !shards[0]) {
-      throw new Error(`Timeseries ${tsName} does not exist`)
+      return []
     }
 
     let shardList = Object.keys(shards)
@@ -457,12 +489,69 @@ export class TimeseriesClient {
     return shardList
   }
 
+  async ensureTableExists(context: TimeseriesContext): Promise<void> {
+    if (this.client.pg.hasTimeseries(context)) {
+      console.log('ALREADY EXISTS', context)
+      return
+    }
+
+    const tsName = `${context.nodeType}$${context.field}`
+    const tableName = `${tsName}$0`
+
+    const createTable = `
+    CREATE TABLE IF NOT EXISTS "${tableName}" (
+      "nodeId" text,
+      payload ${SELVA_TO_SQL_TYPE[context.fieldSchema.type]},
+      ts TIMESTAMP,
+      "fieldSchema" jsonb
+    );
+    `
+    console.log(`running: ${createTable}`)
+    const pg = this.client.pg.getMinInstance()
+    await pg.execute<void>(createTable, [])
+
+    const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${tableName}_node_id_idx" ON "${tableName}" ("nodeId");`
+
+    console.log(`running: ${createNodeIdIndex}`)
+    await pg.execute<void>(createNodeIdIndex, [])
+
+    const { meta: current } = this.client.pg.tsCache.instances[pg.id]
+    const stats = {
+      cpu: current.cpu,
+      memory: current.memory,
+      timestamp: Date.now(),
+      tableMeta: {
+        [tableName]: {
+          tableName,
+          tableSizeBytes: 0,
+          relationSizeBytes: 0,
+        },
+      },
+    }
+
+    this.client.pg.tsCache.updateIndexByInstance(pg.id, { stats })
+    this.client.redis.publish(
+      { type: 'timeseriesRegistry' },
+      constants.TS_REGISTRY_UPDATE,
+      JSON.stringify({
+        event: 'new_shard',
+        ts: Date.now(),
+        id: pg.id,
+        data: { stats },
+      })
+    )
+  }
+
   public async insert<T>(
     tsCtx: TimeseriesContext,
     query: string,
     params: unknown[]
   ): Promise<QueryResult<T>> {
     const shards = this.getShards(tsCtx)
+    if (!shards.length) {
+      await this.ensureTableExists(tsCtx)
+      return this.insert(tsCtx, query, params)
+    }
 
     const shard = shards[shards.length - 1]
     const tableName = `"${tsCtx.nodeType}$${tsCtx.field}$${shard.ts}"`
@@ -474,9 +563,7 @@ export class TimeseriesClient {
     )
   }
 
-  private selectShards(
-    tsCtx: TimeseriesContext
-  ): { ts: number; descriptor: ServerDescriptor }[] {
+  private selectShards(tsCtx: TimeseriesContext): Shard[] {
     // if we have a startTime, start iterating from beginning to find the shard to start
     // if we have an endTime, keep iterating till you go over
     //
