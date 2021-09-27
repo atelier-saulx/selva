@@ -1,6 +1,9 @@
 import { ServerOptions } from '../../types'
 import { connect, SelvaClient, constants } from '@saulx/selva'
 
+// const MAX_SHARD_SIZE_BYTES = 1e9 // 1 GB
+const MAX_SHARD_SIZE_BYTES = 1
+
 export type TimeSeriesInsertContext = {
   nodeId: string
   nodeType: string
@@ -74,11 +77,6 @@ export class TimeseriesWorker {
     setTimeout(this.tick.bind(this), 1000)
   }
 
-  getTableName(context: TimeSeriesInsertContext): string {
-    // TODO: use tsCache to figure out last shard
-    return `"${context.nodeType}\$${context.field}$0"`
-  }
-
   async ensureTableExists(context: TimeSeriesInsertContext): Promise<void> {
     if (this.client.pg.hasTimeseries(context)) {
       console.log('ALREADY EXISTS', context)
@@ -139,9 +137,7 @@ export class TimeseriesWorker {
 
     await this.client.pg.insert<void>(
       context,
-      `INSERT INTO ${this.getTableName(
-        context
-      )} ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO $table_name ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
       [
         context.nodeId,
         context.payload,

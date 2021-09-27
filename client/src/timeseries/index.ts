@@ -463,8 +463,15 @@ export class TimeseriesClient {
     params: unknown[]
   ): Promise<QueryResult<T>> {
     const shards = this.getShards(tsCtx)
-    const pgInstance = shards[shards.length - 1].descriptor
-    return this.pg.execute(pgInstance, query, params)
+
+    const shard = shards[shards.length - 1]
+    const tableName = `"${tsCtx.nodeType}$${tsCtx.field}$${shard.ts}"`
+
+    return this.pg.execute(
+      shard.descriptor,
+      query.replace('$table_name', tableName),
+      params
+    )
   }
 
   private selectShards(
