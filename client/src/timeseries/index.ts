@@ -357,7 +357,7 @@ async function execTimeseries(
       autoQuoteAliasNames: true,
       nameQuoteCharacter: '"',
     })
-    .from(`${nodeType}$${op.sourceField}$0`)
+    .from(`${nodeType}$${op.sourceField}$${queryOptions.shard}`)
     .field('ts')
     .where('"nodeId" = ?', op.id)
     .where(queryOptions.where)
@@ -488,14 +488,12 @@ export class TimeseriesClient {
     return shardList
   }
 
-  async ensureTableExists(context: TimeseriesContext): Promise<void> {
-    if (this.client.pg.hasTimeseries(context)) {
-      console.log('ALREADY EXISTS', context)
-      return
-    }
-
+  async ensureTableExists(
+    context: TimeseriesContext,
+    ts: number = 0
+  ): Promise<void> {
     const tsName = `${context.nodeType}$${context.field}`
-    const tableName = `${tsName}$0`
+    const tableName = `${tsName}$${ts}`
 
     const createTable = `
     CREATE TABLE IF NOT EXISTS "${tableName}" (
