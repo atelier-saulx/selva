@@ -55,8 +55,12 @@ export const SELVA_TO_SQL_TYPE = {
   array: 'JSONB',
 }
 
-const MAX_SHARD_SIZE_BYTES = 1e9 // 1 GB
+// for testing
 // const MAX_SHARD_SIZE_BYTES = -1
+// const NEXT_SHARD_OFFSET = 0
+const MAX_SHARD_SIZE_BYTES = 1e9 // 1 GB
+const NEXT_SHARD_OFFSET = 2 * 60 * 1e3
+
 const DEFAULT_QUERY_LIMIT = 500
 
 const sq = squel.useFlavour('postgres')
@@ -211,7 +215,7 @@ async function runSelect<T>(
     result = await queryInsertQueue(shards[0].descriptor, tsCtx, client, op, {
       shard: shards[0].ts,
       where,
-      limit: limit,
+      limit,
       offset: 0,
     })
   } else {
@@ -219,14 +223,16 @@ async function runSelect<T>(
     result = await execTimeseries(shards[0].descriptor, tsCtx, client, op, {
       shard: shards[0].ts,
       where,
-      limit: limit,
+      limit,
       offset: 0,
     })
   }
 
   limit -= result.rows.length
 
-  if (limit < 0) {
+  if (limit === 0) {
+    return result
+  } else if (limit < 0) {
     result.rows = result.rows.slice(0, limit)
     return result
   }
@@ -237,7 +243,7 @@ async function runSelect<T>(
     const res = await execTimeseries(descriptor, tsCtx, client, op, {
       shard: ts,
       where,
-      limit: limit,
+      limit,
       offset: 0,
     })
 
@@ -246,7 +252,7 @@ async function runSelect<T>(
       limit--
 
       if (hasLimit && limit <= 0) {
-        break
+        return result
       }
     }
   }
@@ -260,7 +266,7 @@ async function runSelect<T>(
       {
         shard: shards[0].ts,
         where,
-        limit: limit,
+        limit,
         offset: 0,
       }
     )
@@ -571,7 +577,7 @@ export class TimeseriesClient {
       shards[i].size.relationSizeBytes > MAX_SHARD_SIZE_BYTES
     ) {
       // the new shard becomes valid in 2 minutes
-      await this.ensureTableExists(tsCtx, Date.now() + 2 * 60 * 1e3)
+      await this.ensureTableExists(tsCtx, Date.now() + NEXT_SHARD_OFFSET)
     }
 
     return shards[i]
