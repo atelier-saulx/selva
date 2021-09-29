@@ -55,9 +55,15 @@ test.beforeEach(async (t) => {
   await client.destroy()
 })
 
+test.afterEach(async (t) => {
+  const client = connect({ port: port })
+  await new Promise((r) => setTimeout(r, 100))
+  await client.delete('root')
+  await client.destroy()
+})
+
 test.after(async (t) => {
   const client = connect({ port: port })
-  await client.delete('root')
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
@@ -146,7 +152,6 @@ test.serial('find index', async (t) => {
     3002,
   ])
 
-  await client.delete('root')
   await client.destroy()
 })
 
@@ -200,7 +205,6 @@ test.serial('find index strings', async (t) => {
     ['root.I.Im5hbWUiIGYgImxlYWd1ZSAwIiBj', [ 101, 101, 1667, 3334 ]]
   )
 
-  await client.delete('root')
   await client.destroy()
 })
 
@@ -277,7 +281,6 @@ test.serial('find index string sets', async (t) => {
   t.deepEqual(indices[3][2], 10)
   t.deepEqual(indices[3][3], 1000)
 
-  await client.delete('root')
   await client.destroy()
 })
 
@@ -326,7 +329,6 @@ test.serial('find index integers', async (t) => {
     [ 'root.I.ImNhdCIgZyAjMyBG', [ 100, 1001, 100, 100 ] ]
   )
 
-  await client.delete('root')
   await client.destroy()
 })
 
@@ -408,6 +410,5 @@ test.serial('find index exists', async (t) => {
     ]
   )
 
-  await client.delete('root')
   await client.destroy()
 })

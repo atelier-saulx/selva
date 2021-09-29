@@ -50,9 +50,15 @@ test.beforeEach(async (t) => {
   await client.destroy()
 })
 
+test.afterEach(async (t) => {
+  const client = connect({ port: port })
+  await new Promise((r) => setTimeout(r, 100))
+  await client.delete('root')
+  await client.destroy()
+})
+
 test.after(async (t) => {
   const client = connect({ port })
-  await client.delete('root')
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
