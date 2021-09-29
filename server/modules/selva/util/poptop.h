@@ -52,7 +52,7 @@ void poptop_maybe_add(struct poptop * restrict l, float score, void * restrict p
  * Remove an element from the top list.
  * @param l is a pointer to the poptop structure.
  */
-void poptop_remove(struct poptop * restrict l, void * restrict p);
+void poptop_remove(struct poptop * restrict l, const void * restrict p);
 
 /**
  * Periodic maintenance.
