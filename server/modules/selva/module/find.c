@@ -1585,17 +1585,17 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             /*
              * Select the best index res set.
              */
-            for (int i = 0; i < nr_index_hints; i++) {
+            for (int j = 0; j < nr_index_hints; j++) {
                 struct SelvaFindIndexControlBlock *icb = NULL;
                 struct SelvaSet *set = NULL;
 
-                ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hints[i], &icb, &set);
-                ind_icb[i] = icb;
+                ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hints[j], &icb, &set);
+                ind_icb[j] = icb;
                 if (!ind_err) {
-                    ind_out[i] = set;
+                    ind_out[j] = set;
 
                     if (ind_select < 0 || SelvaSet_Size(set) < SelvaSet_Size(ind_out[ind_select])) {
-                        ind_select = i; /* Select the smallest index res set for fastest lookup. */
+                        ind_select = j; /* Select the smallest index res set for fastest lookup. */
                     }
                 } else if (ind_err && ind_err != SELVA_ENOENT) {
                     fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
@@ -1645,7 +1645,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
              * There is no need to run the filter again if the indexing was
              * executing the same filter already.
              */
-            if (argv_filter_expr && !RedisModule_StringCompare(argv_filter_expr, index_hints[i])) {
+            if (argv_filter_expr && !RedisModule_StringCompare(argv_filter_expr, index_hints[ind_select])) {
                 args.rpn_ctx = NULL;
                 args.filter = NULL;
             }
@@ -1685,14 +1685,14 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         } else {
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
         }
-        for (int i = 0; i < nr_index_hints; i++) {
-            struct SelvaFindIndexControlBlock *icb = ind_icb[i];
+        for (int j = 0; j < nr_index_hints; j++) {
+            struct SelvaFindIndexControlBlock *icb = ind_icb[j];
 
             if (!icb) {
                 continue;
             }
 
-            if (i == ind_select) {
+            if (j == ind_select) {
                 SelvaFind_Acc(icb, args.acc_take, args.acc_tot);
             } else if (ind_select == -1) {
                 /* No index was selected so all will get the same take. */
