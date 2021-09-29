@@ -423,7 +423,6 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             slen = new_len;
         }
 
-
         cobj = obj;
         key = NULL; /* This needs to be cleared on every iteration. */
         nr_parts_found++;
