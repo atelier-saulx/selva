@@ -1559,8 +1559,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
          * Note that SelvaArgParser_IndexHints() limits the nr_index_hints to
          * FIND_INDICES_MAX_HINTS_FIND
          */
-        struct SelvaFindIndexControlBlock *ind_icb[nr_index_hints];
-        struct SelvaSet *ind_out[nr_index_hints];
+        struct SelvaFindIndexControlBlock *ind_icb[max(nr_index_hints, 1)];
+        struct SelvaSet *ind_out[max(nr_index_hints, 1)];
         int ind_select = -1; /* Selected index. The smallest of all found. */
 
         memset(ind_icb, 0, nr_index_hints * sizeof(struct SelvaFindIndexControlBlock *));
