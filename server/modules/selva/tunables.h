@@ -78,9 +78,9 @@
 
 #define FIND_INDICES_MAX_HINTS_FIND             20 /*!< Maximum number of indexing hints per find command. */
 #define FIND_INDICES_MAX_HINTS                 500 /*!< Maximum number of indexing hints tracked. */
-#define FIND_INDICES_MAX                       100 /*!< Maximum number of indices. 0 = disable indexing. */
+#define FIND_INDICES_MAX                         0 /*!< Maximum number of indices. 0 = disable indexing. */
 #define FIND_INDEXING_THRESHOLD                100 /*!< A candidate for indexing must have at least this many visits per traversal. */
-#define FIND_INDEXING_ICB_UPDATE_INTERVAL     1000 /*!< ICB refresh interval [ms] */
+#define FIND_INDEXING_ICB_UPDATE_INTERVAL     5000 /*!< ICB refresh interval [ms] */
 #define FIND_INDEXING_INTERVAL               60000 /*! How often the set of active indices is decided. */
 #define FIND_INDEXING_POPULARITY_AVE_PERIOD 216000 /*!< [sec] Averaging period for indexing hint demand count. After this period the original value is reduced to 1/e * n. */
 

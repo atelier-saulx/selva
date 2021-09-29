@@ -784,6 +784,10 @@ static void create_indexing_timer(RedisModuleCtx *ctx, struct indexing_timer_arg
 }
 
 int SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy) {
+    if (selva_glob_config.find_indices_max == 0) {
+        return 0; /* Indexing disabled. */
+    }
+
     hierarchy->dyn_index.index_map = SelvaObject_New();
     if (!hierarchy->dyn_index.index_map) {
         return SELVA_ENOMEM;
@@ -842,6 +846,10 @@ static void deinit_index_obj(struct SelvaModify_Hierarchy *hierarchy, struct Sel
 }
 
 void SelvaFindIndex_Deinit(struct SelvaModify_Hierarchy *hierarchy) {
+    if (selva_glob_config.find_indices_max == 0) {
+        return; /* Indexing disabled. */
+    }
+
     if (hierarchy->dyn_index.index_map) {
         deinit_index_obj(hierarchy, hierarchy->dyn_index.index_map);
         SelvaObject_Destroy(hierarchy->dyn_index.index_map);
