@@ -611,16 +611,8 @@ static void icb_proc(RedisModuleCtx *ctx, void *data) {
         return;
     }
 
-    hierarchy = SelvaModify_OpenHierarchy(ctx,
-                                          RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1),
-                                          REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        return;
-    }
-
-    icb->is_valid_timer_id = 0;
-
     /* Recreate the timer. */
+    icb->is_valid_timer_id = 0;
     create_index_cb_timer(ctx, args);
 
     /*
