@@ -115,6 +115,10 @@ async function validateNested(
     return
   }
 
+  if (props.$raw) {
+    return
+  }
+
   if (props.$db) {
     return await transformDb(extraQueries, client, props, path)
   }

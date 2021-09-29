@@ -233,6 +233,10 @@ export type GetOperation =
       type: 'db'
       default?: any
     })
+  | (GetOperationCommon & {
+      type: 'raw'
+      default?: any
+    })
   | { type: 'value'; value: string; field: string }
   | (WithOptional<GetOperationCommon, 'id' | 'sourceField'> & {
       type: 'nested_query'

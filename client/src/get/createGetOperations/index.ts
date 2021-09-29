@@ -25,6 +25,13 @@ export default function createGetOperations(
       field: field.substr(1),
       value: props.$value,
     })
+  } else if (props.$raw) {
+    ops.push({
+      type: 'raw',
+      id,
+      field: field.substr(1),
+      sourceField: props.$raw === true ? field.substr(1) : props.$raw,
+    })
   } else if (props.$id && field) {
     ops.push({
       type: 'nested_query',

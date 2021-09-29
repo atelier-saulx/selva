@@ -753,6 +753,13 @@ export const executeGetOperation = async (
     }
   } else if (op.type === 'inherit') {
     return inherit(client, op, lang, ctx)
+  } else if (op.type === 'raw') {
+    return await client.redis.selva_object_get(
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      '',
+      op.id,
+      <string>op.sourceField
+    )
   } else if (op.type === 'db') {
     const { db } = ctx
 

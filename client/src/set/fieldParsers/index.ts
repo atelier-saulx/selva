@@ -50,10 +50,12 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
       ) {
         const getOpts = {
           $id: (<any>result).$id,
+          ts: { $raw: `${field}._ts` },
         }
         setNestedResult(getOpts, field, true)
 
         const prevResult = await client.get(getOpts)
+        console.log('PREV RESULT', prevResult)
         const prevValue = getNestedField(prevResult, field) || {}
         tsPayload = deepMerge(prevValue, payload)
       }
