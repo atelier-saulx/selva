@@ -441,7 +441,6 @@ static int destroy_index_cb(
 static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
     struct indexing_timer_args *args = (struct indexing_timer_args *)data;
     SelvaModify_Hierarchy *hierarchy = args->hierarchy;
-    struct SelvaFindIndexControlBlock *icb;
     struct poptop_list_el *el;
 
 #if 0
@@ -457,6 +456,7 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
     create_indexing_timer(ctx, args);
 
     if (poptop_maintenance(&hierarchy->dyn_index.top_indices)) {
+        struct SelvaFindIndexControlBlock *icb;
         /*
          * First discard indices that are no longer relevant.
          */
