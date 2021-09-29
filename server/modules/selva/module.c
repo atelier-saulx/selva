@@ -854,6 +854,16 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     return REDISMODULE_OK;
 }
 
+/*
+ * This might be useful in the future.
+ */
+#if 0
+static int my_RedisModuleEventCallback(RedisModuleCtx *ctx, RedisModuleEvent eid, uint64_t subevent, void *data) {
+    return 0;
+}
+    (void)RedisModule_SubscribeToServerEvent(ctx, RedisModuleEvent_Shutdown, my_RedisModuleEventCallback);
+#endif
+
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int err;
 

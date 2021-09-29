@@ -1,5 +1,5 @@
 TEST_SRC += test-hierarchy_serialization.c
-SRC-hierarchy_serialization += ../redis-alloc.c ../redis-rdb.c ../hierarchy-utils.c ../rpn-mock.c ../edge-mock.c ../subscriptions-mock.c ../errors-mock.c
+SRC-hierarchy_serialization += ../redis-alloc.c ../redis-rdb.c ../hierarchy-utils.c ../find-index-mock.c ../rpn-mock.c ../edge-mock.c ../subscriptions-mock.c ../errors-mock.c
 SRC-hierarchy_serialization += ../../module/alias.c
 SRC-hierarchy_serialization += ../../module/config.c
 SRC-hierarchy_serialization += ../../module/errors.c

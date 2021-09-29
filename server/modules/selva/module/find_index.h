@@ -7,6 +7,10 @@ struct RedisModuleString;
 struct SelvaModify_Hierarchy;
 struct SelvaSet;
 struct SelvaFindIndexControlBlock;
+struct indexing_timer_args;
+
+int SelvaFindIndex_Init(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy);
+void SelvaFindIndex_Deinit(struct SelvaModify_Hierarchy *hierarchy);
 
 /**
  * Check if an index exists for this query, update it, and get the indexing result set.

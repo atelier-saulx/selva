@@ -1,5 +1,5 @@
 TEST_SRC += test-edge.c
-SRC-edge += ../redis-alloc.c ../hierarchy-utils.c ../redis-rdb.c ../rpn-mock.c ../subscriptions-mock.c ../errors-mock.c
+SRC-edge += ../redis-alloc.c ../hierarchy-utils.c ../find-index-mock.c ../redis-rdb.c ../rpn-mock.c ../subscriptions-mock.c ../errors-mock.c
 SRC-edge += ../../module/alias.c
 SRC-edge += ../../module/arg_parser.c
 SRC-edge += ../../module/comparator.c
