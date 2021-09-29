@@ -457,6 +457,7 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
 
     if (poptop_maintenance(&hierarchy->dyn_index.top_indices)) {
         struct SelvaFindIndexControlBlock *icb;
+
         /*
          * First discard indices that are no longer relevant.
          */
@@ -568,16 +569,16 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
     }
 }
 
-static float calc_icb_score(struct SelvaFindIndexControlBlock *icb) {
+static float calc_icb_score(const struct SelvaFindIndexControlBlock *icb) {
     float pop_count = icb->pop_count.ave;
     float res_set_size;
     float tot_max;
 
     if (icb->is_valid) {
-        res_set_size = icb->find_acc.ind_take_max;
+        res_set_size = (float)icb->find_acc.ind_take_max;
         tot_max = max((float)icb->find_acc.tot_max, (float)SelvaSet_Size(&icb->res));
     } else {
-        res_set_size = icb->find_acc.take_max;
+        res_set_size = (float)icb->find_acc.take_max;
         tot_max = (float)icb->find_acc.tot_max;
     }
 
