@@ -38,9 +38,7 @@ const sendUpdate = async (
   getOptions.$includeMeta = true
   getOptions.$subscription = subscription.channel
   getOptions.$originDescriptors = subscription.originDescriptors
-  if (!currentVersion) {
-    getOptions.$firstEval = true
-  }
+  getOptions.$firstEval = !currentVersion
 
   if (nodeId) {
     if (inProgressTriggers.has(subscription.channel + ':' + nodeId)) {

@@ -52,16 +52,31 @@ export default async function execTimeseries(
     fields: [<string>op.sourceField],
   })
 
-  if (ctx.subId && !ctx.firstEval) {
+  if (ctx.firstEval === false) {
     // TODO: here add diff function
-    console.log('NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE')
-    return executeGetOperation(
-      client,
-      lang,
-      ctx,
-      { type: 'db', id: op.id, sourceField: op.sourceField, field: op.field },
-      true
-    )
+    const [val, _ts] = await Promise.all([
+      executeGetOperation(
+        client,
+        lang,
+        ctx,
+        { type: 'db', id: op.id, sourceField: op.sourceField, field: op.field },
+        true
+      ),
+      executeGetOperation(
+        client,
+        lang,
+        ctx,
+        {
+          type: 'raw',
+          id: op.id,
+          sourceField: `${op.sourceField}._ts`,
+          field: 'ts',
+        },
+        true
+      ),
+    ])
+    console.log('NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE', _ts, val)
+    return val
   }
 
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
