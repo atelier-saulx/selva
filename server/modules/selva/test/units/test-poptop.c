@@ -1,9 +1,7 @@
 #include <punit.h>
+#include <tgmath.h>
 #include "cdefs.h"
 #include "poptop.h"
-
-static void setup(void)
-{
 
 struct my_data {
     int v;
@@ -24,7 +22,7 @@ static void teardown(void)
 static char * test_add_rm(void)
 {
     const size_t max_size = 10;
-    const int initial_cut = 0;
+    const float initial_cut = 0.0;
     float score = 5.0;
     struct my_data d = {
         .v = 42,
@@ -62,7 +60,8 @@ static char * test_add_rm(void)
     return NULL;
 }
 
-static char * test_add_too_many(void) {
+static char * test_add_too_many(void)
+{
     int err;
     struct my_data d[] = {
         {
@@ -98,7 +97,7 @@ static char * test_add_too_many(void) {
     };
     struct poptop_list_el *el;
 
-    err = poptop_init(&l, 5, 0);
+    err = poptop_init(&l, 5, 0.0f);
     pu_assert_equal("initialized", err, 0);
 
     for (int i = 0; i < num_elem(d); i++) {
@@ -118,7 +117,8 @@ static char * test_add_too_many(void) {
     return NULL;
 }
 
-static char * test_foreach(void) {
+static char * test_foreach(void)
+{
     int err;
     struct my_data d[] = {
         {
@@ -154,7 +154,7 @@ static char * test_foreach(void) {
     };
     struct poptop_list_el *el;
 
-    err = poptop_init(&l, 10, 5);
+    err = poptop_init(&l, 10, 5.0f);
     pu_assert_equal("initialized", err, 0);
 
     for (int i = 0; i < num_elem(d); i++) {
@@ -201,7 +201,8 @@ static char * test_foreach(void) {
     return NULL;
 }
 
-static char * test_maintenance(void) {
+static char * test_maintenance(void)
+{
     int err;
     struct my_data d[] = {
         {
@@ -238,7 +239,7 @@ static char * test_maintenance(void) {
     struct my_data *dp;
     int drop_count = 0;
 
-    err = poptop_init(&l, 10, 0);
+    err = poptop_init(&l, 10, 0.0f);
     pu_assert_equal("initialized", err, 0);
 
     for (int i = 0; i < num_elem(d); i++) {
@@ -247,14 +248,14 @@ static char * test_maintenance(void) {
 
     poptop_maintenance(&l);
 
-    pu_assert_equal("new cut_limit is set", l.cut_limit, 4.0);
+    pu_assert_equal("new cut_limit is set", round(l.cut_limit), 5.0f);
 
     while ((dp = poptop_maintenance_drop(&l))) {
-        pu_assert("expected drop", dp->v < 14);
+        pu_assert("expected drop", dp->v < 15);
         drop_count++;
     }
 
-    pu_assert_equal("dropped", drop_count, 4);
+    pu_assert_equal("dropped", drop_count, 5);
 
     return NULL;
 }
