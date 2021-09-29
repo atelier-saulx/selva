@@ -881,7 +881,7 @@ static char * test_del_node(void)
     pu_assert_equal("depth of e is", SelvaModify_GetHierarchyDepth(hierarchy, "grphnode_e"), 0);
 #endif
 
-    SelvaModify_DelHierarchyNode(NULL, hierarchy, ((Selva_NodeId){ "grphnode_e" }));
+    SelvaModify_DelHierarchyNode(NULL, hierarchy, ((Selva_NodeId){ "grphnode_e" }), 0);
 
     /* ancestors of root */
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "root" }), &findRes);
