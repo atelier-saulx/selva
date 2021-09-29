@@ -56,8 +56,13 @@ struct cfg {
 };
 
 int parse_config_args(RedisModuleString **argv, int argc) {
-    while(argc--) {
-        const char * const cfg_name = RedisModule_StringPtrLen(*argv, NULL);
+    if (argc % 2 != 0) {
+        return SELVA_EINVAL;
+    }
+
+    for (int j = 0; j < argc; j += 2) {
+        const char * const cfg_name = RedisModule_StringPtrLen(argv[j], NULL);
+        const RedisModuleString *cfg_value = argv[j + 1];
         int found = 0;
 
         for (size_t i = 0; i < num_elem(cfg_map); i++) {
@@ -65,7 +70,7 @@ int parse_config_args(RedisModuleString **argv, int argc) {
             if (!strcmp(cfg_name, cfg->name)) {
                 int err;
 
-                err = cfg->parse(cfg->dp, argv[1]);
+                err = cfg->parse(cfg->dp, cfg_value);
                 if (err) {
                     return err;
                 }
