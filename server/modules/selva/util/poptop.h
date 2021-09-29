@@ -3,7 +3,7 @@
 #define _UTIL_POPTOP_H_
 
 struct poptop_list_el {
-    int score;
+    float score;
     void *p;
 };
 

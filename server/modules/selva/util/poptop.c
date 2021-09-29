@@ -23,7 +23,7 @@ void poptop_deinit(struct poptop *l) {
     memset(l, 0, sizeof(*l));
 }
 
-static struct poptop_loc poptop_find(struct poptop * restrict l, void * restrict p) {
+static struct poptop_loc poptop_find(struct poptop * restrict l, const void * restrict p) {
     size_t n = l->max_size;
     struct poptop_list_el *list = l->list;
     struct poptop_list_el *found = NULL;
@@ -95,7 +95,7 @@ static inline void poptop_sort(struct poptop *l) {
  * Find the last element in a sorted poptop list.
  */
 static size_t poptop_find_last(const struct poptop *l) {
-    struct poptop_list_el *list = l->list;
+    const struct poptop_list_el *list = l->list;
     size_t n = l->max_size;
     size_t i = 0;
 
@@ -107,7 +107,7 @@ static size_t poptop_find_last(const struct poptop *l) {
 /**
  * Get the median score from a sorted poptop list.
  */
-static int poptop_median_score(const struct poptop *l, size_t last) {
+static float poptop_median_score(const struct poptop *l, size_t last) {
     float median;
 
     if (last & 1) { /* The number of elements (last + 1) is even. */
@@ -138,7 +138,7 @@ int poptop_maintenance(struct poptop *l) {
 void *poptop_maintenance_drop(struct poptop *l) {
     struct poptop_list_el *list = l->list;
     size_t n = l->max_size;
-    int cut_limit = l->cut_limit;
+    float cut_limit = l->cut_limit;
 
     for (size_t i = 0; i < n; i++) {
         struct poptop_list_el *el = &list[i];
