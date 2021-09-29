@@ -113,7 +113,7 @@ static float poptop_median_score(const struct poptop *l, size_t last) {
     if (last & 1) { /* The number of elements (last + 1) is even. */
         size_t i = (last + 1) >> 1;
 
-        median = (l->list[i].score + l->list[i - 1].score) / 2.0;
+        median = (l->list[i].score + l->list[i - 1].score) / 2.0f;
     } else { /* The number of elements is odd. */
         median = l->list[last >> 1].score;
     }
