@@ -51,6 +51,7 @@ export default async (
       })
     )
 
+    // TODO: add timeseries meta
     const content = new Uint32Array([0])
     const buf = Buffer.from(content.buffer)
     result.push('C', field, buf)

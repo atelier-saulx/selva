@@ -341,6 +341,9 @@ test.serial('get - basic value types timeseries', async (t) => {
           id: true,
           title: true,
           value: true,
+          image: {
+            thumb: true,
+          },
           allValues: {
             $field: 'value',
             $list: { $limit: 10 },
