@@ -342,6 +342,7 @@ export async function start(opts: Options) {
     registry,
     // @ts-ignore
     dir: opts.dir,
+    selvaOptions: parsedOpts.selvaOptions,
     pipeRedisLogs: parsedOpts.pipeRedisLogs || {
       stdout: true,
       stderr: true,
