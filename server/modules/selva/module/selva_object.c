@@ -380,6 +380,7 @@ static int _insert_new_key(struct SelvaObject *obj, const char *name_str, size_t
 }
 
 static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
+    int is_timeseries = 0;
     const char *sep = ".";
     const size_t nr_parts = substring_count(key_name_str, sep, key_name_len) + 1;
     char buf[key_name_len + 1]; /* We assume that the length has been sanity checked at this point. */
@@ -422,9 +423,23 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             slen = new_len;
         }
 
+
         cobj = obj;
         key = NULL; /* This needs to be cleared on every iteration. */
         nr_parts_found++;
+
+        if (is_timeseries && s[0] != '_') {
+            err = get_key(obj, "_value", 6, 0, &key);
+            if (err) {
+                return err;
+            }
+
+            obj = key->value;
+
+            is_timeseries = 0;
+            key = NULL;
+        }
+
         err = get_key(obj, s, slen, 0, &key);
         if ((err == SELVA_ENOENT || (err == 0 && (key->type != SELVA_OBJECT_ARRAY && nr_parts > nr_parts_found))) && ary_idx >= 0 &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
@@ -501,6 +516,18 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             /*
              * Keep nesting or return an object if this was the last token.
              */
+
+            /*
+            if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TIMESERIES) {
+                err = get_key(obj, "_value", 6, 0, &key);
+                if (err) {
+                    return err;
+                }
+            }
+            */
+
+            is_timeseries = 1;
+
             obj = key->value;
         } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {

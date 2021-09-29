@@ -80,7 +80,7 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
         client,
         schema,
         field,
-        { $selva_timeseries: true, _value: payload, _ts: ts },
+        { _value: payload, _ts: ts },
         result,
         fields,
         type,

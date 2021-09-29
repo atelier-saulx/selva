@@ -37,14 +37,6 @@ export default async (
   if (addedFields) {
     result.push(
       '3',
-      `${field}.$selva_timeseries`,
-      createRecord(longLongDef, {
-        d: BigInt(1),
-      })
-    )
-
-    result.push(
-      '3',
       `${field}._ts`,
       createRecord(longLongDef, {
         d: BigInt(payload._ts),
@@ -52,7 +44,7 @@ export default async (
     )
 
     // TODO: add timeseries meta
-    const content = new Uint32Array([0])
+    const content = new Uint32Array([3])
     const buf = Buffer.from(content.buffer)
     result.push('C', field, buf)
   }
