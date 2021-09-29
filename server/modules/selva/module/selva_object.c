@@ -434,6 +434,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
 
             obj = key->value;
+            cobj = obj;
 
             is_timeseries = 0;
             key = NULL;
