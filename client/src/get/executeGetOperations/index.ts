@@ -370,7 +370,7 @@ export const TYPE_CASTS: Record<
     return all
   },
   object: (all: any, id: string, origField: string, schema, lang) => {
-    const result = {}
+    const result: Record<string, any> = {}
     let fieldCount = 0
     const parse = (o, field: string, arr: string[]) =>
       arr.forEach((key, i, arr) => {
@@ -422,10 +422,11 @@ export const TYPE_CASTS: Record<
           o[key] = {}
           parse(o[key], f, val)
         } else {
-          const typeCast = TYPE_CASTS[fieldSchema.type]
-          if (typeCast) {
-            val = typeCast(val, id, f, schema, lang)
-          }
+          val = typeCast(val, id, f, schema, lang)
+          // const typeCast = TYPE_CASTS[fieldSchema.type]
+          // if (typeCast) {
+          //   val = typeCast(val, id, f, schema, lang)
+          // }
 
           setNestedResult(o, key, val)
         }
@@ -433,6 +434,9 @@ export const TYPE_CASTS: Record<
         fieldCount++
       })
     parse(result, origField, all)
+    // if (result.$selva_timeseries) {
+    //   return result._value
+    // }
     if (fieldCount) {
       return result
     }
@@ -485,6 +489,14 @@ export function typeCast(
   const fs = getNestedSchema(schema, id, field)
   if (!fs) {
     return x
+  }
+
+  if (fs.timeseries) {
+    const vIdx = x.findIndex((el) => {
+      return el === '_value'
+    })
+
+    x = x[vIdx + 1]
   }
 
   const cast = TYPE_CASTS[fs.type]
@@ -803,6 +815,7 @@ export const executeGetOperation = async (
       }
     }
 
+    console.log('RRR', op, r)
     if (r !== null && r !== undefined) {
       return typeCast(
         r,

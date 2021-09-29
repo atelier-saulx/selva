@@ -53,6 +53,7 @@ export default async function execTimeseries(
   })
 
   if (ctx.subId && !ctx.firstEval) {
+    // TODO: here add diff function
     console.log('NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE')
     return executeGetOperation(
       client,

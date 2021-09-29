@@ -11,6 +11,7 @@ import json from './json'
 import object from './object'
 import record from './record'
 import array from './array'
+import timeseries from './timeseries'
 import { deepCopy, deepMerge } from '@saulx/utils'
 import { getNestedField, setNestedResult } from '../../get/utils'
 
@@ -39,6 +40,8 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
     $lang?: string
   ) => {
     if (fields.timeseries) {
+      const ts = Date.now()
+
       let tsPayload = payload
 
       if (
@@ -61,7 +64,7 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
         field,
         fieldSchema: fields,
         payload: tsPayload,
-        ts: Date.now(),
+        ts,
       }
 
       console.log('LPUSH', timeseriesCtx)
@@ -69,6 +72,17 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
         { type: 'timeseriesQueue' },
         'timeseries_inserts',
         JSON.stringify({ type: 'insert', context: timeseriesCtx })
+      )
+
+      return timeseries(
+        client,
+        schema,
+        field,
+        { $selva_timeseries: true, _value: payload, _ts: ts },
+        result,
+        fields,
+        type,
+        $lang
       )
     }
 
