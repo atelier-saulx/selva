@@ -822,7 +822,6 @@ export const executeGetOperation = async (
       }
     }
 
-    console.log('RRR', op, r)
     if (r !== null && r !== undefined) {
       return typeCast(
         r,

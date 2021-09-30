@@ -8,6 +8,7 @@ import {
 } from '../utils'
 import { ExecContext, addMarker, executeGetOperation } from './'
 import { TimeseriesContext } from '../../timeseries'
+import { CreatePartialDiff } from '@saulx/diff'
 
 function getFields(path: string, fields: Set<string>, props: GetOptions): void {
   for (const k in props) {
@@ -46,10 +47,20 @@ export default async function execTimeseries(
     return
   }
 
+  const type = getTypeFromId(client.schemas[ctx.db], op.id)
+  const exprCtx: TimeseriesContext = {
+    nodeType: type,
+    field: <string>op.sourceField,
+    fieldSchema,
+    order: op.options?.sort?.$order || 'desc',
+    limit: op.options.limit || -1,
+    offset: op.options.offset || 0,
+  }
+
   addMarker(client, ctx, {
     type: 'node',
     id: op.id,
-    fields: [<string>op.sourceField],
+    fields: [exprCtx.field],
   })
 
   if (ctx.firstEval === false) {
@@ -77,17 +88,6 @@ export default async function execTimeseries(
     ])
     console.log('NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE', _ts, val)
     return val
-  }
-
-  const type = getTypeFromId(client.schemas[ctx.db], op.id)
-
-  const exprCtx: TimeseriesContext = {
-    nodeType: type,
-    field: <string>op.sourceField,
-    fieldSchema,
-    order: op.options?.sort?.$order || 'desc',
-    limit: op.options.limit || -1,
-    offset: op.options.offset || 0,
   }
 
   const fields: Set<string> = new Set()
