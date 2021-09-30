@@ -100,16 +100,6 @@ export default async function execTimeseries(
 
       const ops = []
 
-      let ignoreCnt = currentValue.length - tsCtx.limit
-      if (tsCtx.limit > 0 && currentValue.length >= tsCtx.limit) {
-        for (let i = 0; i < ignoreCnt; i++) {
-          ops.push({
-            index: tsCtx.order === 'desc' ? currentValue.length - i : 0,
-            type: 'delete',
-          })
-        }
-      }
-
       if (tsCtx.order === 'desc') {
         let i = 0
         for (; i < currentValue.length; i++) {
@@ -118,13 +108,11 @@ export default async function execTimeseries(
           }
         }
 
-        if (i >= ignoreCnt) {
-          ops.push({
-            index: i,
-            type: 'insert',
-            value: obj,
-          })
-        }
+        ops.push({
+          index: i,
+          type: 'insert',
+          value: obj,
+        })
       } else {
         let i = currentValue.length
         for (; i >= 0; i--) {
@@ -133,12 +121,28 @@ export default async function execTimeseries(
           }
         }
 
-        if (i >= ignoreCnt) {
-          ops.push({
-            index: i - ignoreCnt,
-            type: 'insert',
-            value: obj,
-          })
+        ops.push({
+          index: i,
+          type: 'insert',
+          value: obj,
+        })
+      }
+
+      if (tsCtx.limit > 0 && currentValue.length + 1 >= tsCtx.limit) {
+        if (tsCtx.order === 'desc') {
+          for (let i = tsCtx.limit; i < currentValue.length + 1; i++) {
+            ops.push({
+              index: i,
+              type: 'delete',
+            })
+          }
+        } else {
+          for (let i = tsCtx.limit; i < currentValue.length + 1; i++) {
+            ops.push({
+              index: 0,
+              type: 'delete',
+            })
+          }
         }
       }
 
