@@ -48,7 +48,7 @@ export default async function execTimeseries(
   }
 
   const type = getTypeFromId(client.schemas[ctx.db], op.id)
-  const exprCtx: TimeseriesContext = {
+  const tsCtx: TimeseriesContext = {
     nodeType: type,
     field: <string>op.sourceField,
     fieldSchema,
@@ -60,7 +60,7 @@ export default async function execTimeseries(
   addMarker(client, ctx, {
     type: 'node',
     id: op.id,
-    fields: [exprCtx.field],
+    fields: [tsCtx.field],
   })
 
   if (ctx.firstEval === false) {
@@ -93,10 +93,10 @@ export default async function execTimeseries(
   const fields: Set<string> = new Set()
   if (['object', 'record'].includes(fieldSchema.type)) {
     getFields('', fields, op.props)
-    exprCtx.selectFields = fields
+    tsCtx.selectFields = fields
   }
 
-  const result: any = await client.pg.select(exprCtx, op)
+  const result: any = await client.pg.select(tsCtx, op)
   return result.rows.map((row) => {
     if (fields.size) {
       const r: any = { value: {} }
