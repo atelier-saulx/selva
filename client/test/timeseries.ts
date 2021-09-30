@@ -420,6 +420,22 @@ test.serial('get - basic value types timeseries', async (t) => {
   )
 
   let i = 3
+  let hmmhmm = await client.get({
+    $id: 'viA',
+    values: {
+      $field: 'value',
+      $list: { $limit: 5 },
+    },
+    thumbnails2: {
+      $all: true,
+      $list: {
+        $find: {
+          $traverse: 'image',
+        },
+        $limit: 5,
+      },
+    },
+  })
   setInterval(async () => {
     await client.set({
       $id: 'viA',
@@ -449,7 +465,18 @@ test.serial('get - basic value types timeseries', async (t) => {
       imageTs: { $raw: 'image._ts' },
     })
 
-    const hmmhmm = await client.get({
+    console.log('WUT WUT', wutwut)
+
+    const a = { values: hmmhmm.values }
+    const b = { values: wutwut.values }
+    const patch = createPatch(a, b, {
+      parseDiffFunctions: true,
+    })
+    console.log('PATCH', a, b, JSON.stringify(patch, null, 2))
+    const applied = applyPatch(a, patch)
+    console.log('APPLIED PATCH', applied)
+
+    hmmhmm = await client.get({
       $id: 'viA',
       values: {
         $field: 'value',
@@ -465,18 +492,8 @@ test.serial('get - basic value types timeseries', async (t) => {
         },
       },
     })
-
     console.log('HMMHMM', JSON.stringify(hmmhmm, null, 2))
-    console.log('WUT WUT', wutwut)
 
-    const a = { values: hmmhmm.values }
-    const b = { values: wutwut.values }
-    const patch = createPatch(a, b, {
-      parseDiffFunctions: true,
-    })
-    console.log('PATCH', a, b, JSON.stringify(patch, null, 2))
-    const applied = applyPatch(a, patch)
-    console.log('APPLIED PATCH', applied)
     i++
   }, 2e3)
 

@@ -32,10 +32,6 @@ export default async function execTimeseries(
   ctx: ExecContext
 ): Promise<any> {
   await client.pg.connect()
-  console.log(
-    'MAKIN TIMESERIES',
-    JSON.stringify(client.pg.tsCache.index, null, 2)
-  )
 
   const fieldSchema = getNestedSchema(
     client.schemas[ctx.db],
@@ -117,7 +113,7 @@ export default async function execTimeseries(
       if (tsCtx.order === 'desc') {
         let i = 0
         for (; i < currentValue.length; i++) {
-          if (ts > currentValue) {
+          if (ts > currentValue[i].ts) {
             break
           }
         }
@@ -132,7 +128,7 @@ export default async function execTimeseries(
       } else {
         let i = currentValue.length
         for (; i >= 0; i--) {
-          if (ts > currentValue) {
+          if (ts > currentValue[i].ts) {
             break
           }
         }
@@ -150,6 +146,7 @@ export default async function execTimeseries(
         return false
       }
 
+      console.log('OPS', { type: 'array', values: ops })
       return { type: 'array', values: ops }
     }
 

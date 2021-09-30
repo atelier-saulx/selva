@@ -27,14 +27,14 @@ export class TimeseriesWorker {
   }
 
   async tick() {
-    console.log('timeseries tick')
+    // console.log('timeseries tick')
     try {
       const row = await this.client.redis.rpop(
         { type: 'timeseriesQueue' },
         'timeseries_inserts'
       )
       if (row) {
-        console.log(row)
+        // console.log(row)
         const obj: {
           type: string
           context: TimeSeriesInsertContext
@@ -42,7 +42,7 @@ export class TimeseriesWorker {
         const { type, context } = obj
 
         if (type === 'insert') {
-          console.log(`Inserting data, postgres at ${this.connectionString}`)
+          // console.log(`Inserting data, postgres at ${this.connectionString}`)
           await this.client.pg.insert<void>(context, context)
         } else {
           console.error(`Unknown schema event ${type} for ${row}`)

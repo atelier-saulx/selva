@@ -400,7 +400,7 @@ async function execTimeseries(
   sql = sql.order('ts', tsCtx.order === 'asc')
 
   const params = sql.toParam({ numberedParametersStartAt: 1 })
-  console.log('SQL', params, 'tsCtx', tsCtx)
+  // console.log('SQL', params, 'tsCtx', tsCtx)
 
   const result: QueryResult<any> = await client.pg.pg.execute(
     pgDescriptor,
@@ -451,8 +451,8 @@ export class TimeseriesClient {
     }
 
     let minId = instances[0]
-    let minVal = this.tsCache.instances[instances[0]].meta
-      .totalRelationSizeBytes
+    let minVal =
+      this.tsCache.instances[instances[0]].meta.totalRelationSizeBytes
     for (let i = 1; i < instances.length; i++) {
       const id = instances[i]
       const { meta } = this.tsCache.instances[id]
