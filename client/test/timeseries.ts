@@ -451,29 +451,25 @@ test.serial('get - basic value types timeseries', async (t) => {
         2
       ),
       'WUT WUT',
-      JSON.stringify(
-        await client.get({
-          $firstEval: false,
-          $id: 'viA',
-          values: {
-            $field: 'value',
-            $list: { $limit: 5 },
-          },
-          valuesTs: { $raw: 'value._ts' },
-          thumbnails2: {
-            $all: true,
-            $list: {
-              $find: {
-                $traverse: 'image',
-              },
-              $limit: 5,
+      await client.get({
+        $firstEval: false,
+        $id: 'viA',
+        values: {
+          $field: 'value',
+          $list: { $limit: 5 },
+        },
+        valuesTs: { $raw: 'value._ts' },
+        thumbnails2: {
+          $all: true,
+          $list: {
+            $find: {
+              $traverse: 'image',
             },
+            $limit: 5,
           },
-          imageTs: { $raw: 'image._ts' },
-        }),
-        null,
-        2
-      )
+        },
+        imageTs: { $raw: 'image._ts' },
+      })
     )
 
     i++

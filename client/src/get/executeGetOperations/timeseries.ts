@@ -65,7 +65,7 @@ export default async function execTimeseries(
 
   if (ctx.firstEval === false) {
     // TODO: here add diff function
-    const [val, _ts] = await Promise.all([
+    const [value, ts] = await Promise.all([
       executeGetOperation(
         client,
         lang,
@@ -86,8 +86,74 @@ export default async function execTimeseries(
         true
       ),
     ])
-    console.log('NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE', _ts, val)
-    return val
+
+    console.log(
+      'NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE',
+      ts,
+      value
+    )
+
+    const obj = { ts, value }
+    const patchFn: CreatePartialDiff = (currentValue) => {
+      if (!currentValue) {
+        return {
+          type: 'update',
+          value: [obj],
+        }
+      }
+
+      const ops = []
+
+      let ignoreCnt = currentValue.length - tsCtx.limit
+      if (tsCtx.limit > 0 && currentValue.length >= tsCtx.limit) {
+        for (let i = 0; i < ignoreCnt; i++) {
+          ops.push({
+            index: tsCtx.order === 'desc' ? currentValue.length - i : 0,
+            type: 'delete',
+          })
+        }
+      }
+
+      if (tsCtx.order === 'desc') {
+        let i = 0
+        for (; i < currentValue.length; i++) {
+          if (ts > currentValue) {
+            break
+          }
+        }
+
+        if (i >= ignoreCnt) {
+          ops.push({
+            index: i,
+            type: 'insert',
+            value: obj,
+          })
+        }
+      } else {
+        let i = currentValue.length
+        for (; i >= 0; i--) {
+          if (ts > currentValue) {
+            break
+          }
+        }
+
+        if (i >= ignoreCnt) {
+          ops.push({
+            index: i - ignoreCnt,
+            type: 'insert',
+            value: obj,
+          })
+        }
+      }
+
+      if (!ops.length) {
+        return false
+      }
+
+      return { type: 'array', values: ops }
+    }
+
+    return patchFn
   }
 
   const fields: Set<string> = new Set()
