@@ -878,27 +878,14 @@ int SelvaFind_AutoIndex(
     }
 
     /*
-     * Some traversals are never indexed.
+     * Only index some traversals.
      */
-    if (dir & (
-        SELVA_HIERARCHY_TRAVERSAL_ARRAY | /* (1) */
-        SELVA_HIERARCHY_TRAVERSAL_REF | /* (2) */
-        SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD | /* (2) */
-        SELVA_HIERARCHY_TRAVERSAL_CHILDREN | /* (2) */
-        SELVA_HIERARCHY_TRAVERSAL_PARENTS | /* (2) */
-        SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS | /* (3) */
-        SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS | /* (3) */
-        SELVA_HIERARCHY_TRAVERSAL_DFS_FULL | /* (3) */
-        SELVA_HIERARCHY_TRAVERSAL_EXPRESSION /* (2) */
-        )) {
-        /*
-         * Legends:
-         * 1 = the sub marker capabilites are lacking.
-         * 2 = technically possible but there is almost no benefit in creating
-         *     this index.
-         * 3 = unlikely to be used.
-         */
-        return 0; /* These traversals are not indexed at the moment. */
+    if (!(dir & (
+                 SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS |
+                 SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS |
+                 SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION
+                ))) {
+        return 0;
     }
 
     icb = upsert_index_cb(ctx, hierarchy, node_id, dir, dir_expression, filter);
