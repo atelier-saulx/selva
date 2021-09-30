@@ -79,6 +79,6 @@
     "redis": "^2.8.0",
     "uuid": "^8.3.2",
     "@saulx/utils": "^2.0.1",
-    "@saulx/diff": "^1.1.1"
+    "@saulx/diff": "^1.1.2"
   }
 }

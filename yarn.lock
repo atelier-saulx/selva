@@ -87,10 +87,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@saulx/diff@^1.1.1":
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/@saulx/diff/-/diff-1.1.1.tgz#89c6f427ad2d2d071a6ae93477e2732f205d05b6"
-  integrity sha512-+YGXfOsLQrcCseyptbybpQYeDubMQZlCFUJ00SK0Jn1DG7uiUQII4zRqsL50Z07E/wrb9zqydnpcunGkxvwaLg==
+"@saulx/diff@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@saulx/diff/-/diff-1.1.2.tgz#3919a7d12e68dee2064d166cc62c7cbfdd2824bd"
+  integrity sha512-3CBUZVVJffDjb0+XhVkt/Syun2BONQD2CJQ+Mym/NTA2vm2fJavVC4BEA1lPKdrrRNginu0dp6RPNbRfWuFlEQ==
   dependencies:
     "@saulx/hash" "^1.0.1"
     "@saulx/utils" "^2.0.1"
