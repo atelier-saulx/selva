@@ -61,6 +61,7 @@ import { start } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
 import { createPatch, applyPatch } from '@saulx/diff'
+import { deepCopy } from '@saulx/utils'
 
 let srv
 let port: number
@@ -467,12 +468,13 @@ test.serial('get - basic value types timeseries', async (t) => {
 
     console.log('WUT WUT', wutwut)
 
-    const a = { values: hmmhmm.values }
+    const a = { values: deepCopy(hmmhmm.values) }
     const b = { values: wutwut.values }
     const patch = createPatch(a, b, {
       parseDiffFunctions: true,
     })
-    console.log('PATCH', a, b, JSON.stringify(patch, null, 2))
+    // @ts-ignore
+    console.log('PATCH', a.values.length, a, b, JSON.stringify(patch, null, 2))
     const applied = applyPatch(a, patch)
     console.log('APPLIED PATCH', applied)
 
