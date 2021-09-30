@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@types/pg": "^8.6.1",
-    "@saulx/selva-server": "8.2.0",
+    "@saulx/selva-server": "8.2.2",
     "before-exit": "1.0.0",
     "async-exec": "^1.1.0",
     "@sindresorhus/fnv1a": "^2.0.1",
@@ -73,13 +73,12 @@
     "pg-native": "3.0.0",
     "squel": "^5.13.0",
     "data-record": "^0.5.2",
-    "@saulx/selva-diff": "^1.0.17",
     "@saulx/selva-query-ast-parser": "^3.0.0",
     "@types/uuid": "^8.3.0",
     "chalk": "^4.1.0",
     "redis": "^2.8.0",
     "uuid": "^8.3.2",
     "@saulx/utils": "^2.0.1",
-    "@saulx/diff": "^1.0.0"
+    "@saulx/diff": "^1.1.1"
   }
 }
