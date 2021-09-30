@@ -20,7 +20,10 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
           // console.log('SEND UPDATE FOR', subscription.channel)
         })
         .catch((err) => {
-          console.error(chalk.red(`Error in send update ${err.message}`))
+          console.error(
+            chalk.red(`Error in send update ${err.message}`),
+            JSON.stringify(subscription.get, null, 2)
+          )
           subscriptionManager.inProgressCount--
           subscription.beingProcessed = false
           if (subscription.processNext) {

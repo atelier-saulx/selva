@@ -107,6 +107,45 @@ export class Observable {
 
   public useCache: boolean
 
+  public reconnect(connection: Connection) {
+    // do it
+
+    if (connection === this.connection) {
+      // connection.attachClient(this)
+      connection.startClientHb(this.selvaClient.uuid, this.selvaClient.selvaId)
+
+      const channel = this.uuid
+      const getOptions = this.getOptions
+
+      const id = this.selvaId
+
+      connection.command({
+        command: 'sadd',
+        args: [channel, this.selvaClient.uuid],
+        id,
+      })
+
+      connection.command({
+        command: 'hsetnx',
+        args: getOptions
+          ? [SUBSCRIPTIONS, channel, JSON.stringify(getOptions)]
+          : [SUBSCRIPTIONS, channel, '{}'],
+        id,
+      })
+
+      connection.command({
+        command: 'publish',
+        args: [
+          NEW_SUBSCRIPTION,
+          JSON.stringify({ client: this.selvaClient.uuid, channel }),
+        ],
+        id,
+      })
+    } else {
+      console.info('RECONNED TO SOMETHING DIFFERENT IN OBSERVABLE')
+    }
+  }
+
   public async hardDisconnect() {
     // just call start again
 

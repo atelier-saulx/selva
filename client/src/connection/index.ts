@@ -9,6 +9,7 @@ import { serverId, isEmptyObject } from '../util'
 import { Observable } from '../observable'
 import { CLIENTS, HEARTBEAT, STOP_HEARTBEAT, LOG } from '../constants'
 import chalk from 'chalk'
+import { test_joinString } from 'lua/tests/util'
 
 const CLIENT_HEARTBEAT_TIMER = 1e3
 
@@ -36,6 +37,8 @@ class Connection {
   // public selvaSubscriptions: {
   //   [key: string]: number
   // }
+
+  public isReconnect: boolean = false
 
   public serverDescriptor: ServerDescriptor
 
@@ -157,6 +160,7 @@ class Connection {
     this.clientHb[uuid].counter++
     clearTimeout(this.clientHb[uuid].timer)
     const setHeartbeat = () => {
+      // console.info('make make hb')
       if (this.connected) {
         this.command({
           id: id,
@@ -580,7 +584,11 @@ class Connection {
     this.subscriber.on('error', () => {})
     this.publisher.on('error', () => {})
 
+    console.info('QUIT', this.uuid)
+    this.subscriber.unsubscribe()
+    this.subscriber.unref()
     this.subscriber.quit()
+    this.publisher.unref()
     this.publisher.quit()
 
     if (this.destroyTimer) {
@@ -609,7 +617,7 @@ class Connection {
 
     // destroy if counter is zero
     if (this.selvaSubscriptionsActive) {
-      console.log(
+      console.info(
         'need to remove subs listeners for hearthbeat, and need to remove message listener'
       )
     }

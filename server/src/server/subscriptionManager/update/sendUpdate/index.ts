@@ -108,7 +108,7 @@ const sendUpdate = async (
 
   const resultStr = JSON.stringify({ type: 'update', payload })
 
-  const currentVersion = subscription.version
+  let currentVersion = subscription.version
   const q = []
 
   // if sub is removed
@@ -158,17 +158,27 @@ const sendUpdate = async (
 
   // maybe add 'expirimental diffs enabled or something'
   if (currentVersion) {
-    const prev = JSON.parse(await redis.hget(selector, CACHE, channel))
-    // maybe gzip the patch (very efficient format for gzip)
-    const diffPatch = diff(prev.payload, payload)
+    try {
+      const prev = JSON.parse(await redis.hget(selector, CACHE, channel))
 
-    // gzip only makes sense for a certain size of update
-    // patch = (
-    //   await (<Promise<Buffer>>gzip(JSON.stringify([diffPatch, currentVersion])))
-    // ).toString('base64')
-    // console.log('PATCH', patch)
+      if (prev) {
+        // maybe gzip the patch (very efficient format for gzip)
+        const diffPatch = diff(prev.payload, payload)
 
-    patch = JSON.stringify([diffPatch, currentVersion])
+        // gzip only makes sense for a certain size of update
+        // patch = (
+        //   await (<Promise<Buffer>>gzip(JSON.stringify([diffPatch, currentVersion])))
+        // ).toString('base64')
+        // console.log('PATCH', patch)
+
+        patch = JSON.stringify([diffPatch, currentVersion])
+      } else {
+        currentVersion = null
+      }
+    } catch (err) {
+      console.error('Cannot read current version')
+      currentVersion = null
+    }
   }
 
   if (patch) {
