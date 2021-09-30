@@ -60,6 +60,7 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
+import { createPatch, applyPatch } from '@saulx/diff'
 
 let srv
 let port: number
@@ -448,32 +449,34 @@ test.serial('get - basic value types timeseries', async (t) => {
       imageTs: { $raw: 'image._ts' },
     })
 
-    console.log(
-      'HMMHMM',
-      JSON.stringify(
-        await client.get({
-          $id: 'viA',
-          values: {
-            $field: 'value',
-            $list: { $limit: 5 },
+    const hmmhmm = await client.get({
+      $id: 'viA',
+      values: {
+        $field: 'value',
+        $list: { $limit: 5 },
+      },
+      thumbnails2: {
+        $all: true,
+        $list: {
+          $find: {
+            $traverse: 'image',
           },
-          thumbnails2: {
-            $all: true,
-            $list: {
-              $find: {
-                $traverse: 'image',
-              },
-              $limit: 5,
-            },
-          },
-        }),
-        null,
-        2
-      ),
-      'WUT WUT',
-      wutwut
-    )
+          $limit: 5,
+        },
+      },
+    })
 
+    console.log('HMMHMM', JSON.stringify(hmmhmm, null, 2))
+    console.log('WUT WUT', wutwut)
+
+    const a = { values: hmmhmm.values }
+    const b = { values: wutwut.values }
+    const patch = createPatch(a, b, {
+      parseDiffFunctions: true,
+    })
+    console.log('PATCH', a, b, JSON.stringify(patch, null, 2))
+    const applied = applyPatch(a, patch)
+    console.log('APPLIED PATCH', applied)
     i++
   }, 2e3)
 
