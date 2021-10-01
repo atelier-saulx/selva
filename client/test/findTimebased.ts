@@ -11,7 +11,7 @@ test.before(async (t) => {
   port = await getPort()
   srv = await start({
     port,
-    selvaOptions: ['FIND_INDICES_MAX', '100', 'FIND_INDEXING_INTERVAL', '500', 'FIND_INDEXING_ICB_UPDATE_INTERVAL', '1000'],
+    selvaOptions: ['FIND_INDICES_MAX', '100', 'FIND_INDEXING_INTERVAL', '1000', 'FIND_INDEXING_ICB_UPDATE_INTERVAL', '500', 'FIND_INDEXING_POPULARITY_AVE_PERIOD', '3'],
   })
 
   await wait(500)
