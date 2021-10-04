@@ -152,7 +152,7 @@ test.serial('find index', async (t) => {
 
   const ilist = await client.redis.selva_index_list('___selva_hierarchy')
   t.deepEqual(ilist[0], 'root.I.ImxlIiBl')
-  t.truthy(ilist[1][0] > 200, `${ilist[1][0]}`)
+  t.truthy(ilist[1][0] > 140, `${ilist[1][0]}`)
   t.truthy(ilist[1][1] > 700, `${ilist[1][1]}`)
   t.truthy(ilist[1][2] < 1, `${ilist[1][2]}`)
   t.truthy(ilist[1][3] === '3002', `${ilist[1][2]}`)
@@ -426,7 +426,7 @@ test.serial('find index exists', async (t) => {
   t.deepEqual(ilist[2], 'root.I.InRoaW5ncyIgaCBM', `${ilist[2]}`)
   t.truthy(ilist[3][0] > 100, `${ilist[3][0]}`)
   t.truthy(ilist[3][1] > 200, `${ilist[3][1]}`)
-  t.truthy(ilist[3][2] > 200, `${ilist[3][2]}`)
+  t.truthy(ilist[3][2] > 150, `${ilist[3][2]}`)
   t.truthy(ilist[3][3] > 490, `${ilist[3][2]}`)
 
   await client.destroy()
