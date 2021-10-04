@@ -59,7 +59,6 @@ struct SelvaFindIndexControlBlock {
          * The full search space size.
          * This is the nubmer of nodes we must traverse to build the find result
          * without indexing.
-         * TODO Median would be better here.
          */
         float tot_max;
         float tot_max_ave;
