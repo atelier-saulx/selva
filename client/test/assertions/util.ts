@@ -6,30 +6,9 @@ export const wait = (timeMs: number = 500): Promise<void> =>
 
 export const idExists = async (
   client: SelvaClient,
-  id: string,
-  dump?: any[]
+  id: string
 ): Promise<boolean> => {
-  if (!dump) dump = await dumpDb(client)
-  for (let key in dump) {
-    if (key === id) {
-      return true
-    }
-    if (dump[key] === id) {
-      return true
-    }
-    if (
-      typeof dump[key] === 'string' &&
-      dump[key].split(',').indexOf(id) !== -1
-    ) {
-      return true
-    }
-    if (typeof dump[key] === 'object') {
-      if (await idExists(client, id, dump[key])) {
-        return true
-      }
-    }
-  }
-  return false
+  return !!(await client.redis.exists(id)) && !!(await client.redis.selva_object_get('', id))
 }
 
 export const dumpDb = async (client: SelvaClient): Promise<any[]> => {
