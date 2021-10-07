@@ -9,7 +9,6 @@ import { serverId, isEmptyObject } from '../util'
 import { Observable } from '../observable'
 import { CLIENTS, HEARTBEAT, STOP_HEARTBEAT, LOG } from '../constants'
 import chalk from 'chalk'
-import { test_joinString } from 'lua/tests/util'
 
 const CLIENT_HEARTBEAT_TIMER = 1e3
 
@@ -584,7 +583,6 @@ class Connection {
     this.subscriber.on('error', () => {})
     this.publisher.on('error', () => {})
 
-    console.info('QUIT', this.uuid)
     this.subscriber.unsubscribe()
     this.subscriber.unref()
     this.subscriber.quit()

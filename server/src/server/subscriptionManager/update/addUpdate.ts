@@ -2,11 +2,11 @@ import sendUpdate from './sendUpdate'
 import { Subscription, SubscriptionManager } from '../types'
 import chalk from 'chalk'
 
-var delayCount = 0
+let delayCount = 0
 
 const sendUpdates = (subscriptionManager: SubscriptionManager) => {
   // seeing a double subscriptions no good
-  let cnt = 0
+  // let cnt = 0
   subscriptionManager.stagedForUpdates.forEach((subscription) => {
     subscription.inProgress = false
     subscriptionManager.stagedForUpdates.delete(subscription)
@@ -14,7 +14,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
       // console.log('in progress dont add')
       subscription.processNext = true
     } else {
-      cnt++
+      // cnt++
       sendUpdate(subscriptionManager, subscription)
         .then((_v) => {
           // console.log('SEND UPDATE FOR', subscription.channel)
@@ -24,6 +24,7 @@ const sendUpdates = (subscriptionManager: SubscriptionManager) => {
             chalk.red(`Error in send update ${err.message}`),
             JSON.stringify(subscription.get, null, 2)
           )
+          console.error(err)
           subscriptionManager.inProgressCount--
           subscription.beingProcessed = false
           if (subscription.processNext) {

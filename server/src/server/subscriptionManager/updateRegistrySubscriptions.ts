@@ -1,6 +1,7 @@
 import { SelvaClient, constants } from '@saulx/selva'
 import { SubscriptionManager } from './types'
 import chalk from 'chalk'
+import { wait } from '../../util'
 
 type Subscriptions = {
   host: string
@@ -72,6 +73,11 @@ export default async function updateRegistry(
   info: Subscriptions,
   subsManager: SubscriptionManager
 ) {
+  const x = ~~(Math.random() * 5e3)
+  await wait()
+
+  console.info('✨ OK register with sub', 'waited', x, 'ms', info.subscriptions)
+
   for (const key in info.subscriptions) {
     subscriptions[key] = info.subscriptions[key]
   }
