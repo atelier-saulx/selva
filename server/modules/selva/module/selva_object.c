@@ -72,6 +72,7 @@ static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
+    /* strcmp() is slightly faster than memcmp() in this case. */
     return strcmp(a->name, b->name);
 }
 

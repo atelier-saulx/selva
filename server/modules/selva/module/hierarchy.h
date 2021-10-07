@@ -171,8 +171,23 @@ int SelvaHierarchy_NodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_Node
 /**
  * Copy nodeId to a buffer.
  */
-char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node);
-char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaModify_HierarchyNode *node);
+static inline char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node) {
+    const char *buf = (const char *)node;
+
+    /* We know the id is the first thing in the struct. */
+    memcpy(id, buf, SELVA_NODE_ID_SIZE);
+
+    return id;
+}
+
+static inline char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaModify_HierarchyNode *node) {
+    const char *buf = (const char *)node;
+
+    memcpy(type, buf, SELVA_NODE_TYPE_SIZE);
+
+    return type;
+}
+
 
 const struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByConstPtr(const struct SelvaModify_HierarchyNode *node);
 struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
