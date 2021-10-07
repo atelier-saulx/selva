@@ -32,7 +32,7 @@ struct SelvaDbVersionInfo {
 } selva_db_version_info;
 
 typedef struct SelvaModify_HierarchyNode {
-    Selva_NodeId id;
+    Selva_NodeId id; /* Must be first. */
     struct trx trx_label;
 #if HIERARCHY_SORT_BY_DEPTH
     ssize_t depth;
@@ -367,16 +367,6 @@ SelvaModify_HierarchyNode *SelvaHierarchy_FindNode(SelvaModify_Hierarchy *hierar
 
 int SelvaHierarchy_NodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
     return SelvaHierarchy_FindNode(hierarchy, id) != NULL;
-}
-
-char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const SelvaModify_HierarchyNode *node) {
-    memcpy(id, node->id, SELVA_NODE_ID_SIZE);
-    return id;
-}
-
-char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const SelvaModify_HierarchyNode *node) {
-    memcpy(type, node->id, SELVA_NODE_TYPE_SIZE);
-    return type;
 }
 
 const struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByConstPtr(const SelvaModify_HierarchyNode *node) {
