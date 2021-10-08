@@ -437,7 +437,7 @@ static int send_node_fields(
                     (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     } else {
-        _Static_assert(sizeof(wildcard) == 2);
+        _Static_assert(sizeof(wildcard) == 2, "Must be a single char");
         const char wildcard_ch = wildcard[0];
         void *iterator;
         const SVector *vec;
