@@ -353,7 +353,7 @@ static enum rpn_error push_string_result(struct rpn_ctx *ctx, const char *s, siz
     }
 
     v->s_size = size;
-    strncpy(v->s, s, slen);
+    memcpy(v->s, s, slen);
     v->s[slen] = '\0';
     v->d = nan_undefined();
 
@@ -1376,7 +1376,7 @@ static enum rpn_error compile_str_literal(struct rpn_expression *expr, int i, co
 
     v = alloc_rpn_operand(size);
     v->s_size = size;
-    strncpy(v->s, str, size);
+    memcpy(v->s, str, len);
     v->s[len] = '\0';
     v->d = nan("");
 
