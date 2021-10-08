@@ -1,5 +1,4 @@
 import test from 'ava'
-import { performance } from 'perf_hooks'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
@@ -231,62 +230,4 @@ test.serial('traversal expression with index', async (t) => {
     (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
     [ `${id}.N.eyJwYXJlbnRzIiwiY2hpbGRyZW4ifQ==.IzQgInZhbHVlIiBnIEU=`, '674' ]
   )
-})
-
-test.serial('slow traversal and fast index', async (t) => {
-  const client = connect({ port })
-  const N = 5000;
-
-  for (let i = 1; i < N + 1; i++) {
-    await client.set({
-      type: 'match',
-      id: `ma${i}`,
-      value: i,
-      parents: [ `ma${i - 1}` ],
-      children: [
-        {
-          type: 'match',
-          value: i | 1,
-        }
-      ]
-    })
-  }
-
-  const expected = ((a, b) => {
-      const arr = []
-      for (var i = a; i <= b; i++) {
-        if (i % 10 === 0) {
-          arr.push(i)
-        }
-      }
-      return arr
-  })(1, N + 1)
-
-  const noIndexStart = performance.now()
-  for (let i = 0; i < 500; i++) {
-    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'order', 'value', 'asc', 'fields', 'value', 'root', '#10 "value" g E L')
-    t.deepEqual(r.map((v) => Number(v[1][1])), expected)
-  }
-  const noIndexEnd = performance.now()
-  const NoIndexTime = noIndexEnd - noIndexStart
-
-  for (let i = 0; i < 500; i++) {
-    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', '#10 "value" g E L', 'order', 'value', 'asc', 'fields', 'value', 'root', '#10 "value" g E L')
-    t.deepEqual(r.map((v) => Number(v[1][1])), expected)
-  }
-  await wait(2e3)
-  const indexStart = performance.now()
-  for (let i = 0; i < 500; i++) {
-    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', '#10 "value" g E L', 'order', 'value', 'asc', 'fields', 'value', 'root', '#10 "value" g E L')
-    t.deepEqual(r.map((v) => Number(v[1][1])), expected)
-  }
-  const indexEnd = performance.now()
-  const indexTime = indexEnd - indexStart
-
-  t.deepEqual(
-    (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
-    [ 'root.I.IzEwICJ2YWx1ZSIgZyBFIEw=', `${expected.length}` ]
-  )
-
-  t.assert(NoIndexTime > 2 * indexTime, 'find from index is at least twice as fast')
 })
