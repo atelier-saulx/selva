@@ -680,7 +680,7 @@ int SVector_Done(const struct SVectorIterator *it) {
     return 1;
 }
 
-void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *vec) {
+void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector * restrict vec) {
     assert(it);
     assert(vec);
 

@@ -450,7 +450,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
     struct SelvaObjectKey *key = NULL;
     struct SelvaObject *cobj = obj; /* Containing object. */
 
-    strncpy(buf, key_name_str, key_name_len);
+    memcpy(buf, key_name_str, key_name_len);
     buf[key_name_len] = '\0';
 
     size_t nr_parts_found = 0;

@@ -126,7 +126,7 @@ static inline enum SVectorMode SVector_Mode(const SVector * restrict vec) {
     return vec->vec_mode;
 }
 
-void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *vec);
+void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector * restrict vec);
 static inline void *SVector_Foreach(struct SVectorIterator *it) {
     return it->fn(it);
 }
