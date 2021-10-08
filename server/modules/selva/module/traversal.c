@@ -277,7 +277,7 @@ int SelvaTraversal_CompareAsc(const void ** restrict a_raw, const void ** restri
             return 1;
         }
     } else if (a->data_len && b->data_len) {
-        const int res = memcmp(aStr, bStr, a->data_len);
+        const int res = strcmp(aStr, bStr);
 
         if (res != 0) {
             return res;
