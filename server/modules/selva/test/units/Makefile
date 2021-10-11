@@ -1,4 +1,5 @@
 # PUnit example project #######################################################
+include ../../common.mk
 
 # Add here one or more include directories.
 IDIR := ./ ../../rmutil ../../util ../../include ../../module
@@ -14,7 +15,7 @@ PU_UU := 1
 # test case descriptions. 0 = disabled; 1 = enabled.
 PU_REPORT_ORIENTED := 1
 
-CCFLAGS := -Wextra -Wno-unused-value -g -include ../tunables.h
+CCFLAGS := $(CFLAGS) -Wextra -Wno-unused-value -g -include ../tunables.h
 
 # Location of punit makefile
 # Do not touch

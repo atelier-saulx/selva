@@ -20,6 +20,7 @@
 #include "selva_node.h"
 #include "selva_object.h"
 #include "selva_onload.h"
+#include "find_index.h"
 #include "selva_set.h"
 #include "traversal.h"
 #include "subscriptions.h"
@@ -161,14 +162,13 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
     Selva_Subscriptions_InitHierarchy(hierarchy);
 
-    hierarchy->dyn_index = SelvaObject_New();
-    if (!hierarchy->dyn_index) {
+    if (SelvaFindIndex_Init(ctx, hierarchy)) {
         SelvaModify_DestroyHierarchy(hierarchy);
         hierarchy = NULL;
         goto fail;
     }
 
-    if(unlikely(SelvaModify_SetHierarchy(ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL) < 0)) {
+    if (unlikely(SelvaModify_SetHierarchy(ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL) < 0)) {
         SelvaModify_DestroyHierarchy(hierarchy);
         hierarchy = NULL;
         goto fail;
@@ -194,10 +194,14 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
      * will be gone anyway.
      */
     SelvaSubscriptions_DestroyAll(NULL, hierarchy);
+    /*
+     * If SelvaSubscriptions_DestroyAll() is ran first the we don't need to
+     * bother about cleaning up subscriptions used by the indexing and thus
+     * hopefully the deinit doesn't need a RedisModuleCtx.
+     */
+    SelvaFindIndex_Deinit(hierarchy);
 
     /* TODO Do we need to destroy constraints? */
-
-    SelvaObject_Destroy(hierarchy->dyn_index);
 
     SVector_Destroy(&hierarchy->heads);
 #if MEM_DEBUG

@@ -19,7 +19,7 @@ enum SelvaObjectType {
     SELVA_OBJECT_SET = 5,
     SELVA_OBJECT_ARRAY = 6,
     SELVA_OBJECT_POINTER = 7,
-};
+} __attribute__((packed));
 
 struct RedisModuleCtx;
 struct RedisModuleIO;

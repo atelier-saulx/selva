@@ -353,6 +353,32 @@ int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out) {
     return 0;
 }
 
+static int _insert_new_key(struct SelvaObject *obj, const char *name_str, size_t name_len, struct SelvaObjectKey **key_out) {
+    struct SelvaObjectKey *key;
+
+    if (obj->obj_size == SELVA_OBJECT_SIZE_MAX) {
+        return SELVA_OBJECT_EOBIG;
+    }
+
+    const size_t key_size = sizeof(struct SelvaObjectKey) + name_len + 1;
+    key = RedisModule_Alloc(key_size);
+    if (!key) {
+        return SELVA_ENOMEM;
+    }
+
+    /*
+     * Initialize and insert.
+     */
+    memset(key, 0, key_size);
+    memcpy(key->name, name_str, name_len);
+    key->name_len = name_len;
+    obj->obj_size++;
+    (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
+
+    *key_out = key;
+    return 0;
+}
+
 static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
     const char *sep = ".";
     const size_t nr_parts = substring_count(key_name_str, sep, key_name_len) + 1;
@@ -363,20 +389,19 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
     strncpy(buf, key_name_str, key_name_len);
     buf[key_name_len] = '\0';
 
-    char *rest;
     size_t nr_parts_found = 0;
+    char *rest;
     char *s;
     for (s = strtok_r(buf, sep, &rest);
          s != NULL;
          s = strtok_r(NULL, sep, &rest)) {
-        size_t slen = strlen(s);
-        int err;
-        ssize_t ary_idx = -1;
-
+        size_t slen = strlen(s); /* strtok_r() is safe. */
         size_t new_len = 0;
+        ssize_t ary_idx = -1;
+        int err;
+
         if (is_array_field(s, slen)) {
             new_len = get_array_field_start_idx(s, slen);
-
             ary_idx = get_array_field_index(s, slen);
 
             if (ary_idx == -1) {
@@ -385,6 +410,9 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
         }
 
+        /*
+         * Replace the current s if s was an array field.
+         */
         char new_s[new_len + 1];
         if (new_len > 0) {
             memcpy(new_s, s, new_len);
@@ -402,28 +430,16 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
-             * but we are allowed to create one here.
+             * but we are allowed to create one here. Only create the key if it didn't exist.
+             * Otherwise we can just reuse the old one.
              */
             if (!key) {
-                /*
-                 * Only create the key if it didn't exist. Otherwise we can just
-                 * reuse it.
-                 */
-                if (obj->obj_size == SELVA_OBJECT_SIZE_MAX) {
-                    return SELVA_OBJECT_EOBIG;
-                }
+                int err2;
 
-                const size_t key_size = sizeof(struct SelvaObjectKey) + slen + 1;
-                key = RedisModule_Alloc(key_size);
-                if (!key) {
-                    return SELVA_ENOMEM;
+                err2 = _insert_new_key(obj, s, slen, &key);
+                if (err2) {
+                    return err2;
                 }
-
-                memset(key, 0, key_size);
-                strcpy(key->name, s); /* strok() is safe. */
-                key->name_len = slen;
-                obj->obj_size++;
-                (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
             } else {
                 /*
                  * Clear the old value.
@@ -450,28 +466,16 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
-             * but we are allowed to create one here.
+             * but we are allowed to create one here. Only create the key if it didn't exist.
+             * Otherwise we can just reuse the old one.
              */
             if (!key) {
-                /*
-                 * Only create the key if it didn't exist. Otherwise we can just
-                 * reuse it.
-                 */
-                if (obj->obj_size == SELVA_OBJECT_SIZE_MAX) {
-                    return SELVA_OBJECT_EOBIG;
-                }
+                int err2;
 
-                const size_t key_size = sizeof(struct SelvaObjectKey) + slen + 1;
-                key = RedisModule_Alloc(key_size);
-                if (!key) {
-                    return SELVA_ENOMEM;
+                err2 = _insert_new_key(obj, s, slen, &key);
+                if (err2) {
+                    return err2;
                 }
-
-                memset(key, 0, key_size);
-                strcpy(key->name, s); /* strok() is safe. */
-                key->name_len = slen;
-                obj->obj_size++;
-                (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
             } else {
                 /*
                  * Clear the old value.
@@ -585,7 +589,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
     }
 
     const size_t key_size = sizeof(struct SelvaObjectKey) + key_name_len + 1;
-    char buf[key_size] __attribute__((aligned(alignof(struct SelvaObjectKey)))); /* RFE This might be dumb */
+    char buf[key_size] __attribute__((aligned(alignof(struct SelvaObjectKey))));
 
     filter = (struct SelvaObjectKey *)buf;
     memset(filter, 0, key_size);
@@ -594,6 +598,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
 
     key = RB_FIND(SelvaObjectKeys, &obj->keys_head, filter);
     if (!key && (flags & SELVA_OBJECT_GETKEY_CREATE)) {
+        /* TODO this is similar but the the same as _insert_new_key() */
         if (obj->obj_size == SELVA_OBJECT_SIZE_MAX) {
             return SELVA_OBJECT_EOBIG;
         }

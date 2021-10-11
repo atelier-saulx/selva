@@ -42,6 +42,9 @@ export default (server: SelvaServer, opts: ServerOptions) => {
           )
     if (fs.existsSync(p)) {
       args.push('--loadmodule', p)
+      if (m === 'selva' && opts.selvaOptions) {
+          args.push(...opts.selvaOptions)
+      }
     } else {
       console.warn(`${m} module does not exists for "${platform}"`)
     }
