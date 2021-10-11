@@ -2,6 +2,8 @@ import { promises as fs } from 'fs'
 import { BackupFns } from '../../backups'
 import { createApi, S3Api } from './s3api'
 
+export { S3Api } from './s3Api'
+
 type S3Opts = {
   config: {
     accessKeyId: string

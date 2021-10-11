@@ -8,6 +8,7 @@ export type S3Api = {
   listObjects: (bucketName: string) => Promise<aws.S3.ObjectList>
   getObject: (bucketName: string, filepath: string) => Promise<aws.S3.Body>
   deleteObject: (bucketName: string, filepath: string) => Promise<void>
+  getSignedObject: (bucketname: string, filepath: string) => Promise<string>
   storeFile: (
     bucketName: string,
     destFilepath: string,
@@ -94,6 +95,25 @@ export function createApi(
 
           resolve()
         })
+      })
+    },
+    getSignedObject(bucketName, filepath) {
+      return new Promise((resolve, reject) => {
+        s3.getSignedUrl(
+          'getObject',
+          {
+            Bucket: bucketName,
+            Key: filepath,
+            Expires: 60 * 5, // valide for 5 minutes
+          },
+          (err, url) => {
+            if (err) {
+              return reject(err)
+            }
+
+            resolve(url)
+          }
+        )
       })
     },
     async storeFile(bucketName, destFilepath, sourceFilepath) {

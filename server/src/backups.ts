@@ -1,5 +1,4 @@
 import { promises as fs } from 'fs'
-import { connect } from '@saulx/selva'
 import { join as pathJoin } from 'path'
 import { createClient } from 'redis'
 
@@ -48,7 +47,7 @@ export async function saveAndBackUp(
   const client = createClient({ port: redisPort })
 
   try {
-    await client.save()
+    client.save()
     await backupFns.sendBackup(pathJoin(redisDir, 'dump.rdb'))
   } catch (e) {
     console.error(`Failed to back up ${e.stack}`)

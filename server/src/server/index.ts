@@ -144,6 +144,8 @@ export class SelvaServer extends EventEmitter {
     } else if (this.type === 'registry') {
       registryManager(this)
     }
+
+    console.info('---------------------  lol started server')
   }
 
   async destroy() {
@@ -229,7 +231,7 @@ export const startServer = async (
   await server.start(opts)
 
   // add singnal handlers in selva itself to close redis
-  console.log('ADDING SIGNAL HANDLERS')
+  console.log('ADDING SIGNAL HANDLERS flurp')
   addSignalHandlers(server)
 
   return server
