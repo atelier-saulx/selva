@@ -7,10 +7,10 @@
 #include "tree.h"
 
 enum SVectorMode {
-    SVECTOR_MODE_NONE,
-    SVECTOR_MODE_ARRAY,
-    SVECTOR_MODE_RBTREE,
-};
+    SVECTOR_MODE_NONE = 0x0,
+    SVECTOR_MODE_ARRAY = 0x1,
+    SVECTOR_MODE_RBTREE = 0x2,
+} __attribute__((packed));
 
 struct SVector;
 struct SVectorIterator;
@@ -38,14 +38,23 @@ struct SVectorIterator {
     void *(*fn)(struct SVectorIterator *it);
 };
 
+/* These + 2 should be 64 for optimal packing. */
+#define _SVECTOR_ARR_SHIFT_INDEX_BITS 14
+#define _SVECTOR_VEC_LAST_BITS 48
+
+/**
+ * Allow shifting until the shift_index is filled.
+ */
+#define _SVECTOR_SHIFT_RESET_THRESHOLD ((1 << _SVECTOR_ARR_SHIFT_INDEX_BITS) - 1)
+
 typedef struct SVector {
-    enum SVectorMode vec_mode;
-
-    /* Array mode specific */
-    unsigned int vec_arr_shift_index; /*!< Index in the vector array for SVector_Shift(). */
-
-    /* Common to all modes */
-    size_t vec_last; /*!< Length of the vector. (Last index + 1) */
+    struct {
+        uint64_t vec_mode : 2;
+        /* Array mode specific. */
+        uint64_t vec_arr_shift_index : _SVECTOR_ARR_SHIFT_INDEX_BITS; /*!< Index in the vector array for SVector_Shift(). */
+        /* Common to all modes. */
+        uint64_t vec_last : _SVECTOR_VEC_LAST_BITS; /*!< Length of the vector. (Last index + 1) */
+    };
 
     union {
         struct {
@@ -61,7 +70,6 @@ typedef struct SVector {
     };
 
     int (*vec_compar)(const void **a, const void **b);
-
 } SVector;
 
 static inline int SVector_IsInitialized(const SVector *vec) {

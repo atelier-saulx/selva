@@ -571,7 +571,7 @@ void *SVector_Shift(SVector * restrict vec) {
         assert(vec->vec_last <= vec->vec_arr_len);
         assert(vec->vec_arr_shift_index <= vec->vec_last);
 
-        if (vec->vec_arr_shift_index > vec->vec_last / 2) {
+        if (vec->vec_arr_shift_index == _SVECTOR_SHIFT_RESET_THRESHOLD) {
             SVector_ShiftReset(vec);
         }
 
@@ -624,10 +624,6 @@ void SVector_ShiftReset(SVector * restrict vec) {
         return;
     }
 
-    /*
-     * We assume that nobody will call this function when nothing was
-     * actually inserted, thus no need to check if vec_arr is NULL.
-     */
     vec->vec_last -= vec->vec_arr_shift_index;
     memmove(vec->vec_arr, vec->vec_arr + vec->vec_arr_shift_index, VEC_SIZE(vec->vec_last));
     vec->vec_arr_shift_index = 0;
