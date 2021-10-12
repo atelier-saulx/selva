@@ -118,6 +118,7 @@ test.beforeEach(async (t) => {
           dingdongs: { type: 'array', items: { type: 'string' } },
           floatArray: { type: 'array', items: { type: 'float' } },
           intArray: { type: 'array', items: { type: 'int' } },
+          tsArray: { type: 'array', items: { type: 'timestamp' } },
           refs: { type: 'references' },
           value: { type: 'number' },
           age: { type: 'number' },
@@ -2322,6 +2323,7 @@ test.serial('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
+    tsArray: [ 1634032349768, 1634032355278 ],
     objRec: {
       abba: {
         intArray: [1, 2, 3, 4, 5],
@@ -2384,6 +2386,7 @@ test.serial('get - field with array', async (t) => {
     intArray: true,
     floatArray: true,
     objArray: true,
+    tsArray: true,
     objRec: true,
   })
 
@@ -2393,6 +2396,7 @@ test.serial('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
+    tsArray: [ 1634032349768, 1634032355278 ],
     objRec: {
       abba: {
         intArray: [1, 2, 3, 4, 5],
@@ -2427,6 +2431,7 @@ test.serial('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
+    tsArray: [ 1634032349768, 1634032355278 ],
     objRec: {
       abba: {
         intArray: [1, 2, 3, 4, 5],

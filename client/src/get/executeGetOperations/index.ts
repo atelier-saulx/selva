@@ -313,23 +313,14 @@ export const TYPE_CASTS: Record<
 
     return Array.isArray(r) ? r[0] : r
   },
-  // array: (x: any) => JSON.parse(x),
   array: (x: any, id: string, field: string, schema, lang) => {
     const fieldSchema = <FieldSchemaArrayLike>getNestedSchema(schema, id, field)
     if (!fieldSchema || !fieldSchema.items) {
       return x
     }
 
-    if (['int', 'float', 'number'].includes(fieldSchema.items.type)) {
-      const converted = x.map((num) => {
-        if (typeof num === 'string') {
-          return Number(num)
-        } else {
-          return num
-        }
-      })
-
-      return converted
+    if (['float', 'number'].includes(fieldSchema.items.type)) {
+      return x.map(Number)
     } else if (
       ['object', 'record'].includes(fieldSchema.items.type) ||
       (!lang && fieldSchema.items.type === 'text')
