@@ -111,6 +111,7 @@ struct EdgeFieldContainer {
      * }
      */
     struct SelvaObject *edges;
+
     /**
      * Custom edge field origin references.
      * This object contains pointers to each field pointing to this node. As
