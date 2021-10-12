@@ -1,6 +1,6 @@
 import { SelvaClient } from '../../'
 import { GetOperationFind, GetResult, GetOptions } from '../types'
-import { sourceFieldToFindArgs, typeCast } from './'
+import { readLongLong, sourceFieldToFindArgs, typeCast } from './'
 import {
   ast2rpn,
   Fork,
@@ -282,14 +282,14 @@ async function checkForNextRefresh(
 
       const [id] = ids
 
-      const time = Number(
+      const time = Number(readLongLong(
         await client.redis.selva_object_get(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
           makeLangArg(client.schemas[ctx.db].languages, lang),
           id,
           f.$field
         )
-      )
+      ))
 
       let v = <string>f.$value
       if (v.startsWith('now-')) {

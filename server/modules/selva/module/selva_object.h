@@ -21,6 +21,9 @@ enum SelvaObjectType {
     SELVA_OBJECT_POINTER = 7,
 } __attribute__((packed));
 
+#define SELVA_OBJECT_REPLY_SPLICE_FLAG 0x01 /*!< Set if the path should be spliced to start from the first wildcard. */
+#define SELVA_OBJECT_REPLY_BINUMF_FLAG 0x02 /*!< Send numeric fields in an LE binary format. */
+
 struct RedisModuleCtx;
 struct RedisModuleIO;
 struct RedisModuleKey;
@@ -226,6 +229,10 @@ int SelvaObject_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str
 int SelvaObject_GetUserMeta(struct SelvaObject *obj, const struct RedisModuleString *key_name, SelvaObjectMeta_t *meta);
 int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta);
 int SelvaObject_SetUserMeta(struct SelvaObject *obj, const struct RedisModuleString *key_name, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta);
+
+/**
+ * @param flags Accepts SELVA_OBJECT_REPLY_SPLICE_FLAG and other reply flags.
+ */
 int SelvaObject_GetWithWildcardStr(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
@@ -279,13 +286,19 @@ int SelvaObject_ReplyWithObjectStr(
         struct RedisModuleString *lang,
         struct SelvaObject *obj,
         const char *key_name_str,
-        size_t key_name_len);
+        size_t key_name_len,
+        unsigned flags);
 
 /*
  * Send a SelvaObject as a Redis reply.
  * @param key_name_str can be NULL.
  */
-int SelvaObject_ReplyWithObject(struct RedisModuleCtx *ctx, struct RedisModuleString *lang, struct SelvaObject *obj, const struct RedisModuleString *key_name);
+int SelvaObject_ReplyWithObject(
+        struct RedisModuleCtx *ctx,
+        struct RedisModuleString *lang,
+        struct SelvaObject *obj,
+        const struct RedisModuleString *key_name,
+        unsigned flags);
 
 struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data);
 void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data);

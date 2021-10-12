@@ -137,7 +137,7 @@ static int send_edge_field_deref_value(
         RedisModule_ReplyWithArray(ctx, 3);
         RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId)); /* The actual node_id. */
         RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
-        SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
+        SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
     } else {
         const struct SelvaModify_HierarchyNode *node;
 
@@ -172,7 +172,7 @@ static int send_object_field_value(
         RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
         RedisModule_ReplyWithString(ctx, full_field);
 
-        err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len);
+        err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
             (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
         }
