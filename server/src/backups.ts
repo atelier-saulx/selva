@@ -18,11 +18,11 @@ function nextBackupTime(
 }
 
 export type BackupFns = { sendBackup: SendBackup; loadBackup: LoadBackup }
-export type SendBackup = (rdbFilePath: string) => Promise<void>
+export type SendBackup = (rdbFilePath: string) => Promise<void> // upload backup to cloud
 export type LoadBackup = (
   rdbFilePath: string,
   rdbLastModified?: Date
-) => Promise<void>
+) => Promise<void> // overwrite local dump.rdb with latest cloud backup
 
 export async function loadBackup(redisDir: string, backupFns: BackupFns) {
   const dumpFile = pathJoin(redisDir, 'dump.rdb')

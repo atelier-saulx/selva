@@ -54,14 +54,14 @@ export default async function mkBackupFn(opts: S3Opts): Promise<BackupFns> {
       }
 
       const latest = objects.reduce((max, o) => {
-        if (new Date(o.Key) > new Date(max.Key)) {
+        if (new Date(o.LastModified) > new Date(max.LastModified)) {
           return o
         }
 
         return max
       })
 
-      if (!rdbLastModified || new Date(latest.Key) > rdbLastModified) {
+      if (!rdbLastModified || new Date(latest.LastModified) > rdbLastModified) {
         const body: Buffer = <Buffer>await s3.getObject(bucketName, latest.Key)
         await fs.writeFile(rdbFilePath, body)
       }
