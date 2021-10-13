@@ -122,6 +122,53 @@ retry:
     return NULL; /* Never reached. */
 }
 
+static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
+    switch (subtype) {
+    case SELVA_OBJECT_STRING:
+        {
+            struct SVectorIterator it;
+            RedisModuleString *str;
+
+            SVector_ForeachBegin(&it, array);
+            while ((str = SVector_Foreach(&it))) {
+                RedisModule_FreeString(NULL, str);
+            }
+        }
+        break;
+    case SELVA_OBJECT_OBJECT:
+        {
+            struct SVectorIterator it;
+            struct SelvaObject *k;
+
+            SVector_ForeachBegin(&it, array);
+            while ((k = SVector_Foreach(&it))) {
+                SelvaObject_Destroy(k);
+            }
+        }
+        break;
+    case SELVA_OBJECT_POINTER:
+    case SELVA_OBJECT_NULL:
+    case SELVA_OBJECT_DOUBLE:
+    case SELVA_OBJECT_LONGLONG:
+        /*
+         * NOP
+         *
+         * We store concrete values so it's enough to just clear the SVector.
+         *
+         * Pointer arrays don't support cleanup but it would be possible to
+         * add support for SelvaObjectPointerOpts.
+         */
+        break;
+     default:
+        fprintf(stderr, "%s:%d: Key clear failed: Unsupported array type %s (%d)\n",
+                __FILE__, __LINE__,
+                SelvaObject_Type2String(subtype, NULL),
+                (int)subtype);
+    }
+
+    SVector_Destroy(array);
+}
+
 static int clear_key_value(struct SelvaObjectKey *key) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
@@ -147,35 +194,7 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         SelvaSet_Destroy(&key->selva_set);
         break;
     case SELVA_OBJECT_ARRAY:
-        if (key->subtype == SELVA_OBJECT_STRING) {
-            struct SVectorIterator it;
-            RedisModuleString *str;
-
-            SVector_ForeachBegin(&it, &key->array);
-            while ((str = SVector_Foreach(&it))) {
-                RedisModule_FreeString(NULL, str);
-            }
-        } else if (key->subtype == SELVA_OBJECT_POINTER) {
-            /*
-             * NOP
-             * Pointer arrays don't support cleanup but it would be possible
-             * to add support for SelvaObjectPointerOpts.
-             */
-        } else if (key->subtype == SELVA_OBJECT_DOUBLE || key->subtype == SELVA_OBJECT_LONGLONG || key->subtype == SELVA_OBJECT_NULL) {
-            /* do nothing, we store concrete values so it's enough to just clear the SVector itself. */
-        } else if (key->subtype == SELVA_OBJECT_OBJECT) {
-            struct SVectorIterator it;
-            struct SelvaObject *k;
-
-            SVector_ForeachBegin(&it, &key->array);
-            while ((k = SVector_Foreach(&it))) {
-                SelvaObject_Destroy(k);
-            }
-        } else {
-            fprintf(stderr, "%s: Key clear failed: Unsupported array type (%d)\n",
-                    __FILE__, (int)key->subtype);
-        }
-        SVector_Destroy(&key->array);
+        clear_object_array(key->subtype, &key->array);
         break;
     case SELVA_OBJECT_POINTER:
         if (key->ptr_opts && key->ptr_opts->ptr_free) {
