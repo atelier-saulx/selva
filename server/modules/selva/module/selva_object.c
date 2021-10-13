@@ -162,8 +162,6 @@ static int clear_key_value(struct SelvaObjectKey *key) {
              * Pointer arrays don't support cleanup but it would be possible
              * to add support for SelvaObjectPointerOpts.
              */
-
-            SVector_Destroy(&key->array);
         } else if (key->subtype == SELVA_OBJECT_DOUBLE || key->subtype == SELVA_OBJECT_LONGLONG || key->subtype == SELVA_OBJECT_NULL) {
             /* do nothing, we store concrete values so it's enough to just clear the SVector itself. */
         } else if (key->subtype == SELVA_OBJECT_OBJECT) {
