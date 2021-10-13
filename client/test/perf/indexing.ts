@@ -66,12 +66,12 @@ test.after(async (t) => {
 
 test.serial('slow traversal and fast index', async (t) => {
   const client = connect({ port })
-  const START = 10000 // 0
+  const START = 0
   const N = 2000000 // 500000
-  const STEP = 10000 // 2500
+  const STEP = 500000 // 2500
 
   console.log('n', 'noIndexTime', 'indexTime')
-  for (let n = START; n < N; n += STEP) {
+  for (let n = START; n <= N; n += STEP) {
     await client.delete('root')
     for (let i = 1; i < n + 1; i++) {
       await client.set({
@@ -87,39 +87,27 @@ test.serial('slow traversal and fast index', async (t) => {
         ]
       })
     }
-
-    //const expected = ((a, b) => {
-    //    const arr = []
-    //    for (var i = a; i <= b; i++) {
-    //      if (i % 10 === 0) {
-    //        arr.push(i)
-    //      }
-    //    }
-    //    return arr
-    //})(1, N + 1)
+    console.log('nr match nodes:', (await client.redis.keys('ma*')).length)
 
     //const filter = '#10 "value" g E L'
-    const filter = `"value" g #${n / 2 - 1000} I "value" g #${n / 2 + 1000} H N`
+    const filter = `#${n / 2 + 999} "value" g #${n / 2 - 1000} i #2 "value" g E L M`
     //const filter = `"value" g #${n / 2} F`
     const order = [] // 'order', 'value', 'asc'
     const fields = ['id'] // 'value'
     const noIndexStart = performance.now()
     for (let i = 0; i < 500; i++) {
       const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', ...order, 'fields', ...fields, 'root', filter)
-      //t.deepEqual(r.map((v) => Number(v[1][1])), expected)
     }
     const noIndexEnd = performance.now()
     const noIndexTime = noIndexEnd - noIndexStart
 
     for (let i = 0; i < 500; i++) {
       const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', filter, ...order, 'fields', ...fields, 'root', filter)
-      //t.deepEqual(r.map((v) => Number(v[1][1])), expected)
     }
     await wait(2e3)
     const indexStart = performance.now()
     for (let i = 0; i < 500; i++) {
       const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', filter, ...order, 'fields', ...fields, 'root', filter)
-      //t.deepEqual(r.map((v) => Number(v[1][1])), expected)
     }
     const indexEnd = performance.now()
     const indexTime = indexEnd - indexStart
