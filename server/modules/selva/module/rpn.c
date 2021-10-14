@@ -522,7 +522,7 @@ enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, RedisModuleString *
     return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_RMFREE);
 }
 
-/* TODO free frag for rpn_set_reg_slvobj() */
+/* TODO free flag for rpn_set_reg_slvobj() */
 enum rpn_error rpn_set_reg_slvobj(struct rpn_ctx *ctx, size_t i, struct SelvaObject *obj, unsigned flags __unused) {
     if (i >= (size_t)ctx->nr_reg) {
         return RPN_ERR_BNDS;
@@ -552,7 +552,7 @@ enum rpn_error rpn_set_reg_slvobj(struct rpn_ctx *ctx, size_t i, struct SelvaObj
     return RPN_ERR_OK;
 }
 
-/* TODO free frag for rpn_set_reg_slvset() */
+/* TODO free flag for rpn_set_reg_slvset() */
 enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet *set, unsigned flags __unused) {
     if (i >= (size_t)ctx->nr_reg) {
         return RPN_ERR_BNDS;
