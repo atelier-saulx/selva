@@ -141,6 +141,8 @@ static int init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType su
 
     if (!SVector_Init(key->array, size, NULL)) {
         RedisModule_Free(key->array);
+        key->type = SELVA_OBJECT_NULL;
+        key->subtype = SELVA_OBJECT_NULL;
         key->array = NULL;
         return SELVA_ENOMEM;
     }
