@@ -1492,7 +1492,6 @@ struct rpn_expression *rpn_compile(const char *input) {
             goto fail;
         }
 
-        /* TODO Free memory on error. */
         switch (tok_str[0]) {
         case '#':
             err = compile_num_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 1);
