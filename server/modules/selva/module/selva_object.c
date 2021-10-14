@@ -423,6 +423,24 @@ static int _insert_new_key(struct SelvaObject *obj, const char *name_str, size_t
     return 0;
 }
 
+static int _insert_new_obj_into_array(struct SelvaObject *obj, char *s, size_t slen, ssize_t ary_idx, struct SelvaObject **out) {
+    struct SelvaObject *new_obj;
+    int err;
+
+    new_obj = SelvaObject_New();
+    if (!new_obj) {
+        return SELVA_ENOMEM;
+    }
+
+    err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+    if (err) {
+        return err;
+    }
+
+    *out = new_obj;
+    return 0;
+}
+
 static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
     const char *sep = ".";
     const size_t nr_parts = substring_count(key_name_str, sep, key_name_len) + 1;
@@ -494,17 +512,10 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                 return err;
             }
 
-            struct SelvaObject *new_obj = SelvaObject_New();
-            if (!new_obj) {
-                return SELVA_ENOMEM;
-            }
-
-            err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+            err = _insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
             if (err) {
                 return err;
             }
-
-            obj = new_obj;
         } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT && key->type != SELVA_OBJECT_ARRAY)) &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
@@ -546,7 +557,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              */
             obj = key->value;
         } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found &&
-            (flags & SELVA_OBJECT_GETKEY_CREATE)) {
+                   (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Keep nesting or return an object if this was the last token.
              */
@@ -556,17 +567,10 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
 
             if (err == SELVA_ENOENT || !obj) {
-                struct SelvaObject *new_obj = SelvaObject_New();
-                if (!new_obj) {
-                    return SELVA_ENOMEM;
-                }
-
-                err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+                err = _insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
                 if (err) {
                     return err;
                 }
-
-                obj = new_obj;
             }
         } else {
             /*
@@ -609,15 +613,12 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         key = NULL;
     }
 
-
     *out = key;
     return 0;
 }
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
-    struct SelvaObjectKey *filter;
-    struct SelvaObjectKey *key;
-
+    /* RFE Actually we should limit this per part. */
     if (key_name_len + 1 > SELVA_OBJECT_KEY_MAX) {
         return SELVA_ENAMETOOLONG;
     }
@@ -631,6 +632,8 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         key_name_len = get_array_field_start_idx(key_name_str, key_name_len);
     }
 
+    struct SelvaObjectKey *filter;
+    struct SelvaObjectKey *key;
     const size_t key_size = sizeof(struct SelvaObjectKey) + key_name_len + 1;
     char buf[key_size] __attribute__((aligned(alignof(struct SelvaObjectKey))));
 
