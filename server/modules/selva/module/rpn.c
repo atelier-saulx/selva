@@ -9,6 +9,7 @@
 #include "cdefs.h"
 #include "../rmutil/sds.h"
 #include "redismodule.h"
+#include "errors.h"
 #include "hierarchy.h"
 #include "selva_node.h"
 #include "selva_object.h"
@@ -1026,6 +1027,34 @@ static inline size_t size_min(size_t a, size_t b) {
     return (a < b ? a : b);
 }
 
+static enum rpn_error SelvaSet_Add_err2rpn_error(int err) {
+    if (err && err != SELVA_EEXIST) {
+        if (err == SELVA_ENOMEM) {
+            return RPN_ERR_ENOMEM;
+        } else {
+            /* Report other errors as a type error. */
+            return RPN_ERR_TYPE;
+        }
+    }
+
+    return RPN_ERR_OK;
+}
+
+static enum rpn_error SelvaSet_Union_err2rpn_error(int err) {
+    if (err >= 0) {
+        return RPN_ERR_OK;
+    } else if (err == SELVA_ENOMEM) {
+        return RPN_ERR_ENOMEM;
+    } else if (err == SELVA_EINVAL) {
+        return RPN_ERR_ILLOPN;
+    } else if (err == SELVA_EINTYPE) {
+        return RPN_ERR_TYPE;
+    } else {
+        /* Report other errors as type errors. */
+        return RPN_ERR_TYPE;
+    }
+}
+
 static enum rpn_error rpn_op_strcmp(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -1119,13 +1148,12 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
                 RedisModule_FreeString(NULL, s);
 
                 if (err != SELVA_EEXIST) {
-                    if (err == SELVA_ENOMEM) {
-                        return RPN_ERR_ENOMEM;
-                    } else {
-                        /* Report other errors as a type error. */
-                        return RPN_ERR_TYPE;
-                    }
+                    return SelvaSet_Add_err2rpn_error(err);
                 }
+                /*
+                 * SELVA_EEXIST doesn't seem like it would happen but let's
+                 * ignore it anyway.
+                 */
             }
 
             break;
@@ -1208,16 +1236,7 @@ static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, st
 
     err = SelvaSet_Union(res->set, set_a, set_b, NULL);
     if (err) {
-        if (err == SELVA_ENOMEM) {
-            return RPN_ERR_ENOMEM;
-        } else if (err = SELVA_EINVAL) {
-            return RPN_ERR_ILLOPN;
-        } else if (SELVA_EINTYPE) {
-            return RPN_ERR_TYPE;
-        } else {
-            /* Report other errors as type errors. */
-            return RPN_ERR_TYPE;
-        }
+        return SelvaSet_Union_err2rpn_error(err);
     }
 
     return push(ctx, res);
@@ -1448,7 +1467,12 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, int 
 
             err = SelvaSet_Add(v->set, rms);
             if (err) {
-                return err;
+                RedisModule_FreeString(NULL, rms);
+
+                if (err != SELVA_EEXIST) {
+                    return SelvaSet_Add_err2rpn_error(err);
+                }
+                /* Ignore SELVA_EEXIST. */
             }
         }
         if (tok_len == 0) {
@@ -1757,12 +1781,10 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
 
     if (res->set) {
         if (res->flags.regist) {
-            SelvaSet_Union(out, res->set, NULL);
-            /* TODO handle errors. */
+            err = SelvaSet_Union_err2rpn_error(SelvaSet_Union(out, res->set, NULL));
         } else {
             /* Safe to move the strings. */
-            SelvaSet_Merge(out, res->set);
-            /* TODO Handle errors. */
+            err = SelvaSet_Union_err2rpn_error(SelvaSet_Merge(out, res->set));
         }
         free_rpn_operand(&res);
     } else if (to_bool(res)) {
@@ -1771,5 +1793,5 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
         return RPN_ERR_TYPE;
     }
 
-    return RPN_ERR_OK;
+    return err;
 }
