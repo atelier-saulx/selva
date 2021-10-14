@@ -290,6 +290,7 @@ int Edge_Add(
 
     insert_edge(src_edge_field, dst_node);
 
+    err = 0; /* Just to be sure. */
     if (constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
         /*
          * This field is bidirectional and so we need to create an edge pointing back.
@@ -298,6 +299,9 @@ int Edge_Add(
                        constraint->bck_field_name_str, constraint->bck_field_name_len,
                        dst_node, src_node);
         if (err && err != SELVA_EEXIST) {
+            Selva_NodeId dst_node_id;
+            int err1; /* We must retain the original err. */
+
             /*
              * Ok so, this is a bit dumb but we break an infinite loop by
              * ignoring SELVA_EEXIST. It's terribly inefficient to attempt to
@@ -307,9 +311,24 @@ int Edge_Add(
              * The normal flow should be like this:
              * Edge_Add(src, dst) -> Edge_Add(dst, src) -> Edge_Add(src, dst) => SELVA_EEXIST
              */
-            /* TODO Actually handle errors here. */
             fprintf(stderr, "%s:%d: An error occurred while creating a bidirectional edge: %s\n",
                     __FILE__, __LINE__, getSelvaErrorStr(err));
+
+            /*
+             * In case of an error we can't actually rollback anymore but we can
+             * delete the edge we just created, perhaps it's still better than
+             * leaving a half-broken bidir edge.
+             * Surely this can fail too if we are OOMing.
+             */
+            SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
+            err1 = Edge_Delete(ctx, hierarchy, src_edge_field, src_node, dst_node_id);
+            if (err1 && err1 != SELVA_ENOENT) {
+                fprintf(stderr, "%s:%d: Failed to remove the broken edge: %s\n",
+                        __FILE__, __LINE__, getSelvaErrorStr(err1));
+            }
+        } else {
+            /* We don't want to leak the SELVA_EEXIST. */
+            err = 0;
         }
     }
 
@@ -319,7 +338,7 @@ int Edge_Add(
      * command. Therefore we expect we don't need to do anything here.
      */
 
-    return 0;
+    return err;
 }
 
 static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaModify_HierarchyNode *dst_node) {
