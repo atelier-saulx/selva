@@ -1540,11 +1540,16 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
         return 0;
     case SELVA_OBJECT_DOUBLE:
     case SELVA_OBJECT_LONGLONG:
+        /* Obviously this is more than one byte but the user doesn't need to care about that. */
         return 1;
     case SELVA_OBJECT_STRING:
         if (key->value) {
             size_t len;
 
+            /*
+             * Now we don't exactly know if the value is some utf8 text string
+             * or a binary buffer, so we just return the byte size.
+             */
             (void)RedisModule_StringPtrLen(key->value, &len);
             return len;
         } else {
@@ -1888,7 +1893,9 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
     default:
-        fprintf(stderr, "Unknown array type %d\n", subtype);
+        fprintf(stderr, "%s:%d: Unknown array type: %d\n",
+                __FILE__, __LINE__,
+                subtype);
         RedisModule_ReplySetArrayLength(ctx, 0);
         break;
     }
