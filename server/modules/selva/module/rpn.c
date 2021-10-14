@@ -1208,9 +1208,16 @@ static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, st
 
     err = SelvaSet_Union(res->set, set_a, set_b, NULL);
     if (err) {
-        /* TODO We just return ENOMEM regardless of the real error for now. */
-        /* TODO Make sure we don't leak memory with the res. */
-        return RPN_ERR_ENOMEM;
+        if (err == SELVA_ENOMEM) {
+            return RPN_ERR_ENOMEM;
+        } else if (err = SELVA_EINVAL) {
+            return RPN_ERR_ILLOPN;
+        } else if (SELVA_EINTYPE) {
+            return RPN_ERR_TYPE;
+        } else {
+            /* Report other errors as type errors. */
+            return RPN_ERR_TYPE;
+        }
     }
 
     return push(ctx, res);
