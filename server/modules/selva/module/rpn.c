@@ -1102,17 +1102,32 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
 
         if (SelvaHierarchy_IsNonEmptyField(node, field_str, field_len)) {
             RedisModuleString *s;
+            int err;
 
             /*
-             * TODO If we are careful we could potentially reuse the original string.
+             * If we'd be care careful we could potentially reuse the original
+             * string, but let's be on the safe side because you never know how
+             * the original string was created.
              */
             s = RedisModule_CreateString(NULL, field_str, field_len);
             if (!s) {
                 return RPN_ERR_ENOMEM;
             }
 
-            /* TODO Handle errors and retain string */
-            SelvaSet_Add(result->set, s);
+            err = SelvaSet_Add(result->set, s);
+            if (err) {
+                RedisModule_FreeString(NULL, s);
+
+                if (err != SELVA_EEXIST) {
+                    if (err == SELVA_ENOMEM) {
+                        return RPN_ERR_ENOMEM;
+                    } else {
+                        /* Report other errors as a type error. */
+                        return RPN_ERR_TYPE;
+                    }
+                }
+            }
+
             break;
         }
     }
