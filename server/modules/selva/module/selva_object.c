@@ -17,7 +17,7 @@
 
 #define SELVA_OBJECT_ENCODING_VERSION   0 /*!< Encoding version for RDB serialization. */
 #define SELVA_OBJECT_KEY_MAX            USHRT_MAX /*!< Maximum length of a key including dots and array notation. */
-#define SELVA_OBJECT_SIZE_MAX           SIZE_MAX /*!< Maximum number of keys in a SelvaObject. */
+#define SELVA_OBJECT_SIZE_MAX           (1 << 30) /*!< Maximum number of keys in a SelvaObject. */
 
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
