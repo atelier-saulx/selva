@@ -15,9 +15,9 @@
 #include "svector.h"
 #include "tree.h"
 
-#define SELVA_OBJECT_ENCODING_VERSION   0
-#define SELVA_OBJECT_KEY_MAX            USHRT_MAX
-#define SELVA_OBJECT_SIZE_MAX           SIZE_MAX
+#define SELVA_OBJECT_ENCODING_VERSION   0 /*!< Encoding version for RDB serialization. */
+#define SELVA_OBJECT_KEY_MAX            USHRT_MAX /*!< Maximum length of a key including dots and array notation. */
+#define SELVA_OBJECT_SIZE_MAX           SIZE_MAX /*!< Maximum number of keys in a SelvaObject. */
 
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
@@ -619,7 +619,6 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 }
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
-    /* RFE Actually we should limit this per part. */
     if (key_name_len + 1 > SELVA_OBJECT_KEY_MAX) {
         return SELVA_ENAMETOOLONG;
     }
