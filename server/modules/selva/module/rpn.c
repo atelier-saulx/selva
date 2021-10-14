@@ -712,8 +712,10 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
             return push_empty_value(ctx);
         }
 
-        /* TODO We should validate the subtype */
-
+        /*
+         * We don't need to care about the type of the set yet because all the
+         * future operations are typesafe anyway.
+         */
         return push_selva_set_result(ctx, set);
     } else { /* Primitive type */
         if (type == RPN_LVTYPE_NUMBER) {
