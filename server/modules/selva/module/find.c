@@ -49,7 +49,7 @@ static int send_all_node_data_fields(
 static int send_hierarchy_field(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
-        Selva_NodeId nodeId,
+        const Selva_NodeId nodeId,
         RedisModuleString *full_field_name,
         const char *field_str,
         size_t field_len) {
