@@ -110,7 +110,7 @@ static int send_edge_field_deref_value(
         SelvaModify_Hierarchy *hierarchy,
         RedisModuleString *lang,
         RedisModuleString *full_field,
-        struct EdgeField *edge_field,
+        const struct EdgeField *edge_field,
         const char *field_str,
         size_t field_len) {
     RedisModuleKey *key = NULL;

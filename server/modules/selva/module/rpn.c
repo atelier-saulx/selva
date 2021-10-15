@@ -242,7 +242,7 @@ static int cpy2rm_str(RedisModuleString **rms_p, const char *str, size_t len) {
     return 0;
 }
 
-static int rpn_operand2rms(RedisModuleString **rms, struct rpn_operand *o) {
+static int rpn_operand2rms(RedisModuleString **rms, const struct rpn_operand *o) {
     const char *str = OPERAND_GET_S(o);
     const size_t len = OPERAND_GET_S_LEN(o);
 

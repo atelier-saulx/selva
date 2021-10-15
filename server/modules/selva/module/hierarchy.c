@@ -2055,7 +2055,7 @@ int SelvaHierarchy_TraverseExpression(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    if (Trx_Begin(&(hierarchy)->trx_state, &trx_cur)) {
+    if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
         return SELVA_HIERARCHY_ETRMAX;
     }
 
@@ -2106,7 +2106,7 @@ int SelvaHierarchy_TraverseExpressionBfs(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         struct rpn_ctx *rpn_ctx,
-        struct rpn_expression *rpn_expr,
+        const struct rpn_expression *rpn_expr,
         const struct SelvaModify_HierarchyCallback *cb) {
     const TraversalCallback tcb = {
         .head_cb = NULL,
