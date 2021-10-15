@@ -9,6 +9,7 @@
 #include "cdefs.h"
 #include "../rmutil/sds.h"
 #include "redismodule.h"
+#include "errors.h"
 #include "hierarchy.h"
 #include "selva_node.h"
 #include "selva_object.h"
@@ -522,7 +523,7 @@ enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, RedisModuleString *
     return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_RMFREE);
 }
 
-/* TODO free frag for rpn_set_reg_slvobj() */
+/* TODO free flag for rpn_set_reg_slvobj() */
 enum rpn_error rpn_set_reg_slvobj(struct rpn_ctx *ctx, size_t i, struct SelvaObject *obj, unsigned flags __unused) {
     if (i >= (size_t)ctx->nr_reg) {
         return RPN_ERR_BNDS;
@@ -552,7 +553,7 @@ enum rpn_error rpn_set_reg_slvobj(struct rpn_ctx *ctx, size_t i, struct SelvaObj
     return RPN_ERR_OK;
 }
 
-/* TODO free frag for rpn_set_reg_slvset() */
+/* TODO free flag for rpn_set_reg_slvset() */
 enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet *set, unsigned flags __unused) {
     if (i >= (size_t)ctx->nr_reg) {
         return RPN_ERR_BNDS;
@@ -712,8 +713,10 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
             return push_empty_value(ctx);
         }
 
-        /* TODO We should validate the subtype */
-
+        /*
+         * We don't need to care about the type of the set yet because all the
+         * future operations are typesafe anyway.
+         */
         return push_selva_set_result(ctx, set);
     } else { /* Primitive type */
         if (type == RPN_LVTYPE_NUMBER) {
@@ -1024,6 +1027,34 @@ static inline size_t size_min(size_t a, size_t b) {
     return (a < b ? a : b);
 }
 
+static enum rpn_error SelvaSet_Add_err2rpn_error(int err) {
+    if (err && err != SELVA_EEXIST) {
+        if (err == SELVA_ENOMEM) {
+            return RPN_ERR_ENOMEM;
+        } else {
+            /* Report other errors as a type error. */
+            return RPN_ERR_TYPE;
+        }
+    }
+
+    return RPN_ERR_OK;
+}
+
+static enum rpn_error SelvaSet_Union_err2rpn_error(int err) {
+    if (err >= 0) {
+        return RPN_ERR_OK;
+    } else if (err == SELVA_ENOMEM) {
+        return RPN_ERR_ENOMEM;
+    } else if (err == SELVA_EINVAL) {
+        return RPN_ERR_ILLOPN;
+    } else if (err == SELVA_EINTYPE) {
+        return RPN_ERR_TYPE;
+    } else {
+        /* Report other errors as type errors. */
+        return RPN_ERR_TYPE;
+    }
+}
+
 static enum rpn_error rpn_op_strcmp(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -1100,17 +1131,31 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
 
         if (SelvaHierarchy_IsNonEmptyField(node, field_str, field_len)) {
             RedisModuleString *s;
+            int err;
 
             /*
-             * TODO If we are careful we could potentially reuse the original string.
+             * If we'd be care careful we could potentially reuse the original
+             * string, but let's be on the safe side because you never know how
+             * the original string was created.
              */
             s = RedisModule_CreateString(NULL, field_str, field_len);
             if (!s) {
                 return RPN_ERR_ENOMEM;
             }
 
-            /* TODO Handle errors and retain string */
-            SelvaSet_Add(result->set, s);
+            err = SelvaSet_Add(result->set, s);
+            if (err) {
+                RedisModule_FreeString(NULL, s);
+
+                if (err != SELVA_EEXIST) {
+                    return SelvaSet_Add_err2rpn_error(err);
+                }
+                /*
+                 * SELVA_EEXIST doesn't seem like it would happen but let's
+                 * ignore it anyway.
+                 */
+            }
+
             break;
         }
     }
@@ -1191,9 +1236,7 @@ static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, st
 
     err = SelvaSet_Union(res->set, set_a, set_b, NULL);
     if (err) {
-        /* TODO We just return ENOMEM regardless of the real error for now. */
-        /* TODO Make sure we don't leak memory with the res. */
-        return RPN_ERR_ENOMEM;
+        return SelvaSet_Union_err2rpn_error(err);
     }
 
     return push(ctx, res);
@@ -1424,7 +1467,12 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, int 
 
             err = SelvaSet_Add(v->set, rms);
             if (err) {
-                return err;
+                RedisModule_FreeString(NULL, rms);
+
+                if (err != SELVA_EEXIST) {
+                    return SelvaSet_Add_err2rpn_error(err);
+                }
+                /* Ignore SELVA_EEXIST. */
             }
         }
         if (tok_len == 0) {
@@ -1468,7 +1516,6 @@ struct rpn_expression *rpn_compile(const char *input) {
             goto fail;
         }
 
-        /* TODO Free memory on error. */
         switch (tok_str[0]) {
         case '#':
             err = compile_num_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 1);
@@ -1734,12 +1781,10 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
 
     if (res->set) {
         if (res->flags.regist) {
-            SelvaSet_Union(out, res->set, NULL);
-            /* TODO handle errors. */
+            err = SelvaSet_Union_err2rpn_error(SelvaSet_Union(out, res->set, NULL));
         } else {
             /* Safe to move the strings. */
-            SelvaSet_Merge(out, res->set);
-            /* TODO Handle errors. */
+            err = SelvaSet_Union_err2rpn_error(SelvaSet_Merge(out, res->set));
         }
         free_rpn_operand(&res);
     } else if (to_bool(res)) {
@@ -1748,5 +1793,5 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
         return RPN_ERR_TYPE;
     }
 
-    return RPN_ERR_OK;
+    return err;
 }
