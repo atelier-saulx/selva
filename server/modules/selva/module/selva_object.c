@@ -417,7 +417,7 @@ static int _insert_new_key(struct SelvaObject *obj, const char *name_str, size_t
      */
     memset(key, 0, key_size);
     memcpy(key->name, name_str, name_len);
-    key->name_len = name_len;
+    key->name_len = (typeof(key->name_len))name_len; /* The size is already verified to fit in get_key(). */
     obj->obj_size++;
     (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
 
