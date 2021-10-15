@@ -364,8 +364,16 @@ static int send_all_node_data_fields(
         res = send_node_field(ctx, lang, hierarchy, node, obj, field_prefix_str, field_prefix_len, field, excluded_fields);
         if (res >= 0) {
             nr_fields += res;
+        } else {
+            /* RFE errors are ignored for now. */
+            Selva_NodeId node_id;
+
+            SelvaHierarchy_GetNodeId(node_id, node);
+            fprintf(stderr, "%s:%d: send_node_field(%.*s) failed: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, node_id,
+                    getSelvaErrorStr(res));
         }
-        /* RFE errors are ignored for now. */
     }
 
     return nr_fields;
