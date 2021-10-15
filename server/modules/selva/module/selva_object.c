@@ -424,7 +424,7 @@ static int _insert_new_key(struct SelvaObject *obj, const char *name_str, size_t
     return 0;
 }
 
-static int _insert_new_obj_into_array(struct SelvaObject *obj, char *s, size_t slen, ssize_t ary_idx, struct SelvaObject **out) {
+static int _insert_new_obj_into_array(struct SelvaObject *obj, const char *s, size_t slen, ssize_t ary_idx, struct SelvaObject **out) {
     struct SelvaObject *new_obj;
     int err;
 
