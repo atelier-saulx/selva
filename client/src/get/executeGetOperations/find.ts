@@ -763,7 +763,7 @@ const executeFindOperation = async (
 
       const mapping = fieldMapping[field]
       const targetField = mapping?.targetField
-      const casted = typeCast(value, op.id, `${op.field}[0].${field}`, schema, lang)
+      const casted = id ? typeCast(value, id, field, schema, lang) : typeCast(value, op.id, `${op.field}[0].${field}`, schema, lang)
 
       if (targetField) {
         for (const f of targetField) {
