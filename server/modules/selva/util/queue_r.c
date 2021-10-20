@@ -55,8 +55,9 @@ int queue_push(queue_cb_t * cb, const void * element)
     const size_t b_size = cb->b_size;
 
     /* Check that the queue is not full */
-    if (next_element == cb->m_read)
+    if (next_element == cb->m_read) {
         return 0;
+    }
 
     memcpy(&((uint8_t *)(cb->data))[cb->m_write * b_size], element, b_size);
 
@@ -72,8 +73,9 @@ void * queue_alloc_get(queue_cb_t * cb)
     uint8_t * p;
 
     /* Check that the queue is not full */
-    if (next_element == cb->m_read)
+    if (next_element == cb->m_read) {
         return NULL;
+    }
 
     p = (void *)((uintptr_t)cb->data + write * b_size);
 
@@ -95,8 +97,9 @@ int queue_pop(queue_cb_t * cb, void * element)
     size_t next_element;
 
     /* Check that the queue is not empty */
-    if (read == write)
+    if (read == write) {
         return 0;
+    }
 
     next_element = (read + 1) % cb->a_len;
 
@@ -112,8 +115,9 @@ int queue_peek(queue_cb_t * cb, void ** element)
     const size_t b_size = cb->b_size;
 
     /* Check that the queue is not empty */
-    if (read == cb->m_write)
+    if (read == cb->m_write) {
         return 0;
+    }
 
     *element = &((uint8_t *)(cb->data))[read * b_size];
 
@@ -128,8 +132,9 @@ int queue_skip(queue_cb_t * cb, size_t n)
         const size_t read = cb->m_read;
 
         /* Check that the queue is not empty */
-        if (read == cb->m_write)
+        if (read == cb->m_write) {
             break;
+        }
 
         cb->m_read = (read + 1) % cb->a_len;
     }
@@ -163,14 +168,16 @@ int seek(queue_cb_t * cb, size_t i, void * element)
     size_t write = cb->m_write;
 
     /* Check that the queue is not empty */
-    if ((read % cb->a_len) == write)
+    if ((read % cb->a_len) == write) {
         return 0;
+    }
 
     size_t element_i = (read + i) % cb->a_len;
 
     /* Check that we don't hit the write position */
-    if(element_i == write)
+    if(element_i == write) {
         return 0;
+    }
 
     memcpy(element, &((uint8_t *)(cb->data))[element_i * cb->b_size],
            cb->b_size);

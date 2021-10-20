@@ -18,14 +18,13 @@ int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx) {
 
 int Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label) {
     if (cur_trx->id != label->id) {
-        /* Visit. */
+        /* Visit & first visit of this trx. */
         label->id = cur_trx->id;
         label->cl = cur_trx->cl;
 
         return 1;
     } else if (!(cur_trx->cl & label->cl)) {
         /* Visit */
-        label->id = cur_trx->id;
         label->cl |= cur_trx->cl;
 
         return 1;
@@ -38,7 +37,7 @@ void Trx_End(struct trx_state * restrict state, struct trx * restrict cur) {
     state->ex |= cur->cl;
 
     if (state->ex == state->cl) {
-        state->id++;
+        state->id++; /* Increment id for the next traversal. */
         state->cl = 0;
         state->ex = 0;
     }

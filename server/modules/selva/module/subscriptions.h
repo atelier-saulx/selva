@@ -192,14 +192,14 @@ struct Selva_SubscriptionMarker {
  */
 struct Selva_SubscriptionMarkers {
     /**
-     * A list of subscriptionMarker structures.
-     */
-    struct SVector vec;
-    /* *
      * Lookup filter.
      * All flags from sub_markers OR'ed for faster lookup.
      */
     unsigned short flags_filter;
+    /**
+     * A list of subscriptionMarker structures.
+     */
+    struct SVector vec;
 };
 
 /**

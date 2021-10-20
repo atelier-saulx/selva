@@ -46,6 +46,39 @@ static int send_all_node_data_fields(
         size_t field_prefix_len,
         RedisModuleString *excluded_fields);
 
+static int send_hierarchy_field(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        const Selva_NodeId nodeId,
+        RedisModuleString *full_field_name,
+        const char *field_str,
+        size_t field_len) {
+#define SEND_FIELD_NAME() RedisModule_ReplyWithString(ctx, full_field_name)
+
+    /*
+     * Check if the field name is a hierarchy field name.
+     * We use length check and memcmp() here instead of strcmp() because it
+     * seems to give us a much better branch prediction success rate and
+     * this function is pretty hot.
+     */
+    if (field_len == 9 && !memcmp(field_str, "ancestors", 9)) {
+        SEND_FIELD_NAME();
+        return HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
+    } else if (field_len == 8 && !memcmp(field_str, "children", 8)) {
+        SEND_FIELD_NAME();
+        return HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
+    } else if (field_len == 11 && !memcmp(field_str, "descendants", 11)) {
+        SEND_FIELD_NAME();
+        return HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
+    } else if (field_len == 7 && !memcmp(field_str, "parents", 7)) {
+        SEND_FIELD_NAME();
+        return HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
+    }
+
+    return SELVA_ENOENT;
+#undef SEND_FIELD_NAME
+}
+
 static int send_edge_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
@@ -222,52 +255,19 @@ static int send_node_field(
         return 0;
     }
 
-#define SEND_FIELD_NAME() RedisModule_ReplyWithString(ctx, full_field_name)
-
     /*
      * Check if the field name is a hierarchy field name.
      */
-    if (!strcmp(field_str, "ancestors")) {
-        RedisModule_ReplyWithString(ctx, field);
-        SEND_FIELD_NAME();
-        err = HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
-        if (err) {
-            fprintf(stderr, "%s:%d: Sending the ancestors field of %.*s failed: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    getSelvaErrorStr(err));
-        }
+    err = send_hierarchy_field(ctx, hierarchy, nodeId, full_field_name, field_str, field_len);
+    if (err == 0) {
         return 1;
-    } else if (!strcmp(field_str, "children")) {
-        SEND_FIELD_NAME();
-        err = HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
-        if (err) {
-            fprintf(stderr, "%s:%d: Sending the children field of %.*s failed: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    getSelvaErrorStr(err));
-        }
-        return 1;
-    } else if (!strcmp(field_str, "descendants")) {
-        SEND_FIELD_NAME();
-        err = HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
-        if (err) {
-            fprintf(stderr, "%s:%d: Sending the descendants field of %.*s failed: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    getSelvaErrorStr(err));
-        }
-        return 1;
-    } else if (!strcmp(field_str, "parents")) {
-        SEND_FIELD_NAME();
-        err = HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
-        if (err) {
-            fprintf(stderr, "%s:%d: Sending the parents field of %.*s failed: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    getSelvaErrorStr(err));
-        }
-        return 1;
+    } else if (err != SELVA_ENOENT) {
+        fprintf(stderr, "%s:%d: Sending the %s field of %.*s failed: %s\n",
+                __FILE__, __LINE__,
+                field_str,
+                (int)SELVA_NODE_ID_SIZE, nodeId,
+                getSelvaErrorStr(err));
+        return 1; /* Something was already sent so +1 */
     } else {
         /*
          * Check if the field name is an edge field.
@@ -284,7 +284,6 @@ static int send_node_field(
             }
         }
     }
-#undef SEND_FIELD_NAME
 
     /*
      * Check if we have a wildcard in the middle of the field name
@@ -292,6 +291,7 @@ static int send_node_field(
      */
     if (strstr(field_str, ".*.")) {
         long resp_count = 0;
+
         err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, 0);
         if (err && err != SELVA_ENOENT) {
             fprintf(stderr, "%s:%d: Sending wildcard field %.*s of %.*s failed: %s\n",
@@ -364,8 +364,16 @@ static int send_all_node_data_fields(
         res = send_node_field(ctx, lang, hierarchy, node, obj, field_prefix_str, field_prefix_len, field, excluded_fields);
         if (res >= 0) {
             nr_fields += res;
+        } else {
+            /* RFE errors are ignored for now. */
+            Selva_NodeId node_id;
+
+            SelvaHierarchy_GetNodeId(node_id, node);
+            fprintf(stderr, "%s:%d: send_node_field(%.*s) failed: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, node_id,
+                    getSelvaErrorStr(res));
         }
-        /* RFE errors are ignored for now. */
     }
 
     return nr_fields;
@@ -437,6 +445,8 @@ static int send_node_fields(
                     (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     } else {
+        _Static_assert(sizeof(wildcard) == 2, "Must be a single char");
+        const char wildcard_ch = wildcard[0];
         void *iterator;
         const SVector *vec;
         size_t nr_fields = 0;
@@ -453,7 +463,7 @@ static int send_node_fields(
                 TO_STR(field);
                 int res;
 
-                if (field_len == sizeof(wildcard) - 1 && !strcmp(field_str, wildcard)) {
+                if (field_len == 1 && field_str[0] == wildcard_ch) {
                     res = send_all_node_data_fields(ctx, lang, hierarchy, node, obj, NULL, 0, excluded_fields);
                     if (res > 0) {
                         nr_fields += res;

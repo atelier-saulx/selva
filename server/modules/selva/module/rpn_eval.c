@@ -81,8 +81,7 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisM
             goto fail;
         }
 
-        /* TODO size func/macro? */
-        RedisModule_ReplyWithArray(ctx, set.size);
+        RedisModule_ReplyWithArray(ctx, SelvaSet_Size(&set));
         SELVA_SET_RMS_FOREACH(el, &set) {
             RedisModule_ReplyWithString(ctx, el->value_rms);
         }

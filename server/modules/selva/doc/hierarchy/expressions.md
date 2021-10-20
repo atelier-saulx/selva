@@ -166,7 +166,7 @@ Therefore, neither of these yields the expected result.
 | `f`      | `node[a]`         | Get the string value of a node field. | `"field" f`              |
 | `g`      | `node[a]`         | Get the number value of a node field. | `"field" g`              |
 | `h`      | `!!node[a]`       | Field exists.                         | `"title.en" h => 1`      |
-| `i`      | `a <= b <= c`     | (interval) `b` is within `a` and `c`. | `"#2 #1 #0 => 1`         |
+| `i`      | `a <= b <= c`     | (interval) `b` is within `a` and `c`. | `"#2 #1 #0 i => 1`       |
 | `j`      | `findFirst(A)`    | Take the name of the first non-empty field into a new set. (value is set or set is non-empty) | `{"nonfield","field"} j => [ 'field' ]` |
 | `k`      | `aon(A)`          | Take all or none (AON), pass the set or result an empty set. | `{"field1","field2"} k => [ 'field1', 'field2' ]` |
 | `n`      | `clk_realtime()`  | Get the current value of `CLOCK_REALTIME` in ms. | `l => 1623253120970` |

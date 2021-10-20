@@ -15,9 +15,9 @@
 #include "svector.h"
 #include "tree.h"
 
-#define SELVA_OBJECT_ENCODING_VERSION   0
-#define SELVA_OBJECT_KEY_MAX            USHRT_MAX
-#define SELVA_OBJECT_SIZE_MAX           SIZE_MAX
+#define SELVA_OBJECT_ENCODING_VERSION   0 /*!< Encoding version for RDB serialization. */
+#define SELVA_OBJECT_KEY_MAX            USHRT_MAX /*!< Maximum length of a key including dots and array notation. */
+#define SELVA_OBJECT_SIZE_MAX           (1 << 30) /*!< Maximum number of keys in a SelvaObject. */
 
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
@@ -39,7 +39,7 @@ struct SelvaObjectKey {
         double emb_double_value; /*!< SELVA_OBJECT_DOUBLE */
         long long emb_ll_value; /*!< SELVA_OBJECT_LONGLONG */
         struct SelvaSet selva_set; /*!< SELVA_OBJECT_SET */
-        SVector array; /*!< SELVA_OBJECT_ARRAY */
+        SVector *array; /*!< SELVA_OBJECT_ARRAY */
     };
     char name[0]; /*!< Name of the key. */
 };
@@ -72,6 +72,7 @@ static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
+    /* strcmp() is slightly faster than memcmp() in this case. */
     return strcmp(a->name, b->name);
 }
 
@@ -122,14 +123,88 @@ retry:
     return NULL; /* Never reached. */
 }
 
+/**
+ * Init an array on key.
+ * The key must be cleared before calling this function.
+ */
+static int init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType subtype, size_t size) {
+    /*
+     * Type must be set before initializing the vector to avoid a situation
+     * where we'd have a key with an unknown value type.
+     */
+    key->type = SELVA_OBJECT_ARRAY;
+    key->subtype = subtype;
+
+    key->array = RedisModule_Calloc(1, sizeof(SVector));
+    if (!key->array) {
+        return SELVA_ENOMEM;
+    }
+
+    if (!SVector_Init(key->array, size, NULL)) {
+        RedisModule_Free(key->array);
+        key->type = SELVA_OBJECT_NULL;
+        key->subtype = SELVA_OBJECT_NULL;
+        key->array = NULL;
+        return SELVA_ENOMEM;
+    }
+
+    return 0;
+}
+
+static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
+    switch (subtype) {
+    case SELVA_OBJECT_STRING:
+        {
+            struct SVectorIterator it;
+            RedisModuleString *str;
+
+            SVector_ForeachBegin(&it, array);
+            while ((str = SVector_Foreach(&it))) {
+                RedisModule_FreeString(NULL, str);
+            }
+        }
+        break;
+    case SELVA_OBJECT_OBJECT:
+        {
+            struct SVectorIterator it;
+            struct SelvaObject *k;
+
+            SVector_ForeachBegin(&it, array);
+            while ((k = SVector_Foreach(&it))) {
+                SelvaObject_Destroy(k);
+            }
+        }
+        break;
+    case SELVA_OBJECT_POINTER:
+    case SELVA_OBJECT_NULL:
+    case SELVA_OBJECT_DOUBLE:
+    case SELVA_OBJECT_LONGLONG:
+        /*
+         * NOP
+         *
+         * We store concrete values so it's enough to just clear the SVector.
+         *
+         * Pointer arrays don't support cleanup but it would be possible to
+         * add support for SelvaObjectPointerOpts.
+         */
+        break;
+     default:
+        fprintf(stderr, "%s:%d: Key clear failed: Unsupported array type %s (%d)\n",
+                __FILE__, __LINE__,
+                SelvaObject_Type2String(subtype, NULL),
+                (int)subtype);
+    }
+
+    SVector_Destroy(array);
+    RedisModule_Free(array);
+}
+
 static int clear_key_value(struct SelvaObjectKey *key) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
-        /* NOP */
-        break;
     case SELVA_OBJECT_DOUBLE:
-        break;
     case SELVA_OBJECT_LONGLONG:
+        /* NOP */
         break;
     case SELVA_OBJECT_STRING:
         if (key->value) {
@@ -147,37 +222,8 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         SelvaSet_Destroy(&key->selva_set);
         break;
     case SELVA_OBJECT_ARRAY:
-        if (key->subtype == SELVA_OBJECT_STRING) {
-            struct SVectorIterator it;
-            RedisModuleString *str;
-
-            SVector_ForeachBegin(&it, &key->array);
-            while ((str = SVector_Foreach(&it))) {
-                RedisModule_FreeString(NULL, str);
-            }
-        } else if (key->subtype == SELVA_OBJECT_POINTER) {
-            /*
-             * NOP
-             * Pointer arrays don't support cleanup but it would be possible
-             * to add support for SelvaObjectPointerOpts.
-             */
-
-            SVector_Destroy(&key->array);
-        } else if (key->subtype == SELVA_OBJECT_DOUBLE || key->subtype == SELVA_OBJECT_LONGLONG || key->subtype == SELVA_OBJECT_NULL) {
-            /* do nothing, we store concrete values so it's enough to just clear the SVector itself. */
-        } else if (key->subtype == SELVA_OBJECT_OBJECT) {
-            struct SVectorIterator it;
-            struct SelvaObject *k;
-
-            SVector_ForeachBegin(&it, &key->array);
-            while ((k = SVector_Foreach(&it))) {
-                SelvaObject_Destroy(k);
-            }
-        } else {
-            fprintf(stderr, "%s: Key clear failed: Unsupported array type (%d)\n",
-                    __FILE__, (int)key->subtype);
-        }
-        SVector_Destroy(&key->array);
+        clear_object_array(key->subtype, key->array);
+        key->array = NULL;
         break;
     case SELVA_OBJECT_POINTER:
         if (key->ptr_opts && key->ptr_opts->ptr_free) {
@@ -371,11 +417,29 @@ static int _insert_new_key(struct SelvaObject *obj, const char *name_str, size_t
      */
     memset(key, 0, key_size);
     memcpy(key->name, name_str, name_len);
-    key->name_len = name_len;
+    key->name_len = (typeof(key->name_len))name_len; /* The size is already verified to fit in get_key(). */
     obj->obj_size++;
     (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
 
     *key_out = key;
+    return 0;
+}
+
+static int _insert_new_obj_into_array(struct SelvaObject *obj, const char *s, size_t slen, ssize_t ary_idx, struct SelvaObject **out) {
+    struct SelvaObject *new_obj;
+    int err;
+
+    new_obj = SelvaObject_New();
+    if (!new_obj) {
+        return SELVA_ENOMEM;
+    }
+
+    err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+    if (err) {
+        return err;
+    }
+
+    *out = new_obj;
     return 0;
 }
 
@@ -387,7 +451,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
     struct SelvaObjectKey *key = NULL;
     struct SelvaObject *cobj = obj; /* Containing object. */
 
-    strncpy(buf, key_name_str, key_name_len);
+    memcpy(buf, key_name_str, key_name_len);
     buf[key_name_len] = '\0';
 
     size_t nr_parts_found = 0;
@@ -449,11 +513,9 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              * Otherwise we can just reuse the old one.
              */
             if (!key) {
-                int err2;
-
-                err2 = _insert_new_key(obj, s, slen, &key);
-                if (err2) {
-                    return err2;
+                err = _insert_new_key(obj, s, slen, &key);
+                if (err) {
+                    return err;
                 }
             } else {
                 /*
@@ -461,22 +523,16 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                  */
                 clear_key_value(key);
             }
-            key->type = SELVA_OBJECT_ARRAY;
-            if (!SVector_Init(&key->array, ary_idx + 1, NULL)) {
-                return SELVA_ENOMEM;
-            }
 
-            struct SelvaObject *new_obj = SelvaObject_New();
-            if (!new_obj) {
-                return SELVA_ENOMEM;
-            }
-
-            err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+            err = init_object_array(key, SELVA_OBJECT_OBJECT, ary_idx + 1);
             if (err) {
                 return err;
             }
 
-            obj = new_obj;
+            err = _insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
+            if (err) {
+                return err;
+            }
         } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT && key->type != SELVA_OBJECT_ARRAY)) &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
@@ -530,7 +586,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
             obj = key->value;
         } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found &&
-            (flags & SELVA_OBJECT_GETKEY_CREATE)) {
+                   (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Keep nesting or return an object if this was the last token.
              */
@@ -540,17 +596,10 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
 
             if (err == SELVA_ENOENT || !obj) {
-                struct SelvaObject *new_obj = SelvaObject_New();
-                if (!new_obj) {
-                    return SELVA_ENOMEM;
-                }
-
-                err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+                err = _insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
                 if (err) {
                     return err;
                 }
-
-                obj = new_obj;
             }
         } else {
             /*
@@ -593,15 +642,11 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         key = NULL;
     }
 
-
     *out = key;
     return 0;
 }
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
-    struct SelvaObjectKey *filter;
-    struct SelvaObjectKey *key;
-
     if (key_name_len + 1 > SELVA_OBJECT_KEY_MAX) {
         return SELVA_ENAMETOOLONG;
     }
@@ -615,6 +660,8 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         key_name_len = get_array_field_start_idx(key_name_str, key_name_len);
     }
 
+    struct SelvaObjectKey *filter;
+    struct SelvaObjectKey *key;
     const size_t key_size = sizeof(struct SelvaObjectKey) + key_name_len + 1;
     char buf[key_size] __attribute__((aligned(alignof(struct SelvaObjectKey))));
 
@@ -1228,19 +1275,13 @@ int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, s
             return err;
         }
 
-        /*
-         * Type must be set before initializing the vector to avoid a situation
-         * where we'd have a key with an unknown value type.
-         */
-        key->type = SELVA_OBJECT_ARRAY;
-        key->subtype = subtype;
-
-        if (!SVector_Init(&key->array, 1, NULL)) {
-            return SELVA_ENOMEM;
+        err = init_object_array(key, subtype, 1);
+        if (err) {
+            return err;
         }
     }
 
-    SVector_Insert(&key->array, p);
+    SVector_Insert(key->array, p);
 
     return 0;
 }
@@ -1269,19 +1310,13 @@ int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str
             return err;
         }
 
-        /*
-         * Type must be set before initializing the vector to avoid a situation
-         * where we'd have a key with an unknown value type.
-         */
-        key->type = SELVA_OBJECT_ARRAY;
-        key->subtype = subtype;
-
-        if (!SVector_Init(&key->array, 1, NULL)) {
-            return SELVA_ENOMEM;
+        err = init_object_array(key, subtype, 1);
+        if (err) {
+            return err;
         }
     }
 
-    SVector_Insert(&key->array, p);
+    SVector_Insert(key->array, p);
 
     return 0;
 }
@@ -1310,19 +1345,13 @@ int SelvaObject_AssignArrayIndexStr(struct SelvaObject *obj, const char *key_nam
             return err;
         }
 
-        /*
-         * Type must be set before initializing the vector to avoid a situation
-         * where we'd have a key with an unknown value type.
-         */
-        key->type = SELVA_OBJECT_ARRAY;
-        key->subtype = subtype;
-
-        if (!SVector_Init(&key->array, idx+1, NULL)) {
-            return SELVA_ENOMEM;
+        err = init_object_array(key, subtype, idx + 1);
+        if (err) {
+            return err;
         }
     }
 
-    SVector_SetIndex(&key->array, idx, p);
+    SVector_SetIndex(key->array, idx, p);
     return 0;
 }
 
@@ -1356,19 +1385,13 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
             return err;
         }
 
-        /*
-         * Type must be set before initializing the vector to avoid a situation
-         * where we'd have a key with an unknown value type.
-         */
-        key->type = SELVA_OBJECT_ARRAY;
-        key->subtype = subtype;
-
-        if (!SVector_Init(&key->array, idx+1, NULL)) {
-            return SELVA_ENOMEM;
+        err = init_object_array(key, subtype, idx + 1);
+        if (err) {
+            return err;
         }
     }
 
-    SVector_InsertIndex(&key->array, idx, p);
+    SVector_InsertIndex(key->array, idx, p);
     return 0;
 }
 
@@ -1387,11 +1410,11 @@ int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const char *key_name_s
         return SELVA_EINVAL;
     }
 
-    if (SVector_Size(&key->array) < idx) {
+    if (SVector_Size(key->array) < idx) {
         return SELVA_EINVAL;
     }
 
-    SVector_RemoveIndex(&key->array, idx);
+    SVector_RemoveIndex(key->array, idx);
 
     return 0;
 }
@@ -1415,7 +1438,7 @@ int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, s
         *out_subtype = key->subtype;
     }
     if (out_p) {
-        *out_p = &key->array;
+        *out_p = key->array;
     }
 
     return 0;
@@ -1569,11 +1592,16 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
         return 0;
     case SELVA_OBJECT_DOUBLE:
     case SELVA_OBJECT_LONGLONG:
+        /* Obviously this is more than one byte but the user doesn't need to care about that. */
         return 1;
     case SELVA_OBJECT_STRING:
         if (key->value) {
             size_t len;
 
+            /*
+             * Now we don't exactly know if the value is some utf8 text string
+             * or a binary buffer, so we just return the byte size.
+             */
             (void)RedisModule_StringPtrLen(key->value, &len);
             return len;
         } else {
@@ -1590,7 +1618,7 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
     case SELVA_OBJECT_SET:
         return key->selva_set.size;
     case SELVA_OBJECT_ARRAY:
-        return SVector_Size(&key->array);
+        return SVector_Size(key->array);
     case SELVA_OBJECT_POINTER:
         return (key->ptr_opts && key->ptr_opts->ptr_len) ? key->ptr_opts->ptr_len(key->value) : 1;
     }
@@ -1697,7 +1725,7 @@ void *SelvaObject_ForeachValue(const struct SelvaObject *obj, void **iterator, c
     case SELVA_OBJECT_SET:
         return &key->selva_set;
     case SELVA_OBJECT_ARRAY:
-        return &key->array;
+        return key->array;
     }
 
     return NULL;
@@ -1737,7 +1765,7 @@ void *SelvaObject_ForeachValueType(
     case SELVA_OBJECT_SET:
         return &key->selva_set;
     case SELVA_OBJECT_ARRAY:
-        return &key->array;
+        return key->array;
     }
 
     return NULL;
@@ -1917,7 +1945,9 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
     default:
-        fprintf(stderr, "Unknown array type %d\n", subtype);
+        fprintf(stderr, "%s:%d: Unknown array type: %d\n",
+                __FILE__, __LINE__,
+                subtype);
         RedisModule_ReplySetArrayLength(ctx, 0);
         break;
     }
@@ -1978,7 +2008,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
         replyWithSelvaSet(ctx, &key->selva_set);
         break;
     case SELVA_OBJECT_ARRAY:
-        replyWithArray(ctx, lang, key->subtype, &key->array);
+        replyWithArray(ctx, lang, key->subtype, key->array);
         break;
     case SELVA_OBJECT_POINTER:
         if (key->value) {
@@ -2774,7 +2804,7 @@ static void rdb_save_object_set(RedisModuleIO *io, struct SelvaObjectKey *key) {
 }
 
 static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key, void *ptr_save_data) {
-    const struct SVector *array = &key->array;
+    const struct SVector *array = key->array;
 
     RedisModule_SaveUnsigned(io, key->subtype);
     RedisModule_SaveUnsigned(io, array->vec_last);
@@ -2782,14 +2812,14 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
     if (key->subtype == SELVA_OBJECT_LONGLONG) {
         void* num;
         struct SVectorIterator it;
-        SVector_ForeachBegin(&it, &key->array);
+        SVector_ForeachBegin(&it, key->array);
         while ((num = SVector_Foreach(&it))) {
             RedisModule_SaveSigned(io, (long long)num);
         }
     } else if (key->subtype == SELVA_OBJECT_DOUBLE) {
         void* num_ptr;
         struct SVectorIterator it;
-        SVector_ForeachBegin(&it, &key->array);
+        SVector_ForeachBegin(&it, key->array);
         while ((num_ptr = SVector_Foreach(&it))) {
             double num;
             memcpy(&num, &num_ptr, sizeof(double));
@@ -2798,14 +2828,14 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
     } else if (key->subtype == SELVA_OBJECT_STRING) {
         RedisModuleString *str;
         struct SVectorIterator it;
-        SVector_ForeachBegin(&it, &key->array);
+        SVector_ForeachBegin(&it, key->array);
         while ((str = SVector_Foreach(&it))) {
             RedisModule_SaveString(io, str);
         }
     } else if (key->subtype == SELVA_OBJECT_OBJECT) {
         struct SelvaObject *k;
         struct SVectorIterator it;
-        SVector_ForeachBegin(&it, &key->array);
+        SVector_ForeachBegin(&it, key->array);
         while ((k = SVector_Foreach(&it))) {
             SelvaObjectTypeRDBSave(io, k, ptr_save_data);
         }

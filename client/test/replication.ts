@@ -100,12 +100,13 @@ test.beforeEach(async (t) => {
   rclientReplica = redis.createClient(replica.port)
 })
 
-test.after(async (_t) => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.destroy()
   await replica.destroy()
   await srv.destroy()
   await removeDump(dir)()
+  await t.connectionsAreEmpty()
 })
 
 test.afterEach(async () => {
@@ -193,7 +194,7 @@ test.serial('hierarchy replication', async (t) => {
   await new Promise((resolve, reject) =>
     rclientOrigin.send_command(
       'selva.hierarchy.del',
-      ['___selva_hierarchy', 'grphnode_a'],
+      ['___selva_hierarchy', 0, 'grphnode_a'],
       (err, res) => (err ? reject(err) : resolve(res))
     )
   )
