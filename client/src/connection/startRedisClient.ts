@@ -1,5 +1,5 @@
 import { Connection, connections } from '.'
-import { RedisClient } from 'redis'
+import { RedisClient } from '@saulx/redis-client'
 import { SERVER_HEARTBEAT, LOG } from '../constants'
 import './redisClientExtensions'
 import chalk from 'chalk'
