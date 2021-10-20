@@ -6,6 +6,7 @@
 #include "redismodule.h"
 #include "cdefs.h"
 #include "linker_set.h"
+#include "endian.h"
 #include "typestr.h"
 #include "cstrings.h"
 #include "errors.h"
@@ -1816,7 +1817,7 @@ static void replyWithDouble(RedisModuleCtx *ctx, double value, unsigned flags) {
     if (flags & SELVA_OBJECT_REPLY_BINUMF_FLAG) {
         char buf[sizeof(value)];
 
-        memcpy(buf, &value, sizeof(value));
+        htoledouble(buf, value);
         RedisModule_ReplyWithBinaryBuffer(ctx, buf, sizeof(buf));
     } else {
         RedisModule_ReplyWithDouble(ctx, value);
@@ -1825,9 +1826,10 @@ static void replyWithDouble(RedisModuleCtx *ctx, double value, unsigned flags) {
 
 static void replyWithLongLong(RedisModuleCtx *ctx, long long value, unsigned flags) {
     if (flags & SELVA_OBJECT_REPLY_BINUMF_FLAG) {
-        char buf[sizeof(value)];
+        uint64_t tmp = htole64(value);
+        char buf[sizeof(tmp)];
 
-        memcpy(buf, &value, sizeof(value));
+        memcpy(buf, &tmp, sizeof(tmp));
         RedisModule_ReplyWithBinaryBuffer(ctx, buf, sizeof(buf));
     } else {
         RedisModule_ReplyWithLongLong(ctx, value);
