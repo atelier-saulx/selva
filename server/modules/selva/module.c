@@ -165,6 +165,9 @@ static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, co
     TO_STR(data);
     struct SelvaModify_OpSet *op;
 
+    /* TODO Support __ORDER_BIG_ENDIAN__ */
+    _Static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Only little endian host is supported");
+
     if (!data_str && data_len < sizeof(struct SelvaModify_OpSet)) {
         return NULL;
     }

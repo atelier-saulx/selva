@@ -291,8 +291,7 @@ static int send_node_field(
      */
     if (strstr(field_str, ".*.")) {
         long resp_count = 0;
-
-        err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, 0);
+        err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err && err != SELVA_ENOENT) {
             fprintf(stderr, "%s:%d: Sending wildcard field %.*s of %.*s failed: %s\n",
                     __FILE__, __LINE__,
@@ -319,7 +318,7 @@ static int send_node_field(
      * Send the reply.
      */
     RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str));
-    err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len);
+    err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
     if (err) {
         fprintf(stderr, "%s:%d: Failed to send the field (%.*s) for node_id: \"%.*s\" err: \"%s\"\n",
                 __FILE__, __LINE__,
@@ -438,7 +437,7 @@ static int send_node_fields(
         return fields_len;
     } else if (!excluded_fields && fields_len == 1 &&
                SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
-        err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
+        err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
             fprintf(stderr, "%s:%d: Failed to send all fields for node_id: \"%.*s\"\n",
                     __FILE__, __LINE__,
@@ -518,7 +517,7 @@ static int send_array_object_field(
     if (strstr(field_str, ".*.")) {
         long resp_count = 0;
 
-        err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, 0);
+        err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err && err != SELVA_ENOENT) {
             fprintf(stderr, "%s:%d: Sending wildcard field %.*s in array object failed: %s\n",
                     __FILE__, __LINE__,
@@ -541,7 +540,7 @@ static int send_array_object_field(
      * Send the reply.
      */
     RedisModule_ReplyWithString(ctx, full_field_name);
-    err = SelvaObject_ReplyWithObject(ctx, lang, obj, field);
+    err = SelvaObject_ReplyWithObject(ctx, lang, obj, field, SELVA_OBJECT_REPLY_BINUMF_FLAG);
     if (err) {
         fprintf(stderr, "%s:%d: Failed to send the field (%s) in array object err: \"%s\"\n",
                 __FILE__, __LINE__,
@@ -585,7 +584,7 @@ static int send_array_object_fields(
     if (fields_len < 0) {
         return fields_len;
     } else if (fields_len == 1 && SelvaTraversal_FieldsContains(fields, "*", 1)) { /* '*' is a wildcard */
-        err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
+        err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
             fprintf(stderr, "%s:%d: Failed to send all fields for selva object in array: %s\n",
                     __FILE__, __LINE__,
@@ -694,7 +693,7 @@ static ssize_t send_merge_all(
         RedisModule_ReplyWithArray(ctx, 3);
         RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
         RedisModule_ReplyWithString(ctx, full_field_path);
-        err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len);
+        err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
             TO_STR(obj_path);
 
@@ -756,7 +755,7 @@ static ssize_t send_named_merge(
             RedisModule_ReplyWithArray(ctx, 3);
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
             RedisModule_ReplyWithString(ctx, full_field_path);
-            err = SelvaObject_ReplyWithObject(ctx, lang, obj, field);
+            err = SelvaObject_ReplyWithObject(ctx, lang, obj, field, SELVA_OBJECT_REPLY_BINUMF_FLAG);
             if (err) {
                 TO_STR(field);
 
@@ -844,7 +843,7 @@ static ssize_t send_deep_merge(
 
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
             RedisModule_ReplyWithString(ctx, next_path);
-            err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len);
+            err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
             if (err) {
                 TO_STR(obj_path);
 
@@ -940,7 +939,7 @@ static ssize_t send_node_object_merge(
 
             RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
             RedisModule_ReplyWithString(ctx, obj_path);
-            err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
+            err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
             if (err) {
                 TO_STR(obj_path);
 
