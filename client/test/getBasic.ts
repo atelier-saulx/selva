@@ -2314,7 +2314,7 @@ test.serial('get - record with nested wildcard query', async (t) => {
   await client.destroy()
 })
 
-test.serial('get - field with array', async (t) => {
+test.serial.only('get - field with array', async (t) => {
   const client = connect({ port })
   const id = await client.set({
     type: 'lekkerType',
@@ -2324,7 +2324,7 @@ test.serial('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
-    tsArray: [ 1634032349768, 1634032355278 ],
+    tsArray: [1634032349768, 1634032355278],
     objRec: {
       abba: {
         intArray: [1, 2, 3, 4, 5],
@@ -2400,7 +2400,7 @@ test.serial('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
-    tsArray: [ 1634032349768, 1634032355278 ],
+    tsArray: [1634032349768, 1634032355278],
     objRec: {
       abba: {
         intArray: [1, 2, 3, 4, 5],
@@ -2438,7 +2438,7 @@ test.serial('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
-    tsArray: [ 1634032349768, 1634032355278 ],
+    tsArray: [1634032349768, 1634032355278],
     objRec: {
       abba: {
         intArray: [1, 2, 3, 4, 5],
