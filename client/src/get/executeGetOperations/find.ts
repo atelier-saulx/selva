@@ -14,7 +14,7 @@ import {
   sourceFieldToDir,
   addMarker,
 } from './'
-import { padId, joinIds } from '../utils'
+import { padId, joinIds, EMPTY_ID } from '../utils'
 import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 import { mkIndex } from './indexing'
@@ -763,9 +763,10 @@ const executeFindOperation = async (
 
       const mapping = fieldMapping[field]
       const targetField = mapping?.targetField
-      const casted = id
-        ? typeCast(value, id, field, schema, lang)
-        : typeCast(value, op.id, `${op.field}[0].${field}`, schema, lang)
+      const casted =
+        id === EMPTY_ID
+          ? typeCast(value, op.id, `${op.field}[0].${field}`, schema, lang)
+          : typeCast(value, id, field, schema, lang)
 
       if (targetField) {
         for (const f of targetField) {
