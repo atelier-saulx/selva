@@ -32,7 +32,8 @@ function ast2inlineRpn(schema: Schema, f: FilterAST | null): string | null {
         return `"${f.$field}" f "${f.$value}" c`
       } else {
         // numeric
-        return `"${f.$field}" g #${f.$value} F`
+        const num = Number(f.$value)
+        return Number.isNaN(num) ? null : `"${f.$field}" g #${num} F`
       }
     case 'has':
       if (typeof f.$value === 'string') {
