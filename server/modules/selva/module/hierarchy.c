@@ -1631,13 +1631,13 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
         \
         SVector_ForeachBegin(&it, (adj_vec)); \
         SelvaModify_HierarchyNode *adj; \
-        while((adj = SVector_Foreach(&it))) { \
+        while ((adj = SVector_Foreach(&it))) { \
             if (Trx_Visit(&trx_cur, &adj->trx_label)) { \
                 child_cb(node, adj, cb->child_arg); \
                 SVector_Insert(&q, adj); \
             } \
         } \
-    } while(0)
+    } while (0)
 
 #define BFS_TRAVERSE_END(hierarchy) \
     } \

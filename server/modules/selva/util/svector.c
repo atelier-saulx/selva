@@ -651,7 +651,6 @@ static void *SVector_ArrayForeach(struct SVectorIterator *it) {
         void **p;
 
         p = it->arr.cur++;
-        __builtin_prefetch(*it->arr.cur, 0, 2);
         return *p;
     }
 
