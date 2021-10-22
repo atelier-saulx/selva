@@ -341,8 +341,16 @@ static enum rpn_error push_double_result(struct rpn_ctx *ctx, double x) {
     return push(ctx, v);
 }
 
-static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long v) {
-    return push_double_result(ctx, (double)v);
+static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long x) {
+    struct rpn_operand *v = alloc_rpn_operand(0);
+
+    if (unlikely(!v)) {
+        return RPN_ERR_ENOMEM;
+    }
+
+    v->d = (double)x;
+
+    return push(ctx, v);
 }
 
 static enum rpn_error push_string_result(struct rpn_ctx *ctx, const char *s, size_t slen) {
