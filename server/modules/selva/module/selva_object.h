@@ -90,6 +90,21 @@ struct SelvaObjectPointerOpts {
  */
 #define selvaobject_autofree __attribute__((cleanup(_cleanup_SelvaObject_Destroy)))
 
+struct SelvaObjectAny {
+    enum SelvaObjectType type; /*!< Type of the value. */
+    enum SelvaObjectType subtype; /*!< Subtype of the value. Arrays use this. */
+    SelvaObjectMeta_t user_meta; /*!< User defined metadata. */
+    union {
+        double d; /*!< SELVA_OBJECT_DOUBLE */
+        long long ll; /*!< SELVA_OBJECT_LONGLONG */
+        struct RedisModuleString *str; /* SELVA_OBJECT_STRING */
+        struct SelvaObject *obj; /* SELVA_OBJECT_OBJECT */
+        struct SelvaSet *set; /*!< SELVA_OBJECT_SET */
+        struct SVector *array; /*!< SELVA_OBJECT_ARRAY */
+        void *p; /* SELVA_OBJECT_POINTER */
+    };
+};
+
 /**
  * Create a new SelvaObject.
  * @return Returns a pointer to the newly created object;
@@ -208,6 +223,9 @@ int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleStri
 int SelvaObject_GetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
 int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p);
 int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
+
+int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res);
+int SelvaObject_GetAny(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct SelvaObjectAny *res);
 
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct RedisModuleString *key_name);
