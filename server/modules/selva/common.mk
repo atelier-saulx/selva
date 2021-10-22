@@ -5,7 +5,8 @@ CFLAGS := -std=gnu99 -Wall -Wextra -Wno-unused-value -Wno-zero-length-array -Wno
 
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
-	CFLAGS += -ggdb3 -march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2 -mbmi -mbmi2 -mlzcnt -mmovbe -mprfchw -ftree-vectorize
+	CFLAGS += -ggdb3 -march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2 -mbmi -mbmi2 -mlzcnt -mmovbe -mprfchw -fno-math-errno -ftree-vectorize
+	#-opt-info-vec-optimized
 	#-ftree-vectorizer-verbose=5 -fopt-info-vec-missed
 else # Assume x86-64 mac
 	CFLAGS += -g -march=x86-64 -mtune=core-avx2 -mfpmath=sse -mavx -mavx2
