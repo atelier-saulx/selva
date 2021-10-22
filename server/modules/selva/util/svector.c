@@ -648,10 +648,11 @@ static void *SVector_EmptyForeach(struct SVectorIterator *it __unused) {
 }
 
 static void *SVector_ArrayForeach(struct SVectorIterator *it) {
-    if (it->arr.cur < it->arr.end) {
+    if (likely(it->arr.cur < it->arr.end)) {
         void **p;
 
         p = it->arr.cur++;
+        __builtin_prefetch(*it->arr.cur, 0, 2);
         return *p;
     }
 
@@ -692,6 +693,7 @@ void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector * 
             it->arr.cur = vec->vec_arr + vec->vec_arr_shift_index;
             it->arr.end = vec->vec_arr + vec->vec_last;
             it->fn = SVector_ArrayForeach;
+            __builtin_prefetch(vec->vec_arr, 0, 3);
         }
     } else if (it->mode == SVECTOR_MODE_RBTREE) {
         struct SVector_rbtree *head = (struct SVector_rbtree *)&vec->vec_rbhead;
@@ -700,6 +702,7 @@ void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector * 
             it->rbtree.head = head;
             it->rbtree.next = RB_MIN(SVector_rbtree, head);
             it->fn = SVector_RbTreeForeach;
+            __builtin_prefetch(head, 0, 2);
         }
     }
 }
