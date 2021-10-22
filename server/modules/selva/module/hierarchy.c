@@ -1737,7 +1737,7 @@ static int bfs_expression(
         SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
 
         rpn_set_hierarchy_node(rpn_ctx, node);
-        rpn_set_reg(rpn_ctx, 0, node->id, SELVA_NODE_ID_SIZE, 0);
+        rpn_set_reg(rpn_ctx, 0, node->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
         rpn_err = rpn_selvaset(redis_ctx, rpn_ctx, rpn_expr, &fields);
         if (rpn_err) {
             fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",
@@ -2062,7 +2062,7 @@ int SelvaHierarchy_TraverseExpression(
     SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
 
     rpn_set_hierarchy_node(rpn_ctx, head);
-    rpn_set_reg(rpn_ctx, 0, head->id, SELVA_NODE_ID_SIZE, 0);
+    rpn_set_reg(rpn_ctx, 0, head->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
     rpn_err = rpn_selvaset(ctx, rpn_ctx, rpn_expr, &fields);
     if (rpn_err) {
         fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",

@@ -501,12 +501,16 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
         /*
          * Set the integer value.
          */
-        char *e = (char *)s;
-        if (size > 0) {
-            r->d = strtod(s, &e);
-        }
-        if (e == s) {
+        if (flags & RPN_SET_REG_FLAG_IS_NAN) {
             r->d = nan("");
+        } else {
+            char *e = (char *)s;
+            if (size > 0) {
+                r->d = strtod(s, &e);
+            }
+            if (e == s) {
+                r->d = nan("");
+            }
         }
 
         ctx->reg[i] = r;
