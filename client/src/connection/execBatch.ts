@@ -84,8 +84,6 @@ export default function execBatch(
                     }
                     // publish will be lost
                     connection.queue.push(queue[i])
-
-                    //
                   } else {
                     // most cases here we want to treat it as a busy error
                     queue[i].reject(v)
