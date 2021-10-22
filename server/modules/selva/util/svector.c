@@ -208,9 +208,8 @@ static void SVector_Resize(SVector *vec, size_t i) {
 }
 
 void SVector_Insert(SVector *vec, void *el) {
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY &&
-        vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
-        vec->vec_compar) {
+    if (vec->vec_mode == SVECTOR_MODE_ARRAY && vec->vec_compar &&
+        vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD) {
         migrate_arr_to_rbtree(vec);
     }
 
