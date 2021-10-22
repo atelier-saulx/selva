@@ -341,8 +341,16 @@ static enum rpn_error push_double_result(struct rpn_ctx *ctx, double x) {
     return push(ctx, v);
 }
 
-static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long v) {
-    return push_double_result(ctx, (double)v);
+static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long x) {
+    struct rpn_operand *v = alloc_rpn_operand(0);
+
+    if (unlikely(!v)) {
+        return RPN_ERR_ENOMEM;
+    }
+
+    v->d = (double)x;
+
+    return push(ctx, v);
 }
 
 static enum rpn_error push_string_result(struct rpn_ctx *ctx, const char *s, size_t slen) {
@@ -493,12 +501,16 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
         /*
          * Set the integer value.
          */
-        char *e = (char *)s;
-        if (size > 0) {
-            r->d = strtod(s, &e);
-        }
-        if (e == s) {
+        if (flags & RPN_SET_REG_FLAG_IS_NAN) {
             r->d = nan("");
+        } else {
+            char *e = (char *)s;
+            if (size > 0) {
+                r->d = strtod(s, &e);
+            }
+            if (e == s) {
+                r->d = nan("");
+            }
         }
 
         ctx->reg[i] = r;
@@ -599,6 +611,15 @@ static int fast_atou(const char * str) {
     }
 
     return n;
+}
+
+static inline double js_fmod(double x, double y) {
+    double result = remainder(fabs(x), (y = fabs(y)));
+    if (signbit(result)) {
+        result += y;
+    }
+
+    return copysign(result, x);
 }
 
 static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, int type) {
@@ -788,13 +809,8 @@ static enum rpn_error rpn_op_mul(struct RedisModuleCtx *redis_ctx __unused, stru
 static enum rpn_error rpn_op_rem(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
-    long long d = (long long)b->d;
 
-    if (d == 0) {
-        return RPN_ERR_DIV;
-    }
-
-    return push_int_result(ctx, (long long)a->d % d);
+    return push_double_result(ctx, js_fmod(a->d, b->d));
 }
 
 static enum rpn_error rpn_op_eq(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {

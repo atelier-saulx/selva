@@ -971,7 +971,7 @@ static ssize_t send_node_object_merge(
     return res;
 }
 
-static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+static __hot int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
@@ -985,7 +985,7 @@ static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg)
 
         rpn_set_hierarchy_node(rpn_ctx, node);
         /* Set node_id to the register */
-        rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, 0);
+        rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
 
         /*
          * Resolve the expression and get the result.

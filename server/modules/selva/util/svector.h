@@ -130,6 +130,10 @@ void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector * 
 static inline void *SVector_Foreach(struct SVectorIterator *it) {
     return it->fn(it);
 }
+
+/**
+ * Returns true if SVector_Foreach() has reached the end of the vector.
+ */
 int SVector_Done(const struct SVectorIterator *it);
 
 #define SVECTOR_AUTOFREE(name) \
