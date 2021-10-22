@@ -971,7 +971,7 @@ static ssize_t send_node_object_merge(
     return res;
 }
 
-static int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+static __hot int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;

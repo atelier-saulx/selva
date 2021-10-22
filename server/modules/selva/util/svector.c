@@ -646,7 +646,7 @@ static void *SVector_EmptyForeach(struct SVectorIterator *it __unused) {
     return NULL;
 }
 
-static void *SVector_ArrayForeach(struct SVectorIterator *it) {
+static __hot void *SVector_ArrayForeach(struct SVectorIterator *it) {
     if (likely(it->arr.cur < it->arr.end)) {
         void **p;
 
@@ -657,7 +657,7 @@ static void *SVector_ArrayForeach(struct SVectorIterator *it) {
     return NULL;
 }
 
-static void *SVector_RbTreeForeach(struct SVectorIterator *it) {
+static __hot void *SVector_RbTreeForeach(struct SVectorIterator *it) {
     struct SVector_rbnode *cur = it->rbtree.next;
 
     if (!cur) {

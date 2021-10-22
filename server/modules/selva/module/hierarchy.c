@@ -1646,7 +1646,7 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
 /**
  * BFS from a given head node towards its descendants or ancestors.
  */
-static int bfs(
+static __hot int bfs(
         SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *head,
         enum SelvaModify_HierarchyNode_Relationship dir,
@@ -1873,7 +1873,7 @@ static int traverse_edge_field(
  * implementation from the innocent users just wanting to traverse the
  * hierarchy.
  */
-static int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *node, void *arg) {
+static __hot int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *node, void *arg) {
     struct SelvaModify_HierarchyCallback *cb = (struct SelvaModify_HierarchyCallback *)arg;
 
     return cb->node_cb(node, cb->node_arg);

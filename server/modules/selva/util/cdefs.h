@@ -55,6 +55,9 @@
 #define __constructor   __attribute__((constructor))
 #define __destructor    __attribute__((destructor))
 
+#define __hot __attribute__((hot))
+#define __cold __attribute__((cold))
+
 #define num_elem(x) (sizeof(x) / sizeof(*(x)))
 
 #define min(a, b) \
