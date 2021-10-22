@@ -165,6 +165,9 @@ static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, co
     TO_STR(data);
     struct SelvaModify_OpSet *op;
 
+    /* TODO Support __ORDER_BIG_ENDIAN__ */
+    _Static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Only little endian host is supported");
+
     if (!data_str && data_len < sizeof(struct SelvaModify_OpSet)) {
         return NULL;
     }
@@ -853,6 +856,16 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     return REDISMODULE_OK;
 }
+
+/*
+ * This might be useful in the future.
+ */
+#if 0
+static int my_RedisModuleEventCallback(RedisModuleCtx *ctx, RedisModuleEvent eid, uint64_t subevent, void *data) {
+    return 0;
+}
+    (void)RedisModule_SubscribeToServerEvent(ctx, RedisModuleEvent_Shutdown, my_RedisModuleEventCallback);
+#endif
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int err;

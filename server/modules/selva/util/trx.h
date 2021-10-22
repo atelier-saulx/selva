@@ -13,12 +13,12 @@ typedef uint64_t trxid_t;
  */
 struct trx_state {
     trxid_t id; /*!< Id of the transaction. */
-    trxid_t cl; /* Colors used in the transaction. */
-    trxid_t ex; /* Traversals that have finished. */
+    trxid_t cl; /*!< Colors used in the transaction. */
+    trxid_t ex; /*!< Traversals that have finished. */
 };
 
 /**
- * Transaction traversal state.
+ * Transaction label/element state.
  */
 struct trx {
     trxid_t id; /*!< Id of the currently executing transaction. */

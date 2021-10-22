@@ -571,7 +571,7 @@ void *SVector_Shift(SVector * restrict vec) {
         assert(vec->vec_last <= vec->vec_arr_len);
         assert(vec->vec_arr_shift_index <= vec->vec_last);
 
-        if (vec->vec_arr_shift_index > vec->vec_last / 2) {
+        if (vec->vec_arr_shift_index == _SVECTOR_SHIFT_RESET_THRESHOLD) {
             SVector_ShiftReset(vec);
         }
 
@@ -624,10 +624,6 @@ void SVector_ShiftReset(SVector * restrict vec) {
         return;
     }
 
-    /*
-     * We assume that nobody will call this function when nothing was
-     * actually inserted, thus no need to check if vec_arr is NULL.
-     */
     vec->vec_last -= vec->vec_arr_shift_index;
     memmove(vec->vec_arr, vec->vec_arr + vec->vec_arr_shift_index, VEC_SIZE(vec->vec_last));
     vec->vec_arr_shift_index = 0;
@@ -684,16 +680,15 @@ int SVector_Done(const struct SVectorIterator *it) {
     return 1;
 }
 
-void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *vec) {
+void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector * restrict vec) {
     assert(it);
     assert(vec);
 
     it->mode = vec->vec_mode;
+    it->fn = SVector_EmptyForeach;
 
     if (it->mode == SVECTOR_MODE_ARRAY) {
-        if (!vec->vec_arr) {
-            it->fn = SVector_EmptyForeach;
-        } else {
+        if (vec->vec_arr) {
             it->arr.cur = vec->vec_arr + vec->vec_arr_shift_index;
             it->arr.end = vec->vec_arr + vec->vec_last;
             it->fn = SVector_ArrayForeach;
@@ -701,14 +696,10 @@ void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *v
     } else if (it->mode == SVECTOR_MODE_RBTREE) {
         struct SVector_rbtree *head = (struct SVector_rbtree *)&vec->vec_rbhead;
 
-        if (RB_EMPTY(head)) {
-            it->fn = SVector_EmptyForeach;
-        } else {
+        if (!RB_EMPTY(head)) {
             it->rbtree.head = head;
             it->rbtree.next = RB_MIN(SVector_rbtree, head);
             it->fn = SVector_RbTreeForeach;
         }
-    } else {
-        abort();
     }
 }

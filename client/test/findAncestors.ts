@@ -2,7 +2,7 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
-import { wait, dumpDb } from './assertions'
+import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv

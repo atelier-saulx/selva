@@ -292,7 +292,7 @@ int Edge_ListConstraintsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
         return REDISMODULE_OK;
     }
 
-    err = SelvaObject_ReplyWithObject(ctx, NULL, hierarchy->edge_field_constraints.dyn_constraints, NULL);
+    err = SelvaObject_ReplyWithObject(ctx, NULL, hierarchy->edge_field_constraints.dyn_constraints, NULL, 0);
     if (err) {
         return replyWithSelvaError(ctx, err);
     }

@@ -190,7 +190,7 @@ int SelvaLang_ListCommand(RedisModuleCtx *ctx, RedisModuleString **argv __unused
         return RedisModule_WrongArity(ctx);
     }
 
-    return SelvaObject_ReplyWithObject(ctx, NULL, langs, NULL);
+    return SelvaObject_ReplyWithObject(ctx, NULL, langs, NULL, 0);
 }
 
 static void SelvaLang_Reply(struct RedisModuleCtx *ctx, void *p) {

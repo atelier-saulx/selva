@@ -936,7 +936,7 @@ int SelvaSubscriptions_TraverseMarker(
 
         rpn_ctx = rpn_init(1);
         if (rpn_ctx) {
-            if (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+            if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
                 err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
             } else {
                 err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, cb);
@@ -1111,7 +1111,7 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hi
 
         rpn_ctx = rpn_init(1);
         if (rpn_ctx) {
-            if (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+            if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
                 err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
             } else {
                 err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, &cb);
@@ -2528,7 +2528,7 @@ int SelvaSubscriptions_ListMissingCommand(RedisModuleCtx *ctx, RedisModuleString
         return REDISMODULE_OK;
     }
 
-    err = SelvaObject_ReplyWithObject(ctx, NULL, hierarchy->subs.missing, NULL);
+    err = SelvaObject_ReplyWithObject(ctx, NULL, hierarchy->subs.missing, NULL, 0);
     if (err) {
         replyWithSelvaError(ctx, err);
     }

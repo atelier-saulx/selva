@@ -20,6 +20,7 @@
 #include "selva_node.h"
 #include "selva_object.h"
 #include "selva_onload.h"
+#include "find_index.h"
 #include "selva_set.h"
 #include "traversal.h"
 #include "subscriptions.h"
@@ -31,7 +32,7 @@ struct SelvaDbVersionInfo {
 } selva_db_version_info;
 
 typedef struct SelvaModify_HierarchyNode {
-    Selva_NodeId id;
+    Selva_NodeId id; /* Must be first. */
     struct trx trx_label;
 #if HIERARCHY_SORT_BY_DEPTH
     ssize_t depth;
@@ -161,14 +162,13 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
     Selva_Subscriptions_InitHierarchy(hierarchy);
 
-    hierarchy->dyn_index = SelvaObject_New();
-    if (!hierarchy->dyn_index) {
+    if (SelvaFindIndex_Init(ctx, hierarchy)) {
         SelvaModify_DestroyHierarchy(hierarchy);
         hierarchy = NULL;
         goto fail;
     }
 
-    if(unlikely(SelvaModify_SetHierarchy(ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL) < 0)) {
+    if (unlikely(SelvaModify_SetHierarchy(ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL) < 0)) {
         SelvaModify_DestroyHierarchy(hierarchy);
         hierarchy = NULL;
         goto fail;
@@ -194,10 +194,14 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
      * will be gone anyway.
      */
     SelvaSubscriptions_DestroyAll(NULL, hierarchy);
+    /*
+     * If SelvaSubscriptions_DestroyAll() is ran first the we don't need to
+     * bother about cleaning up subscriptions used by the indexing and thus
+     * hopefully the deinit doesn't need a RedisModuleCtx.
+     */
+    SelvaFindIndex_Deinit(hierarchy);
 
     /* TODO Do we need to destroy constraints? */
-
-    SelvaObject_Destroy(hierarchy->dyn_index);
 
     SVector_Destroy(&hierarchy->heads);
 #if MEM_DEBUG
@@ -363,16 +367,6 @@ SelvaModify_HierarchyNode *SelvaHierarchy_FindNode(SelvaModify_Hierarchy *hierar
 
 int SelvaHierarchy_NodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id) {
     return SelvaHierarchy_FindNode(hierarchy, id) != NULL;
-}
-
-char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const SelvaModify_HierarchyNode *node) {
-    memcpy(id, node->id, SELVA_NODE_ID_SIZE);
-    return id;
-}
-
-char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const SelvaModify_HierarchyNode *node) {
-    memcpy(type, node->id, SELVA_NODE_TYPE_SIZE);
-    return type;
 }
 
 const struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByConstPtr(const SelvaModify_HierarchyNode *node) {
@@ -2061,7 +2055,7 @@ int SelvaHierarchy_TraverseExpression(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    if (Trx_Begin(&(hierarchy)->trx_state, &trx_cur)) {
+    if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
         return SELVA_HIERARCHY_ETRMAX;
     }
 
@@ -2112,7 +2106,7 @@ int SelvaHierarchy_TraverseExpressionBfs(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         struct rpn_ctx *rpn_ctx,
-        struct rpn_expression *rpn_expr,
+        const struct rpn_expression *rpn_expr,
         const struct SelvaModify_HierarchyCallback *cb) {
     const TraversalCallback tcb = {
         .head_cb = NULL,
@@ -2632,7 +2626,7 @@ int SelvaHierarchy_EdgeListCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         }
     }
 
-    SelvaObject_ReplyWithObject(ctx, NULL, obj, NULL);
+    SelvaObject_ReplyWithObject(ctx, NULL, obj, NULL, 0);
 
     return REDISMODULE_OK;
 }

@@ -18,6 +18,7 @@ export type ServerOptions = {
   host?: string
   name?: string
   modules?: string[]
+  selvaOptions?: string[]
   dir?: string
   default?: boolean
   attachToExisting?: boolean

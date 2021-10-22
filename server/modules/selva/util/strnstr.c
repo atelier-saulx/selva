@@ -44,17 +44,23 @@ char * strnstr(const char *s, const char *find, size_t slen)
 
 	if ((c = *find++) != '\0') {
 		size_t len = strlen(find);
+
 		do {
             char sc;
+
 			do {
-				if (slen-- < 1 || (sc = *s++) == '\0')
-					return (NULL);
+				if (slen-- < 1 || (sc = *s++) == '\0') {
+					return NULL;
+                }
 			} while (sc != c);
-			if (len > slen)
-				return (NULL);
+
+			if (len > slen) {
+				return NULL;
+            }
+
 		} while (strncmp(s, find, len) != 0);
 		s--;
 	}
 
-	return ((char *)s);
+	return (char *)s;
 }
