@@ -11,12 +11,12 @@ export default function execBatch(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     if (connection.serverIsBusy) {
-      console.log('Server is busy - retrying in 5 seconds')
+      console.info('Server is busy - retrying in 5 seconds')
       connection.emit('busy')
       setTimeout(() => {
         connection.serverIsBusy = false
         if (!connection.connected) {
-          console.log('DC while busy add to buffer again!')
+          console.info('DC while busy add to buffer again!')
           connection.queue.push(...queue)
         } else {
           execBatch(connection, queue)
@@ -40,12 +40,13 @@ export default function execBatch(
       })
       batch.exec((err: Error, reply: any[]) => {
         if (err) {
-          console.log('ERROR FROM BATCH', err)
+          console.error('ERROR FROM BATCH', err)
 
           reject(err)
         } else {
           let hasBusy = false
-          let busySlice = []
+
+          const busySlice = []
 
           if (reply) {
             reply.forEach((v: any, i: number) => {
@@ -55,8 +56,9 @@ export default function execBatch(
                   busySlice.push(queue[i])
                 } else if (queue[i].reject) {
                   if (v.message.includes('READONLY')) {
-                    console.log(
-                      'OK HERE SOMETHING WRONG',
+                    console.error(
+                      connection.serverDescriptor,
+                      'OK HERE SOMETHING WRONG (readonly)',
                       queue[i],
                       connection.serverDescriptor
                     )
@@ -73,6 +75,7 @@ export default function execBatch(
                         showUncertainState = true
                         console.warn(
                           chalk.yellow(
+                            connection.serverDescriptor,
                             `Uncertain state errors (connection lost) fired ${uncertainStateCnt}x in the last second`
                           )
                         )
@@ -95,7 +98,7 @@ export default function execBatch(
           }
           if (hasBusy) {
             connection.serverIsBusy = true
-            console.log('exec it again from busy')
+            console.info('exec it again from busy')
             execBatch(connection, busySlice)
               .then(() => {
                 resolve()
