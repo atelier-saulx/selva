@@ -613,6 +613,15 @@ static int fast_atou(const char * str) {
     return n;
 }
 
+static inline double js_fmod(double x, double y) {
+    double result = remainder(fabs(x), (y = fabs(y)));
+    if (signbit(result)) {
+        result += y;
+    }
+
+    return copysign(result, x);
+}
+
 static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, int type) {
     const size_t i = fast_atou(str_index);
 
@@ -818,13 +827,8 @@ static enum rpn_error rpn_op_mul(struct RedisModuleCtx *redis_ctx __unused, stru
 static enum rpn_error rpn_op_rem(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
-    long long d = (long long)b->d;
 
-    if (d == 0) {
-        return RPN_ERR_DIV;
-    }
-
-    return push_int_result(ctx, (long long)a->d % d);
+    return push_double_result(ctx, js_fmod(a->d, b->d));
 }
 
 static enum rpn_error rpn_op_eq(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
