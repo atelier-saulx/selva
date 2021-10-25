@@ -262,6 +262,25 @@ int SelvaHierarchy_UpsertNode(
  * Add new relationships relative to other existing nodes.
  * The function is nondestructive; previously existing edges to and from other
  * nodes and metadata are be preserved.
+ * @param ctx If NULL then no events are sent.
+ * @param parents   Sets these nodes as parents to this node,
+ *                  while keeping the existing parents.
+ * @param children  Sets these nodes as children to this node,
+ *                  while keeping the existing children.
+ */
+int SelvaModify_AddHierarchyP(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *node,
+        size_t nr_parents,
+        const Selva_NodeId *parents,
+        size_t nr_children,
+        const Selva_NodeId *children);
+
+/**
+ * Add new relationships relative to other existing nodes.
+ * The function is nondestructive; previously existing edges to and from other
+ * nodes and metadata are be preserved.
  * If a node with id doesn't exist it will be created.
  * @param ctx If NULL then no events are sent.
  * @param parents   Sets these nodes as parents to this node,

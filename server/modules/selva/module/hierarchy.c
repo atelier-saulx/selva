@@ -1238,6 +1238,37 @@ int SelvaHierarchy_UpsertNode(
      return 0;
 }
 
+int SelvaModify_AddHierarchyP(
+        RedisModuleCtx *ctx,
+        SelvaModify_Hierarchy *hierarchy,
+        SelvaModify_HierarchyNode *node,
+        size_t nr_parents,
+        const Selva_NodeId *parents,
+        size_t nr_children,
+        const Selva_NodeId *children) {
+    int err, res = 0;
+
+    /*
+     * Update relationship relative to other nodes
+     * RFE if isNewNode == 0 then errors are not handled properly as
+     * we don't know how to rollback.
+     */
+    err = cross_insert_parents(ctx, hierarchy, node, nr_parents, parents);
+    if (err < 0) {
+        return err;
+    }
+    res += err;
+
+    /* Same for the children */
+    err = cross_insert_children(ctx, hierarchy, node, nr_children, children);
+    if (err < 0) {
+        return err;
+    }
+    res += err;
+
+    return res;
+}
+
 int SelvaModify_AddHierarchy(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
@@ -1248,7 +1279,7 @@ int SelvaModify_AddHierarchy(
         const Selva_NodeId *children) {
     SelvaModify_HierarchyNode *node;
     int isNewNode;
-    int err, res = 0;
+    int err;
 
     err = SelvaHierarchy_UpsertNode(ctx, hierarchy, id, &node);
     if (err == SELVA_HIERARCHY_EEXIST) {
@@ -1257,30 +1288,18 @@ int SelvaModify_AddHierarchy(
         return err;
     } else {
         isNewNode = 1;
-        res++;
     }
 
-    /*
-     * Update relationship relative to other nodes
-     * RFE if isNewNode == 0 then errors are not handled properly as
-     * we don't know how to rollback.
-     */
-    err = cross_insert_parents(ctx, hierarchy, node, nr_parents, parents);
-    if (err < 0 && isNewNode) {
-        del_node(ctx, hierarchy, node);
+    err = SelvaModify_AddHierarchyP(ctx, hierarchy, node, nr_parents, parents, nr_children, children);
+    if (err < 0) {
+        if (isNewNode) {
+            del_node(ctx, hierarchy, node);
+        }
+
         return err;
     }
-    res += err;
 
-    /* Same for the children */
-    err = cross_insert_children(ctx, hierarchy, node, nr_children, children);
-    if (err < 0 && isNewNode) {
-        del_node(ctx, hierarchy, node);
-        return err;
-    }
-    res += err;
-
-    return res;
+    return err + isNewNode; /* Return the number of changes. */
 }
 
 int SelvaModify_DelHierarchy(
@@ -2292,10 +2311,8 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
         /*
          * Insert children of the node.
-         * TODO We could make this faster by skipping the lookup as we already
-         * have a pointer to the node.
          */
-        err = SelvaModify_AddHierarchy(NULL, hierarchy, node_id, 0, NULL, nr_children, children);
+        err = SelvaModify_AddHierarchyP(NULL, hierarchy, node, 0, NULL, nr_children, children);
         if (err < 0) {
             RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy");
             goto error;
