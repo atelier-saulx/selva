@@ -163,11 +163,20 @@ void rpn_destroy(struct rpn_ctx *ctx) {
             free_rpn_operand(&v);
         }
 
-        RedisModule_Free(ctx->rms_id);
         RedisModule_Free(ctx->rms_field);
         RedisModule_Free(ctx->reg);
         RedisModule_Free(ctx);
     }
+}
+
+void rpn_set_hierarchy_node(struct rpn_ctx *ctx, const struct SelvaModify_HierarchyNode *node) {
+    ctx->node = node;
+    ctx->obj = SelvaHierarchy_GetNodeObject(node);
+}
+
+/* TODO obj should be const but selva_object isn't good with conts atm. */
+void rpn_set_obj(struct rpn_ctx *ctx, struct SelvaObject *obj) {
+    ctx->obj = obj;
 }
 
 /*
@@ -663,67 +672,17 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     return RPN_ERR_TYPE;
 }
 
-static struct SelvaObject *open_object(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
-    struct SelvaObject *obj = NULL;
-
-    if (ctx->obj) {
-        obj = ctx->obj;
-    } else {
-        struct rpn_operand *operand;
-
-        /* reg[0] should contain either a SelvaObject or a node_id */
-        operand = ctx->reg[0];
-        if (operand) {
-            if (operand->flags.slvobj) {
-                ctx->obj = obj = OPERAND_GET_OBJ(operand);
-            } else if (redis_ctx) {
-                RedisModuleKey *key;
-
-                /* Assume the operand is a node_id */
-                const char *id_str = OPERAND_GET_S(operand);
-                if (!id_str) {
-                    return NULL;
-                }
-
-                int err = cpy2rm_str(&ctx->rms_id, id_str, strnlen(id_str, SELVA_NODE_ID_SIZE));
-                if (err) {
-                    return NULL;
-                }
-
-                key = RedisModule_OpenKey(redis_ctx, ctx->rms_id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
-                if (!key) {
-                    return NULL;
-                }
-
-                ctx->redis_key = key;
-                err = SelvaObject_Key2Obj(key, &obj);
-                if (err) {
-                    return NULL;
-                }
-                ctx->obj = obj;
-            }
-        }
-    }
-
-    return obj;
-}
-
-static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_operand *field, int type) {
-    struct SelvaObject *obj;
+static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *field, int type) {
     const char *field_str = OPERAND_GET_S(field);
     const size_t field_len = OPERAND_GET_S_LEN(field);
     struct SelvaObjectAny any;
     int err;
 
-    obj = open_object(redis_ctx, ctx);
-    if (!obj) {
-        fprintf(stderr, "%s:%d: Node object not found for: \"%.*s\"\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, RedisModule_StringPtrLen(ctx->rms_id, NULL));
+    if (!ctx->obj) {
         return RPN_ERR_NPE;
     }
 
-    err = SelvaObject_GetAnyStr(obj, field_str, field_len, &any);
+    err = SelvaObject_GetAnyStr(ctx->obj, field_str, field_len, &any);
     if (err || any.type == SELVA_OBJECT_NULL) {
         if (err == SELVA_ENOENT) {
             return (type == RPN_LVTYPE_NUMBER) ? push_double_result(ctx, nan_undefined()) : push_empty_value(ctx);
@@ -922,9 +881,8 @@ static enum rpn_error rpn_op_ternary(struct RedisModuleCtx *redis_ctx __unused, 
     }
 }
 
-static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     int exists;
-    struct SelvaObject *obj;
     OPERAND(ctx, field);
     const char *field_str = OPERAND_GET_S(field);
     const size_t field_len = OPERAND_GET_S_LEN(field);
@@ -937,15 +895,14 @@ static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx, struct rpn
         return push_int_result(ctx, 1);
     }
 
-    obj = open_object(redis_ctx, ctx);
-    if (!obj) {
+    if (!ctx->obj) {
         return push_int_result(ctx, 0);
     }
 
     /*
      * Finally check if it's a node object field.
      */
-    exists = !SelvaObject_ExistsStr(obj, field_str, field_len);
+    exists = !SelvaObject_ExistsStr(ctx->obj, field_str, field_len);
 
     return push_int_result(ctx, exists);
 }
@@ -958,7 +915,7 @@ static enum rpn_error rpn_op_range(struct RedisModuleCtx *redis_ctx __unused, st
     return push_int_result(ctx, a->d <= b->d && b->d <= c->d);
 }
 
-static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     struct SelvaSet *set;
     OPERAND(ctx, s); /* set */
     OPERAND(ctx, v); /* value */
@@ -966,19 +923,13 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ct
     set = OPERAND_GET_SET(s); /* The operand `s` is a set if this gets set. */
     if (!set) {
         /* The operand `s` is a field_name string. */
-        struct SelvaObject *obj;
-
-        obj = open_object(redis_ctx, ctx);
-        if (!obj) {
-            fprintf(stderr, "%s:%d: Node object not found for: \"%.*s\"\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, RedisModule_StringPtrLen(ctx->rms_id, NULL));
-            return push_int_result(ctx, 0);
+        if (!ctx->obj) {
+            return RPN_ERR_NPE;
         }
 
         const char *field_name_str = OPERAND_GET_S(s);
         const size_t field_name_len = OPERAND_GET_S_LEN(s);
-        set = SelvaObject_GetSetStr(obj, field_name_str, field_name_len);
+        set = SelvaObject_GetSetStr(ctx->obj, field_name_str, field_name_len);
         if (!set) {
             return push_int_result(ctx, 0);
         }
@@ -1090,16 +1041,16 @@ static enum rpn_error rpn_op_cidcmp(struct RedisModuleCtx *redis_ctx __unused, s
     return push_int_result(ctx, !Selva_CmpNodeType(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0])));
 }
 
-static enum rpn_error rpn_op_getsfld(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_getsfld(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
 
-    return rpn_getfld(redis_ctx, ctx, field, RPN_LVTYPE_STRING);
+    return rpn_getfld(ctx, field, RPN_LVTYPE_STRING);
 }
 
-static enum rpn_error rpn_op_getdfld(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_getdfld(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
 
-    return rpn_getfld(redis_ctx, ctx, field, RPN_LVTYPE_NUMBER);
+    return rpn_getfld(ctx, field, RPN_LVTYPE_NUMBER);
 }
 
 static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
@@ -1666,24 +1617,11 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
     return RPN_ERR_OK;
 }
 
-/**
- * Close the Selva node redis key if opened.
- * This function must be called after every to rpn().
- */
-static void close_node_key(struct rpn_ctx *ctx) {
-    if (ctx->redis_key) {
-        RedisModule_CloseKey(ctx->redis_key);
-    }
-    ctx->redis_key = NULL;
-    ctx->obj = NULL;
-}
-
 enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, int *out) {
     struct rpn_operand *res;
     enum rpn_error err;
 
     err = rpn(redis_ctx, ctx, expr);
-    close_node_key(ctx);
     if (err) {
         return err;
     }
@@ -1704,7 +1642,6 @@ enum rpn_error rpn_double(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
     enum rpn_error err;
 
     err = rpn(redis_ctx, ctx, expr);
-    close_node_key(ctx);
     if (err) {
         return err;
     }
@@ -1725,7 +1662,6 @@ enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx
     enum rpn_error err;
 
     err = rpn(redis_ctx, ctx, expr);
-    close_node_key(ctx);
     if (err) {
         return err;
     }
@@ -1746,7 +1682,6 @@ enum rpn_error rpn_rms(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, co
     enum rpn_error err;
 
     err = rpn(redis_ctx, ctx, expr);
-    close_node_key(ctx);
     if (err) {
         return err;
     }
@@ -1767,7 +1702,6 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
     enum rpn_error err;
 
     err = rpn(redis_ctx, ctx, expr);
-    close_node_key(ctx);
     if (err) {
         return err;
     }

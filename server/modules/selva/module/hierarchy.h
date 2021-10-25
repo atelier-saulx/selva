@@ -11,7 +11,7 @@
 #include "subscriptions.h"
 #include "poptop.h"
 
-#define HIERARCHY_ENCODING_VERSION  2
+#define HIERARCHY_ENCODING_VERSION  3
 
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
@@ -188,6 +188,7 @@ static inline char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], 
     return type;
 }
 
+struct SelvaObject *SelvaHierarchy_GetNodeObject(const struct SelvaModify_HierarchyNode *node);
 
 const struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByConstPtr(const struct SelvaModify_HierarchyNode *node);
 struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
@@ -352,7 +353,6 @@ int SelvaModify_TraverseHierarchy(
         enum SelvaTraversal dir,
         const struct SelvaModify_HierarchyCallback *cb);
 int SelvaModify_TraverseHierarchyField(
-        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaTraversal dir,
@@ -374,7 +374,6 @@ int SelvaHierarchy_TraverseExpressionBfs(
         const struct rpn_expression *rpn_expr,
         const struct SelvaModify_HierarchyCallback *cb);
 int SelvaModify_TraverseArray(
-        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         const char *ref_field_str,

@@ -29,159 +29,6 @@ const struct SelvaArgParser_EnumType merge_types[] = {
     }
 };
 
-static const char *get_next_field_name(const char *s) {
-    while (*s != '\n' && *s != '\0') s++;
-    return s;
-}
-
-int SelvaTraversal_ParseDir(
-        RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
-        enum SelvaTraversal *dir,
-        RedisModuleString **field_name_out,
-        Selva_NodeId nodeId,
-        enum SelvaTraversalAlgo algo,
-        const RedisModuleString *field_name) {
-    const char *p1 = RedisModule_StringPtrLen(field_name, NULL); /* Beginning of a field_name or a list of field_names. */
-    const char *p2 = get_next_field_name(p1); /* Last char of the first field_name. */
-
-    /*
-     * Open the node object.
-     */
-    RedisModuleString *rms_node_id;
-    RedisModuleKey *node_key;
-    struct SelvaObject *obj;
-    int err = 0;
-
-    /*
-     * Open the node key.
-     * We may not need this but we don't know it yet.
-     */
-    rms_node_id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
-    node_key = RedisModule_OpenKey(ctx, rms_node_id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
-    err = SelvaObject_Key2Obj(node_key, &obj);
-    if (err) {
-        return err;
-    }
-
-    do {
-        const size_t sz = (size_t)((ptrdiff_t)p2 - (ptrdiff_t)p1);
-
-        if (sz == 4 && !strncmp("node", p1, 4)) {
-            *dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
-            break;
-        } else if (sz == 8 && !strncmp("children", p1, 8)) {
-            *dir = SELVA_HIERARCHY_TRAVERSAL_CHILDREN;
-            break;
-        } else if (sz == 7 && !strncmp("parents", p1, 7)) {
-            *dir = SELVA_HIERARCHY_TRAVERSAL_PARENTS;
-            break;
-        } else if (sz == 9 && !strncmp("ancestors", p1, 9)) {
-            *dir = algo == HIERARCHY_BFS
-                ? SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS
-                : SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS;
-            break;
-        } else if (sz == 11 && !strncmp("descendants", p1, 11)) {
-            *dir = algo == HIERARCHY_BFS
-                ? SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS
-                : SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS;
-            break;
-        } else if (sz > 0) {
-            /*
-             * Check if the field_name is a custom edge field name.
-             * TODO This should check that the field is non-empty.
-             */
-            if (Edge_GetField(SelvaHierarchy_FindNode(hierarchy, nodeId), p1, sz)) {
-                RedisModuleString *rms;
-
-                if (algo != HIERARCHY_BFS) {
-                    err = SELVA_HIERARCHY_EINVAL;
-                    break;
-                }
-
-                rms = RedisModule_CreateString(ctx, p1, sz);
-                if (!rms) {
-                    err = SELVA_HIERARCHY_ENOMEM;
-                    break;
-                }
-
-                err = 0;
-                *field_name_out = rms;
-                *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD;
-                break;
-            } else {
-                /*
-                 * Check if the field_name is a regular field containing
-                 * a set of nodeId strings.
-                 */
-                enum SelvaObjectType type;
-
-                /* TODO Actually verify that it contains strings */
-                type = SelvaObject_GetTypeStr(obj, p1, sz);
-                if (type == SELVA_OBJECT_SET) {
-                    RedisModuleString *rms;
-
-#if 0
-                    fprintf(stderr, "%s:%d: Field exists. node: %.*s field: %.*s type: %d\n",
-                            __FILE__, __LINE__,
-                            (int)SELVA_NODE_ID_SIZE, nodeId,
-                            (int)sz, p1,
-                            type);
-#endif
-
-                    rms = RedisModule_CreateString(ctx, p1, sz);
-                    if (!rms) {
-                        err = SELVA_HIERARCHY_ENOMEM;
-                        break;
-                    }
-
-                    err = 0;
-                    *field_name_out = rms;
-                    *dir = SELVA_HIERARCHY_TRAVERSAL_REF;
-                    break;
-                } else if (type == SELVA_OBJECT_ARRAY) {
-                    RedisModuleString *rms;
-
-#if 0
-                    fprintf(stderr, "%s:%d: Field exists. node: %.*s field: %.*s type: %d\n",
-                            __FILE__, __LINE__,
-                            (int)SELVA_NODE_ID_SIZE, nodeId,
-                            (int)sz, p1,
-                            type);
-#endif
-
-                    rms = RedisModule_CreateString(ctx, p1, sz);
-                    if (!rms) {
-                        err = SELVA_HIERARCHY_ENOMEM;
-                        break;
-                    }
-
-                    err = 0;
-                    *field_name_out = rms;
-                    *dir = SELVA_HIERARCHY_TRAVERSAL_ARRAY;
-                    break;
-                }
-            }
-        } else {
-            err = SELVA_HIERARCHY_EINVAL;
-            break;
-        }
-
-        if (*p2 == '\0') {
-            /* If this was the last field_name, we give up. */
-            err = SELVA_HIERARCHY_ENOENT;
-            break;
-        }
-
-        /* Find the next field_name in the string. */
-        p1 = p2 + 1;
-        p2 = get_next_field_name(p1);
-    } while (p1 != p2);
-
-    RedisModule_CloseKey(node_key);
-    return err;
-}
-
 int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const RedisModuleString *arg) {
     TO_STR(arg);
 
@@ -305,8 +152,6 @@ struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
         struct SelvaModify_HierarchyNode *node,
         const RedisModuleString *order_field) {
     Selva_NodeId nodeId;
-    RedisModuleString *id;
-    RedisModuleKey *key;
     struct TraversalOrderedItem *item = NULL;
     double d = 0.0;
     char data_lang[LANG_MAX];
@@ -317,86 +162,75 @@ struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
     memset(data_lang, '\0', sizeof(data_lang));
     SelvaHierarchy_GetNodeId(nodeId, node);
 
-    id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
-    if (!id) {
-        return NULL;
-    }
+    int err;
+    struct SelvaObject *obj;
+    obj = SelvaHierarchy_GetNodeObject(node);
+    enum SelvaObjectType obj_type;
 
-    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
-    if (key) {
-        struct SelvaObject *obj;
-        int err;
+    obj_type = SelvaObject_GetType(obj, order_field);
 
-        err = SelvaObject_Key2Obj(key, &obj);
-        if (!err) {
-            enum SelvaObjectType obj_type;
+    if (obj_type == SELVA_OBJECT_STRING) {
+        RedisModuleString *value = NULL;
 
-            obj_type = SelvaObject_GetType(obj, order_field);
+        err = SelvaObject_GetString(obj, order_field, &value);
+        if (!err && value) {
+            data = RedisModule_StringPtrLen(value, &data_len);
+            type = ORDERED_ITEM_TYPE_TEXT;
+        }
+    } else if (obj_type == SELVA_OBJECT_OBJECT) {
+        SelvaObjectMeta_t meta;
+        SelvaObject_GetUserMeta(obj, order_field, &meta);
 
-            if (obj_type == SELVA_OBJECT_STRING) {
-                RedisModuleString *value = NULL;
+        if (meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
+            TO_STR(lang);
+            struct SelvaObject *text_obj;
+            int text_err = SelvaObject_GetObject(obj, order_field, &text_obj);
+            if (text_err) {
+                return NULL;
+            }
 
-                err = SelvaObject_GetString(obj, order_field, &value);
-                if (!err && value) {
-                    data = RedisModule_StringPtrLen(value, &data_len);
-                    type = ORDERED_ITEM_TYPE_TEXT;
-                }
-            } else if (obj_type == SELVA_OBJECT_OBJECT) {
-                SelvaObjectMeta_t meta;
-                SelvaObject_GetUserMeta(obj, order_field, &meta);
+            if (!lang_len) {
+                return NULL;
+            }
 
-                if (meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
-                    TO_STR(lang);
-                    struct SelvaObject *text_obj;
-                    int text_err = SelvaObject_GetObject(obj, order_field, &text_obj);
-                    if (text_err) {
-                        goto cleanup;
+            char buf[lang_len + 1];
+            memcpy(buf, lang_str, lang_len + 1);
+            const char *sep = "\n";
+            char *rest = NULL;
+
+            for (const char *token = strtok_r(buf, sep, &rest);
+                 token != NULL;
+                 token = strtok_r(NULL, sep, &rest)) {
+                const size_t slen = strlen(token);
+
+                RedisModuleString *raw_value = NULL;
+                text_err = SelvaObject_GetStringStr(text_obj, token, slen, &raw_value);
+                if (!text_err && raw_value) {
+                    TO_STR(raw_value);
+
+                    if (raw_value_len) {
+                        strncpy(data_lang, token, sizeof(data_lang) - 1);
+                        data_lang[sizeof(data_lang) - 1] = '\0';
+                        data = raw_value_str;
+                        data_len = raw_value_len;
+                        type = ORDERED_ITEM_TYPE_TEXT;
+                        break;
                     }
-
-                    if (!lang_len) {
-                        goto cleanup;
-                    }
-
-                    char buf[lang_len + 1];
-                    memcpy(buf, lang_str, lang_len + 1);
-                    const char *sep = "\n";
-                    char *rest = NULL;
-
-                    for (const char *token = strtok_r(buf, sep, &rest);
-                         token != NULL;
-                         token = strtok_r(NULL, sep, &rest)) {
-                        const size_t slen = strlen(token);
-
-                        RedisModuleString *raw_value = NULL;
-                        text_err = SelvaObject_GetStringStr(text_obj, token, slen, &raw_value);
-                        if (!text_err && raw_value) {
-                            TO_STR(raw_value);
-
-                            if (raw_value_len) {
-                                strncpy(data_lang, token, sizeof(data_lang) - 1);
-                                data_lang[sizeof(data_lang) - 1] = '\0';
-                                data = raw_value_str;
-                                data_len = raw_value_len;
-                                type = ORDERED_ITEM_TYPE_TEXT;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } else if (obj_type == SELVA_OBJECT_DOUBLE) {
-                err = SelvaObject_GetDouble(obj, order_field, &d);
-                if (!err) {
-                    type = ORDERED_ITEM_TYPE_DOUBLE;
-                }
-            } else if (obj_type == SELVA_OBJECT_LONGLONG) {
-                long long v;
-
-                err = SelvaObject_GetLongLong(obj, order_field, &v);
-                if (!err) {
-                    d = (double)v;
-                    type = ORDERED_ITEM_TYPE_DOUBLE;
                 }
             }
+        }
+    } else if (obj_type == SELVA_OBJECT_DOUBLE) {
+        err = SelvaObject_GetDouble(obj, order_field, &d);
+        if (!err) {
+            type = ORDERED_ITEM_TYPE_DOUBLE;
+        }
+    } else if (obj_type == SELVA_OBJECT_LONGLONG) {
+        long long v;
+
+        err = SelvaObject_GetLongLong(obj, order_field, &v);
+        if (!err) {
+            d = (double)v;
+            type = ORDERED_ITEM_TYPE_DOUBLE;
         }
     }
 
@@ -428,8 +262,6 @@ struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
     item->data_len = final_data_len;
     item->d = d;
 
-cleanup:
-    RedisModule_CloseKey(key);
     return item;
 }
 
@@ -469,11 +301,11 @@ struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
             struct SelvaObject *text_obj;
             int text_err = SelvaObject_GetObject(obj, order_field, &text_obj);
             if (text_err) {
-                goto cleanup;
+                return NULL;
             }
 
             if (!lang_len) {
-                goto cleanup;
+                return NULL;
             }
 
             char buf[lang_len + 1];
@@ -546,7 +378,6 @@ struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
     item->d = d;
     item->data_obj = obj;
 
-cleanup:
     return item;
 }
 
