@@ -583,7 +583,9 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
             */
 
-            is_timeseries = 1;
+            if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TIMESERIES) {
+              is_timeseries = 1;
+            }
 
             obj = key->value;
         } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found &&
