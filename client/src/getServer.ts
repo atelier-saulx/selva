@@ -29,7 +29,21 @@ const getServer = (
         type = 'replica'
       }
 
-      if (type === 'subscriptionRegistry') {
+      if (type === 'timeseriesRegistry') {
+        // just get first for now - never had more then one yet...
+        // eslint-disable-next-line
+        for (let k in selvaClient.servers.tsRegisters) {
+          server = selvaClient.servers.tsRegisters[k]
+          break
+        }
+      } else if (type === 'timeseriesQueue') {
+        // just get first for now - never had more then one yet...
+        // eslint-disable-next-line
+        for (let k in selvaClient.servers.timeseriesQueues) {
+          server = selvaClient.servers.timeseriesQueues[k]
+          break
+        }
+      } else if (type === 'subscriptionRegistry') {
         // just get first for now
         // eslint-disable-next-line
         for (const k in selvaClient.servers.subRegisters) {
@@ -57,12 +71,11 @@ const getServer = (
               getServer(selvaClient, cb, selector)
             }, 2e3)
             if (!getSubInprogress[selectionOptions.subscription]) {
-              getSubInprogress[
-                selectionOptions.subscription
-              ] = selvaClient.redis.get(
-                { type: 'subscriptionRegistry' },
-                selectionOptions.subscription
-              )
+              getSubInprogress[selectionOptions.subscription] =
+                selvaClient.redis.get(
+                  { type: 'subscriptionRegistry' },
+                  selectionOptions.subscription
+                )
             }
             getSubInprogress[selectionOptions.subscription].then((serverId) => {
               if (!isCanceled) {
