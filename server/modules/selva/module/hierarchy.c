@@ -201,7 +201,7 @@ void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy) {
      */
     SelvaFindIndex_Deinit(hierarchy);
 
-    /* TODO Do we need to destroy constraints? */
+    Edge_DeinitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
 
     SVector_Destroy(&hierarchy->heads);
 #if MEM_DEBUG
