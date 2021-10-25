@@ -130,6 +130,7 @@ struct EdgeFieldContainer {
 };
 
 void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data);
+void Edge_DeinitEdgeFieldConstraints(struct EdgeFieldConstraints *data);
 int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, const struct EdgeFieldDynConstraintParams *params);
 const struct EdgeFieldConstraint *Edge_GetConstraint(
         const struct EdgeFieldConstraints *data,
