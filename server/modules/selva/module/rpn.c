@@ -341,8 +341,16 @@ static enum rpn_error push_double_result(struct rpn_ctx *ctx, double x) {
     return push(ctx, v);
 }
 
-static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long v) {
-    return push_double_result(ctx, (double)v);
+static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long x) {
+    struct rpn_operand *v = alloc_rpn_operand(0);
+
+    if (unlikely(!v)) {
+        return RPN_ERR_ENOMEM;
+    }
+
+    v->d = (double)x;
+
+    return push(ctx, v);
 }
 
 static enum rpn_error push_string_result(struct rpn_ctx *ctx, const char *s, size_t slen) {
@@ -493,12 +501,16 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
         /*
          * Set the integer value.
          */
-        char *e = (char *)s;
-        if (size > 0) {
-            r->d = strtod(s, &e);
-        }
-        if (e == s) {
+        if (flags & RPN_SET_REG_FLAG_IS_NAN) {
             r->d = nan("");
+        } else {
+            char *e = (char *)s;
+            if (size > 0) {
+                r->d = strtod(s, &e);
+            }
+            if (e == s) {
+                r->d = nan("");
+            }
         }
 
         ctx->reg[i] = r;
@@ -601,6 +613,15 @@ static int fast_atou(const char * str) {
     return n;
 }
 
+static inline double js_fmod(double x, double y) {
+    double result = remainder(fabs(x), (y = fabs(y)));
+    if (signbit(result)) {
+        result += y;
+    }
+
+    return copysign(result, x);
+}
+
 static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, int type) {
     const size_t i = fast_atou(str_index);
 
@@ -691,7 +712,7 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
     struct SelvaObject *obj;
     const char *field_str = OPERAND_GET_S(field);
     const size_t field_len = OPERAND_GET_S_LEN(field);
-    RedisModuleString *value = NULL;
+    struct SelvaObjectAny any;
     int err;
 
     obj = open_object(redis_ctx, ctx);
@@ -702,43 +723,33 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
         return RPN_ERR_NPE;
     }
 
-    const enum SelvaObjectType field_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
-    if (field_type == SELVA_OBJECT_NULL) {
-        return (type == RPN_LVTYPE_NUMBER) ? push_double_result(ctx, nan_undefined()) : push_empty_value(ctx);
-    } else if (field_type == SELVA_OBJECT_SET) {
-        struct SelvaSet *set;
+    err = SelvaObject_GetAnyStr(obj, field_str, field_len, &any);
+    if (err || any.type == SELVA_OBJECT_NULL) {
+        if (err == SELVA_ENOENT) {
+            return (type == RPN_LVTYPE_NUMBER) ? push_double_result(ctx, nan_undefined()) : push_empty_value(ctx);
+        }
+        return RPN_ERR_ENOMEM; /* Presumably this the only other relevant error. */
+    }
 
-        set = SelvaObject_GetSetStr(obj, field_str, field_len);
-        if (!set) {
+    const enum SelvaObjectType field_type = any.type;
+    if (field_type == SELVA_OBJECT_SET) {
+        if (likely(any.set)) {
+            /*
+             * We don't need to care about the type of the set yet because all the
+             * future operations are typesafe anyway.
+             */
+            return push_selva_set_result(ctx, any.set);
+        } else {
+            /* RFE Should we return nan_undefined() for RPN_LVTYPE_NUMBER */
             return push_empty_value(ctx);
         }
-
-        /*
-         * We don't need to care about the type of the set yet because all the
-         * future operations are typesafe anyway.
-         */
-        return push_selva_set_result(ctx, set);
     } else { /* Primitive type */
         if (type == RPN_LVTYPE_NUMBER) {
-            double dvalue;
-
-            switch (field_type) {
-            case SELVA_OBJECT_DOUBLE:
-                err = SelvaObject_GetDoubleStr(obj, field_str, field_len, &dvalue);
-                break;
-            case SELVA_OBJECT_LONGLONG:
-                {
-                    long long v;
-
-                    err = SelvaObject_GetLongLongStr(obj, field_str, field_len, &v);
-                    dvalue = (double)v;
-                }
-                break;
-            default:
-                err = RPN_ERR_NAN;
-            }
-
-            if (err) {
+            if (field_type == SELVA_OBJECT_DOUBLE) {
+                return push_double_result(ctx, any.d);
+            } else if (field_type == SELVA_OBJECT_LONGLONG) {
+                return push_double_result(ctx, (double)any.ll);
+            } else {
                 const char *type_str = SelvaObject_Type2String(field_type, NULL);
 
                 fprintf(stderr, "%s:%d: Field value [%.*s].%.*s is not a number, actual type: \"%s\"\n",
@@ -749,27 +760,19 @@ static enum rpn_error rpn_getfld(struct RedisModuleCtx *redis_ctx, struct rpn_ct
 
                 return RPN_ERR_NAN;
             }
-
-            return push_double_result(ctx, dvalue);
-        } else { /* Assume SELVA_OBJECT_STRING && RPN_LVTYPE_STRING */
-            /* This will fail if the field type is not a string. */
-            /* TODO: wrap this in a new function so it takes lang and gets from text if it's a text type object instead of string inn rms_field */
-            err = SelvaObject_GetStringStr(obj, field_str, field_len, &value);
-            if (err || !value) {
+        } else { /* Assume RPN_LVTYPE_STRING */
+            /* TODO: Add lang support */
+            if (field_type == SELVA_OBJECT_STRING && any.str) {
+                return push_rm_string_result(ctx, any.str);
+            } else {
 #if 0
-                fprintf(stderr, "%s:%d: Field \"%s\" not found for node: \"%.*s\"\n",
+                fprintf(stderr, "%s:%d: Field \"%s\" not found in node: \"%.*s\"\n",
                         __FILE__, __LINE__,
                         OPERAND_GET_S(field),
                         (int)SELVA_NODE_ID_SIZE, (const void *)OPERAND_GET_S(ctx->reg[0]));
 #endif
                 return push_empty_value(ctx);
             }
-
-            /*
-             * Supposedly there is no need to free `value`
-             * because we are using automatic memory management.
-             */
-            return push_rm_string_result(ctx, value);
         }
     }
 }
@@ -806,13 +809,8 @@ static enum rpn_error rpn_op_mul(struct RedisModuleCtx *redis_ctx __unused, stru
 static enum rpn_error rpn_op_rem(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
-    long long d = (long long)b->d;
 
-    if (d == 0) {
-        return RPN_ERR_DIV;
-    }
-
-    return push_int_result(ctx, (long long)a->d % d);
+    return push_double_result(ctx, js_fmod(a->d, b->d));
 }
 
 static enum rpn_error rpn_op_eq(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {

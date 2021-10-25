@@ -1525,6 +1525,57 @@ int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *k
     return off;
 }
 
+int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) {
+    struct SelvaObjectKey *key;
+    enum SelvaObjectType type;
+    int err;
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    }
+
+    res->subtype = key->subtype;
+    res->user_meta = key->user_meta;
+    type = key->type;
+    res->type = type;
+
+    switch (type) {
+    case SELVA_OBJECT_NULL:
+        res->p = NULL;
+        break;
+    case SELVA_OBJECT_DOUBLE:
+        res->d = key->emb_double_value;
+        break;
+    case SELVA_OBJECT_LONGLONG:
+        res->ll = key->emb_ll_value;
+        break;
+    case SELVA_OBJECT_STRING:
+        res->str = key->value;
+        break;
+    case SELVA_OBJECT_OBJECT:
+        res->obj = key->value;
+        break;
+    case SELVA_OBJECT_SET:
+        res->set = &key->selva_set;
+        break;
+    case SELVA_OBJECT_ARRAY:
+        res->array = key->array;
+        break;
+    case SELVA_OBJECT_POINTER:
+        res->p = key->value;
+        break;
+    }
+
+    return 0;
+}
+
+int SelvaObject_GetAny(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObjectAny *res) {
+    TO_STR(key_name);
+
+    return SelvaObject_GetAnyStr(obj, key_name_str, key_name_len, res);
+}
+
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     struct SelvaObjectKey *key;
     enum SelvaObjectType type = SELVA_OBJECT_NULL;
@@ -1746,7 +1797,7 @@ void *SelvaObject_ForeachValueType(
 }
 
 const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len) {
-    if (type >= 0 && type < num_elem(type_names)) {
+    if ((size_t)type < num_elem(type_names)) {
         const struct so_type_name *tn = &type_names[type];
 
         if (len) {
@@ -2358,7 +2409,7 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         return replyWithSelvaErrorf(ctx, err, "get_key");
     }
 
-    if (type >= 0 && type < num_elem(type_names)) {
+    if ((size_t)type < num_elem(type_names)) {
         const struct so_type_name *tn = &type_names[type];
 
         RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
