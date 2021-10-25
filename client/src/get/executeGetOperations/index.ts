@@ -289,11 +289,11 @@ async function refreshMarkers(
 }
 
 export function readDouble(x: string) {
-    return readValue(doubleDef, Buffer.from(x), '.d')
+  return readValue(doubleDef, Buffer.from(x), '.d')
 }
 
 export function readLongLong(x: string) {
-    return readValue(longLongDef, Buffer.from(x), '.d')
+  return readValue(longLongDef, Buffer.from(x), '.d')
 }
 
 export const TYPE_CASTS: Record<
@@ -331,8 +331,14 @@ export const TYPE_CASTS: Record<
       return x
     }
 
-    if (['boolean', 'float', 'number', 'timestamp', 'int'].includes(fieldSchema.items.type)) {
-      return x.map((num) => TYPE_CASTS[fieldSchema.items.type](num, id, '', schema, lang))
+    if (
+      ['boolean', 'float', 'number', 'timestamp', 'int'].includes(
+        fieldSchema.items.type
+      )
+    ) {
+      return x.map((num) =>
+        TYPE_CASTS[fieldSchema.items.type](num, id, '', schema, lang)
+      )
     } else if (
       ['object', 'record'].includes(fieldSchema.items.type) ||
       (!lang && fieldSchema.items.type === 'text')
@@ -365,7 +371,9 @@ export const TYPE_CASTS: Record<
     if (
       ['float', 'number', 'timestamp', 'int'].includes(fieldSchema.items.type)
     ) {
-      return all.map((num) => TYPE_CASTS[fieldSchema.items.type](num, id, '', schema, lang))
+      return all.map((num) =>
+        TYPE_CASTS[fieldSchema.items.type](num, id, '', schema, lang)
+      )
     }
 
     return all

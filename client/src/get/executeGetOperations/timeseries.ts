@@ -9,6 +9,7 @@ import {
 import { ExecContext, addMarker, executeGetOperation } from './'
 import { TimeseriesContext } from '../../timeseries'
 import { CreatePartialDiff } from '@saulx/diff'
+import { readLongLong } from '../executeGetOperations'
 
 function getFields(path: string, fields: Set<string>, props: GetOptions): void {
   for (const k in props) {
@@ -61,7 +62,7 @@ export default async function execTimeseries(
 
   if (ctx.firstEval === false) {
     // TODO: here add diff function
-    const [value, ts] = await Promise.all([
+    const [value, _ts] = await Promise.all([
       executeGetOperation(
         client,
         lang,
@@ -83,8 +84,11 @@ export default async function execTimeseries(
       ),
     ])
 
+    const ts = Number(readLongLong(_ts))
+
     console.log(
       'NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE',
+      typeof ts,
       ts,
       value
     )
