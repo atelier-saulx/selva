@@ -1797,7 +1797,7 @@ void *SelvaObject_ForeachValueType(
 }
 
 const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len) {
-    if (type >= 0 && type < num_elem(type_names)) {
+    if ((size_t)type < num_elem(type_names)) {
         const struct so_type_name *tn = &type_names[type];
 
         if (len) {
@@ -2409,7 +2409,7 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         return replyWithSelvaErrorf(ctx, err, "get_key");
     }
 
-    if (type >= 0 && type < num_elem(type_names)) {
+    if ((size_t)type < num_elem(type_names)) {
         const struct so_type_name *tn = &type_names[type];
 
         RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
