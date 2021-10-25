@@ -1423,27 +1423,6 @@ int SelvaModify_DelHierarchyNode(
     return SelvaModify_DelHierarchyNodeP(ctx, hierarchy, node, force);
 }
 
-/*
- * TODO Unused function.
- */
-ssize_t SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId **res) {
-    struct SVectorIterator it;
-    const SelvaModify_HierarchyNode *node;
-    Selva_NodeId *list = NodeList_New(1);
-    ssize_t nr_nodes = 0;
-
-    SVector_ForeachBegin(&it, &hierarchy->heads);
-    while ((node = SVector_Foreach(&it))) {
-        list = NodeList_Insert(list, node->id, ++nr_nodes);
-        if (unlikely(!list)) {
-            return SELVA_HIERARCHY_ENOMEM;
-        }
-    }
-
-    *res = list;
-    return nr_nodes;
-}
-
 static void HierarchyNode_HeadCallback_Dummy(SelvaModify_HierarchyNode *node, void *arg) {
     REDISMODULE_NOT_USED(node);
     REDISMODULE_NOT_USED(arg);
@@ -2476,6 +2455,34 @@ int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
     return REDISMODULE_OK;
 }
 
+int SelvaModify_Hierarchy_HeadsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    /*
+     * Open the Redis key.
+     */
+    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[1], REDISMODULE_READ);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
+    }
+
+    struct SVectorIterator it;
+    const SelvaModify_HierarchyNode *node;
+
+    RedisModule_ReplyWithArray(ctx, SVector_Size(&hierarchy->heads));
+
+    SVector_ForeachBegin(&it, &hierarchy->heads);
+    while ((node = SVector_Foreach(&it))) {
+        RedisModule_ReplyWithStringBuffer(ctx, node->id, Selva_NodeIdLen(node->id));
+    }
+
+    return REDISMODULE_OK;
+}
+
 int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -2728,6 +2735,7 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
      * Register commands.
      */
     if (RedisModule_CreateCommand(ctx, "selva.hierarchy.del", SelvaModify_Hierarchy_DelNodeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.heads", SelvaModify_Hierarchy_HeadsCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.parents", SelvaModify_Hierarchy_ParentsCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.children", SelvaModify_Hierarchy_ChildrenCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.edgelist", SelvaHierarchy_EdgeListCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
