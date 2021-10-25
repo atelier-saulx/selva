@@ -753,7 +753,6 @@ static int cross_insert_parents(
 
 /*
  * @param pointers is set if nodes array contains pointers instead of Ids.
- * TODO This should be probably refactored into two functions or something to make it cleaner.
  */
 static int crossRemove(
         RedisModuleCtx *ctx,
@@ -773,38 +772,23 @@ static int crossRemove(
     if (unlikely(!SVector_Clone(&sub_markers, &node->metadata.sub_markers.vec, NULL))) {
         return SELVA_HIERARCHY_ENOMEM;
     }
-#endif
-#if 0
-    fprintf(stderr, "removing %d rels from %.*s:", (int)n, (int)SELVA_NODE_ID_SIZE, node->id);
-    for (size_t i = 0; i < n; i++) {
-        if (pointers) {
-            SelvaModify_HierarchyNode *adjacent;
-
-            memcpy(&adjacent, nodes[i], sizeof(SelvaModify_HierarchyNode *));
-            fprintf(stderr, " %.*s", (int)SELVA_NODE_ID_SIZE, adjacent->id);
-        } else {
-            fprintf(stderr, " %.*s", (int)SELVA_NODE_ID_SIZE, nodes[i]);
-        }
-    }
-    fprintf(stderr, "\n");
-#endif
-
     SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, node);
+#endif
 
     if (rel == RELATIONSHIP_CHILD) { /* no longer a child of adjacent */
         const size_t initialNodeParentsSize = SVector_Size(&node->parents);
         int pubParents = 0;
 
         for (size_t i = 0; i < n; i++) {
-            SelvaModify_HierarchyNode *adjacent;
+            SelvaModify_HierarchyNode *parent;
 
             if (pointers) {
-                memcpy(&adjacent, nodes[i], sizeof(SelvaModify_HierarchyNode *));
+                memcpy(&parent, nodes[i], sizeof(SelvaModify_HierarchyNode *));
             } else {
-                adjacent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
+                parent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
             }
 
-            if (!adjacent) {
+            if (!parent) {
                 /*
                  * The most Redis thing to do is probably to ignore any
                  * missing nodes.
@@ -812,13 +796,13 @@ static int crossRemove(
                 continue;
             }
 
-            SVector_Remove(&adjacent->children, node);
-            SVector_Remove(&node->parents, adjacent);
+            SVector_Remove(&parent->children, node);
+            SVector_Remove(&node->parents, parent);
 
 #if HIERARCHY_SORT_BY_DEPTH
             updateDepth(hierarchy, adjacent);
 #endif
-            publishChildrenUpdate(ctx, hierarchy, adjacent);
+            publishChildrenUpdate(ctx, hierarchy, parent);
             pubParents = 1;
         }
 
@@ -834,15 +818,15 @@ static int crossRemove(
         int pubChildren = 0;
 
         for (size_t i = 0; i < n; i++) {
-            SelvaModify_HierarchyNode *adjacent;
+            SelvaModify_HierarchyNode *child;
 
             if (pointers) {
-                memcpy(&adjacent, nodes[i], sizeof(SelvaModify_HierarchyNode *));
+                memcpy(&child, nodes[i], sizeof(SelvaModify_HierarchyNode *));
             } else {
-                adjacent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
+                child = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
             }
 
-            if (!adjacent) {
+            if (!child) {
                 /*
                  * The most Redis thing to do is probably to ignore any
                  * missing nodes.
@@ -850,18 +834,18 @@ static int crossRemove(
                 continue;
             }
 
-            SVector_Remove(&adjacent->parents, node);
-            SVector_Remove(&node->children, adjacent);
+            SVector_Remove(&child->parents, node);
+            SVector_Remove(&node->children, child);
 
-            if (SVector_Size(&adjacent->parents) == 0) {
-                /* adjacent is an orphan now */
-                mkHead(hierarchy, adjacent);
+            if (SVector_Size(&child->parents) == 0) {
+                /* child is an orphan now */
+                mkHead(hierarchy, child);
             }
 
 #if HIERARCHY_SORT_BY_DEPTH
             updateDepth(hierarchy, adjacent);
 #endif
-            publishParentsUpdate(ctx, hierarchy, adjacent);
+            publishParentsUpdate(ctx, hierarchy, child);
             pubChildren = 1;
         }
 
