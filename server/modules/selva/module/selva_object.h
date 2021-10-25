@@ -126,10 +126,6 @@ void SelvaObject_Destroy(struct SelvaObject *obj);
 void _cleanup_SelvaObject_Destroy(struct SelvaObject **obj);
 
 /**
- * Get the SelvaObject represented by a RedisModuleKey.
- */
-int SelvaObject_Key2Obj(struct RedisModuleKey *key, struct SelvaObject **out);
-/**
  * Delete a key an its value from a SelvaObject.
  */
 int SelvaObject_DelKeyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);

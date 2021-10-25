@@ -3,7 +3,6 @@ import { readValue } from 'data-record'
 import './assertions'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import { dumpDb } from './assertions'
 import getPort from 'get-port'
 import { wait } from '../src/util'
 import { doubleDef } from '../src/set/modifyDataRecords'
@@ -139,7 +138,7 @@ test.serial('can delete root', async (t) => {
   )
 
   await client.delete('root')
-  t.deepEqual(await dumpDb(client), [['root', ['id', 'root', 'type', 'root']]])
+  t.deepEqual(await client.redis.selva_object_get('', 'root'), ['id', 'root', 'type', 'root'])
 
   await client.destroy()
 })

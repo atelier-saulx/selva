@@ -138,28 +138,8 @@ static int send_edge_field(
      * an infinite loop or any other issues as we'll be always cutting the
      * field name shorter and thus the recursion should eventually stop.
      */
-
-    Selva_NodeId dst_id;
-    SelvaHierarchy_GetNodeId(dst_id, dst_node);
-
-    RedisModuleString *dst_id_rms;
-    dst_id_rms = RedisModule_CreateString(ctx, dst_id, Selva_NodeIdLen(dst_id));
-    if (!dst_id_rms) {
-        return SELVA_ENOMEM;
-    }
-
-    RedisModuleKey *dst_key;
-    dst_key = RedisModule_OpenKey(ctx, dst_id_rms, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
-    if (!dst_key) {
-        return SELVA_ENOENT;
-    }
-
     struct SelvaObject *dst_obj;
-    int err;
-    err = SelvaObject_Key2Obj(dst_key, &dst_obj);
-    if (err) {
-        return err;
-    }
+    dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
 
     const char *next_field_str = field_str + off;
     size_t next_field_len = field_len - off;
@@ -208,15 +188,6 @@ static int is_excluded_field(RedisModuleString *excluded_fields, RedisModuleStri
 
     /* RMS always ends with '\0', so let's utilize that. */
     r = memmem(excluded_fields_str, excluded_fields_len, field_name_str, field_name_len + 1);
-
-#if 0
-    fprintf(stderr, "Excluded: %p '%s'\nexcluded_fields: '", r, field_name_str);
-    for (size_t i = 0; i < excluded_fields_len; i++) {
-        const char c = excluded_fields_str[i];
-        fprintf(stderr, "%c", c == '\0' ? '|' : c);
-    }
-    fprintf(stderr, "'\n");
-#endif
 
     /* The list is made in a way that each element is delimited by '\0' from beginning and end. */
     return r && *(r - 1) == '\0';
@@ -387,27 +358,11 @@ static int send_node_fields(
         RedisModuleString *excluded_fields) {
     const char wildcard[] = "*";
     Selva_NodeId nodeId;
-    RedisModuleString *id;
+    struct SelvaObject *obj;
     int err;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
-
-    id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
-    if (!id) {
-        return SELVA_ENOMEM;
-    }
-
-    RedisModuleKey *key;
-    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
-    if (!key) {
-        return SELVA_ENOENT;
-    }
-
-    struct SelvaObject *obj;
-    err = SelvaObject_Key2Obj(key, &obj);
-    if (err) {
-        return err;
-    }
+    obj = SelvaHierarchy_GetNodeObject(node);
 
     /*
      * The response format:
@@ -428,12 +383,10 @@ static int send_node_fields(
      */
 
     RedisModule_ReplyWithArray(ctx, 2);
-    RedisModule_ReplyWithString(ctx, id);
+    RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
 
     const ssize_t fields_len = SelvaObject_Len(fields, NULL);
     if (fields_len < 0) {
-        RedisModule_CloseKey(key);
-
         return fields_len;
     } else if (!excluded_fields && fields_len == 1 &&
                SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
@@ -486,7 +439,6 @@ static int send_node_fields(
         RedisModule_ReplySetArrayLength(ctx, 2 * nr_fields);
     }
 
-    RedisModule_CloseKey(key);
     return 0;
 }
 
@@ -866,31 +818,18 @@ static ssize_t send_deep_merge(
 static ssize_t send_node_object_merge(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        Selva_NodeId nodeId,
+        struct SelvaModify_HierarchyNode *node,
         enum SelvaMergeStrategy merge_strategy,
         RedisModuleString *obj_path,
         struct SelvaObject *fields,
         size_t *nr_fields_out) {
-    RedisModuleString *id;
+    Selva_NodeId nodeId;
+    struct SelvaObject *node_obj;
     TO_STR(obj_path);
     int err;
 
-    id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
-    if (!id) {
-        return SELVA_ENOMEM;
-    }
-
-    RedisModuleKey *key;
-    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
-    if (!key) {
-        return SELVA_ENOENT;
-    }
-
-    struct SelvaObject *node_obj;
-    err = SelvaObject_Key2Obj(key, &node_obj);
-    if (err) {
-        return err;
-    }
+    SelvaHierarchy_GetNodeId(nodeId, node);
+    node_obj = SelvaHierarchy_GetNodeObject(node);
 
     /* Get the nested object by given path. */
     struct SelvaObject *obj;
@@ -967,7 +906,6 @@ static ssize_t send_node_object_merge(
         res = replyWithSelvaErrorf(ctx, SELVA_ENOTSUP, "Merge strategy not supported: %d\n", (int)merge_strategy);
     }
 
-    RedisModule_CloseKey(key);
     return res;
 }
 
@@ -983,9 +921,9 @@ static __hot int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void
     if (take && rpn_ctx) {
         int err;
 
-        rpn_set_hierarchy_node(rpn_ctx, node);
         /* Set node_id to the register */
         rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
+        rpn_set_hierarchy_node(rpn_ctx, node);
 
         /*
          * Resolve the expression and get the result.
@@ -1011,7 +949,7 @@ static __hot int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void
             int err;
 
             if (args->merge_strategy != MERGE_STRATEGY_NONE) {
-                err = send_node_object_merge(args->ctx, args->lang, nodeId, args->merge_strategy, args->merge_path, args->fields, args->merge_nr_fields);
+                err = send_node_object_merge(args->ctx, args->lang, node, args->merge_strategy, args->merge_path, args->fields, args->merge_nr_fields);
             } else if (args->fields) {
                 err = send_node_fields(args->ctx, args->lang, args->hierarchy, node, args->fields, args->excluded_fields);
             } else {
@@ -1070,6 +1008,7 @@ static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
                     rpn_str_error[err]);
             return 1;
         }
+        rpn_set_obj(rpn_ctx, obj);
 
         /*
          * Resolve the expression and get the result.
@@ -1169,7 +1108,7 @@ static size_t FindCommand_PrintOrderedResult(
         }
 
         if (merge_strategy != MERGE_STRATEGY_NONE) {
-            err = send_node_object_merge(ctx, lang, item->node_id, merge_strategy, merge_path, fields, nr_fields_out);
+            err = send_node_object_merge(ctx, lang, item->node, merge_strategy, merge_path, fields, nr_fields_out);
         } else if (fields) {
             struct SelvaModify_HierarchyNode *node = item->node;
 
@@ -1679,14 +1618,14 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             };
             TO_STR(ref_field);
 
-            err = SelvaModify_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
+            err = SelvaModify_TraverseArray(hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
         } else if ((dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
                     SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                     SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))
                    && ref_field) {
             TO_STR(ref_field);
 
-            err = SelvaModify_TraverseHierarchyField(ctx, hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
+            err = SelvaModify_TraverseHierarchyField(hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
             err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) {
