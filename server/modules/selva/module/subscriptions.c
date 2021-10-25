@@ -193,7 +193,7 @@ int Selva_SubscriptionFilterMatch(RedisModuleCtx *ctx, const struct SelvaModify_
 
     SelvaHierarchy_GetNodeId(node_id, node);
     rpn_set_hierarchy_node(filter_ctx, node);
-    rpn_set_reg(filter_ctx, 0, node_id, SELVA_NODE_ID_SIZE, 0);
+    rpn_set_reg(filter_ctx, 0, node_id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
     err = rpn_bool(ctx, filter_ctx, marker->filter_expression, &res);
     if (err) {
         fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
@@ -2528,7 +2528,7 @@ int SelvaSubscriptions_ListMissingCommand(RedisModuleCtx *ctx, RedisModuleString
         return REDISMODULE_OK;
     }
 
-    err = SelvaObject_ReplyWithObject(ctx, NULL, hierarchy->subs.missing, NULL);
+    err = SelvaObject_ReplyWithObject(ctx, NULL, hierarchy->subs.missing, NULL, 0);
     if (err) {
         replyWithSelvaError(ctx, err);
     }

@@ -29,24 +29,11 @@ const getServer = (
         type = 'replica'
       }
 
-      if (type === 'timeseriesRegistry') {
-        // just get first for now - never had more then one yet...
+      if (type === 'subscriptionRegistry') {
+        // just get first for now
         // eslint-disable-next-line
-        for (let k in selvaClient.servers.tsRegisters) {
-          server = selvaClient.servers.tsRegisters[k]
-          break
-        }
-      } else if (type === 'timeseriesQueue') {
-        // just get first for now - never had more then one yet...
-        // eslint-disable-next-line
-        for (let k in selvaClient.servers.timeseriesQueues) {
-          server = selvaClient.servers.timeseriesQueues[k]
-          break
-        }
-      } else if (type === 'subscriptionRegistry') {
-        // just get first for now - never had more then one yet...
-        // eslint-disable-next-line
-        for (let k in selvaClient.servers.subRegisters) {
+        for (const k in selvaClient.servers.subRegisters) {
+          // eslint-disable-next-line
           server = selvaClient.servers.subRegisters[k]
           break
         }
@@ -54,47 +41,59 @@ const getServer = (
         // with a timeout
         if (selectionOptions && selectionOptions.subscription) {
           let isCanceled = false
-          const timer = setTimeout(() => {
-            // console.log('Timeout getting from subs registry')
-            isCanceled = true
-            delete getSubInprogress[selectionOptions.subscription]
-            getServer(selvaClient, cb, selector)
-          }, 1e3)
-          if (!getSubInprogress[selectionOptions.subscription]) {
-            getSubInprogress[
-              selectionOptions.subscription
-            ] = selvaClient.redis.get(
-              { type: 'subscriptionRegistry' },
-              selectionOptions.subscription
-            )
+          let subReg
+          // eslint-disable-next-line
+          for (const k in selvaClient.servers.subRegisters) {
+            // eslint-disable-next-line
+            subReg = selvaClient.servers.subRegisters[k]
+            break
           }
-          getSubInprogress[selectionOptions.subscription].then((serverId) => {
-            if (!isCanceled) {
-              if (serverId) {
-                let [host, port] = serverId.split(':')
-                port = Number(port)
-                const server = selvaClient.servers.subsManagers.find((s) => {
-                  if (s.host === host && s.port === port) {
-                    return true
-                  }
-                  return false
-                })
-                if (server) {
-                  cb(server)
-                } else {
-                  getServer(selvaClient, cb, selector)
-                }
-              } else {
-                if (selvaClient.servers.subsManagers[0]) {
-                  cb(selvaClient.servers.subsManagers[0])
-                } else {
-                  getServer(selvaClient, cb, selector)
-                }
-              }
-              clearTimeout(timer)
+
+          if (subReg) {
+            const timer = setTimeout(() => {
+              // console.log('Timeout getting from subs registry')
+              isCanceled = true
               delete getSubInprogress[selectionOptions.subscription]
+              getServer(selvaClient, cb, selector)
+            }, 2e3)
+            if (!getSubInprogress[selectionOptions.subscription]) {
+              getSubInprogress[
+                selectionOptions.subscription
+              ] = selvaClient.redis.get(
+                { type: 'subscriptionRegistry' },
+                selectionOptions.subscription
+              )
             }
-          })
+            getSubInprogress[selectionOptions.subscription].then((serverId) => {
+              if (!isCanceled) {
+                if (serverId) {
+                  let [host, port] = serverId.split(':')
+                  port = Number(port)
+                  const server = selvaClient.servers.subsManagers.find((s) => {
+                    if (s.host === host && s.port === port) {
+                      return true
+                    }
+                    return false
+                  })
+                  if (server) {
+                    cb(server)
+                  } else {
+                    getServer(selvaClient, cb, selector)
+                  }
+                } else {
+                  if (selvaClient.servers.subsManagers[0]) {
+                    cb(selvaClient.servers.subsManagers[0])
+                  } else {
+                    getServer(selvaClient, cb, selector)
+                  }
+                }
+                clearTimeout(timer)
+                delete getSubInprogress[selectionOptions.subscription]
+              }
+            })
+          } else {
+            getServer(selvaClient, cb, selector)
+          }
           return
         } else {
           server = selvaClient.servers.subsManagers[0]

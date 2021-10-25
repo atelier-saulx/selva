@@ -3,11 +3,11 @@ import { hashObjectIgnoreKeyOrder } from '@saulx/hash'
 import { Subscription, SubscriptionManager } from '../../types'
 import { wait } from '../../../../util'
 import diff from '@saulx/diff'
-import { gzip as zipCb } from 'zlib'
-import { promisify } from 'util'
+// import { gzip as zipCb } from 'zlib'
+// import { promisify } from 'util'
 import chalk from 'chalk'
 import { removeRefreshMeta, addRefreshMeta } from '../../updateRefresh'
-const gzip = promisify(zipCb)
+// const gzip = promisify(zipCb)
 
 const { CACHE } = constants
 
@@ -23,7 +23,7 @@ const sendUpdate = async (
   // }
 
   const channel = subscription.channel
-  const currentVersion = subscription.version
+  let currentVersion = subscription.version
   const { client, selector } = subscriptionManager
   const redis = client.redis
 
@@ -85,7 +85,7 @@ const sendUpdate = async (
     if (t > 300) {
       console.log('\n----------------------------------------------------')
       console.log('Get subscription took', t, 'ms')
-      console.dir(getOptions, { depth: 2 })
+      console.dir(getOptions, { depth: 4 })
       console.log('----------------------------------------------------')
     }
   } catch (err) {
@@ -159,17 +159,27 @@ const sendUpdate = async (
 
   // maybe add 'expirimental diffs enabled or something'
   if (currentVersion) {
-    const prev = JSON.parse(await redis.hget(selector, CACHE, channel))
-    // maybe gzip the patch (very efficient format for gzip)
-    const diffPatch = diff(prev.payload, payload)
+    try {
+      const prev = JSON.parse(await redis.hget(selector, CACHE, channel))
 
-    // gzip only makes sense for a certain size of update
-    // patch = (
-    //   await (<Promise<Buffer>>gzip(JSON.stringify([diffPatch, currentVersion])))
-    // ).toString('base64')
-    // console.log('PATCH', patch)
+      if (prev) {
+        // maybe gzip the patch (very efficient format for gzip)
+        const diffPatch = diff(prev.payload, payload)
 
-    patch = JSON.stringify([diffPatch, currentVersion])
+        // gzip only makes sense for a certain size of update
+        // patch = (
+        //   await (<Promise<Buffer>>gzip(JSON.stringify([diffPatch, currentVersion])))
+        // ).toString('base64')
+        // console.log('PATCH', patch)
+
+        patch = JSON.stringify([diffPatch, currentVersion])
+      } else {
+        currentVersion = null
+      }
+    } catch (err) {
+      console.error('Cannot read current version')
+      currentVersion = null
+    }
   }
 
   if (patch) {

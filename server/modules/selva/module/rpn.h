@@ -54,10 +54,8 @@ struct rpn_expression {
     struct rpn_operand *input_literal_reg[RPN_MAX_D];
 };
 
-/*
- * Free register values after unref.
- */
-#define RPN_SET_REG_FLAG_RMFREE 0x01
+#define RPN_SET_REG_FLAG_RMFREE 0x01 /*!< Free register values after unref. */
+#define RPN_SET_REG_FLAG_IS_NAN 0x02 /*!< The numeric value of a reg should be NaN when set with rpn_set_reg(). */
 
 extern const char *rpn_str_error[RPN_ERR_LAST];
 

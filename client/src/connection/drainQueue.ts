@@ -38,6 +38,7 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
               }
             })
           } else if (command === 'xgroup') {
+            // eslint-disable-next-line
             connection.publisher['xgroup'](...args, (err, data) => {
               if (err || !data) {
                 if (reject) {

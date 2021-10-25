@@ -1,6 +1,6 @@
 import { SelvaClient } from '../../'
 import { GetOperationFind, GetResult, GetOptions } from '../types'
-import { sourceFieldToFindArgs, typeCast } from './'
+import { readLongLong, sourceFieldToFindArgs, typeCast } from './'
 import {
   ast2rpn,
   Fork,
@@ -14,7 +14,7 @@ import {
   sourceFieldToDir,
   addMarker,
 } from './'
-import { padId, joinIds } from '../utils'
+import { padId, joinIds, EMPTY_ID } from '../utils'
 import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 import { mkIndex } from './indexing'
@@ -282,14 +282,14 @@ async function checkForNextRefresh(
 
       const [id] = ids
 
-      const time = Number(
+      const time = Number(readLongLong(
         await client.redis.selva_object_get(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
           makeLangArg(client.schemas[ctx.db].languages, lang),
           id,
           f.$field
         )
-      )
+      ))
 
       let v = <string>f.$value
       if (v.startsWith('now-')) {
@@ -763,7 +763,10 @@ const executeFindOperation = async (
 
       const mapping = fieldMapping[field]
       const targetField = mapping?.targetField
-      const casted = typeCast(value, id, field, schema, lang)
+      const casted =
+        id === EMPTY_ID
+          ? typeCast(value, op.id, `${op.field}[0].${field}`, schema, lang)
+          : typeCast(value, id, field, schema, lang)
 
       if (targetField) {
         for (const f of targetField) {

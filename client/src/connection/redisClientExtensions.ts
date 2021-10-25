@@ -1,4 +1,4 @@
-import * as redis from 'redis'
+import * as redis from '@saulx/redis-client'
 
 const redisSearchCommands = [
   'CREATE',

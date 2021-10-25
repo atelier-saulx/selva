@@ -1,6 +1,6 @@
 import test from 'ava'
 import { start } from '../src/index'
-import redis from 'redis'
+import redis from '@saulx/redis-client'
 
 test.cb('create a server', (t) => {
   start({ port: 6061 }).then((server) => {

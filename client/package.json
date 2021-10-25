@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "8.2.2",
+  "version": "9.0.0",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && node ../tools/script-sha.js && yarn buildTs",
@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@types/pg": "^8.6.1",
-    "@saulx/selva-server": "8.2.2",
+    "@saulx/selva-server": "9.0.0",
     "before-exit": "1.0.0",
     "async-exec": "^1.1.0",
     "@sindresorhus/fnv1a": "^2.0.1",
@@ -76,9 +76,10 @@
     "@saulx/selva-query-ast-parser": "^3.0.0",
     "@types/uuid": "^8.3.0",
     "chalk": "^4.1.0",
-    "redis": "^2.8.0",
+    "@saulx/redis-client": "^1.0.0",
     "uuid": "^8.3.2",
     "@saulx/utils": "^2.0.1",
     "@saulx/diff": "^1.1.3"
   }
 }
+

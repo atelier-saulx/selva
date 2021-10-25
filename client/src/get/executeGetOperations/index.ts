@@ -1,9 +1,11 @@
+import { readValue } from 'data-record'
 import { SelvaClient } from '../../'
 import { GetOperation, GetResult, TraverseByType } from '../types'
 import { FieldSchema } from '../../schema'
 import { setNestedResult, getNestedSchema, getNestedField } from '../utils'
 import resolveId from '../resolveId'
 import createGetOperations from '../createGetOperations'
+import { doubleDef, longLongDef } from '../../set/modifyDataRecords'
 import { GetOptions } from '../'
 import find from './find'
 import aggregate from './aggregate'
@@ -286,15 +288,23 @@ async function refreshMarkers(
   )
 }
 
+export function readDouble(x: string) {
+    return readValue(doubleDef, Buffer.from(x), '.d')
+}
+
+export function readLongLong(x: string) {
+    return readValue(longLongDef, Buffer.from(x), '.d')
+}
+
 export const TYPE_CASTS: Record<
   string,
   (x: any, id: string, field: string, schema: Schema, lang?: string) => any
 > = {
-  float: Number,
-  number: Number,
-  timestamp: Number,
-  int: Number,
-  boolean: (x: any) => !!Number(x),
+  float: (x: any) => readDouble(x),
+  number: (x: any) => readDouble(x),
+  timestamp: (x: any) => Number(readLongLong(x)),
+  int: (x: any) => Number(readLongLong(x)),
+  boolean: (x: any) => !!Number(readLongLong(x)),
   json: (x: any) => JSON.parse(x),
   reference: (r: any, _id: string, _field: string, schema, lang) => {
     if (Array.isArray(r) && r.length > 1) {
@@ -321,8 +331,8 @@ export const TYPE_CASTS: Record<
       return x
     }
 
-    if (['float', 'number'].includes(fieldSchema.items.type)) {
-      return x.map(Number)
+    if (['boolean', 'float', 'number', 'timestamp', 'int'].includes(fieldSchema.items.type)) {
+      return x.map((num) => TYPE_CASTS[fieldSchema.items.type](num, id, '', schema, lang))
     } else if (
       ['object', 'record'].includes(fieldSchema.items.type) ||
       (!lang && fieldSchema.items.type === 'text')
@@ -353,9 +363,9 @@ export const TYPE_CASTS: Record<
     }
 
     if (
-      ['number', 'int', 'float', 'timestamp'].includes(fieldSchema.items.type)
+      ['float', 'number', 'timestamp', 'int'].includes(fieldSchema.items.type)
     ) {
-      return all.map((x) => Number(x))
+      return all.map((num) => TYPE_CASTS[fieldSchema.items.type](num, id, '', schema, lang))
     }
 
     return all
@@ -377,7 +387,6 @@ export const TYPE_CASTS: Record<
         }
 
         let fieldSchema = getNestedSchema(schema, id, f)
-
         if (!fieldSchema) {
           throw new Error(
             'Cannot find field type ' + id + ` ${f} - getNestedSchema`

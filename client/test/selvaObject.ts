@@ -1,7 +1,7 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import redis, { RedisClient } from 'redis'
+import redis, { RedisClient } from '@saulx/redis-client'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'

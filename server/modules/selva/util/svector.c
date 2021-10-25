@@ -208,9 +208,8 @@ static void SVector_Resize(SVector *vec, size_t i) {
 }
 
 void SVector_Insert(SVector *vec, void *el) {
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY &&
-        vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
-        vec->vec_compar) {
+    if (vec->vec_mode == SVECTOR_MODE_ARRAY && vec->vec_compar &&
+        vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD) {
         migrate_arr_to_rbtree(vec);
     }
 
@@ -647,8 +646,8 @@ static void *SVector_EmptyForeach(struct SVectorIterator *it __unused) {
     return NULL;
 }
 
-static void *SVector_ArrayForeach(struct SVectorIterator *it) {
-    if (it->arr.cur < it->arr.end) {
+static __hot void *SVector_ArrayForeach(struct SVectorIterator *it) {
+    if (likely(it->arr.cur < it->arr.end)) {
         void **p;
 
         p = it->arr.cur++;
@@ -658,7 +657,7 @@ static void *SVector_ArrayForeach(struct SVectorIterator *it) {
     return NULL;
 }
 
-static void *SVector_RbTreeForeach(struct SVectorIterator *it) {
+static __hot void *SVector_RbTreeForeach(struct SVectorIterator *it) {
     struct SVector_rbnode *cur = it->rbtree.next;
 
     if (!cur) {
@@ -692,6 +691,7 @@ void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector * 
             it->arr.cur = vec->vec_arr + vec->vec_arr_shift_index;
             it->arr.end = vec->vec_arr + vec->vec_last;
             it->fn = SVector_ArrayForeach;
+            __builtin_prefetch(vec->vec_arr, 0, 3);
         }
     } else if (it->mode == SVECTOR_MODE_RBTREE) {
         struct SVector_rbtree *head = (struct SVector_rbtree *)&vec->vec_rbhead;
@@ -700,6 +700,7 @@ void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector * 
             it->rbtree.head = head;
             it->rbtree.next = RB_MIN(SVector_rbtree, head);
             it->fn = SVector_RbTreeForeach;
+            __builtin_prefetch(head, 0, 2);
         }
     }
 }

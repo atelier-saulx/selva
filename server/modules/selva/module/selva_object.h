@@ -21,6 +21,9 @@ enum SelvaObjectType {
     SELVA_OBJECT_POINTER = 7,
 } __attribute__((packed));
 
+#define SELVA_OBJECT_REPLY_SPLICE_FLAG 0x01 /*!< Set if the path should be spliced to start from the first wildcard. */
+#define SELVA_OBJECT_REPLY_BINUMF_FLAG 0x02 /*!< Send numeric fields in an LE binary format. */
+
 struct RedisModuleCtx;
 struct RedisModuleIO;
 struct RedisModuleKey;
@@ -86,6 +89,21 @@ struct SelvaObjectPointerOpts {
  * Auto free a SelvaObject when code execution exits a block scope.
  */
 #define selvaobject_autofree __attribute__((cleanup(_cleanup_SelvaObject_Destroy)))
+
+struct SelvaObjectAny {
+    enum SelvaObjectType type; /*!< Type of the value. */
+    enum SelvaObjectType subtype; /*!< Subtype of the value. Arrays use this. */
+    SelvaObjectMeta_t user_meta; /*!< User defined metadata. */
+    union {
+        double d; /*!< SELVA_OBJECT_DOUBLE */
+        long long ll; /*!< SELVA_OBJECT_LONGLONG */
+        struct RedisModuleString *str; /* SELVA_OBJECT_STRING */
+        struct SelvaObject *obj; /* SELVA_OBJECT_OBJECT */
+        struct SelvaSet *set; /*!< SELVA_OBJECT_SET */
+        struct SVector *array; /*!< SELVA_OBJECT_ARRAY */
+        void *p; /* SELVA_OBJECT_POINTER */
+    };
+};
 
 /**
  * Create a new SelvaObject.
@@ -206,6 +224,9 @@ int SelvaObject_GetPointerStr(struct SelvaObject *obj, const char *key_name_str,
 int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p);
 int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
 
+int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res);
+int SelvaObject_GetAny(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct SelvaObjectAny *res);
+
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct RedisModuleString *key_name);
 
@@ -226,6 +247,10 @@ int SelvaObject_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str
 int SelvaObject_GetUserMeta(struct SelvaObject *obj, const struct RedisModuleString *key_name, SelvaObjectMeta_t *meta);
 int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta);
 int SelvaObject_SetUserMeta(struct SelvaObject *obj, const struct RedisModuleString *key_name, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta);
+
+/**
+ * @param flags Accepts SELVA_OBJECT_REPLY_SPLICE_FLAG and other reply flags.
+ */
 int SelvaObject_GetWithWildcardStr(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
@@ -279,13 +304,19 @@ int SelvaObject_ReplyWithObjectStr(
         struct RedisModuleString *lang,
         struct SelvaObject *obj,
         const char *key_name_str,
-        size_t key_name_len);
+        size_t key_name_len,
+        unsigned flags);
 
 /*
  * Send a SelvaObject as a Redis reply.
  * @param key_name_str can be NULL.
  */
-int SelvaObject_ReplyWithObject(struct RedisModuleCtx *ctx, struct RedisModuleString *lang, struct SelvaObject *obj, const struct RedisModuleString *key_name);
+int SelvaObject_ReplyWithObject(
+        struct RedisModuleCtx *ctx,
+        struct RedisModuleString *lang,
+        struct SelvaObject *obj,
+        const struct RedisModuleString *key_name,
+        unsigned flags);
 
 struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data);
 void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data);

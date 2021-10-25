@@ -62,6 +62,7 @@ test.beforeEach(async (t) => {
                     properties: {
                       hello: { type: 'string' },
                       value: { type: 'int' },
+                      fvalue: { type: 'number' },
                     },
                   },
                 },
@@ -2323,7 +2324,7 @@ test.serial('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
-    tsArray: [ 1634032349768, 1634032355278 ],
+    tsArray: [1634032349768, 1634032355278],
     objRec: {
       abba: {
         intArray: [1, 2, 3, 4, 5],
@@ -2332,14 +2333,17 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 1',
             value: 1,
+            fvalue: 1.5,
           },
           {
             hello: 'yes 2',
             value: 2,
+            fvalue: 1.6,
           },
           {
             hello: 'yes 3',
             value: 3,
+            fvalue: 1.7,
           },
         ],
       },
@@ -2396,7 +2400,7 @@ test.serial('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
-    tsArray: [ 1634032349768, 1634032355278 ],
+    tsArray: [1634032349768, 1634032355278],
     objRec: {
       abba: {
         intArray: [1, 2, 3, 4, 5],
@@ -2405,14 +2409,17 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 1',
             value: 1,
+            fvalue: 1.5,
           },
           {
             hello: 'yes 2',
             value: 2,
+            fvalue: 1.6,
           },
           {
             hello: 'yes 3',
             value: 3,
+            fvalue: 1.7,
           },
         ],
       },
@@ -2431,7 +2438,7 @@ test.serial('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
-    tsArray: [ 1634032349768, 1634032355278 ],
+    tsArray: [1634032349768, 1634032355278],
     objRec: {
       abba: {
         intArray: [1, 2, 3, 4, 5],
@@ -2440,14 +2447,17 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 1',
             value: 1,
+            fvalue: 1.5,
           },
           {
             hello: 'yes 2',
             value: 2,
+            fvalue: 1.6,
           },
           {
             hello: 'yes 3',
             value: 3,
+            fvalue: 1.7,
           },
         ],
       },
@@ -2519,6 +2529,36 @@ test.serial('get - field with array', async (t) => {
     objRec: {
       abba: {
         objArray: {
+          fvalue: true,
+          $list: true,
+        },
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(objs, {
+    objRec: {
+      abba: {
+        objArray: [
+          {
+            fvalue: 1.5,
+          },
+          {
+            fvalue: 1.6,
+          },
+          {
+            fvalue: 1.7,
+          },
+        ],
+      },
+    },
+  })
+
+  objs = await client.get({
+    $id: id,
+    objRec: {
+      abba: {
+        objArray: {
           $all: true,
           $list: true,
         },
@@ -2533,14 +2573,17 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 1',
             value: 1,
+            fvalue: 1.5,
           },
           {
             hello: 'yes 2',
             value: 2,
+            fvalue: 1.6,
           },
           {
             hello: 'yes 3',
             value: 3,
+            fvalue: 1.7,
           },
         ],
       },
@@ -2576,6 +2619,7 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 3',
             value: 3,
+            fvalue: 1.7,
           },
         ],
       },
@@ -2615,10 +2659,12 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 3',
             value: 3,
+            fvalue: 1.7,
           },
           {
             hello: 'yes 2',
             value: 2,
+            fvalue: 1.6,
           },
         ],
       },
@@ -2651,10 +2697,12 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 3',
             value: 3,
+            fvalue: 1.7,
           },
           {
             hello: 'yes 2',
             value: 2,
+            fvalue: 1.6,
           },
         ],
       },
@@ -2687,6 +2735,7 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 2',
             value: 2,
+            fvalue: 1.6,
           },
         ],
       },
@@ -2721,14 +2770,17 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 1',
             value: 1,
+            fvalue: 1.5,
           },
           {
             hello: 'yes 2',
             value: 2,
+            fvalue: 1.6,
           },
           {
             hello: 'yes 3',
             value: 3,
+            fvalue: 1.7,
           },
           {},
         ],
@@ -2777,14 +2829,17 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 1',
             value: 1,
+            fvalue: 1.5,
           },
           {
             hello: 'yes 2',
             value: 2,
+            fvalue: 1.6,
           },
           {
             hello: 'yes 3',
             value: 3,
+            fvalue: 1.7,
           },
           {},
           {
@@ -2862,14 +2917,17 @@ test.serial('get - field with array', async (t) => {
           {
             hello: 'yes 1',
             value: 1,
+            fvalue: 1.5,
           },
           {
             hello: 'yes 2',
             value: 2,
+            fvalue: 1.6,
           },
           {
             hello: 'yes 3',
             value: 3,
+            fvalue: 1.7,
           },
           {},
           {

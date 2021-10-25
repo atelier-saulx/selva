@@ -167,3 +167,5 @@ export const setNestedResult = (
 
 export const joinIds = (ids: string[]): string =>
   ids.map((id) => padId(id)).join('')
+
+export const EMPTY_ID = '\0'.repeat(10)

@@ -1631,13 +1631,13 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
         \
         SVector_ForeachBegin(&it, (adj_vec)); \
         SelvaModify_HierarchyNode *adj; \
-        while((adj = SVector_Foreach(&it))) { \
+        while ((adj = SVector_Foreach(&it))) { \
             if (Trx_Visit(&trx_cur, &adj->trx_label)) { \
                 child_cb(node, adj, cb->child_arg); \
                 SVector_Insert(&q, adj); \
             } \
         } \
-    } while(0)
+    } while (0)
 
 #define BFS_TRAVERSE_END(hierarchy) \
     } \
@@ -1646,7 +1646,7 @@ static int full_dfs(SelvaModify_Hierarchy *hierarchy, const TraversalCallback * 
 /**
  * BFS from a given head node towards its descendants or ancestors.
  */
-static int bfs(
+static __hot int bfs(
         SelvaModify_Hierarchy *hierarchy,
         SelvaModify_HierarchyNode *head,
         enum SelvaModify_HierarchyNode_Relationship dir,
@@ -1737,7 +1737,7 @@ static int bfs_expression(
         SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
 
         rpn_set_hierarchy_node(rpn_ctx, node);
-        rpn_set_reg(rpn_ctx, 0, node->id, SELVA_NODE_ID_SIZE, 0);
+        rpn_set_reg(rpn_ctx, 0, node->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
         rpn_err = rpn_selvaset(redis_ctx, rpn_ctx, rpn_expr, &fields);
         if (rpn_err) {
             fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",
@@ -1873,7 +1873,7 @@ static int traverse_edge_field(
  * implementation from the innocent users just wanting to traverse the
  * hierarchy.
  */
-static int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *node, void *arg) {
+static __hot int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaModify_HierarchyNode *node, void *arg) {
     struct SelvaModify_HierarchyCallback *cb = (struct SelvaModify_HierarchyCallback *)arg;
 
     return cb->node_cb(node, cb->node_arg);
@@ -2062,7 +2062,7 @@ int SelvaHierarchy_TraverseExpression(
     SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
 
     rpn_set_hierarchy_node(rpn_ctx, head);
-    rpn_set_reg(rpn_ctx, 0, head->id, SELVA_NODE_ID_SIZE, 0);
+    rpn_set_reg(rpn_ctx, 0, head->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
     rpn_err = rpn_selvaset(ctx, rpn_ctx, rpn_expr, &fields);
     if (rpn_err) {
         fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",
@@ -2626,7 +2626,7 @@ int SelvaHierarchy_EdgeListCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         }
     }
 
-    SelvaObject_ReplyWithObject(ctx, NULL, obj, NULL);
+    SelvaObject_ReplyWithObject(ctx, NULL, obj, NULL, 0);
 
     return REDISMODULE_OK;
 }

@@ -155,8 +155,7 @@ const connectRegistry = (
                 selvaClient.emit('removed-servers', payload)
               }
             } else if (event === 'move-sub') {
-              // from server to server - still needs to be implmented ?
-              console.info('MOVE SUBSCRIPTION')
+              // from server to server
             } else if (event === 'update-index') {
               // now we are going to move them!
               // can be either a subs manager update of index or replica

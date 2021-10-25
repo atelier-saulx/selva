@@ -1,0 +1,52 @@
+{
+  "name": "@saulx/redis-parser",
+  "version": "1.0.0",
+  "description": "Javascript Redis protocol (RESP) parser",
+  "main": "index.js",
+  "scripts": {
+    "test": "nyc --cache --preserve-comments mocha -- -R spec && nyc report --reporter=html",
+    "benchmark": "node ./benchmark",
+    "lint": "standard --fix",
+    "posttest": "npm run lint && npm run coverage:check",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls",
+    "coverage:check": "nyc check-coverage --branch 100 --statement 100"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NodeRedis/node-redis-parser.git"
+  },
+  "keywords": [
+    "redis",
+    "protocol",
+    "parser",
+    "database",
+    "javascript",
+    "node",
+    "nodejs",
+    "resp"
+  ],
+  "files": [
+    "index.js",
+    "lib"
+  ],
+  "engines": {
+    "node": ">=4"
+  },
+  "devDependencies": {
+    "benchmark": "^2.1.0",
+    "coveralls": "^3.0.10",
+    "nyc": "^14.1.1",
+    "mocha": "^6.1.1",
+    "standard": "^11.0.1"
+  },
+  "author": "Ruben Bridgewater",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/NodeRedis/node-redis-parser/issues"
+  },
+  "homepage": "https://github.com/NodeRedis/node-redis-parser#readme",
+  "directories": {
+    "test": "test",
+    "lib": "lib"
+  }
+}
