@@ -437,6 +437,32 @@ test.serial('get - basic value types timeseries', async (t) => {
       },
     },
   })
+
+  await wait(2e3)
+
+  const obs = client.observe({
+    $id: 'viA',
+    values: {
+      $field: 'value',
+      $list: { $limit: 5 },
+    },
+  })
+
+  obs.subscribe((yes) => {
+    console.log('yes', yes)
+  })
+
+  await wait(1e3)
+
+  const subs = await client.redis.selva_subscriptions_list('___selva_hierarchy')
+  for (const sid of subs) {
+    console.log(
+      'SUB',
+      sid,
+      await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid)
+    )
+  }
+
   setInterval(async () => {
     await client.set({
       $id: 'viA',
@@ -446,55 +472,55 @@ test.serial('get - basic value types timeseries', async (t) => {
       },
     })
 
-    const wutwut = await client.get({
-      $firstEval: false,
-      $id: 'viA',
-      values: {
-        $field: 'value',
-        $list: { $limit: 5 },
-      },
-      valuesTs: { $raw: 'value._ts' },
-      thumbnails2: {
-        $all: true,
-        $list: {
-          $find: {
-            $traverse: 'image',
-          },
-          $limit: 5,
-        },
-      },
-      imageTs: { $raw: 'image._ts' },
-    })
+    // const wutwut = await client.get({
+    //   $firstEval: false,
+    //   $id: 'viA',
+    //   values: {
+    //     $field: 'value',
+    //     $list: { $limit: 5 },
+    //   },
+    //   valuesTs: { $raw: 'value._ts' },
+    //   thumbnails2: {
+    //     $all: true,
+    //     $list: {
+    //       $find: {
+    //         $traverse: 'image',
+    //       },
+    //       $limit: 5,
+    //     },
+    //   },
+    //   imageTs: { $raw: 'image._ts' },
+    // })
 
-    console.log('WUT WUT', wutwut)
+    // console.log('WUT WUT', wutwut)
 
-    const a = { values: deepCopy(hmmhmm.values) }
-    const b = { values: wutwut.values }
-    const patch = createPatch(a, b, {
-      parseDiffFunctions: true,
-    })
-    // @ts-ignore
-    console.log('PATCH', a.values.length, a, b, JSON.stringify(patch, null, 2))
-    const applied = applyPatch(a, patch)
-    console.log('APPLIED PATCH', applied)
+    // const a = { values: deepCopy(hmmhmm.values) }
+    // const b = { values: wutwut.values }
+    // const patch = createPatch(a, b, {
+    //   parseDiffFunctions: true,
+    // })
+    // // @ts-ignore
+    // console.log('PATCH', a.values.length, a, b, JSON.stringify(patch, null, 2))
+    // const applied = applyPatch(a, patch)
+    // console.log('APPLIED PATCH', applied)
 
-    hmmhmm = await client.get({
-      $id: 'viA',
-      values: {
-        $field: 'value',
-        $list: { $limit: 5 },
-      },
-      thumbnails2: {
-        $all: true,
-        $list: {
-          $find: {
-            $traverse: 'image',
-          },
-          $limit: 5,
-        },
-      },
-    })
-    console.log('HMMHMM', JSON.stringify(hmmhmm, null, 2))
+    // hmmhmm = await client.get({
+    //   $id: 'viA',
+    //   values: {
+    //     $field: 'value',
+    //     $list: { $limit: 5 },
+    //   },
+    //   thumbnails2: {
+    //     $all: true,
+    //     $list: {
+    //       $find: {
+    //         $traverse: 'image',
+    //       },
+    //       $limit: 5,
+    //     },
+    //   },
+    // })
+    // console.log('HMMHMM', JSON.stringify(hmmhmm, null, 2))
 
     i++
   }, 2e3)

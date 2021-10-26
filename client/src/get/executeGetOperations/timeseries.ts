@@ -61,7 +61,7 @@ export default async function execTimeseries(
   })
 
   if (ctx.firstEval === false) {
-    // TODO: here add diff function
+    ctx.meta.hasTimeseries = true
     const [value, _ts] = await Promise.all([
       executeGetOperation(
         client,

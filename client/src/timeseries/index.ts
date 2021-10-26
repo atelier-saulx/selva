@@ -203,6 +203,11 @@ async function runSelect<T>(
   op: GetOperationFind | GetOperationAggregate,
   where: squel.Expression
 ): Promise<QueryResult<T>> {
+  if (!shards.length) {
+    console.log('TIMESERIES QUERY, NO SHARDS', client.pg.tsCache.index)
+    return { rows: [], command: 'select', rowCount: 0, oid: 0, fields: [] }
+  }
+
   let limit = tsCtx.limit
   // TODO: offset
   // let offset = tsCtx.offset

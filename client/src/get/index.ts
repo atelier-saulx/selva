@@ -200,10 +200,12 @@ async function get(
       }
       meta = { [props.$db || 'default']: resultMeta }
       meta.___refreshAt = resultMeta.___refreshAt
+      meta.hasTimeseries = meta.hasTimeseries || resultMeta.hasTimeseries
     } else {
       if (resultMeta.___refreshAt) {
         if (!meta.___refreshAt || meta.___refreshAt > resultMeta.___refreshAt) {
           meta.___refreshAt = resultMeta.___refreshAt
+          meta.hasTimeseries = meta.hasTimeseries || resultMeta.hasTimeseries
         }
       }
       deepMerge(meta, {

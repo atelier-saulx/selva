@@ -79,6 +79,7 @@ const sendUpdate = async (
   let payload
   try {
     payload = await client.get(getOptions)
+    console.log('GOT PAYLOAD', payload)
 
     const t = Date.now() - startTime
 
@@ -92,6 +93,7 @@ const sendUpdate = async (
     payload = {
       ___$error___: err.message,
     }
+    console.error('SUBSCRIPTION ERROR', payload, getOptions)
   }
 
   if (payload.$ignore === true) {
@@ -164,7 +166,9 @@ const sendUpdate = async (
 
       if (prev) {
         // maybe gzip the patch (very efficient format for gzip)
-        const diffPatch = diff(prev.payload, payload)
+        const diffPatch = diff(prev.payload, payload, {
+          parseDiffFunctions: !!newMeta.hasTimeseries,
+        })
 
         // gzip only makes sense for a certain size of update
         // patch = (
