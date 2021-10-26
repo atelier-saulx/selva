@@ -108,8 +108,9 @@ const sendUpdate = async (
 
   delete payload.$meta
 
-  // TODO: this doesn't really work with patch functions with timeseries stuff
-  const newVersion = hashObjectIgnoreKeyOrder(payload)
+  const newVersion = newMeta.hasTimeseries
+    ? newMeta.hasTimeseries
+    : hashObjectIgnoreKeyOrder(payload)
 
   const resultStr = JSON.stringify({ type: 'update', payload })
 

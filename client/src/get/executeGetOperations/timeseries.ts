@@ -67,7 +67,6 @@ export default async function execTimeseries(
   // })
 
   if (ctx.firstEval === false) {
-    ctx.meta.hasTimeseries = true
     const [value, _ts] = await Promise.all([
       executeGetOperation(
         client,
@@ -91,6 +90,7 @@ export default async function execTimeseries(
     ])
 
     const ts = Number(readLongLong(_ts))
+    ctx.meta.hasTimeseries = Math.max(ctx.meta.hasTimeseries || 0, ts)
 
     console.log(
       'NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE',
