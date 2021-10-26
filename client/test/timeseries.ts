@@ -455,6 +455,10 @@ test.serial('get - basic value types timeseries', async (t) => {
   await wait(1e3)
 
   const subs = await client.redis.selva_subscriptions_list('___selva_hierarchy')
+  console.log(
+    'SUBBY SUB',
+    await client.redis.selva_subscriptions_debug('___selva_hierarchy', 'viA')
+  )
   for (const sid of subs) {
     console.log(
       'SUB',

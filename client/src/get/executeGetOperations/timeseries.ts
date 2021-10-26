@@ -6,7 +6,12 @@ import {
   getTypeFromId,
   setNestedResult,
 } from '../utils'
-import { ExecContext, addMarker, executeGetOperation } from './'
+import {
+  ExecContext,
+  addMarker,
+  executeGetOperation,
+  bufferNodeMarker,
+} from './'
 import { TimeseriesContext } from '../../timeseries'
 import { CreatePartialDiff } from '@saulx/diff'
 import { readLongLong } from '../executeGetOperations'
@@ -54,11 +59,12 @@ export default async function execTimeseries(
     offset: op.options.offset || 0,
   }
 
-  addMarker(client, ctx, {
-    type: 'node',
-    id: op.id,
-    fields: [tsCtx.field],
-  })
+  bufferNodeMarker(ctx, op.id, tsCtx.field)
+  // addMarker(client, ctx, {
+  //   type: 'node',
+  //   id: op.id,
+  //   fields: [tsCtx.field],
+  // })
 
   if (ctx.firstEval === false) {
     ctx.meta.hasTimeseries = true
