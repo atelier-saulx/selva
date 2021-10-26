@@ -530,21 +530,27 @@ export class TimeseriesClient {
 
     console.log(`running: ${createNodeIdIndex}`)
 
-    const { meta: current } = this.client.pg.tsCache.instances[pg.id]
+    const { meta: current, tableMeta } = this.client.pg.tsCache.instances[pg.id]
     const stats = {
       cpu: current.cpu,
       memory: current.memory,
       timestamp: Date.now(),
-      tableMeta: {
+      tableMeta: Object.assign({}, tableMeta || {}, {
         [tableName]: {
           tableName,
           tableSizeBytes: 0,
           relationSizeBytes: 0,
         },
-      },
+      }),
     }
 
     this.client.pg.tsCache.updateIndexByInstance(pg.id, { stats })
+    await this.client.redis.hset(
+      { type: 'timeseriesRegistry' },
+      'servers',
+      pg.id,
+      JSON.stringify({ stats })
+    )
     this.client.redis.publish(
       { type: 'timeseriesRegistry' },
       constants.TS_REGISTRY_UPDATE,

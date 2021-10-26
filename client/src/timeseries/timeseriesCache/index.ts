@@ -11,7 +11,11 @@ class TimeseriesCache {
     }
   }
   public instances: {
-    [instanceId: string]: { descriptor: ServerDescriptor; meta: any }
+    [instanceId: string]: {
+      descriptor: ServerDescriptor
+      meta: any
+      tableMeta?: any
+    }
   }
   private refreshTimer: NodeJS.Timeout
 
@@ -34,7 +38,7 @@ class TimeseriesCache {
         throw new Error()
       }
 
-      this.index = {}
+      // this.index = {}
       for (const id in current) {
         this.updateIndexByInstance(id, JSON.parse(current[id]))
       }
@@ -101,6 +105,7 @@ class TimeseriesCache {
         },
         timestamp,
       },
+      tableMeta,
       descriptor: {
         host,
         port,
