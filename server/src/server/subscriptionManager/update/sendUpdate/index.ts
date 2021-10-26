@@ -108,6 +108,7 @@ const sendUpdate = async (
 
   delete payload.$meta
 
+  // TODO: this doesn't really work with patch functions with timeseries stuff
   const newVersion = hashObjectIgnoreKeyOrder(payload)
 
   const resultStr = JSON.stringify({ type: 'update', payload })
@@ -169,6 +170,7 @@ const sendUpdate = async (
         const diffPatch = diff(prev.payload, payload, {
           parseDiffFunctions: !!newMeta.hasTimeseries,
         })
+        console.log('DIFF PATCH', diffPatch)
 
         // gzip only makes sense for a certain size of update
         // patch = (
