@@ -2,7 +2,7 @@ import { constants } from '@saulx/selva'
 import { hashObjectIgnoreKeyOrder } from '@saulx/hash'
 import { Subscription, SubscriptionManager } from '../../types'
 import { wait } from '../../../../util'
-import diff from '@saulx/diff'
+import diff, { applyPatch } from '@saulx/diff'
 // import { gzip as zipCb } from 'zlib'
 // import { promisify } from 'util'
 import chalk from 'chalk'
@@ -113,7 +113,7 @@ const sendUpdate = async (
     : hashObjectIgnoreKeyOrder(payload)
 
   // TODO: for timeseries this should contain the applied patch actually... hmm...
-  const resultStr = JSON.stringify({ type: 'update', payload })
+  let resultStr = JSON.stringify({ type: 'update', payload })
 
   const q = []
 
@@ -173,6 +173,10 @@ const sendUpdate = async (
           parseDiffFunctions: !!newMeta.hasTimeseries,
         })
         console.log('DIFF PATCH', diffPatch)
+        resultStr = JSON.stringify({
+          type: 'update',
+          payload: applyPatch(payload, diffPatch),
+        })
 
         // gzip only makes sense for a certain size of update
         // patch = (
