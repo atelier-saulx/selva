@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include "traversal.h"
 #include "find_index.h"
