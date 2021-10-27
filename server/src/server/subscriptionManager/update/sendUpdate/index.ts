@@ -112,7 +112,6 @@ const sendUpdate = async (
     ? newMeta.hasTimeseries
     : hashObjectIgnoreKeyOrder(payload)
 
-  // TODO: for timeseries this should contain the applied patch actually... hmm...
   let resultStr = JSON.stringify({ type: 'update', payload })
 
   const q = []
