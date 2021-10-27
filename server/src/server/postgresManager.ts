@@ -30,8 +30,8 @@ export default class PostgresManager extends ProcessManager {
     if (isLinux) {
       const command = `/usr/lib/postgresql/12/bin/postgres`
       super(command, {
-        // TODO: pg_data needs to be pluggable
-        args: ['-D', path.join(process.cwd(), 'pg_data')],
+        // TODO: pg_data needs to more easily be pluggable
+        args: ['-D', process.env.PGDATA],
         env: {},
       })
     } else {
