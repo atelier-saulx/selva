@@ -1,6 +1,7 @@
 import ProcessManager from './processManager'
 import { spawnSync } from 'child_process'
 import { Client as PgClient } from 'pg'
+import * as path from 'path'
 
 // TODO: increase this? and make the worker update it when it creates new tables
 const TABLE_META_COLLECT_INTERVAL = 0.3 * 60 * 1e3
@@ -30,7 +31,7 @@ export default class PostgresManager extends ProcessManager {
       const command = `/usr/lib/postgresql/12/bin/postgres`
       super(command, {
         // TODO: pg_data needs to be pluggable
-        args: ['-D', './pg_data'],
+        args: ['-D', path.join(process.cwd(), 'pg_data')],
         env: {},
       })
     } else {
