@@ -278,7 +278,7 @@ static int create_node_object(SelvaModify_HierarchyNode *node) {
             return SELVA_ENOMEM;
         }
 
-        err = SelvaObject_SetStringStr(node->obj, "type", 4, type);
+        err = SelvaObject_SetStringStr(node->obj, SELVA_TYPE_FIELD, sizeof(SELVA_TYPE_FIELD) - 1, type);
         if (err) {
             RedisModule_FreeString(NULL, type);
             return err;
