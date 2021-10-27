@@ -13,12 +13,12 @@ const DEFAULT_HIERARCHY = '___selva_hierarchy'
 let srv
 let port: number
 
-export function readDouble(x: string) {
-  return readValue(doubleDef, Buffer.from(x), '.d')
+export function readDouble(x) {
+  return readValue(doubleDef, x, '.d')
 }
 
-function readLongLong(x: string) {
-  return readValue(longLongDef, Buffer.from(x), '.d')
+function readLongLong(x) {
+  return readValue(longLongDef, x, '.d')
 }
 
 test.before(async (t) => {
