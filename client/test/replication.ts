@@ -216,10 +216,6 @@ test.serial('modify command is replicated', async (t) => {
   )
   t.deepEqual(res1, ['grphnode_a', 'UPDATED', 'UPDATED'])
   await wait(200)
-  const keys = (await new Promise((resolve, reject) =>
-    rclientReplica.keys('*', (err, res) => (err ? reject(err) : resolve(res)))
-  )) as string[]
-  t.assert(keys.includes('grphnode_a'))
   t.deepEqual(
     await new Promise((resolve, reject) =>
       rclientOrigin.send_command(
@@ -285,11 +281,6 @@ test.serial('modify command is replicated ignoring errors', async (t) => {
   t.assert(res1[2] instanceof ReplyError)
 
   await wait(200)
-
-  const keys = (await new Promise((resolve, reject) =>
-    rclientReplica.keys('*', (err, res) => (err ? reject(err) : resolve(res)))
-  )) as string[]
-  t.assert(keys.includes('grphnode_a'))
 
   t.deepEqual(
     await new Promise((resolve, reject) =>
@@ -432,11 +423,6 @@ test.serial('modify all cases are replicated', async (t) => {
 
   await wait(200)
 
-  const keys = (await new Promise((resolve, reject) =>
-    rclientReplica.keys('*', (err, res) => (err ? reject(err) : resolve(res)))
-  )) as string[]
-  t.assert(keys.includes('grphnode_a'))
-
   await Promise.all([rclientOrigin, rclientReplica].map(async (r) => {
     t.deepEqual(
       await new Promise((resolve, reject) =>
@@ -451,16 +437,16 @@ test.serial('modify all cases are replicated', async (t) => {
         ...['f02', 'abc'],
         ...['f03', 'def'],
         ...['f04', 'def'],
-        ...['f06', 13],
-        ...['f07', 42],
-        ...['f08', 15],
-        ...['f09', '1.414213562'],
-        ...['f10', '13.369999999999999'],
-        ...['f11', '2.7182818279999998'],
-        ...['f12', 10],
-        ...['f13', 6],
-        ...['f14', '0.98999999999999999'],
-        ...['f15', '4.1500000000000004'],
+        ...['f06', createRecord(longLongDef, { d: BigInt(13) })],
+        ...['f07', createRecord(longLongDef, { d: BigInt(42) })],
+        ...['f08', createRecord(longLongDef, { d: BigInt(15) })],
+        ...['f09', createRecord(doubleDef, { d: 1.414213562 })],
+        ...['f10', createRecord(doubleDef, { d: 13.369999999999999 })],
+        ...['f11', createRecord(doubleDef, { d: 2.7182818279999998 })],
+        ...['f12', createRecord(longLongDef, { d: BigInt(10) })],
+        ...['f13', createRecord(longLongDef, { d: BigInt(6) })],
+        ...['f14', createRecord(doubleDef, { d: 0.98999999999999999 })],
+        ...['f15', createRecord(doubleDef, { d: 4.1500000000000004 })],
         ...['f16', ['lal', 'lol']],
         ...['id', 'grphnode_a'],
       ]
@@ -569,16 +555,16 @@ test.serial('modify all cases are replicated', async (t) => {
         ...['f02', 'abc'],
         ...['f03', 'def'],
         ...['f04', 'def'],
-        ...['f06', 13],
-        ...['f07', 42],
-        ...['f08', 15],
-        ...['f09', '1.414213562'],
-        ...['f10', '13.369999999999999'],
-        ...['f11', '2.7182818279999998'],
-        ...['f12', 20],
-        ...['f13', 11],
-        ...['f14', '2'],
-        ...['f15', '5.1600000000000001'],
+        ...['f06', createRecord(longLongDef, { d: BigInt(13) })],
+        ...['f07', createRecord(longLongDef, { d: BigInt(42) })],
+        ...['f08', createRecord(longLongDef, { d: BigInt(15) })],
+        ...['f09', createRecord(doubleDef, { d: 1.414213562 })],
+        ...['f10', createRecord(doubleDef, { d: 13.369999999999999 })],
+        ...['f11', createRecord(doubleDef, { d: 2.7182818279999998 })],
+        ...['f12', createRecord(longLongDef, { d: BigInt(20) })],
+        ...['f13', createRecord(longLongDef, { d: BigInt(11) })],
+        ...['f14', createRecord(doubleDef, { d: 2 })],
+        ...['f15', createRecord(doubleDef, { d: 5.1600000000000001 })],
         ...['f16', ['lal', 'lol']],
         ...['id', 'grphnode_a'],
       ]
@@ -1448,7 +1434,7 @@ test.serial('modify set ops are replicated (double)', async (t) => {
         )
       ),
       [
-        ...['f01', ['1', '2', '3']],
+        ...['f01', ['1', '2', '3'].map((d) => createRecord(doubleDef, { d }))],
         ...['id', 'grphnode_a'],
       ]
     )
@@ -1510,7 +1496,7 @@ test.serial('modify set ops are replicated (double)', async (t) => {
         )
       ),
       [
-        ...['f01', ['1', '2', '3', '4']],
+        ...['f01', ['1', '2', '3', '4'].map((d) => createRecord(doubleDef, { d }))],
         ...['id', 'grphnode_a'],
       ]
     )
@@ -1572,7 +1558,7 @@ test.serial('modify set ops are replicated (double)', async (t) => {
         )
       ),
       [
-        ...['f01', ['1', '3', '4']],
+        ...['f01', ['1', '3', '4'].map((d) => createRecord(doubleDef, { d }))],
         ...['id', 'grphnode_a'],
       ]
     )
@@ -1612,7 +1598,7 @@ test.serial('modify set ops are replicated (double)', async (t) => {
         )
       ),
       [
-        ...['f01', ['5', '6']],
+        ...['f01', ['5', '6'].map((d) => createRecord(doubleDef, { d }))],
         ...['id', 'grphnode_a'],
       ]
     )
@@ -1752,7 +1738,7 @@ test.serial('modify set ops are replicated (double)', async (t) => {
         )
       ),
       [
-        ...['f01', ['13.369999999999999']],
+        ...['f01', ['13.369999999999999'].map ((d) => createRecord(doubleDef, { d }))],
         ...['id', 'grphnode_a'],
       ]
     )
@@ -1816,7 +1802,7 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
         )
       ),
       [
-        ...['f01', [1, 2, 3]],
+        ...['f01', [1, 2, 3].map((d) => createRecord(longLongDef, { d: BigInt(d) }))],
         ...['id', 'grphnode_a'],
       ]
     )
@@ -1878,7 +1864,7 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
         )
       ),
       [
-        ...['f01', [1, 2, 3, 4]],
+        ...['f01', [1, 2, 3, 4].map((d) => createRecord(longLongDef, { d: BigInt(d) }))],
         ...['id', 'grphnode_a'],
       ]
     )
@@ -1940,7 +1926,7 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
         )
       ),
       [
-        ...['f01', [1, 3, 4]],
+        ...['f01', [1, 3, 4].map((d) => createRecord(longLongDef, { d: BigInt(d) }))],
         ...['id', 'grphnode_a'],
       ]
     )
@@ -1980,7 +1966,7 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
         )
       ),
       [
-        ...['f01', [5, 6]],
+        ...['f01', [5, 6].map ((d) => createRecord(longLongDef, { d: BigInt(d) }))],
         ...['id', 'grphnode_a'],
       ]
     )
@@ -2120,7 +2106,7 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
         )
       ),
       [
-        ...['f01', [13]],
+        ...['f01', [13].map ((d) => createRecord(longLongDef, { d: BigInt(d) }))],
         ...['id', 'grphnode_a'],
       ]
     )
