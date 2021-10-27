@@ -38,27 +38,17 @@ The `SelvaObject` data type is implemented in
 
 ## Selva Node
 
-A Selva node is built of several parts stored in different ways in Redis and
-therefore also the management and ownership of the data is divided into several
-C files. Typically when a selva node is mentioned it means both a node in the
-hierarchy and the companion `SelvaObject` stored in a separate Redis key.
-
-Regular node fields are generally managed by
-[selva_node.c](../module/selva_node.c), which is used to abstract/wrap all
-access to regular node fields, including creation, reading, and writing of
-all regular fields. It's also called to create the initial node when a new
-node with no user provided fields is created.
-
-Set fields of a node are managed by [selva_set.c](../module/selva_set.c). This
-includes both, regular string sets as well as node reference sets. However,
-the reference fields are be also resolved and traversed by
-[hierarchy.c](../module/hierarchy.c).
-
-Node aliases (and `aliases` field) are handled by [alias.c](../module/alias.c).
+A Selva node is a structure managed by the hierarchy system. A node
+contains hard-coded hierarchy fields (`parents` and `children`),
+a `SelvaObject` containing the data fields, edge fields, and other meta
+data. Edge fields are actually handled as an external metadata to the
+hierarchy system.
 
 Hierarchy fields `ancestors`, `children`, `descendants`, and `parents` are
 owned, managed, and traversed by the functions in
 [hierarchy.c](../module/hierarchy.c).
+
+Node aliases (and `aliases` field) are handled by [alias.c](../module/alias.c).
 
 ## Graph Link Types
 
