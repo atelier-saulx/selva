@@ -12,6 +12,9 @@ static void EdgeConstraint_Reply(struct RedisModuleCtx *ctx, void *p);
 static void *so_rdb_load(struct RedisModuleIO *io, int encver, void *load_data);
 static void so_rdb_save(struct RedisModuleIO *io, void *value, void *load_data);
 
+#define DYN_CONSTRAINT_NAME_LEN(field_name_len) \
+    (SELVA_NODE_TYPE_SIZE + 1 + field_name_len)
+
 static const struct SelvaObjectPointerOpts obj_opts = {
     .ptr_type_id = SELVA_OBJECT_POINTER_EDGE_CONSTRAINTS,
     .ptr_reply = EdgeConstraint_Reply,
@@ -35,8 +38,10 @@ void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
     }
 }
 
-#define DYN_CONSTRAINT_NAME_LEN(field_name_len) \
-    (SELVA_NODE_TYPE_SIZE + 1 + field_name_len)
+void Edge_DeinitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
+    SelvaObject_Destroy(data->dyn_constraints);
+    memset(data, 0, sizeof(*data));
+}
 
 /**
  * Make a dynamic constraint object field name.
