@@ -27,7 +27,7 @@ export default class PostgresManager extends ProcessManager {
     const isLinux = process.platform === 'linux'
 
     if (isLinux) {
-      const command = `/usr/lib/12/bin/postgres`
+      const command = `/usr/lib/postgresql/12/bin/postgres`
       super(command, {
         // TODO: pg_data needs to be pluggable
         args: ['-D', './pg_data'],
