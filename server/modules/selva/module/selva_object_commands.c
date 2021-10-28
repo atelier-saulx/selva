@@ -19,7 +19,7 @@ static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleStri
     RedisModuleString *hkey_name;
     struct SelvaModify_Hierarchy *hierarchy;
     Selva_NodeId nodeId;
-    struct SelvaModify_HierarchyNode *node;
+    const struct SelvaModify_HierarchyNode *node;
 
     /*
      * Open the Redis key.
@@ -134,7 +134,8 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             long resp_count = 0;
 
             RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-            err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, okey_str, okey_len, &resp_count, -1, SELVA_OBJECT_REPLY_SPLICE_FLAG | SELVA_OBJECT_REPLY_BINUMF_FLAG);
+            err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, okey_str, okey_len,
+                                                 &resp_count, -1, SELVA_OBJECT_REPLY_SPLICE_FLAG | SELVA_OBJECT_REPLY_BINUMF_FLAG);
             if (err == SELVA_ENOENT) {
                 /* Keep looking. */
                 RedisModule_ReplySetArrayLength(ctx, resp_count);
@@ -289,7 +290,7 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
 
         RedisModule_ReplySetArrayLength(ctx, 2);
     } else if (type == SELVA_OBJECT_SET) {
-        struct SelvaSet *set;
+        const struct SelvaSet *set;
 
         set = SelvaObject_GetSet(obj, okey);
         if (set) {

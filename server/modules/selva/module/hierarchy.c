@@ -2481,6 +2481,7 @@ int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
 
 int SelvaModify_Hierarchy_HeadsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    const SelvaModify_Hierarchy *hierarchy;
 
     if (argc != 2) {
         return RedisModule_WrongArity(ctx);
@@ -2489,7 +2490,7 @@ int SelvaModify_Hierarchy_HeadsCommand(RedisModuleCtx *ctx, RedisModuleString **
     /*
      * Open the Redis key.
      */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[1], REDISMODULE_READ);
+    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[1], REDISMODULE_READ);
     if (!hierarchy) {
         return REDISMODULE_OK;
     }
