@@ -1694,7 +1694,7 @@ enum rpn_error rpn_rms(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, co
     *out = RedisModule_CreateString(redis_ctx, OPERAND_GET_S(res), OPERAND_GET_S_LEN(res));
     free_rpn_operand(&res);
 
-    return out ? RPN_ERR_OK : RPN_ERR_ENOMEM;
+    return *out ? RPN_ERR_OK : RPN_ERR_ENOMEM;
 }
 
 enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out) {

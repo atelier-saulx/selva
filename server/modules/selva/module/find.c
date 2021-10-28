@@ -250,7 +250,7 @@ static int send_node_field(
             err = send_edge_field(ctx, lang, hierarchy, node, edges, field_prefix_str, field_prefix_len, field, excluded_fields);
             if (err == 0) {
                return 1;
-            } else if (err && err != SELVA_ENOENT) {
+            } else if (err != SELVA_ENOENT) {
                 return 0;
             }
         }
@@ -1517,7 +1517,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         /* find_indices_max == 0 => indexing disabled */
         if (nr_index_hints > 0 && selva_glob_config.find_indices_max > 0) {
             RedisModuleString *dir_expr = NULL;
-            int ind_err;
 
             if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
                        SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
@@ -1536,6 +1535,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             for (int j = 0; j < nr_index_hints; j++) {
                 struct SelvaFindIndexControlBlock *icb = NULL;
                 struct SelvaSet *set = NULL;
+                int ind_err;
 
                 ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hints[j], &icb, &set);
                 ind_icb[j] = icb;
@@ -1545,7 +1545,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                     if (ind_select < 0 || SelvaSet_Size(set) < SelvaSet_Size(ind_out[ind_select])) {
                         ind_select = j; /* Select the smallest index res set for fastest lookup. */
                     }
-                } else if (ind_err && ind_err != SELVA_ENOENT) {
+                } else if (ind_err != SELVA_ENOENT) {
                     fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
                             __FILE__, __LINE__,
                             getSelvaErrorStr(ind_err));
