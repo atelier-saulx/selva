@@ -818,7 +818,7 @@ static ssize_t send_deep_merge(
 static ssize_t send_node_object_merge(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        struct SelvaModify_HierarchyNode *node,
+        const struct SelvaModify_HierarchyNode *node,
         enum SelvaMergeStrategy merge_strategy,
         RedisModuleString *obj_path,
         struct SelvaObject *fields,
