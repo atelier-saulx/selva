@@ -272,20 +272,18 @@ struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
         const RedisModuleString *order_field) {
     struct TraversalOrderedItem *item = NULL;
     double d = 0.0;
-    char data_lang[LANG_MAX];
     const char *data = NULL;
     size_t data_len = 0;
+    char data_lang[LANG_MAX];
     enum SelvaObjectType obj_type;
     enum TraversalOrderedItemType type = ORDERED_ITEM_TYPE_EMPTY;
-    int err;
 
     memset(data_lang, '\0', sizeof(data_lang));
 
-
     obj_type = SelvaObject_GetType(obj, order_field);
-
     if (obj_type == SELVA_OBJECT_STRING) {
         RedisModuleString *value = NULL;
+        int err;
 
         err = SelvaObject_GetString(obj, order_field, &value);
         if (!err && value) {
@@ -297,14 +295,16 @@ struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
         SelvaObject_GetUserMeta(obj, order_field, &meta);
 
         if (meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
-            TO_STR(lang);
             struct SelvaObject *text_obj;
-            int text_err = SelvaObject_GetObject(obj, order_field, &text_obj);
-            if (text_err) {
+            TO_STR(lang);
+            int err;
+
+            if (lang_len == 0) {
                 return NULL;
             }
 
-            if (!lang_len) {
+            err = SelvaObject_GetObject(obj, order_field, &text_obj);
+            if (err) {
                 return NULL;
             }
 
@@ -319,8 +319,8 @@ struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
                 const size_t slen = strlen(token);
 
                 RedisModuleString *raw_value = NULL;
-                text_err = SelvaObject_GetStringStr(text_obj, token, slen, &raw_value);
-                if (!text_err && raw_value) {
+                err = SelvaObject_GetStringStr(text_obj, token, slen, &raw_value);
+                if (!err && raw_value) {
                     TO_STR(raw_value);
 
                     if (raw_value_len) {
@@ -335,12 +335,15 @@ struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
             }
         }
     } else if (obj_type == SELVA_OBJECT_DOUBLE) {
+        int err;
+
         err = SelvaObject_GetDouble(obj, order_field, &d);
         if (!err) {
             type = ORDERED_ITEM_TYPE_DOUBLE;
         }
     } else if (obj_type == SELVA_OBJECT_LONGLONG) {
         long long v;
+        int err;
 
         err = SelvaObject_GetLongLong(obj, order_field, &v);
         if (!err) {
