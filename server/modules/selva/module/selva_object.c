@@ -275,6 +275,10 @@ void SelvaObject_Clear(struct SelvaObject *obj, const char * const exclude[]) {
 }
 
 void SelvaObject_Destroy(struct SelvaObject *obj) {
+    if (!obj) {
+        return;
+    }
+
     SelvaObject_Clear(obj, NULL);
 #if MEM_DEBUG
     memset(obj, 0, sizeof(*obj));
