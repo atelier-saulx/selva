@@ -31,6 +31,8 @@
 #define SELVA_OBJECT_META_SUBTYPE_RECORD 1
 #define SELVA_OBJECT_META_SUBTYPE_TEXT 2
 
+struct RedisModuleString;
+
 /**
  * Type for Selva NodeId.
  */
@@ -77,6 +79,9 @@ static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {
 #pragma GCC diagnostic pop
 #endif
 }
+
+void Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *rms);
+
 
 /**
  * Initialize a string array from a node_id or node type string.

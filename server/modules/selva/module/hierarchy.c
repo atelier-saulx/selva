@@ -138,10 +138,6 @@ static int SelvaModify_HierarchyNode_Compare(const SelvaModify_HierarchyNode *a,
 
 RB_GENERATE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
 
-static inline void RMString2NodeId(Selva_NodeId nodeId, const RedisModuleString *rmStr) {
-    Selva_NodeIdCpy(nodeId, RedisModule_StringPtrLen(rmStr, NULL));
-}
-
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     SelvaModify_Hierarchy *hierarchy;
 
@@ -2465,7 +2461,7 @@ int SelvaModify_Hierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString 
     for (int i = 3; i < argc; i++) {
         Selva_NodeId nodeId;
 
-        RMString2NodeId(nodeId, argv[i]);
+        Selva_RMString2NodeId(nodeId, argv[i]);
 
         if (!SelvaModify_DelHierarchyNode(ctx, hierarchy, nodeId, flags[0] == 'F')) {
             nr_deleted++;
@@ -2528,7 +2524,7 @@ int SelvaModify_Hierarchy_ParentsCommand(RedisModuleCtx *ctx, RedisModuleString 
      */
     Selva_NodeId nodeId;
 
-    RMString2NodeId(nodeId, argv[2]);
+    Selva_RMString2NodeId(nodeId, argv[2]);
     const SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
@@ -2580,7 +2576,7 @@ int SelvaModify_Hierarchy_ChildrenCommand(RedisModuleCtx *ctx, RedisModuleString
      */
     Selva_NodeId nodeId;
 
-    RMString2NodeId(nodeId, argv[2]);
+    Selva_RMString2NodeId(nodeId, argv[2]);
     const SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
@@ -2619,7 +2615,7 @@ int SelvaHierarchy_EdgeListCommand(RedisModuleCtx *ctx, RedisModuleString **argv
      */
     Selva_NodeId nodeId;
 
-    RMString2NodeId(nodeId, argv[2]);
+    Selva_RMString2NodeId(nodeId, argv[2]);
     SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
@@ -2677,7 +2673,7 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
      */
     Selva_NodeId nodeId;
 
-    RMString2NodeId(nodeId, argv[2]);
+    Selva_RMString2NodeId(nodeId, argv[2]);
     SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
