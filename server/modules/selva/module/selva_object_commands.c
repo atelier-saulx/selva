@@ -10,11 +10,6 @@
 #include "svector.h"
 #include "selva_object.h"
 
-/* TODO MOVE */
-static inline void RMString2NodeId(Selva_NodeId nodeId, const RedisModuleString *rmStr) {
-    Selva_NodeIdCpy(nodeId, RedisModule_StringPtrLen(rmStr, NULL));
-}
-
 static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleString *key_name, int mode) {
     RedisModuleString *hkey_name;
     struct SelvaModify_Hierarchy *hierarchy;
@@ -34,7 +29,7 @@ static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleStri
         return NULL;
     }
 
-    RMString2NodeId(nodeId, key_name);
+    Selva_RMString2NodeId(nodeId, key_name);
     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);

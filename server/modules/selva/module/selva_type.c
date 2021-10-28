@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "cdefs.h"
-#include "selva.h"
+#include "redismodule.h"
 #include "errors.h"
+#include "selva.h"
 
 /*
  * Technically a nodeId is always 10 bytes but sometimes a printable
@@ -17,6 +18,10 @@ size_t Selva_NodeIdLen(const Selva_NodeId nodeId) {
     }
 
     return len;
+}
+
+void Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *rms) {
+    Selva_NodeIdCpy(nodeId, RedisModule_StringPtrLen(rms, NULL));
 }
 
 /*
