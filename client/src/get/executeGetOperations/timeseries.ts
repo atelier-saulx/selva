@@ -60,11 +60,6 @@ export default async function execTimeseries(
   }
 
   bufferNodeMarker(ctx, op.id, tsCtx.field)
-  // addMarker(client, ctx, {
-  //   type: 'node',
-  //   id: op.id,
-  //   fields: [tsCtx.field],
-  // })
 
   if (ctx.firstEval === false) {
     const [value, _ts] = await Promise.all([
@@ -92,12 +87,12 @@ export default async function execTimeseries(
     const ts = Number(readLongLong(_ts))
     ctx.meta.hasTimeseries = Math.max(ctx.meta.hasTimeseries || 0, ts)
 
-    console.log(
-      'NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE',
-      typeof ts,
-      ts,
-      value
-    )
+    // console.log(
+    //   'NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE',
+    //   typeof ts,
+    //   ts,
+    //   value
+    // )
 
     const obj = { ts, value }
     const patchFn: CreatePartialDiff = (currentValue) => {
@@ -160,7 +155,6 @@ export default async function execTimeseries(
         return false
       }
 
-      console.log('OPS', { type: 'array', values: ops })
       return { type: 'array', values: ops }
     }
 
