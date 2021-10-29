@@ -98,17 +98,6 @@ export function getNestedSchema(
       return null
     }
 
-    // if (prop.timeseries) {
-    //   prop = {
-    //     type: 'object',
-    //     properties: {
-    //       $selva_timeseries: { type: 'boolean' },
-    //       _ts: { type: 'timestamp' },
-    //       _value: { type: 'prop' },
-    //     },
-    //   }
-    // }
-
     if (prop.type === 'text' && i === fields.length - 1) {
       return { type: 'string' }
     }
