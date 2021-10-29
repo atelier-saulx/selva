@@ -1,5 +1,5 @@
 import { ServerOptions } from '../../types'
-import { connect, SelvaClient, constants } from '@saulx/selva'
+import { connect, SelvaClient } from '@saulx/selva'
 
 export type TimeSeriesInsertContext = {
   nodeId: string
@@ -13,11 +13,9 @@ export type TimeSeriesInsertContext = {
 export class TimeseriesWorker {
   private opts: ServerOptions
   private client: SelvaClient
-  private connectionString: string
 
-  constructor(opts: ServerOptions, connectionString: string) {
+  constructor(opts: ServerOptions) {
     this.opts = opts
-    this.connectionString = connectionString
   }
 
   async start() {
@@ -27,14 +25,12 @@ export class TimeseriesWorker {
   }
 
   async tick() {
-    // console.log('timeseries tick')
     try {
       const row = await this.client.redis.rpop(
         { type: 'timeseriesQueue' },
         'timeseries_inserts'
       )
       if (row) {
-        // console.log(row)
         const obj: {
           type: string
           context: TimeSeriesInsertContext
@@ -42,7 +38,6 @@ export class TimeseriesWorker {
         const { type, context } = obj
 
         if (type === 'insert') {
-          // console.log(`Inserting data, postgres at ${this.connectionString}`)
           await this.client.pg.insert<void>(context, context)
         } else {
           console.error(`Unknown schema event ${type} for ${row}`)
@@ -61,14 +56,9 @@ export class TimeseriesWorker {
 }
 
 export async function startTimeseriesWorker(
-  opts: ServerOptions,
-  timeseriesDbInfo: { password: string; host: string; port: number }
+  opts: ServerOptions
 ): Promise<TimeseriesWorker> {
-  const connectionString = `postgres://postgres:${timeseriesDbInfo.password}@${timeseriesDbInfo.host}:${timeseriesDbInfo.port}`
-  const worker = new TimeseriesWorker(opts, connectionString)
+  const worker = new TimeseriesWorker(opts)
   await worker.start()
   return worker
 }
-
-// TODO:
-// create new shard if current is full

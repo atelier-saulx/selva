@@ -79,7 +79,6 @@ const sendUpdate = async (
   let payload
   try {
     payload = await client.get(getOptions)
-    console.log('GOT PAYLOAD', payload)
 
     const t = Date.now() - startTime
 
@@ -171,7 +170,7 @@ const sendUpdate = async (
         const diffPatch = diff(prev.payload, payload, {
           parseDiffFunctions: !!newMeta.hasTimeseries,
         })
-        console.log('DIFF PATCH', diffPatch)
+
         resultStr = JSON.stringify({
           type: 'update',
           payload: applyPatch(payload, diffPatch),
