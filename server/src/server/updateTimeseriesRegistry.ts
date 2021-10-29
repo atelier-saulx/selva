@@ -63,7 +63,6 @@ export default async function updateRegistry(
 
   if (isNew) {
     // better codes
-    console.log('PUBLISHING PUBLISHING', 'new_server')
     client.redis.publish(
       { type: 'timeseriesRegistry' },
       constants.TS_REGISTRY_UPDATE,
@@ -75,7 +74,6 @@ export default async function updateRegistry(
       })
     )
   } else {
-    console.log('PUBLISHING PUBLISHING', 'stats_update')
     client.redis.publish(
       { type: 'timeseriesRegistry' },
       constants.TS_REGISTRY_UPDATE,
