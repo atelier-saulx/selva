@@ -75,10 +75,10 @@ export default class ProcessManager extends EventEmitter {
             }
           })
           .catch((e) => {
-            console.error(
-              `Error collecting load measurements from ${this.command}`,
-              e
-            )
+            // console.error(
+            //   `Error collecting load measurements from ${this.command}`,
+            //   e
+            // )
           })
           .finally(() => {
             if (this.isMeasuring) {
