@@ -40,8 +40,6 @@ const addOriginListeners = async (
           const subId = channel.slice(prefixLength)
           const subscription = subsManager.subscriptions[subId]
 
-          console.log('HEYOO SUB UPDATE', subId, subscription)
-
           if (subscription) {
             addUpdate(subsManager, subscription)
           }
