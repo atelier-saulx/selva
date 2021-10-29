@@ -204,7 +204,6 @@ async function runSelect<T>(
   where: squel.Expression
 ): Promise<QueryResult<T>> {
   if (!shards.length) {
-    console.log('TIMESERIES QUERY, NO SHARDS', client.pg.tsCache.index)
     return { rows: [], command: 'select', rowCount: 0, oid: 0, fields: [] }
   }
 
@@ -523,12 +522,9 @@ export class TimeseriesClient {
       "fieldSchema" jsonb
     );
     `
-    console.log(`running: ${createTable}`)
     const pg = this.client.pg.getMinInstance()
 
     const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${tableName}_node_id_idx" ON "${tableName}" ("nodeId");`
-
-    console.log(`running: ${createNodeIdIndex}`)
 
     const { meta: current, tableMeta } = this.client.pg.tsCache.instances[pg.id]
     const stats = {
