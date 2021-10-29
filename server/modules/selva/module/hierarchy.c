@@ -2214,6 +2214,7 @@ int load_metadata(RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hierarch
     /*
      * Note that the metadata must be loaded and saved in predefined order.
      */
+
     err = Edge_RdbLoad(io, encver, hierarchy, node);
     if (err) {
         return err;
@@ -2228,24 +2229,28 @@ int load_metadata(RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hierarch
 }
 
 void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
-    if (encver > HIERARCHY_ENCODING_VERSION) {
-        RedisModule_LogIOError(io, "warning", "Unknown selva_hierarchy version");
+    SelvaModify_Hierarchy *hierarchy;
+    int err;
+
+    if (encver != HIERARCHY_ENCODING_VERSION) {
+        RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
         return NULL;
     }
 
 #if HIERARCHY_SORT_BY_DEPTH
     rdbLoading = 1;
 #endif
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_NewHierarchy(NULL);
 
-    if (encver >= 2) {
-        int err;
+    hierarchy = SelvaModify_NewHierarchy(NULL);
+    if (!hierarchy) {
+        RedisModule_LogIOError(io, "warning", "Failed to create a new hierarchy");
+        return NULL;
+    }
 
-        err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
-        if (err) {
-            RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints: %s", getSelvaErrorStr(err));
-            goto error;
-        }
+    err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
+    if (err) {
+        RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints: %s", getSelvaErrorStr(err));
+        goto error;
     }
 
     while (1) {

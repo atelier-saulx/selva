@@ -14,7 +14,6 @@
 #include "tree.h"
 #include "selva_object.h"
 
-#define SELVA_OBJECT_ENCODING_VERSION   0 /*!< Encoding version for RDB serialization. */
 #define SELVA_OBJECT_KEY_MAX            USHRT_MAX /*!< Maximum length of a key including dots and array notation. */
 #define SELVA_OBJECT_SIZE_MAX           (1 << 30) /*!< Maximum number of keys in a SelvaObject. */
 
