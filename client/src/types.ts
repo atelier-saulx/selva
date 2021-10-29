@@ -30,7 +30,6 @@ export type ServerSelector = {
   strict?: boolean
   port?: number
   subscription?: string
-  // special timeseries selection criteria - like a qeury
 }
 
 export type ServerSelectOptions = { subscription?: string; strict?: true }
