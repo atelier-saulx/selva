@@ -62,8 +62,11 @@ export default async function mkBackupFn(opts: S3Opts): Promise<BackupFns> {
       })
 
       if (!rdbLastModified || new Date(latest.LastModified) > rdbLastModified) {
+        console.info(`Using online backup dump named "${latest.Key}"`)
         const body: Buffer = <Buffer>await s3.getObject(bucketName, latest.Key)
         await fs.writeFile(rdbFilePath, body)
+      } else {
+        console.info('Using local backup, remote is older.')
       }
     },
   }
