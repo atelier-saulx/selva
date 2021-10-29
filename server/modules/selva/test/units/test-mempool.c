@@ -1,4 +1,5 @@
 #include <punit.h>
+#include <stdint.h>
 #include "mempool.h"
 
 static void setup(void)

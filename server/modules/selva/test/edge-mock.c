@@ -16,6 +16,10 @@ void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
     memset(data, 0, sizeof(*data));
 }
 
+void Edge_DeinitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
+    memset(data, 0, sizeof(*data));
+}
+
 int Edge_RdbLoad(struct RedisModuleIO *io, int encver __unused, struct SelvaModify_Hierarchy *hierarchy __unused, struct SelvaModify_HierarchyNode *node __unused) {
     RedisModule_LoadUnsigned(io);
     return 0;

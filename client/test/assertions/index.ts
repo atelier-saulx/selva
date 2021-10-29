@@ -1,6 +1,6 @@
 import t from 'ava'
 import { Assertions } from 'ava/lib/assert.js'
-import { logDb, dumpDb, idExists, wait } from './util'
+import { idExists, wait } from './util'
 import hash from '@sindresorhus/fnv1a'
 import { join } from 'path'
 import fs from 'fs'
@@ -131,7 +131,7 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
         throw err
       })
     })
-   
+
   `
       : `
       const fn = ${body};
@@ -142,12 +142,12 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
       const wait = (t = 100) => (new Promise(r => setTimeout(r, t)))
 
       const p = { wait }
-    
+
 
       for (let key in selva) {
         p[key] = selva[key]
       }
-  
+
       for (let key in selvaServer) {
         p[key] = selvaServer[key]
       }
@@ -203,4 +203,4 @@ const removeDump = (dir: string) => {
   }
 }
 
-export { logDb, dumpDb, idExists, wait, worker, removeDump }
+export { idExists, wait, worker, removeDump }

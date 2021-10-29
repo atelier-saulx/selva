@@ -2,6 +2,8 @@ import { promises as fs } from 'fs'
 import { BackupFns } from '../../backups'
 import { createApi, S3Api } from './s3api'
 
+export { S3Api } from './s3Api'
+
 type S3Opts = {
   config: {
     accessKeyId: string
@@ -52,16 +54,19 @@ export default async function mkBackupFn(opts: S3Opts): Promise<BackupFns> {
       }
 
       const latest = objects.reduce((max, o) => {
-        if (new Date(o.Key) > new Date(max.Key)) {
+        if (new Date(o.LastModified) > new Date(max.LastModified)) {
           return o
         }
 
         return max
       })
 
-      if (!rdbLastModified || new Date(latest.Key) > rdbLastModified) {
+      if (!rdbLastModified || new Date(latest.LastModified) > rdbLastModified) {
+        console.info(`Using online backup dump named "${latest.Key}"`)
         const body: Buffer = <Buffer>await s3.getObject(bucketName, latest.Key)
         await fs.writeFile(rdbFilePath, body)
+      } else {
+        console.info('Using local backup, remote is older.')
       }
     },
   }

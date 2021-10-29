@@ -133,14 +133,6 @@ int SelvaTraversal_ParseOrder(
         const struct RedisModuleString *txt,
         const struct RedisModuleString *fld,
         const struct RedisModuleString *ord);
-int SelvaTraversal_ParseDir(
-        struct RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
-        enum SelvaTraversal *dir,
-        struct RedisModuleString **field_name_out,
-        Selva_NodeId nodeId,
-        enum SelvaTraversalAlgo algo,
-        const struct RedisModuleString *field_name);
 int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct RedisModuleString *arg);
 orderFunc SelvaTraversal_GetOrderFunc(enum SelvaResultOrder order);
 struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(

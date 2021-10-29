@@ -408,7 +408,7 @@ static int add_set_values(
                     Selva_NodeIdCpy(node_id, id_str);
                     Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
 
-                    update_alias(ctx, alias_key, id, ref);
+                    update_alias(hierarchy, alias_key, id, ref);
                 }
 
                 res++;

@@ -1,13 +1,14 @@
 import { promises as fs } from 'fs'
-import aws from 'aws-sdk'
+import S3 from 'aws-sdk/clients/s3'
 
 export type S3Api = {
-  getBuckets: () => Promise<aws.S3.Bucket[]>
+  getBuckets: () => Promise<S3.Bucket[]>
   createBucket: (bucketName: string, acl: string) => Promise<void>
   ensureBucket: (bucketName: string, acl: string) => Promise<void>
-  listObjects: (bucketName: string) => Promise<aws.S3.ObjectList>
-  getObject: (bucketName: string, filepath: string) => Promise<aws.S3.Body>
+  listObjects: (bucketName: string) => Promise<S3.ObjectList>
+  getObject: (bucketName: string, filepath: string) => Promise<S3.Body>
   deleteObject: (bucketName: string, filepath: string) => Promise<void>
+  getSignedObject: (bucketname: string, filepath: string) => Promise<string>
   storeFile: (
     bucketName: string,
     destFilepath: string,
@@ -26,8 +27,12 @@ export function createApi(
     throw new Error('No accessKeyId or secretAccessKey provided')
   }
 
-  aws.config.update(opts)
-  const s3 = new aws.S3({ endpoint: endpoint })
+  const s3 = new S3({
+    signatureVersion: 'v4',
+    accessKeyId: opts.accessKeyId,
+    secretAccessKey: opts.secretAccessKey,
+    endpoint: endpoint,
+  })
   const api: S3Api = {
     getBuckets() {
       return new Promise((resolve, reject) => {
@@ -94,6 +99,25 @@ export function createApi(
 
           resolve()
         })
+      })
+    },
+    getSignedObject(bucketName, filepath) {
+      return new Promise((resolve, reject) => {
+        s3.getSignedUrl(
+          'getObject',
+          {
+            Bucket: bucketName,
+            Key: filepath,
+            Expires: 60 * 5, // valide for 5 minutes
+          },
+          (err, url) => {
+            if (err) {
+              return reject(err)
+            }
+
+            resolve(url)
+          }
+        )
       })
     },
     async storeFile(bucketName, destFilepath, sourceFilepath) {

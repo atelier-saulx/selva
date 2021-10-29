@@ -82,7 +82,7 @@ char * base64_encode(const char *str_in, size_t len, size_t *out_len)
 char * base64_decode(const char *str_in, size_t len, size_t *out_len)
 {
     const unsigned char *src = (const unsigned char *)str_in;
-    unsigned char dtable[256], *out, *pos, block[4], tmp;
+    unsigned char dtable[256], *out, *pos, block[4];
     size_t i, count, olen;
     int pad = 0;
 
@@ -111,6 +111,8 @@ char * base64_decode(const char *str_in, size_t len, size_t *out_len)
 
     count = 0;
     for (i = 0; i < len; i++) {
+        unsigned char tmp;
+
         tmp = dtable[src[i]];
         if (tmp == 0x80) {
             continue;
