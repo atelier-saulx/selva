@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs'
 import { connect } from '@saulx/selva'
 import { join as pathJoin } from 'path'
+import { createClient } from 'redis'
 
 let LAST_BACKUP_TIMESTAMP: number = 0
 let LAST_RUN: number = Date.now()
@@ -39,22 +40,21 @@ export async function loadBackup(redisDir: string, backupFns: BackupFns) {
   }
 }
 
-// loads the latest backup, but only if it's newer than local dump.rdb
 export async function saveAndBackUp(
   redisDir: string,
   redisPort: number,
   backupFns: BackupFns
 ): Promise<void> {
-  const client = connect({ port: redisPort })
+  const client = createClient({ port: redisPort })
 
   try {
-    await client.redis.save()
+    await client.save()
     await backupFns.sendBackup(pathJoin(redisDir, 'dump.rdb'))
   } catch (e) {
     console.error(`Failed to back up ${e.stack}`)
     throw e
   } finally {
-    client.destroy()
+    client.quit()
   }
 }
 
