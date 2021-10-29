@@ -55,7 +55,6 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
         setNestedResult(getOpts, field, true)
 
         const prevResult = await client.get(getOpts)
-        console.log('PREV RESULT', prevResult)
         const prevValue = getNestedField(prevResult, field) || {}
         tsPayload = deepMerge(prevValue, payload)
       }
@@ -69,7 +68,6 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
         ts,
       }
 
-      console.log('LPUSH', timeseriesCtx)
       client.redis.lpush(
         { type: 'timeseriesQueue' },
         'timeseries_inserts',
