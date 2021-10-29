@@ -497,15 +497,6 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              * Keep nesting or return an object if this was the last token.
              */
 
-            /*
-            if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TIMESERIES) {
-                err = get_key(obj, "_value", 6, 0, &key);
-                if (err) {
-                    return err;
-                }
-            }
-            */
-
             if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TIMESERIES) {
               is_timeseries = 1;
             }
