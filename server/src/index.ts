@@ -308,15 +308,7 @@ export async function startTimeseries(opts: Options) {
   return db
 }
 
-// TODO: make a startTimeseriesWorker function
-// use worker like in subscriptionManager :shrug: -- can also not and just make a connection to $db: 'timeseries'
-// we depend on origin with name 'timeseries' to exist for things to work
-
-// TODO: put all these ^ in the start function below so our "minimum" test setup is more complete
-
-// make a registry, then add origin, then add subs manager
-// backups may be a bit problematic here :/
-// maybe we can put the registry and subs manager in a different db in redis and only back up the "main db"? hmmmmmmmmmmmmm let me see (tony notes)
+// TODO: extract timeseries stuff out, we don't really need it for 99.99% of tests
 export async function start(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
 
