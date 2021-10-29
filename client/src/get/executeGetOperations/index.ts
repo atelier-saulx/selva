@@ -431,20 +431,13 @@ export const TYPE_CASTS: Record<
           parse(o[key], f, val)
         } else {
           val = typeCast(val, id, f, schema, lang)
-          // const typeCast = TYPE_CASTS[fieldSchema.type]
-          // if (typeCast) {
-          //   val = typeCast(val, id, f, schema, lang)
-          // }
-
           setNestedResult(o, key, val)
         }
 
         fieldCount++
       })
     parse(result, origField, all)
-    // if (result.$selva_timeseries) {
-    //   return result._value
-    // }
+
     if (fieldCount) {
       return result
     }
