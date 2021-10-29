@@ -3,6 +3,7 @@ import {
   TypeSchema,
   FieldSchema,
   SearchIndexes,
+  Timeseries,
   SearchRaw,
   defaultFields,
   rootDefaultFields,
@@ -17,6 +18,7 @@ import * as logger from '../logger'
 
 let CACHED_SCHEMA: Schema | null = null
 let CACHED_SEARCH_INDEXES: SearchIndexes | null = null
+let CACHED_TIMESERIES: Timeseries | null = null
 
 export function getSchema(): Schema {
   if (CACHED_SCHEMA) {
@@ -54,6 +56,21 @@ export function getSearchIndexes(): SearchIndexes {
   return searchIndexes
 }
 
+export function getTimeseries(): Timeseries {
+  if (CACHED_TIMESERIES) {
+    return CACHED_TIMESERIES
+  }
+
+  const timeseriesStr = r.hget('___selva_schema', 'timeseries')
+  if (!timeseriesStr) {
+    return {}
+  }
+
+  const timeseries: Timeseries = cjson.decode(timeseriesStr)
+  CACHED_TIMESERIES = timeseries
+  return timeseries
+}
+
 function constructPrefixMap(schema: Schema): void {
   const prefixMap: Record<string, string> = {}
   for (const typeName in schema.types) {
@@ -65,11 +82,16 @@ function constructPrefixMap(schema: Schema): void {
 
 export function saveSchema(
   schema: Schema,
-  searchIndexes?: SearchIndexes
+  searchIndexes?: SearchIndexes,
+  timeseries?: Timeseries
 ): string {
   if (searchIndexes) {
     // FIXME: should we include this in the SHA1?
     saveSearchIndexes(searchIndexes)
+  }
+
+  if (timeseries) {
+    saveTimeseries(timeseries)
   }
 
   constructPrefixMap(schema)
@@ -87,7 +109,14 @@ export function saveSchema(
 export function saveSearchIndexes(searchIndexes: SearchIndexes): string {
   CACHED_SEARCH_INDEXES = searchIndexes
   const encoded = cjson.encode(searchIndexes)
-  r.hset('___selva_schema', 'searchIndexes', encoded) // TODO: is this where we actually want to set it?
+  r.hset('___selva_schema', 'searchIndexes', encoded)
+  return encoded
+}
+
+export function saveTimeseries(timeseries: Timeseries): string {
+  CACHED_TIMESERIES = timeseries
+  const encoded = cjson.encode(timeseries)
+  r.hset('___selva_schema', 'timeseries', encoded)
   return encoded
 }
 
@@ -164,15 +193,18 @@ function checkField(
   path: string,
   searchIndexes: SearchIndexes,
   changedSearchIndexes: Record<string, boolean>,
+  timeseries: Timeseries,
   oldField: FieldSchema,
   newField: FieldSchema
 ): string | null {
   if (!oldField) {
-    findSearchConfigurations(
+    findFieldConfigurations(
       newField,
+      type,
       path,
       searchIndexes,
-      changedSearchIndexes
+      changedSearchIndexes,
+      timeseries
     )
     return null
   } else if (!newField) {
@@ -228,6 +260,7 @@ function checkField(
           path + '.' + key,
           searchIndexes,
           changedSearchIndexes,
+          timeseries,
           (<any>oldField).properties[key],
           newField.properties[key]
         ))
@@ -243,6 +276,7 @@ function checkField(
         path,
         searchIndexes,
         changedSearchIndexes,
+        timeseries,
         (<any>oldField).items,
         newField.items
       ))
@@ -276,7 +310,8 @@ function checkNestedChanges(
   oldType: TypeSchema,
   newType: TypeSchema,
   searchIndexes: SearchIndexes,
-  changedIndexes: Record<string, boolean>
+  changedIndexes: Record<string, boolean>,
+  timeseries: Timeseries
 ): null | string {
   for (const field in oldType.fields) {
     if (!newType.fields) {
@@ -291,6 +326,7 @@ function checkNestedChanges(
         field,
         searchIndexes,
         changedIndexes,
+        timeseries,
         oldType.fields[field],
         newType.fields[field]
       )
@@ -304,7 +340,14 @@ function checkNestedChanges(
   for (const field in newType.fields) {
     if (!oldType.fields || !oldType.fields[field]) {
       const f = newType.fields[field]
-      findSearchConfigurations(f, field, searchIndexes, changedIndexes)
+      findFieldConfigurations(
+        f,
+        type,
+        field,
+        searchIndexes,
+        changedIndexes,
+        timeseries
+      )
       findBidirectionalReferenceConfigurations(newType, f, field)
     }
   }
@@ -315,6 +358,7 @@ function checkNestedChanges(
 function verifyTypes(
   searchIndexes: SearchIndexes,
   changedSearchIndexes: Record<string, boolean>,
+  timeseries: Timeseries,
   oldSchema: Schema,
   newSchema: Schema
 ): string | null {
@@ -331,7 +375,8 @@ function verifyTypes(
       oldSchema.types[type],
       newSchema.types[type],
       searchIndexes,
-      changedSearchIndexes
+      changedSearchIndexes,
+      timeseries
     )
 
     if (err) {
@@ -349,11 +394,13 @@ function verifyTypes(
         newSchema.types[type].fields || {}
       )
 
-      findSearchConfigurations(
+      findFieldConfigurations(
         newSchema.types[type],
+        type,
         '',
         searchIndexes,
-        changedSearchIndexes
+        changedSearchIndexes,
+        timeseries
       )
       findBidirectionalReferenceConfigurations(
         newSchema.types[type],
@@ -373,7 +420,8 @@ function verifyTypes(
     oldSchema.rootType,
     newSchema.rootType,
     {}, // skip indexing for root
-    {}
+    {},
+    timeseries
   )
 
   if (err) {
@@ -412,11 +460,13 @@ function convertSearch(f: FieldSchema): SearchRaw {
   return field.search
 }
 
-function findSearchConfigurations(
+function findFieldConfigurations(
   obj: TypeSchema | FieldSchema,
+  typeName: string,
   path: string,
   searchIndexes: SearchIndexes,
-  changedSearchIndexes: Record<string, boolean>
+  changedSearchIndexes: Record<string, boolean>,
+  timeseries: Timeseries
 ): void {
   if ((<any>obj).type) {
     const field = <FieldSchema>obj
@@ -425,11 +475,13 @@ function findSearchConfigurations(
       (field.type === 'json' && field.properties)
     ) {
       for (const propName in field.properties) {
-        findSearchConfigurations(
+        findFieldConfigurations(
           field.properties[propName],
+          typeName,
           `${path}.${propName}`,
           searchIndexes,
-          changedSearchIndexes
+          changedSearchIndexes,
+          timeseries
         )
       }
     } else {
@@ -454,17 +506,26 @@ function findSearchConfigurations(
           searchIndexes[index][path] = field.search.type
           changedSearchIndexes[index] = true
         }
+      } else if (field.timeseries) {
+        if (!timeseries[typeName]) {
+          timeseries[typeName] = {}
+        }
+
+        const tsFields = timeseries[typeName]
+        tsFields[path] = field
       }
     }
   } else {
     const type = <TypeSchema>obj
     if (type.fields) {
       for (const fieldName in type.fields) {
-        findSearchConfigurations(
+        findFieldConfigurations(
           type.fields[fieldName],
+          typeName,
           fieldName,
           searchIndexes,
-          changedSearchIndexes
+          changedSearchIndexes,
+          timeseries
         )
       }
     }
@@ -530,6 +591,7 @@ function findBidirectionalReferenceConfigurations(
 export function verifyAndEnsureRequiredFields(
   searchIndexes: SearchIndexes,
   changedSearchIndexes: Record<string, boolean>,
+  timeseries: Timeseries,
   oldSchema: Schema,
   newSchema: Schema
 ): string | null {
@@ -547,6 +609,7 @@ export function verifyAndEnsureRequiredFields(
     (err = verifyTypes(
       searchIndexes,
       changedSearchIndexes,
+      timeseries,
       oldSchema,
       newSchema
     ))
@@ -609,10 +672,12 @@ export function updateSchema(
   }
 
   const searchIndexes = getSearchIndexes()
+  const timeseries = getTimeseries()
 
   const err = verifyAndEnsureRequiredFields(
     searchIndexes,
     changedSearchIndexes,
+    timeseries,
     oldSchema,
     newSchema
   )
@@ -623,6 +688,6 @@ export function updateSchema(
   checkLanguageChange(changedSearchIndexes, searchIndexes, oldSchema, newSchema)
   updateSearchIndexes(changedSearchIndexes, searchIndexes, newSchema)
   updateHierarchies(oldSchema, newSchema)
-  const saved = saveSchema(newSchema, searchIndexes)
+  const saved = saveSchema(newSchema, searchIndexes, timeseries)
   return [saved, null]
 }

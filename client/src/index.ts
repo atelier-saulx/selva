@@ -8,7 +8,6 @@ import {
 } from './types'
 import digest from './digest'
 import Redis from './redis'
-
 import {
   GetSchemaResult,
   SchemaOptions,
@@ -21,7 +20,7 @@ import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
 import conformToSchema from './schema/conformToSchema'
 import initializeSchema from './schema/initializeSchema'
-
+import { TimeseriesClient } from './timeseries'
 import { GetOptions, ObserveEventOptions, GetResult, get } from './get'
 import { SetOptions, set, setWithMeta } from './set'
 import { IdOptions } from 'lua/src/id'
@@ -54,6 +53,7 @@ let clientId = 0
 
 export class SelvaClient extends EventEmitter {
   public redis: Redis
+  public pg: TimeseriesClient
 
   public selvaId: string
 
@@ -77,14 +77,19 @@ export class SelvaClient extends EventEmitter {
     replicas: { [key: string]: ServerDescriptor[] }
     // origins by name
     origins: { [key: string]: ServerDescriptor }
-
     subRegisters: { [key: string]: ServerDescriptor }
+    timeseriesQueues: { [key: string]: ServerDescriptor }
+    timeseries: { [key: string]: ServerDescriptor }
+    tsRegisters: { [key: string]: ServerDescriptor }
   } = {
     ids: new Set(),
     origins: {},
     subsManagers: [],
     replicas: {},
     subRegisters: {},
+    timeseries: {},
+    tsRegisters: {},
+    timeseriesQueues: {},
   }
 
   public registryConnection?: Connection
@@ -130,6 +135,7 @@ export class SelvaClient extends EventEmitter {
     this.selvaId = ++clientId + ''
     this.redis = new Redis(this)
     connectRegistry(this, opts)
+    this.pg = new TimeseriesClient(this)
   }
 
   connect(opts: ConnectOptions) {
@@ -288,8 +294,8 @@ export class SelvaClient extends EventEmitter {
     opts: ServerSelector,
     selectOptions?: ServerSelectOptions
   ): Promise<ServerDescriptor> {
-    return new Promise((r) => {
-      getServer(this, r, opts, selectOptions)
+    return new Promise((resolve) => {
+      getServer(this, resolve, opts, selectOptions)
     })
   }
 

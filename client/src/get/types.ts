@@ -200,6 +200,7 @@ export type GetOperationAggregate = GetOperationCommon & {
   byType?: TraverseByType
   options: { limit: number; offset: number; sort?: Sort | undefined }
   nested?: GetOperationFind
+  isTimeseries?: boolean
 }
 
 export type GetOperationFind = GetOperationCommon & {
@@ -213,6 +214,7 @@ export type GetOperationFind = GetOperationCommon & {
   recursive?: boolean
   byType?: TraverseByType
   options: { limit: number; offset: number; sort?: Sort | undefined }
+  isTimeseries?: boolean
 }
 
 export type GetOperationInherit = GetOperationCommon & {
@@ -229,6 +231,10 @@ export type GetOperationInherit = GetOperationCommon & {
 export type GetOperation =
   | (GetOperationCommon & {
       type: 'db'
+      default?: any
+    })
+  | (GetOperationCommon & {
+      type: 'raw'
       default?: any
     })
   | { type: 'value'; value: string; field: string }

@@ -9,16 +9,6 @@ import { serverId } from '../util'
 import moveReplicas from './moveReplicas'
 import moveSubscriptionManager from './moveSubscriptionManager'
 
-/*
- registry-update
-  events
-  'new-server'
-  'remove-server'
-  'move-subscription'
-  registry-server-info
-    sends updates of all info objects (make this specific as well)
-*/
-
 const updateServerListeners = (selvaClient: SelvaClient) => {
   if (selvaClient.addServerUpdateListeners.length) {
     const len = selvaClient.addServerUpdateListeners.length
@@ -125,6 +115,9 @@ const connectRegistry = (
           subsManagers: [],
           replicas: {},
           subRegisters: {},
+          timeseries: {},
+          tsRegisters: {},
+          timeseriesQueues: {},
         }
         selvaClient.emit('removed-servers', { event: '*' })
       }

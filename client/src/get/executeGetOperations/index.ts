@@ -10,17 +10,19 @@ import { GetOptions } from '../'
 import find from './find'
 import aggregate from './aggregate'
 import inherit from './inherit'
+import timeseries from './timeseries'
 import { Rpn, bfsExpr2rpn } from '@saulx/selva-query-ast-parser'
 import { FieldSchemaArrayLike, Schema } from '~selva/schema'
 import { ServerDescriptor } from '~selva/types'
 import { makeLangArg } from './util'
-import { deepCopy, deepMerge } from '@saulx/utils'
+import { deepMerge } from '@saulx/utils'
 
 export type ExecContext = {
   db: string
   meta: any
   subId?: string
   originDescriptors?: Record<string, ServerDescriptor>
+  firstEval?: boolean
   nodeMarkers?: Record<string, Set<string>>
   hasFindMarkers?: boolean
 }
@@ -287,11 +289,11 @@ async function refreshMarkers(
 }
 
 export function readDouble(x: string) {
-    return readValue(doubleDef, Buffer.from(x), '.d')
+  return readValue(doubleDef, Buffer.from(x), '.d')
 }
 
 export function readLongLong(x: string) {
-    return readValue(longLongDef, Buffer.from(x), '.d')
+  return readValue(longLongDef, Buffer.from(x), '.d')
 }
 
 export const TYPE_CASTS: Record<
@@ -329,8 +331,14 @@ export const TYPE_CASTS: Record<
       return x
     }
 
-    if (['boolean', 'float', 'number', 'timestamp', 'int'].includes(fieldSchema.items.type)) {
-      return x.map((num) => TYPE_CASTS[fieldSchema.items.type](num, id, '', schema, lang))
+    if (
+      ['boolean', 'float', 'number', 'timestamp', 'int'].includes(
+        fieldSchema.items.type
+      )
+    ) {
+      return x.map((num) =>
+        TYPE_CASTS[fieldSchema.items.type](num, id, '', schema, lang)
+      )
     } else if (
       ['object', 'record'].includes(fieldSchema.items.type) ||
       (!lang && fieldSchema.items.type === 'text')
@@ -363,13 +371,15 @@ export const TYPE_CASTS: Record<
     if (
       ['float', 'number', 'timestamp', 'int'].includes(fieldSchema.items.type)
     ) {
-      return all.map((num) => TYPE_CASTS[fieldSchema.items.type](num, id, '', schema, lang))
+      return all.map((num) =>
+        TYPE_CASTS[fieldSchema.items.type](num, id, '', schema, lang)
+      )
     }
 
     return all
   },
   object: (all: any, id: string, origField: string, schema, lang) => {
-    const result = {}
+    const result: Record<string, any> = {}
     let fieldCount = 0
     const parse = (o, field: string, arr: string[]) =>
       arr.forEach((key, i, arr) => {
@@ -420,17 +430,14 @@ export const TYPE_CASTS: Record<
           o[key] = {}
           parse(o[key], f, val)
         } else {
-          const typeCast = TYPE_CASTS[fieldSchema.type]
-          if (typeCast) {
-            val = typeCast(val, id, f, schema, lang)
-          }
-
+          val = typeCast(val, id, f, schema, lang)
           setNestedResult(o, key, val)
         }
 
         fieldCount++
       })
     parse(result, origField, all)
+
     if (fieldCount) {
       return result
     }
@@ -483,6 +490,14 @@ export function typeCast(
   const fs = getNestedSchema(schema, id, field)
   if (!fs) {
     return x
+  }
+
+  if (fs.timeseries) {
+    const vIdx = x.findIndex((el) => {
+      return el === '_value'
+    })
+
+    x = x[vIdx + 1]
   }
 
   const cast = TYPE_CASTS[fs.type]
@@ -726,11 +741,26 @@ export const executeGetOperation = async (
       })
     )
   } else if (op.type === 'find') {
-    return find(client, op, lang, ctx)
+    if (op.isTimeseries) {
+      return timeseries(client, op, lang, ctx)
+    } else {
+      return find(client, op, lang, ctx)
+    }
   } else if (op.type === 'aggregate') {
-    return aggregate(client, op, lang, ctx)
+    if (op.isTimeseries) {
+      return timeseries(client, op, lang, ctx)
+    } else {
+      return aggregate(client, op, lang, ctx)
+    }
   } else if (op.type === 'inherit') {
     return inherit(client, op, lang, ctx)
+  } else if (op.type === 'raw') {
+    return await client.redis.selva_object_get(
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      '',
+      op.id,
+      <string>op.sourceField
+    )
   } else if (op.type === 'db') {
     const { db } = ctx
 

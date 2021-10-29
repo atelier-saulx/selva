@@ -1,7 +1,23 @@
+import { SelvaClient } from '../..'
 import { GetOperation, GetOptions } from '../types'
+import { getNestedSchema } from '../utils'
 import find from './find'
 
-const list = (props: GetOptions, id: string, field: string): GetOperation => {
+const list = (
+  client: SelvaClient,
+  db: string,
+  props: GetOptions,
+  id: string,
+  field: string
+): GetOperation => {
+  const fieldSchema = getNestedSchema(
+    client.schemas[db],
+    id,
+    <string>props.$field || field.substr(1)
+  )
+
+  const isTimeseries = fieldSchema && fieldSchema.timeseries
+
   if (props.$list === true) {
     return {
       type: 'find',
@@ -13,9 +29,12 @@ const list = (props: GetOptions, id: string, field: string): GetOperation => {
         limit: -1, // no limit
         offset: 0,
       },
+      isTimeseries,
     }
   } else if (props.$list.$find) {
     return find(
+      client,
+      db,
       props.$list.$find,
       props,
       id,
@@ -39,6 +58,7 @@ const list = (props: GetOptions, id: string, field: string): GetOperation => {
           ? props.$list.$sort[0]
           : props.$list.$sort || undefined,
       },
+      isTimeseries,
     }
   }
 }

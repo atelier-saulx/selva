@@ -50,6 +50,7 @@
     ]
   },
   "devDependencies": {
+    "@types/pg": "^8.6.1",
     "@saulx/selva-server": "9.0.0",
     "before-exit": "1.0.0",
     "async-exec": "^1.1.0",
@@ -68,8 +69,10 @@
     "typescript-to-lua": "^0.30.1"
   },
   "dependencies": {
+    "pg": "8.7.1",
+    "pg-native": "3.0.0",
+    "squel": "^5.13.0",
     "data-record": "^0.5.2",
-    "@saulx/selva-diff": "^1.0.17",
     "@saulx/selva-query-ast-parser": "^3.0.0",
     "@types/uuid": "^8.3.0",
     "chalk": "^4.1.0",

@@ -136,9 +136,6 @@ export class SelvaServer extends EventEmitter {
       heartbeat(this)
     }
 
-    // if (this.type === 'subscriptionRegistry') {
-    //   subscriptionRegistry(this)
-    // }
     if (this.type === 'subscriptionManager') {
       this.subscriptionManager = await startSubscriptionManager(opts)
     } else if (this.type === 'registry') {

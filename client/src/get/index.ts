@@ -93,6 +93,10 @@ async function get(
 
   const db = props.$db || 'default'
   let subId = props.$subscription || (ctx && ctx.subId)
+  let firstEval = props.$firstEval
+  if (firstEval === undefined) {
+    firstEval = ctx?.firstEval
+  }
 
   let originDescriptors: Record<string, ServerDescriptor> = {}
   if (subId) {
@@ -178,6 +182,7 @@ async function get(
     subId,
     meta: resultMeta,
     originDescriptors,
+    firstEval,
   }
 
   const getResult = await executeGetOperations(
@@ -195,10 +200,12 @@ async function get(
       }
       meta = { [props.$db || 'default']: resultMeta }
       meta.___refreshAt = resultMeta.___refreshAt
+      meta.hasTimeseries = meta.hasTimeseries || resultMeta.hasTimeseries
     } else {
       if (resultMeta.___refreshAt) {
         if (!meta.___refreshAt || meta.___refreshAt > resultMeta.___refreshAt) {
           meta.___refreshAt = resultMeta.___refreshAt
+          meta.hasTimeseries = meta.hasTimeseries || resultMeta.hasTimeseries
         }
       }
       deepMerge(meta, {

@@ -11,6 +11,84 @@ import json from './json'
 import object from './object'
 import record from './record'
 import array from './array'
+import timeseries from './timeseries'
+import { deepCopy, deepMerge } from '@saulx/utils'
+import { getNestedField, setNestedResult } from '../../get/utils'
+
+type FieldParserFn = (
+  client: SelvaClient,
+  schema: Schema,
+  field: string,
+  payload: SetOptions,
+  result: (string | Buffer)[],
+  fields: FieldSchema,
+  type: string,
+  $lang?: string
+) => Promise<number>
+
+const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
+  fn: FieldParserFn
+) => {
+  return async (
+    client: SelvaClient,
+    schema: Schema,
+    field: string,
+    payload: SetOptions,
+    result: (string | Buffer)[],
+    fields: FieldSchema,
+    type: string,
+    $lang?: string
+  ) => {
+    if (fields.timeseries) {
+      const ts = Date.now()
+
+      let tsPayload = payload
+
+      if (
+        payload.$merge !== false &&
+        ['object', 'record'].includes(fields.type)
+      ) {
+        const getOpts = {
+          $id: (<any>result).$id,
+          ts: { $raw: `${field}._ts` },
+        }
+        setNestedResult(getOpts, field, true)
+
+        const prevResult = await client.get(getOpts)
+        const prevValue = getNestedField(prevResult, field) || {}
+        tsPayload = deepMerge(prevValue, payload)
+      }
+
+      const timeseriesCtx = {
+        nodeId: (<any>result).$id,
+        nodeType: type,
+        field,
+        fieldSchema: fields,
+        payload: tsPayload,
+        ts,
+      }
+
+      client.redis.lpush(
+        { type: 'timeseriesQueue' },
+        'timeseries_inserts',
+        JSON.stringify({ type: 'insert', context: timeseriesCtx })
+      )
+
+      return timeseries(
+        client,
+        schema,
+        field,
+        { _value: payload, _ts: ts },
+        result,
+        fields,
+        type,
+        $lang
+      )
+    }
+
+    return fn(client, schema, field, payload, result, fields, type, $lang)
+  }
+}
 
 const fieldParsers: {
   [index: string]: (
@@ -34,6 +112,10 @@ const fieldParsers: {
   object,
   array,
   record,
+}
+
+for (const fnName in fieldParsers) {
+  fieldParsers[fnName] = wrapTimeseries(fieldParsers[fnName])
 }
 
 export default fieldParsers

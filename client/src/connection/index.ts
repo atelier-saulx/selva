@@ -13,6 +13,7 @@ import chalk from 'chalk'
 const CLIENT_HEARTBEAT_TIMER = 1e3
 
 const connections: Map<string, Connection> = new Map()
+// this connections object can also have a pql instance (which is a different type of connection)
 
 type ConnectionState = {
   id?: string
@@ -667,8 +668,15 @@ class Connection {
 }
 
 const createConnection = (serverDescriptor: ServerDescriptor) => {
+  // here needs to be special
   let connection = connections.get(serverId(serverDescriptor))
   if (!connection) {
+    console.info('sd', serverDescriptor)
+
+    if (serverDescriptor.type === 'timeseries') {
+      console.info('NEED TO MAKE A SPECIAL CONNECTION!')
+    }
+
     connection = new Connection(serverDescriptor)
   }
   return connection

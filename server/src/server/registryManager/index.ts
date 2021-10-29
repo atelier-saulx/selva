@@ -83,6 +83,8 @@ const orderServers = (
   return q
 }
 
+// here we add removeServer from timeseriesRegistry
+
 const removeServerFromSubsRegistry = async (
   client: SelvaClient,
   server: ServerDescriptor
@@ -149,6 +151,8 @@ export const registryManager = (server: SelvaServer) => {
           server.host,
           server.port
         )
+        // if server.type === 'timeseries' DO SOMETHING
+
         if (server.type === 'subscriptionManager') {
           removeServerFromSubsRegistry(client, server).then(() => {
             console.info(

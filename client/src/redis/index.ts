@@ -27,7 +27,9 @@ class RedisSelvaClient extends RedisMethods {
     event: string,
     callback?: Callback
   ): void
+
   removeListener(event: string, callback: Callback): void
+
   removeListener(selector: any, event: any, callback?: any): void {
     removeRemoteListener(this.selvaClient, selector, event, callback)
   }

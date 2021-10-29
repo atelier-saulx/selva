@@ -1,5 +1,5 @@
 import { Callback } from './redis/types'
-import { SelvaClient, RedisCommand } from '.'
+import { SelvaClient } from '.'
 import { ServerSelector } from './types'
 import getServer from './getServer'
 import { createConnection } from './connection'

@@ -115,6 +115,10 @@ async function validateNested(
     return
   }
 
+  if (props.$raw) {
+    return
+  }
+
   if (props.$db) {
     return await transformDb(extraQueries, client, props, path)
   }
@@ -250,6 +254,9 @@ export default async function validateTopLevel(
         // internal option
         continue
       } else if (field === '$originDescriptors') {
+        // internal option
+        continue
+      } else if (field === '$firstEval') {
         // internal option
         continue
       } else if (field === '$alias') {

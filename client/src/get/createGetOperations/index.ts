@@ -25,6 +25,13 @@ export default function createGetOperations(
       field: field.substr(1),
       value: props.$value,
     })
+  } else if (props.$raw) {
+    ops.push({
+      type: 'raw',
+      id,
+      field: field.substr(1),
+      sourceField: props.$raw === true ? field.substr(1) : props.$raw,
+    })
   } else if (props.$id && field) {
     ops.push({
       type: 'nested_query',
@@ -39,11 +46,11 @@ export default function createGetOperations(
       props,
     })
   } else if (props.$list) {
-    ops.push(list(props, id, field))
+    ops.push(list(client, db, props, id, field))
   } else if (props.$find) {
-    ops.push(find(props.$find, props, id, field, true))
+    ops.push(find(client, db, props.$find, props, id, field, true))
   } else if (props.$aggregate) {
-    ops.push(aggregate(props.$aggregate, props, id, field))
+    ops.push(aggregate(client, db, props.$aggregate, props, id, field))
   } else if (props.$default) {
     ops.push({
       type: 'db',

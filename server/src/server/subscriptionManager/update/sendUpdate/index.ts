@@ -2,7 +2,7 @@ import { constants } from '@saulx/selva'
 import { hashObjectIgnoreKeyOrder } from '@saulx/hash'
 import { Subscription, SubscriptionManager } from '../../types'
 import { wait } from '../../../../util'
-import diff from '@saulx/diff'
+import diff, { applyPatch } from '@saulx/diff'
 // import { gzip as zipCb } from 'zlib'
 // import { promisify } from 'util'
 import chalk from 'chalk'
@@ -23,6 +23,7 @@ const sendUpdate = async (
   // }
 
   const channel = subscription.channel
+  let currentVersion = subscription.version
   const { client, selector } = subscriptionManager
   const redis = client.redis
 
@@ -37,6 +38,7 @@ const sendUpdate = async (
   getOptions.$includeMeta = true
   getOptions.$subscription = subscription.channel
   getOptions.$originDescriptors = subscription.originDescriptors
+  getOptions.$firstEval = !currentVersion
 
   if (nodeId) {
     if (inProgressTriggers.has(subscription.channel + ':' + nodeId)) {
@@ -90,6 +92,7 @@ const sendUpdate = async (
     payload = {
       ___$error___: err.message,
     }
+    console.error('SUBSCRIPTION ERROR', payload, getOptions)
   }
 
   if (payload.$ignore === true) {
@@ -104,11 +107,12 @@ const sendUpdate = async (
 
   delete payload.$meta
 
-  const newVersion = hashObjectIgnoreKeyOrder(payload)
+  const newVersion = newMeta.hasTimeseries
+    ? newMeta.hasTimeseries
+    : hashObjectIgnoreKeyOrder(payload)
 
-  const resultStr = JSON.stringify({ type: 'update', payload })
+  let resultStr = JSON.stringify({ type: 'update', payload })
 
-  let currentVersion = subscription.version
   const q = []
 
   // if sub is removed
@@ -163,7 +167,14 @@ const sendUpdate = async (
 
       if (prev) {
         // maybe gzip the patch (very efficient format for gzip)
-        const diffPatch = diff(prev.payload, payload)
+        const diffPatch = diff(prev.payload, payload, {
+          parseDiffFunctions: !!newMeta.hasTimeseries,
+        })
+
+        resultStr = JSON.stringify({
+          type: 'update',
+          payload: applyPatch(payload, diffPatch),
+        })
 
         // gzip only makes sense for a certain size of update
         // patch = (
