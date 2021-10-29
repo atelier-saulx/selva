@@ -43,7 +43,7 @@ export class TimeseriesWorker {
           console.error(`Unknown schema event ${type} for ${row}`)
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
       //nop
     }
