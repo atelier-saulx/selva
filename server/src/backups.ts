@@ -1,5 +1,4 @@
 import { promises as fs } from 'fs'
-import { connect } from '@saulx/selva'
 import { join as pathJoin } from 'path'
 import { createClient } from 'redis'
 
@@ -19,22 +18,20 @@ function nextBackupTime(
 }
 
 export type BackupFns = { sendBackup: SendBackup; loadBackup: LoadBackup }
-export type SendBackup = (rdbFilePath: string) => Promise<void>
+export type SendBackup = (rdbFilePath: string) => Promise<void> // upload backup to cloud
 export type LoadBackup = (
   rdbFilePath: string,
   rdbLastModified?: Date
-) => Promise<void>
+) => Promise<void> // overwrite local dump.rdb with latest cloud backup
 
 export async function loadBackup(redisDir: string, backupFns: BackupFns) {
   const dumpFile = pathJoin(redisDir, 'dump.rdb')
   try {
     let stat = await fs.stat(dumpFile)
-    console.log(
-      `Existing backup found from ${stat.mtime} of ${stat.size} bytes`
-    )
+    console.info(`Local dump found from ${stat.mtime} of ${stat.size} bytes`)
     await backupFns.loadBackup(dumpFile, stat.mtime)
     stat = await fs.stat(dumpFile)
-    console.log(`Backup load completed, size: ${stat.size} bytes`)
+    console.info(`Backup load completed, size: ${stat.size} bytes`)
   } catch (e) {
     await backupFns.loadBackup(dumpFile)
   }
@@ -48,7 +45,12 @@ export async function saveAndBackUp(
   const client = createClient({ port: redisPort })
 
   try {
-    await client.save()
+    await new Promise<void>((resolve, reject) => {
+      client.save((err) => {
+        if (err) reject(err)
+        else resolve()
+      })
+    })
     await backupFns.sendBackup(pathJoin(redisDir, 'dump.rdb'))
   } catch (e) {
     console.error(`Failed to back up ${e.stack}`)
@@ -65,14 +67,14 @@ export function scheduleBackups(
 ) {
   let timeout = null
   const backup = () => {
-    console.log(`Scheduling backup in ${intervalInMinutes} minutes`)
+    console.info(`Scheduling backup in ${intervalInMinutes} minutes`)
     timeout = setTimeout(() => {
       runBackup(redisDir, backupFns)
         .then(() => {
-          console.log('Backup successfully created')
+          console.info('Backup successfully created')
         })
         .catch((e) => {
-          console.log('error', e)
+          console.info('error', e)
         })
         .finally(() => {
           backup()
@@ -97,11 +99,11 @@ export async function runBackup(redisDir: string, backupFns: BackupFns) {
 
   const stat = await fs.stat(dumpPath)
   if (stat.mtime < new Date(LAST_BACKUP_TIMESTAMP)) {
-    console.log(`No changes since ${stat.mtime}, skipping backup`)
+    console.info(`No changes since ${stat.mtime}, skipping backup`)
     return
   }
 
-  console.log('Trying to create backup', String(timeOfDay))
+  console.info('Trying to create backup', String(timeOfDay))
 
   await backupFns.sendBackup(dumpPath)
   LAST_BACKUP_TIMESTAMP = Date.now()
