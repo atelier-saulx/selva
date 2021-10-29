@@ -92,7 +92,7 @@ export default class PostgresManager extends ProcessManager {
       } else {
         return { runtimeInfo }
       }
-    } catch (err) {
+    } catch (err: any) {
       // this.emit('error', err)
       return {
         runtimeInfo,
