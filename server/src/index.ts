@@ -340,6 +340,100 @@ export async function start(opts: Options) {
     },
   })
 
+  // const tsRegistry = await startTimeseriesRegistry({
+  //   registry: {
+  //     port: parsedOpts.port,
+  //     host: parsedOpts.host,
+  //   },
+  // })
+
+  // const timeseriesPostgres = await startTimeseries({
+  //   registry: {
+  //     port: parsedOpts.port,
+  //     host: parsedOpts.host,
+  //   },
+  //   // TODO: make port configurable
+  //   port: 5436,
+  // })
+
+  // const timeseries = await startTimeseriesQueue({
+  //   registry,
+  //   // @ts-ignore
+  //   dir: opts.dir,
+  //   pipeRedisLogs: parsedOpts.pipeRedisLogs || {
+  //     stdout: true,
+  //     stderr: true,
+  //   },
+  // })
+  //
+  // const timeseriesWorker = await startTimeseriesWorker({
+  //   registry: {
+  //     port: parsedOpts.port,
+  //     host: parsedOpts.host,
+  //   },
+  // })
+
+  const subs = await startSubscriptionManager({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host,
+    },
+  })
+
+  const subsRegistry = await startSubscriptionRegistry({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host,
+    },
+  })
+
+  registry.on('close', async () => {
+    // TODO: Remove comment
+    // console.log('Close all servers does it work ?')
+    await origin.destroy()
+    await subs.destroy()
+    await subsRegistry.destroy()
+    // await timeseries.destroy()
+    // await tsRegistry.destroy()
+    // timeseriesPostgres.destroy() // not async
+    // await timeseriesWorker.destroy()
+  })
+
+  return registry
+}
+
+export async function startWithTimeseries(opts: Options) {
+  const parsedOpts = await resolveOpts(opts)
+
+  // TODO: for now all in different ports, fix later
+  const err = validate(
+    parsedOpts,
+    [],
+    ['registry', 'backups', 'name', 'default']
+  )
+
+  if (err) {
+    console.error(`Error starting selva server ${chalk.red(err)}`)
+    throw new Error(err)
+  }
+
+  const registry = await startServer('registry', {
+    ...parsedOpts,
+    name: 'registry',
+  })
+
+  const origin = await startOrigin({
+    name: 'default',
+    registry,
+    // @ts-ignore
+    dir: opts.dir,
+    selvaOptions: parsedOpts.selvaOptions,
+    pipeRedisLogs: parsedOpts.pipeRedisLogs || {
+      stdout: true,
+      stderr: true,
+    },
+  })
+
   const tsRegistry = await startTimeseriesRegistry({
     registry: {
       port: parsedOpts.port,
@@ -366,6 +460,13 @@ export async function start(opts: Options) {
     },
   })
 
+  const timeseriesWorker = await startTimeseriesWorker({
+    registry: {
+      port: parsedOpts.port,
+      host: parsedOpts.host,
+    },
+  })
+
   const subs = await startSubscriptionManager({
     registry: {
       port: parsedOpts.port,
@@ -380,20 +481,13 @@ export async function start(opts: Options) {
     },
   })
 
-  const timeseriesWorker = await startTimeseriesWorker({
-    registry: {
-      port: parsedOpts.port,
-      host: parsedOpts.host,
-    },
-  })
-
   registry.on('close', async () => {
     // TODO: Remove comment
     // console.log('Close all servers does it work ?')
     await origin.destroy()
-    await timeseries.destroy()
     await subs.destroy()
     await subsRegistry.destroy()
+    await timeseries.destroy()
     await tsRegistry.destroy()
     timeseriesPostgres.destroy() // not async
     await timeseriesWorker.destroy()

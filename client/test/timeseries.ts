@@ -1,63 +1,6 @@
-/*
- * TIMESERIES READS???
-const case1 = {
-  $id: 'ma1',
-  id: true,
-  title: true,
-  description: true,
-  visits: {
-    $list: true, // let's say this defaults to all from the last shard? I dno, what's the best way to do this? then we also subscribe to new entries
-  },
-}
-
-const case2 = {
-  $id: 'ma1',
-  id: true,
-  title: true,
-  description: true,
-  visits: {
-    // no fields specified, let's say this works when it's a primitive value? :thinking:
-    $list: {
-      $find: {
-        $filter: [
-          {
-            $field: 'createdAt',
-            $operator: '>',
-            $field: 'now-1d',
-          },
-        ],
-      },
-    },
-  },
-}
-
-const case3 = {
-  $id: 'ma1',
-  id: true,
-  title: true,
-  description: true,
-  visits: {
-    // now it's an object
-    name: true,
-    description: true,
-    $list: {
-      $find: {
-        $filter: [
-          {
-            $field: 'createdAt',
-            $operator: '>',
-            $field: 'now-1d',
-          },
-        ],
-      },
-    },
-  },
-}
-*/
-
 import test from 'ava'
 import { connect } from '../src/index'
-import { start } from '@saulx/selva-server'
+import { startWithTimeseries } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
 import { createPatch, applyPatch } from '@saulx/diff'
@@ -68,7 +11,7 @@ let port: number
 
 test.before(async (t) => {
   port = await getPort()
-  srv = await start({
+  srv = await startWithTimeseries({
     port,
   })
   await new Promise((resolve, _reject) => {

@@ -26,13 +26,11 @@ class TimeseriesCache {
   }
 
   async refreshIndex() {
-    console.log('REFRESHING INDEX')
     try {
       const current = await this.client.redis.hgetall(
         { type: 'timeseriesRegistry' },
         'servers'
       )
-      console.log('CURRENT', current)
 
       if (!current) {
         throw new Error()
@@ -43,7 +41,7 @@ class TimeseriesCache {
         this.updateIndexByInstance(id, JSON.parse(current[id]))
       }
     } catch (e) {
-      console.error('HEYOO ERROR', e)
+      console.error('ERROR UPDATING TIMESERIES CACHE', e)
     } finally {
       this.refreshTimer = setTimeout(() => {
         this.refreshIndex()
