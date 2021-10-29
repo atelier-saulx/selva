@@ -291,7 +291,6 @@ export async function startTimeseries(opts: Options) {
         timestamp: rawStats.runtimeInfo.timestamp,
         tableMeta: rawStats.pgInfo,
       }
-      console.log('HELLO POSTGRES STATS', stats, info)
 
       updateTimeseriesRegistry(
         tsServer,
