@@ -45,7 +45,12 @@ export async function saveAndBackUp(
   const client = createClient({ port: redisPort })
 
   try {
-    client.save()
+    await new Promise<void>((resolve, reject) => {
+      client.save((err) => {
+        if (err) reject(err)
+        else resolve()
+      })
+    })
     await backupFns.sendBackup(pathJoin(redisDir, 'dump.rdb'))
   } catch (e) {
     console.error(`Failed to back up ${e.stack}`)
