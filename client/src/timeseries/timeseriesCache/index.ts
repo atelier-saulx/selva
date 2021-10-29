@@ -131,7 +131,7 @@ class TimeseriesCache {
         let obj
         try {
           obj = JSON.parse(msg)
-        } catch (e) {
+        } catch (e: any) {
           console.error('Invalid registry update payload', e)
           return
         }
