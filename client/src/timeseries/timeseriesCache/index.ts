@@ -40,7 +40,7 @@ class TimeseriesCache {
       for (const id in current) {
         this.updateIndexByInstance(id, JSON.parse(current[id]))
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('ERROR UPDATING TIMESERIES CACHE', e)
     } finally {
       this.refreshTimer = setTimeout(() => {
