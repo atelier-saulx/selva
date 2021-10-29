@@ -70,7 +70,12 @@ static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
-    /* strcmp() is slightly faster than memcmp() in this case. */
+    /*
+     * strcmp() is slightly faster than memcmp() in this case.
+     * We could compare the string lengths before doing the comparison but that
+     * doesn't really change much as the biggest latency in this function is
+     * caused by the fetch from DRAM.
+     */
     return strcmp(a->name, b->name);
 }
 
