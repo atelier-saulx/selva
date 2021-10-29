@@ -692,7 +692,7 @@ struct EdgeField_load_data {
  *   dst_id
  * ]
  */
-static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, void *p) {
+static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __unused, void *p) {
     RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
     struct EdgeField_load_data *load_data = (struct EdgeField_load_data *)p;
     struct SelvaModify_Hierarchy *hierarchy = load_data->hierarchy;
@@ -703,7 +703,6 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
     struct EdgeField *edge_field;
 
     constraint_id = RedisModule_LoadUnsigned(io);
-
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
         char *node_type __auto_free = NULL;
         char *field_name_str __auto_free = NULL;
@@ -759,10 +758,6 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver, vo
 
 int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node) {
     RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
-
-    if (encver < 1) { /* hierarchy encver */
-        return 0; /* Only the latest version supports loading metadata. */
-    }
 
     if (unlikely(!ctx)) {
         RedisModule_LogIOError(io, "warning", "Redis ctx can't be NULL");
