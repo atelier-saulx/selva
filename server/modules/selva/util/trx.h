@@ -2,6 +2,8 @@
 #ifndef _UTIL_TRX_H_
 #define _UTIL_TRX_H_
 
+#include "cdefs.h"
+
 typedef uint64_t trxid_t;
 
 /**
@@ -13,12 +15,12 @@ typedef uint64_t trxid_t;
  */
 struct trx_state {
     trxid_t id; /*!< Id of the transaction. */
-    trxid_t cl; /* Colors used in the transaction. */
-    trxid_t ex; /* Traversals that have finished. */
+    trxid_t cl; /*!< Colors used in the transaction. */
+    trxid_t ex; /*!< Traversals that have finished. */
 };
 
 /**
- * Transaction traversal state.
+ * Transaction label/element state.
  */
 struct trx {
     trxid_t id; /*!< Id of the currently executing transaction. */
@@ -33,7 +35,7 @@ int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx);
 /**
  * Visit a node.
  */
-int Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label);
+int __hot Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label);
 
 /**
  * End traversal.

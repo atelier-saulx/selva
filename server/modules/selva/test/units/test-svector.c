@@ -665,7 +665,10 @@ static char * test_shift_reset(void)
     pu_assert_ptr_equal("Shifts el[2]", SVector_Shift(&vec), &el[2]);
     pu_assert_equal("shift index is changed", vec.vec_arr_shift_index, 3);
     pu_assert_ptr_equal("Shifts el[3]", SVector_Shift(&vec), &el[3]);
+    /* TODO Much larger shift is now allowed. */
+#if 0
     pu_assert_equal("shift index is reset", vec.vec_arr_shift_index, 1);
+#endif
 
     SVector_ShiftReset(&vec);
     pu_assert_equal("shift index is reset", vec.vec_arr_shift_index, 0);
@@ -758,9 +761,9 @@ static char * test_get_index(void)
 
 static char * test_sizeof_ctrl(void)
 {
-    pu_test_description("Make sure the SVector size doesn't accidentally grow over time");
+    pu_test_description("Make sure the SVector size doesn't accidentally change when we make changes");
 
-    pu_assert_equal("sizeof the control struct", sizeof(SVector), 56);
+    pu_assert_equal("sizeof the control struct", sizeof(SVector), 48);
 
     return NULL;
 }

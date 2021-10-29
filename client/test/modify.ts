@@ -1,15 +1,25 @@
 import test from 'ava'
+import { readValue } from 'data-record'
 import './assertions'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import { dumpDb, idExists } from './assertions'
+import { idExists } from './assertions'
 import getPort from 'get-port'
 import { wait } from '../src/util'
+import { doubleDef, longLongDef } from '../src/set/modifyDataRecords'
 
 const DEFAULT_HIERARCHY = '___selva_hierarchy'
 
 let srv
 let port: number
+
+export function readDouble(x) {
+  return readValue(doubleDef, x, '.d')
+}
+
+function readLongLong(x) {
+  return readValue(longLongDef, x, '.d')
+}
 
 test.before(async (t) => {
   port = await getPort()
@@ -261,7 +271,7 @@ test.serial('root', async (t) => {
   })
 
   t.deepEqual(root, 'root')
-  t.deepEqual(await client.redis.selva_object_get('', 'root', 'value'), '9001')
+  t.deepEqual(readDouble(await client.redis.selva_object_get('', 'root', 'value')), 9001)
   t.deepEqual(
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
     [match]
@@ -935,8 +945,8 @@ test.serial('$increment, $default', async (t) => {
   })
 
   t.is(
-    await client.redis.selva_object_get('', 'viDingDong', 'value'),
-    '100',
+    readDouble(await client.redis.selva_object_get('', 'viDingDong', 'value')),
+    100,
     'uses default if value does not exist'
   )
 
@@ -949,8 +959,8 @@ test.serial('$increment, $default', async (t) => {
   })
 
   t.is(
-    await client.redis.selva_object_get('', 'viDingDong', 'value'),
-    '110',
+    readDouble(await client.redis.selva_object_get('', 'viDingDong', 'value')),
+    110,
     'increment if value exists'
   )
 
@@ -1538,7 +1548,7 @@ test.serial('$delete: true', async (t) => {
   })
 
   t.deepEqual(root, 'root')
-  t.deepEqual(await client.redis.selva_object_get('', 'root', 'value'), '9001')
+  t.deepEqual(readDouble(await client.redis.selva_object_get('', 'root', 'value')), 9001)
   t.deepEqual(
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
     [match]

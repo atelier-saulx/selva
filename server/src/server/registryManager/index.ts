@@ -12,9 +12,9 @@ type ServerIndex = {
 }
 
 const insert = (array: ServerIndex[], target: ServerIndex): void => {
-  var l: number = 0
-  var h: number = array.length - 1
-  var m: number
+  let l: number = 0
+  let h: number = array.length - 1
+  let m: number
   while (l <= h) {
     m = (l + h) >>> 1
     const a = array[m].weight
@@ -61,6 +61,10 @@ const orderServers = (
   }
 
   if (move) {
+    if (type === 'subscriptionManager') {
+      console.info('MOVE SUB MANAGER (weight is subs)', servers)
+    }
+
     q.push(
       redis.publish(
         {
@@ -121,7 +125,7 @@ export const registryManager = (server: SelvaServer) => {
       // got all of them
       // console.log('initial servers')
     } else {
-      console.log(
+      console.info(
         chalk.green('Server is added to registry'),
         server.name,
         server.type,
@@ -138,7 +142,7 @@ export const registryManager = (server: SelvaServer) => {
         // got all of them
         // console.log('remove all servers')
       } else {
-        console.log(
+        console.info(
           chalk.red('Server is removed from registry'),
           server.name,
           server.type,
@@ -147,7 +151,7 @@ export const registryManager = (server: SelvaServer) => {
         )
         if (server.type === 'subscriptionManager') {
           removeServerFromSubsRegistry(client, server).then(() => {
-            console.log(
+            console.info(
               chalk.gray(
                 'Succesfully removed subsmanager from subscription-registry'
               )

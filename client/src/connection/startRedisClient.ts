@@ -1,6 +1,6 @@
-import { Connection, connections } from '.'
-import { RedisClient } from 'redis'
-import { SERVER_HEARTBEAT, LOG } from '../constants'
+import { Connection } from '.'
+import { RedisClient } from '@saulx/redis-client'
+import { SERVER_HEARTBEAT } from '../constants'
 import './redisClientExtensions'
 import chalk from 'chalk'
 import { SelvaClient } from '..'
@@ -31,10 +31,10 @@ const startClient = (
 ): RedisClient => {
   let tries = 0
   let retryTimer = 0
-  let isReconnect = false
 
   const retryStrategy = () => {
     tries++
+
     if (tries > 30) {
       if (!connection.isDestroyed) {
         log(
@@ -45,12 +45,13 @@ const startClient = (
       }
     }
     if (connection.clientsConnected[type] === true) {
-      connection.serverHeartbeatTimer = null
+      // clearTimeout(connection.serverHeartbeatTimer)
       connection.clientsConnected[type] = false
       if (connection.connected) {
         clearTimeout(connection.serverHeartbeatTimer)
         connection.connected = false
         connection.isDc = true
+        console.info('DC', connection.serverDescriptor.type)
         connection.emit('disconnect', type)
       }
     }
@@ -71,25 +72,34 @@ const startClient = (
     tries = 0
 
     connection.clientsConnected[type] = true
+
     for (const t in connection.clientsConnected) {
       if (connection.clientsConnected[t] === false) {
         return
       }
     }
-    connection.connected = true
-    clearTimeout(connection.startClientTimer)
-    connection.startClientTimer = null
-    connection.emit('connect')
 
-    if (isReconnect) {
-      connection.clients.forEach((c) => {
-        if (c instanceof SelvaClient) {
-          c.emit('reconnect', connection.serverDescriptor)
-        }
-      })
+    if (!connection.connected) {
+      connection.connected = true
+      clearTimeout(connection.startClientTimer)
+      connection.startClientTimer = null
+      connection.emit('connect')
+
+      if (connection.isReconnect) {
+        // may need this
+        console.info('RECONN', connection.serverDescriptor.type)
+
+        connection.clients.forEach((c) => {
+          if (c instanceof SelvaClient) {
+            c.emit('reconnect', connection.serverDescriptor)
+          } else {
+            c.reconnect(connection)
+          }
+        })
+      } else {
+        connection.isReconnect = true
+      }
     }
-
-    isReconnect = true
   })
 
   client.on('error', (err) => {
@@ -130,7 +140,8 @@ export default (connection: Connection) => {
       if (!connection.isDestroyed) {
         log(
           connection,
-          'Server heartbeat expired (longer then 1 min) destroy connection'
+          'Server heartbeat expired (longer then 1 min) destroy connection ' +
+            connection.uuid
         )
         connection.hardDisconnect()
       }

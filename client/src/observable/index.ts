@@ -107,6 +107,45 @@ export class Observable {
 
   public useCache: boolean
 
+  public reconnect(connection: Connection) {
+    // do it
+
+    if (connection === this.connection) {
+      // connection.attachClient(this)
+      connection.startClientHb(this.selvaClient.uuid, this.selvaClient.selvaId)
+
+      const channel = this.uuid
+      const getOptions = this.getOptions
+
+      const id = this.selvaId
+
+      connection.command({
+        command: 'sadd',
+        args: [channel, this.selvaClient.uuid],
+        id,
+      })
+
+      connection.command({
+        command: 'hsetnx',
+        args: getOptions
+          ? [SUBSCRIPTIONS, channel, JSON.stringify(getOptions)]
+          : [SUBSCRIPTIONS, channel, '{}'],
+        id,
+      })
+
+      connection.command({
+        command: 'publish',
+        args: [
+          NEW_SUBSCRIPTION,
+          JSON.stringify({ client: this.selvaClient.uuid, channel }),
+        ],
+        id,
+      })
+    } else {
+      console.info('RECONNED TO SOMETHING DIFFERENT IN OBSERVABLE')
+    }
+  }
+
   public async hardDisconnect() {
     // just call start again
 
@@ -315,9 +354,14 @@ export class Observable {
                 // need more info why this happens all the time
                 console.error(
                   'Mismatching versions from diff!',
+                  'Current Observable version',
                   this.version,
+                  'Patch from version from sub cache',
                   fromVersion,
+                  'Received from event',
                   versions,
+                  'Current version on sub manager cache',
+                  version,
                   JSON.stringify(this.getOptions, null, 2)
                 )
                 this.getValue()
@@ -442,8 +486,6 @@ export class Observable {
       },
       { subscription: channel }
     )
-
-    //  if (!this.connection) {
 
     const connection = (this.connection = createConnection(server))
     const id = this.selvaId

@@ -5,7 +5,9 @@
     "client",
     "server",
     "tools",
-    "query-ast-parser"
+    "query-ast-parser",
+    "redis/client",
+    "redis/parser"
   ],
   "scripts": {
     "killall": "pkill -9 node && pkill -9 redis",

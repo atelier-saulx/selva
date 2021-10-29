@@ -52,21 +52,23 @@ struct SelvaFindIndexControlBlock {
          * This number is updated when the index is not valid and we traversed
          * the hierarchy.
          */
-        size_t take_max;
+        float take_max;
+        float take_max_ave;
 
         /**
          * The full search space size.
          * This is the nubmer of nodes we must traverse to build the find result
          * without indexing.
-         * TODO Median would be better here.
          */
-        size_t tot_max;
+        float tot_max;
+        float tot_max_ave;
 
         /**
          * The number of nodes taken from the res when the index is valid.
          * This is updated when the index is valid.
          */
-        size_t ind_take_max;
+        float ind_take_max;
+        float ind_take_max_ave;
     } find_acc;
 
     /**
@@ -74,7 +76,7 @@ struct SelvaFindIndexControlBlock {
      */
     struct {
         int cur; /*!< Times the hint has been seen during current period. */
-        float ave; /*!< Average times seen over a period of time. */
+        float ave; /*!< Average times seen over a period of time (FIND_INDEXING_POPULARITY_AVE_PERIOD). */
     } pop_count;
 
     /*
@@ -309,7 +311,7 @@ static int start_index(
     icb->is_active = 1;
 
     /* Clear indexed find accounting. */
-    icb->find_acc.ind_take_max = 0;
+    icb->find_acc.ind_take_max = 0.0f;
 
     hierarchy->dyn_index.nr_indices++;
 
@@ -575,11 +577,11 @@ static float calc_icb_score(const struct SelvaFindIndexControlBlock *icb) {
     float tot_max;
 
     if (icb->is_valid) {
-        res_set_size = (float)icb->find_acc.ind_take_max;
-        tot_max = max((float)icb->find_acc.tot_max, (float)SelvaSet_Size(&icb->res));
+        res_set_size = icb->find_acc.ind_take_max_ave;
+        tot_max = max(icb->find_acc.tot_max_ave, (float)SelvaSet_Size(&icb->res));
     } else {
-        res_set_size = (float)icb->find_acc.take_max;
-        tot_max = (float)icb->find_acc.tot_max;
+        res_set_size = icb->find_acc.take_max_ave;
+        tot_max = icb->find_acc.tot_max_ave;
     }
 
 #if 0
@@ -616,16 +618,28 @@ static void icb_proc(RedisModuleCtx *ctx, void *data) {
     create_index_cb_timer(ctx, args);
 
     /*
+     * Calculate the average popularity of the associated hint.
+     */
+    icb->pop_count.ave = lpf_calc_next(lpf_a, icb->pop_count.ave, (float)icb->pop_count.cur);
+    icb->pop_count.cur = 0; /* Reset the counting to start the next period. */
+
+
+    if (icb->is_valid) {
+        icb->find_acc.ind_take_max_ave = lpf_calc_next(lpf_a, icb->find_acc.ind_take_max_ave, icb->find_acc.ind_take_max);
+    } else {
+        icb->find_acc.take_max_ave = lpf_calc_next(lpf_a, icb->find_acc.take_max_ave, icb->find_acc.take_max);
+        icb->find_acc.tot_max_ave = lpf_calc_next(lpf_a, icb->find_acc.tot_max_ave, icb->find_acc.tot_max);
+    }
+    icb->find_acc.take_max = 0.0f;
+    icb->find_acc.tot_max = 0.0f;
+    icb->find_acc.ind_take_max = 0.0f;
+
+    /*
      * Consider the index hint for indexing if take exceeds the threshold.
      */
-    if (icb->is_active || (int)icb->find_acc.tot_max >= selva_glob_config.find_indexing_threshold) {
+    if (icb->is_active || icb->find_acc.tot_max_ave >= (float)selva_glob_config.find_indexing_threshold) {
         float score;
 
-        /*
-         * Calculate the average popularity of the associated hint.
-         */
-        icb->pop_count.ave = lpf_calc_next(lpf_a, icb->pop_count.ave, (float)icb->pop_count.cur);
-        icb->pop_count.cur = 0; /* Reset the counting to start the next period. */
         score = calc_icb_score(icb);
 
         /*
@@ -914,13 +928,13 @@ void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_
      * Result set size accounting.
      */
     if (icb->is_valid) {
-        if (acc_take > icb->find_acc.ind_take_max) {
-            icb->find_acc.ind_take_max = acc_take;
+        if ((float)acc_take > icb->find_acc.ind_take_max) {
+            icb->find_acc.ind_take_max = (float)acc_take;
         }
     } else {
-        if (acc_take > icb->find_acc.take_max || acc_tot > icb->find_acc.tot_max) {
-            icb->find_acc.take_max = acc_take;
-            icb->find_acc.tot_max = acc_tot;
+        if ((float)acc_take > icb->find_acc.take_max || (float)acc_tot > icb->find_acc.tot_max) {
+            icb->find_acc.take_max = (float)acc_take;
+            icb->find_acc.tot_max = (float)acc_tot;
         }
     }
 }
@@ -943,15 +957,15 @@ static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
             n++;
             RedisModule_ReplyWithString(ctx, icb->name);
             RedisModule_ReplyWithArray(ctx, 4);
-            RedisModule_ReplyWithLongLong(ctx, icb->find_acc.take_max);
-            RedisModule_ReplyWithLongLong(ctx, icb->find_acc.tot_max);
-            RedisModule_ReplyWithLongLong(ctx, icb->find_acc.ind_take_max);
+            RedisModule_ReplyWithDouble(ctx, (double)icb->find_acc.take_max_ave);
+            RedisModule_ReplyWithDouble(ctx, (double)icb->find_acc.tot_max_ave);
+            RedisModule_ReplyWithDouble(ctx, (double)icb->find_acc.ind_take_max_ave);
             if (!icb->is_active) {
                 RedisModule_ReplyWithSimpleString(ctx, "not_active");
             } else if (!icb->is_valid) {
                 RedisModule_ReplyWithSimpleString(ctx, "not_valid");
             } else {
-                RedisModule_ReplyWithLongLong(ctx, SelvaSet_Size(&icb->res));
+                RedisModule_ReplyWithDouble(ctx, (double)SelvaSet_Size(&icb->res));
             }
         } else if (type == SELVA_OBJECT_OBJECT) {
             n += list_index(ctx, (struct SelvaObject *)p);
@@ -1057,9 +1071,13 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
      * The first three parameters will make sure we have a coefficient of 1.
      * The last two are a lazy attempt to get this ICB on the top of the list.
      */
-    icb->find_acc.tot_max = selva_glob_config.find_indexing_threshold + 1;
-    icb->find_acc.take_max = selva_glob_config.find_indexing_threshold + 1;
-    icb->find_acc.ind_take_max = selva_glob_config.find_indexing_threshold + 1;
+    float v = (float)selva_glob_config.find_indexing_threshold + 1.0f;
+    icb->find_acc.tot_max = v;
+    icb->find_acc.tot_max_ave = v;
+    icb->find_acc.take_max = v;
+    icb->find_acc.take_max_ave = v;
+    icb->find_acc.ind_take_max = v;
+    icb->find_acc.ind_take_max_ave = v;
     icb->pop_count.cur = 1000.0f;
     icb->pop_count.ave = 1000.0f;
 
@@ -1124,9 +1142,19 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     return RedisModule_ReplyWithLongLong(ctx, 1);
 }
 
+static void mod_info(RedisModuleInfoCtx *ctx, int for_crash_report __unused) {
+    if (RedisModule_InfoAddSection(ctx, "selva") == REDISMODULE_ERR) {
+        return;
+    }
+    RedisModule_InfoBeginDictField(ctx, "index");
+    (void)RedisModule_InfoAddFieldDouble(ctx, "lpf_a", lpf_a);
+    RedisModule_InfoEndDictField(ctx);
+}
 
 static int FindIndex_OnLoad(RedisModuleCtx *ctx) {
-    lpf_a = lpf_geta(selva_glob_config.find_indexing_icb_update_interval, selva_glob_config.find_indexing_popularity_ave_period);
+    lpf_a = lpf_geta((float)selva_glob_config.find_indexing_popularity_ave_period, (float)selva_glob_config.find_indexing_icb_update_interval / 1000.0f);
+
+    RedisModule_RegisterInfoFunc(ctx, mod_info);
 
     if (RedisModule_CreateCommand(ctx, "selva.index.list", SelvaFindIndex_ListCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.index.new", SelvaFindIndex_NewCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||

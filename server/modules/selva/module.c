@@ -165,6 +165,9 @@ static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, co
     TO_STR(data);
     struct SelvaModify_OpSet *op;
 
+    /* TODO Support __ORDER_BIG_ENDIAN__ */
+    _Static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Only little endian host is supported");
+
     if (!data_str && data_len < sizeof(struct SelvaModify_OpSet)) {
         return NULL;
     }
@@ -352,17 +355,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     Selva_NodeId nodeId;
+    const struct SelvaModify_HierarchyNode *node;
     const unsigned flags = parse_flags(argv[2]);
 
     RedisModuleString2Selva_NodeId(nodeId, id);
 
-    id_key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!id_key) {
-        replyWithSelvaErrorf(ctx, err, "ERR Failed to open the key for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
-        return REDISMODULE_OK;
-    }
-
-    if (RedisModule_KeyType(id_key) == REDISMODULE_KEYTYPE_EMPTY) {
+    node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+    if (!node) {
         if (FISSET_UPDATE(flags)) {
             /* if the specified id doesn't exist but $operation: 'update' specified */
             RedisModule_ReplyWithNull(ctx);
@@ -371,18 +370,15 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         const size_t nr_parents = FISSET_NO_ROOT(flags) ? 0 : 1;
 
-        err = SelvaNode_Initialize(ctx, id_key, id, nodeId);
-        if (err) {
-            replyWithSelvaErrorf(ctx, err, "ERR Failed to initialize the node for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
-            return REDISMODULE_OK;
-        }
-
         err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
         if (err < 0) {
-            replyWithSelvaErrorf(ctx, err, "ERR Failed to initialize the node hierarchy for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
-            return REDISMODULE_OK;
+            return replyWithSelvaErrorf(ctx, err, "ERR Failed to initialize the node hierarchy for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
         }
 
+        node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+        if (unlikely(!node)) {
+            return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "A node that was just created was lost immediately");
+        }
         trigger_created = 1;
     } else if (FISSET_CREATE(flags)) {
         /* if the specified id exists but $operation: 'insert' specified. */
@@ -390,16 +386,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return REDISMODULE_OK;
     }
 
-    err = SelvaObject_Key2Obj(id_key, &obj);
-    if (err) {
-        TO_STR(id);
-
-        return replyWithSelvaErrorf(ctx, err, "Failed to open the object for id: \"%s\"", id_str);
-    }
-
-    const struct SelvaModify_HierarchyNode *node;
-
-    node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+    obj = SelvaHierarchy_GetNodeObject(node);
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {

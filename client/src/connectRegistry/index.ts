@@ -1,7 +1,7 @@
 import { SelvaClient, ConnectOptions, ServerDescriptor } from '..'
 import { Connect } from '../types'
 import { createConnection, connections } from '../connection'
-import { REGISTRY_UPDATE, REGISTRY_MOVE_SUBSCRIPTION } from '../constants'
+import { REGISTRY_UPDATE } from '../constants'
 import getInitialRegistryServers from './getInitialRegistryServers'
 import addServer from './addServer'
 import removeServer from './removeServer'
@@ -163,8 +163,7 @@ const connectRegistry = (
               }
             } else if (event === 'move-sub') {
               // from server to server
-              console.log('MOVE SUBSCRIPTION')
-            } else if ('update-index') {
+            } else if (event === 'update-index') {
               // now we are going to move them!
               // can be either a subs manager update of index or replica
               const { type, move } = payload

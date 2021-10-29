@@ -19,6 +19,7 @@
 #define HIERARCHY_DEFAULT_KEY "___selva_hierarchy"
 
 #define SELVA_ID_FIELD         "id"
+#define SELVA_TYPE_FIELD       "type"
 #define SELVA_ALIASES_FIELD    "aliases"
 #define SELVA_CREATED_AT_FIELD "createdAt"
 #define SELVA_UPDATED_AT_FIELD "updatedAt"
@@ -29,6 +30,8 @@
 #define SELVA_OBJECT_META_SUBTYPE_OBJECT 0
 #define SELVA_OBJECT_META_SUBTYPE_RECORD 1
 #define SELVA_OBJECT_META_SUBTYPE_TEXT 2
+
+struct RedisModuleString;
 
 /**
  * Type for Selva NodeId.
@@ -76,6 +79,9 @@ static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {
 #pragma GCC diagnostic pop
 #endif
 }
+
+void Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *rms);
+
 
 /**
  * Initialize a string array from a node_id or node type string.

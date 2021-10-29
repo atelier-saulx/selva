@@ -3,7 +3,7 @@ import { ServerDescriptor } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import drainQueue from './drainQueue'
 import startRedisClient from './startRedisClient'
-import { RedisClient } from 'redis'
+import { RedisClient } from '@saulx/redis-client'
 import { Callback } from '../redis/types'
 import { serverId, isEmptyObject } from '../util'
 import { Observable } from '../observable'
@@ -36,6 +36,8 @@ class Connection {
   // public selvaSubscriptions: {
   //   [key: string]: number
   // }
+
+  public isReconnect: boolean = false
 
   public serverDescriptor: ServerDescriptor
 
@@ -157,6 +159,7 @@ class Connection {
     this.clientHb[uuid].counter++
     clearTimeout(this.clientHb[uuid].timer)
     const setHeartbeat = () => {
+      // console.info('make make hb')
       if (this.connected) {
         this.command({
           id: id,
@@ -289,7 +292,7 @@ class Connection {
   public emit(event: string, payload?: any) {
     const listeners = this.listeners[event]
     if (listeners) {
-      for (let id in listeners) {
+      for (const id in listeners) {
         listeners[id].forEach((cb) => {
           cb(payload)
         })
@@ -580,7 +583,10 @@ class Connection {
     this.subscriber.on('error', () => {})
     this.publisher.on('error', () => {})
 
+    this.subscriber.unsubscribe()
+    this.subscriber.unref()
     this.subscriber.quit()
+    this.publisher.unref()
     this.publisher.quit()
 
     if (this.destroyTimer) {
@@ -609,7 +615,7 @@ class Connection {
 
     // destroy if counter is zero
     if (this.selvaSubscriptionsActive) {
-      console.log(
+      console.info(
         'need to remove subs listeners for hearthbeat, and need to remove message listener'
       )
     }

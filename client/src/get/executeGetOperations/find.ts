@@ -1,6 +1,6 @@
-import { Schema, SelvaClient } from '../../'
+import { SelvaClient } from '../../'
 import { GetOperationFind, GetResult, GetOptions } from '../types'
-import { sourceFieldToFindArgs, typeCast } from './'
+import { readLongLong, sourceFieldToFindArgs, typeCast } from './'
 import {
   ast2rpn,
   Fork,
@@ -14,9 +14,10 @@ import {
   sourceFieldToDir,
   addMarker,
 } from './'
-import { padId, joinIds } from '../utils'
+import { padId, joinIds, EMPTY_ID } from '../utils'
 import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
+import { mkIndex } from './indexing'
 
 function makeFieldsString(fields: Set<string>): string {
   let str = ''
@@ -37,88 +38,6 @@ function makeFieldsString(fields: Set<string>): string {
   }
 
   return str
-}
-
-function mkIndex(schema: Schema, op: GetOperationFind): string[] {
-  if (op.id && op.id !== 'root') {
-    return []
-  }
-
-  if (!op.filter || !op.filter.$and) {
-    return []
-  }
-
-  if (op.sourceField !== 'descendants') {
-    return []
-  }
-
-  const f = <FilterAST>op.filter.$and
-    .filter((f: Fork | FilterAST) => !isFork(f))
-    .sort((a: FilterAST, b: FilterAST) => {
-      const operatorCmp = (op: typeof a.$operator) =>
-        (({
-          '=': 1,
-          exists: 2,
-          notExists: 3,
-          has: 4,
-        }[op] || 5) - 1)
-      const fieldCmp = (field: string | string[]) => (field === 'type' ? 0 : 1)
-
-      return (
-        operatorCmp(a.$operator) - operatorCmp(b.$operator) ||
-        fieldCmp(a.$field) - fieldCmp(b.$field) ||
-        a.$operator.localeCompare(b.$operator) ||
-        a.$field.localeCompare(b.$field)
-      )
-    })
-    .find((f: FilterAST) => {
-      if (f.$field === 'type' && f.$operator === '=') {
-        return typeof f.$value === 'string'
-      } else if (['=', 'has'].includes(f.$operator)) {
-        // TODO Support array of values
-        return ['boolean', 'float', 'int', 'number', 'string'].includes(
-          typeof f.$value
-        )
-      } else if (['exists', 'notExists'].includes(f.$operator)) {
-        return true
-      } else {
-        return false
-      }
-    })
-
-  if (!f) {
-    return []
-  }
-
-  if (f.$field === 'type') {
-    const prefix =
-      f.$value === 'root' ? 'ro' : schema?.types[<string>f.$value]?.prefix
-    if (!prefix) {
-      return []
-    }
-
-    return ['index', `"${prefix}" e`]
-  } else if (f.$operator === '=') {
-    if (typeof f.$value === 'string') {
-      return ['index', `"${f.$field}" f "${f.$value}" c`]
-    } else {
-      // numeric
-      return ['index', `"${f.$field}" g #${f.$value} F`]
-    }
-  } else if (f.$operator === 'has') {
-    if (typeof f.$value === 'string') {
-      return ['index', `"${f.$value}" "${f.$field}" a`]
-    } else {
-      // numeric
-      return ['index', `"${f.$value}" #${f.$field} a`]
-    }
-  } else if (f.$operator === 'exists') {
-    return ['index', `"${f.$field}" h`]
-  } else if (f.$operator === 'notExists') {
-    return ['index', `"${f.$field}" h L`]
-  }
-
-  return []
 }
 
 function parseGetOpts(
@@ -363,14 +282,14 @@ async function checkForNextRefresh(
 
       const [id] = ids
 
-      const time = Number(
+      const time = Number(readLongLong(
         await client.redis.selva_object_get(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
           makeLangArg(client.schemas[ctx.db].languages, lang),
           id,
           f.$field
         )
-      )
+      ))
 
       let v = <string>f.$value
       if (v.startsWith('now-')) {
@@ -844,7 +763,10 @@ const executeFindOperation = async (
 
       const mapping = fieldMapping[field]
       const targetField = mapping?.targetField
-      const casted = typeCast(value, id, field, schema, lang)
+      const casted =
+        id === EMPTY_ID
+          ? typeCast(value, op.id, `${op.field}[0].${field}`, schema, lang)
+          : typeCast(value, id, field, schema, lang)
 
       if (targetField) {
         for (const f of targetField) {

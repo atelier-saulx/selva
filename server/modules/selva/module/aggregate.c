@@ -197,33 +197,9 @@ static int apply_agg_fn_obj(struct SelvaObject *obj, struct AggregateCommand_Arg
     return (!agg_func) ? 0 : agg_func(obj, args);
 }
 
-static int apply_agg_fn(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
-    Selva_NodeId nodeId;
-    RedisModuleString *id;
-    SelvaHierarchy_GetNodeId(nodeId, node);
-    id = RedisModule_CreateString(args->find_args.ctx, nodeId, Selva_NodeIdLen(nodeId));
-
-    RedisModuleKey *key;
-    key = RedisModule_OpenKey(args->find_args.ctx, id, REDISMODULE_READ | REDISMODULE_OPEN_KEY_NOTOUCH);
-
-    struct SelvaObject *node_obj = NULL;
-
-    int err = 0;
-    err = SelvaObject_Key2Obj(key, &node_obj);
-
-    if (err || !node_obj) {
-        goto cleanup;
-    }
-
-    err = apply_agg_fn_obj(node_obj, args);
-
-cleanup:
-    RedisModule_CloseKey(key);
-
-    return err;
+static inline int apply_agg_fn(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
+    return apply_agg_fn_obj(SelvaHierarchy_GetNodeObject(node), args);
 }
-
-
 
 static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
@@ -236,9 +212,9 @@ static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void 
     if (take && rpn_ctx) {
         int err;
 
-        rpn_set_hierarchy_node(rpn_ctx, node);
         /* Set node_id to the register */
-        rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, 0);
+        rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
+        rpn_set_hierarchy_node(rpn_ctx, node);
 
         /*
          * Resolve the expression and get the result.
@@ -314,6 +290,7 @@ static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
                     rpn_str_error[err]);
             return 1;
         }
+        rpn_set_obj(rpn_ctx, obj);
 
         /*
          * Resolve the expression and get the result.
@@ -773,14 +750,14 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             };
             TO_STR(ref_field);
 
-            err = SelvaModify_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
+            err = SelvaModify_TraverseArray(hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
         } else if (ref_field &&
                    (dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
                            SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                            SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))) {
             TO_STR(ref_field);
 
-            err = SelvaModify_TraverseHierarchyField(ctx, hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
+            err = SelvaModify_TraverseHierarchyField(hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
             err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) {

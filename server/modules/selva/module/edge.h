@@ -111,6 +111,7 @@ struct EdgeFieldContainer {
      * }
      */
     struct SelvaObject *edges;
+
     /**
      * Custom edge field origin references.
      * This object contains pointers to each field pointing to this node. As
@@ -129,6 +130,7 @@ struct EdgeFieldContainer {
 };
 
 void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data);
+void Edge_DeinitEdgeFieldConstraints(struct EdgeFieldConstraints *data);
 int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, const struct EdgeFieldDynConstraintParams *params);
 const struct EdgeFieldConstraint *Edge_GetConstraint(
         const struct EdgeFieldConstraints *data,

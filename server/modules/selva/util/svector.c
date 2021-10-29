@@ -208,9 +208,8 @@ static void SVector_Resize(SVector *vec, size_t i) {
 }
 
 void SVector_Insert(SVector *vec, void *el) {
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY &&
-        vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
-        vec->vec_compar) {
+    if (vec->vec_mode == SVECTOR_MODE_ARRAY && vec->vec_compar &&
+        vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD) {
         migrate_arr_to_rbtree(vec);
     }
 
@@ -571,7 +570,7 @@ void *SVector_Shift(SVector * restrict vec) {
         assert(vec->vec_last <= vec->vec_arr_len);
         assert(vec->vec_arr_shift_index <= vec->vec_last);
 
-        if (vec->vec_arr_shift_index > vec->vec_last / 2) {
+        if (vec->vec_arr_shift_index == _SVECTOR_SHIFT_RESET_THRESHOLD) {
             SVector_ShiftReset(vec);
         }
 
@@ -624,10 +623,6 @@ void SVector_ShiftReset(SVector * restrict vec) {
         return;
     }
 
-    /*
-     * We assume that nobody will call this function when nothing was
-     * actually inserted, thus no need to check if vec_arr is NULL.
-     */
     vec->vec_last -= vec->vec_arr_shift_index;
     memmove(vec->vec_arr, vec->vec_arr + vec->vec_arr_shift_index, VEC_SIZE(vec->vec_last));
     vec->vec_arr_shift_index = 0;
@@ -651,8 +646,8 @@ static void *SVector_EmptyForeach(struct SVectorIterator *it __unused) {
     return NULL;
 }
 
-static void *SVector_ArrayForeach(struct SVectorIterator *it) {
-    if (it->arr.cur < it->arr.end) {
+static __hot void *SVector_ArrayForeach(struct SVectorIterator *it) {
+    if (likely(it->arr.cur < it->arr.end)) {
         void **p;
 
         p = it->arr.cur++;
@@ -662,7 +657,7 @@ static void *SVector_ArrayForeach(struct SVectorIterator *it) {
     return NULL;
 }
 
-static void *SVector_RbTreeForeach(struct SVectorIterator *it) {
+static __hot void *SVector_RbTreeForeach(struct SVectorIterator *it) {
     struct SVector_rbnode *cur = it->rbtree.next;
 
     if (!cur) {
@@ -684,31 +679,28 @@ int SVector_Done(const struct SVectorIterator *it) {
     return 1;
 }
 
-void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector *vec) {
+void SVector_ForeachBegin(struct SVectorIterator * restrict it, const SVector * restrict vec) {
     assert(it);
     assert(vec);
 
     it->mode = vec->vec_mode;
+    it->fn = SVector_EmptyForeach;
 
     if (it->mode == SVECTOR_MODE_ARRAY) {
-        if (!vec->vec_arr) {
-            it->fn = SVector_EmptyForeach;
-        } else {
+        if (vec->vec_arr) {
             it->arr.cur = vec->vec_arr + vec->vec_arr_shift_index;
             it->arr.end = vec->vec_arr + vec->vec_last;
             it->fn = SVector_ArrayForeach;
+            __builtin_prefetch(vec->vec_arr, 0, 3);
         }
     } else if (it->mode == SVECTOR_MODE_RBTREE) {
         struct SVector_rbtree *head = (struct SVector_rbtree *)&vec->vec_rbhead;
 
-        if (RB_EMPTY(head)) {
-            it->fn = SVector_EmptyForeach;
-        } else {
+        if (!RB_EMPTY(head)) {
             it->rbtree.head = head;
             it->rbtree.next = RB_MIN(SVector_rbtree, head);
             it->fn = SVector_RbTreeForeach;
+            __builtin_prefetch(head, 0, 2);
         }
-    } else {
-        abort();
     }
 }

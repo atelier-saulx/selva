@@ -6,18 +6,17 @@
 #include "redismodule.h"
 #include "cdefs.h"
 #include "linker_set.h"
-#include "typestr.h"
+#include "endian.h"
 #include "cstrings.h"
 #include "errors.h"
-#include "selva_object.h"
-#include "selva_onload.h"
 #include "selva_set.h"
 #include "svector.h"
 #include "tree.h"
+#include "selva_object.h"
 
-#define SELVA_OBJECT_ENCODING_VERSION   0
-#define SELVA_OBJECT_KEY_MAX            USHRT_MAX
-#define SELVA_OBJECT_SIZE_MAX           SIZE_MAX
+#define SELVA_OBJECT_ENCODING_VERSION   0 /*!< Encoding version for RDB serialization. */
+#define SELVA_OBJECT_KEY_MAX            USHRT_MAX /*!< Maximum length of a key including dots and array notation. */
+#define SELVA_OBJECT_SIZE_MAX           (1 << 30) /*!< Maximum number of keys in a SelvaObject. */
 
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
@@ -39,7 +38,7 @@ struct SelvaObjectKey {
         double emb_double_value; /*!< SELVA_OBJECT_DOUBLE */
         long long emb_ll_value; /*!< SELVA_OBJECT_LONGLONG */
         struct SelvaSet selva_set; /*!< SELVA_OBJECT_SET */
-        SVector array; /*!< SELVA_OBJECT_ARRAY */
+        SVector *array; /*!< SELVA_OBJECT_ARRAY */
     };
     char name[0]; /*!< Name of the key. */
 };
@@ -54,7 +53,6 @@ struct so_type_name {
     size_t len;
 };
 
-static RedisModuleType *ObjectType;
 SET_DECLARE(selva_objpop, struct SelvaObjectPointerOpts);
 
 /**
@@ -67,11 +65,12 @@ static const struct SelvaObjectPointerOpts default_ptr_opts = {
 SELVA_OBJECT_POINTER_OPTS(default_ptr_opts);
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
-static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key);
-static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj);
+static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key, unsigned flags);
+static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, unsigned flags);
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
+    /* strcmp() is slightly faster than memcmp() in this case. */
     return strcmp(a->name, b->name);
 }
 
@@ -122,14 +121,88 @@ retry:
     return NULL; /* Never reached. */
 }
 
+/**
+ * Init an array on key.
+ * The key must be cleared before calling this function.
+ */
+static int init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType subtype, size_t size) {
+    /*
+     * Type must be set before initializing the vector to avoid a situation
+     * where we'd have a key with an unknown value type.
+     */
+    key->type = SELVA_OBJECT_ARRAY;
+    key->subtype = subtype;
+
+    key->array = RedisModule_Calloc(1, sizeof(SVector));
+    if (!key->array) {
+        return SELVA_ENOMEM;
+    }
+
+    if (!SVector_Init(key->array, size, NULL)) {
+        RedisModule_Free(key->array);
+        key->type = SELVA_OBJECT_NULL;
+        key->subtype = SELVA_OBJECT_NULL;
+        key->array = NULL;
+        return SELVA_ENOMEM;
+    }
+
+    return 0;
+}
+
+static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
+    switch (subtype) {
+    case SELVA_OBJECT_STRING:
+        {
+            struct SVectorIterator it;
+            RedisModuleString *str;
+
+            SVector_ForeachBegin(&it, array);
+            while ((str = SVector_Foreach(&it))) {
+                RedisModule_FreeString(NULL, str);
+            }
+        }
+        break;
+    case SELVA_OBJECT_OBJECT:
+        {
+            struct SVectorIterator it;
+            struct SelvaObject *k;
+
+            SVector_ForeachBegin(&it, array);
+            while ((k = SVector_Foreach(&it))) {
+                SelvaObject_Destroy(k);
+            }
+        }
+        break;
+    case SELVA_OBJECT_POINTER:
+    case SELVA_OBJECT_NULL:
+    case SELVA_OBJECT_DOUBLE:
+    case SELVA_OBJECT_LONGLONG:
+        /*
+         * NOP
+         *
+         * We store concrete values so it's enough to just clear the SVector.
+         *
+         * Pointer arrays don't support cleanup but it would be possible to
+         * add support for SelvaObjectPointerOpts.
+         */
+        break;
+     default:
+        fprintf(stderr, "%s:%d: Key clear failed: Unsupported array type %s (%d)\n",
+                __FILE__, __LINE__,
+                SelvaObject_Type2String(subtype, NULL),
+                (int)subtype);
+    }
+
+    SVector_Destroy(array);
+    RedisModule_Free(array);
+}
+
 static int clear_key_value(struct SelvaObjectKey *key) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
-        /* NOP */
-        break;
     case SELVA_OBJECT_DOUBLE:
-        break;
     case SELVA_OBJECT_LONGLONG:
+        /* NOP */
         break;
     case SELVA_OBJECT_STRING:
         if (key->value) {
@@ -147,37 +220,8 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         SelvaSet_Destroy(&key->selva_set);
         break;
     case SELVA_OBJECT_ARRAY:
-        if (key->subtype == SELVA_OBJECT_STRING) {
-            struct SVectorIterator it;
-            RedisModuleString *str;
-
-            SVector_ForeachBegin(&it, &key->array);
-            while ((str = SVector_Foreach(&it))) {
-                RedisModule_FreeString(NULL, str);
-            }
-        } else if (key->subtype == SELVA_OBJECT_POINTER) {
-            /*
-             * NOP
-             * Pointer arrays don't support cleanup but it would be possible
-             * to add support for SelvaObjectPointerOpts.
-             */
-
-            SVector_Destroy(&key->array);
-        } else if (key->subtype == SELVA_OBJECT_DOUBLE || key->subtype == SELVA_OBJECT_LONGLONG || key->subtype == SELVA_OBJECT_NULL) {
-            /* do nothing, we store concrete values so it's enough to just clear the SVector itself. */
-        } else if (key->subtype == SELVA_OBJECT_OBJECT) {
-            struct SVectorIterator it;
-            struct SelvaObject *k;
-
-            SVector_ForeachBegin(&it, &key->array);
-            while ((k = SVector_Foreach(&it))) {
-                SelvaObject_Destroy(k);
-            }
-        } else {
-            fprintf(stderr, "%s: Key clear failed: Unsupported array type (%d)\n",
-                    __FILE__, (int)key->subtype);
-        }
-        SVector_Destroy(&key->array);
+        clear_object_array(key->subtype, key->array);
+        key->array = NULL;
         break;
     case SELVA_OBJECT_POINTER:
         if (key->ptr_opts && key->ptr_opts->ptr_free) {
@@ -231,6 +275,10 @@ void SelvaObject_Clear(struct SelvaObject *obj, const char * const exclude[]) {
 }
 
 void SelvaObject_Destroy(struct SelvaObject *obj) {
+    if (!obj) {
+        return;
+    }
+
     SelvaObject_Clear(obj, NULL);
 #if MEM_DEBUG
     memset(obj, 0, sizeof(*obj));
@@ -275,84 +323,6 @@ size_t SelvaObject_MemUsage(const void *value) {
     return size;
 }
 
-static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleString *key_name, int mode) {
-    struct SelvaObject *obj = NULL;
-    RedisModuleKey *key;
-    int type;
-
-    key = RedisModule_OpenKey(ctx, key_name, mode);
-    type = RedisModule_KeyType(key);
-
-    if (type != REDISMODULE_KEYTYPE_EMPTY &&
-        RedisModule_ModuleTypeGetType(key) != ObjectType) {
-        RedisModule_CloseKey(key);
-        RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
-
-        return NULL;
-    }
-
-    /* Create an empty value object if the key is currently empty. */
-    if (type == REDISMODULE_KEYTYPE_EMPTY) {
-        if ((mode & REDISMODULE_WRITE) == REDISMODULE_WRITE) {
-            obj = SelvaObject_New();
-            if (!obj) {
-                replyWithSelvaError(ctx, SELVA_ENOMEM);
-            }
-
-            RedisModule_ModuleTypeSetValue(key, ObjectType, obj);
-        } else {
-            replyWithSelvaError(ctx, SELVA_ENOENT);
-        }
-    } else {
-        obj = RedisModule_ModuleTypeGetValue(key);
-        if (!obj) {
-            replyWithSelvaError(ctx, SELVA_ENOENT);
-        }
-    }
-
-    return obj;
-}
-
-int SelvaObject_Key2Obj(RedisModuleKey *key, struct SelvaObject **out) {
-    struct SelvaObject *obj;
-
-    if (!key) {
-        return SELVA_ENOENT;
-    }
-
-    /* Create an empty value object if the key is currently empty. */
-    if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
-        int err;
-
-        obj = SelvaObject_New();
-        if (!obj) {
-            return SELVA_ENOMEM;
-        }
-
-        err = RedisModule_ModuleTypeSetValue(key, ObjectType, obj);
-        if (err != REDISMODULE_OK) {
-            SelvaObject_Destroy(obj);
-            return SELVA_ENOENT;
-        }
-        /* TODO This check is really slow */
-#if 0
-    } else if (RedisModule_ModuleTypeGetType(key) == ObjectType) {
-#endif
-    } else {
-        obj = RedisModule_ModuleTypeGetValue(key);
-        if (!obj) {
-            return SELVA_ENOENT;
-        }
-#if 0
-    } else {
-        return SELVA_EINVAL;
-#endif
-    }
-
-    *out = obj;
-    return 0;
-}
-
 static int _insert_new_key(struct SelvaObject *obj, const char *name_str, size_t name_len, struct SelvaObjectKey **key_out) {
     struct SelvaObjectKey *key;
 
@@ -371,11 +341,29 @@ static int _insert_new_key(struct SelvaObject *obj, const char *name_str, size_t
      */
     memset(key, 0, key_size);
     memcpy(key->name, name_str, name_len);
-    key->name_len = name_len;
+    key->name_len = (typeof(key->name_len))name_len; /* The size is already verified to fit in get_key(). */
     obj->obj_size++;
     (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
 
     *key_out = key;
+    return 0;
+}
+
+static int _insert_new_obj_into_array(struct SelvaObject *obj, const char *s, size_t slen, ssize_t ary_idx, struct SelvaObject **out) {
+    struct SelvaObject *new_obj;
+    int err;
+
+    new_obj = SelvaObject_New();
+    if (!new_obj) {
+        return SELVA_ENOMEM;
+    }
+
+    err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+    if (err) {
+        return err;
+    }
+
+    *out = new_obj;
     return 0;
 }
 
@@ -386,7 +374,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
     struct SelvaObjectKey *key = NULL;
     struct SelvaObject *cobj = obj; /* Containing object. */
 
-    strncpy(buf, key_name_str, key_name_len);
+    memcpy(buf, key_name_str, key_name_len);
     buf[key_name_len] = '\0';
 
     size_t nr_parts_found = 0;
@@ -434,11 +422,9 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              * Otherwise we can just reuse the old one.
              */
             if (!key) {
-                int err2;
-
-                err2 = _insert_new_key(obj, s, slen, &key);
-                if (err2) {
-                    return err2;
+                err = _insert_new_key(obj, s, slen, &key);
+                if (err) {
+                    return err;
                 }
             } else {
                 /*
@@ -446,22 +432,16 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                  */
                 clear_key_value(key);
             }
-            key->type = SELVA_OBJECT_ARRAY;
-            if (!SVector_Init(&key->array, ary_idx + 1, NULL)) {
-                return SELVA_ENOMEM;
-            }
 
-            struct SelvaObject *new_obj = SelvaObject_New();
-            if (!new_obj) {
-                return SELVA_ENOMEM;
-            }
-
-            err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+            err = init_object_array(key, SELVA_OBJECT_OBJECT, ary_idx + 1);
             if (err) {
                 return err;
             }
 
-            obj = new_obj;
+            err = _insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
+            if (err) {
+                return err;
+            }
         } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT && key->type != SELVA_OBJECT_ARRAY)) &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
@@ -503,7 +483,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              */
             obj = key->value;
         } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found &&
-            (flags & SELVA_OBJECT_GETKEY_CREATE)) {
+                   (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Keep nesting or return an object if this was the last token.
              */
@@ -513,17 +493,10 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
 
             if (err == SELVA_ENOENT || !obj) {
-                struct SelvaObject *new_obj = SelvaObject_New();
-                if (!new_obj) {
-                    return SELVA_ENOMEM;
-                }
-
-                err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
+                err = _insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
                 if (err) {
                     return err;
                 }
-
-                obj = new_obj;
             }
         } else {
             /*
@@ -566,15 +539,11 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         key = NULL;
     }
 
-
     *out = key;
     return 0;
 }
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
-    struct SelvaObjectKey *filter;
-    struct SelvaObjectKey *key;
-
     if (key_name_len + 1 > SELVA_OBJECT_KEY_MAX) {
         return SELVA_ENAMETOOLONG;
     }
@@ -588,6 +557,8 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         key_name_len = get_array_field_start_idx(key_name_str, key_name_len);
     }
 
+    struct SelvaObjectKey *filter;
+    struct SelvaObjectKey *key;
     const size_t key_size = sizeof(struct SelvaObjectKey) + key_name_len + 1;
     char buf[key_size] __attribute__((aligned(alignof(struct SelvaObjectKey))));
 
@@ -1201,19 +1172,13 @@ int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, s
             return err;
         }
 
-        /*
-         * Type must be set before initializing the vector to avoid a situation
-         * where we'd have a key with an unknown value type.
-         */
-        key->type = SELVA_OBJECT_ARRAY;
-        key->subtype = subtype;
-
-        if (!SVector_Init(&key->array, 1, NULL)) {
-            return SELVA_ENOMEM;
+        err = init_object_array(key, subtype, 1);
+        if (err) {
+            return err;
         }
     }
 
-    SVector_Insert(&key->array, p);
+    SVector_Insert(key->array, p);
 
     return 0;
 }
@@ -1242,19 +1207,13 @@ int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str
             return err;
         }
 
-        /*
-         * Type must be set before initializing the vector to avoid a situation
-         * where we'd have a key with an unknown value type.
-         */
-        key->type = SELVA_OBJECT_ARRAY;
-        key->subtype = subtype;
-
-        if (!SVector_Init(&key->array, 1, NULL)) {
-            return SELVA_ENOMEM;
+        err = init_object_array(key, subtype, 1);
+        if (err) {
+            return err;
         }
     }
 
-    SVector_Insert(&key->array, p);
+    SVector_Insert(key->array, p);
 
     return 0;
 }
@@ -1283,19 +1242,13 @@ int SelvaObject_AssignArrayIndexStr(struct SelvaObject *obj, const char *key_nam
             return err;
         }
 
-        /*
-         * Type must be set before initializing the vector to avoid a situation
-         * where we'd have a key with an unknown value type.
-         */
-        key->type = SELVA_OBJECT_ARRAY;
-        key->subtype = subtype;
-
-        if (!SVector_Init(&key->array, idx+1, NULL)) {
-            return SELVA_ENOMEM;
+        err = init_object_array(key, subtype, idx + 1);
+        if (err) {
+            return err;
         }
     }
 
-    SVector_SetIndex(&key->array, idx, p);
+    SVector_SetIndex(key->array, idx, p);
     return 0;
 }
 
@@ -1329,19 +1282,13 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
             return err;
         }
 
-        /*
-         * Type must be set before initializing the vector to avoid a situation
-         * where we'd have a key with an unknown value type.
-         */
-        key->type = SELVA_OBJECT_ARRAY;
-        key->subtype = subtype;
-
-        if (!SVector_Init(&key->array, idx+1, NULL)) {
-            return SELVA_ENOMEM;
+        err = init_object_array(key, subtype, idx + 1);
+        if (err) {
+            return err;
         }
     }
 
-    SVector_InsertIndex(&key->array, idx, p);
+    SVector_InsertIndex(key->array, idx, p);
     return 0;
 }
 
@@ -1360,11 +1307,11 @@ int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const char *key_name_s
         return SELVA_EINVAL;
     }
 
-    if (SVector_Size(&key->array) < idx) {
+    if (SVector_Size(key->array) < idx) {
         return SELVA_EINVAL;
     }
 
-    SVector_RemoveIndex(&key->array, idx);
+    SVector_RemoveIndex(key->array, idx);
 
     return 0;
 }
@@ -1388,7 +1335,7 @@ int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, s
         *out_subtype = key->subtype;
     }
     if (out_p) {
-        *out_p = &key->array;
+        *out_p = key->array;
     }
 
     return 0;
@@ -1501,6 +1448,57 @@ int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *k
     return off;
 }
 
+int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) {
+    struct SelvaObjectKey *key;
+    enum SelvaObjectType type;
+    int err;
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    }
+
+    res->subtype = key->subtype;
+    res->user_meta = key->user_meta;
+    type = key->type;
+    res->type = type;
+
+    switch (type) {
+    case SELVA_OBJECT_NULL:
+        res->p = NULL;
+        break;
+    case SELVA_OBJECT_DOUBLE:
+        res->d = key->emb_double_value;
+        break;
+    case SELVA_OBJECT_LONGLONG:
+        res->ll = key->emb_ll_value;
+        break;
+    case SELVA_OBJECT_STRING:
+        res->str = key->value;
+        break;
+    case SELVA_OBJECT_OBJECT:
+        res->obj = key->value;
+        break;
+    case SELVA_OBJECT_SET:
+        res->set = &key->selva_set;
+        break;
+    case SELVA_OBJECT_ARRAY:
+        res->array = key->array;
+        break;
+    case SELVA_OBJECT_POINTER:
+        res->p = key->value;
+        break;
+    }
+
+    return 0;
+}
+
+int SelvaObject_GetAny(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObjectAny *res) {
+    TO_STR(key_name);
+
+    return SelvaObject_GetAnyStr(obj, key_name_str, key_name_len, res);
+}
+
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     struct SelvaObjectKey *key;
     enum SelvaObjectType type = SELVA_OBJECT_NULL;
@@ -1542,11 +1540,16 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
         return 0;
     case SELVA_OBJECT_DOUBLE:
     case SELVA_OBJECT_LONGLONG:
+        /* Obviously this is more than one byte but the user doesn't need to care about that. */
         return 1;
     case SELVA_OBJECT_STRING:
         if (key->value) {
             size_t len;
 
+            /*
+             * Now we don't exactly know if the value is some utf8 text string
+             * or a binary buffer, so we just return the byte size.
+             */
             (void)RedisModule_StringPtrLen(key->value, &len);
             return len;
         } else {
@@ -1563,7 +1566,7 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
     case SELVA_OBJECT_SET:
         return key->selva_set.size;
     case SELVA_OBJECT_ARRAY:
-        return SVector_Size(&key->array);
+        return SVector_Size(key->array);
     case SELVA_OBJECT_POINTER:
         return (key->ptr_opts && key->ptr_opts->ptr_len) ? key->ptr_opts->ptr_len(key->value) : 1;
     }
@@ -1670,7 +1673,7 @@ void *SelvaObject_ForeachValue(const struct SelvaObject *obj, void **iterator, c
     case SELVA_OBJECT_SET:
         return &key->selva_set;
     case SELVA_OBJECT_ARRAY:
-        return &key->array;
+        return key->array;
     }
 
     return NULL;
@@ -1710,14 +1713,14 @@ void *SelvaObject_ForeachValueType(
     case SELVA_OBJECT_SET:
         return &key->selva_set;
     case SELVA_OBJECT_ARRAY:
-        return &key->array;
+        return key->array;
     }
 
     return NULL;
 }
 
 const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len) {
-    if (type >= 0 && type < num_elem(type_names)) {
+    if ((size_t)type < num_elem(type_names)) {
         const struct so_type_name *tn = &type_names[type];
 
         if (len) {
@@ -1729,62 +1732,30 @@ const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len) {
     return NULL;
 }
 
-int SelvaObject_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaObject *obj;
-    int err;
+static void replyWithDouble(RedisModuleCtx *ctx, double value, unsigned flags) {
+    if (flags & SELVA_OBJECT_REPLY_BINUMF_FLAG) {
+        char buf[sizeof(value)];
 
-    const int ARGV_KEY = 1;
-    const int ARGV_OKEY = 2;
-
-    if (argc != 3) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
-    if (!obj) {
-        return REDISMODULE_OK;
-    }
-
-    err = SelvaObject_DelKey(obj, argv[ARGV_OKEY]);
-    if (err == SELVA_ENOENT) {
-        RedisModule_ReplyWithLongLong(ctx, 0);
-    } else if (err) {
-        return replyWithSelvaError(ctx, err);
+        htoledouble(buf, value);
+        RedisModule_ReplyWithBinaryBuffer(ctx, buf, sizeof(buf));
     } else {
-        RedisModule_ReplyWithLongLong(ctx, 1);
+        RedisModule_ReplyWithDouble(ctx, value);
     }
-
-    return RedisModule_ReplicateVerbatim(ctx);
 }
 
-int SelvaObject_ExistsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaObject *obj;
-    int err;
+static void replyWithLongLong(RedisModuleCtx *ctx, long long value, unsigned flags) {
+    if (flags & SELVA_OBJECT_REPLY_BINUMF_FLAG) {
+        uint64_t tmp = htole64(value);
+        char buf[sizeof(tmp)];
 
-    const int ARGV_KEY = 1;
-    const int ARGV_OKEY = 2;
-
-    if (argc < 3) {
-        return RedisModule_WrongArity(ctx);
+        memcpy(buf, &tmp, sizeof(tmp));
+        RedisModule_ReplyWithBinaryBuffer(ctx, buf, sizeof(buf));
+    } else {
+        RedisModule_ReplyWithLongLong(ctx, value);
     }
-
-    obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
-    if (!obj) {
-        return REDISMODULE_OK;
-    }
-
-    err = SelvaObject_Exists(obj, argv[ARGV_OKEY]);
-    if (err == SELVA_ENOENT) {
-        return RedisModule_ReplyWithLongLong(ctx, 0);
-    } else if (err) {
-        return replyWithSelvaError(ctx, err);
-    }
-    return RedisModule_ReplyWithLongLong(ctx, 1);
 }
 
-static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
+static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set, unsigned flags) {
     struct SelvaSetElement *el;
     size_t n = 0;
 
@@ -1797,12 +1768,12 @@ static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
         }
     } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
         SELVA_SET_DOUBLE_FOREACH(el, set) {
-            RedisModule_ReplyWithDouble(ctx, el->value_d);
+            replyWithDouble(ctx, el->value_d, flags);
             n++;
         }
     } else if (set->type == SELVA_SET_TYPE_LONGLONG) {
         SELVA_SET_LONGLONG_FOREACH(el, set) {
-            RedisModule_ReplyWithLongLong(ctx, el->value_ll);
+            replyWithLongLong(ctx, el->value_ll, flags);
             n++;
         }
     }
@@ -1810,7 +1781,7 @@ static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set) {
     RedisModule_ReplySetArrayLength(ctx, n);
 }
 
-static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum SelvaObjectType subtype, const SVector *array) {
+static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum SelvaObjectType subtype, const SVector *array, unsigned flags) {
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     struct SVectorIterator it;
     size_t n = 0;
@@ -1821,18 +1792,19 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
 
         do {
             void *pd;
-            double d;
 
             pd = SVector_Foreach(&it);
-            n++;
 
             if (!pd) {
-                RedisModule_ReplyWithDouble(ctx, 0.0);
-                continue;
+                replyWithDouble(ctx, 0.0, flags);
+            } else {
+                double d;
+
+                memcpy(&d, &pd, sizeof(double));
+                replyWithDouble(ctx, d, flags);
             }
 
-            memcpy(&d, &pd, sizeof(double));
-            RedisModule_ReplyWithDouble(ctx, d);
+            n++;
         } while (!SVector_Done(&it));
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
@@ -1847,7 +1819,7 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
 
             n++;
             ll = (long long)p;
-            RedisModule_ReplyWithLongLong(ctx, ll);
+            replyWithLongLong(ctx, ll, flags);
         } while (!SVector_Done(&it));
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
@@ -1884,29 +1856,31 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
                 continue;
             }
 
-            replyWithObject(ctx, lang, o);
+            replyWithObject(ctx, lang, o, flags);
         } while (!SVector_Done(&it));
 
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
     default:
-        fprintf(stderr, "Unknown array type %d\n", subtype);
+        fprintf(stderr, "%s:%d: Unknown array type: %d\n",
+                __FILE__, __LINE__,
+                subtype);
         RedisModule_ReplySetArrayLength(ctx, 0);
         break;
     }
 
 }
 
-static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key) {
+static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key, unsigned flags) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
         RedisModule_ReplyWithNull(ctx);
         break;
     case SELVA_OBJECT_DOUBLE:
-        RedisModule_ReplyWithDouble(ctx, key->emb_double_value);
+        replyWithDouble(ctx, key->emb_double_value, flags);
         break;
     case SELVA_OBJECT_LONGLONG:
-        RedisModule_ReplyWithLongLong(ctx, key->emb_ll_value);
+        replyWithLongLong(ctx, key->emb_ll_value, flags);
         break;
     case SELVA_OBJECT_STRING:
         if (key->value) {
@@ -1941,17 +1915,17 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
 
                 RedisModule_ReplyWithNull(ctx);
             } else {
-                replyWithObject(ctx, lang, key->value);
+                replyWithObject(ctx, lang, key->value, flags);
             }
         } else {
             RedisModule_ReplyWithNull(ctx);
         }
         break;
     case SELVA_OBJECT_SET:
-        replyWithSelvaSet(ctx, &key->selva_set);
+        replyWithSelvaSet(ctx, &key->selva_set, flags);
         break;
     case SELVA_OBJECT_ARRAY:
-        replyWithArray(ctx, lang, key->subtype, &key->array);
+        replyWithArray(ctx, lang, key->subtype, key->array, flags);
         break;
     case SELVA_OBJECT_POINTER:
         if (key->value) {
@@ -1969,7 +1943,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
     }
 }
 
-static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj) {
+static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, unsigned flags) {
     struct SelvaObjectKey *key;
     size_t n = 0;
 
@@ -1977,7 +1951,7 @@ static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct
 
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
         RedisModule_ReplyWithStringBuffer(ctx, key->name, key->name_len);
-        replyWithKeyValue(ctx, lang, key);
+        replyWithKeyValue(ctx, lang, key, flags);
 
         n += 2;
     }
@@ -1985,12 +1959,18 @@ static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct
     RedisModule_ReplySetArrayLength(ctx, n);
 }
 
-int SelvaObject_ReplyWithObjectStr(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
+int SelvaObject_ReplyWithObjectStr(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        struct SelvaObject *obj,
+        const char *key_name_str,
+        size_t key_name_len,
+        unsigned flags) {
     struct SelvaObjectKey *key;
     int err;
 
     if (!key_name_str) {
-        replyWithObject(ctx, lang, obj);
+        replyWithObject(ctx, lang, obj, flags);
         return 0;
     }
 
@@ -1999,17 +1979,22 @@ int SelvaObject_ReplyWithObjectStr(RedisModuleCtx *ctx, RedisModuleString *lang,
         return err;
     }
 
-    replyWithKeyValue(ctx, lang, key);
+    replyWithKeyValue(ctx, lang, key, flags);
 
     return 0;
 }
 
-int SelvaObject_ReplyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *key_name) {
+int SelvaObject_ReplyWithObject(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        struct SelvaObject *obj,
+        const RedisModuleString *key_name,
+        unsigned flags) {
     if (key_name) {
         TO_STR(key_name);
-        return SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len);
+        return SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len, flags);
     } else {
-        replyWithObject(ctx, lang, obj);
+        replyWithObject(ctx, lang, obj, flags);
         return 0;
     }
 }
@@ -2083,7 +2068,7 @@ int SelvaObject_GetWithWildcardStr(
                 continue;
             }
 
-            if (flags == 1) {
+            if (flags & SELVA_OBJECT_REPLY_SPLICE_FLAG) {
                 /* if the path should be spliced to start from the first wildcard as expected by selva.object.get */
                 const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + after_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + after_len;
                 char reply_path[reply_path_len + 1];
@@ -2112,7 +2097,7 @@ int SelvaObject_GetWithWildcardStr(
                 RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
             }
 
-            replyWithKeyValue(ctx, lang, key);
+            replyWithKeyValue(ctx, lang, key, flags);
             *resp_count += 2;
         }
     }
@@ -2123,319 +2108,6 @@ int SelvaObject_GetWithWildcardStr(
     }
 
     return 0;
-}
-
-int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaObject *obj;
-    struct SelvaObjectKey *key;
-
-    const int ARGV_LANG = 1;
-    const int ARGV_KEY = 2;
-    const int ARGV_OKEY = 3;
-
-    if (argc < 3) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    RedisModuleString *lang = argv[ARGV_LANG];
-    obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
-    if (!obj) {
-        return REDISMODULE_OK;
-    }
-
-    if (argc == 3) {
-        replyWithObject(ctx, lang, obj);
-        return REDISMODULE_OK;
-    }
-
-    for (int i = ARGV_OKEY; i < argc; i++) {
-        const RedisModuleString *okey = argv[i];
-        TO_STR(okey);
-
-        int err = 0;
-
-        if (strstr(okey_str, ".*.")) {
-            long resp_count = 0;
-
-            RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-            err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, okey_str, okey_len, &resp_count, -1, 1);
-            if (err == SELVA_ENOENT) {
-                /* Keep looking. */
-                RedisModule_ReplySetArrayLength(ctx, resp_count);
-                continue;
-            } else if (err) {
-                replyWithSelvaErrorf(ctx, err, "get_key");
-                RedisModule_ReplySetArrayLength(ctx, resp_count + 1);
-
-                return REDISMODULE_OK;
-            }
-
-            RedisModule_ReplySetArrayLength(ctx, resp_count);
-        } else {
-            err = get_key(obj, okey_str, okey_len, 0, &key);
-            if (err == SELVA_ENOENT) {
-                /* Keep looking. */
-                continue;
-            } else if (err) {
-                return replyWithSelvaErrorf(ctx, err, "get_key");
-            }
-
-            replyWithKeyValue(ctx, lang, key);
-        }
-
-        return REDISMODULE_OK;
-    }
-
-    return RedisModule_ReplyWithNull(ctx);
-}
-
-int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaObject *obj;
-    size_t values_set = 0;
-    int err;
-
-    const int ARGV_KEY = 1;
-    const int ARGV_OKEY = 2;
-    const int ARGV_TYPE = 3;
-    const int ARGV_OVAL = 4;
-
-    if (argc <= ARGV_TYPE) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    size_t type_len;
-    const char type = RedisModule_StringPtrLen(argv[ARGV_TYPE], &type_len)[0];
-
-    if (type_len != 1) {
-        return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid or missing type argument");
-    }
-
-    if (!(argc == 5 || (type == 'S' && argc >= 5))) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!obj) {
-        return REDISMODULE_OK;
-    }
-
-    switch (type) {
-    case 'f': /* SELVA_OBJECT_DOUBLE */
-        err = SelvaObject_SetDouble(
-            obj,
-            argv[ARGV_OKEY],
-            strtod(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL));
-        values_set++;
-        break;
-    case 'i': /* SELVA_OBJECT_LONGLONG */
-        err = SelvaObject_SetLongLong(
-            obj,
-            argv[ARGV_OKEY],
-            strtoll(RedisModule_StringPtrLen(argv[ARGV_OVAL], NULL), NULL, 10));
-        values_set++;
-        break;
-    case 's': /* SELVA_OBJECT_STRING */
-        err = SelvaObject_SetString(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
-        if (err == 0) {
-            RedisModule_RetainString(ctx, argv[ARGV_OVAL]);
-        }
-        values_set++;
-        break;
-    case 'S': /* SELVA_OBJECT_SET */
-        for (int i = ARGV_OVAL; i < argc; i++) {
-            if (SelvaObject_AddStringSet(obj, argv[ARGV_OKEY], argv[i]) == 0) {
-                RedisModule_RetainString(ctx, argv[i]);
-                values_set++;
-            }
-        }
-        err = 0;
-        break;
-    default:
-        err = SELVA_EINTYPE;
-    }
-    if (err) {
-        return replyWithSelvaError(ctx, err);
-    }
-    RedisModule_ReplyWithLongLong(ctx, values_set);
-
-    return RedisModule_ReplicateVerbatim(ctx);
-}
-
-int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaObject *obj;
-    struct SelvaObjectKey *key;
-    int err;
-
-    const int ARGV_KEY = 1;
-    const int ARGV_OKEY = 2;
-
-    if (argc != 3) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
-    if (!obj) {
-        return REDISMODULE_OK;
-    }
-
-    enum SelvaObjectType type = SELVA_OBJECT_NULL;
-    const RedisModuleString *okey = argv[ARGV_OKEY];
-    TO_STR(okey);
-
-    err = get_key(obj, okey_str, okey_len, 0, &key);
-    if (!err) {
-        type = key->type;
-    } else if (err != SELVA_ENOENT) {
-        return replyWithSelvaErrorf(ctx, err, "get_key");
-    }
-
-    if (type >= 0 && type < num_elem(type_names)) {
-        const struct so_type_name *tn = &type_names[type];
-
-        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-        RedisModule_ReplyWithStringBuffer(ctx, tn->name, tn->len);
-
-        if (type == SELVA_OBJECT_ARRAY) {
-            const enum SelvaObjectType subtype = key->subtype;
-            const char *subtype_str;
-            size_t subtype_len;
-
-            subtype_str = SelvaObject_Type2String(subtype, &subtype_len);
-
-            if (subtype_str) {
-                RedisModule_ReplyWithStringBuffer(ctx, subtype_str, subtype_len);
-            } else {
-                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key subtype %d", (int)subtype);
-            }
-
-            RedisModule_ReplySetArrayLength(ctx, 2);
-        } else if (type == SELVA_OBJECT_SET) {
-            switch (key->selva_set.type) {
-            case SELVA_SET_TYPE_RMSTRING:
-                RedisModule_ReplyWithSimpleString(ctx, "string");
-                break;
-            case SELVA_SET_TYPE_DOUBLE:
-                RedisModule_ReplyWithSimpleString(ctx, "double");
-                break;
-            case SELVA_SET_TYPE_LONGLONG:
-                RedisModule_ReplyWithSimpleString(ctx, "long long");
-                break;
-            case SELVA_SET_TYPE_NODEID:
-                RedisModule_ReplyWithSimpleString(ctx, "nodeId");
-                break;
-            default:
-                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid set type %d", (int)key->selva_set.type);
-                break;
-            }
-
-            RedisModule_ReplySetArrayLength(ctx, 2);
-        } else {
-            RedisModule_ReplySetArrayLength(ctx, 1);
-        }
-    } else {
-        return replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "invalid key type %d", (int)type);
-    }
-
-    return REDISMODULE_OK;
-}
-
-int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaObject *obj;
-
-    const int ARGV_KEY = 1;
-    const int ARGV_OKEY = 2;
-
-    if (argc != 2 && argc != 3) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
-    if (!obj) {
-        return REDISMODULE_OK;
-    }
-
-    ssize_t len;
-    if (argc == 2) {
-        len = obj->obj_size;
-    } else {
-        len = SelvaObject_Len(obj, argv[ARGV_OKEY]);
-        if (len < 0) {
-            int err = (int)len;
-
-            if (err == SELVA_EINTYPE) {
-                return replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "key type not supported");
-            } else {
-                return replyWithSelvaError(ctx, err);
-            }
-        }
-    }
-
-    return RedisModule_ReplyWithLongLong(ctx, len);
-}
-
-int SelvaObject_GetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaObject *obj;
-    int err;
-
-    const int ARGV_KEY = 1;
-    const int ARGV_OKEY = 2;
-
-    if (argc != 3) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
-    if (!obj) {
-        return REDISMODULE_OK;
-    }
-
-    SelvaObjectMeta_t user_meta;
-    err = SelvaObject_GetUserMeta(obj, argv[ARGV_OKEY], &user_meta);
-    if (err) {
-        return replyWithSelvaErrorf(ctx, err, "Failed to get key metadata");
-    }
-
-    return RedisModule_ReplyWithLongLong(ctx, user_meta);
-}
-
-int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaObject *obj;
-    SelvaObjectMeta_t user_meta;
-    int err;
-
-    const int ARGV_KEY = 1;
-    const int ARGV_OKEY = 2;
-    const int ARGV_MVAL = 3;
-
-    if (argc != 4) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    const RedisModuleString *mval = argv[ARGV_MVAL];
-    TO_STR(mval);
-
-    if (mval_len < sizeof(SelvaObjectMeta_t)) {
-        return replyWithSelvaErrorf(ctx, SELVA_EINTYPE,"Expected: %s", typeof_str(user_meta));
-    }
-
-    obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
-    if (!obj) {
-        return REDISMODULE_OK;
-    }
-
-    memcpy(&user_meta, mval_str, sizeof(SelvaObjectMeta_t));
-    err = SelvaObject_SetUserMeta(obj, argv[ARGV_OKEY], user_meta, NULL);
-    if (err) {
-        return replyWithSelvaErrorf(ctx, err, "Failed to set key metadata");
-    }
-
-    return RedisModule_ReplyWithLongLong(ctx, 1);
 }
 
 static int rdb_load_object_double(RedisModuleIO *io, struct SelvaObject *obj, const RedisModuleString *name) {
@@ -2696,19 +2368,6 @@ struct SelvaObject *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver, void *
     return obj;
 }
 
-void *_SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver) {
-    if (encver != SELVA_OBJECT_ENCODING_VERSION) {
-        /*
-         * RFE
-         * We should actually log an error here, or try to implement
-         * the ability to load older versions of our data structure.
-         */
-        return NULL;
-    }
-
-    return SelvaObjectTypeRDBLoad(io, encver, NULL);
-}
-
 static void rdb_save_object_string(RedisModuleIO *io, struct SelvaObjectKey *key) {
     if (!key->value) {
         RedisModule_LogIOError(io, "warning", "STRING value missing");
@@ -2747,7 +2406,7 @@ static void rdb_save_object_set(RedisModuleIO *io, struct SelvaObjectKey *key) {
 }
 
 static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key, void *ptr_save_data) {
-    const struct SVector *array = &key->array;
+    const struct SVector *array = key->array;
 
     RedisModule_SaveUnsigned(io, key->subtype);
     RedisModule_SaveUnsigned(io, array->vec_last);
@@ -2755,14 +2414,14 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
     if (key->subtype == SELVA_OBJECT_LONGLONG) {
         void* num;
         struct SVectorIterator it;
-        SVector_ForeachBegin(&it, &key->array);
+        SVector_ForeachBegin(&it, key->array);
         while ((num = SVector_Foreach(&it))) {
             RedisModule_SaveSigned(io, (long long)num);
         }
     } else if (key->subtype == SELVA_OBJECT_DOUBLE) {
         void* num_ptr;
         struct SVectorIterator it;
-        SVector_ForeachBegin(&it, &key->array);
+        SVector_ForeachBegin(&it, key->array);
         while ((num_ptr = SVector_Foreach(&it))) {
             double num;
             memcpy(&num, &num_ptr, sizeof(double));
@@ -2771,14 +2430,14 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
     } else if (key->subtype == SELVA_OBJECT_STRING) {
         RedisModuleString *str;
         struct SVectorIterator it;
-        SVector_ForeachBegin(&it, &key->array);
+        SVector_ForeachBegin(&it, key->array);
         while ((str = SVector_Foreach(&it))) {
             RedisModule_SaveString(io, str);
         }
     } else if (key->subtype == SELVA_OBJECT_OBJECT) {
         struct SelvaObject *k;
         struct SVectorIterator it;
-        SVector_ForeachBegin(&it, &key->array);
+        SVector_ForeachBegin(&it, key->array);
         while ((k = SVector_Foreach(&it))) {
             SelvaObjectTypeRDBSave(io, k, ptr_save_data);
         }
@@ -2842,66 +2501,3 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, struct SelvaObject *obj, void *pt
         }
     }
 }
-
-void _SelvaObjectTypeRDBSave(RedisModuleIO *io, void *value) {
-    SelvaObjectTypeRDBSave(io, value, NULL);
-}
-
-void SelvaObjectTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key __unused, void *value __unused) {
-    RedisModule_LogIOError(aof, "warning", "AOF rewrite not supported");
-}
-
-void SelvaObjectTypeFree(void *value) {
-    struct SelvaObject *obj = (struct SelvaObject *)value;
-
-    SelvaObject_Destroy(obj);
-}
-
-static int SelvaObject_OnLoad(RedisModuleCtx *ctx) {
-    RedisModuleTypeMethods tm = {
-        .version = REDISMODULE_TYPE_METHOD_VERSION,
-        .rdb_load = _SelvaObjectTypeRDBLoad,
-        .rdb_save = _SelvaObjectTypeRDBSave,
-        .aof_rewrite = SelvaObjectTypeAOFRewrite,
-        .mem_usage = SelvaObject_MemUsage,
-        .free = SelvaObjectTypeFree,
-    };
-
-    ObjectType = RedisModule_CreateDataType(ctx, "selva_obj", SELVA_OBJECT_ENCODING_VERSION, &tm);
-    if (ObjectType == NULL) {
-        return REDISMODULE_ERR;
-    }
-
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.object.del", SelvaObject_DelCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.exists", SelvaObject_ExistsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.get", SelvaObject_GetCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR ||
-#if 0
-        RedisModule_CreateCommand(ctx, "selva.object.getrange", SelvaObject_GetRangeCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.incrby", SelvaObject_IncrbyCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.incrbydouble", SelvaObject_IncrbyDoubleCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.keys", SelvaObject_KeysCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-#endif
-        RedisModule_CreateCommand(ctx, "selva.object.len", SelvaObject_LenCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-#if 0
-        RedisModule_CreateCommand(ctx, "selva.object.mget", SelvaObject_MgetCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.mset", SelvaObject_MsetCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.scan", SelvaObject_ScanCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-#endif
-        RedisModule_CreateCommand(ctx, "selva.object.set", SelvaObject_SetCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
-#if 0
-        RedisModule_CreateCommand(ctx, "selva.object.setnx", SelvaObject_SetNXCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.strlen", SelvaObject_StrlenCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-#endif
-        RedisModule_CreateCommand(ctx, "selva.object.type", SelvaObject_TypeCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        /*RedisModule_CreateCommand(ctx, "selva.object.vals", SelvaObject_ValsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR*/
-        RedisModule_CreateCommand(ctx, "selva.object.getmeta", SelvaObject_GetMetaCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.object.setmeta", SelvaObject_SetMetaCommand, "write", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    return REDISMODULE_OK;
-}
-SELVA_ONLOAD(SelvaObject_OnLoad);

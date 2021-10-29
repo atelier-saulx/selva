@@ -1,12 +1,17 @@
 import test from 'ava'
+import { readValue } from 'data-record'
 import './assertions'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import { dumpDb } from './assertions'
 import getPort from 'get-port'
 import { wait } from '../src/util'
+import { doubleDef } from '../src/set/modifyDataRecords'
 
 const DEFAULT_HIERARCHY = '___selva_hierarchy'
+
+export function readDouble(x) {
+  return readValue(doubleDef, x, '.d')
+}
 
 let srv
 let port: number
@@ -126,14 +131,14 @@ test.serial('can delete root', async (t) => {
   })
 
   t.deepEqual(root, 'root')
-  t.deepEqual(await client.redis.selva_object_get('', 'root', 'value'), '9001')
+  t.deepEqual(readDouble(await client.redis.selva_object_get('', 'root', 'value')), 9001)
   t.deepEqual(
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
     [match]
   )
 
   await client.delete('root')
-  t.deepEqual(await dumpDb(client), [['root', ['id', 'root', 'type', 'root']]])
+  t.deepEqual(await client.redis.selva_object_get('', 'root'), ['id', 'root', 'type', 'root'])
 
   await client.destroy()
 })

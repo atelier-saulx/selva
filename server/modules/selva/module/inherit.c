@@ -43,31 +43,6 @@ static int send_field_value(
         const char *field_str,
         size_t field_len);
 
-static int open_node_key(RedisModuleCtx *ctx, const Selva_NodeId nodeId, RedisModuleKey **key_out, struct SelvaObject **obj_out) {
-    RedisModuleString *id;
-    RedisModuleKey *key;
-    int err;
-
-    id = RedisModule_CreateString(ctx, nodeId, Selva_NodeIdLen(nodeId));
-    if (!id) {
-        return SELVA_ENOMEM;
-    }
-
-    key = RedisModule_OpenKey(ctx, id, REDISMODULE_READ);
-    if (!key) {
-        return SELVA_ENOENT;
-    }
-
-    *key_out = key;
-
-    err = SelvaObject_Key2Obj(RedisModule_OpenKey(ctx, id, REDISMODULE_READ), obj_out);
-    if (err) {
-        return err;
-    }
-
-    return 0;
-}
-
 static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id, RedisModuleString *full_field, struct EdgeField *edge_field) {
     /*
      * Start a new array reply:
@@ -82,10 +57,8 @@ static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id
 }
 
 static int deref_single_ref(
-        RedisModuleCtx *ctx,
         const struct EdgeField *edge_field,
         Selva_NodeId node_id_out,
-        RedisModuleKey **key_out,
         struct SelvaObject **obj_out) {
     const struct EdgeFieldConstraint *constraint = edge_field->constraint;
     const struct SelvaModify_HierarchyNode *node;
@@ -102,7 +75,8 @@ static int deref_single_ref(
     }
 
     SelvaHierarchy_GetNodeId(node_id_out, node);
-    return open_node_key(ctx, node_id_out, key_out, obj_out);
+    *obj_out = SelvaHierarchy_GetNodeObject(node);
+    return 0;
 }
 
 static int send_edge_field_deref_value(
@@ -110,15 +84,14 @@ static int send_edge_field_deref_value(
         SelvaModify_Hierarchy *hierarchy,
         RedisModuleString *lang,
         RedisModuleString *full_field,
-        struct EdgeField *edge_field,
+        const struct EdgeField *edge_field,
         const char *field_str,
         size_t field_len) {
-    RedisModuleKey *key = NULL;
     struct SelvaObject *obj;
     Selva_NodeId nodeId;
     int err;
 
-    err = deref_single_ref(ctx, edge_field, nodeId, &key, &obj);
+    err = deref_single_ref(edge_field, nodeId, &obj);
     if (err) {
         return err;
     }
@@ -137,7 +110,7 @@ static int send_edge_field_deref_value(
         RedisModule_ReplyWithArray(ctx, 3);
         RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId)); /* The actual node_id. */
         RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
-        SelvaObject_ReplyWithObject(ctx, lang, obj, NULL);
+        SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
     } else {
         const struct SelvaModify_HierarchyNode *node;
 
@@ -149,7 +122,6 @@ static int send_edge_field_deref_value(
         return send_field_value(ctx, hierarchy, lang, node, nodeId, obj, full_field, field_str, field_len);
     }
 
-    RedisModule_CloseKey(key);
     return 0;
 }
 
@@ -172,7 +144,7 @@ static int send_object_field_value(
         RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
         RedisModule_ReplyWithString(ctx, full_field);
 
-        err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len);
+        err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
             (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
         }
@@ -223,20 +195,11 @@ static int send_field_value(
 static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
     RedisModuleKey *key = NULL;
-    struct SelvaObject *obj;
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
     struct InheritCommand_Args *restrict args = (struct InheritCommand_Args *)arg;
     int err;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
-    err = open_node_key(args->ctx, nodeId, &key, &obj);
-    if (err) {
-        fprintf(stderr, "%s:%d: Failed to open a node object. nodeId: %.*s error: %s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, nodeId,
-                getSelvaErrorStr(err));
-        /* Ignore errors. */
-        return 0;
-    }
 
     /*
      * Check that the node is of an accepted type.
@@ -299,7 +262,6 @@ static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *a
         }
     }
 
-    RedisModule_CloseKey(key);
     return 0;
 }
 

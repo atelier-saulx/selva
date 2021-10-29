@@ -11,7 +11,7 @@
 #include "subscriptions.h"
 #include "poptop.h"
 
-#define HIERARCHY_ENCODING_VERSION  2
+#define HIERARCHY_ENCODING_VERSION  3
 
 struct SelvaModify_Hierarchy;
 typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
@@ -171,8 +171,24 @@ int SelvaHierarchy_NodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_Node
 /**
  * Copy nodeId to a buffer.
  */
-char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node);
-char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaModify_HierarchyNode *node);
+static inline char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node) {
+    const char *buf = (const char *)node;
+
+    /* We know the id is the first thing in the struct. */
+    memcpy(id, buf, SELVA_NODE_ID_SIZE);
+
+    return id;
+}
+
+static inline char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaModify_HierarchyNode *node) {
+    const char *buf = (const char *)node;
+
+    memcpy(type, buf, SELVA_NODE_TYPE_SIZE);
+
+    return type;
+}
+
+struct SelvaObject *SelvaHierarchy_GetNodeObject(const struct SelvaModify_HierarchyNode *node);
 
 const struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByConstPtr(const struct SelvaModify_HierarchyNode *node);
 struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
@@ -242,6 +258,25 @@ int SelvaHierarchy_UpsertNode(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         struct SelvaModify_HierarchyNode **out);
+
+/**
+ * Add new relationships relative to other existing nodes.
+ * The function is nondestructive; previously existing edges to and from other
+ * nodes and metadata are be preserved.
+ * @param ctx If NULL then no events are sent.
+ * @param parents   Sets these nodes as parents to this node,
+ *                  while keeping the existing parents.
+ * @param children  Sets these nodes as children to this node,
+ *                  while keeping the existing children.
+ */
+int SelvaModify_AddHierarchyP(
+        struct RedisModuleCtx *ctx,
+        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaModify_HierarchyNode *node,
+        size_t nr_parents,
+        const Selva_NodeId *parents,
+        size_t nr_children,
+        const Selva_NodeId *children);
 
 /**
  * Add new relationships relative to other existing nodes.
@@ -318,7 +353,6 @@ int SelvaModify_TraverseHierarchy(
         enum SelvaTraversal dir,
         const struct SelvaModify_HierarchyCallback *cb);
 int SelvaModify_TraverseHierarchyField(
-        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaTraversal dir,
@@ -337,10 +371,9 @@ int SelvaHierarchy_TraverseExpressionBfs(
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         struct rpn_ctx *rpn_ctx,
-        struct rpn_expression *rpn_expr,
+        const struct rpn_expression *rpn_expr,
         const struct SelvaModify_HierarchyCallback *cb);
 int SelvaModify_TraverseArray(
-        struct RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
         const Selva_NodeId id,
         const char *ref_field_str,

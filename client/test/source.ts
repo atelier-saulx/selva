@@ -3,7 +3,6 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
-import { dumpDb } from './assertions'
 
 let srv
 let port: number
