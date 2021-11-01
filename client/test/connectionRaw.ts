@@ -6,7 +6,6 @@ import {
   startReplica,
   SelvaServer,
 } from '../../server'
-import './assertions'
 import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
 import fs from 'fs'
