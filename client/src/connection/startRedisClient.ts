@@ -5,7 +5,13 @@ import './redisClientExtensions'
 import chalk from 'chalk'
 import { SelvaClient } from '..'
 
+import { connectSocket } from './socket'
+
 /*
+
+  // here we just add tcp
+
+
     hard-disconnect
     Event to indicate that a redis client got corupted / cannot connect
 
@@ -131,8 +137,33 @@ export default (connection: Connection) => {
     }
   }, 60e3)
 
-  connection.subscriber = startClient(connection, 'subscriber')
-  connection.publisher = startClient(connection, 'publisher')
+  const socket = connectSocket({
+    host: connection.serverDescriptor.host,
+    port: connection.serverDescriptor.port,
+  })
+
+  socket.on('connect', () => {
+    console.info('connect!')
+  })
+
+  socket.on('close', () => {
+    console.info('close!')
+  })
+
+  socket.on('data', (d) => {
+    console.info('datax!', d.toString())
+  })
+
+  socket.on('error', (err) => {
+    console.info('datax!', err)
+  })
+
+  socket.on('drain', () => {
+    console.info('drain time!')
+  })
+
+  // connection.subscriber = startClient(connection, 'subscriber')
+  // connection.publisher = startClient(connection, 'publisher')
 
   const serverHeartbeat = () => {
     clearTimeout(connection.serverHeartbeatTimer)

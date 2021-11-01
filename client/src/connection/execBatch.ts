@@ -5,6 +5,9 @@ import chalk from 'chalk'
 let uncertainStateCnt = 0
 let showUncertainState = true
 
+// here we just add  straight tcp - every command goes over this except INFO
+// handle info seperately
+
 export default function execBatch(
   connection: Connection,
   queue: RedisCommand[]
