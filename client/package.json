@@ -68,6 +68,7 @@
     "typescript-to-lua": "^0.30.1"
   },
   "dependencies": {
+    "redis-parser": "^3.0.0",
     "data-record": "^0.5.2",
     "@saulx/selva-diff": "^1.0.17",
     "@saulx/selva-query-ast-parser": "^3.0.0",

@@ -2,13 +2,13 @@ import { RedisCommand, SelvaClient } from '..'
 import { ServerDescriptor } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import drainQueue from './drainQueue'
-import startRedisClient from './startRedisClient'
-import { RedisClient } from '@saulx/redis-client'
+import startRedisClient from './socket'
 import { Callback } from '../redis/types'
 import { serverId, isEmptyObject } from '../util'
 import { Observable } from '../observable'
 import { CLIENTS, HEARTBEAT, STOP_HEARTBEAT, LOG } from '../constants'
-import chalk from 'chalk'
+import net from 'net'
+import { encodeCommand } from './commands'
 
 const CLIENT_HEARTBEAT_TIMER = 1e3
 
@@ -25,9 +25,10 @@ type ConnectionState = {
 }
 
 class Connection {
-  public subscriber: RedisClient
+  // public subscriber: RedisClient
+  public publisher: net.Socket
 
-  public publisher: RedisClient
+  public subscriber: net.Socket
 
   public uuid: string
 
@@ -159,7 +160,6 @@ class Connection {
     this.clientHb[uuid].counter++
     clearTimeout(this.clientHb[uuid].timer)
     const setHeartbeat = () => {
-      // console.info('make make hb')
       if (this.connected) {
         this.command({
           id: id,
@@ -210,7 +210,10 @@ class Connection {
     }
     if (!this[type][channel]) {
       this[type][channel] = {}
-      this.subscriber[method](channel)
+      this.sendPubSubOverWire(
+        method === 'subscribe' ? 'SUBSCRIBE' : 'PSUBSCRIBE',
+        channel
+      )
       this.addActive()
     }
     if (this[type][channel][id] === undefined) {
@@ -232,7 +235,10 @@ class Connection {
       }
       if (Object.keys(this[type][channel]).length === 0) {
         delete this[type][channel]
-        this.subscriber[method](channel)
+        this.sendPubSubOverWire(
+          method === 'punsubscribe' ? 'PUNSUBSCRIBE' : 'UNSUBSCRIBE',
+          channel
+        )
         this.removeActive()
       }
     }
@@ -271,7 +277,7 @@ class Connection {
       if (cb) {
         listeners[event][id].delete(cb)
         if (!listeners[event][id].size) {
-          this.subscriber.removeListener(event, cb)
+          // this.subscriber.removeListener(event, cb)
           delete listeners[event][id]
           if (isEmptyObject(listeners[event])) {
             delete listeners[event]
@@ -279,7 +285,7 @@ class Connection {
         }
       } else {
         listeners[event][id].forEach((cb) => {
-          this.subscriber.removeListener(event, cb)
+          // this.subscriber.removeListener(event, cb)
         })
         delete listeners[event][id]
         if (isEmptyObject(listeners[event])) {
@@ -306,7 +312,7 @@ class Connection {
       if (cb) {
         listeners[event][id].delete(cb)
         if (!listeners[event][id].size) {
-          this.subscriber.removeListener(event, cb)
+          // this.subscriber.removeListener(event, cb)
           delete listeners[event][id]
           if (isEmptyObject(listeners[event])) {
             delete listeners[event]
@@ -367,7 +373,7 @@ class Connection {
       listeners[event][id] = new Set()
     }
     listeners[event][id].add(cb)
-    this.subscriber.on(event, cb)
+    // this.subscriber.on(event, cb)
   }
 
   public applyConnectionState(state: ConnectionState) {
@@ -583,11 +589,13 @@ class Connection {
     this.subscriber.on('error', () => {})
     this.publisher.on('error', () => {})
 
-    this.subscriber.unsubscribe()
+    // this.subscriber.unsubscribe()
     this.subscriber.unref()
-    this.subscriber.quit()
+    delete this.subscriber
+    // this.subscriber.quit()
     this.publisher.unref()
-    this.publisher.quit()
+    delete this.publisher
+    // this.publisher.quit()
 
     if (this.destroyTimer) {
       clearTimeout(this.destroyTimer)
@@ -626,6 +634,25 @@ class Connection {
     this.removeAllListeners()
   }
 
+  sendPubSubOverWire(
+    type: 'SUBSCRIBE' | 'PSUBSCRIBE' | 'UNSUBSCRIBE' | 'PUNSUBSCRIBE',
+    channel: string
+  ) {
+    if (!this.connected) {
+      console.info(
+        '    🐢 NOT CONNECTED NEED TO DO IT LATER --->',
+        type,
+        channel
+      )
+    } else {
+      console.info('    🤯 SEND ', type, channel)
+
+      for (const toWrite of encodeCommand([type, channel])) {
+        this.subscriber.write(toWrite)
+      }
+    }
+  }
+
   constructor(serverDescriptor: ServerDescriptor) {
     this.uuid = uuidv4()
 
@@ -657,6 +684,25 @@ class Connection {
       () => {
         // this is prob a good place...
         this.destroyIfIdle()
+
+        console.info('go go go CONNECTED')
+
+        console.info('SEND SUBS DO QUEUE', this.subscriptions)
+        console.info('SEND PSUBS DO QUEUE', this.psubscriptions)
+
+        for (const channel in this.subscriptions) {
+          this.sendPubSubOverWire('SUBSCRIBE', channel)
+        }
+
+        for (const channel in this.psubscriptions) {
+          this.sendPubSubOverWire('PSUBSCRIBE', channel)
+        }
+
+        /*
+          SUBSCRIBE = 'SUBSCRIBE',
+          PSUBSCRIBE = 'PSUBSCRIBE'
+        */
+
         if (this.queue.length) {
           drainQueue(this)
         }

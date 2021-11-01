@@ -10,9 +10,16 @@ test.serial('connection min', async (t) => {
 
   const registry = await startRegistry({ port })
 
+  console.info('go go go client')
   const client = connect({
     port,
   })
+
+  console.info('YES CONNECT IT!')
+
+  await wait(10000)
+
+  console.log('wait is done')
 
   const origin = await startOrigin({
     default: true,

@@ -24,34 +24,34 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
           const redisCommand = q[i]
           const { command, resolve, args, reject } = redisCommand
           if (command === 'info') {
-            connection.publisher.info((err, data) => {
-              if (err || !data) {
-                if (reject) {
-                  reject(err || new Error('no data'))
-                } else if (resolve) {
-                  resolve('')
-                }
-              } else {
-                if (resolve) {
-                  resolve(data)
-                }
-              }
-            })
+            // connection.publisher.info((err, data) => {
+            //   if (err || !data) {
+            //     if (reject) {
+            //       reject(err || new Error('no data'))
+            //     } else if (resolve) {
+            //       resolve('')
+            //     }
+            //   } else {
+            //     if (resolve) {
+            //       resolve(data)
+            //     }
+            //   }
+            // })
           } else if (command === 'xgroup') {
             // eslint-disable-next-line
-            connection.publisher['xgroup'](...args, (err, data) => {
-              if (err || !data) {
-                if (reject) {
-                  reject(err || new Error('no data'))
-                } else if (resolve) {
-                  resolve('')
-                }
-              } else {
-                if (resolve) {
-                  resolve(data)
-                }
-              }
-            })
+            // connection.publisher['xgroup'](...args, (err, data) => {
+            //   if (err || !data) {
+            //     if (reject) {
+            //       reject(err || new Error('no data'))
+            //     } else if (resolve) {
+            //       resolve('')
+            //     }
+            //   } else {
+            //     if (resolve) {
+            //       resolve(data)
+            //     }
+            //   }
+            // })
           } else {
             if (command.toLowerCase() === 'evalsha') {
               const script = args[0]
