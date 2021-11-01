@@ -1,8 +1,9 @@
-import { isMainThread } from 'worker_threads'
-import { native, QueryResult, Pool } from 'pg'
+// import { isMainThread } from 'worker_threads'
+import { QueryResult, Pool } from 'pg'
 
 // TODO: why is this broken in worker_threads
-const PgPool = isMainThread ? native.Pool : Pool
+// const PgPool = isMainThread ? native.Pool : Pool
+const PgPool = Pool
 
 export class PG {
   public id: string

@@ -72,11 +72,9 @@
     "node-fetch": "^2.6.1",
     "os-utils": "^0.0.14",
     "pg": "8.7.1",
-    "pg-native": "3.0.0",
     "pidusage": "^2.0.21",
     "redis": "^2.8.0",
     "rimraf": "^3.0.2",
     "@saulx/redis-client": "^1.0.0"
   }
 }
-
