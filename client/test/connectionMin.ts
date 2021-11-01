@@ -17,15 +17,47 @@ test.serial('connection min', async (t) => {
 
   console.info('YES CONNECT IT!')
 
-  await wait(10000)
+  await wait(2000)
 
   console.log('wait is done')
+  console.log('\n\n\n----------------------')
 
   const origin = await startOrigin({
     default: true,
     registry: { port },
     dir: null,
   })
+
+  console.info('update shcema')
+  await client.updateSchema({
+    types: {
+      flap: {
+        fields: {
+          snurk: { type: 'string' },
+        },
+      },
+    },
+  })
+  console.info('update schema done')
+
+  const x = await client.set({
+    type: 'flap',
+    snurk: 'yes!',
+  })
+
+  console.info('🦉', x)
+
+  const flap = await client.get({
+    $id: x,
+    $all: true,
+  })
+
+  console.info('SNURXXX', flap)
+
+  await wait(2000)
+
+  console.log('\n\n\n----------------------')
+  console.info('REMOVE ALL')
 
   await registry.destroy()
   await origin.destroy()

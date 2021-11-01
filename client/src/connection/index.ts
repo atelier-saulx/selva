@@ -9,6 +9,7 @@ import { Observable } from '../observable'
 import { CLIENTS, HEARTBEAT, STOP_HEARTBEAT, LOG } from '../constants'
 import net from 'net'
 import { encodeCommand } from './commands'
+import chalk from 'chalk'
 
 const CLIENT_HEARTBEAT_TIMER = 1e3
 

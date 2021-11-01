@@ -1,10 +1,9 @@
 import { Connection } from '.'
-import './redisClientExtensions'
 import chalk from 'chalk'
 import { SelvaClient } from '..'
 import net from 'net'
 import { SERVER_HEARTBEAT } from '../constants'
-
+import RedisParser from '@saulx/redis-parser'
 /*
     hard-disconnect
     Event to indicate that a redis client got corupted / cannot connect
@@ -34,6 +33,97 @@ const createSocket = (
   let retryTimeout: NodeJS.Timeout
 
   const makeSocket = () => {
+    const socket = net.connect(connection.serverDescriptor)
+    // @ts-ignore
+    socket.commands = []
+
+    const parser = new RedisParser({
+      returnReply: (reply: unknown) => {
+        const t = Array.isArray(reply) && reply[0]
+
+        // if (connection.serverDescriptor.type !== 'registry') {
+        //   // @ts-ignore
+        //   if (!t && typeof reply === 'string' && reply.length > 100) {
+        //     console.info('\n\nBIG REPLY', reply.slice(0, 50) + '...')
+        //   } else {
+        //     console.info('\n\nREPLY', reply)
+        //   }
+        // }
+
+        if (
+          t === 'subscribe' ||
+          t === 'psubscribe' ||
+          t === 'unsubscribe' ||
+          t === 'punsubscribe'
+        ) {
+          // yes nice
+        } else if (t === 'message') {
+          if (reply[1] !== '___selva_subscription:server_heartbeat') {
+            // console.info('   ', reply)
+            // console.info('   ', connection.listeners)
+            // console.info('   ', connection.redisListeners)
+          }
+          // this can be a lot more efficient!
+          // pbsubscrbe need to handle that
+          if (connection.redisListeners?.message) {
+            // console.info(connection.listeners.message)
+            for (const fn in connection.redisListeners.message) {
+              connection.redisListeners.message[fn].forEach((fn) => {
+                fn(reply[1], reply[2])
+              })
+            }
+          }
+        } else {
+          // reply id and then call the queue on your socket - and just add it
+          // queue listeners or something
+
+          // @ts-ignore
+          const r = socket.commands.shift()
+
+          // console.info('\nREPLY', reply)
+          if (r) {
+            // if (connection.serverDescriptor.type !== 'registry') {
+            //   console.info(
+            //     'RESOLVE IT!',
+            //     connection.serverDescriptor,
+            //     r[2],
+            //     r[3]
+            //   )
+            //   console.log('\n')
+            // }
+            r[0](reply)
+          }
+        }
+
+        // @ts-ignore
+        if (socket.commands.length === 0) {
+          // @ts-ignore
+          if (socket.empty) {
+            // @ts-ignore
+            socket.empty()
+          }
+        }
+      },
+      returnError: (err: Error) => {
+        console.error('lil err from the parser', err)
+        // @ts-ignore
+        const r = socket.commands.shift()
+        if (r && r[1]) {
+          // console.info('RESOLVE IT!')
+          r[1](err)
+        }
+
+        // @ts-ignore
+        if (socket.commands.length === 0) {
+          // @ts-ignore
+          if (socket.empty) {
+            // @ts-ignore
+            socket.empty()
+          }
+        }
+      },
+    })
+
     if (connection[type]) {
       connection[type].removeAllListeners()
       connection[type].unref()
@@ -43,8 +133,6 @@ const createSocket = (
     if (connection.isDestroyed) {
       return
     }
-
-    const socket = net.connect(connection.serverDescriptor)
 
     socket.setMaxListeners(10e3)
 
@@ -87,7 +175,9 @@ const createSocket = (
     })
 
     socket.on('data', (d) => {
-      console.info('DATAX!', d.toString())
+      // console.info('DATAX!', `[${d.toString()}]`)
+
+      parser.execute(d)
     })
 
     socket.on('error', (err) => {
@@ -176,8 +266,9 @@ export default (connection: Connection) => {
 
   // for internals this is pretty nice
   connection.subscribe(SERVER_HEARTBEAT, connection.uuid)
-  connection.on('message', (channel) => {
+  connection.addRemoteListener('message', (channel) => {
     if (channel === SERVER_HEARTBEAT) {
+      // console.info('  incoming message HB!')
       serverHeartbeat()
     }
   })

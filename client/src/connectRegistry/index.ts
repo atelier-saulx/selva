@@ -139,7 +139,11 @@ const connectRegistry = (
       registryConnection.addRemoteListener(
         'message',
         (channel, msg) => {
+          console.info('on msg', channel, msg)
+
           if (channel === REGISTRY_UPDATE) {
+            console.info('REGISTRY UPDATED', msg)
+
             const payload = JSON.parse(msg)
             const { event } = payload
             if (event === 'new') {

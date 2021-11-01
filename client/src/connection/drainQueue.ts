@@ -24,6 +24,8 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
           const redisCommand = q[i]
           const { command, resolve, args, reject } = redisCommand
           if (command === 'info') {
+            parsedQ.push(redisCommand)
+
             // connection.publisher.info((err, data) => {
             //   if (err || !data) {
             //     if (reject) {
@@ -38,6 +40,8 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
             //   }
             // })
           } else if (command === 'xgroup') {
+            parsedQ.push(redisCommand)
+
             // eslint-disable-next-line
             // connection.publisher['xgroup'](...args, (err, data) => {
             //   if (err || !data) {

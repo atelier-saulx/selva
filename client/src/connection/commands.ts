@@ -11,14 +11,18 @@ export const DELIMITER = '\r\n'
 
 */
 
-export type RedisCommandArguments = (string | Buffer)[]
+export type RedisCommandArguments = (string | number | Buffer)[]
 
 export function* encodeCommand(
   args: RedisCommandArguments
 ): IterableIterator<string | Buffer> {
   yield `*${args.length}${DELIMITER}`
 
-  for (const arg of args) {
+  for (let arg of args) {
+    if (typeof arg === 'number') {
+      arg = `${arg}`
+    }
+
     const byteLength =
       typeof arg === 'string' ? Buffer.byteLength(arg) : arg.length
     yield `$${byteLength.toString()}${DELIMITER}`
