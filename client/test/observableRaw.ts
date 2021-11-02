@@ -16,7 +16,7 @@ const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
-test.serial('Make some observables and many subs managers', async (t) => {
+test.only('Make some observables and many subs managers', async (t) => {
   // maybe run all the servers in workers
   const port = await getPort()
   const registry = await startRegistry({ port })
@@ -124,6 +124,8 @@ test.serial('Make some observables and many subs managers', async (t) => {
 
   // need to test lesst strict we just want these numbers
   const resultSpread = [1, 2, 1]
+
+  console.info('SPREAD', resultSpread)
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map((v) => v.length),
