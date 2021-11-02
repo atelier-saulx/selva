@@ -1,6 +1,10 @@
 import test from 'ava'
 import { connect } from '@saulx/selva'
-import { startRegistry, startOrigin } from '../../server'
+import {
+  startRegistry,
+  startOrigin,
+  startSubscriptionManager,
+} from '../../server'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -11,6 +15,7 @@ test.serial('connection min', async (t) => {
   const registry = await startRegistry({ port })
 
   console.info('go go go client')
+
   const client = connect({
     port,
   })
@@ -54,7 +59,33 @@ test.serial('connection min', async (t) => {
 
   console.info('SNURXXX', flap)
 
-  await wait(2000)
+  const subManager = await startSubscriptionManager({
+    registry: { port },
+  })
+
+  const unsubsribe = client
+    .observe({
+      snurks: {
+        $all: true,
+        $list: {
+          $find: {
+            $traverse: 'children',
+            $filter: {
+              $field: 'type',
+              $operator: '=',
+              $value: 'flap',
+            },
+          },
+        },
+      },
+    })
+    .subscribe((d) => {
+      console.info('------------------------>', d)
+    })
+
+  // unsubsribe
+
+  await wait(10000)
 
   console.info('\n\n\n----------------------')
   console.info('REMOVE ALL')

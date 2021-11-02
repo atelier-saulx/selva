@@ -92,7 +92,9 @@ const createSocket = (
               // )
               // console.log('\n')
             }
-            r[0](reply)
+            if (r[0]) {
+              r[0](reply)
+            }
           }
         }
 

@@ -640,14 +640,15 @@ class Connection {
     channel: string
   ) {
     if (!this.connected) {
-      console.info(
-        '    🐢 NOT CONNECTED NEED TO DO IT LATER --->',
-        type,
-        channel
-      )
+      // console.info(
+      //   '    🐢 NOT CONNECTED NEED TO DO IT LATER --->',
+      //   type,
+      //   channel
+      // )
     } else {
-      console.info('    🤯 SEND ', type, channel)
+      // console.info('    🤯 SEND ', type, channel)
 
+      // use to string
       for (const toWrite of encodeCommand([type, channel])) {
         this.subscriber.write(toWrite)
       }
