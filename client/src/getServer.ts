@@ -56,7 +56,7 @@ const getServer = (
             console.info('go sub reg select')
 
             const timer = setTimeout(() => {
-              console.log('Timeout getting from subs registry')
+              console.info('Timeout getting from subs registry')
               isCanceled = true
               delete getSubInprogress[selectionOptions.subscription]
               getServer(selvaClient, cb, selector)
