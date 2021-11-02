@@ -14,7 +14,10 @@ const getServer = (
     cb({ ...selector, host: selector.host, port: selector.port })
   } else {
     let { type, name } = selector
-    if (!selvaClient.registryConnection) {
+    if (
+      !selvaClient.registryConnection ||
+      !selvaClient.registryConnection.connected
+    ) {
       console.info(
         'registry connection not created, add once listener on selvaClient.connect (means registry is connected) '
       )

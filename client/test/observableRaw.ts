@@ -260,12 +260,14 @@ test.only('Make some observables and many subs managers', async (t) => {
     'New server does have moved channel'
   )
 
+  console.info('RESULTS BEFORE OBS 5', await getServersSubscriptions())
+
   t.is(
     Object.values(await getServersSubscriptions()).reduce((a, b) => {
       return a + b.length
     }, 0),
-    4,
-    'after moving to obs5 still has 4 things'
+    5,
+    'after moving to obs5 still has 5 things'
   )
 
   // we just destroyed the other observable as well :/
@@ -278,8 +280,8 @@ test.only('Make some observables and many subs managers', async (t) => {
     Object.values(await getServersSubscriptions()).reduce((a, b) => {
       return a + b.length
     }, 0),
-    4,
-    'after removing obs5 still has 4 subs'
+    5,
+    'after removing obs5 still has 5 subs'
   )
 
   await wait(3e3)
@@ -293,13 +295,13 @@ test.only('Make some observables and many subs managers', async (t) => {
     Object.values(await getServersSubscriptions()).reduce((a, b) => {
       return a + b.length
     }, 0),
-    4,
-    'after removing servers still has 4 subs'
+    5,
+    'after removing servers still has 5 subs'
   )
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map((v) => v.length),
-    [4],
+    [5],
     'Correct spread one 1 server is left'
   )
 

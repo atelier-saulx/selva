@@ -16,9 +16,8 @@ const updateServerListeners = (selvaClient: SelvaClient) => {
       selvaClient.addServerUpdateListeners[i]()
     }
     if (selvaClient.addServerUpdateListeners.length > len) {
-      selvaClient.addServerUpdateListeners = selvaClient.addServerUpdateListeners.slice(
-        len
-      )
+      selvaClient.addServerUpdateListeners =
+        selvaClient.addServerUpdateListeners.slice(len)
     } else {
       selvaClient.addServerUpdateListeners = []
     }
@@ -93,6 +92,8 @@ const connectRegistry = (
           selvaClient.emit('connect', descriptor)
           getInitialRegistryServers(selvaClient).then(() => {
             selvaClient.emit('added-servers', { event: '*' })
+            console.info('add  servers CONNECT')
+
             updateServerListeners(selvaClient)
           })
         },
@@ -104,6 +105,8 @@ const connectRegistry = (
         // not a promise is faster
         getInitialRegistryServers(selvaClient).then(() => {
           selvaClient.emit('added-servers', { event: '*' })
+          console.info('add  servers REUSED')
+
           updateServerListeners(selvaClient)
         })
       }
@@ -139,6 +142,7 @@ const connectRegistry = (
               const { server } = payload
               if (addServer(selvaClient, <ServerDescriptor>server)) {
                 selvaClient.emit('added-servers', payload)
+                console.info('add single server', payload)
                 updateServerListeners(selvaClient)
               }
             } else if (event === 'remove') {
