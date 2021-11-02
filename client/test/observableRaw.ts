@@ -120,12 +120,16 @@ test.only('Make some observables and many subs managers', async (t) => {
 
   obs4.subscribe(() => {})
 
-  await wait(1e3)
+  await wait(2e3)
 
   // need to test lesst strict we just want these numbers
-  const resultSpread = [1, 2, 1]
+  const resultSpread = [2, 2, 1]
 
-  console.info('SPREAD', resultSpread)
+  // console.info(
+  //   'SPREAD',
+  //   Object.values(await getServersSubscriptions()).map((v) => v.length),
+  //   await getServersSubscriptions()
+  // )
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map((v) => v.length),
