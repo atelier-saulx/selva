@@ -1,13 +1,11 @@
 import test from 'ava'
-import { connect, connections, Observable, constants } from '../src/index'
+import { connect, Observable, constants } from '../src/index'
 import {
   startRegistry,
   startOrigin,
-  startReplica,
   startSubscriptionManager,
   startSubscriptionRegistry,
 } from '../../server/dist'
-import './assertions'
 import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
 import getPort from 'get-port'
