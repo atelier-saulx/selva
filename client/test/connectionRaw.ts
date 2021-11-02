@@ -140,13 +140,21 @@ test.serial('connection / server orchestration', async (t) => {
     { strict: true }
   )
 
-  await client.updateSchema({
-    rootType: {
-      fields: {
-        flap: { type: 'string' },
+  try {
+    await client.updateSchema({
+      rootType: {
+        fields: {
+          flap: { type: 'string' },
+        },
       },
-    },
-  })
+    })
+
+    console.info('schema correct')
+  } catch (err) {
+    console.error(err)
+  }
+
+  console.log('xxxx')
 
   await client.set({
     $id: 'root',
@@ -170,7 +178,7 @@ test.serial('connection / server orchestration', async (t) => {
             fn(r, ++cnt)
           } else {
             await client.destroy()
-            console.log('Done with load (30 x 100k)')
+            console.info('Done with load (30 x 100k)')
           }
         }
         fn(r)
@@ -181,6 +189,8 @@ test.serial('connection / server orchestration', async (t) => {
   }
 
   await putUnderLoad(oneReplica)
+
+  console.log('pl 1')
 
   // now getting a replica needs to get another one
   const secondReplica = await client.getServer(
@@ -194,6 +204,8 @@ test.serial('connection / server orchestration', async (t) => {
   )
 
   await putUnderLoad(secondReplica)
+
+  console.log('pl 2')
 
   const [{ replica, moduleId, size }, w1] = await worker(
     async ({ connect, wait, moduleId, connections }, { port }) => {
@@ -209,6 +221,8 @@ test.serial('connection / server orchestration', async (t) => {
   )
 
   w1.terminate()
+
+  console.log('dirty exit 1')
 
   // put under load test combined with disconnect
   // emulting busy errors
@@ -511,7 +525,7 @@ test.serial(
       default: true,
     })
     let timeoutCnt = 0
-    origin.on('error', (err) => {
+    origin.on('error', () => {
       // redis crash
       timeoutCnt++
     })
@@ -550,7 +564,7 @@ test.serial('Change origin and re-conn replica', async (t) => {
   })
 
   replica.on('error', (err) => {
-    console.log(err)
+    console.error(err)
   })
 
   const client = connect({ port })
