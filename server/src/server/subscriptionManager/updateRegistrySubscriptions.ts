@@ -76,10 +76,8 @@ export default async function updateRegistry(
   // this has to go
   // const x = ~~(Math.random() * 5e3)
   // await wait()
-
   // this is not rly the problem
   // maybe it has more otdo with query load
-
   // console.info('✨ OK register with sub', 'waited', x, 'ms', info.subscriptions)
 
   for (const key in info.subscriptions) {

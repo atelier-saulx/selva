@@ -1,6 +1,5 @@
 import { SubscriptionManager, Subscription } from './types'
 import { constants, GetOptions } from '@saulx/selva'
-import { hash } from './util'
 import addUpdate from './update/addUpdate'
 import { addOriginListeners } from './originListeners'
 import updateRegistry from './updateRegistrySubscriptions'
@@ -50,7 +49,7 @@ const parseOrigins = (
       origins.add('default')
     }
   }
-  for (let key in getOptions) {
+  for (const key in getOptions) {
     if (key === '$db') {
       origins.add(getOptions[key])
     } else if (typeof getOptions[key] === 'object') {
