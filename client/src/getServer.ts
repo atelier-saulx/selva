@@ -15,9 +15,9 @@ const getServer = (
   } else {
     let { type, name } = selector
     if (!selvaClient.registryConnection) {
-      // console.log(
-      //   'registry connection not created, add once listener on selvaClient.connect (means registry is connected) '
-      // )
+      console.info(
+        'registry connection not created, add once listener on selvaClient.connect (means registry is connected) '
+      )
       selvaClient.addServerUpdateListeners.push(() =>
         getServer(selvaClient, cb, selector, selectionOptions)
       )
@@ -50,8 +50,10 @@ const getServer = (
           }
 
           if (subReg) {
+            console.info('go sub reg select')
+
             const timer = setTimeout(() => {
-              // console.log('Timeout getting from subs registry')
+              console.log('Timeout getting from subs registry')
               isCanceled = true
               delete getSubInprogress[selectionOptions.subscription]
               getServer(selvaClient, cb, selector)
@@ -65,6 +67,8 @@ const getServer = (
               )
             }
             getSubInprogress[selectionOptions.subscription].then((serverId) => {
+              console.info('go sub reg select result', serverId)
+
               if (!isCanceled) {
                 if (serverId) {
                   let [host, port] = serverId.split(':')
@@ -92,6 +96,8 @@ const getServer = (
               }
             })
           } else {
+            console.info('!!NO sub reg select')
+
             getServer(selvaClient, cb, selector)
           }
           return

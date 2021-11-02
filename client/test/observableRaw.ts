@@ -120,21 +120,30 @@ test.only('Make some observables and many subs managers', async (t) => {
 
   obs4.subscribe(() => {})
 
-  await wait(2e3)
+  await wait(1e3)
 
   // need to test lesst strict we just want these numbers
+  // includs schema sub so it are 5 of them
   const resultSpread = [2, 2, 1]
-
-  // console.info(
-  //   'SPREAD',
-  //   Object.values(await getServersSubscriptions()).map((v) => v.length),
-  //   await getServersSubscriptions()
-  // )
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map((v) => v.length),
     resultSpread,
     'Correct spread of subscriptions on subs managers'
+  )
+
+  console.info(
+    'SPREAD',
+    Object.values(await getServersSubscriptions()).map((v) => v.length),
+    await getServersSubscriptions()
+  )
+
+  await wait(5e3)
+
+  console.info(
+    'SPREAD-2',
+    Object.values(await getServersSubscriptions()).map((v) => v.length),
+    await getServersSubscriptions()
   )
 
   // use this worker to test
@@ -171,6 +180,12 @@ test.only('Make some observables and many subs managers', async (t) => {
       await wait(1e3)
     },
     { port }
+  )
+
+  console.info(
+    'SPREAD after worker',
+    Object.values(await getServersSubscriptions()).map((v) => v.length),
+    await getServersSubscriptions()
   )
 
   t.deepEqualIgnoreOrder(

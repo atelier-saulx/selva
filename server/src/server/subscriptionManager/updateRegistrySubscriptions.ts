@@ -32,6 +32,9 @@ const handleAddPrev = async (
         )
       ) {
         // if the server is unregistered this will be useless to add to a quuee
+
+        console.info('MOVE SUB', channel, id)
+
         await client.redis.publish(
           { host, port: port, type: 'subscriptionManager' },
           constants.REGISTRY_MOVE_SUBSCRIPTION,
