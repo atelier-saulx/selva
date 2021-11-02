@@ -16,7 +16,10 @@ const getServer = (
     let { type, name } = selector
     if (
       !selvaClient.registryConnection ||
-      !selvaClient.registryConnection.connected
+      (type === 'subscriptionManager' &&
+        selectionOptions &&
+        selectionOptions.subscription &&
+        !selvaClient.registryConnection.connected)
     ) {
       console.info(
         'registry connection not created, add once listener on selvaClient.connect (means registry is connected) '
