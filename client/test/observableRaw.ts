@@ -16,7 +16,7 @@ const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 test.before(removeDump(dir))
 test.after(removeDump(dir))
 
-test.only('Make some observables and many subs managers', async (t) => {
+test.serial('Make some observables and many subs managers', async (t) => {
   // maybe run all the servers in workers
   const port = await getPort()
   const registry = await startRegistry({ port })
@@ -338,7 +338,7 @@ test.only('Make some observables and many subs managers', async (t) => {
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map((v) => v.length),
-    [1],
+    [2],
     'New sub is added'
   )
 
