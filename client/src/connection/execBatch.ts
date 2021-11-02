@@ -74,8 +74,8 @@ export default function execBatch(
                       setTimeout(() => {
                         showUncertainState = true
                         console.warn(
+                          connection.serverDescriptor,
                           chalk.yellow(
-                            connection.serverDescriptor,
                             `Uncertain state errors (connection lost) fired ${uncertainStateCnt}x in the last second`
                           )
                         )
