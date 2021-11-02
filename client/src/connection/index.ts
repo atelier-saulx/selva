@@ -671,7 +671,7 @@ const createConnection = (serverDescriptor: ServerDescriptor) => {
   // here needs to be special
   let connection = connections.get(serverId(serverDescriptor))
   if (!connection) {
-    console.info('sd', serverDescriptor)
+    // console.info('sd', serverDescriptor)
 
     if (serverDescriptor.type === 'timeseries') {
       console.info('NEED TO MAKE A SPECIAL CONNECTION!')
