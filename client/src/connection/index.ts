@@ -646,7 +646,9 @@ class Connection {
       //   channel
       // )
     } else {
-      // console.info('    🤯 SEND ', type, channel)
+      if (type === 'UNSUBSCRIBE') {
+        console.info('    🤯 UNSUBSCRIBE ', type, channel)
+      }
 
       // use to string
       for (const toWrite of encodeCommand([type, channel])) {
