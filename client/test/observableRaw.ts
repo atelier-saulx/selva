@@ -344,13 +344,19 @@ test.serial('Make some observables and many subs managers', async (t) => {
 
   w.terminate()
 
-  await wait(5e3)
+  await wait(15e3)
 
   t.deepEqual(
-    await getServersSubscriptions(),
-    {},
-    'all subs are removed from subsregistry after worker is terminated'
+    Object.values(await getServersSubscriptions()),
+    [['___selva_subscription:schema_update:default']],
+    'all subs are removed from subsregistry after worker is terminated - except schema'
   )
+
+  // t.deepEqual(
+  //   await getServersSubscriptions(),
+  //   {},
+  //   'all subs are removed from subsregistry after worker is terminated'
+  // )
 
   await wait(500)
   await client.destroy()
