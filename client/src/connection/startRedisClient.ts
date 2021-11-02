@@ -51,7 +51,6 @@ const startClient = (
         clearTimeout(connection.serverHeartbeatTimer)
         connection.connected = false
         connection.isDc = true
-        console.info('DC', connection.serverDescriptor.type)
         connection.emit('disconnect', type)
       }
     }
