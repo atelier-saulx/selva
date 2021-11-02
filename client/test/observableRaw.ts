@@ -315,10 +315,12 @@ test.only('Make some observables and many subs managers', async (t) => {
 
   await wait(2000)
 
+  console.log(Object.values(await getServersSubscriptions()))
+
   t.deepEqual(
-    await getServersSubscriptions(),
-    {},
-    'all subs are removed from subsregistry'
+    Object.values(await getServersSubscriptions()),
+    [['___selva_subscription:schema_update:default']],
+    'all subs are removed from subsregistry - except schema'
   )
 
   const [, w] = await worker(
