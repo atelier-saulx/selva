@@ -546,6 +546,8 @@ export class Observable {
           })
         }
       } else if (channel === incomingChannel) {
+        console.info('incoming', incomingChannel, msg)
+
         // msg is checksum
         // will also add diff maybe? or store the last diff?
         // console.log('Incoming msg for observable', msg)

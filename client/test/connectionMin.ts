@@ -86,6 +86,8 @@ test.serial('connection min', async (t) => {
     console.info('------------------------>', d)
   })
 
+  await wait(500)
+
   await client.set({
     $id: x,
     snurk: 'x',
@@ -105,8 +107,15 @@ test.serial('connection min', async (t) => {
     snurk: 'flurp',
   })
 
+  await client.set({
+    type: 'flap',
+    snurk: 'flurp',
+  })
+
   console.info('s3')
 
+  await wait(2000)
+  console.info('\n\nUNSUBSCRIBE')
   obs.unsubscribe()
   // unsubsribe
 
