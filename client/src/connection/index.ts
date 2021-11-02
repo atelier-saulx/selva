@@ -573,7 +573,7 @@ class Connection {
 
   public destroy() {
     // remove this log later...
-    // console.log('Destroy connection', serverId(this.serverDescriptor))
+    console.info('Destroy connection', this.serverDescriptor)
 
     if (this.isDestroyed) {
       console.warn('Allready destroyed connection', this.serverDescriptor)
@@ -647,7 +647,12 @@ class Connection {
       // )
     } else {
       if (type === 'UNSUBSCRIBE') {
-        console.info('    🤯 UNSUBSCRIBE ', type, channel)
+        console.info(
+          '    🤯 UNSUBSCRIBE ',
+          type,
+          channel,
+          this.serverDescriptor
+        )
       }
 
       // use to string

@@ -61,9 +61,10 @@ const orderServers = (
   }
 
   if (move) {
-    if (type === 'subscriptionManager') {
-      console.info('MOVE SUB MANAGER (weight is subs)', servers)
-    }
+    // if (type === 'subscriptionManager') {
+    // this is only about moving the ordering (which one to select)
+    // console.info('MOVE SUB MANAGER (weight is subs)', servers)
+    // }
 
     q.push(
       redis.publish(

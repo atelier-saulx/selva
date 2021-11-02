@@ -142,7 +142,7 @@ const createSocket = (
     socket.on('connect', () => {
       tries = 0
       // console.info(connection.serverDescriptor)
-      console.info('connect SOCKET!', type, connection.serverDescriptor)
+      // console.info('connect SOCKET!', type, connection.serverDescriptor)
 
       connection.clientsConnected[type] = true
       for (const t in connection.clientsConnected) {
@@ -191,9 +191,9 @@ const createSocket = (
         log(connection, type + ': ' + err.message)
       }
     })
-    socket.on('drain', () => {
-      console.info('drain time!')
-    })
+    // socket.on('drain', () => {
+    //   console.info('drain time!')
+    // })
     connection[type] = socket
   }
 
