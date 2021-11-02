@@ -38,7 +38,7 @@ const createSocket = (
     socket.commands = []
 
     const parser = new RedisParser({
-      returnReply: (reply: unknown) => {
+      returnReply: (reply: unknown, ...args) => {
         const t = Array.isArray(reply) && reply[0]
 
         // if (connection.serverDescriptor.type !== 'registry') {
@@ -51,6 +51,7 @@ const createSocket = (
         // }
 
         if (
+          reply === 'QUEUED' ||
           t === 'subscribe' ||
           t === 'psubscribe' ||
           t === 'unsubscribe' ||
@@ -80,17 +81,17 @@ const createSocket = (
           // @ts-ignore
           const r = socket.commands.shift()
 
-          // console.info('\nREPLY', reply)
+          // console.info('\nREPLY', reply, args)
           if (r) {
-            // if (connection.serverDescriptor.type !== 'registry') {
-            //   console.info(
-            //     'RESOLVE IT!',
-            //     connection.serverDescriptor,
-            //     r[2],
-            //     r[3]
-            //   )
-            //   console.log('\n')
-            // }
+            if (connection.serverDescriptor.type !== 'registry') {
+              // console.info(
+              //   'RESOLVE IT!',
+              //   connection.serverDescriptor,
+              //   r[2],
+              //   r[3]
+              // )
+              // console.log('\n')
+            }
             r[0](reply)
           }
         }

@@ -19,8 +19,8 @@ test.serial('connection min', async (t) => {
 
   await wait(2000)
 
-  console.log('wait is done')
-  console.log('\n\n\n----------------------')
+  console.info('wait is done')
+  console.info('\n\n\n----------------------')
 
   const origin = await startOrigin({
     default: true,
@@ -56,7 +56,7 @@ test.serial('connection min', async (t) => {
 
   await wait(2000)
 
-  console.log('\n\n\n----------------------')
+  console.info('\n\n\n----------------------')
   console.info('REMOVE ALL')
 
   await registry.destroy()
