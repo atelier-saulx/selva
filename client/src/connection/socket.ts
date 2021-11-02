@@ -214,7 +214,7 @@ const createSocket = (
         clearTimeout(connection.serverHeartbeatTimer)
         connection.connected = false
         connection.isDc = true
-        console.info('DC SOCKET', connection.serverDescriptor.type)
+        // console.info('DC SOCKET', connection.serverDescriptor.type)
         connection.emit('disconnect', type)
       }
     }

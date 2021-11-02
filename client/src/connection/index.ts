@@ -689,10 +689,10 @@ class Connection {
         // this is prob a good place...
         this.destroyIfIdle()
 
-        console.info('go go go CONNECTED', this.serverDescriptor)
-
-        console.info('SEND SUBS DO QUEUE', this.subscriptions)
-        console.info('SEND PSUBS DO QUEUE', this.psubscriptions)
+        // handle inco,ing
+        // console.info('go go go CONNECTED', this.serverDescriptor)
+        // console.info('SEND SUBS DO QUEUE', this.subscriptions)
+        // console.info('SEND PSUBS DO QUEUE', this.psubscriptions)
 
         for (const channel in this.subscriptions) {
           this.sendPubSubOverWire('SUBSCRIBE', channel)

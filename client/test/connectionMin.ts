@@ -4,6 +4,7 @@ import {
   startRegistry,
   startOrigin,
   startSubscriptionManager,
+  startSubscriptionRegistry,
 } from '../../server'
 import { wait } from './assertions'
 import getPort from 'get-port'
@@ -59,30 +60,54 @@ test.serial('connection min', async (t) => {
 
   console.info('SNURXXX', flap)
 
+  const sReg = await startSubscriptionRegistry({ registry: { port } })
+
   const subManager = await startSubscriptionManager({
     registry: { port },
   })
 
-  const unsubsribe = client
-    .observe({
-      snurks: {
-        $all: true,
-        $list: {
-          $find: {
-            $traverse: 'children',
-            $filter: {
-              $field: 'type',
-              $operator: '=',
-              $value: 'flap',
-            },
+  const obs = client.observe({
+    snurks: {
+      $all: true,
+      $list: {
+        $find: {
+          $traverse: 'children',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'flap',
           },
         },
       },
-    })
-    .subscribe((d) => {
-      console.info('------------------------>', d)
-    })
+    },
+  })
 
+  obs.subscribe((d) => {
+    console.info('------------------------>', d)
+  })
+
+  await client.set({
+    $id: x,
+    snurk: 'x',
+  })
+
+  console.info('s1')
+
+  await client.set({
+    $id: x,
+    snurk: 'y',
+  })
+
+  console.info('s2')
+
+  await client.set({
+    $id: x,
+    snurk: 'flurp',
+  })
+
+  console.info('s3')
+
+  obs.unsubscribe()
   // unsubsribe
 
   await wait(10000)
@@ -92,6 +117,8 @@ test.serial('connection min', async (t) => {
 
   await registry.destroy()
   await origin.destroy()
+  await subManager.destroy()
+  await sReg.destroy()
   await client.destroy()
 
   await t.connectionsAreEmpty()
