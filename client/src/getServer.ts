@@ -67,8 +67,6 @@ const getServer = (
           }
 
           if (subReg) {
-            console.info('go sub reg select')
-
             const timer = setTimeout(() => {
               console.info('Timeout getting from subs registry')
               isCanceled = true
@@ -83,8 +81,6 @@ const getServer = (
                 )
             }
             getSubInprogress[selectionOptions.subscription].then((serverId) => {
-              console.info('go sub reg select result', serverId)
-
               if (!isCanceled) {
                 if (serverId) {
                   let [host, port] = serverId.split(':')
@@ -112,8 +108,6 @@ const getServer = (
               }
             })
           } else {
-            console.info('!!NO sub reg select')
-
             getServer(selvaClient, cb, selector)
           }
           return
