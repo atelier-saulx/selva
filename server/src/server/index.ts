@@ -12,7 +12,6 @@ import attachStatusListeners from './attachStatusListeners'
 import { wait } from '../util'
 import chalk from 'chalk'
 import { removeFromRegistry } from './updateRegistry'
-import beforeExit from 'before-exit'
 import {
   startSubscriptionManager,
   stopSubscriptionManager,
@@ -49,7 +48,7 @@ export class SelvaServer extends EventEmitter {
     this.setMaxListeners(10000)
     this.type = type
 
-    this.on('error', (err) => {
+    this.on('error', () => {
       // console.error(err)
     })
 

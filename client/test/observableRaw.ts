@@ -55,7 +55,7 @@ test.serial('Make some observables and many subs managers', async (t) => {
       constants.REGISTRY_SUBSCRIPTION_INDEX + '*'
     )
     const s = {}
-    for (let k of servers) {
+    for (const k of servers) {
       const x = await client.redis.smembers({ type: 'subscriptionRegistry' }, k)
       s[k.replace(constants.REGISTRY_SUBSCRIPTION_INDEX, '')] = x
     }
@@ -336,7 +336,7 @@ test.serial('Make some observables and many subs managers', async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.only('diff observables', async (t) => {
+test.serial('diff observables', async (t) => {
   const port = await getPort()
   const registry = await startRegistry({ port })
   const connectOpts = { port }

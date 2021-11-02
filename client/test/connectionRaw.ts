@@ -21,9 +21,7 @@ test.after(removeDump(dir))
 test.serial('connection / server orchestration', async (t) => {
   await wait(2e3)
   const port = await getPort()
-
   const registry = await startRegistry({ port })
-
   const client = connect({
     port,
   })
