@@ -26,6 +26,11 @@ const drainQueue = (connection: Connection, q?: RedisCommand[]) => {
           if (command === 'info') {
             connection.publisher.info((err, data) => {
               if (err || !data) {
+                console.info(
+                  'go some error on my info',
+                  err,
+                  connection.serverDescriptor
+                )
                 if (reject) {
                   reject(err || new Error('no data'))
                 } else if (resolve) {

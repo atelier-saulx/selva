@@ -31,10 +31,6 @@ export default function execBatch(
     } else {
       const batch = connection.publisher.batch()
 
-      if (global.SNURK) {
-        console.info('LOGGY TIME', queue, connection.serverDescriptor)
-      }
-
       // console.log(queue.filter(v => v.command !== 'SCRIPT'))
 
       queue.forEach(({ command, args }) => {
