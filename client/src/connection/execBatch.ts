@@ -19,13 +19,14 @@ export default function execBatch(
           console.info('DC while busy add to buffer again!')
           connection.queue.push(...queue)
         } else {
+          console.info('retry batch', queue)
           execBatch(connection, queue)
             .then(() => {
               resolve()
             })
             .catch((err) => reject(err))
         }
-      }, 5e3)
+      }, 10e3)
     } else {
       const batch = connection.publisher.batch()
 
