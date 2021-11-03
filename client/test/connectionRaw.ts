@@ -582,6 +582,8 @@ test.serial('Change origin and re-conn replica', async (t) => {
   t.is(y, 'snurf', 'get snurf from re-connected replica')
 
   await wait(6000)
+  console.info('------------------------\n go destroy stuff')
+  global.SNURK = true
   await replica.destroy()
   await registry.destroy()
   await origin.destroy()

@@ -577,18 +577,23 @@ class Connection {
     this.clients = new Set()
 
     this.isDestroyed = true
+    this.subscriber.unsubscribe()
+
+    setTimeout(() => {
+      this.subscriber.unref()
+      this.subscriber.quit()
+      this.publisher.unref()
+      this.publisher.quit()
+
+      delete this.publisher
+      delete this.subscriber
+    }, 100)
 
     this.subscriber.removeAllListeners()
     this.publisher.removeAllListeners()
 
     this.subscriber.on('error', () => {})
     this.publisher.on('error', () => {})
-
-    this.subscriber.unsubscribe()
-    this.subscriber.unref()
-    this.subscriber.quit()
-    this.publisher.unref()
-    this.publisher.quit()
 
     if (this.destroyTimer) {
       clearTimeout(this.destroyTimer)
