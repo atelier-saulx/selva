@@ -1,6 +1,7 @@
 import { Connection } from '.'
 import { RedisCommand } from '../redis/types'
 import chalk from 'chalk'
+import { connect } from '..'
 
 let uncertainStateCnt = 0
 let showUncertainState = true
@@ -29,6 +30,10 @@ export default function execBatch(
       }, 10e3)
     } else {
       const batch = connection.publisher.batch()
+
+      if (global.SNURK) {
+        console.info('LOGGY TIME', queue, connection.serverDescriptor)
+      }
 
       // console.log(queue.filter(v => v.command !== 'SCRIPT'))
 
