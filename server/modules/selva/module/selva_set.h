@@ -107,7 +107,14 @@ int SelvaSet_AddNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
         const char *: SelvaSet_AddNodeId \
         )((set), (x))
 
-int SelvaSet_HasRms(struct SelvaSet *set, RedisModuleString *s);
+/**
+ * Look for a string equal to s in the SelvaSet set.
+ * @returns Returns a pointer to a RedisModuleString stored in set if found;
+ *          Otherwise a NULL pointer is returned.
+ */
+struct RedisModuleString *SelvaSet_FindRms(struct SelvaSet *set, struct RedisModuleString *s);
+
+int SelvaSet_HasRms(struct SelvaSet *set, struct RedisModuleString *s);
 int SelvaSet_HasDouble(struct SelvaSet *set, double d);
 int SelvaSet_HasLongLong(struct SelvaSet *set, long long ll);
 int SelvaSet_HasNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
@@ -119,7 +126,7 @@ int SelvaSet_HasNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
         const char *: SelvaSet_HasNodeId \
         )((set), (x))
 
-struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s);
+struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, struct RedisModuleString *s);
 struct SelvaSetElement *SelvaSet_RemoveDouble(struct SelvaSet *set, double d);
 struct SelvaSetElement *SelvaSet_RemoveLongLong(struct SelvaSet *set, long long ll);
 struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, const Selva_NodeId node_id);

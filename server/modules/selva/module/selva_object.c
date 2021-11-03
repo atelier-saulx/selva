@@ -12,6 +12,7 @@
 #include "selva_set.h"
 #include "svector.h"
 #include "tree.h"
+#include "shared.h"
 #include "selva_object.h"
 
 #define SELVA_OBJECT_KEY_MAX            USHRT_MAX /*!< Maximum length of a key including dots and array notation. */
@@ -23,7 +24,8 @@
  */
 #define NR_EMBEDDED_KEYS                4
 /**
- * Maximum length of the name of an embedded key. Must align nicely with the SelvaObject structure.
+ * Maximum length of the name of an embedded key.
+ * Must align nicely with the SelvaObject structure.
  */
 #define EMBEDDED_NAME_MAX               8
 #define EMBEDDED_KEY_SIZE               (sizeof(struct SelvaObjectKey) + EMBEDDED_NAME_MAX)
@@ -2227,13 +2229,28 @@ static int rdb_load_object_long_long(RedisModuleIO *io, struct SelvaObject *obj,
 }
 
 static int rdb_load_object_string(RedisModuleIO *io, struct SelvaObject *obj, const RedisModuleString *name) {
+    TO_STR(name);
     RedisModuleString *value = RedisModule_LoadString(io);
-    int err;
+    RedisModuleString *shared = Share_RMS(name_str, name_len, value);
 
-    err = SelvaObject_SetString(obj, name, value);
-    if (err) {
-        RedisModule_LogIOError(io, "warning", "Error while loading a string");
-        return SELVA_EINVAL;
+    if (shared) {
+        int err;
+
+        RedisModule_FreeString(NULL, value);
+
+        err = SelvaObject_SetStringStr(obj, name_str, name_len, shared);
+        if (err) {
+            RedisModule_LogIOError(io, "warning", "Failed to set a shared string value");
+            return err;
+        }
+    } else {
+        int err;
+
+        err = SelvaObject_SetStringStr(obj, name_str, name_len, value);
+        if (err) {
+            RedisModule_LogIOError(io, "warning", "Error while loading a string");
+            return SELVA_EINVAL;
+        }
     }
 
     return 0;

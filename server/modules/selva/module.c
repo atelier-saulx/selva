@@ -19,6 +19,7 @@
 #include "module/selva_node.h"
 #include "module/selva_object.h"
 #include "module/subscriptions.h"
+#include "module/shared.h"
 
 #define FLAG_NO_ROOT    0x01
 #define FLAG_NO_MERGE   0x02
@@ -603,12 +604,22 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 }
             }
 
-            err = SelvaObject_SetString(obj, field, value);
-            if (err) {
-                replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
-                continue;
+            RedisModuleString *shared = Share_RMS(field_str, field_len, value);
+            if (shared) {
+                err = SelvaObject_SetString(obj, field, shared);
+                if (err) {
+                    RedisModule_FreeString(NULL, shared);
+                    replyWithSelvaErrorf(ctx, err, "Failed to set a shared string value");
+                    continue;
+                }
+            } else {
+                err = SelvaObject_SetString(obj, field, value);
+                if (err) {
+                    replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+                    continue;
+                }
+                RedisModule_RetainString(ctx, value);
             }
-            RedisModule_RetainString(ctx, value);
         } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
                    type_code == SELVA_MODIFY_ARG_LONGLONG) {
             if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG && old_type != SELVA_OBJECT_NULL) {

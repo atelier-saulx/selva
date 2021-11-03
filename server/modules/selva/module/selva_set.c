@@ -224,6 +224,24 @@ void SelvaSet_Destroy(struct SelvaSet *set) {
     }
 }
 
+RedisModuleString *SelvaSet_FindRms(struct SelvaSet *set, RedisModuleString *s) {
+    struct SelvaSetElement find = {
+        .value_rms = s,
+    };
+    RedisModuleString *res = NULL;
+
+    if (likely(set->type == SELVA_SET_TYPE_RMSTRING)) {
+        struct SelvaSetElement *el;
+
+        el = RB_FIND(SelvaSetRms, &set->head_rms, &find);
+        if (el) {
+            res = el->value_rms;
+        }
+    }
+
+    return res;
+}
+
 int SelvaSet_HasRms(struct SelvaSet *set, RedisModuleString *s) {
     struct SelvaSetElement find = {
         .value_rms = s,
