@@ -29,6 +29,16 @@ export default function execBatch(
         }
       }, 10e3)
     } else {
+      if (connection.isDestroyed) {
+        reject(new Error('Connection is destroyed'))
+        return
+      }
+
+      if (!connection.publisher) {
+        reject(new Error('No publisher'))
+        return
+      }
+
       const batch = connection.publisher.batch()
 
       // console.log(queue.filter(v => v.command !== 'SCRIPT'))
