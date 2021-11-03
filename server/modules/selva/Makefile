@@ -32,6 +32,7 @@ OBJS := \
 	module/selva_object_commands.o \
 	module/selva_set.o \
 	module/selva_type.o \
+	module/shared.o \
 	module/subscriptions.o
 
 IDIR := $(patsubst %,-I%, $(INCLUDE_DIR))
