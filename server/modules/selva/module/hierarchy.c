@@ -91,14 +91,6 @@ SET_DECLARE(selva_HMDtor, SelvaModify_HierarchyMetadataDestructorHook);
 __nonstring static const Selva_NodeId HIERARCHY_RDB_EOF;
 static RedisModuleType *HierarchyType;
 
-#if HIERARCHY_SORT_BY_DEPTH
-/*!<
- * DB is loading.
- * If set then some expensive operations can be skipped and/or deferred.
- */
-static int rdbLoading;
-#endif
-
 static void SelvaModify_DestroyNode(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
@@ -461,7 +453,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, Selv
 static void updateDepth(SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *head) {
     SVector q;
 
-    if (unlikely(rdbLoading)) {
+    if (unlikely(isRdbLoading(NULL))) {
         /*
          * Skip updates for now as it would require a full BFS pass for every new node.
          */
@@ -2237,10 +2229,6 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
         return NULL;
     }
 
-#if HIERARCHY_SORT_BY_DEPTH
-    rdbLoading = 1;
-#endif
-
     hierarchy = SelvaModify_NewHierarchy(NULL);
     if (!hierarchy) {
         RedisModule_LogIOError(io, "warning", "Failed to create a new hierarchy");
@@ -2327,8 +2315,6 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
     }
 
 #if HIERARCHY_SORT_BY_DEPTH
-    rdbLoading = 0;
-
     /*
      * Update depths on a single pass to save time.
      */
