@@ -587,7 +587,7 @@ class Connection {
 
       delete this.publisher
       delete this.subscriber
-    }, 100)
+    }, 0)
 
     this.subscriber.removeAllListeners()
     this.publisher.removeAllListeners()
