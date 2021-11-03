@@ -1,5 +1,6 @@
-import { native, QueryResult, Pool } from 'pg'
-const PgPool = native.Pool // or use pool if native deps are an issue
+import { /* native, */ QueryResult, Pool } from 'pg'
+// const PgPool = native.Pool // or use pool if native deps are an issue
+const PgPool = Pool // or use pool if native deps are an issue
 
 export class PG {
   protected pool: Pool
