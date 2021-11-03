@@ -130,6 +130,10 @@ static int SelvaModify_HierarchyNode_Compare(const SelvaModify_HierarchyNode *a,
 
 RB_GENERATE_STATIC(hierarchy_index_tree, SelvaModify_HierarchyNode, _index_entry, SelvaModify_HierarchyNode_Compare)
 
+static int isRdbLoading(RedisModuleCtx *ctx) {
+     return !!(REDISMODULE_CTX_FLAGS_LOADING & RedisModule_GetContextFlags(ctx));
+}
+
 SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     SelvaModify_Hierarchy *hierarchy;
 
@@ -157,7 +161,7 @@ SelvaModify_Hierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
         goto fail;
     }
 
-    if (unlikely(SelvaModify_SetHierarchy(ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL) < 0)) {
+    if (unlikely(SelvaModify_SetHierarchy(isRdbLoading(ctx) ? NULL : ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL) < 0)) {
         SelvaModify_DestroyHierarchy(hierarchy);
         hierarchy = NULL;
         goto fail;
@@ -306,6 +310,7 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
 
     memcpy(node->id, id, SELVA_NODE_ID_SIZE);
 
+    /* The SelvaObject is created elsewhere if we are loading and ctx is not set. */
     if (likely(ctx)) {
         int err;
 
@@ -334,6 +339,9 @@ static SelvaModify_HierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeI
 
 static void SelvaModify_DestroyNode(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy, SelvaModify_HierarchyNode *node) {
     SelvaModify_HierarchyMetadataDestructorHook **dtor_p;
+
+    /* Don't pass ctx when loading. */
+    ctx = isRdbLoading(ctx) ? NULL : ctx;
 
     SET_FOREACH(dtor_p, selva_HMDtor) {
         SelvaModify_HierarchyMetadataDestructorHook *dtor = *dtor_p;
@@ -516,7 +524,7 @@ static inline void publishAncestorsUpdate(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const SelvaModify_HierarchyNode *node) {
-    if (ctx) {
+    if (ctx && !isRdbLoading(ctx)) {
         SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, "ancestors", 9);
     }
 }
@@ -525,7 +533,7 @@ static inline void publishDescendantsUpdate(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const SelvaModify_HierarchyNode *node) {
-    if (ctx) {
+    if (ctx && !isRdbLoading(ctx)) {
         SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, "descendants", 11);
     }
 }
@@ -534,7 +542,7 @@ static inline void publishChildrenUpdate(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const SelvaModify_HierarchyNode *node) {
-    if (ctx) {
+    if (ctx && !isRdbLoading(ctx)) {
         SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, "children", 8);
     }
 }
@@ -543,7 +551,7 @@ static inline void publishParentsUpdate(
         RedisModuleCtx *ctx,
         struct SelvaModify_Hierarchy *hierarchy,
         const SelvaModify_HierarchyNode *node) {
-    if (ctx) {
+    if (ctx && !isRdbLoading(ctx)) {
         SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, "parents", 7);
     }
 }
@@ -1182,10 +1190,6 @@ int SelvaModify_SetHierarchyChildren(
     return res;
 }
 
-static int isRdbLoading(RedisModuleCtx *ctx) {
-     return !!(REDISMODULE_CTX_FLAGS_LOADING & RedisModule_GetContextFlags(ctx));
-}
-
 int SelvaHierarchy_UpsertNode(
         RedisModuleCtx *ctx,
         SelvaModify_Hierarchy *hierarchy,
@@ -1193,7 +1197,7 @@ int SelvaHierarchy_UpsertNode(
         SelvaModify_HierarchyNode **out) {
     SelvaModify_HierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, id);
     SelvaModify_HierarchyNode *prev_node;
-    int isLoading = isRdbLoading(ctx);
+    const int isLoading = isRdbLoading(ctx);
 
     if (node) {
         if (out) {
@@ -2229,7 +2233,7 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
         return NULL;
     }
 
-    hierarchy = SelvaModify_NewHierarchy(NULL);
+    hierarchy = SelvaModify_NewHierarchy(RedisModule_GetContextFromIO(io));
     if (!hierarchy) {
         RedisModule_LogIOError(io, "warning", "Failed to create a new hierarchy");
         return NULL;
