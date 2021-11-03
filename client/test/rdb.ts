@@ -187,6 +187,30 @@ test.serial('can reload from RDB', async (t) => {
     }
   })
 
+  await client.set({
+    $id: 'viTest',
+    title: { en: 'hello' },
+    stringAry: ['hello', 'world'],
+    doubleAry: [1.0, 2.1, 3.2],
+    intAry: [7, 6, 5, 4, 3, 2, 999],
+    children: [
+      {
+        type: 'lekkerType',
+        title: { en: 'hello' },
+        children: [
+          {
+            type: 'lekkerType',
+            title: { en: 'hello' },
+          },
+          {
+            type: 'lekkerType',
+            title: { en: 'hallo' },
+          },
+        ]
+      }
+    ]
+  })
+
   await client.redis.save()
   await wait(1000)
   await restartServer()

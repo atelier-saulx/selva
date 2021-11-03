@@ -208,13 +208,18 @@ static void SVector_Resize(SVector *vec, size_t i) {
 }
 
 void SVector_Insert(SVector *vec, void *el) {
+    assert(el);
+
     if (vec->vec_mode == SVECTOR_MODE_ARRAY && vec->vec_compar &&
         vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD) {
         migrate_arr_to_rbtree(vec);
     }
 
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
-        assert(el);
+        if (vec->vec_compar && SVector_Search(vec, el)) {
+            /* Already inserted into a sorted vector. */
+            return;
+        }
 
         ssize_t i = vec->vec_last++;
         SVector_Resize(vec, i);
@@ -231,8 +236,9 @@ void SVector_Insert(SVector *vec, void *el) {
 
         assert(vec->vec_last <= vec->vec_arr_len);
     } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
-        (void)rbtree_insert(vec, el);
-        vec->vec_last++;
+        if (!rbtree_insert(vec, el)) {
+            vec->vec_last++;
+        }
     } else {
         abort();
     }
@@ -243,8 +249,7 @@ void *SVector_InsertFast(SVector *vec, void *el) {
     assert(vec->vec_compar);
 
     if (vec->vec_mode == SVECTOR_MODE_ARRAY &&
-        vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD &&
-        vec->vec_compar) {
+        vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD) {
         migrate_arr_to_rbtree(vec);
     }
 
@@ -303,14 +308,20 @@ void *SVector_InsertFast(SVector *vec, void *el) {
         vec->vec_last++;
 
         assert(vec->vec_last <= vec->vec_arr_len);
+
+        return NULL;
     } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
-        vec->vec_last++;
-        return rbtree_insert(vec, el);
+        void *res;
+
+        res = rbtree_insert(vec, el);
+        if (!res) {
+            vec->vec_last++;
+        }
+
+        return res;
     } else {
         abort();
     }
-
-    return NULL;
 }
 
 ssize_t SVector_SearchIndex(const SVector * restrict vec, void *key) {

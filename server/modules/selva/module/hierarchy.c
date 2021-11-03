@@ -2276,6 +2276,9 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
             goto error;
         }
 
+        /*
+         * Load the ids of child nodes.
+         */
         uint64_t nr_children = RedisModule_LoadUnsigned(io);
         Selva_NodeId *children __auto_free = NULL;
 
@@ -2296,7 +2299,8 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
 
                 err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
                 if (err < 0) {
-                    RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy");
+                    RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
+                                           getSelvaErrorStr(err));
                     goto error;
                 }
 
@@ -2309,7 +2313,8 @@ void *HierarchyTypeRDBLoad(RedisModuleIO *io, int encver) {
          */
         err = SelvaModify_AddHierarchyP(NULL, hierarchy, node, 0, NULL, nr_children, children);
         if (err < 0) {
-            RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy");
+            RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
+                                   getSelvaErrorStr(err));
             goto error;
         }
     }

@@ -743,6 +743,35 @@ static char * test_foreach_large_fast_insert(void)
     return NULL;
 }
 
+static char * test_foreach_extra_large(void)
+{
+    struct data el[100000];
+    size_t i = 0;
+
+    SVector_Init(&vec, 300, compar);
+    for (i = 0; i < num_elem(el); i++) {
+        el[i].id = i;
+        SVector_Insert(&vec, &el[i]);
+        SVector_Insert(&vec, &el[i]);
+    }
+
+    pu_assert_equal("inserted all", i, 100000);
+    pu_assert_equal("size is correct", SVector_Size(&vec), 100000);
+
+    struct SVectorIterator it;
+    struct data *d;
+
+    i = 0;
+    SVector_ForeachBegin(&it, &vec);
+    while ((d = SVector_Foreach(&it))) {
+        i++;
+    }
+
+    pu_assert_equal("visited every item", i, 100000);
+
+    return NULL;
+}
+
 static char * test_get_index(void)
 {
     struct data el[] = { { 1 }, { 2 }, { 3 } };
@@ -801,6 +830,7 @@ void all_tests(void)
     pu_def_test(test_foreach_small, PU_RUN);
     pu_def_test(test_foreach_large, PU_RUN);
     pu_def_test(test_foreach_large_fast_insert, PU_RUN);
+    pu_def_test(test_foreach_extra_large, PU_RUN);
     pu_def_test(test_get_index, PU_RUN);
     pu_def_test(test_sizeof_ctrl, PU_RUN);
 }
