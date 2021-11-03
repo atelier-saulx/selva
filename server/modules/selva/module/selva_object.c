@@ -16,6 +16,17 @@
 
 #define SELVA_OBJECT_KEY_MAX            USHRT_MAX /*!< Maximum length of a key including dots and array notation. */
 #define SELVA_OBJECT_SIZE_MAX           (1 << 30) /*!< Maximum number of keys in a SelvaObject. */
+/**
+ * Number of keys embedded into the object.
+ * Must be a power of two. This must be relatively small because we are doing
+ * a linear search into the embedded keys.
+ */
+#define NR_EMBEDDED_KEYS                4
+/**
+ * Maximum length of the name of an embedded key. Must align nicely with the SelvaObject structure.
+ */
+#define EMBEDDED_NAME_MAX               8
+#define EMBEDDED_KEY_SIZE               (sizeof(struct SelvaObjectKey) + EMBEDDED_NAME_MAX)
 
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
@@ -43,8 +54,10 @@ struct SelvaObjectKey {
 };
 
 struct SelvaObject {
-    size_t obj_size;
+    uint32_t obj_size;
+    uint32_t emb_res;
     struct SelvaObjectKeys keys_head;
+    char emb_keys[NR_EMBEDDED_KEYS * EMBEDDED_KEY_SIZE];
 };
 
 struct so_type_name {
@@ -101,6 +114,7 @@ struct SelvaObject *SelvaObject_New(void) {
     }
 
     obj->obj_size = 0;
+    obj->emb_res = (1 << NR_EMBEDDED_KEYS) - 1;
     RB_INIT(&obj->keys_head);
 
     return obj;
@@ -247,6 +261,51 @@ static int clear_key_value(struct SelvaObjectKey *key) {
     return 0;
 }
 
+/**
+ * Get embedded key from index i.
+ * Note: There is no bound checking in this function.
+ */
+static inline struct SelvaObjectKey *get_emb_key(struct SelvaObject *obj, size_t i) {
+    return (struct SelvaObjectKey *)(obj->emb_keys + i * EMBEDDED_KEY_SIZE);
+}
+
+static struct SelvaObjectKey *alloc_key(struct SelvaObject *obj, size_t name_len) {
+    const size_t key_size = sizeof(struct SelvaObjectKey) + name_len + 1;
+    struct SelvaObjectKey *key;
+
+    if (name_len < EMBEDDED_NAME_MAX && obj->emb_res != 0) {
+        int i = __builtin_ffs(obj->emb_res) - 1;
+
+        obj->emb_res &= ~(1 << i); /* Reserve it. */
+        key = get_emb_key(obj, i);
+    } else {
+        key = RedisModule_Alloc(key_size);
+    }
+
+    if (key) {
+        memset(key, 0, key_size);
+    }
+
+    return key;
+}
+
+static void remove_key(struct SelvaObject *obj, struct SelvaObjectKey *key) {
+    const intptr_t i = ((intptr_t)key - (intptr_t)obj->emb_keys) / EMBEDDED_KEY_SIZE;
+
+    /* Clear and free the key. */
+    RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
+    obj->obj_size--;
+    (void)clear_key_value(key);
+
+    if (i >= 0 && i < NR_EMBEDDED_KEYS) {
+        /* The key was allocated from the embedded keys. */
+        obj->emb_res |= 1 << i; /* Mark it free. */
+    } else {
+        /* The key was allocated with RedisModule_Alloc(). */
+        RedisModule_Free(key);
+    }
+}
+
 void SelvaObject_Clear(struct SelvaObject *obj, const char * const exclude[]) {
     struct SelvaObjectKey *next;
 
@@ -265,15 +324,7 @@ void SelvaObject_Clear(struct SelvaObject *obj, const char * const exclude[]) {
         }
 
         if (clear) {
-            RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
-            obj->obj_size--;
-
-            /* Clear and free the key. */
-            (void)clear_key_value(key);
-#if MEM_DEBUG
-            memset(key, 0, sizeof(*key));
-#endif
-            RedisModule_Free(key);
+            remove_key(obj, key);
         }
     }
 }
@@ -327,15 +378,14 @@ size_t SelvaObject_MemUsage(const void *value) {
     return size;
 }
 
-static int _insert_new_key(struct SelvaObject *obj, const char *name_str, size_t name_len, struct SelvaObjectKey **key_out) {
+static int insert_new_key(struct SelvaObject *obj, const char *name_str, size_t name_len, struct SelvaObjectKey **key_out) {
     struct SelvaObjectKey *key;
 
     if (obj->obj_size == SELVA_OBJECT_SIZE_MAX) {
         return SELVA_OBJECT_EOBIG;
     }
 
-    const size_t key_size = sizeof(struct SelvaObjectKey) + name_len + 1;
-    key = RedisModule_Alloc(key_size);
+    key = alloc_key(obj, name_len);
     if (!key) {
         return SELVA_ENOMEM;
     }
@@ -343,7 +393,6 @@ static int _insert_new_key(struct SelvaObject *obj, const char *name_str, size_t
     /*
      * Initialize and insert.
      */
-    memset(key, 0, key_size);
     memcpy(key->name, name_str, name_len);
     key->name_len = (typeof(key->name_len))name_len; /* The size is already verified to fit in get_key(). */
     obj->obj_size++;
@@ -441,7 +490,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              * Otherwise we can just reuse the old one.
              */
             if (!key) {
-                err = _insert_new_key(obj, s, slen, &key);
+                err = insert_new_key(obj, s, slen, &key);
                 if (err) {
                     return err;
                 }
@@ -471,7 +520,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             if (!key) {
                 int err2;
 
-                err2 = _insert_new_key(obj, s, slen, &key);
+                err2 = insert_new_key(obj, s, slen, &key);
                 if (err2) {
                     return err2;
                 }
@@ -553,13 +602,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
     }
 
     if (flags & SELVA_OBJECT_GETKEY_DELETE) {
-        RB_REMOVE(SelvaObjectKeys, &cobj->keys_head, key);
-        cobj->obj_size--;
-        (void)clear_key_value(key);
-#if MEM_DEBUG
-        memset(key, 0, sizeof(*key));
-#endif
-        RedisModule_Free(key);
+        remove_key(cobj, key);
         key = NULL;
     }
 
@@ -567,7 +610,52 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
     return 0;
 }
 
+static struct SelvaObjectKey *find_key_emb(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
+    if (key_name_len < EMBEDDED_NAME_MAX) {
+        for (int i = 0; i < NR_EMBEDDED_KEYS; i++) {
+            if ((obj->emb_res & (1 << i)) == 0) {
+                struct SelvaObjectKey *key = get_emb_key(obj, i);
+
+                if (key->name_len == key_name_len && !memcmp(key->name, key_name_str, key_name_len)) {
+                    return key;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
+static struct SelvaObjectKey *find_key_rb(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
+    const size_t key_size = sizeof(struct SelvaObjectKey) + key_name_len + 1;
+    char buf[key_size] __attribute__((aligned(alignof(struct SelvaObjectKey))));
+    struct SelvaObjectKey *filter = (struct SelvaObjectKey *)buf;
+
+    memset(filter, 0, key_size);
+    memcpy(filter->name, key_name_str, key_name_len);
+    filter->name_len = key_name_len;
+
+    return RB_FIND(SelvaObjectKeys, &obj->keys_head, filter);
+}
+
+static struct SelvaObjectKey *find_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
+    struct SelvaObjectKey *key;
+
+    key = find_key_emb(obj, key_name_str, key_name_len);
+    if (key) {
+        return key;
+    }
+
+    /* Otherwise look from the RB tree. */
+    return find_key_rb(obj, key_name_str, key_name_len);
+}
+
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
+    struct SelvaObjectKey *key;
+
+    /* Prefetch seems to help just a little bit here. */
+    __builtin_prefetch(obj, 0, 0);
+
     if (key_name_len + 1 > SELVA_OBJECT_KEY_MAX) {
         return SELVA_ENAMETOOLONG;
     }
@@ -581,44 +669,20 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         key_name_len = get_array_field_start_idx(key_name_str, key_name_len);
     }
 
-    struct SelvaObjectKey *filter;
-    struct SelvaObjectKey *key;
-    const size_t key_size = sizeof(struct SelvaObjectKey) + key_name_len + 1;
-    char buf[key_size] __attribute__((aligned(alignof(struct SelvaObjectKey))));
-
-    filter = (struct SelvaObjectKey *)buf;
-    memset(filter, 0, key_size);
-    memcpy(filter->name, key_name_str, key_name_len);
-    filter->name_len = key_name_len;
-
-    key = RB_FIND(SelvaObjectKeys, &obj->keys_head, filter);
+    key = find_key(obj, key_name_str, key_name_len);
     if (!key && (flags & SELVA_OBJECT_GETKEY_CREATE)) {
-        /* TODO this is similar but the the same as _insert_new_key() */
-        if (obj->obj_size == SELVA_OBJECT_SIZE_MAX) {
-            return SELVA_OBJECT_EOBIG;
-        }
+        int err;
 
-        key = RedisModule_Alloc(key_size);
-        if (!key) {
-            return SELVA_ENOMEM;
+        err = insert_new_key(obj, key_name_str, key_name_len, &key);
+        if (err) {
+            return err;
         }
-
-        memcpy(key, filter, key_size);
-        memset(&key->_entry, 0, sizeof(key->_entry)); /* RFE Might not be necessary. */
-        obj->obj_size++;
-        (void)RB_INSERT(SelvaObjectKeys, &obj->keys_head, key);
     } else if (!key) {
         return SELVA_ENOENT;
     }
 
     if (flags & SELVA_OBJECT_GETKEY_DELETE) {
-        RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
-        obj->obj_size--;
-        (void)clear_key_value(key);
-#if MEM_DEBUG
-        memset(key, 0, sizeof(*key));
-#endif
-        RedisModule_Free(key);
+        remove_key(obj, key);
         key = NULL;
     }
 
