@@ -363,7 +363,7 @@ test.serial('get nested results without find', async (t) => {
 
   await Promise.all(teams.map((t) => client.set(t)))
 
-  const le = await client.set({
+  await client.set({
     type: 'league',
     name: 'league 1',
     children: matches,
