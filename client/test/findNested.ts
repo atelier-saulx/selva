@@ -37,8 +37,6 @@ test.before(async (t) => {
   })
 
   await client.destroy()
-
-  console.info('go time')
 })
 
 test.after(async (t) => {
@@ -83,8 +81,6 @@ test.serial('get nested results', async (t) => {
   }
 
   await Promise.all(teams.map((t) => client.set(t)))
-
-  console.info('go time set some things???')
 
   await client.set({
     type: 'league',
