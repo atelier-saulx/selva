@@ -2228,10 +2228,14 @@ static int rdb_load_object_long_long(RedisModuleIO *io, struct SelvaObject *obj,
     return 0;
 }
 
-static int rdb_load_object_string(RedisModuleIO *io, struct SelvaObject *obj, const RedisModuleString *name) {
+static int rdb_load_object_string(RedisModuleIO *io, int level, struct SelvaObject *obj, const RedisModuleString *name) {
     TO_STR(name);
     RedisModuleString *value = RedisModule_LoadString(io);
-    RedisModuleString *shared = Share_RMS(name_str, name_len, value);
+    RedisModuleString *shared = NULL;
+
+    if (level == 0) {
+        shared = Share_RMS(name_str, name_len, value);
+    }
 
     if (shared) {
         int err;
@@ -2354,7 +2358,7 @@ static int rdb_load_pointer(RedisModuleIO *io, int encver, struct SelvaObject *o
     return 0;
 }
 
-static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data) {
+static void *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data) {
     struct SelvaObject *obj;
 
     obj = SelvaObject_New();
@@ -2396,7 +2400,7 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
             }
             break;
         case SELVA_OBJECT_STRING:
-            err = rdb_load_object_string(io, obj, name);
+            err = rdb_load_object_string(io, level, obj, name);
             if (err) {
                 RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_STRING: %s",
                                        getSelvaErrorStr(err));
@@ -2415,7 +2419,7 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
                     return NULL;
                 }
 
-                key->value = rdb_load_object(io, encver, ptr_load_data);
+                key->value = rdb_load_object(io, encver, level + 1, ptr_load_data);
                 if (!key->value) {
                     RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_OBJECT");
                     return NULL;
@@ -2468,7 +2472,7 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, void *ptr_load_data)
 struct SelvaObject *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver, void *ptr_load_data) {
     struct SelvaObject *obj;
 
-    obj = rdb_load_object(io, encver, ptr_load_data);
+    obj = rdb_load_object(io, encver, 0, ptr_load_data);
 
     return obj;
 }
