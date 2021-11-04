@@ -2392,44 +2392,6 @@ void HierarchyTypeRDBSave(RedisModuleIO *io, void *value) {
     RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
 
-static void HierarchyAOFSaveHead(SelvaModify_HierarchyNode *node, void *arg) {
-    void **args = (void **)arg;
-    RedisModuleIO *aof = (RedisModuleIO *)args[0];
-    RedisModuleString *key = (RedisModuleString *)args[1];
-
-    /* Create the head node */
-    RedisModule_EmitAOF(aof, "SELVA.HIERARCHY.ADD", "sb",
-        key,
-        node->id, (size_t)SELVA_NODE_ID_SIZE);
-}
-
-static void HierarchyAOFSaveChild(SelvaModify_HierarchyNode *parent, SelvaModify_HierarchyNode *child, void *arg) {
-    void **args = (void **)arg;
-    RedisModuleIO *aof = (RedisModuleIO *)args[0];
-    RedisModuleString *key = (RedisModuleString *)args[1];
-
-    /* Create the children */
-    RedisModule_EmitAOF(aof, "SELVA.HIERARCHY.ADD", "sbb",
-    key,
-    child->id, (size_t)SELVA_NODE_ID_SIZE,
-    parent->id, (size_t)SELVA_NODE_ID_SIZE);
-}
-
-void HierarchyTypeAOFRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
-    SelvaModify_Hierarchy *hierarchy = (SelvaModify_Hierarchy *)value;
-    void *args[] = { aof, key };
-    const TraversalCallback cb = {
-        .head_cb = HierarchyAOFSaveHead,
-        .head_arg = args,
-        .node_cb = NULL,
-        .node_arg = NULL,
-        .child_cb = HierarchyAOFSaveChild,
-        .child_arg = args,
-    };
-
-    (void)full_dfs(hierarchy, &cb);
-}
-
 void HierarchyTypeFree(void *value) {
     SelvaModify_Hierarchy *hierarchy = (SelvaModify_Hierarchy *)value;
 
@@ -2740,7 +2702,7 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
         .rdb_load = HierarchyTypeRDBLoad,
         .rdb_save = HierarchyTypeRDBSave,
-        .aof_rewrite = HierarchyTypeAOFRewrite,
+        .aof_rewrite = NULL,
         .free = HierarchyTypeFree,
         .aux_load = SelvaVersion_AuxLoad,
         .aux_save = SelvaVersion_AuxSave,
