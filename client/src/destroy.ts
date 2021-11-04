@@ -1,5 +1,6 @@
 import { SelvaClient } from '.'
 import { connections } from './connection'
+import { wait } from './util'
 
 export default async (selvaClient: SelvaClient) => {
   if (selvaClient.isDestroyed) {
@@ -28,4 +29,6 @@ export default async (selvaClient: SelvaClient) => {
       )
     }
   })
+
+  await wait(500)
 }
