@@ -19,14 +19,25 @@ export default function execBatch(
           console.info('DC while busy add to buffer again!')
           connection.queue.push(...queue)
         } else {
+          console.info('retry batch', queue)
           execBatch(connection, queue)
             .then(() => {
               resolve()
             })
             .catch((err) => reject(err))
         }
-      }, 5e3)
+      }, 10e3)
     } else {
+      if (connection.isDestroyed) {
+        reject(new Error('Connection is destroyed'))
+        return
+      }
+
+      if (!connection.publisher) {
+        reject(new Error('No publisher'))
+        return
+      }
+
       const batch = connection.publisher.batch()
 
       // console.log(queue.filter(v => v.command !== 'SCRIPT'))
@@ -74,8 +85,8 @@ export default function execBatch(
                       setTimeout(() => {
                         showUncertainState = true
                         console.warn(
+                          connection.serverDescriptor,
                           chalk.yellow(
-                            connection.serverDescriptor,
                             `Uncertain state errors (connection lost) fired ${uncertainStateCnt}x in the last second`
                           )
                         )

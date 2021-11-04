@@ -12,7 +12,6 @@ import attachStatusListeners from './attachStatusListeners'
 import { wait } from '../util'
 import chalk from 'chalk'
 import { removeFromRegistry } from './updateRegistry'
-import beforeExit from 'before-exit'
 import {
   startSubscriptionManager,
   stopSubscriptionManager,
@@ -49,7 +48,7 @@ export class SelvaServer extends EventEmitter {
     this.setMaxListeners(10000)
     this.type = type
 
-    this.on('error', (err) => {
+    this.on('error', () => {
       // console.error(err)
     })
 
@@ -189,30 +188,32 @@ export class SelvaServer extends EventEmitter {
 }
 
 function addSignalHandlers(server: SelvaServer): void {
+  process.setMaxListeners(10e4)
+
   process.on('SIGINT', () => {
-    console.log('Got SIGINT, closing redis server')
+    console.info('Got SIGINT, closing redis server')
     if (server.pm) {
       server.pm.destroy('SIGINT')
     }
 
     setTimeout(() => {
-      console.log('Exiting after graceful shutdown')
+      console.info('Exiting after graceful shutdown')
       process.exit(0)
     }, 1e3 * 4).unref()
   })
   process.on('SIGTERM', () => {
-    console.log('Got SIGTERM, closing redis server')
+    console.info('Got SIGTERM, closing redis server')
     if (server.pm) {
       server.pm.destroy('SIGTERM')
     }
 
     setTimeout(() => {
-      console.log('Exiting after graceful shutdown')
+      console.info('Exiting after graceful shutdown')
       process.exit(0)
     }, 1e3 * 4).unref()
   })
   process.on('exit', (code) => {
-    console.log('Process exiting with code', code)
+    console.info('Process exiting with code', code)
     server.destroy()
     process.exit(0)
   })

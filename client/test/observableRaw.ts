@@ -1,13 +1,11 @@
 import test from 'ava'
-import { connect, connections, Observable, constants } from '../src/index'
+import { connect, Observable, constants } from '../src/index'
 import {
   startRegistry,
   startOrigin,
-  startReplica,
   startSubscriptionManager,
   startSubscriptionRegistry,
 } from '../../server/dist'
-import './assertions'
 import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
 import getPort from 'get-port'
@@ -57,7 +55,7 @@ test.serial('Make some observables and many subs managers', async (t) => {
       constants.REGISTRY_SUBSCRIPTION_INDEX + '*'
     )
     const s = {}
-    for (let k of servers) {
+    for (const k of servers) {
       const x = await client.redis.smembers({ type: 'subscriptionRegistry' }, k)
       s[k.replace(constants.REGISTRY_SUBSCRIPTION_INDEX, '')] = x
     }
@@ -125,12 +123,27 @@ test.serial('Make some observables and many subs managers', async (t) => {
   await wait(1e3)
 
   // need to test lesst strict we just want these numbers
-  const resultSpread = [1, 2, 1]
+  // includs schema sub so it are 5 of them
+  const resultSpread = [2, 2, 1]
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map((v) => v.length),
     resultSpread,
     'Correct spread of subscriptions on subs managers'
+  )
+
+  console.info(
+    'SPREAD',
+    Object.values(await getServersSubscriptions()).map((v) => v.length),
+    await getServersSubscriptions()
+  )
+
+  await wait(5e3)
+
+  console.info(
+    'SPREAD-2',
+    Object.values(await getServersSubscriptions()).map((v) => v.length),
+    await getServersSubscriptions()
   )
 
   // use this worker to test
@@ -167,6 +180,12 @@ test.serial('Make some observables and many subs managers', async (t) => {
       await wait(1e3)
     },
     { port }
+  )
+
+  console.info(
+    'SPREAD after worker',
+    Object.values(await getServersSubscriptions()).map((v) => v.length),
+    await getServersSubscriptions()
   )
 
   t.deepEqualIgnoreOrder(
@@ -241,12 +260,14 @@ test.serial('Make some observables and many subs managers', async (t) => {
     'New server does have moved channel'
   )
 
+  console.info('RESULTS BEFORE OBS 5', await getServersSubscriptions())
+
   t.is(
     Object.values(await getServersSubscriptions()).reduce((a, b) => {
       return a + b.length
     }, 0),
-    4,
-    'after moving to obs5 still has 4 things'
+    5,
+    'after moving to obs5 still has 5 things'
   )
 
   // we just destroyed the other observable as well :/
@@ -259,8 +280,8 @@ test.serial('Make some observables and many subs managers', async (t) => {
     Object.values(await getServersSubscriptions()).reduce((a, b) => {
       return a + b.length
     }, 0),
-    4,
-    'after removing obs5 still has 4 subs'
+    5,
+    'after removing obs5 still has 5 subs'
   )
 
   await wait(3e3)
@@ -274,13 +295,13 @@ test.serial('Make some observables and many subs managers', async (t) => {
     Object.values(await getServersSubscriptions()).reduce((a, b) => {
       return a + b.length
     }, 0),
-    4,
-    'after removing servers still has 4 subs'
+    5,
+    'after removing servers still has 5 subs'
   )
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map((v) => v.length),
-    [4],
+    [5],
     'Correct spread one 1 server is left'
   )
 
@@ -294,10 +315,12 @@ test.serial('Make some observables and many subs managers', async (t) => {
 
   await wait(2000)
 
+  console.log(Object.values(await getServersSubscriptions()))
+
   t.deepEqual(
-    await getServersSubscriptions(),
-    {},
-    'all subs are removed from subsregistry'
+    Object.values(await getServersSubscriptions()),
+    [['___selva_subscription:schema_update:default']],
+    'all subs are removed from subsregistry - except schema'
   )
 
   const [, w] = await worker(
@@ -315,19 +338,25 @@ test.serial('Make some observables and many subs managers', async (t) => {
 
   t.deepEqualIgnoreOrder(
     Object.values(await getServersSubscriptions()).map((v) => v.length),
-    [1],
+    [2],
     'New sub is added'
   )
 
   w.terminate()
 
-  await wait(5e3)
+  await wait(15e3)
 
   t.deepEqual(
-    await getServersSubscriptions(),
-    {},
-    'all subs are removed from subsregistry after worker is terminated'
+    Object.values(await getServersSubscriptions()),
+    [['___selva_subscription:schema_update:default']],
+    'all subs are removed from subsregistry after worker is terminated - except schema'
   )
+
+  // t.deepEqual(
+  //   await getServersSubscriptions(),
+  //   {},
+  //   'all subs are removed from subsregistry after worker is terminated'
+  // )
 
   await wait(500)
   await client.destroy()
@@ -338,7 +367,7 @@ test.serial('Make some observables and many subs managers', async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.only('diff observables', async (t) => {
+test.serial('diff observables', async (t) => {
   const port = await getPort()
   const registry = await startRegistry({ port })
   const connectOpts = { port }

@@ -32,6 +32,9 @@ const handleAddPrev = async (
         )
       ) {
         // if the server is unregistered this will be useless to add to a quuee
+
+        console.info('MOVE SUB', channel, id)
+
         await client.redis.publish(
           { host, port: port, type: 'subscriptionManager' },
           constants.REGISTRY_MOVE_SUBSCRIPTION,
@@ -76,10 +79,8 @@ export default async function updateRegistry(
   // this has to go
   // const x = ~~(Math.random() * 5e3)
   // await wait()
-
   // this is not rly the problem
   // maybe it has more otdo with query load
-
   // console.info('✨ OK register with sub', 'waited', x, 'ms', info.subscriptions)
 
   for (const key in info.subscriptions) {

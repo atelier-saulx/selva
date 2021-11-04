@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -41,11 +40,15 @@ test.before(async (t) => {
 })
 
 test.after(async (t) => {
+  console.info('CLOSING')
+
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
+
+  console.info('CLOSED')
 })
 
 test.serial('get nested results', async (t) => {
@@ -356,7 +359,7 @@ test.serial('get nested results without find', async (t) => {
 
   await Promise.all(teams.map((t) => client.set(t)))
 
-  const le = await client.set({
+  await client.set({
     type: 'league',
     name: 'league 1',
     children: matches,

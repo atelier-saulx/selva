@@ -16,9 +16,8 @@ const updateServerListeners = (selvaClient: SelvaClient) => {
       selvaClient.addServerUpdateListeners[i]()
     }
     if (selvaClient.addServerUpdateListeners.length > len) {
-      selvaClient.addServerUpdateListeners = selvaClient.addServerUpdateListeners.slice(
-        len
-      )
+      selvaClient.addServerUpdateListeners =
+        selvaClient.addServerUpdateListeners.slice(len)
     } else {
       selvaClient.addServerUpdateListeners = []
     }

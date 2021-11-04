@@ -78,6 +78,7 @@ redis.RedisClient.prototype.on_info_cmd = function (err, res) {
       return
     }
 
+    // here
     if (
       err.message.includes('connection is already closed') ||
       err.message.includes(
@@ -99,7 +100,6 @@ redis.RedisClient.prototype.on_info_cmd = function (err, res) {
     }
 
     err.message = 'Ready check failed: ' + err.message
-    console.log(err)
     setTimeout(
       function (self) {
         self.ready_check()
