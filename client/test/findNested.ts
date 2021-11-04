@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -38,18 +37,26 @@ test.before(async (t) => {
   })
 
   await client.destroy()
+
+  console.info('go time')
 })
 
 test.after(async (t) => {
+  console.info('CLOSING')
+
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
+
+  console.info('CLOSED')
 })
 
-test.serial('get nested results', async (t) => {
+test.only('get nested results', async (t) => {
   const client = connect({ port })
+
+  console.info('SNIRXXX')
 
   const matches = []
   const teams = []
@@ -78,6 +85,8 @@ test.serial('get nested results', async (t) => {
   }
 
   await Promise.all(teams.map((t) => client.set(t)))
+
+  console.info('go time set some things???')
 
   await client.set({
     type: 'league',

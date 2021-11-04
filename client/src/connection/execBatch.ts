@@ -1,7 +1,6 @@
 import { Connection } from '.'
 import { RedisCommand } from '../redis/types'
 import chalk from 'chalk'
-import { connect } from '..'
 
 let uncertainStateCnt = 0
 let showUncertainState = true
