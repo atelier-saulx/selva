@@ -53,10 +53,8 @@ test.after(async (t) => {
   console.info('CLOSED')
 })
 
-test.only('get nested results', async (t) => {
+test.serial('get nested results', async (t) => {
   const client = connect({ port })
-
-  console.info('SNIRXXX')
 
   const matches = []
   const teams = []
