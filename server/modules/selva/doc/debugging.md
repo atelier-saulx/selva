@@ -1,5 +1,22 @@
 # Debugging
 
+## Starting the Server Manually
+
+**On Linux**:
+
+```
+LD_LIBRARY_PATH=/usr/local/lib LOCPATH=/home/hbp/repos/selva/server/modules/binaries/linux_x64/locale ../binaries/linux_x64/redis-server-selva --loadmodule ./module.so FIND_INDEXING_INTERVAL 500 FIND_INDEXING_ICB_UPDATE_INTERVAL 100 FIND_INDICES_MAX 100
+```
+
+`LD_LIBRARY_PATH` is where your `hiredis` is supposed to be located.
+`LOCPATH` is for loading our custom locales.
+
+**On MacOS**:
+
+```
+../binaries/darwin_x64/redis-server-selva -- --loadmodule module.so
+```
+
 ## Dumping a Hierarchy Using redis-cli
 
 **hiearachy-dot-dump.js**
@@ -50,7 +67,7 @@ The `.gdbinit` file in the module directory will load some useful helpers from
 Start the server with GDB:
 
 ```
-gdb --args redis-server --loadmodule ./module.so
+LD_LIBRARY_PATH=/usr/local/lib LOCPATH=/home/hbp/repos/selva/server/modules/binaries/linux_x64/locale gdb --args ../binaries/linux_x64/redis-server-selva --loadmodule ./module.so 'FIND_INDEXING_INTERVAL' '500' 'FIND_INDEXING_ICB_UPDATE_INTERVAL' '1000' 'FIND_INDICES_MAX' 100
 ```
 
 **print-vector SYMBOL TYPE**
@@ -96,6 +113,12 @@ restart from `main()` after attaching to it.
 LLDB is partially compatible with GDB but many commands behave a bit differently
 and some commands don't exist with the same syntax.
 See the LLDB [Tutorial](https://lldb.llvm.org/use/tutorial.html).
+
+On MacOS the server can be also started manually with `lldb as follows:
+
+```
+lldb ../binaries/darwin_x64/redis-server-selva -- --loadmodule module.so
+```
 
 ## Valgrind
 
@@ -148,3 +171,7 @@ The path to the VTune binaries must be set in `$PATH`. Typically it's something
 like `/opt/intel/vtune_profiler_2021/bin64`. VTune can be installed on the
 remote by the local host over SSH, as long as the path you have selected is
 writable by the user.
+
+In the remote mode you can either provide a startup script for starting the test
+or run everything manually and attach to the running `redis-server-selva`
+process.
