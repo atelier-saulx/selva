@@ -64,7 +64,7 @@ static char * test_delete_edge(void)
     pu_assert("Add edge", !Edge_Add(NULL, hierarchy, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")));
 
     /* Delete an edge. */
-    struct SelvaModify_HierarchyNode *node_a = SelvaHierarchy_FindNode(hierarchy, "grphnode_a");
+    struct SelvaHierarchyNode *node_a = SelvaHierarchy_FindNode(hierarchy, "grphnode_a");
     Edge_Delete(NULL, NULL, Edge_GetField(node_a, "a", 1), node_a, "grphnode_b");
 
     pu_assert_equal("a.a doesn't have b", Edge_Has(Edge_GetField(SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), "a", 1), SelvaHierarchy_FindNode(hierarchy, "grphnode_b")), 0);

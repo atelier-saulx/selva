@@ -10,7 +10,7 @@
 
 int SelvaResolve_NodeId(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         RedisModuleString **ids,
         size_t nr_ids,
         Selva_NodeId node_id) {
@@ -84,7 +84,7 @@ int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     /*
      * Open the Redis key.
      */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
         return replyWithSelvaErrorf(ctx, SELVA_HIERARCHY_ENOENT, "Hierarchy not found");
     }

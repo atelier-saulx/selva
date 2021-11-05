@@ -29,8 +29,8 @@
 static int send_node_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        SelvaModify_Hierarchy *hierarchy,
-        struct SelvaModify_HierarchyNode *node,
+        SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
         const char *field_prefix_str,
         size_t field_prefix_len,
@@ -39,8 +39,8 @@ static int send_node_field(
 static int send_all_node_data_fields(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        SelvaModify_Hierarchy *hierarchy,
-        struct SelvaModify_HierarchyNode *node,
+        SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
         const char *field_prefix_str,
         size_t field_prefix_len,
@@ -48,7 +48,7 @@ static int send_all_node_data_fields(
 
 static int send_hierarchy_field(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId nodeId,
         RedisModuleString *full_field_name,
         const char *field_str,
@@ -82,8 +82,8 @@ static int send_hierarchy_field(
 static int send_edge_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        SelvaModify_Hierarchy *hierarchy,
-        struct SelvaModify_HierarchyNode *node,
+        SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
         struct SelvaObject *edges,
         const char *field_prefix_str,
         size_t field_prefix_len,
@@ -120,7 +120,7 @@ static int send_edge_field(
         return SELVA_EINTYPE;
     }
 
-    struct SelvaModify_HierarchyNode *dst_node;
+    struct SelvaHierarchyNode *dst_node;
     dst_node = SVector_GetIndex(&edge_field->arcs, 0);
     if (!dst_node) {
         Selva_NodeId node_id;
@@ -196,8 +196,8 @@ static int is_excluded_field(RedisModuleString *excluded_fields, RedisModuleStri
 static int send_node_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        SelvaModify_Hierarchy *hierarchy,
-        struct SelvaModify_HierarchyNode *node,
+        SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
         const char *field_prefix_str,
         size_t field_prefix_len,
@@ -243,7 +243,7 @@ static int send_node_field(
         /*
          * Check if the field name is an edge field.
          */
-        struct SelvaModify_HierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
+        struct SelvaHierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
         struct SelvaObject *edges = metadata->edge_fields.edges;
 
         if (edges) {
@@ -305,8 +305,8 @@ static int send_node_field(
 static int send_all_node_data_fields(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        SelvaModify_Hierarchy *hierarchy,
-        struct SelvaModify_HierarchyNode *node,
+        SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
         const char *field_prefix_str,
         size_t field_prefix_len,
@@ -352,8 +352,8 @@ static int send_all_node_data_fields(
 static int send_node_fields(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        SelvaModify_Hierarchy *hierarchy,
-        struct SelvaModify_HierarchyNode *node,
+        SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
         struct SelvaObject *fields,
         RedisModuleString *excluded_fields) {
     const char wildcard[] = "*";
@@ -818,7 +818,7 @@ static ssize_t send_deep_merge(
 static ssize_t send_node_object_merge(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        const struct SelvaModify_HierarchyNode *node,
+        const struct SelvaHierarchyNode *node,
         enum SelvaMergeStrategy merge_strategy,
         RedisModuleString *obj_path,
         struct SelvaObject *fields,
@@ -909,7 +909,7 @@ static ssize_t send_node_object_merge(
     return res;
 }
 
-static __hot int FindCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
@@ -1076,7 +1076,7 @@ static int FindCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
 static size_t FindCommand_PrintOrderedResult(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         ssize_t offset,
         ssize_t limit,
         enum SelvaMergeStrategy merge_strategy,
@@ -1110,7 +1110,7 @@ static size_t FindCommand_PrintOrderedResult(
         if (merge_strategy != MERGE_STRATEGY_NONE) {
             err = send_node_object_merge(ctx, lang, item->node, merge_strategy, merge_path, fields, nr_fields_out);
         } else if (fields) {
-            struct SelvaModify_HierarchyNode *node = item->node;
+            struct SelvaHierarchyNode *node = item->node;
 
             if (node) {
                 err = send_node_fields(ctx, lang, hierarchy, node, fields, excluded_fields);
@@ -1263,7 +1263,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     /*
      * Open the Redis key.
      */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
+    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
         return REDISMODULE_OK;
     }
@@ -1577,7 +1577,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .acc_tot = 0,
             .acc_take = 0,
         };
-        const struct SelvaModify_HierarchyCallback cb = {
+        const struct SelvaHierarchyCallback cb = {
             .node_cb = FindCommand_NodeCb,
             .node_arg = &args,
         };
@@ -1599,7 +1599,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             }
 
             SELVA_SET_NODEID_FOREACH(el, ind_out[ind_select]) {
-                struct SelvaModify_HierarchyNode *node;
+                struct SelvaHierarchyNode *node;
 
                 node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
                 if (node) {
@@ -1733,7 +1733,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     /*
      * Open the Redis key.
      */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
+    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
         return REDISMODULE_OK;
     }
@@ -1840,7 +1840,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * Run the filter for each node.
      */
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
-        struct SelvaModify_HierarchyNode *node;
+        struct SelvaHierarchyNode *node;
         ssize_t tmp_limit = -1;
         struct FindCommand_Args args = {
             .ctx = ctx,

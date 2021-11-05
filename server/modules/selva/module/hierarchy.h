@@ -13,9 +13,9 @@
 
 #define HIERARCHY_ENCODING_VERSION  3
 
-struct SelvaModify_Hierarchy;
-typedef struct SelvaModify_Hierarchy SelvaModify_Hierarchy;
-struct SelvaModify_HierarchyNode;
+struct SelvaHierarchy;
+typedef struct SelvaHierarchy SelvaHierarchy;
+struct SelvaHierarchyNode;
 
 /* Forward declarations for metadata */
 /* ... */
@@ -26,7 +26,7 @@ struct SelvaModify_HierarchyNode;
  * This structure should contain primitive data types or pointers to forward
  * declared structures.
  */
-struct SelvaModify_HierarchyMetadata {
+struct SelvaHierarchyMetadata {
     /**
      * Subscription markers.
      */
@@ -34,14 +34,14 @@ struct SelvaModify_HierarchyMetadata {
     struct EdgeFieldContainer edge_fields;
 };
 
-typedef void SelvaModify_HierarchyMetadataConstructorHook(
+typedef void SelvaHierarchyMetadataConstructorHook(
         const Selva_NodeId id,
-        struct SelvaModify_HierarchyMetadata *metadata);
-typedef void SelvaModify_HierarchyMetadataDestructorHook(
+        struct SelvaHierarchyMetadata *metadata);
+typedef void SelvaHierarchyMetadataDestructorHook(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
-        struct SelvaModify_HierarchyNode *node,
-        struct SelvaModify_HierarchyMetadata *metadata);
+        SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        struct SelvaHierarchyMetadata *metadata);
 
 #define SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(fun) \
     DATA_SET(selva_HMCtor, fun)
@@ -51,10 +51,10 @@ typedef void SelvaModify_HierarchyMetadataDestructorHook(
 
 struct Selva_Subscription;
 
-RB_HEAD(hierarchy_index_tree, SelvaModify_HierarchyNode);
+RB_HEAD(hierarchy_index_tree, SelvaHierarchyNode);
 RB_HEAD(hierarchy_subscriptions_tree, Selva_Subscription);
 
-struct SelvaModify_Hierarchy {
+struct SelvaHierarchy {
     /**
      * Global transaction state.
      */
@@ -134,10 +134,10 @@ struct SelvaModify_Hierarchy {
  * Called for each node found during a traversal.
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */
-typedef int (*SelvaModify_HierarchyCallback)(struct SelvaModify_HierarchyNode *node, void *arg);
+typedef int (*SelvaHierarchyCallback)(struct SelvaHierarchyNode *node, void *arg);
 
-struct SelvaModify_HierarchyCallback {
-    SelvaModify_HierarchyCallback node_cb;
+struct SelvaHierarchyCallback {
+    SelvaHierarchyCallback node_cb;
     void * node_arg;
 };
 
@@ -154,24 +154,24 @@ struct RedisModuleString;
 /**
  * Create a new hierarchy.
  */
-SelvaModify_Hierarchy *SelvaModify_NewHierarchy(struct RedisModuleCtx *ctx);
+SelvaHierarchy *SelvaModify_NewHierarchy(struct RedisModuleCtx *ctx);
 
 /**
  * Free a hierarchy.
  */
-void SelvaModify_DestroyHierarchy(SelvaModify_Hierarchy *hierarchy);
+void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy);
 
 /**
  * Open a hierarchy key.
  */
-SelvaModify_Hierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name, int mode);
+SelvaHierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name, int mode);
 
-int SelvaHierarchy_NodeExists(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
+int SelvaHierarchy_NodeExists(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 
 /**
  * Copy nodeId to a buffer.
  */
-static inline char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct SelvaModify_HierarchyNode *node) {
+static inline char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct SelvaHierarchyNode *node) {
     const char *buf = (const char *)node;
 
     /* We know the id is the first thing in the struct. */
@@ -180,7 +180,7 @@ static inline char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct Selva
     return id;
 }
 
-static inline char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaModify_HierarchyNode *node) {
+static inline char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaHierarchyNode *node) {
     const char *buf = (const char *)node;
 
     memcpy(type, buf, SELVA_NODE_TYPE_SIZE);
@@ -188,31 +188,31 @@ static inline char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], 
     return type;
 }
 
-struct SelvaObject *SelvaHierarchy_GetNodeObject(const struct SelvaModify_HierarchyNode *node);
+struct SelvaObject *SelvaHierarchy_GetNodeObject(const struct SelvaHierarchyNode *node);
 
-const struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByConstPtr(const struct SelvaModify_HierarchyNode *node);
-struct SelvaModify_HierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByPtr(struct SelvaModify_HierarchyNode *node);
+const struct SelvaHierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByConstPtr(const struct SelvaHierarchyNode *node);
+struct SelvaHierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByPtr(struct SelvaHierarchyNode *node);
 #define SelvaHierarchy_GetNodeMetadataByPtr(node) _Generic((node), \
-        const struct SelvaModify_HierarchyNode *: _SelvaHierarchy_GetNodeMetadataByConstPtr, \
-        struct SelvaModify_HierarchyNode *: _SelvaHierarchy_GetNodeMetadataByPtr \
+        const struct SelvaHierarchyNode *: _SelvaHierarchy_GetNodeMetadataByConstPtr, \
+        struct SelvaHierarchyNode *: _SelvaHierarchy_GetNodeMetadataByPtr \
         )(node)
 
-struct SelvaModify_HierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
-        SelvaModify_Hierarchy *hierarchy,
+struct SelvaHierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id);
 
 #if HIERARCHY_SORT_BY_DEPTH
-ssize_t SelvaModify_GetHierarchyDepth(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
+ssize_t SelvaModify_GetHierarchyDepth(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 #endif
 
 int SelvaModify_DelHierarchyChildren(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id);
 
 int SelvaModify_DelHierarchyParents(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id);
 
 /**
@@ -224,7 +224,7 @@ int SelvaModify_DelHierarchyParents(
  */
 int SelvaModify_SetHierarchy(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
         const Selva_NodeId *parents,
@@ -237,7 +237,7 @@ int SelvaModify_SetHierarchy(
  */
 int SelvaModify_SetHierarchyParents(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
         const Selva_NodeId *parents);
@@ -248,16 +248,16 @@ int SelvaModify_SetHierarchyParents(
  */
 int SelvaModify_SetHierarchyChildren(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_children,
         const Selva_NodeId *children);
 
 int SelvaHierarchy_UpsertNode(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
-        struct SelvaModify_HierarchyNode **out);
+        struct SelvaHierarchyNode **out);
 
 /**
  * Add new relationships relative to other existing nodes.
@@ -271,8 +271,8 @@ int SelvaHierarchy_UpsertNode(
  */
 int SelvaModify_AddHierarchyP(
         struct RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
-        struct SelvaModify_HierarchyNode *node,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
         size_t nr_parents,
         const Selva_NodeId *parents,
         size_t nr_children,
@@ -291,7 +291,7 @@ int SelvaModify_AddHierarchyP(
  */
 int SelvaModify_AddHierarchy(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
         const Selva_NodeId *parents,
@@ -307,7 +307,7 @@ int SelvaModify_AddHierarchy(
  */
 int SelvaModify_DelHierarchy(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
         const Selva_NodeId *parents,
@@ -321,7 +321,7 @@ int SelvaModify_DelHierarchy(
  */
 int SelvaModify_DelHierarchyNode(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         int force);
 
@@ -330,56 +330,56 @@ int SelvaModify_DelHierarchyNode(
  * Do not use this function unless you absolutely need it as the safest and
  * better supporter way to refer to hierarchy nodes is by using nodeId.
  */
-struct SelvaModify_HierarchyNode *SelvaHierarchy_FindNode(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id);
+struct SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 
 /**
  * Get orphan head nodes of the given hierarchy.
  */
-ssize_t SelvaModify_GetHierarchyHeads(SelvaModify_Hierarchy *hierarchy, Selva_NodeId **res);
+ssize_t SelvaModify_GetHierarchyHeads(SelvaHierarchy *hierarchy, Selva_NodeId **res);
 
 /**
  * Get an unsorted list of ancestors fo a given node.
  */
-ssize_t SelvaModify_FindAncestors(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors);
+ssize_t SelvaModify_FindAncestors(SelvaHierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors);
 
 /**
  * Get an unsorted list of descendants of a given node.
  */
-ssize_t SelvaModify_FindDescendants(SelvaModify_Hierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
+ssize_t SelvaModify_FindDescendants(SelvaHierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
 
 int SelvaModify_TraverseHierarchy(
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaTraversal dir,
-        const struct SelvaModify_HierarchyCallback *cb);
+        const struct SelvaHierarchyCallback *cb);
 int SelvaModify_TraverseHierarchyField(
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaTraversal dir,
         const char *field_name_str,
         size_t field_name_len,
-        const struct SelvaModify_HierarchyCallback *cb);
+        const struct SelvaHierarchyCallback *cb);
 int SelvaHierarchy_TraverseExpression(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         struct rpn_ctx *rpn_ctx,
         struct rpn_expression *rpn_expr,
-        const struct SelvaModify_HierarchyCallback *cb);
+        const struct SelvaHierarchyCallback *cb);
 int SelvaHierarchy_TraverseExpressionBfs(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         struct rpn_ctx *rpn_ctx,
         const struct rpn_expression *rpn_expr,
-        const struct SelvaModify_HierarchyCallback *cb);
+        const struct SelvaHierarchyCallback *cb);
 int SelvaModify_TraverseArray(
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         const char *ref_field_str,
         size_t ref_field_len,
         const struct SelvaModify_ArrayObjectCallback *cb);
-int SelvaHierarchy_IsNonEmptyField(const struct SelvaModify_HierarchyNode *node, const char *field_str, size_t field_len);
+int SelvaHierarchy_IsNonEmptyField(const struct SelvaHierarchyNode *node, const char *field_str, size_t field_len);
 
 /*
  * hierarchy_reply.c
@@ -391,7 +391,7 @@ int SelvaHierarchy_IsNonEmptyField(const struct SelvaModify_HierarchyNode *node,
  */
 int HierarchyReply_WithTraversal(
         struct RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId nodeId,
         size_t nr_types,
         const Selva_NodeType *types,

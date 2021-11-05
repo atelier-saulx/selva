@@ -4,7 +4,7 @@
 #include "cdefs.h"
 #include "hierarchy-utils.h"
 
-SelvaModify_Hierarchy *hierarchy;
+SelvaHierarchy *hierarchy;
 Selva_NodeId *findRes;
 RedisModuleIO *io;
 
@@ -13,14 +13,14 @@ Selva_NodeId HIERARCHY_RDB_EOF __nonstring;
 /* GCC needs something to be stored in the set. */
 static void init_node_metadata(
         Selva_NodeId id __unused,
-        struct SelvaModify_HierarchyMetadata *metadata __unused) {
+        struct SelvaHierarchyMetadata *metadata __unused) {
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata);
 
 /* GCC needs something to be stored in the set. */
 static void deinit_node_metadata(
         Selva_NodeId id __unused,
-        struct SelvaModify_HierarchyMetadata *metadata __unused) {
+        struct SelvaHierarchyMetadata *metadata __unused) {
 }
 SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata);
 

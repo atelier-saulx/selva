@@ -8,7 +8,7 @@
 #include "hierarchy.h"
 
 extern Selva_NodeId HIERARCHY_RDB_EOF __nonstring;
-extern SelvaModify_Hierarchy *hierarchy;
+extern SelvaHierarchy *hierarchy;
 extern Selva_NodeId *findRes;
 extern RedisModuleIO *io;
 

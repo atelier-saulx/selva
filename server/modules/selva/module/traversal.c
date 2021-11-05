@@ -151,7 +151,7 @@ GENERATE_FUNMAP(SelvaTraversal_GetOrderFunc, order_functions, enum SelvaResultOr
 struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        struct SelvaModify_HierarchyNode *node,
+        struct SelvaHierarchyNode *node,
         const RedisModuleString *order_field) {
     Selva_NodeId nodeId;
     struct TraversalOrderedItem *item = NULL;
