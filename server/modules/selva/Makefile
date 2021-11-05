@@ -1,9 +1,8 @@
 include common.mk
 
 SELVA_VERSION := $(shell sh -c 'git rev-parse --verify HEAD')
-INCLUDE_DIR := ./include ./util
-RMUTIL_LIBDIR := rmutil
-UTIL_LIBDIR := util
+INCLUDE_DIR := include lib/util
+LIBS := rmutil util
 OBJS := \
 	version.o \
 	module.o \
@@ -35,30 +34,31 @@ OBJS := \
 	module/shared.o \
 	module/subscriptions.o
 
-IDIR := $(patsubst %,-I%, $(INCLUDE_DIR))
-
+IDIR := $(patsubst %,-I%,$(INCLUDE_DIR))
 CFLAGS += $(IDIR) -include tunables.h \
 	-O2 \
 	-fPIC \
 	-fno-strict-aliasing \
 	-D REDISMODULE_EXPERIMENTAL_API=1
+LIBDIR := $(patsubst %,lib/%,$(LIBS))
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
 	SHOBJ_CFLAGS ?= -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Bsymbolic
-	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
+	SHOBJ_LDLIBS := -lc -lhiredis -lcrypto -lssl
 else ifeq ($(shell test `sw_vers -productVersion|cut -c1-2` -ge 11; echo $$?),0)
 #	CFLAGS += -Wpadded
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
-	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup -L /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib
+	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
+	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib /usr/local/Cellar/openssl@1.1/1.1.1k/lib/
 	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
 else
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
-	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
+	SHOBJ_LDLIBS := -lc -lhiredis -lcrypto -lssl
 endif
 CC ?= gcc
-
+LIBS_A := $(foreach S,$(LIBS),lib/$(S)/lib$(S).a)
 
 all: module.so
 
@@ -70,14 +70,11 @@ else
 	echo "const char * const selva_version = \"$(SELVA_VERSION)\";" > version.c
 endif
 
-$(RMUTIL_LIBDIR)/librmutil.a: FORCE
-	$(MAKE) -C $(RMUTIL_LIBDIR)
+$(LIBS_A): FORCE
+	$(MAKE) DISABLE_SHARED=1 -C $(dir $@)
 
-$(UTIL_LIBDIR)/libutil.a: FORCE
-	$(MAKE) -C $(UTIL_LIBDIR)
-
-module.so: $(OBJS) $(RMUTIL_LIBDIR)/librmutil.a $(UTIL_LIBDIR)/libutil.a
-	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(LIBS) -L$(UTIL_LIBDIR) -L$(RMUTIL_LIBDIR) -L/usr/local/Cellar/openssl@1.1/1.1.1k/lib/ $(SHOBJ_LDLIBS)
+module.so: $(OBJS) $(LIBS_A)
+	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(addprefix  -L,$(LIBDIR)) $(SHOBJ_LDLIBS)
 
 check:
 ifeq ($(uname_S),Linux)
@@ -86,13 +83,13 @@ ifeq ($(uname_S),Linux)
 		-addon=threadsafety.py --addon=cert.py \
 		--suppressions-list=cppcheck_suppressions.txt \
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
-		-i $(RMUTIL_LIBDIR) $(IDIR) module.c ./module ./util
+		$(IDIR) module.c ./module ./util
 else # Assume macOs
 	cppcheck --quiet --inline-suppr \
 		--language=c --std=c99 --platform=unix64 --enable=all \
 		--suppressions-list=cppcheck_suppressions.txt \
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
-		-i $(RMUTIL_LIBDIR) -i test $(IDIR) -I./module module.c ./module ./util
+		-i test $(IDIR) -I./module module.c ./module ./util
 endif
 
 test:
