@@ -2,8 +2,9 @@
 #include <time.h>
 #include "cdefs.h"
 #include "module/config.h"
-#include "cstrings.h"
 #include "redismodule.h"
+#include "cstrings.h"
+#include "libdeflate.h"
 #include "typestr.h"
 #include "selva.h"
 #include "selva_onload.h"
@@ -863,6 +864,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     int err;
 
     fprintf(stderr, "Selva version: %s\n", selva_version);
+
+    /* FIXME These pointers end up being NULL */
+#if 0
+    libdeflate_set_memory_allocator(RedisModule_Alloc, RedisModule_Free);
+#endif
 
     /* Register the module itself */
     if (RedisModule_Init(ctx, "selva", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {

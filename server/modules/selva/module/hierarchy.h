@@ -128,6 +128,20 @@ struct SelvaHierarchy {
         struct indexing_timer_args *indexing_timer_args;
         struct SelvaObject *index_map;
     } dyn_index;
+
+    /**
+     * Storage descriptor for detached nodes.
+     * It's possible to determine if a node exists in a detached subtree and restore
+     * the node and its subtree using this structure.
+     */
+    struct SelvaHierarchyDetached {
+        /**
+         * The object maps each nodeId to a pointer that describes where the detached
+         * subtree containing the nodeId is located. E.g. it can be a tagged pointer
+         * to a RedisModuleString that contains a compressed subtree string.
+         */
+        struct SelvaObject *obj;
+    } index_detached;
 };
 
 /**
@@ -146,6 +160,14 @@ typedef int (*SelvaModify_ArrayObjectCallback)(struct SelvaObject *obj, void *ar
 struct SelvaModify_ArrayObjectCallback {
     SelvaModify_ArrayObjectCallback node_cb;
     void * node_arg;
+};
+
+/**
+ * Flags for SelvaModify_DelHierarchyNode().
+ */
+enum SelvaModify_DelHierarchyNodeFlag {
+    DEL_HIERARCHY_NODE_FORCE = 0x01, /*!< Force delete regardless of existing parents and external edge references. */
+    DEL_HIERARCHY_NODE_DETACH = 0x02, /*!< Delete, mark as detached. Note that this doesn't disable sending subscription events. */
 };
 
 struct RedisModuleCtx;
@@ -323,7 +345,7 @@ int SelvaModify_DelHierarchyNode(
         struct RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
-        int force);
+        enum SelvaModify_DelHierarchyNodeFlag flags);
 
 /**
  * Get an opaque pointer to a hierarchy node.

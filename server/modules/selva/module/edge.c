@@ -243,6 +243,21 @@ static int get_or_create_EdgeField(
     return 0;
 }
 
+int Edge_Usage(const struct SelvaHierarchyNode *node) {
+    const struct EdgeFieldContainer *efc = &SelvaHierarchy_GetNodeMetadataByPtr(node)->edge_fields;
+    int res = 0;
+
+    if (efc->edges && SelvaObject_Len(efc->edges, NULL) > 0) {
+        res |= 1;
+    }
+
+    if (efc->origins && SelvaObject_Len(efc->origins, NULL) > 0) {
+        res |= 2;
+    }
+
+    return res;
+}
+
 int Edge_Has(const struct EdgeField *edge_field, struct SelvaHierarchyNode *dst_node) {
     return SVector_SearchIndex(&edge_field->arcs, dst_node) >= 0;
 }

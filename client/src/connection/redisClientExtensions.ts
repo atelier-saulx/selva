@@ -48,6 +48,8 @@ const selva_commands = [
   'selva.hierarchy.find',
   'selva.hierarchy.findin',
   'selva.hierarchy.parents',
+  'selva.hierarchy.compress',
+  'selva.hierarchy.listcompressed',
   'selva.inherit',
   'selva.resolve.nodeid',
   'selva.subscriptions.add',

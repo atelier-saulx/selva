@@ -43,6 +43,11 @@ int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx);
 int __hot Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label);
 
 /**
+ * Test if cur_tx has visited label.
+ */
+int Trx_HasVisited(const struct trx * restrict cur_trx, const struct trx * restrict label);
+
+/**
  * End traversal.
  */
 void Trx_End(struct trx_state * restrict state, struct trx * restrict cur);
