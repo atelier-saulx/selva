@@ -14,7 +14,7 @@ struct send_hierarchy_field_data {
 /*
  * Used for ancestors, children, descendants, parents
  */
-static int send_hierarchy_field_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+static int send_hierarchy_field_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
     struct send_hierarchy_field_data *args = (struct send_hierarchy_field_data *)arg;
     int match = 0;
@@ -47,7 +47,7 @@ static int send_hierarchy_field_NodeCb(struct SelvaModify_HierarchyNode *node, v
 
 int HierarchyReply_WithTraversal(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         const Selva_NodeId nodeId,
         size_t nr_types,
         const Selva_NodeType *types,
@@ -62,7 +62,7 @@ int HierarchyReply_WithTraversal(
         .types = types,
         .len = 0,
     };
-    const struct SelvaModify_HierarchyCallback cb = {
+    const struct SelvaHierarchyCallback cb = {
         .node_cb = send_hierarchy_field_NodeCb,
         .node_arg = &args,
     };

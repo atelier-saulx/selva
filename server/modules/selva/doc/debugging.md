@@ -73,7 +73,7 @@ LD_LIBRARY_PATH=/usr/local/lib LOCPATH=/home/hbp/repos/selva/server/modules/bina
 **print-vector SYMBOL TYPE**
 
 ```gdb
-(gdb) print-vector stack SelvaModify_HierarchyNode
+(gdb) print-vector stack SelvaHierarchyNode
 0: {id: "d\000\000\000\000\000\000\000\000", visit_stamp: 00, parents: { "c\000\000\000\000\000\000\000\000", }, children: { "e\000\000\000\000\000\000\000\000", }}
 ```
 

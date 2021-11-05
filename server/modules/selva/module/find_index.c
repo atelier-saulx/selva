@@ -104,13 +104,13 @@ struct SelvaFindIndexControlBlock {
 };
 
 struct icb_proc_args {
-    SelvaModify_Hierarchy *hierarchy;
+    SelvaHierarchy *hierarchy;
     struct SelvaFindIndexControlBlock *icb;
 };
 
 struct indexing_timer_args {
     int active;
-    struct SelvaModify_Hierarchy *hierarchy;
+    struct SelvaHierarchy *hierarchy;
 };
 
 Selva_SubscriptionId find_index_sub_id; /* zeroes. */
@@ -167,7 +167,7 @@ static RedisModuleString *build_name(
     return RedisModule_CreateString(NULL, name_str, name_len);
 }
 
-static int set_marker_id(struct SelvaModify_Hierarchy *hierarchy, struct SelvaFindIndexControlBlock *icb) {
+static int set_marker_id(struct SelvaHierarchy *hierarchy, struct SelvaFindIndexControlBlock *icb) {
     int next = bitmap_ffs(hierarchy->dyn_index.find_marker_id_stack);
 
     if (next < 0) {
@@ -194,10 +194,10 @@ static int skip_node(const struct SelvaFindIndexControlBlock *icb, const Selva_N
 
 static void update_index(
         RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy __unused,
+        struct SelvaHierarchy *hierarchy __unused,
         struct Selva_SubscriptionMarker *marker,
         unsigned short event_flags,
-        const struct SelvaModify_HierarchyNode *node) {
+        const struct SelvaHierarchyNode *node) {
     struct SelvaFindIndexControlBlock *icb;
 
     /*
@@ -286,7 +286,7 @@ static void update_index(
  * Start an index.
  */
 static int start_index(
-        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaHierarchy *hierarchy,
         struct SelvaFindIndexControlBlock *icb) {
     const unsigned short marker_flags = SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY | SELVA_SUBSCRIPTION_FLAG_CH_FIELD | SELVA_SUBSCRIPTION_FLAG_REFRESH;
     const char *dir_field = NULL;
@@ -323,7 +323,7 @@ static int start_index(
  */
 static int discard_index(
         struct RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaHierarchy *hierarchy,
         struct SelvaFindIndexControlBlock *icb) {
     int err;
 
@@ -364,7 +364,7 @@ static int discard_index(
  */
 static int destroy_index_cb(
         RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaHierarchy *hierarchy,
         struct SelvaFindIndexControlBlock *icb) {
     int err;
 
@@ -442,7 +442,7 @@ static int destroy_index_cb(
 
 static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
     struct indexing_timer_args *args = (struct indexing_timer_args *)data;
-    SelvaModify_Hierarchy *hierarchy = args->hierarchy;
+    SelvaHierarchy *hierarchy = args->hierarchy;
     struct poptop_list_el *el;
 
 #if 0
@@ -597,7 +597,7 @@ static float calc_icb_score(const struct SelvaFindIndexControlBlock *icb) {
 
 static void icb_proc(RedisModuleCtx *ctx, void *data) {
     struct icb_proc_args *args = (struct icb_proc_args *)data;
-    SelvaModify_Hierarchy *hierarchy = args->hierarchy;
+    SelvaHierarchy *hierarchy = args->hierarchy;
     struct SelvaFindIndexControlBlock *icb = args->icb;
 
 #if 0
@@ -661,7 +661,7 @@ static void icb_proc(RedisModuleCtx *ctx, void *data) {
  */
 static struct SelvaFindIndexControlBlock *upsert_index_cb(
         RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaHierarchy *hierarchy,
         const Selva_NodeId node_id,
         enum SelvaTraversal dir,
         RedisModuleString *dir_expression,
@@ -790,7 +790,7 @@ static void create_indexing_timer(RedisModuleCtx *ctx, struct indexing_timer_arg
     (void)RedisModule_CreateTimer(ctx, period, make_indexing_decission_proc, args);
 }
 
-int SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy) {
+int SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
     if (selva_glob_config.find_indices_max == 0) {
         return 0; /* Indexing disabled. */
     }
@@ -837,7 +837,7 @@ int SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaModify_Hierarchy *hierarchy) {
 }
 
 /* TODO Could possibly use the built-in free */
-static void deinit_index_obj(struct SelvaModify_Hierarchy *hierarchy, struct SelvaObject *obj) {
+static void deinit_index_obj(struct SelvaHierarchy *hierarchy, struct SelvaObject *obj) {
     SelvaObject_Iterator *it;
     enum SelvaObjectType type;
     void *p;
@@ -852,7 +852,7 @@ static void deinit_index_obj(struct SelvaModify_Hierarchy *hierarchy, struct Sel
     }
 }
 
-void SelvaFindIndex_Deinit(struct SelvaModify_Hierarchy *hierarchy) {
+void SelvaFindIndex_Deinit(struct SelvaHierarchy *hierarchy) {
     if (selva_glob_config.find_indices_max == 0) {
         return; /* Indexing disabled. */
     }
@@ -877,7 +877,7 @@ void SelvaFindIndex_Deinit(struct SelvaModify_Hierarchy *hierarchy) {
 
 int SelvaFind_AutoIndex(
         RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaHierarchy *hierarchy,
         enum SelvaTraversal dir, RedisModuleString *dir_expression,
         const Selva_NodeId node_id,
         RedisModuleString *filter,
@@ -980,7 +980,7 @@ static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
 }
 
 static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    SelvaModify_Hierarchy *hierarchy;
+    SelvaHierarchy *hierarchy;
 
     if (argc != 2) {
         return RedisModule_WrongArity(ctx);
@@ -1007,7 +1007,7 @@ static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **a
 }
 
 static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    SelvaModify_Hierarchy *hierarchy;
+    SelvaHierarchy *hierarchy;
     enum SelvaTraversal dir;
     RedisModuleString *dir_expression;
     const RedisModuleString *rms_node_id;
@@ -1085,7 +1085,7 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
 }
 
 static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    SelvaModify_Hierarchy *hierarchy;
+    SelvaHierarchy *hierarchy;
     void *p;
     struct SelvaFindIndexControlBlock *icb;
     int discard = 0;

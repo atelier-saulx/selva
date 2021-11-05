@@ -4,11 +4,11 @@ import string
 
 # Helper functions #############################################################
 
-SelvaModify_HierarchyNode_Type = gdb.lookup_type('SelvaModify_HierarchyNode')
+SelvaHierarchyNode_Type = gdb.lookup_type('SelvaHierarchyNode')
 
 def adjVectorToString(vec):
     list = '{ '
-    arr =  vec['vec_data'].dereference().cast(SelvaModify_HierarchyNode_Type.pointer().array(vec['vec_last']))
+    arr =  vec['vec_data'].dereference().cast(SelvaHierarchyNode_Type.pointer().array(vec['vec_last']))
     for i in range(vec['vec_last']):
         list += str(arr[i].dereference()['id']) + ', '
 
@@ -16,8 +16,8 @@ def adjVectorToString(vec):
 
 # Pretty printers ##############################################################
 
-class SelvaModify_HierarchyNode_Printer:
-    "Print SelvaModify_HierarchyNode"
+class SelvaHierarchyNode_Printer:
+    "Print SelvaHierarchyNode"
 
     def __init__(self, val):
         self.val = val
@@ -40,8 +40,8 @@ class SelvaModify_HierarchyNode_Printer:
         return node
 
 def build_pretty_printer():
-    pp = gdb.printing.RegexpCollectionPrettyPrinter("SelvaModify_HierarchyNode")
-    pp.add_printer('SelvaModify_HierarchyNode', '^SelvaModify_HierarchyNode$', SelvaModify_HierarchyNode_Printer)
+    pp = gdb.printing.RegexpCollectionPrettyPrinter("SelvaHierarchyNode")
+    pp.add_printer('SelvaHierarchyNode', '^SelvaHierarchyNode$', SelvaHierarchyNode_Printer)
     return pp
 
 # Commands #####################################################################

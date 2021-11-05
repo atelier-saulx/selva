@@ -272,7 +272,7 @@ enum selva_op_repl_state handle_modify_arg_op_obj_meta(
  */
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    SelvaModify_Hierarchy *hierarchy;
+    SelvaHierarchy *hierarchy;
     RedisModuleString *id = NULL;
     RedisModuleKey *id_key = NULL;
     struct SelvaObject *obj = NULL;
@@ -356,7 +356,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     Selva_NodeId nodeId;
-    const struct SelvaModify_HierarchyNode *node;
+    const struct SelvaHierarchyNode *node;
     const unsigned flags = parse_flags(argv[2]);
 
     RedisModuleString2Selva_NodeId(nodeId, id);

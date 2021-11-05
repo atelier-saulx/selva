@@ -21,7 +21,7 @@
 
 struct InheritCommand_Args {
     RedisModuleCtx *ctx;
-    SelvaModify_Hierarchy *hierarchy;
+    SelvaHierarchy *hierarchy;
     RedisModuleString *lang;
 
     size_t first_node; /*!< We ignore the type of the first node. */
@@ -34,9 +34,9 @@ struct InheritCommand_Args {
 
 static int send_field_value(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         RedisModuleString *lang,
-        const struct SelvaModify_HierarchyNode *node,
+        const struct SelvaHierarchyNode *node,
         const Selva_NodeId node_id,
         struct SelvaObject *obj,
         RedisModuleString *full_field,
@@ -61,7 +61,7 @@ static int deref_single_ref(
         Selva_NodeId node_id_out,
         struct SelvaObject **obj_out) {
     const struct EdgeFieldConstraint *constraint = edge_field->constraint;
-    const struct SelvaModify_HierarchyNode *node;
+    const struct SelvaHierarchyNode *node;
 
     if (constraint) {
         if (!(constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
@@ -81,7 +81,7 @@ static int deref_single_ref(
 
 static int send_edge_field_deref_value(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         RedisModuleString *lang,
         RedisModuleString *full_field,
         const struct EdgeField *edge_field,
@@ -112,7 +112,7 @@ static int send_edge_field_deref_value(
         RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
         SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
     } else {
-        const struct SelvaModify_HierarchyNode *node;
+        const struct SelvaHierarchyNode *node;
 
         node = SelvaHierarchy_FindNode(hierarchy, nodeId);
         if (!node) {
@@ -155,9 +155,9 @@ static int send_object_field_value(
 
 static int send_field_value(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         RedisModuleString *lang,
-        const struct SelvaModify_HierarchyNode *node,
+        const struct SelvaHierarchyNode *node,
         const Selva_NodeId node_id,
         struct SelvaObject *obj,
         RedisModuleString *full_field,
@@ -192,7 +192,7 @@ static int send_field_value(
     return send_object_field_value(ctx, lang, node_id, obj, full_field, field_str, field_len);
 }
 
-static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+static int InheritCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
     RedisModuleKey *key = NULL;
     struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
@@ -267,7 +267,7 @@ static int InheritCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *a
 
 size_t inheritHierarchyFields(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         Selva_NodeId node_id,
         size_t nr_types,
         const Selva_NodeType *types,
@@ -346,7 +346,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     /*
      * Open the Redis key.
      */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
         return REDISMODULE_OK;
     }
@@ -397,7 +397,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         .nr_fields = nr_field_names,
         .nr_results = nr_presolved,
     };
-    const struct SelvaModify_HierarchyCallback cb = {
+    const struct SelvaHierarchyCallback cb = {
         .node_cb = InheritCommand_NodeCb,
         .node_arg = &args,
     };

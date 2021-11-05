@@ -48,7 +48,7 @@ enum TraversalOrderedItemType {
 struct TraversalOrderedItem {
     enum TraversalOrderedItemType type;
     Selva_NodeId node_id;
-    struct SelvaModify_HierarchyNode *node;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *data_obj;
     double d;
     size_t data_len;
@@ -65,15 +65,15 @@ typedef int (*orderFunc)(const void ** restrict a_raw, const void ** restrict b_
 
 struct RedisModuleString;
 struct RedisModuleCtx;
-struct SelvaModify_Hierarchy;
-struct SelvaModify_HierarchyNode;
+struct SelvaHierarchy;
+struct SelvaHierarchyNode;
 
 extern const struct SelvaArgParser_EnumType merge_types[3];
 
 struct FindCommand_Args {
     struct RedisModuleCtx *ctx;
     struct RedisModuleString *lang;
-    struct SelvaModify_Hierarchy *hierarchy;
+    struct SelvaHierarchy *hierarchy;
 
     ssize_t *nr_nodes; /*!< Number of nodes in the result. */
     ssize_t offset; /*!< Start from nth node. */
@@ -138,7 +138,7 @@ orderFunc SelvaTraversal_GetOrderFunc(enum SelvaResultOrder order);
 struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
-        struct SelvaModify_HierarchyNode *node,
+        struct SelvaHierarchyNode *node,
         const struct RedisModuleString *order_field);
 struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
         struct RedisModuleCtx *ctx,

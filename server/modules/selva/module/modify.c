@@ -43,7 +43,7 @@ static ssize_t string2rms(RedisModuleCtx *ctx, int8_t type, const char *s, Redis
 
 static int update_hierarchy(
     RedisModuleCtx *ctx,
-    SelvaModify_Hierarchy *hierarchy,
+    SelvaHierarchy *hierarchy,
     const Selva_NodeId node_id,
     const char *field_str,
     const struct SelvaModify_OpSet *setOpts
@@ -158,12 +158,12 @@ static int update_hierarchy(
 
 static int update_edge(
     RedisModuleCtx *ctx,
-    SelvaModify_Hierarchy *hierarchy,
+    SelvaHierarchy *hierarchy,
     const Selva_NodeId node_id,
     const RedisModuleString *field,
     const struct SelvaModify_OpSet *setOpts
 ) {
-    struct SelvaModify_HierarchyNode *node;
+    struct SelvaHierarchyNode *node;
     const unsigned constraint_id = setOpts->edge_constraint_id;
     TO_STR(field);
 
@@ -224,7 +224,7 @@ static int update_edge(
          */
         for (size_t i = 0; i < setOpts->$value_len; i += SELVA_NODE_ID_SIZE) {
             const char *dst_node_id = setOpts->$value + i;
-            struct SelvaModify_HierarchyNode *dst_node;
+            struct SelvaHierarchyNode *dst_node;
             int err;
 
             err = SelvaHierarchy_UpsertNode(ctx, hierarchy, dst_node_id, &dst_node);
@@ -271,7 +271,7 @@ static int update_edge(
 
         if (setOpts->$add_len > 0) {
             for (size_t i = 0; i < setOpts->$add_len; i += SELVA_NODE_ID_SIZE) {
-                struct SelvaModify_HierarchyNode *dst_node;
+                struct SelvaHierarchyNode *dst_node;
                 int err;
 
                 err = SelvaHierarchy_UpsertNode(ctx, hierarchy, setOpts->$add + i, &dst_node);
@@ -329,7 +329,7 @@ static int update_edge(
 
 static void selva_set_defer_alias_change_events(
         RedisModuleCtx *ctx,
-        SelvaModify_Hierarchy *hierarchy,
+        SelvaHierarchy *hierarchy,
         struct SelvaSet *aliases) {
     struct SelvaSetElement *el;
 
@@ -346,7 +346,7 @@ static void selva_set_defer_alias_change_events(
  */
 static int add_set_values(
     RedisModuleCtx *ctx,
-    SelvaModify_Hierarchy *hierarchy,
+    SelvaHierarchy *hierarchy,
     RedisModuleKey *alias_key,
     struct SelvaObject *obj,
     RedisModuleString *id,
@@ -679,7 +679,7 @@ static int del_set_values(
  */
 static int update_set(
     RedisModuleCtx *ctx,
-    SelvaModify_Hierarchy *hierarchy,
+    SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
     const RedisModuleString *field,
@@ -737,7 +737,7 @@ static int update_set(
 
 int SelvaModify_ModifySet(
     RedisModuleCtx *ctx,
-    SelvaModify_Hierarchy *hierarchy,
+    SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
     const RedisModuleString *field,
@@ -862,7 +862,7 @@ void SelvaModify_ModifyIncrementDouble(
 
 int SelvaModify_ModifyDel(
     RedisModuleCtx *ctx,
-    SelvaModify_Hierarchy *hierarchy,
+    SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
     RedisModuleString *id,
     const RedisModuleString *field
@@ -884,7 +884,7 @@ int SelvaModify_ModifyDel(
             err = REDISMODULE_ERR;
         }
     } else { /* It's either an edge field or an object field. */
-        struct SelvaModify_HierarchyNode *node;
+        struct SelvaHierarchyNode *node;
 
         node = SelvaHierarchy_FindNode(hierarchy, node_id);
         if (!node) {

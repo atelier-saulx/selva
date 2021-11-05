@@ -4,11 +4,11 @@
 #include "edge.h"
 #include "redismodule.h"
 
-struct EdgeField *Edge_GetField(const struct SelvaModify_HierarchyNode *node __unused, const char *key_name_str __unused, size_t key_name_len __unused) {
+struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *node __unused, const char *key_name_str __unused, size_t key_name_len __unused) {
     return NULL;
 }
 
-int Edge_Refcount(struct SelvaModify_HierarchyNode *node __unused) {
+int Edge_Refcount(struct SelvaHierarchyNode *node __unused) {
     return 0;
 }
 
@@ -20,12 +20,12 @@ void Edge_DeinitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
     memset(data, 0, sizeof(*data));
 }
 
-int Edge_RdbLoad(struct RedisModuleIO *io, int encver __unused, struct SelvaModify_Hierarchy *hierarchy __unused, struct SelvaModify_HierarchyNode *node __unused) {
+int Edge_RdbLoad(struct RedisModuleIO *io, int encver __unused, struct SelvaHierarchy *hierarchy __unused, struct SelvaHierarchyNode *node __unused) {
     RedisModule_LoadUnsigned(io);
     return 0;
 }
 
-void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaModify_HierarchyNode *node __unused) {
+void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaHierarchyNode *node __unused) {
     RedisModule_SaveUnsigned(io, 0);
 }
 

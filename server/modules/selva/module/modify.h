@@ -9,7 +9,7 @@
 #include "selva_object.h"
 
 struct RedisModuleCtx;
-struct SelvaModify_Hierarchy;
+struct SelvaHierarchy;
 struct SelvaObject;
 
 enum SelvaModify_ArgType {
@@ -66,7 +66,7 @@ struct SelvaModify_OpSet {
  */
 int SelvaModify_ModifySet(
     struct RedisModuleCtx *ctx,
-    struct SelvaModify_Hierarchy *hierarchy,
+    struct SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
     struct RedisModuleString *id,
     const struct RedisModuleString *field,
@@ -90,7 +90,7 @@ void SelvaModify_ModifyIncrementDouble(
 
 int SelvaModify_ModifyDel(
     struct RedisModuleCtx *ctx,
-    struct SelvaModify_Hierarchy *hierarchy,
+    struct SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
     struct RedisModuleString *id,
     const struct RedisModuleString *field
