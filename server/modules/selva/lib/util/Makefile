@@ -1,10 +1,10 @@
-include ../common.mk
+include ../../common.mk
 
-RM_INCLUDE_DIR := ../include
+RM_INCLUDE_DIR := ../../include
 
 CFLAGS += -fPIC -O2 -Wno-unused-function -fno-strict-aliasing
 CFLAGS += -I$(RM_INCLUDE_DIR)
-CC=gcc
+CC := gcc
 
 OBJS := \
 	auto_free.o \
