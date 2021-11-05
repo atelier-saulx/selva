@@ -33,6 +33,10 @@ int Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label) {
     return 0; /* Don't visit. */
 }
 
+int Trx_HasVisited(const struct trx * restrict cur_trx, const struct trx * restrict label) {
+    return label->id == cur_trx->id && (label->cl & cur_trx->cl) == cur_trx->cl;
+}
+
 void Trx_End(struct trx_state * restrict state, struct trx * restrict cur) {
     state->ex |= cur->cl;
 

@@ -206,6 +206,10 @@ int Selva_SubscriptionFilterMatch(RedisModuleCtx *ctx, const struct SelvaHierarc
     return res;
 }
 
+int SelvaSubscriptions_hasActiveMarkers(const struct SelvaHierarchyMetadata *node_metadata) {
+    return SVector_Size(&node_metadata->sub_markers.vec) > 0;
+}
+
 Selva_SubscriptionMarkerId Selva_GenSubscriptionMarkerId(Selva_SubscriptionMarkerId prev, const char *s) {
     /* fnv32 */
     uint32_t hash = prev > 0 ? (uint32_t)(prev & 0x7FFFFFFF) : 2166136261u;

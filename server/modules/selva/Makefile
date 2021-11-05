@@ -18,6 +18,7 @@ OBJS := \
 	module/find.o \
 	module/find_index.o \
 	module/hierarchy.o \
+	module/hierarchy_detached.o \
 	module/hierarchy_reply.o \
 	module/inherit.o \
 	module/modify.o \
