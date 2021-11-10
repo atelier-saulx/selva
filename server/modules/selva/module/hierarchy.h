@@ -1,6 +1,6 @@
 #pragma once
-#ifndef SELVA_MODIFY_HIERARCHY
-#define SELVA_MODIFY_HIERARCHY
+#ifndef _SELVA_HIERARCHY_H_
+#define _SELVA_HIERARCHY_H_
 
 #include "linker_set.h"
 #include "selva.h"
@@ -397,4 +397,4 @@ int HierarchyReply_WithTraversal(
         const Selva_NodeType *types,
         enum SelvaTraversal dir);
 
-#endif /* SELVA_MODIFY_HIERARCHY */
+#endif /* _SELVA_HIERARCHY_H_ */

@@ -2,6 +2,8 @@
 #ifndef _FIND_INDEX_H_
 #define _FIND_INDEX_H_
 
+#include "traversal.h"
+
 struct RedisModuleCtx;
 struct RedisModuleString;
 struct SelvaHierarchy;
