@@ -12,7 +12,6 @@
 #include "async_task.h"
 #include "cdefs.h"
 #include "errors.h"
-#include "hierarchy.h"
 #include "edge.h"
 #include "modify.h"
 #include "rpn.h"
@@ -25,12 +24,21 @@
 #include "traversal.h"
 #include "subscriptions.h"
 #include "svector.h"
+#include "hierarchy.h"
 
+/**
+ * Selva module version tracking.
+ * This is used to track the Selva module version used to create and modify the
+ * hierarchy that was serialized and later deserialized.
+ */
 struct SelvaDbVersionInfo {
     RedisModuleString *created_with;
     RedisModuleString *updated_with;
 } selva_db_version_info;
 
+/**
+ * The core type of Selva hierarchy.
+ */
 typedef struct SelvaHierarchyNode {
     Selva_NodeId id; /* Must be first. */
     struct trx trx_label;
@@ -44,6 +52,9 @@ typedef struct SelvaHierarchyNode {
     RB_ENTRY(SelvaHierarchyNode) _index_entry;
 } SelvaHierarchyNode;
 
+/**
+ * Filter struct used for RB searches.
+ */
 typedef struct SelvaHierarchySearchFilter {
     Selva_NodeId id;
 } SelvaHierarchySearchFilter;

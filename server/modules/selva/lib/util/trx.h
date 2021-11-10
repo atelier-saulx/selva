@@ -21,6 +21,9 @@ struct trx_state {
 
 /**
  * Transaction label/element state.
+ * When used to hold the current reentrant state the variable is typically
+ * called trx_cur, while the label in the traversed data structure is
+ * called trx_label.
  */
 struct trx {
     trxid_t id; /*!< Id of the currently executing transaction. */
@@ -34,6 +37,8 @@ int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx);
 
 /**
  * Visit a node.
+ * @returns 0 if the node should not be visited;
+ *          1 if the node should be visited.
  */
 int __hot Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label);
 
