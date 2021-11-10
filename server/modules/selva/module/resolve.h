@@ -8,7 +8,7 @@
 struct RedisModuleCtx;
 struct RedisModuleKey;
 struct RedisModuleString;
-struct SelvaModify_Hierarchy;
+struct SelvaHierarchy;
 
 #define SELVA_RESOLVE_NODE_ID   0x40000000
 #define SELVA_RESOLVE_ALIAS     0x20000000
@@ -22,7 +22,7 @@ struct SelvaModify_Hierarchy;
  */
 int SelvaResolve_NodeId(
         struct RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaHierarchy *hierarchy,
         RedisModuleString **ids,
         size_t nr_ids,
         Selva_NodeId node_id);

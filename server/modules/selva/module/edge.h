@@ -12,8 +12,8 @@
 struct RedisModuleCtx;
 struct RedisModuleIO;
 struct RedisModuleString;
-struct SelvaModify_Hierarchy;
-struct SelvaModify_HierarchyNode;
+struct SelvaHierarchy;
+struct SelvaHierarchyNode;
 struct SelvaObject;
 
 #define EDGE_FIELD_CONSTRAINT_ID_DEFAULT    0
@@ -146,14 +146,14 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(
  * @param node is a pointer to the node the lookup should be applied to. Can be NULL.
  * @returns A pointer to an EdgeField if node is set and the field is found; Otherwise NULL.
  */
-struct EdgeField *Edge_GetField(const struct SelvaModify_HierarchyNode *node, const char *field_name_str, size_t field_name_len);
+struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *node, const char *field_name_str, size_t field_name_len);
 
 /**
  * Check if an EdgeField has a reference to dst_node.
  * @returns 0 = not found;
  *          1 = found.
  */
-int Edge_Has(const struct EdgeField *edge_field, struct SelvaModify_HierarchyNode *dst_node);
+int Edge_Has(const struct EdgeField *edge_field, struct SelvaHierarchyNode *dst_node);
 
 /**
  * Add a new edge.
@@ -163,17 +163,17 @@ int Edge_Has(const struct EdgeField *edge_field, struct SelvaModify_HierarchyNod
  */
 int Edge_Add(
         struct RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaHierarchy *hierarchy,
         unsigned constraint_id,
         const char *field_name_str,
         size_t field_name_len,
-        struct SelvaModify_HierarchyNode *src_node,
-        struct SelvaModify_HierarchyNode *dst_node);
+        struct SelvaHierarchyNode *src_node,
+        struct SelvaHierarchyNode *dst_node);
 int Edge_Delete(
         struct RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaHierarchy *hierarchy,
         struct EdgeField *edge_field,
-        struct SelvaModify_HierarchyNode *src_node,
+        struct SelvaHierarchyNode *src_node,
         Selva_NodeId dst_node_id);
 
 /**
@@ -182,14 +182,14 @@ int Edge_Delete(
  */
 int Edge_ClearField(
         struct RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
-        struct SelvaModify_HierarchyNode *src_node,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *src_node,
         const char *field_name_str,
         size_t field_name_len);
 int Edge_DeleteField(
         struct RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
-        struct SelvaModify_HierarchyNode *src_node,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *src_node,
         const char *field_name_str,
         size_t field_name_len);
 
@@ -201,11 +201,11 @@ int Edge_DeleteField(
  * @param node is a pointer to the node.
  * @returns Returns the number of references from other nodes.
  */
-int Edge_Refcount(struct SelvaModify_HierarchyNode *node);
+int Edge_Refcount(struct SelvaHierarchyNode *node);
 void replyWithEdgeField(struct RedisModuleCtx *ctx, struct EdgeField *edge_field);
 
-int Edge_RdbLoad(struct RedisModuleIO *io, int encver, struct SelvaModify_Hierarchy *hierarchy, struct SelvaModify_HierarchyNode *node);
-void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaModify_HierarchyNode *node);
+int Edge_RdbLoad(struct RedisModuleIO *io, int encver, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node);
+void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaHierarchyNode *node);
 int EdgeConstraint_RdbLoad(struct RedisModuleIO *io, int encver, struct EdgeFieldConstraints *data);
 void EdgeConstraint_RdbSave(struct RedisModuleIO *io, struct EdgeFieldConstraints *data);
 

@@ -197,11 +197,11 @@ static int apply_agg_fn_obj(struct SelvaObject *obj, struct AggregateCommand_Arg
     return (!agg_func) ? 0 : agg_func(obj, args);
 }
 
-static inline int apply_agg_fn(struct SelvaModify_HierarchyNode *node, struct AggregateCommand_Args* args) {
+static inline int apply_agg_fn(struct SelvaHierarchyNode *node, struct AggregateCommand_Args* args) {
     return apply_agg_fn_obj(SelvaHierarchy_GetNodeObject(node), args);
 }
 
-static int AggregateCommand_NodeCb(struct SelvaModify_HierarchyNode *node, void *arg) {
+static int AggregateCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
     Selva_NodeId nodeId;
     struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->find_args.rpn_ctx;
@@ -367,7 +367,7 @@ static size_t AggregateCommand_AggregateOrderedResult(
      */
     SVector_ForeachBegin(&it, order_result);
     while ((item = SVector_Foreach(&it))) {
-        struct SelvaModify_HierarchyNode *node = item->node;
+        struct SelvaHierarchyNode *node = item->node;
         int err;
 
         if (limit-- == 0) {
@@ -397,7 +397,7 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
         RedisModuleCtx *ctx,
         RedisModuleString *lang __unused,
         void *arg __unused,
-        SelvaModify_Hierarchy *hierarchy __unused,
+        SelvaHierarchy *hierarchy __unused,
         ssize_t offset,
         ssize_t limit,
         struct SelvaObject *fields __unused,
@@ -513,7 +513,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     /*
      * Open the Redis key.
      */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
+    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
         return REDISMODULE_OK;
     }
@@ -734,7 +734,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         };
         args.find_args = find_args;
 
-        const struct SelvaModify_HierarchyCallback cb = {
+        const struct SelvaHierarchyCallback cb = {
             .node_cb = AggregateCommand_NodeCb,
             .node_arg = &args,
         };
@@ -859,7 +859,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     /*
      * Open the Redis key.
      */
-    SelvaModify_Hierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
+    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
         return REDISMODULE_OK;
     }
@@ -1007,7 +1007,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     };
     ssize_t array_len = 0;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
-        struct SelvaModify_HierarchyNode *node;
+        struct SelvaHierarchyNode *node;
         ssize_t tmp_limit = -1;
         struct FindCommand_Args find_args = {
             .ctx = ctx,

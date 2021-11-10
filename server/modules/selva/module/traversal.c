@@ -56,6 +56,8 @@ int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const RedisModuleString *
         *dir = SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION;
     } else if (!strcmp("expression", arg_str)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_EXPRESSION;
+    } else if (!strcmp("dfs_full", arg_str)) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_DFS_FULL;
     } else {
         return SELVA_SUBSCRIPTIONS_EINVAL;
     }
@@ -149,7 +151,7 @@ GENERATE_FUNMAP(SelvaTraversal_GetOrderFunc, order_functions, enum SelvaResultOr
 struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        struct SelvaModify_HierarchyNode *node,
+        struct SelvaHierarchyNode *node,
         const RedisModuleString *order_field) {
     Selva_NodeId nodeId;
     struct TraversalOrderedItem *item = NULL;
@@ -416,7 +418,6 @@ int SelvaTraversal_GetSkip(enum SelvaTraversal dir) {
     case SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS:
     case SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS:
     case SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS:
-    case SELVA_HIERARCHY_TRAVERSAL_DFS_FULL:
     case SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION:
         return 1;
     default:

@@ -4,17 +4,17 @@
 #include "traversal.h"
 #include "find_index.h"
 
-int SelvaFindIndex_Init(struct RedisModuleCtx *ctx, struct SelvaModify_Hierarchy *hierarchy) {
+int SelvaFindIndex_Init(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy) {
     return 0;
 }
 
-void SelvaFindIndex_Deinit(struct SelvaModify_Hierarchy *hierarchy) {
+void SelvaFindIndex_Deinit(struct SelvaHierarchy *hierarchy) {
     return;
 }
 
 int SelvaFind_AutoIndex(
         struct RedisModuleCtx *ctx,
-        struct SelvaModify_Hierarchy *hierarchy,
+        struct SelvaHierarchy *hierarchy,
         enum SelvaTraversal dir, struct RedisModuleString *dir_expression_str,
         const Selva_NodeId node_id,
         struct RedisModuleString *filter,

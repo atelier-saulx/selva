@@ -12,9 +12,9 @@
 
 static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleString *key_name, int mode) {
     RedisModuleString *hkey_name;
-    struct SelvaModify_Hierarchy *hierarchy;
+    struct SelvaHierarchy *hierarchy;
     Selva_NodeId nodeId;
-    const struct SelvaModify_HierarchyNode *node;
+    const struct SelvaHierarchyNode *node;
 
     /*
      * Open the Redis key.
