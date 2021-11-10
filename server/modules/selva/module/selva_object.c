@@ -16,7 +16,7 @@
 #include "selva_object.h"
 
 #define SELVA_OBJECT_KEY_MAX            USHRT_MAX /*!< Maximum length of a key including dots and array notation. */
-#define SELVA_OBJECT_SIZE_MAX           (1 << 30) /*!< Maximum number of keys in a SelvaObject. */
+#define SELVA_OBJECT_SIZE_MAX           0x7FFFFFFF /*!< Maximum number of keys in a SelvaObject. */
 /**
  * Number of keys embedded into the object.
  * Must be a power of two. This must be relatively small because we are doing
