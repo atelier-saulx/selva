@@ -70,6 +70,7 @@
   },
   "dependencies": {
     "pg": "8.7.1",
+    "pg-native": "3.0.0",
     "squel": "^5.13.0",
     "data-record": "^0.5.2",
     "@saulx/selva-query-ast-parser": "^3.0.0",
