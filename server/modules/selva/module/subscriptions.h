@@ -253,7 +253,7 @@ int SelvaSubscriptions_TraverseMarker(
 int SelvaSubscriptions_RefreshByMarkerId(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id);
 
 /**

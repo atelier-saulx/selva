@@ -245,7 +245,7 @@ static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
     RedisModule_Free(marker);
 }
 
-static void remove_sub_missing_accessor_markers(SelvaHierarchy *hierarchy, struct Selva_Subscription *sub) {
+static void remove_sub_missing_accessor_markers(SelvaHierarchy *hierarchy, const struct Selva_Subscription *sub) {
     struct SelvaObject *missing = hierarchy->subs.missing;
     SelvaObject_Iterator *it_missing;
     struct SelvaObject *subs;
@@ -492,7 +492,7 @@ static void set_marker(struct Selva_SubscriptionMarkers *sub_markers, struct Sel
 
 static void reset_marker_filter(struct Selva_SubscriptionMarkers *sub_markers) {
     struct SVectorIterator it;
-    struct Selva_SubscriptionMarker *marker;
+    const struct Selva_SubscriptionMarker *marker;
 
     sub_markers->flags_filter = 0;
 
@@ -583,7 +583,7 @@ static int clear_node_marker_cb(struct SelvaHierarchyNode *node, void *arg) {
  */
 static struct Selva_Subscription *create_subscription(
         struct SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id) {
+        const Selva_SubscriptionId sub_id) {
     struct Selva_Subscription *sub;
 
     sub = RedisModule_Calloc(1, sizeof(struct Selva_Subscription));
@@ -650,7 +650,7 @@ static int new_marker(
     return 0;
 }
 
-static void marker_set_node_id(struct Selva_SubscriptionMarker *marker, Selva_NodeId node_id) {
+static void marker_set_node_id(struct Selva_SubscriptionMarker *marker, const Selva_NodeId node_id) {
     marker->marker_flags &= ~SELVA_SUBSCRIPTION_FLAG_TRIGGER;
     memcpy(marker->node_id, node_id, SELVA_NODE_ID_SIZE);
 }
@@ -1013,9 +1013,10 @@ static int refresh_marker(
 int SelvaSubscriptions_RefreshByMarkerId(
         RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id) {
     struct Selva_SubscriptionMarker *marker;
+
     marker = SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id);
     if (!marker) {
         return SELVA_SUBSCRIPTIONS_ENOENT;
@@ -1772,7 +1773,7 @@ void Selva_Subscriptions_DeferTriggerEvents(
 static void send_update_events(struct SelvaHierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     struct SVectorIterator it;
-    struct Selva_Subscription *sub;
+    const struct Selva_Subscription *sub;
 
     SVector_ForeachBegin(&it, &def->updates);
     while ((sub = SVector_Foreach(&it))) {
@@ -1791,7 +1792,7 @@ static void send_update_events(struct SelvaHierarchy *hierarchy) {
 static void send_trigger_events(struct SelvaHierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
     struct SVectorIterator it;
-    struct Selva_SubscriptionMarker *marker;
+    const struct Selva_SubscriptionMarker *marker;
 
     SVector_ForeachBegin(&it, &def->triggers);
     while ((marker = SVector_Foreach(&it))) {
