@@ -10,7 +10,6 @@ int rms_compress(struct compressed_rms *out, RedisModuleString *in) {
     struct libdeflate_compressor *compressor;
     char *compressed_str __auto_free = NULL;
     size_t compressed_size = 0;
-
     TO_STR(in);
 
     compressor = libdeflate_alloc_compressor(6);
@@ -30,16 +29,17 @@ int rms_compress(struct compressed_rms *out, RedisModuleString *in) {
 
     if (compressed_size == 0) {
         /* No compression was achieved. */
+        compressed_size = in_len;
         out->uncompressed_size = -1;
         out->rms = RedisModule_HoldString(NULL, in);
     } else {
-        fprintf(stderr, "%s:%d: Compression ratio: %.2f:1\n",
-                __FILE__, __LINE__,
-                (double)in_len / (double)compressed_size);
-
         out->uncompressed_size = in_len;
         out->rms = RedisModule_CreateString(NULL, compressed_str, compressed_size);
     }
+
+    fprintf(stderr, "%s:%d: Compression ratio: %.2f:1\n",
+            __FILE__, __LINE__,
+            (double)in_len / (double)compressed_size);
 
     return 0;
 }
