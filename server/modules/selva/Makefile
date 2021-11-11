@@ -1,11 +1,12 @@
 include common.mk
 
 SELVA_VERSION := $(shell sh -c 'git rev-parse --verify HEAD')
-INCLUDE_DIR := include lib/util
-LIBS := rmutil util
+INCLUDE_DIR := include lib/util lib/deflate
+LIBS := rmutil util deflate
 OBJS := \
 	version.o \
 	module.o \
+	module/aggregate.o \
 	module/alias.o \
 	module/arg_parser.o \
 	module/async_task.o \
@@ -16,13 +17,12 @@ OBJS := \
 	module/errors.o \
 	module/find.o \
 	module/find_index.o \
-	module/aggregate.o \
-	module/traversal.o \
 	module/hierarchy.o \
 	module/hierarchy_reply.o \
 	module/inherit.o \
 	module/modify.o \
 	module/resolve.o \
+	module/rms_compressor.o \
 	module/rpn.o \
 	module/rpn_eval.o \
 	module/selva_lang.o \
@@ -30,6 +30,7 @@ OBJS := \
 	module/selva_object.o \
 	module/selva_object_commands.o \
 	module/selva_set.o \
+	module/traversal.o \
 	module/selva_type.o \
 	module/shared.o \
 	module/subscriptions.o
@@ -71,7 +72,11 @@ else
 endif
 
 $(LIBS_A): FORCE
-	$(MAKE) DISABLE_SHARED=1 -C $(dir $@)
+	@if [[ $(@) == *"deflate"* ]]; then \
+		$(MAKE) DISABLE_SHARED=1 CFLAGS=-fPIC DISABLE_GZIP=1 DISABLE_ZLIB=1 -C $(dir $@) libdeflate.a; \
+	else \
+		$(MAKE) -C $(dir $@); \
+	fi
 
 module.so: $(OBJS) $(LIBS_A)
 	$(LD) -o $@ $^ $(SHOBJ_LDFLAGS) $(addprefix  -L,$(LIBDIR)) $(SHOBJ_LDLIBS)
@@ -111,6 +116,7 @@ clean: FORCE
 	find . -type f -name "*.gcno" -exec rm -f {} \;
 	find . -type f -name "*.gcov" -exec rm -f {} \;
 	$(MAKE) -C test clean
+	$(MAKE) -C lib/deflate clean
 
 FORCE:
 
