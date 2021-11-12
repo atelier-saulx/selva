@@ -48,7 +48,7 @@ int stringlist_search(const char *list, const char *str) {
 }
 
 int stringlist_searchn(const char *list, const char *str, size_t n) {
-	const char *s1 = list;
+    const char *s1 = list;
 
     if (!str || str[0] == '\0' || n == 0) {
         return 0;
@@ -82,13 +82,13 @@ int stringlist_searchn(const char *list, const char *str, size_t n) {
 }
 
 size_t substring_count(const char *string, const char *substring, size_t n) {
-	size_t i, l1, l2;
+	size_t l1, l2;
 	size_t count = 0;
 
 	l1 = n;
 	l2 = strlen(substring);
 
-	for (i = 0; i < l1 - l2; i++) {
+	for (size_t i = 0; i < l1 - l2; i++) {
 		if (strstr(string + i, substring) == string + i) {
 			count++;
 			i = i + l2 - 1;
@@ -99,8 +99,8 @@ size_t substring_count(const char *string, const char *substring, size_t n) {
 }
 
 int is_array_field(const char *field_str, size_t field_len) {
-    // we assume that field names are typically just alphanumeric -- which is true
-    if (field_str[field_len-1] == ']') {
+    /* we assume that field names are typically just alphanumeric -- which is true */
+    if (field_str[field_len - 1] == ']') {
         return 1;
     }
 
