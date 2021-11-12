@@ -193,10 +193,9 @@ static int send_field_value(
 }
 
 static int InheritCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
-    Selva_NodeId nodeId;
-    RedisModuleKey *key = NULL;
-    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
     struct InheritCommand_Args *restrict args = (struct InheritCommand_Args *)arg;
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    Selva_NodeId nodeId;
     int err;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
@@ -215,7 +214,6 @@ static int InheritCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
              * This node type is not accepted and we don't need to check whether
              * the field set.
              */
-            RedisModule_CloseKey(key);
             return 0;
         }
     } else {
@@ -246,7 +244,6 @@ static int InheritCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
 
             /* Stop traversing if all fields were found. */
             if (args->nr_results == (ssize_t)args->nr_fields) {
-                RedisModule_CloseKey(key);
                 return 1;
             }
         } else if (err != SELVA_ENOENT) {
