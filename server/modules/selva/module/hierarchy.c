@@ -2227,6 +2227,7 @@ int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, Selv
         return err;
     }
 
+    SelvaObject_Destroy(node->obj); /* The object was already created by newNode(). */
     node->obj = SelvaObjectTypeRDBLoad(io, encver, NULL);
     if (!node->obj) {
         return SELVA_ENOENT;
