@@ -221,7 +221,9 @@ $(SHARED_LIB):$(SHARED_LIB_OBJ)
 		$(SHARED_LIB_LDFLAGS) -shared $+
 
 ifdef DISABLE_SHARED
-undefine SHARED_LIB_SYMLINK
+	ifneq ($(shell uname),Darwin)
+		undefine SHARED_LIB_SYMLINK
+	endif
 else
 DEFAULT_TARGETS += $(SHARED_LIB)
 endif
