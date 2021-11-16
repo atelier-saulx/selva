@@ -1554,7 +1554,7 @@ static int dfs(
  * Traverse through all nodes of the hierarchy from heads to leaves.
  */
 static int full_dfs(SelvaHierarchy *hierarchy, const TraversalCallback * restrict cb) {
-    SelvaHierarchyNode **head;
+    SelvaHierarchyNode *head;
     SVECTOR_AUTOFREE(stack);
 
     HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : &HierarchyNode_HeadCallback_Dummy;
@@ -1575,7 +1575,7 @@ static int full_dfs(SelvaHierarchy *hierarchy, const TraversalCallback * restric
     SVector_ForeachBegin(&it, &hierarchy->heads);
     while ((head = SVector_Foreach(&it))) {
         SVector_Insert(&stack, head);
-        head_cb(*head, cb->head_arg);
+        head_cb(head, cb->head_arg);
 
         while (SVector_Size(&stack) > 0) {
             SelvaHierarchyNode *node = SVector_Pop(&stack);
