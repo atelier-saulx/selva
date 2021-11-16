@@ -3,7 +3,7 @@ const { compile, createRecord } = require('data-record')
 import { connect } from '../src/index'
 import { setRecordDefCstring } from '../src/set/modifyDataRecords'
 import { start } from '@saulx/selva-server'
-import redis, { RedisClient } from '@/saulx/redis-client'
+import redis, { RedisClient } from '@saulx/redis-client'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
