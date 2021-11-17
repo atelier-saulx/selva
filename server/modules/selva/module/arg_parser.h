@@ -46,6 +46,11 @@ int SelvaArgsParser_StringList(
  * Set separator: '\n'
  * List separator: '|'
  * Enf of sets: '\0'
+ * The list_out object will be built as follows:
+ * {
+ *   '0': ['field1', 'field2'],
+ *   '1': ['field3', 'field4'],
+ * }
  */
 int SelvaArgsParser_StringSetList(
         struct RedisModuleCtx *ctx,
