@@ -43,21 +43,19 @@ CFLAGS += $(IDIR) -include tunables.h \
 	-fno-strict-aliasing \
 	-D REDISMODULE_EXPERIMENTAL_API=1
 LIBDIR := $(patsubst %,lib/%,$(LIBS))
+SHOBJ_LDLIBS := -lc -lhiredis -lcrypto -lssl
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
 	SHOBJ_CFLAGS ?= -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Bsymbolic
-	SHOBJ_LDLIBS := -lc -lhiredis -lcrypto -lssl
 else ifeq ($(shell test `sw_vers -productVersion|cut -c1-2` -ge 11; echo $$?),0)
-#	CFLAGS += -Wpadded
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
 	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib /usr/local/Cellar/openssl@1.1/1.1.1k/lib/
-	SHOBJ_LDLIBS := -lrmutil -lutil -lc -lhiredis -lcrypto -lssl
-else
+else # Old macOs
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
-	SHOBJ_LDLIBS := -lc -lhiredis -lcrypto -lssl
+	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib /usr/local/Cellar/openssl@1.1/1.1.1k/lib/
 endif
 CC ?= gcc
 LIBS_A := $(foreach S,$(LIBS),lib/$(S)/lib$(S).a)
