@@ -52,7 +52,9 @@ function parseGetOpts(
 ] {
   const pathPrefix = path === '' ? '' : path + '.'
   let fields: Map<string, Set<string>> = new Map()
-  fields.set('$any', new Set())
+  if (!fields.has(type)) {
+    fields.set(type, new Set())
+  }
   const mapping: Record<
     string,
     {
@@ -116,7 +118,7 @@ function parseGetOpts(
     } else if (k === '$all') {
       fields.get(type).add(path + '.*')
     } else if (k === '$fieldsByType') {
-      for (const t of props.$fieldsByType) {
+      for (const t in props.$fieldsByType) {
         const [nestedFieldsMap, , hasSpecial] = parseGetOpts(
           props.$fieldsByType[t],
           path,
@@ -558,6 +560,7 @@ const findFields = async (
       }
     }
 
+    console.log('FIELD OPTS', fieldsOpt)
     const result = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       lang,
@@ -646,6 +649,7 @@ const findFields = async (
       }
     }
 
+    console.log('FIELD OPTS', fieldsOpt)
     const schema = client.schemas[ctx.db]
     const sourceFieldSchema = op.nested
       ? null

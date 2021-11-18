@@ -190,7 +190,7 @@ async function validateNested(
           )
         }
 
-        for (const t of props.$fieldsByType) {
+        for (const t in props.$fieldsByType) {
           await validateNested(
             extraQueries,
             client,
@@ -282,7 +282,7 @@ export default async function validateTopLevel(
           )
         }
 
-        for (const t of props.$fieldsByType) {
+        for (const t in props.$fieldsByType) {
           await validateTopLevel(
             extraQueries,
             client,
