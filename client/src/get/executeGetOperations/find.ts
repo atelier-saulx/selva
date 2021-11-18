@@ -45,12 +45,13 @@ function parseGetOpts(
   path: string,
   nestedMapping?: Record<string, { targetField?: string[]; default?: any }>
 ): [
-  Set<string>,
+  Map<string, Set<string>>,
   Record<string, { targetField?: string[]; default?: any }>,
   boolean
 ] {
   const pathPrefix = path === '' ? '' : path + '.'
-  let fields: Set<string> = new Set()
+  let fields: Map<string, Set<string>> = new Map()
+  fields.set('$any', new Set())
   const mapping: Record<
     string,
     {
@@ -67,13 +68,13 @@ function parseGetOpts(
     } else if (props.$list && k === '$field' && pathPrefix === '') {
       // ignore
     } else if (!hasAll && !k.startsWith('$') && props[k] === true) {
-      fields.add(pathPrefix + k)
+      fields.get('$any').add(pathPrefix + k)
     } else if (props[k] === false) {
-      fields.add(`!${pathPrefix + k}`)
+      fields.get('$any').add(`!${pathPrefix + k}`)
     } else if (k === '$field') {
       const $field = props[k]
       if (Array.isArray($field)) {
-        fields.add($field.join('|'))
+        fields.get('$any').add($field.join('|'))
         $field.forEach((f) => {
           if (!mapping[f]) {
             mapping[f] = { targetField: [path] }
@@ -88,7 +89,7 @@ function parseGetOpts(
           mapping[f].targetField.push(path)
         })
       } else {
-        fields.add($field)
+        fields.get('$any').add($field)
 
         if (!mapping[$field]) {
           mapping[$field] = { targetField: [path] }
@@ -99,7 +100,7 @@ function parseGetOpts(
         }
       }
     } else if (k === '$default') {
-      fields.add(path)
+      fields.get('$any').add(path)
 
       const $default = props[k]
       if (!mapping[path]) {
@@ -109,14 +110,14 @@ function parseGetOpts(
       }
     } else if (path === '' && k === '$all') {
       // fields = new Set(['*'])
-      fields.add('*')
+      fields.get('$any').add('*')
       // hasAll = true
     } else if (k === '$all') {
-      fields.add(path + '.*')
+      fields.get('$any').add(path + '.*')
     } else if (k.startsWith('$')) {
       return [fields, mapping, true]
     } else if (typeof props[k] === 'object') {
-      const [nestedFields, , hasSpecial] = parseGetOpts(
+      const [nestedFieldsMap, , hasSpecial] = parseGetOpts(
         props[k],
         pathPrefix + k,
         mapping
@@ -126,8 +127,13 @@ function parseGetOpts(
         return [fields, mapping, true]
       }
 
-      for (const f of nestedFields.values()) {
-        fields.add(f)
+      for (const [type, nestedFields] of nestedFieldsMap.entries()) {
+        const set = fields.get(type) || new Set()
+        for (const f of nestedFields.values()) {
+          set.add(f)
+        }
+
+        fields.set(type, set)
       }
     }
   }
@@ -475,7 +481,7 @@ const findFields = async (
   op: GetOperationFind,
   lang: string,
   ctx: ExecContext,
-  fieldsOpt
+  fieldsOpt: Map<string, Set<string>>
 ): Promise<string[]> => {
   const { db, subId } = ctx
 
@@ -513,7 +519,9 @@ const findFields = async (
             fields:
               op.props.$all === true
                 ? []
-                : [...fieldsOpt.values()].filter((f) => !f.startsWith('!')),
+                : [...fieldsOpt.get('$any').values()].filter(
+                    (f) => !f.startsWith('!')
+                  ),
             rpn: args,
           })
 
@@ -538,7 +546,7 @@ const findFields = async (
       'limit',
       op.options.limit,
       'fields',
-      makeFieldsString(fieldsOpt),
+      makeFieldsString(fieldsOpt.get('$any')),
       joinIds(op.inKeys),
       ...args
     )
@@ -638,7 +646,7 @@ const findFields = async (
       'limit',
       op.options.limit,
       'fields',
-      makeFieldsString(fieldsOpt),
+      makeFieldsString(fieldsOpt.get('$any')),
       padId(op.id),
       ...args
     )
