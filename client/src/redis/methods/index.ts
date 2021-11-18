@@ -3563,6 +3563,36 @@ async selva_hierarchy_parents(opts: any, ...args: args): Promise<any> {
 }
 
 
+async selva_hierarchy_compress(opts: ServerSelector, ...args: args): Promise<any>
+async selva_hierarchy_compress(...args: args): Promise<any>
+async selva_hierarchy_compress(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_compress', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_compress', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_hierarchy_listcompressed(opts: ServerSelector, ...args: args): Promise<any>
+async selva_hierarchy_listcompressed(...args: args): Promise<any>
+async selva_hierarchy_listcompressed(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_listcompressed', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_hierarchy_listcompressed', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async selva_inherit(opts: ServerSelector, ...args: args): Promise<any>
 async selva_inherit(...args: args): Promise<any>
 async selva_inherit(opts: any, ...args: args): Promise<any> {

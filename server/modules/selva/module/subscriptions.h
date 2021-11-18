@@ -197,7 +197,7 @@ struct Selva_SubscriptionMarkers {
      */
     unsigned short flags_filter;
     /**
-     * A list of subscriptionMarker structures.
+     * A list of pointers to subscriptionMarker structures.
      */
     struct SVector vec;
 };
@@ -209,6 +209,8 @@ struct SelvaSubscriptions_DeferredEvents {
     SVector updates; /*!< A set of Selva_Subscriptions. */
     SVector triggers; /*!< A set of Selva_SubscriptionMarkers */
 };
+
+int SelvaSubscriptions_hasActiveMarkers(const struct SelvaHierarchyMetadata *node_metadata);
 
 /**
  * Generate a subscription marker id by hashing an input string.
