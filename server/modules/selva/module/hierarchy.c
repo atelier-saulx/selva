@@ -496,10 +496,6 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
     return NULL;
 }
 
-int SelvaHierarchy_NodeExists(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
-    return SelvaHierarchy_FindNode(hierarchy, id) != NULL;
-}
-
 struct SelvaObject *SelvaHierarchy_GetNodeObject(const struct SelvaHierarchyNode *node) {
     return node->obj;
 }
