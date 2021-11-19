@@ -1,5 +1,10 @@
-import { SelvaClient } from '../../'
-import { GetOperationFind, GetResult, GetOptions } from '../types'
+import { Schema, SelvaClient } from '../../'
+import {
+  GetOperationFind,
+  GetResult,
+  GetOptions,
+  TraverseByType,
+} from '../types'
 import { readLongLong, sourceFieldToFindArgs, typeCast } from './'
 import {
   ast2rpn,
@@ -7,6 +12,7 @@ import {
   FilterAST,
   isFork,
   convertNow,
+  bfsExpr2rpn,
 } from '@saulx/selva-query-ast-parser'
 import {
   executeNestedGetOperations,
@@ -19,7 +25,42 @@ import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 import { mkIndex } from './indexing'
 
-function makeFieldsString(fields: Set<string>): string {
+function makeFieldsString(
+  schema: Schema,
+  fieldsByType: Map<string, Set<string>>
+): [string, string] {
+  const fields = fieldsByType.get('$any')
+
+  if (
+    fieldsByType.size > 1 ||
+    (fieldsByType.size === 1 && !fieldsByType.has('$any'))
+  ) {
+    const any = fieldsByType.get('$any') || new Set()
+
+    const byType: TraverseByType = {
+      $any: any.size ? { $all: [...any] } : false,
+    }
+
+    for (const [type, tFields] of fieldsByType.entries()) {
+      if (type === '$any') {
+        continue
+      }
+
+      const allFields = new Set([...tFields])
+      for (const aField of any) {
+        allFields.add(aField)
+      }
+
+      if (!allFields.size) {
+        continue
+      }
+
+      byType[type] = { $all: [...allFields] }
+    }
+
+    return ['fields_rpn', bfsExpr2rpn(schema.types, byType)]
+  }
+
   let str = ''
   let hasWildcard = false
   for (const f of fields) {
@@ -37,20 +78,24 @@ function makeFieldsString(fields: Set<string>): string {
     str = str.slice(0, -1)
   }
 
-  return str
+  return ['fields', str]
 }
 
 function parseGetOpts(
   props: GetOptions,
   path: string,
+  type: string = '$any',
   nestedMapping?: Record<string, { targetField?: string[]; default?: any }>
 ): [
-  Set<string>,
+  Map<string, Set<string>>,
   Record<string, { targetField?: string[]; default?: any }>,
   boolean
 ] {
   const pathPrefix = path === '' ? '' : path + '.'
-  let fields: Set<string> = new Set()
+  let fields: Map<string, Set<string>> = new Map()
+  if (!fields.has(type)) {
+    fields.set(type, new Set())
+  }
   const mapping: Record<
     string,
     {
@@ -67,13 +112,13 @@ function parseGetOpts(
     } else if (props.$list && k === '$field' && pathPrefix === '') {
       // ignore
     } else if (!hasAll && !k.startsWith('$') && props[k] === true) {
-      fields.add(pathPrefix + k)
+      fields.get(type).add(pathPrefix + k)
     } else if (props[k] === false) {
-      fields.add(`!${pathPrefix + k}`)
+      fields.get(type).add(`!${pathPrefix + k}`)
     } else if (k === '$field') {
       const $field = props[k]
       if (Array.isArray($field)) {
-        fields.add($field.join('|'))
+        fields.get(type).add($field.join('|'))
         $field.forEach((f) => {
           if (!mapping[f]) {
             mapping[f] = { targetField: [path] }
@@ -88,7 +133,7 @@ function parseGetOpts(
           mapping[f].targetField.push(path)
         })
       } else {
-        fields.add($field)
+        fields.get(type).add($field)
 
         if (!mapping[$field]) {
           mapping[$field] = { targetField: [path] }
@@ -99,7 +144,7 @@ function parseGetOpts(
         }
       }
     } else if (k === '$default') {
-      fields.add(path)
+      fields.get(type).add(path)
 
       const $default = props[k]
       if (!mapping[path]) {
@@ -109,16 +154,39 @@ function parseGetOpts(
       }
     } else if (path === '' && k === '$all') {
       // fields = new Set(['*'])
-      fields.add('*')
+      fields.get(type).add('*')
       // hasAll = true
     } else if (k === '$all') {
-      fields.add(path + '.*')
+      fields.get(type).add(path + '.*')
+    } else if (k === '$fieldsByType') {
+      for (const t in props.$fieldsByType) {
+        const [nestedFieldsMap, , hasSpecial] = parseGetOpts(
+          props.$fieldsByType[t],
+          path,
+          t,
+          nestedMapping
+        )
+
+        if (hasSpecial) {
+          return [fields, mapping, true]
+        }
+
+        for (const [type, nestedFields] of nestedFieldsMap.entries()) {
+          const set = fields.get(type) || new Set()
+          for (const f of nestedFields.values()) {
+            set.add(f)
+          }
+
+          fields.set(type, set)
+        }
+      }
     } else if (k.startsWith('$')) {
       return [fields, mapping, true]
     } else if (typeof props[k] === 'object') {
-      const [nestedFields, , hasSpecial] = parseGetOpts(
+      const [nestedFieldsMap, , hasSpecial] = parseGetOpts(
         props[k],
         pathPrefix + k,
+        type,
         mapping
       )
 
@@ -126,8 +194,13 @@ function parseGetOpts(
         return [fields, mapping, true]
       }
 
-      for (const f of nestedFields.values()) {
-        fields.add(f)
+      for (const [type, nestedFields] of nestedFieldsMap.entries()) {
+        const set = fields.get(type) || new Set()
+        for (const f of nestedFields.values()) {
+          set.add(f)
+        }
+
+        fields.set(type, set)
       }
     }
   }
@@ -282,14 +355,16 @@ async function checkForNextRefresh(
 
       const [id] = ids
 
-      const time = Number(readLongLong(
-        await client.redis.selva_object_get(
-          ctx.originDescriptors[ctx.db] || { name: ctx.db },
-          makeLangArg(client.schemas[ctx.db].languages, lang),
-          id,
-          f.$field
+      const time = Number(
+        readLongLong(
+          await client.redis.selva_object_get(
+            ctx.originDescriptors[ctx.db] || { name: ctx.db },
+            makeLangArg(client.schemas[ctx.db].languages, lang),
+            id,
+            f.$field
+          )
         )
-      ))
+      )
 
       let v = <string>f.$value
       if (v.startsWith('now-')) {
@@ -473,7 +548,7 @@ const findFields = async (
   op: GetOperationFind,
   lang: string,
   ctx: ExecContext,
-  fieldsOpt
+  fieldsOpt: Map<string, Set<string>>
 ): Promise<string[]> => {
   const { db, subId } = ctx
 
@@ -511,7 +586,9 @@ const findFields = async (
             fields:
               op.props.$all === true
                 ? []
-                : [...fieldsOpt.values()].filter((f) => !f.startsWith('!')),
+                : [...fieldsOpt.get('$any').values()].filter(
+                    (f) => !f.startsWith('!')
+                  ),
             rpn: args,
           })
 
@@ -535,8 +612,7 @@ const findFields = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      'fields',
-      makeFieldsString(fieldsOpt),
+      ...makeFieldsString(client.schemas[ctx.db], fieldsOpt),
       joinIds(op.inKeys),
       ...args
     )
@@ -635,8 +711,7 @@ const findFields = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      'fields',
-      makeFieldsString(fieldsOpt),
+      ...makeFieldsString(schema, fieldsOpt),
       padId(op.id),
       ...args
     )

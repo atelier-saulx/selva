@@ -115,6 +115,16 @@ struct FindCommand_Args {
      * ```
      */
     struct RedisModuleString *excluded_fields;
+    /**
+     * Field names expression context for `fields_expression`.
+     */
+    struct rpn_ctx *fields_rpn_ctx;
+    /**
+     * Field names expression.
+     * Another way to select which fields should be returned to the client is
+     * using an RPN expression that returns a set on field names.
+     */
+    struct rpn_expression *fields_expression;
 
     const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
     SVector *order_result; /*!< Results of the find wrapped in TraversalOrderedItem structs.

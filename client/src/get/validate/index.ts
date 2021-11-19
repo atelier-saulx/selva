@@ -183,6 +183,22 @@ async function validateNested(
             `Operator $value should not exist with any other operators, ${allowed} found`
           )
         }
+      } else if (field === '$fieldsByType') {
+        if (typeof props.$fieldsByType !== 'object') {
+          throw new Error(
+            `${path}.$fieldsByType ${props.$fieldsByType} should be an object of fields indexed by type modifier`
+          )
+        }
+
+        for (const t in props.$fieldsByType) {
+          await validateNested(
+            extraQueries,
+            client,
+            fieldName,
+            props.$fieldsByType[t],
+            path
+          )
+        }
       } else {
         throw new Error(
           `Operator ${field} is not supported in nested fields for ${
@@ -259,6 +275,21 @@ export default async function validateTopLevel(
       } else if (field === '$firstEval') {
         // internal option
         continue
+      } else if (field === '$fieldsByType') {
+        if (typeof props.$fieldsByType !== 'object') {
+          throw new Error(
+            `${path}.$fieldsByType ${props.$fieldsByType} should be an object of fields indexed by type modifier`
+          )
+        }
+
+        for (const t in props.$fieldsByType) {
+          await validateTopLevel(
+            extraQueries,
+            client,
+            props.$fieldsByType[t],
+            path
+          )
+        }
       } else if (field === '$alias') {
         if (typeof props.$alias !== 'string' && !Array.isArray(props.$alias)) {
           throw new Error(

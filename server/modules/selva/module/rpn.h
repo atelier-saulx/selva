@@ -82,4 +82,10 @@ enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx
 enum rpn_error rpn_rms(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, struct RedisModuleString **out);
 enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out);
 
+void _rpn_auto_free_ctx(void *p);
+#define __auto_free_rpn_ctx __attribute__((cleanup(_rpn_auto_free_ctx)))
+
+void _rpn_auto_free_expression(void *p);
+#define __auto_free_rpn_expression __attribute__((cleanup(_rpn_auto_free_expression)))
+
 #endif /* _RPN_H_ */

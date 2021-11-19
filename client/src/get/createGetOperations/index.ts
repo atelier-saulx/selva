@@ -19,6 +19,7 @@ export default function createGetOperations(
 ): GetOperation[] {
   const schema = client.schemas[db]
 
+  // TODO: handle single case of $fieldsByType here based on type of passed id
   if (props.$value) {
     ops.push({
       type: 'value',

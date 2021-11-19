@@ -169,6 +169,12 @@ void rpn_destroy(struct rpn_ctx *ctx) {
     }
 }
 
+void _rpn_auto_free_ctx(void *p) {
+    struct rpn_ctx *ctx = *(void **)p;
+
+    rpn_destroy(ctx);
+}
+
 void rpn_set_hierarchy_node(struct rpn_ctx *ctx, const struct SelvaHierarchyNode *node) {
     ctx->node = node;
     ctx->obj = SelvaHierarchy_GetNodeObject(node);
@@ -1542,6 +1548,12 @@ void rpn_destroy_expression(struct rpn_expression *expr) {
 
         RedisModule_Free(expr);
     }
+}
+
+void _rpn_auto_free_expression(void *p) {
+    struct rpn_expression *expr = *(void **)p;
+
+    rpn_destroy_expression(expr);
 }
 
 static enum rpn_error get_literal(struct rpn_ctx *ctx, const struct rpn_expression *expr, const char *s) {
