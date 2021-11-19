@@ -2,9 +2,11 @@
 #ifndef _RMS_COMPRESSOR_H_
 #define _RMS_COMPRESSOR_H_
 
+struct RedisModuleString;
+
 struct compressed_rms {
     ssize_t uncompressed_size; /*!< if equal or greater than zero then rms is compressed; Otherwise rms is uncompressed. */
-    RedisModuleString *rms;
+    struct RedisModuleString *rms;
 };
 
 static inline struct compressed_rms *rms_alloc_compressed(void) {
@@ -19,6 +21,6 @@ static inline void rms_free_compressed(struct compressed_rms *compressed_rms) {
 }
 
 int rms_compress(struct compressed_rms *out, RedisModuleString *in);
-int rms_decompress(RedisModuleString **out, struct compressed_rms *in);
+int rms_decompress(struct RedisModuleString **out, struct compressed_rms *in);
 
 #endif /* _RMS_COMPRESSOR_H_ */

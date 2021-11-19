@@ -1474,43 +1474,6 @@ int SelvaModify_DelHierarchy(
     return err1 ? err1 : err2;
 }
 
-static Selva_NodeId *NodeList_New(int nr_nodes) {
-    return RedisModule_Alloc(nr_nodes * sizeof(Selva_NodeId));
-}
-
-static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, const Selva_NodeId id, size_t nr_nodes) {
-    Selva_NodeId *newList = RedisModule_Realloc(list, nr_nodes * sizeof(Selva_NodeId));
-    if (unlikely(!newList)) {
-        RedisModule_Free(list);
-        return NULL;
-    }
-
-    memcpy(newList + nr_nodes - 1, id, sizeof(Selva_NodeId));
-
-    return newList;
-}
-
-static Selva_NodeId *getNodeIds(const SVector *adjacent_nodes, size_t * nr_ids) {
-    size_t i = 0;
-    Selva_NodeId *ids;
-    struct SVectorIterator it;
-    const SelvaHierarchyNode *adj;
-
-    ids = NodeList_New(SVector_Size(adjacent_nodes));
-    if (!ids) {
-        return NULL;
-    }
-
-    SVector_ForeachBegin(&it, adjacent_nodes);
-    while ((adj = SVector_Foreach(&it))) {
-        ids = NodeList_Insert(ids, adj->id, ++i);
-    }
-
-    *nr_ids = i;
-    return ids;
-}
-
-/* TODO The function above is very similar, maybe one of these could go. */
 static void copy_nodeIds(Selva_NodeId *dst, const struct SVector *vec) {
     struct SVectorIterator it;
     const SelvaHierarchyNode *node;
@@ -1547,10 +1510,13 @@ static int SelvaModify_DelHierarchyNodeP(
 
     SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, node);
 
-    ids = getNodeIds(&node->children, &nr_ids);
-    if (unlikely(!ids)) {
+    nr_ids = SVector_Size(&node->children);
+    ids = RedisModule_PoolAlloc(ctx, nr_ids * SELVA_NODE_ID_SIZE);
+    if (!ids) {
         return SELVA_HIERARCHY_ENOMEM;
     }
+
+    copy_nodeIds(ids, &node->children);
 
     /*
      * Delete orphan children recursively.
@@ -1595,7 +1561,6 @@ static int SelvaModify_DelHierarchyNodeP(
         }
     }
 
-    RedisModule_Free(ids);
     del_node(ctx, hierarchy, node);
 
     return 0;
@@ -2313,72 +2278,7 @@ int SelvaModify_TraverseArray(
     return traverse_array(head, ref_field_str, ref_field_len, cb);
 }
 
-static int dfs_make_list_node_cb(SelvaHierarchyNode *node, void *arg) {
-    void **args = (void **)arg;
-    const SelvaHierarchyNode *head = (SelvaHierarchyNode *)args[0];
-    ssize_t *nr_nodes = (ssize_t *)args[1];
-    Selva_NodeId **list = (Selva_NodeId **)args[2];
-
-    if (*list && node != head) {
-        *nr_nodes = *nr_nodes + 1;
-        *list = NodeList_Insert(*list, node->id, *nr_nodes);
-        if (unlikely(!(*list))) {
-            *nr_nodes = SELVA_HIERARCHY_ENOMEM;
-        }
-    }
-
-    return 0;
-}
-
-static ssize_t SelvaModify_FindDir(
-        SelvaHierarchy *hierarchy,
-        const Selva_NodeId id,
-        enum SelvaHierarchyNode_Relationship dir,
-        Selva_NodeId **res) {
-    SelvaHierarchyNode *head = SelvaHierarchy_FindNode(hierarchy, id);
-    if (!head) {
-        return SELVA_HIERARCHY_ENOENT;
-    }
-
-    int err;
-    ssize_t nr_nodes = 0;
-    Selva_NodeId *list = NodeList_New(1);
-    void *args[] = { head, &nr_nodes, &list };
-    const TraversalCallback cb = {
-        .head_cb = NULL,
-        .head_arg = NULL,
-        .node_cb = dfs_make_list_node_cb,
-        .node_arg = args,
-        .child_cb = NULL,
-        .child_arg = NULL,
-    };
-
-    err = dfs(hierarchy, head, dir, &cb);
-    if (err != 0) {
-        *res = NULL;
-        RedisModule_Free(list);
-
-        return err;
-    } else if (nr_nodes <= 0) {
-        *res = NULL;
-        RedisModule_Free(list);
-    } else {
-        *res = list;
-    }
-
-    return nr_nodes;
-}
-
-ssize_t SelvaModify_FindAncestors(SelvaHierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors) {
-    return SelvaModify_FindDir(hierarchy, id, RELATIONSHIP_PARENT, ancestors);
-}
-
-ssize_t SelvaModify_FindDescendants(SelvaHierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants) {
-    return SelvaModify_FindDir(hierarchy, id, RELATIONSHIP_CHILD, descendants);
-}
-
 int SelvaHierarchy_IsNonEmptyField(const struct SelvaHierarchyNode *node, const char *field_str, size_t field_len) {
-
     if ((field_len == 7 && !strncmp("parents", field_str, 7)) ||
         (field_len == 9 && !strncmp("ancestors", field_str, 9))) {
         return SVector_Size(&node->parents) > 0;
