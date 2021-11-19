@@ -792,7 +792,7 @@ const executeFindOperation = async (
     for (const id of ids) {
       const realOpts: any = {}
       for (const key in op.props) {
-        if (key === '$all' || !key.startsWith('$')) {
+        if (['$all', '$fieldsByType'].includes(key) || !key.startsWith('$')) {
           realOpts[key] = op.props[key]
         }
       }

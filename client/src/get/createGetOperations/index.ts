@@ -137,6 +137,18 @@ export default function createGetOperations(
       }
       createGetOperations(client, props[key], id, field + '.' + key, db, ops)
     }
+
+    if (props.$fieldsByType) {
+      const type =
+        id === 'root'
+          ? 'root'
+          : client.schemas[db].prefixToTypeMapping[id.slice(0, 2)]
+
+      const additionalFields = props.$fieldsByType[type]
+      if (additionalFields) {
+        createGetOperations(client, additionalFields, id, field, db, ops)
+      }
+    }
   } else {
     ops.push({
       type: 'db',
