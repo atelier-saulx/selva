@@ -359,16 +359,6 @@ struct SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, co
  */
 ssize_t SelvaModify_GetHierarchyHeads(SelvaHierarchy *hierarchy, Selva_NodeId **res);
 
-/**
- * Get an unsorted list of ancestors fo a given node.
- */
-ssize_t SelvaModify_FindAncestors(SelvaHierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors);
-
-/**
- * Get an unsorted list of descendants of a given node.
- */
-ssize_t SelvaModify_FindDescendants(SelvaHierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants);
-
 int SelvaModify_TraverseHierarchy(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
