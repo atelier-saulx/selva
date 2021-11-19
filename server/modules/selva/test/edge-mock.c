@@ -4,11 +4,11 @@
 #include "edge.h"
 #include "redismodule.h"
 
-struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *node __unused, const char *key_name_str __unused, size_t key_name_len __unused) {
+struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *node, const char *key_name_str, size_t key_name_len) {
     return NULL;
 }
 
-int Edge_Refcount(struct SelvaHierarchyNode *node __unused) {
+int Edge_Refcount(struct SelvaHierarchyNode *node) {
     return 0;
 }
 
@@ -20,19 +20,23 @@ void Edge_DeinitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
     memset(data, 0, sizeof(*data));
 }
 
-int Edge_RdbLoad(struct RedisModuleIO *io, int encver __unused, struct SelvaHierarchy *hierarchy __unused, struct SelvaHierarchyNode *node __unused) {
+int Edge_Usage(const struct SelvaHierarchyNode *node) {
+    return 0;
+}
+
+int Edge_RdbLoad(struct RedisModuleIO *io, int encver, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
     RedisModule_LoadUnsigned(io);
     return 0;
 }
 
-void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaHierarchyNode *node __unused) {
+void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaHierarchyNode *node) {
     RedisModule_SaveUnsigned(io, 0);
 }
 
-int EdgeConstraint_RdbLoad(struct RedisModuleIO *io __unused, int encver __unused, struct EdgeFieldConstraints *data __unused) {
+int EdgeConstraint_RdbLoad(struct RedisModuleIO *io, int encver, struct EdgeFieldConstraints *data) {
     return 0;
 }
 
-void EdgeConstraint_RdbSave(struct RedisModuleIO *io __unused, struct EdgeFieldConstraints *data __unused) {
+void EdgeConstraint_RdbSave(struct RedisModuleIO *io, struct EdgeFieldConstraints *data) {
     return;
 }

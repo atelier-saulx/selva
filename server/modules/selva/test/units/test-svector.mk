@@ -1,5 +1,5 @@
 TEST_SRC += test-svector.c
 SRC-svector += ../redis-alloc.c
-SRC-svector += ../../rmutil/sds.c
-SRC-svector += ../../util/mempool.c
-SRC-svector += ../../util/svector.c
+SRC-svector += ../../lib/rmutil/sds.c
+SRC-svector += ../../lib/util/mempool.c
+SRC-svector += ../../lib/util/svector.c

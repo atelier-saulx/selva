@@ -1,6 +1,9 @@
 #include <punit.h>
 #include <stdlib.h>
 #include <string.h>
+#include "redismodule.h"
+#include "selva.h"
+#include "traversal.h"
 #include "hierarchy.h"
 #include "cdefs.h"
 #include "errors.h"
@@ -18,6 +21,76 @@ static void teardown(void)
 
     free(findRes);
     findRes = NULL;
+}
+
+
+static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, const Selva_NodeId id, size_t nr_nodes) {
+    Selva_NodeId *newList = RedisModule_Realloc(list, nr_nodes * sizeof(Selva_NodeId));
+    if (!newList) {
+        RedisModule_Free(list);
+        return NULL;
+    }
+
+    memcpy(newList + nr_nodes - 1, id, SELVA_NODE_ID_SIZE);
+
+    return newList;
+}
+
+int node_cb(struct SelvaHierarchyNode *node, void *arg) {
+    void **args = (void **)arg;
+    const char *headId = (char *)args[0];
+    Selva_NodeId nodeId;
+    ssize_t *nr_nodes = (ssize_t *)args[1];
+    Selva_NodeId **list = (Selva_NodeId **)args[2];
+
+    SelvaHierarchy_GetNodeId(nodeId, node);
+    if (*list && memcmp(nodeId, headId, SELVA_NODE_ID_SIZE)) {
+        *nr_nodes = *nr_nodes + 1;
+        *list = NodeList_Insert(*list, nodeId, *nr_nodes);
+        if (!(*list)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static ssize_t SelvaModify_FindAncestors(SelvaHierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **ancestors) {
+    ssize_t nr_nodes = 0;
+    Selva_NodeId *list = RedisModule_Alloc(SELVA_NODE_ID_SIZE);
+    void *args[] = { id, &nr_nodes, &list };
+    struct SelvaHierarchyCallback cb = {
+        .node_cb = node_cb,
+        .node_arg = args,
+    };
+    int err;
+
+    err = SelvaModify_TraverseHierarchy(hierarchy, id, SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS, &cb);
+    *ancestors = list;
+    if (err) {
+        return err;
+    }
+
+    return nr_nodes;
+}
+
+ssize_t SelvaModify_FindDescendants(SelvaHierarchy *hierarchy, const Selva_NodeId id, Selva_NodeId **descendants) {
+    ssize_t nr_nodes = 0;
+    Selva_NodeId *list = RedisModule_Alloc(SELVA_NODE_ID_SIZE);
+    void *args[] = { id, &nr_nodes, &list };
+    struct SelvaHierarchyCallback cb = {
+        .node_cb = node_cb,
+        .node_arg = args,
+    };
+    int err;
+
+    err = SelvaModify_TraverseHierarchy(hierarchy, id, SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS, &cb);
+    *descendants = list;
+    if (err) {
+        return err;
+    }
+
+    return nr_nodes;
 }
 
 static char * test_insert_one(void)
@@ -898,7 +971,6 @@ static char * test_del_node(void)
     /* ancestors of root */
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "root" }), &findRes);
     pu_assert_equal("returned the right number of ancestors", nr_ancestors, 0);
-    pu_assert("results pointer was not set", findRes == NULL);
     free(findRes);
     findRes = NULL;
 
