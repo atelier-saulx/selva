@@ -222,11 +222,11 @@ static RedisModuleCtx * _RedisModule_GetContextFromIO(RedisModuleIO *io) {
 }
 
 int redis_mock_ctx_flags;
-static int _RedisModule_GetContextFlags(RedisModuleCtx *ctx __unused) {
+static int _RedisModule_GetContextFlags(RedisModuleCtx *ctx) {
     return redis_mock_ctx_flags;
 }
 
-static void _RedisModule_LogIOError(RedisModuleIO *io __unused, const char *level, const char *fmt, ...) {
+static void _RedisModule_LogIOError(RedisModuleIO *io, const char *level, const char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
