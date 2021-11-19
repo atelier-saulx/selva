@@ -31,6 +31,13 @@ test.beforeEach(async (t) => {
           thing: { type: 'string', search: { type: ['EXISTS'] } },
         },
       },
+      special: {
+        prefix: 'sp',
+        fields: {
+          name: { type: 'string', search: { type: ['TAG'] } },
+          thing: { type: 'string', search: { type: ['EXISTS'] } },
+        },
+      },
       match: {
         prefix: 'ma',
         fields: {
@@ -243,11 +250,12 @@ test.serial('find - string field only not exists indexed', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('find - text exists field', async (t) => {
+test.serial('find - text exists field', async (t) => {
   // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
   await client.set({
     $language: 'en',
+    $id: 'ma1',
     type: 'match',
     description: 'match 1',
     value: 1,
@@ -255,6 +263,7 @@ test.serial.only('find - text exists field', async (t) => {
 
   await client.set({
     $language: 'en',
+    $id: 'ma2',
     type: 'match',
     name: 'match 2',
     value: 1,
@@ -265,6 +274,13 @@ test.serial.only('find - text exists field', async (t) => {
     $id: 'le1',
     type: 'league',
     name: 'league 1',
+  })
+
+  await client.set({
+    $language: 'en',
+    $id: 'sp1',
+    type: 'special',
+    name: 'special 1',
   })
 
   t.deepEqualIgnoreOrder(
@@ -295,35 +311,30 @@ test.serial.only('find - text exists field', async (t) => {
   )
 
   t.deepEqualIgnoreOrder(
-    await client.get({
-      $id: 'root',
-      items: {
-        $fieldsByType: {
-          match: { description: true, name: true },
-          league: { id: true },
-        },
-        $list: {
-          $find: {
-            $traverse: 'children',
-            $filter: [
-              {
-                $field: 'type',
-                $operator: '=',
-                $value: 'match',
-              },
-            ],
+    (
+      await client.get({
+        $id: 'root',
+        id: true,
+        items: {
+          id: true,
+          $fieldsByType: {
+            match: { description: true, name: true },
+            league: { id: true, name: true },
+          },
+          $list: {
+            $find: {
+              $traverse: 'children',
+            },
           },
         },
-      },
-    }),
-    {
-      id: 'root',
-      items: [
-        { name: 'match 1', description: { en: 'match 1' } },
-        { name: 'match 2', description: { en: 'match 2' } },
-        { id: 'le1' },
-      ],
-    }
+      })
+    ).items,
+    [
+      { id: 'ma1', description: { en: 'match 1' } },
+      { id: 'ma2', name: 'match 2' },
+      { id: 'le1', name: 'league 1' },
+      { id: 'sp1' },
+    ]
   )
 
   t.deepEqualIgnoreOrder(

@@ -1,5 +1,10 @@
-import { SelvaClient } from '../../'
-import { GetOperationFind, GetResult, GetOptions } from '../types'
+import { Schema, SelvaClient } from '../../'
+import {
+  GetOperationFind,
+  GetResult,
+  GetOptions,
+  TraverseByType,
+} from '../types'
 import { readLongLong, sourceFieldToFindArgs, typeCast } from './'
 import {
   ast2rpn,
@@ -7,6 +12,7 @@ import {
   FilterAST,
   isFork,
   convertNow,
+  bfsExpr2rpn,
 } from '@saulx/selva-query-ast-parser'
 import {
   executeNestedGetOperations,
@@ -19,8 +25,42 @@ import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 import { mkIndex } from './indexing'
 
-function makeFieldsString(fieldsByType: Map<string, Set<string>>): string {
+function makeFieldsString(
+  schema: Schema,
+  fieldsByType: Map<string, Set<string>>
+): [string, string] {
   const fields = fieldsByType.get('$any')
+
+  if (
+    fieldsByType.size > 1 ||
+    (fieldsByType.size === 1 && !fieldsByType.has('$any'))
+  ) {
+    const any = fieldsByType.get('$any') || new Set()
+
+    const byType: TraverseByType = {
+      $any: any.size ? { $all: [...any] } : false,
+    }
+
+    for (const [type, tFields] of fieldsByType.entries()) {
+      if (type === '$any') {
+        continue
+      }
+
+      const allFields = new Set([...tFields])
+      for (const aField of any) {
+        allFields.add(aField)
+      }
+
+      if (!allFields.size) {
+        continue
+      }
+
+      byType[type] = { $all: [...allFields] }
+    }
+
+    return ['fields_rpn', bfsExpr2rpn(schema.types, byType)]
+  }
+
   let str = ''
   let hasWildcard = false
   for (const f of fields) {
@@ -38,7 +78,7 @@ function makeFieldsString(fieldsByType: Map<string, Set<string>>): string {
     str = str.slice(0, -1)
   }
 
-  return str
+  return ['fields', str]
 }
 
 function parseGetOpts(
@@ -561,7 +601,11 @@ const findFields = async (
       }
     }
 
-    console.log('FIELD OPTS', fieldsOpt)
+    console.log(
+      'FIELD OPTS',
+      fieldsOpt,
+      ...makeFieldsString(client.schemas[ctx.db], fieldsOpt)
+    )
     const result = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       lang,
@@ -573,8 +617,7 @@ const findFields = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      'fields',
-      makeFieldsString(fieldsOpt),
+      ...makeFieldsString(client.schemas[ctx.db], fieldsOpt),
       joinIds(op.inKeys),
       ...args
     )
@@ -650,11 +693,11 @@ const findFields = async (
       }
     }
 
-    console.log('FIELD OPTS', fieldsOpt)
     const schema = client.schemas[ctx.db]
     const sourceFieldSchema = op.nested
       ? null
       : getNestedSchema(schema, op.id, sourceField)
+    console.log('FIELD OPTS', fieldsOpt, ...makeFieldsString(schema, fieldsOpt))
     const result = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
@@ -674,8 +717,7 @@ const findFields = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      'fields',
-      makeFieldsString(fieldsOpt),
+      ...makeFieldsString(schema, fieldsOpt),
       padId(op.id),
       ...args
     )
