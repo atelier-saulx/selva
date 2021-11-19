@@ -19,7 +19,8 @@ import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 import { mkIndex } from './indexing'
 
-function makeFieldsString(fields: Set<string>): string {
+function makeFieldsString(fieldsByType: Map<string, Set<string>>): string {
+  const fields = fieldsByType.get('$any')
   let str = ''
   let hasWildcard = false
   for (const f of fields) {
@@ -573,7 +574,7 @@ const findFields = async (
       'limit',
       op.options.limit,
       'fields',
-      makeFieldsString(fieldsOpt.get('$any')),
+      makeFieldsString(fieldsOpt),
       joinIds(op.inKeys),
       ...args
     )
@@ -674,7 +675,7 @@ const findFields = async (
       'limit',
       op.options.limit,
       'fields',
-      makeFieldsString(fieldsOpt.get('$any')),
+      makeFieldsString(fieldsOpt),
       padId(op.id),
       ...args
     )
