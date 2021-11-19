@@ -310,6 +310,7 @@ test.serial('find - text exists field', async (t) => {
     { id: 'root', items: [{ description: { en: 'match 1' } }] }
   )
 
+  // TODO: make a separate test case from this
   t.deepEqualIgnoreOrder(
     (
       await client.get({
