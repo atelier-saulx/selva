@@ -320,7 +320,10 @@ test.serial('find - text exists field', async (t) => {
           id: true,
           $fieldsByType: {
             match: { description: true, name: true },
-            league: { id: true, name: true },
+            league: {
+              id: true,
+              name: true,
+            },
           },
           $list: {
             $find: {
@@ -334,6 +337,43 @@ test.serial('find - text exists field', async (t) => {
       { id: 'ma1', description: { en: 'match 1' } },
       { id: 'ma2', name: 'match 2' },
       { id: 'le1', name: 'league 1' },
+      { id: 'sp1' },
+    ]
+  )
+  t.deepEqualIgnoreOrder(
+    (
+      await client.get({
+        $id: 'root',
+        id: true,
+        items: {
+          id: true,
+          $fieldsByType: {
+            match: { description: true, name: true },
+            league: {
+              id: true,
+              name: true,
+              parents: {
+                id: true,
+                $list: {
+                  $find: {
+                    $traverse: 'parents',
+                  },
+                },
+              },
+            },
+          },
+          $list: {
+            $find: {
+              $traverse: 'children',
+            },
+          },
+        },
+      })
+    ).items,
+    [
+      { id: 'ma1', description: { en: 'match 1' } },
+      { id: 'ma2', name: 'match 2' },
+      { id: 'le1', name: 'league 1', parents: [{ id: 'root' }] },
       { id: 'sp1' },
     ]
   )
