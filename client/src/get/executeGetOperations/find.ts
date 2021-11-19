@@ -601,11 +601,6 @@ const findFields = async (
       }
     }
 
-    console.log(
-      'FIELD OPTS',
-      fieldsOpt,
-      ...makeFieldsString(client.schemas[ctx.db], fieldsOpt)
-    )
     const result = await client.redis.selva_hierarchy_findin(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       lang,
@@ -697,7 +692,6 @@ const findFields = async (
     const sourceFieldSchema = op.nested
       ? null
       : getNestedSchema(schema, op.id, sourceField)
-    console.log('FIELD OPTS', fieldsOpt, ...makeFieldsString(schema, fieldsOpt))
     const result = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
