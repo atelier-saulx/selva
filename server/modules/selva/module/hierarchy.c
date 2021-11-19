@@ -1487,7 +1487,6 @@ static int SelvaModify_DelHierarchyNodeP(
         SelvaHierarchyNode *node,
         enum SelvaModify_DelHierarchyNodeFlag flags,
         void *opt_arg) {
-    Selva_NodeId *ids;
     size_t nr_ids;
 
     assert(("hierarchy must be set", hierarchy));
@@ -1507,52 +1506,56 @@ static int SelvaModify_DelHierarchyNodeP(
     SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, node);
 
     nr_ids = SVector_Size(&node->children);
-    ids = RedisModule_PoolAlloc(ctx, nr_ids * SELVA_NODE_ID_SIZE);
-    if (!ids) {
-        return SELVA_HIERARCHY_ENOMEM;
-    }
+    if (nr_ids > 0) {
+        Selva_NodeId *ids;
 
-    copy_nodeIds(ids, &node->children);
+        ids = RedisModule_PoolAlloc(ctx, nr_ids * SELVA_NODE_ID_SIZE);
+        if (!ids) {
+            return SELVA_HIERARCHY_ENOMEM;
+        }
 
-    /*
-     * Delete orphan children recursively.
-     */
-    for (size_t i = 0; i < nr_ids; i++) {
-        Selva_NodeId nodeId;
-        int err;
-
-        memcpy(nodeId, ids + i, SELVA_NODE_ID_SIZE);
+        copy_nodeIds(ids, &node->children);
 
         /*
-         * Find the node.
+         * Delete orphan children recursively.
          */
-        SelvaHierarchyNode *child = SelvaHierarchy_FindNode(hierarchy, nodeId);
-        if (!child) {
-            /* Node not found;
-             * This is probably fine, as there might have been a circular link.
+        for (size_t i = 0; i < nr_ids; i++) {
+            Selva_NodeId nodeId;
+            int err;
+
+            memcpy(nodeId, ids + i, SELVA_NODE_ID_SIZE);
+
+            /*
+             * Find the node.
              */
-            continue;
-        }
+            SelvaHierarchyNode *child = SelvaHierarchy_FindNode(hierarchy, nodeId);
+            if (!child) {
+                /* Node not found;
+                 * This is probably fine, as there might have been a circular link.
+                 */
+                continue;
+            }
 
-        /*
-         * Note that we store a pointer in a Selva_NodeId array to save in
-         * pointless RB_FIND() lookups.
-         */
-        Selva_NodeId arr[1];
-        memcpy(arr, &child, sizeof(SelvaHierarchyNode *));
-        err = crossRemove(ctx, hierarchy, node, RELATIONSHIP_PARENT, 1, arr, 1);
-        if (err) {
-            return err;
-        }
-
-        /*
-         * Recursively delete the child and its children if its parents field is
-         * empty and no edge fields are pointing to it.
-         */
-        if ((flags & DEL_HIERARCHY_NODE_FORCE) || (SVector_Size(&child->parents) == 0 && Edge_Refcount(child) == 0)) {
-            err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child, flags, opt_arg);
+            /*
+             * Note that we store a pointer in a Selva_NodeId array to save in
+             * pointless RB_FIND() lookups.
+             */
+            Selva_NodeId arr[1];
+            memcpy(arr, &child, sizeof(SelvaHierarchyNode *));
+            err = crossRemove(ctx, hierarchy, node, RELATIONSHIP_PARENT, 1, arr, 1);
             if (err) {
                 return err;
+            }
+
+            /*
+             * Recursively delete the child and its children if its parents field is
+             * empty and no edge fields are pointing to it.
+             */
+            if ((flags & DEL_HIERARCHY_NODE_FORCE) || (SVector_Size(&child->parents) == 0 && Edge_Refcount(child) == 0)) {
+                err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child, flags, opt_arg);
+                if (err) {
+                    return err;
+                }
             }
         }
     }
