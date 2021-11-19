@@ -13,6 +13,8 @@
 
 #define HIERARCHY_ENCODING_VERSION  3
 
+struct RedisModuleCtx;
+struct RedisModuleString;
 struct SelvaHierarchy;
 typedef struct SelvaHierarchy SelvaHierarchy;
 struct SelvaHierarchyNode;
@@ -170,9 +172,6 @@ enum SelvaModify_DelHierarchyNodeFlag {
     DEL_HIERARCHY_NODE_DETACH = 0x02, /*!< Delete, mark as detached. Note that this doesn't disable sending subscription events. */
 };
 
-struct RedisModuleCtx;
-struct RedisModuleString;
-
 /**
  * Create a new hierarchy.
  */
@@ -187,8 +186,6 @@ void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy);
  * Open a hierarchy key.
  */
 SelvaHierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name, int mode);
-
-int SelvaHierarchy_NodeExists(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 
 /**
  * Copy nodeId to a buffer.
@@ -353,6 +350,13 @@ int SelvaModify_DelHierarchyNode(
  * better supporter way to refer to hierarchy nodes is by using nodeId.
  */
 struct SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Selva_NodeId id);
+
+/**
+ * Check if node exists.
+ */
+static inline int SelvaHierarchy_NodeExists(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
+    return SelvaHierarchy_FindNode(hierarchy, id) != NULL;
+}
 
 /**
  * Get orphan head nodes of the given hierarchy.
