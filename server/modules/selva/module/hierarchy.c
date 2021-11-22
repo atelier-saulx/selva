@@ -20,6 +20,7 @@
 #include "selva_node.h"
 #include "selva_object.h"
 #include "selva_onload.h"
+#include "selva_trace.h"
 #include "find_index.h"
 #include "selva_set.h"
 #include "traversal.h"
@@ -143,6 +144,10 @@ SET_DECLARE(selva_HMDtor, SelvaHierarchyMetadataDestructorHook);
 __nonstring static const Selva_NodeId HIERARCHY_RDB_EOF;
 static RedisModuleType *HierarchyType;
 static RedisModuleType *HierarchySubtreeType;
+
+SELVA_TRACE_HANDLE(find_inmem);
+SELVA_TRACE_HANDLE(find_detached);
+SELVA_TRACE_HANDLE(restore_subtree);
 
 /**
  * A pointer to the hierarchy subtree being loaded.
@@ -457,7 +462,9 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
 
     memcpy(&filter.id, id, SELVA_NODE_ID_SIZE);
 
+    SELVA_TRACE_BEGIN(find_inmem);
     node = RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaHierarchyNode *)(&filter));
+    SELVA_TRACE_END(find_inmem);
     if (node) {
         if (!node->flags.detached) {
             return node;
@@ -478,7 +485,9 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
      * already called once.
      */
     if (!isDecompressingSubtree) {
+        SELVA_TRACE_BEGIN(find_detached);
         err = restore_subtree(hierarchy, id);
+        SELVA_TRACE_END(find_detached);
         if (err) {
             if (err != SELVA_ENOENT && err != SELVA_HIERARCHY_ENOENT) {
                 fprintf(stderr, "%s:%d: Restoring a subtree containing %.*s failed: %s\n",
@@ -2823,6 +2832,8 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     const void *load_res;
     int err;
 
+    SELVA_TRACE_BEGIN(restore_subtree);
+
     err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed);
     if (err) {
         return err;
@@ -2842,6 +2853,8 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     if (!load_res) {
         return SELVA_HIERARCHY_EINVAL;
     }
+
+    SELVA_TRACE_END(restore_subtree);
 
     fprintf(stderr, "%s:%d: Restored the subtree of %.*s\n",
             __FILE__, __LINE__,
