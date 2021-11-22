@@ -83,13 +83,13 @@ ifeq ($(uname_S),Linux)
 		-addon=threadsafety.py --addon=cert.py \
 		--suppressions-list=cppcheck_suppressions.txt \
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
-		$(IDIR) module.c ./module ./util
+		$(IDIR) module.c ./module ./lib/util
 else # Assume macOs
 	cppcheck --quiet --inline-suppr \
 		--language=c --std=c99 --platform=unix64 --enable=all \
 		--suppressions-list=cppcheck_suppressions.txt \
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
-		-i test $(IDIR) -I./module module.c ./module ./util
+		-i test $(IDIR) -I./module -I./lib/util module.c ./module ./lib/util
 endif
 
 test:
