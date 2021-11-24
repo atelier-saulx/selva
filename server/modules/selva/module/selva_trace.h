@@ -33,13 +33,14 @@ struct SelvaTrace {
  * results. Bear in mind that traces are stacked so an outter trace cannot be
  * terminated before its inner trace.
  */
-#define SELVA_TRACE_BEGIN(name) \
-    __itt_task_begin(selva_trace_domain, __itt_null, __itt_null, CONCATENATE(selva_trace_handle_, name).handle);
+#define SELVA_TRACE_BEGIN(_name) \
+    __itt_task_begin(selva_trace_domain, __itt_null, __itt_null, CONCATENATE(selva_trace_handle_, _name).handle);
 
 /**
  * End a trace.
  */
-#define SELVA_TRACE_END(name) \
+#define SELVA_TRACE_END(_name) \
+    CONCATENATE(selva_trace_handle_, _name); \
     __itt_task_end(selva_trace_domain)
 
 /**
