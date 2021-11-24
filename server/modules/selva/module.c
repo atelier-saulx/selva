@@ -16,8 +16,9 @@
 #include "module/modify.h"
 #include "module/selva_node.h"
 #include "module/selva_object.h"
-#include "module/subscriptions.h"
+#include "module/selva_trace.h"
 #include "module/shared.h"
+#include "module/subscriptions.h"
 
 #define FLAG_NO_ROOT    0x01
 #define FLAG_NO_MERGE   0x02
@@ -47,6 +48,8 @@ enum selva_op_repl_state {
 
 SET_DECLARE(selva_onload, Selva_Onload);
 SET_DECLARE(selva_onunld, Selva_Onunload);
+
+SELVA_TRACE_HANDLE(cmd_modify);
 
 /*
  * Replicate the selva.modify command.
@@ -269,6 +272,7 @@ enum selva_op_repl_state handle_modify_arg_op_obj_meta(
  * UPDATED = changes made and replicated
  */
 int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    SELVA_TRACE_BEGIN_AUTO(cmd_modify);
     RedisModule_AutoMemory(ctx);
     SelvaHierarchy *hierarchy;
     RedisModuleString *id = NULL;

@@ -20,6 +20,7 @@
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"
+#include "selva_trace.h"
 #include "subscriptions.h"
 #include "edge.h"
 #include "svector.h"
@@ -46,6 +47,17 @@ static int send_all_node_data_fields(
         const char *field_prefix_str,
         size_t field_prefix_len,
         RedisModuleString *excluded_fields);
+
+/*
+ * Trace handles.
+ */
+SELVA_TRACE_HANDLE(cmd_find_array);
+SELVA_TRACE_HANDLE(cmd_find_bfs_expression);
+SELVA_TRACE_HANDLE(cmd_find_index);
+SELVA_TRACE_HANDLE(cmd_find_refs);
+SELVA_TRACE_HANDLE(cmd_find_rest);
+SELVA_TRACE_HANDLE(cmd_find_sort_result);
+SELVA_TRACE_HANDLE(cmd_find_traversal_expression);
 
 static int send_hierarchy_field(
         RedisModuleCtx *ctx,
@@ -1652,6 +1664,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 args.filter = NULL;
             }
 
+            SELVA_TRACE_BEGIN(cmd_find_index);
             SELVA_SET_NODEID_FOREACH(el, ind_out[ind_select]) {
                 struct SelvaHierarchyNode *node;
 
@@ -1665,6 +1678,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                     (void)FindCommand_NodeCb(node, &args);
                 }
             }
+            SELVA_TRACE_END(cmd_find_index);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             const struct SelvaModify_ArrayObjectCallback ary_cb = {
                 .node_cb = FindCommand_ArrayNodeCb,
@@ -1672,20 +1686,30 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             };
             TO_STR(ref_field);
 
+            SELVA_TRACE_BEGIN(cmd_find_array);
             err = SelvaModify_TraverseArray(hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
+            SELVA_TRACE_END(cmd_find_array);
         } else if ((dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
                     SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                     SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))
                    && ref_field) {
             TO_STR(ref_field);
 
+            SELVA_TRACE_BEGIN(cmd_find_refs);
             err = SelvaModify_TraverseHierarchyField(hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
+            SELVA_TRACE_END(cmd_find_refs);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+            SELVA_TRACE_BEGIN(cmd_find_bfs_expression);
             err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
+            SELVA_TRACE_END(cmd_find_bfs_expression);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) {
+            SELVA_TRACE_BEGIN(cmd_find_traversal_expression);
             err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
+            SELVA_TRACE_END(cmd_find_traversal_expression);
         } else {
+            SELVA_TRACE_BEGIN(cmd_find_rest);
             err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
+            SELVA_TRACE_END(cmd_find_rest);
         }
         for (int j = 0; j < nr_index_hints; j++) {
             struct SelvaFindIndexControlBlock *icb = ind_icb[j];
@@ -1722,10 +1746,12 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        SELVA_TRACE_BEGIN(cmd_find_sort_result);
         nr_nodes = (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY)
             ? FindCommand_PrintOrderedArrayResult(ctx, lang, offset, limit, fields, &order_result)
             : FindCommand_PrintOrderedResult(ctx, lang, hierarchy, offset, limit, merge_strategy, merge_path,
                                              fields, excluded_fields, &order_result, &merge_nr_fields);
+        SELVA_TRACE_END(cmd_find_sort_result);
     }
 
     /* nr_nodes is never negative at this point so we can safely cast it. */
