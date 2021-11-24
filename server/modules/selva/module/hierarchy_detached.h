@@ -7,6 +7,10 @@
 struct SelvaHierarchy;
 struct compressed_rms;
 
+static inline int SelvaHierarchyDetached_IndexExists(struct SelvaHierarchy *hierarchy) {
+    return !!hierarchy->index_detached.obj;
+}
+
 int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct compressed_rms **compressed);
 
 /**

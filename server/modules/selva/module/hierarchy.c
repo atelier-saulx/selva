@@ -484,7 +484,7 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
      * If isDecompressingSubtree is set it means that restore_subtree() was
      * already called once.
      */
-    if (!isDecompressingSubtree) {
+    if (SelvaHierarchyDetached_IndexExists(hierarchy) && !isDecompressingSubtree) {
         SELVA_TRACE_BEGIN(find_detached);
         err = restore_subtree(hierarchy, id);
         SELVA_TRACE_END(find_detached);
