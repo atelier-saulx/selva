@@ -19,6 +19,7 @@
 #include "rpn.h"
 #include "selva_object.h"
 #include "selva_onload.h"
+#include "selva_trace.h"
 #include "subscriptions.h"
 
 struct Selva_Subscription {
@@ -51,6 +52,8 @@ static const struct SelvaArgParser_EnumType trigger_event_types[] = {
         .id = 0,
     }
 };
+
+SELVA_TRACE_HANDLE(cmd_subscriptions_refresh);
 
 static struct Selva_Subscription *find_sub(SelvaHierarchy *hierarchy, const Selva_SubscriptionId sub_id);
 static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct Selva_SubscriptionMarker *marker, const Selva_NodeId node_id);
@@ -2434,6 +2437,7 @@ out:
  * SELVA.SUBSCRIPTIONS.refresh KEY SUB_ID
  */
 int SelvaSubscriptions_RefreshCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    SELVA_TRACE_BEGIN_AUTO(cmd_subscriptions_refresh);
     int err;
 
     if (argc != 3) {

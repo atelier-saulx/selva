@@ -14,9 +14,8 @@
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"
+#include "selva_trace.h"
 #include "find_index.h"
-
-static float lpf_a; /*!< Popularity count average dampening coefficient. */
 
 /**
  * Indexing hint accounting and indices.
@@ -113,7 +112,16 @@ struct indexing_timer_args {
     struct SelvaHierarchy *hierarchy;
 };
 
+static float lpf_a; /*!< Popularity count average dampening coefficient. */
 Selva_SubscriptionId find_index_sub_id; /* zeroes. */
+
+/*
+ * Trace hangles.
+ */
+SELVA_TRACE_HANDLE(FindIndex_AutoIndex);
+SELVA_TRACE_HANDLE(FindIndex_icb_proc);
+SELVA_TRACE_HANDLE(FindIndex_make_indexing_decission_proc);
+SELVA_TRACE_HANDLE(FindIndex_refresh);
 
 static void create_index_cb_timer(RedisModuleCtx *ctx, struct icb_proc_args *args);
 static void create_indexing_timer(RedisModuleCtx *ctx, struct indexing_timer_args *args);
@@ -441,6 +449,7 @@ static int destroy_index_cb(
 }
 
 static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
+    SELVA_TRACE_BEGIN_AUTO(FindIndex_make_indexing_decission_proc);
     struct indexing_timer_args *args = (struct indexing_timer_args *)data;
     SelvaHierarchy *hierarchy = args->hierarchy;
     struct poptop_list_el *el;
@@ -549,7 +558,9 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
          * refresh will call the action function for each node and thus build the
          * initial index.
          */
+        SELVA_TRACE_BEGIN(FindIndex_refresh);
         err = SelvaSubscriptions_RefreshByMarkerId(ctx, hierarchy, find_index_sub_id, icb->marker_id);
+        SELVA_TRACE_END(FindIndex_refresh);
         if (err) {
             fprintf(stderr, "%s:%d: Failed to refresh the index for \"%s\": %s\n",
                     __FILE__, __LINE__,
@@ -596,6 +607,7 @@ static float calc_icb_score(const struct SelvaFindIndexControlBlock *icb) {
 }
 
 static void icb_proc(RedisModuleCtx *ctx, void *data) {
+    SELVA_TRACE_BEGIN_AUTO(FindIndex_icb_proc);
     struct icb_proc_args *args = (struct icb_proc_args *)data;
     SelvaHierarchy *hierarchy = args->hierarchy;
     struct SelvaFindIndexControlBlock *icb = args->icb;
@@ -883,6 +895,7 @@ int SelvaFind_AutoIndex(
         RedisModuleString *filter,
         struct SelvaFindIndexControlBlock **icb_out,
         struct SelvaSet **out) {
+    SELVA_TRACE_BEGIN_AUTO(FindIndex_AutoIndex);
     struct SelvaFindIndexControlBlock *icb;
     TO_STR(filter);
     filter_str;
