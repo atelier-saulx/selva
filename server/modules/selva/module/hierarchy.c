@@ -3168,6 +3168,7 @@ int SelvaHierarchy_CompressCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     }
 
     RedisModule_ReplyWithLongLong(ctx, 1);
+    RedisModule_ReplicateVerbatim(ctx);
 
     return REDISMODULE_OK;
 }
