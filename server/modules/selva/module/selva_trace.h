@@ -63,7 +63,7 @@ extern __itt_domain* selva_trace_domain;
 #define SELVA_TRACE_HANDLE(name)
 #define SELVA_TRACE_BEGIN(name)
 #define SELVA_TRACE_END(name)
-#define SELVA_TRACE_AUTO_END(name)
+#define SELVA_TRACE_BEGIN_AUTO(_name)
 #endif
 
 #endif /* _SELVA_TRACE_H_ */
