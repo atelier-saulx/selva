@@ -175,3 +175,30 @@ writable by the user.
 In the remote mode you can either provide a startup script for starting the test
 or run everything manually and attach to the running `redis-server-selva`
 process.
+
+### Tracing
+
+`selva_trace.h` provides a tracing API currently with Intel ITT that's
+compatible with Intel VTune. The tracing system and none of the calls are
+compiled into the code unless tracing is explicitly enabled during the build
+time. This can be done by adding `SELVA_TRACE=1` as an argument to `make` when
+building.
+
+**Example**
+
+```sh
+make SELVA_TRACE=1 -j4
+```
+
+Finally to enable instrumentation while running the Redis server the
+`INTEL_LIBITTNOTIFY64` env variable must be set.
+
+**Example**
+
+```sh
+INTEL_LIBITTNOTIFY64=/opt/intel/oneapi/vtune/2021.7.1/lib64/runtime/libittnotify_collector.so yarn test test/perf/compression.ts
+```
+
+Now VTune can be attached to the server process and the analysis results will
+have (optional) categorization by Task name. Also most of the analyses will show
+some task statistics on the Summary tab.

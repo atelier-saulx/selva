@@ -31,9 +31,10 @@ OBJS := \
 	module/selva_object.o \
 	module/selva_object_commands.o \
 	module/selva_set.o \
-	module/traversal.o \
+	module/selva_trace.o \
 	module/selva_type.o \
 	module/shared.o \
+	module/traversal.o \
 	module/subscriptions.o
 
 IDIR := $(patsubst %,-I%,$(INCLUDE_DIR))
@@ -51,7 +52,11 @@ ifeq ($(uname_S),Linux)
 else # macOS
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
-	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib /usr/local/Cellar/openssl@1.1/1.1.1k/lib/
+	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib /usr/local/Cellar/openssl@1.1/1.1.1k/lib
+endif
+ifeq ($(SELVA_TRACE),1)
+	CFLAGS += -I/opt/intel/oneapi/vtune/2021.7.1/sdk/include -DSELVA_TRACE=1
+	SHOBJ_LDFLAGS += /opt/intel/oneapi/vtune/2021.7.1/sdk/lib64/libittnotify.a
 endif
 CC ?= gcc
 LIBS_A := $(foreach S,$(LIBS),lib/$(S)/lib$(S).a)
