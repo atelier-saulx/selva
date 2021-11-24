@@ -34,7 +34,16 @@ struct SelvaTrace {
  * terminated before its inner trace.
  */
 #define SELVA_TRACE_BEGIN(_name) \
-    __itt_task_begin(selva_trace_domain, __itt_null, __itt_null, CONCATENATE(selva_trace_handle_, _name).handle);
+    __itt_task_begin(selva_trace_domain, __itt_null, __itt_null, CONCATENATE(selva_trace_handle_, _name).handle)
+
+/**
+ * Begin a new automatic trace.
+ * The trace is automatically terminated when the block scope ends.
+ * SELVA_TRACE_END() must not be called for an automatic trace.
+ */
+#define SELVA_TRACE_BEGIN_AUTO(_name) \
+    __attribute__((cleanup(SelvaTrace_AutoEnd))) const struct SelvaTrace *CONCATENATE(_autoend_selva_trace_, _name) = &CONCATENATE(selva_trace_handle_, _name); \
+    __itt_task_begin(selva_trace_domain, __itt_null, __itt_null, CONCATENATE(selva_trace_handle_, _name).handle)
 
 /**
  * End a trace.
@@ -42,6 +51,8 @@ struct SelvaTrace {
 #define SELVA_TRACE_END(_name) \
     CONCATENATE(selva_trace_handle_, _name); \
     __itt_task_end(selva_trace_domain)
+
+void SelvaTrace_AutoEnd(void *);
 
 /**
  * The Selva tracing domain.
@@ -52,6 +63,7 @@ extern __itt_domain* selva_trace_domain;
 #define SELVA_TRACE_HANDLE(name)
 #define SELVA_TRACE_BEGIN(name)
 #define SELVA_TRACE_END(name)
+#define SELVA_TRACE_AUTO_END(name)
 #endif
 
 #endif /* _SELVA_TRACE_H_ */
