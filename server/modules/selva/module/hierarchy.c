@@ -2404,7 +2404,7 @@ static int load_tree(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy) {
                 }
 
                 if (isDecompressingSubtree) {
-                    SelvaHierarchyDetached_RemoveNode(hierarchy, node_id);
+                    SelvaHierarchyDetached_RemoveNode(hierarchy, child_id);
                 }
 
                 err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
