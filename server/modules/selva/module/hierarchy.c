@@ -484,7 +484,7 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
      * If isDecompressingSubtree is set it means that restore_subtree() was
      * already called once.
      */
-    if (!isDecompressingSubtree) {
+    if (SelvaHierarchyDetached_IndexExists(hierarchy) && !isDecompressingSubtree) {
         SELVA_TRACE_BEGIN(find_detached);
         err = restore_subtree(hierarchy, id);
         SELVA_TRACE_END(find_detached);
@@ -2404,7 +2404,7 @@ static int load_tree(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy) {
                 }
 
                 if (isDecompressingSubtree) {
-                    SelvaHierarchyDetached_RemoveNode(hierarchy, node_id);
+                    SelvaHierarchyDetached_RemoveNode(hierarchy, child_id);
                 }
 
                 err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);

@@ -10,6 +10,7 @@
 #include "cstrings.h"
 #include "errors.h"
 #include "selva_set.h"
+#include "selva_trace.h"
 #include "svector.h"
 #include "tree.h"
 #include "shared.h"
@@ -68,6 +69,8 @@ struct so_type_name {
 };
 
 SET_DECLARE(selva_objpop, struct SelvaObjectPointerOpts);
+
+SELVA_TRACE_HANDLE(SelvaObject_get_key);
 
 /**
  * Defaults for SELVA_OBJECT_POINTER handling.
@@ -653,6 +656,7 @@ static struct SelvaObjectKey *find_key(struct SelvaObject *obj, const char *key_
 }
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
+    SELVA_TRACE_BEGIN_AUTO(SelvaObject_get_key);
     struct SelvaObjectKey *key;
 
     /* Prefetch seems to help just a little bit here. */

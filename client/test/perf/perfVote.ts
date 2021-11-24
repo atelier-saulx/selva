@@ -1,11 +1,11 @@
 import { performance } from 'perf_hooks'
 import test from 'ava'
-import { connect } from '../src/index'
+import { connect } from '../../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
-import { wait } from './assertions'
+import '../assertions'
+import { wait } from '../assertions'
 import getPort from 'get-port'
-import { SetOptions } from '../src/set'
+import { SetOptions } from '../../src/set'
 const { RateLimit } = require('async-sema')
 
 let srv
@@ -42,13 +42,14 @@ test.beforeEach(async (t) => {
   })
 })
 
-test.after(async (_t) => {
+test.after(async (t) => {
   const client = connect({ port })
   const d = Date.now()
   //await client.delete('root')
   console.log('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('voting w/parsers', async (t) => {

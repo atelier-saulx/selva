@@ -5,7 +5,7 @@ SET_DECLARE(selva_trace, struct SelvaTrace);
 __itt_domain* selva_trace_domain;
 
 __constructor static void init_selva_trace(void) {
-    struct SelvaTrace  **data_p;
+    struct SelvaTrace **data_p;
 
     selva_trace_domain = __itt_domain_create("Selva.Domain.Global");
 
@@ -16,4 +16,7 @@ __constructor static void init_selva_trace(void) {
     }
 }
 
+void SelvaTrace_AutoEnd(void *p __unused) {
+    __itt_task_end(selva_trace_domain);
+}
 #endif
