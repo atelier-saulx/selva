@@ -314,7 +314,30 @@ int SelvaObject_ReplyWithObject(
         const struct RedisModuleString *key_name,
         unsigned flags);
 
+/**
+ * Load a SelvaObject from RDB.
+ * @returns a SelvaObject.
+ */
 struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data);
+
+/**
+ * Load a SelvaObject or NULL from RDB.
+ * @returns NULL if the object length is zero.
+ */
+struct SelvaObject *SelvaObjectTypeRDBLoad2(struct RedisModuleIO *io, int encver, void *ptr_load_data);
+
+/**
+ * Serialize a SelvaObject in RDB.
+ * @param obj is a pointer to the SelvaObject to be serialized.
+ * @param ptr_save_data is an optional pointer to additional data that can be used by a registered pointer type.
+ */
 void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data);
+
+/**
+ * Serialize a SelvaObject or NULL.
+ * @param obj is a pointer to the SelvaObject to be serialized. Can be NULL.
+ * @param ptr_save_data is an optional pointer to additional data that can be used by a registered pointer type.
+ */
+void SelvaObjectTypeRDBSave2(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data);
 
 #endif /* SELVA_OBJECT */
