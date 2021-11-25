@@ -81,10 +81,11 @@ static const struct SelvaObjectPointerOpts default_ptr_opts = {
 };
 SELVA_OBJECT_POINTER_OPTS(default_ptr_opts);
 
+RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
 static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key, unsigned flags);
 static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, unsigned flags);
-RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
+static void *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data);
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
     /*
@@ -2362,6 +2363,79 @@ static int rdb_load_pointer(RedisModuleIO *io, int encver, struct SelvaObject *o
     return 0;
 }
 
+static int rdb_load_field(RedisModuleIO *io, struct SelvaObject *obj, int encver, int level, void *ptr_load_data) {
+    RedisModuleString *name = RedisModule_LoadString(io);
+    const enum SelvaObjectType type = RedisModule_LoadUnsigned(io);
+    const SelvaObjectMeta_t user_meta = RedisModule_LoadUnsigned(io);
+    int err = 0;
+
+    if (unlikely(!name)) {
+        RedisModule_LogIOError(io, "warning", "SelvaObject key name cannot be NULL");
+        return SELVA_EINVAL;
+    }
+
+    switch (type) {
+    case SELVA_OBJECT_NULL:
+        /* NOP - There is generally no reason to recreate NULLs */
+        break;
+    case SELVA_OBJECT_DOUBLE:
+        err = rdb_load_object_double(io, obj, name);
+        break;
+    case SELVA_OBJECT_LONGLONG:
+        err = rdb_load_object_long_long(io, obj, name);
+        break;
+    case SELVA_OBJECT_STRING:
+        err = rdb_load_object_string(io, level, obj, name);
+        break;
+    case SELVA_OBJECT_OBJECT:
+        {
+            struct SelvaObjectKey *key;
+            TO_STR(name);
+
+            err = get_key(obj, name_str, name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+            if (err) {
+                break;
+            }
+
+            key->value = rdb_load_object(io, encver, level + 1, ptr_load_data);
+            if (!key->value) {
+                err = SELVA_EINVAL;
+                break;
+            }
+            key->type = SELVA_OBJECT_OBJECT;
+        }
+        break;
+    case SELVA_OBJECT_SET:
+        err = rdb_load_object_set(io, obj, name);
+        break;
+    case SELVA_OBJECT_ARRAY:
+        err = rdb_load_object_array(io, obj, name, encver, ptr_load_data);
+        break;
+    case SELVA_OBJECT_POINTER:
+        err = rdb_load_pointer(io, encver, obj, name, ptr_load_data);
+        break;
+    default:
+        RedisModule_LogIOError(io, "warning", "Unknown type");
+    }
+    if (err) {
+            RedisModule_LogIOError(io, "warning", "Error while loading a %s: %s",
+                                   SelvaObject_Type2String(type, NULL),
+                                   getSelvaErrorStr(err));
+        return err;
+    }
+
+    /*
+     * Not the most efficient way to do this as we may need to look
+     * multiple lookups.
+     */
+    if (SelvaObject_SetUserMeta(obj, name, user_meta, NULL)) {
+        RedisModule_LogIOError(io, "warning", "Failed to set user meta");
+    }
+
+    RedisModule_FreeString(NULL, name);
+    return 0;
+}
+
 static void *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data) {
     struct SelvaObject *obj;
 
@@ -2373,101 +2447,13 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr
 
     const size_t obj_size = RedisModule_LoadUnsigned(io);
     for (size_t i = 0; i < obj_size; i++) {
-        RedisModuleString *name = RedisModule_LoadString(io);
-        const enum SelvaObjectType type = RedisModule_LoadUnsigned(io);
-        const SelvaObjectMeta_t user_meta = RedisModule_LoadUnsigned(io);
         int err;
 
-        if (unlikely(!name)) {
-            RedisModule_LogIOError(io, "warning", "SelvaObject key name cannot be NULL");
-            break;
+        err = rdb_load_field(io, obj, encver, level, ptr_load_data);
+        if (err) {
+            /* No need to do cleanup as Redis will terminate. */
+            return NULL;
         }
-
-        switch (type) {
-        case SELVA_OBJECT_NULL:
-            /* NOP - There is generally no reason to recreate NULLs */
-            break;
-        case SELVA_OBJECT_DOUBLE:
-            err = rdb_load_object_double(io, obj, name);
-            if(err) {
-                RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_DOUBLE: %s",
-                                       getSelvaErrorStr(err));
-                return NULL;
-            }
-            break;
-        case SELVA_OBJECT_LONGLONG:
-            err = rdb_load_object_long_long(io, obj, name);
-            if (err) {
-                RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_LONGLONG: %s",
-                                       getSelvaErrorStr(err));
-                return NULL;
-            }
-            break;
-        case SELVA_OBJECT_STRING:
-            err = rdb_load_object_string(io, level, obj, name);
-            if (err) {
-                RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_STRING: %s",
-                                       getSelvaErrorStr(err));
-                return NULL;
-            }
-            break;
-        case SELVA_OBJECT_OBJECT:
-            {
-                struct SelvaObjectKey *key;
-                TO_STR(name);
-
-                err = get_key(obj, name_str, name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
-                if (err) {
-                    RedisModule_LogIOError(io, "warning", "Error while creating an object key: %s",
-                                           getSelvaErrorStr(err));
-                    return NULL;
-                }
-
-                key->value = rdb_load_object(io, encver, level + 1, ptr_load_data);
-                if (!key->value) {
-                    RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_OBJECT");
-                    return NULL;
-                }
-                key->type = SELVA_OBJECT_OBJECT;
-            }
-            break;
-        case SELVA_OBJECT_SET:
-            err = rdb_load_object_set(io, obj, name);
-            if (err) {
-                RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_SET: %s",
-                                       getSelvaErrorStr(err));
-                return NULL;
-            }
-            break;
-        case SELVA_OBJECT_ARRAY:
-            err = rdb_load_object_array(io, obj, name, encver, ptr_load_data);
-            if (err) {
-                RedisModule_LogIOError(io, "warning", "Error while loading an SELVA_OBJECT_ARRAY: %s",
-                                       getSelvaErrorStr(err));
-                return NULL;
-            }
-            break;
-        case SELVA_OBJECT_POINTER:
-            err = rdb_load_pointer(io, encver, obj, name, ptr_load_data);
-            if (err) {
-                RedisModule_LogIOError(io, "warning", "Error while loading a SELVA_OBJECT_POINTER: %s",
-                                       getSelvaErrorStr(err));
-                return NULL;
-            }
-            break;
-        default:
-            RedisModule_LogIOError(io, "warning", "Unknown type");
-        }
-
-        /*
-         * Not the most efficient way to do this as we may need to look
-         * multiple lookups.
-         */
-        if (SelvaObject_SetUserMeta(obj, name, user_meta, NULL)) {
-            RedisModule_LogIOError(io, "warning", "Failed to set user meta");
-        }
-
-        RedisModule_FreeString(NULL, name);
     }
 
     return obj;
@@ -2477,6 +2463,33 @@ struct SelvaObject *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver, void *
     struct SelvaObject *obj;
 
     obj = rdb_load_object(io, encver, 0, ptr_load_data);
+
+    return obj;
+}
+
+struct SelvaObject *SelvaObjectTypeRDBLoad2(RedisModuleIO *io, int encver, void *ptr_load_data) {
+    const size_t obj_size = RedisModule_LoadUnsigned(io);
+    struct SelvaObject *obj;
+
+    if (obj_size == 0) {
+        return NULL;
+    }
+
+    obj = SelvaObject_New();
+    if (!obj) {
+        RedisModule_LogIOError(io, "warning", "Failed to create a new SelvaObject");
+        return NULL;
+    }
+
+    for (size_t i = 0; i < obj_size; i++) {
+        int err;
+
+        err = rdb_load_field(io, obj, encver, 0, ptr_load_data);
+        if (err) {
+            /* No need to do cleanup as Redis will terminate. */
+            return NULL;
+        }
+    }
 
     return obj;
 }
@@ -2612,5 +2625,13 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, struct SelvaObject *obj, void *pt
         default:
             RedisModule_LogIOError(io, "warning", "Unknown type");
         }
+    }
+}
+
+void SelvaObjectTypeRDBSave2(RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data) {
+    if (!obj) {
+        RedisModule_SaveUnsigned(io, 0);
+    } else {
+        SelvaObjectTypeRDBSave(io, obj, ptr_save_data);
     }
 }
