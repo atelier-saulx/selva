@@ -704,7 +704,7 @@ struct EdgeField_load_data {
  * Storage format: [
  *   constraint_id,
  *   nr_edges,
- *   dst_id
+ *   dst_id...
  * ]
  */
 static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __unused, void *p) {
@@ -717,6 +717,9 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
     size_t nr_edges;
     struct EdgeField *edge_field;
 
+    /*
+     * Constraint.
+     */
     constraint_id = RedisModule_LoadUnsigned(io);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
         char *node_type __auto_free = NULL;
@@ -738,6 +741,9 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
         return NULL;
     }
 
+    /*
+     * Edges/arcs.
+     */
     for (size_t i = 0; i < nr_edges; i++) {
         char *dst_id_str __auto_free = NULL;
         size_t dst_id_len;
@@ -773,28 +779,24 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
 
 int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
     RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
+    struct SelvaHierarchyMetadata *metadata;
 
     if (unlikely(!ctx)) {
         RedisModule_LogIOError(io, "warning", "Redis ctx can't be NULL");
         return SELVA_EINVAL;
     }
 
-    /* A boolean flag to tell whether there are any edge fields. */
-    if (RedisModule_LoadUnsigned(io)) {
-        struct SelvaHierarchyMetadata *metadata;
+    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 
-        metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
-
-        /*
-         * We use the SelvaObject RDB loader to load the object which will then
-         * call EdgeField_RdbLoad for each field stored in the object to
-         * initialize the actual EdgeField structures.
-         */
-        metadata->edge_fields.edges = SelvaObjectTypeRDBLoad(io, encver, &(struct EdgeField_load_data){
-            .hierarchy = hierarchy,
-            .src_node = node,
-        });
-    }
+    /*
+     * We use the SelvaObject RDB loader to load the object which will then
+     * call EdgeField_RdbLoad for each field stored in the object to
+     * initialize the actual EdgeField structures.
+     */
+    metadata->edge_fields.edges = SelvaObjectTypeRDBLoad2(io, encver, &(struct EdgeField_load_data){
+        .hierarchy = hierarchy,
+        .src_node = node,
+    });
 
     return 0;
 }
@@ -808,6 +810,9 @@ static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused vo
     struct SVectorIterator vec_it;
     const struct SelvaHierarchyNode *dst_node;
 
+    /*
+     * Constraint.
+     */
     RedisModule_SaveUnsigned(io, constraint_id);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
         const struct EdgeFieldConstraint *constraint = edgeField->constraint;
@@ -815,8 +820,11 @@ static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused vo
         RedisModule_SaveStringBuffer(io, constraint->node_type, SELVA_NODE_TYPE_SIZE);
         RedisModule_SaveStringBuffer(io, constraint->field_name_str, constraint->field_name_len);
     }
-    RedisModule_SaveUnsigned(io, SVector_Size(&edgeField->arcs)); /* nr_edges */
 
+    /*
+     * Edges/arcs.
+     */
+    RedisModule_SaveUnsigned(io, SVector_Size(&edgeField->arcs)); /* nr_edges */
     SVector_ForeachBegin(&vec_it, &edgeField->arcs);
     while ((dst_node = SVector_Foreach(&vec_it))) {
         Selva_NodeId dst_node_id;
@@ -828,13 +836,6 @@ static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused vo
 
 void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaHierarchyNode *node) {
     struct SelvaHierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
-    struct SelvaObject *edges = metadata->edge_fields.edges;
 
-    /* A boolean marker to trigger the loader. */
-    if (edges && SelvaObject_Len(edges, NULL) > 0) {
-        RedisModule_SaveUnsigned(io, 1);
-        SelvaObjectTypeRDBSave(io, metadata->edge_fields.edges, NULL);
-    } else {
-        RedisModule_SaveUnsigned(io, 0);
-    }
+    SelvaObjectTypeRDBSave2(io, metadata->edge_fields.edges, NULL);
 }
