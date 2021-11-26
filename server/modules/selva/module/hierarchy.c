@@ -8,6 +8,7 @@
 #include <time.h>
 #include "redismodule.h"
 #include "auto_free.h"
+#include "selva.h"
 #include "alias.h"
 #include "async_task.h"
 #include "cdefs.h"

@@ -349,7 +349,7 @@ static int add_set_values(
     SelvaHierarchy *hierarchy,
     RedisModuleKey *alias_key,
     struct SelvaObject *obj,
-    RedisModuleString *id,
+    Selva_NodeId node_id,
     const RedisModuleString *field,
     const char *value_ptr,
     size_t value_len,
@@ -402,13 +402,9 @@ static int add_set_values(
 
                 /* Add to the global aliases hash. */
                 if (alias_key) {
-                    Selva_NodeId node_id;
-                    TO_STR(id);
-
-                    Selva_NodeIdCpy(node_id, id_str);
                     Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
 
-                    update_alias(hierarchy, alias_key, id, ref);
+                    update_alias(ctx, hierarchy, alias_key, node_id, ref);
                 }
 
                 res++;
@@ -681,7 +677,7 @@ static int update_set(
     RedisModuleCtx *ctx,
     SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
-    RedisModuleString *id,
+    Selva_NodeId node_id,
     const RedisModuleString *field,
     const struct SelvaModify_OpSet *setOpts
 ) {
@@ -703,7 +699,7 @@ static int update_set(
         /*
          * Set new values.
          */
-        err = add_set_values(ctx, hierarchy, alias_key, obj, id, field, setOpts->$value, setOpts->$value_len, setOpts->op_set_type, 1);
+        err = add_set_values(ctx, hierarchy, alias_key, obj, node_id, field, setOpts->$value, setOpts->$value_len, setOpts->op_set_type, 1);
         if (err < 0) {
             return err;
         } else {
@@ -713,7 +709,7 @@ static int update_set(
         if (setOpts->$add_len > 0) {
             int err;
 
-            err = add_set_values(ctx, hierarchy, alias_key, obj, id, field, setOpts->$add, setOpts->$add_len, setOpts->op_set_type, 0);
+            err = add_set_values(ctx, hierarchy, alias_key, obj, node_id, field, setOpts->$add, setOpts->$add_len, setOpts->op_set_type, 0);
             if (err < 0) {
                 return err;
             } else {
@@ -739,18 +735,15 @@ int SelvaModify_ModifySet(
     RedisModuleCtx *ctx,
     SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
-    RedisModuleString *id,
+    Selva_NodeId node_id,
     const RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
-    TO_STR(id, field);
+    TO_STR(field);
 
     if (setOpts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
-        Selva_NodeId node_id;
         int isChildren = !strcmp(field_str, "children");
         int isParents = !isChildren && !strcmp(field_str, "parents");
-
-        Selva_NodeIdCpy(node_id, id_str);
 
         if (setOpts->delete_all) {
             /* If delete_all is set the other fields are ignored. */
@@ -821,7 +814,7 @@ int SelvaModify_ModifySet(
             /*
              * Other set ops use C-strings and operate on the node SelvaObject.
              */
-            return update_set(ctx, hierarchy, obj, id, field, setOpts);
+            return update_set(ctx, hierarchy, obj, node_id, field, setOpts);
         }
     }
 }
@@ -864,15 +857,11 @@ int SelvaModify_ModifyDel(
     RedisModuleCtx *ctx,
     SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
-    RedisModuleString *id,
+    Selva_NodeId node_id,
     const RedisModuleString *field
 ) {
-    TO_STR(id, field);
-    Selva_NodeId node_id;
+    TO_STR(field);
     int err = 0;
-
-    memset(node_id, '\0', SELVA_NODE_ID_SIZE);
-    memcpy(node_id, id_str, min(id_len, SELVA_NODE_ID_SIZE));
 
     if (!strcmp(field_str, "children")) {
         err = SelvaModify_DelHierarchyChildren(ctx, hierarchy, node_id);

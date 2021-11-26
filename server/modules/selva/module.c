@@ -115,14 +115,6 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
     RedisModule_ReplicateVerbatimArgs(ctx, argv, argc);
 }
 
-static void RedisModuleString2Selva_NodeId(Selva_NodeId nodeId, const RedisModuleString *id) {
-    TO_STR(id);
-
-    id_str = RedisModule_StringPtrLen(id, &id_len);
-    memset(nodeId, '\0', SELVA_NODE_ID_SIZE);
-    memcpy(nodeId, id_str, min(id_len, SELVA_NODE_ID_SIZE));
-}
-
 /*
  * Tokenize nul-terminated strings from a string with the size of size.
  */
@@ -244,12 +236,267 @@ enum selva_op_repl_state handle_modify_arg_op_obj_meta(
     }
 
     if (new_user_meta != old_user_meta) {
-        RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
-    } else {
-        RedisModule_ReplyWithSimpleString(ctx, "OK");
+        return SELVA_OP_REPL_STATE_UPDATED;
     }
 
     return SELVA_OP_REPL_STATE_REPLICATE;
+}
+
+static enum selva_op_repl_state modify_array_op(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct SelvaObject *obj, int active_insert_idx, int has_push, char type_code, RedisModuleString *field, RedisModuleString *value) {
+    TO_STR(field, value);
+    int idx = get_array_field_index(field_str, field_len);
+    int new_len = get_array_field_start_idx(field_str, field_len);
+
+    if (idx == -1) {
+        const int ary_len = (int)SelvaObject_GetArrayLenStr(obj, field_str, new_len);
+
+        idx = ary_len - 1 + has_push;
+        if (idx < 0) {
+            /* TODO No idea what should be the error but the previous error was bogus. */
+            replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Unable to set value to array index %d", idx);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    }
+
+    if (type_code == SELVA_MODIFY_ARG_STRING) {
+        int err;
+
+        if (active_insert_idx == idx) {
+            err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
+            active_insert_idx = -1;
+        } else {
+            err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
+        }
+
+        if (err) {
+            replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        RedisModule_RetainString(ctx, value);
+    } else if (type_code == SELVA_MODIFY_ARG_DOUBLE) {
+        int err;
+        union {
+            char s[sizeof(double)];
+            double d;
+            void *p;
+        } v = {
+            .d = 0.0,
+        };
+
+        if (value_len != sizeof(v.d)) {
+            REPLY_WITH_ARG_TYPE_ERROR(v.d);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        memcpy(v.s, value_str, sizeof(v.d));
+
+        if (active_insert_idx == idx) {
+            err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, v.p);
+            active_insert_idx = -1;
+        } else {
+            err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, v.p);
+        }
+
+        if (err) {
+            replyWithSelvaErrorf(ctx, err, "Failed to set a double value");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else if (type_code == SELVA_MODIFY_ARG_LONGLONG) {
+        int err;
+        union {
+            char s[sizeof(double)];
+            long long ll;
+            void *p;
+        } v = {
+            .ll = 0,
+        };
+
+        if (value_len != sizeof(v.ll)) {
+            REPLY_WITH_ARG_TYPE_ERROR(v.ll);
+            return 0;
+        }
+
+        memcpy(v.s, value_str, sizeof(v.ll));
+
+        if (active_insert_idx == idx) {
+            err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, v.p);
+            active_insert_idx = -1;
+        } else {
+            err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, v.p);
+        }
+
+        if (err) {
+            replyWithSelvaErrorf(ctx, err, "Failed to set a long value");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
+        return handle_modify_arg_op_obj_meta(ctx, nodeId, obj, field, value);
+    } else {
+        replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
+    return SELVA_OP_REPL_STATE_UPDATED;
+}
+
+static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, Selva_NodeId nodeId, struct SelvaObject *obj, char type_code, RedisModuleString *field, RedisModuleString *value) {
+    const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
+    TO_STR(field, value);
+
+    if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
+        const struct SelvaModify_OpIncrement *incrementOpts = (const struct SelvaModify_OpIncrement *)value_str;
+
+        SelvaModify_ModifyIncrement(obj, field, old_type, incrementOpts);
+    } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE) {
+        const struct SelvaModify_OpIncrementDouble *incrementOpts = (const struct SelvaModify_OpIncrementDouble*)value_str;
+
+        SelvaModify_ModifyIncrementDouble(ctx, obj, field, old_type, incrementOpts);
+    } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
+        struct SelvaModify_OpSet *setOpts;
+        int err;
+
+        setOpts = SelvaModify_OpSet_align(ctx, value);
+        if (!setOpts) {
+            replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid OpSet");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        err = SelvaModify_ModifySet(ctx, hierarchy, obj, nodeId, field, setOpts);
+        if (err == 0) {
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        } else if (err < 0) {
+            replyWithSelvaError(ctx, err);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
+        int err;
+
+        err = SelvaModify_ModifyDel(ctx, hierarchy, obj, nodeId, field);
+        if (err == SELVA_ENOENT) {
+            /* No need to replicate. */
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        } else if (err) {
+            TO_STR(field);
+            char err_msg[120];
+
+            snprintf(err_msg, sizeof(err_msg), "%s; Failed to delete the field: \"%s\"", getSelvaErrorStr(err), field_str);
+            RedisModule_ReplyWithError(ctx, err_msg);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING ||
+            type_code == SELVA_MODIFY_ARG_STRING) {
+        RedisModuleString *old_value;
+        RedisModuleString *shared;
+        int err;
+
+        if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        if (old_type == SELVA_OBJECT_STRING && !SelvaObject_GetString(obj, field, &old_value)) {
+            TO_STR(old_value);
+
+            if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
+                RedisModule_ReplyWithSimpleString(ctx, "OK");
+                return SELVA_OP_REPL_STATE_UNCHANGED;
+            }
+        }
+
+        shared = Share_RMS(field_str, field_len, value);
+        if (shared) {
+            err = SelvaObject_SetString(obj, field, shared);
+            if (err) {
+                RedisModule_FreeString(NULL, shared);
+                replyWithSelvaErrorf(ctx, err, "Failed to set a shared string value");
+                return SELVA_OP_REPL_STATE_UNCHANGED;
+            }
+        } else {
+            err = SelvaObject_SetString(obj, field, value);
+            if (err) {
+                replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+                return SELVA_OP_REPL_STATE_UNCHANGED;
+            }
+            RedisModule_RetainString(ctx, value);
+        }
+    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
+            type_code == SELVA_MODIFY_ARG_LONGLONG) {
+        if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG && old_type != SELVA_OBJECT_NULL) {
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        long long ll = 0;
+
+        if (value_len != sizeof(long long)) {
+            REPLY_WITH_ARG_TYPE_ERROR(ll);
+            return 0;
+        }
+
+        memcpy(&ll, value_str, sizeof(ll));
+
+        long long old_value;
+        if (old_type == SELVA_OBJECT_LONGLONG && !SelvaObject_GetLongLong(obj, field, &old_value)) {
+            if (old_value == ll) {
+                RedisModule_ReplyWithSimpleString(ctx, "OK");
+                return 0;
+            }
+        }
+
+        SelvaObject_SetLongLong(obj, field, ll);
+    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE ||
+            type_code == SELVA_MODIFY_ARG_DOUBLE) {
+        if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE && old_type != SELVA_OBJECT_NULL) {
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        double d;
+
+        if (value_len != sizeof(double)) {
+            REPLY_WITH_ARG_TYPE_ERROR(d);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        memcpy(&d, value_str, sizeof(d));
+
+        double old_value;
+        if (old_type == SELVA_OBJECT_DOUBLE && !SelvaObject_GetDouble(obj, field, &old_value)) {
+            if (old_value == d) {
+                RedisModule_ReplyWithSimpleString(ctx, "OK");
+                return SELVA_OP_REPL_STATE_UNCHANGED;
+            }
+        }
+
+        SelvaObject_SetDouble(obj, field, d);
+    } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
+        return handle_modify_arg_op_obj_meta(ctx, nodeId, obj, field, value);
+    } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
+        uint32_t v;
+        int err;
+
+        if (value_len != sizeof(uint32_t)) {
+            REPLY_WITH_ARG_TYPE_ERROR(v);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        memcpy(&v, value_str, sizeof(uint32_t));
+
+        err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v);
+        if (err) {
+            replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",
+                    (int)field_len, field_str);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else {
+        replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid type: \"%c\"", type_code);
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
+    return SELVA_OP_REPL_STATE_UPDATED;
 }
 
 /*
@@ -329,7 +576,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_CFIELDS, str, &tmp_id, NULL)) {
                     Selva_NodeId nodeId;
 
-                    RedisModuleString2Selva_NodeId(nodeId, tmp_id);
+                    Selva_RMString2NodeId(nodeId, tmp_id);
 
                     if (SelvaHierarchy_NodeExists(hierarchy, nodeId)) {
                         id = tmp_id;
@@ -361,7 +608,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     const struct SelvaHierarchyNode *node;
     const unsigned flags = parse_flags(argv[2]);
 
-    RedisModuleString2Selva_NodeId(nodeId, id);
+    Selva_RMString2NodeId(nodeId, id);
 
     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
@@ -426,140 +673,83 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_ReplyWithString(ctx, id);
 
     for (int i = 3; i < argc; i += 3) {
-        const RedisModuleString *type = argv[i];
-        const RedisModuleString *field = argv[i + 1];
+        RedisModuleString *type = argv[i];
+        RedisModuleString *field = argv[i + 1];
         RedisModuleString *value = argv[i + 2];
-
-        TO_STR(type, field, value);
-        /* [0] always points to a valid char in RM_String. */
-        const char type_code = type_str[0];
-        const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
+        TO_STR(type, field);
+        const char type_code = type_str[0]; /* [0] always points to a valid char in RM_String. */
+        enum selva_op_repl_state repl_state = SELVA_OP_REPL_STATE_UNCHANGED;
 
         if (is_array_field(field_str, field_len)) {
-            int idx = get_array_field_index(field_str, field_len);
-            int new_len = get_array_field_start_idx(field_str, field_len);
+            repl_state = modify_array_op(ctx, nodeId, obj, active_insert_idx, has_push, type_code, field, value);
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
+            TO_STR(value);
+            uint32_t item_type;
 
-            if (idx == -1) {
-                const int ary_len = (int)SelvaObject_GetArrayLenStr(obj, field_str, new_len);
-
-                idx = ary_len - 1 + has_push;
-                if (idx < 0) {
-                    replyWithSelvaErrorf(ctx, err, "Unable to set value to array index %d", idx);
-                    continue;
-                }
+            if (value_len != sizeof(uint32_t)) {
+                replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid item type");
+                continue;
             }
 
-            if (type_code == SELVA_MODIFY_ARG_STRING) {
-                if (active_insert_idx == idx) {
-                    err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
-                    active_insert_idx = -1;
-                } else {
-                    err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
+            memcpy(&item_type, value_str, sizeof(uint32_t));
+            if (item_type == SELVA_OBJECT_OBJECT) {
+                struct SelvaObject *new_obj;
+                int err;
+
+                new_obj = SelvaObject_New();
+                if (!new_obj) {
+                    replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to push new object to array index (%.*s.%s)",
+                            (int)field_len, field_str);
+                    continue;
                 }
 
+                err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
                 if (err) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+                    replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                            (int)field_len, field_str);
                     continue;
                 }
-
-                RedisModule_RetainString(ctx, value);
-            } else if (type_code == SELVA_MODIFY_ARG_DOUBLE) {
-                union {
-                    char s[sizeof(double)];
-                    double d;
-                    void *p;
-                } v = {
-                    .d = 0.0,
-                };
-
-                if (value_len != sizeof(v.d)) {
-                    REPLY_WITH_ARG_TYPE_ERROR(v.d);
-                    continue;
-                }
-
-                memcpy(v.s, value_str, sizeof(v.d));
-
-                if (active_insert_idx == idx) {
-                    err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, v.p);
-                    active_insert_idx = -1;
-                } else {
-                    err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, v.p);
-                }
-
-                if (err) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to set a double value");
-                    continue;
-                }
-            } else if (type_code == SELVA_MODIFY_ARG_LONGLONG) {
-                union {
-                    char s[sizeof(double)];
-                    long long ll;
-                    void *p;
-                } v = {
-                    .ll = 0,
-                };
-
-                if (value_len != sizeof(v.ll)) {
-                    REPLY_WITH_ARG_TYPE_ERROR(v.ll);
-                    continue;
-                }
-
-                memcpy(v.s, value_str, sizeof(v.ll));
-
-                if (active_insert_idx == idx) {
-                    err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, v.p);
-                    active_insert_idx = -1;
-                } else {
-                    err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, v.p);
-                }
-
-                if (err) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to set a long value");
-                    continue;
-                }
-            } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-                enum selva_op_repl_state res;
-
-                res = handle_modify_arg_op_obj_meta(ctx, nodeId, obj, field, value);
-                if (res == SELVA_OP_REPL_STATE_REPLICATE) {
-                    /*
-                     * This triplet needs to be replicated.
-                     * We replicate it regardless of any changes just in case for now
-                     * and we might stop replicate it later on when we are sure that
-                     * it isn't necessary.
-                     */
-                    bitmap_set(replset, i / 3 - 1);
-                }
-                continue;
             } else {
-                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
-                continue;
+                has_push = 1;
             }
-        } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
-            const struct SelvaModify_OpIncrement *incrementOpts = (const struct SelvaModify_OpIncrement *)value_str;
 
-            SelvaModify_ModifyIncrement(obj, field, old_type, incrementOpts);
-        } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE) {
-            const struct SelvaModify_OpIncrementDouble *incrementOpts = (const struct SelvaModify_OpIncrementDouble*)value_str;
+            repl_state = SELVA_OP_REPL_STATE_UPDATED;
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_INSERT) {
+            TO_STR(value);
+            uint32_t item_type;
+            uint32_t insert_idx;
 
-            SelvaModify_ModifyIncrementDouble(ctx, obj, field, old_type, incrementOpts);
-        } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
-            struct SelvaModify_OpSet *setOpts;
-
-            setOpts = SelvaModify_OpSet_align(ctx, value);
-            if (!setOpts) {
-                replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid OpSet");
+            if (value_len != 2 * sizeof(uint32_t)) {
+                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: int[2]");
                 continue;
             }
 
-            err = SelvaModify_ModifySet(ctx, hierarchy, obj, id, field, setOpts);
-            if (err == 0) {
-                RedisModule_ReplyWithSimpleString(ctx, "OK");
-                continue;
-            } else if (err < 0) {
-                replyWithSelvaError(ctx, err);
-                continue;
+            memcpy(&item_type, value_str, sizeof(uint32_t));
+            memcpy(&insert_idx, value_str + sizeof(uint32_t), sizeof(uint32_t));
+
+            if (item_type == SELVA_OBJECT_OBJECT) {
+                int err;
+                struct SelvaObject *new_obj = SelvaObject_New();
+
+                if (!new_obj) {
+                    replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to push new object to array index (%.*s.%s)",
+                            (int)field_len, field_str);
+                    continue;
+                }
+
+                err = SelvaObject_InsertArrayIndexStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, insert_idx, new_obj);
+                if (err) {
+                    SelvaObject_Destroy(new_obj);
+
+                    replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                            (int)field_len, field_str);
+                    continue;
+                }
+            } else {
+                active_insert_idx = insert_idx;
             }
+
+            repl_state = SELVA_OP_REPL_STATE_UPDATED;
         } else if (type_code == SELVA_MODIFY_ARG_STRING_ARRAY) {
             /*
              * Currently the $alias query is the only operation using string arrays.
@@ -573,215 +763,31 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             /* This triplet needs to be replicated. */
             bitmap_set(replset, i / 3 - 1);
-
             continue;
-        } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
-            err = SelvaModify_ModifyDel(ctx, hierarchy, obj, id, field);
-            if (err == SELVA_ENOENT) {
-                /* No need to replicate. */
-                RedisModule_ReplyWithSimpleString(ctx, "OK");
-                continue;
-            } else if (err) {
-                TO_STR(field);
-                char err_msg[120];
-
-                snprintf(err_msg, sizeof(err_msg), "%s; Failed to delete the field: \"%s\"", getSelvaErrorStr(err), field_str);
-                RedisModule_ReplyWithError(ctx, err_msg);
-                continue;
-            }
-        } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING ||
-                   type_code == SELVA_MODIFY_ARG_STRING) {
-            if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
-                RedisModule_ReplyWithSimpleString(ctx, "OK");
-                continue;
-            }
-
-            RedisModuleString *old_value;
-            if (old_type == SELVA_OBJECT_STRING && !SelvaObject_GetString(obj, field, &old_value)) {
-                TO_STR(old_value);
-
-                if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
-                    RedisModule_ReplyWithSimpleString(ctx, "OK");
-                    continue;
-                }
-            }
-
-            RedisModuleString *shared = Share_RMS(field_str, field_len, value);
-            if (shared) {
-                err = SelvaObject_SetString(obj, field, shared);
-                if (err) {
-                    RedisModule_FreeString(NULL, shared);
-                    replyWithSelvaErrorf(ctx, err, "Failed to set a shared string value");
-                    continue;
-                }
-            } else {
-                err = SelvaObject_SetString(obj, field, value);
-                if (err) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
-                    continue;
-                }
-                RedisModule_RetainString(ctx, value);
-            }
-        } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
-                   type_code == SELVA_MODIFY_ARG_LONGLONG) {
-            if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG && old_type != SELVA_OBJECT_NULL) {
-                RedisModule_ReplyWithSimpleString(ctx, "OK");
-                continue;
-            }
-
-            long long ll = 0;
-
-            if (value_len != sizeof(long long)) {
-                REPLY_WITH_ARG_TYPE_ERROR(ll);
-                continue;
-            }
-
-            memcpy(&ll, value_str, sizeof(ll));
-
-            long long old_value;
-            if (old_type == SELVA_OBJECT_LONGLONG && !SelvaObject_GetLongLong(obj, field, &old_value)) {
-                if (old_value == ll) {
-                    RedisModule_ReplyWithSimpleString(ctx, "OK");
-                    continue;
-                }
-            }
-
-            SelvaObject_SetLongLong(obj, field, ll);
-        } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE ||
-                   type_code == SELVA_MODIFY_ARG_DOUBLE) {
-            if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE && old_type != SELVA_OBJECT_NULL) {
-                RedisModule_ReplyWithSimpleString(ctx, "OK");
-                continue;
-            }
-
-            double d;
-
-            if (value_len != sizeof(double)) {
-                REPLY_WITH_ARG_TYPE_ERROR(d);
-                continue;
-            }
-
-            memcpy(&d, value_str, sizeof(d));
-
-            double old_value;
-            if (old_type == SELVA_OBJECT_DOUBLE && !SelvaObject_GetDouble(obj, field, &old_value)) {
-                if (old_value == d) {
-                    RedisModule_ReplyWithSimpleString(ctx, "OK");
-                    continue;
-                }
-            }
-
-            SelvaObject_SetDouble(obj, field, d);
-        } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-            enum selva_op_repl_state res;
-
-            res = handle_modify_arg_op_obj_meta(ctx, nodeId, obj, field, value);
-            if (res == SELVA_OP_REPL_STATE_REPLICATE) {
-                /*
-                 * This triplet needs to be replicated.
-                 * We replicate it regardless of any changes just in case for now
-                 * and we might stop replicate it later on when we are sure that
-                 * it isn't necessary.
-                 */
-                bitmap_set(replset, i / 3 - 1);
-            }
-            continue;
-        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
-            uint32_t item_type;
-            memcpy(&item_type, value_str, sizeof(uint32_t));
-
-            if (item_type == SELVA_OBJECT_OBJECT) {
-                /* object */
-                struct SelvaObject *new_obj = SelvaObject_New();
-                if (!new_obj) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
-                            (int)field_len, field_str);
-                    continue;
-                }
-
-                err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
-            } else {
-                has_push = 1;
-                err = 0;
-            }
-
-            if (err) {
-                replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
-                        (int)field_len, field_str);
-                continue;
-            }
-        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_INSERT) {
-            uint32_t item_type;
-            uint32_t insert_idx;
-
-            if (value_len != 2 * sizeof(uint32_t)) {
-                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: int[2]");
-                continue;
-            }
-
-            memcpy(&item_type, value_str, sizeof(uint32_t));
-            memcpy(&insert_idx, value_str + sizeof(uint32_t), sizeof(uint32_t));
-
-            if (item_type == SELVA_OBJECT_OBJECT) {
-                /* object */
-                struct SelvaObject *new_obj = SelvaObject_New();
-                if (!new_obj) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
-                            (int)field_len, field_str);
-                    continue;
-                }
-
-                err = SelvaObject_InsertArrayIndexStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, insert_idx, new_obj);
-            } else {
-                active_insert_idx = insert_idx;
-                err = 0;
-            }
-
-            if (err) {
-                replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
-                        (int)field_len, field_str);
-                continue;
-            }
-        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
-            uint32_t v;
-
-            if (value_len != sizeof(uint32_t)) {
-                REPLY_WITH_ARG_TYPE_ERROR(v);
-                continue;
-            }
-
-            memcpy(&v, value_str, sizeof(uint32_t));
-
-            err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v);
-            if (err) {
-                replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",
-                        (int)field_len, field_str);
-                continue;
-            }
         } else {
-            replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid type: \"%c\"", type_code);
-            continue;
+            repl_state = modify_op(ctx, hierarchy, nodeId, obj, type_code, field, value);
         }
 
-        /* This triplet needs to be replicated. */
-        bitmap_set(replset, i / 3 - 1);
+        if (repl_state == SELVA_OP_REPL_STATE_REPLICATE) {
+            /* This triplet needs to be replicated. */
+            bitmap_set(replset, i / 3 - 1);
 
-        /*
-         * Publish that the field was changed.
-         * Hierarchy handles events for parents and children.
-         */
-        if (strcmp(field_str, "parents") && strcmp(field_str, "children")) {
-            SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, field_str, field_len);
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+        } else if (repl_state == SELVA_OP_REPL_STATE_UPDATED) {
+            /* This triplet needs to be replicated. */
+            bitmap_set(replset, i / 3 - 1);
+
+            /*
+             * Publish that the field was changed.
+             * Hierarchy handles events for parents and children.
+             */
+            if (strcmp(field_str, "parents") && strcmp(field_str, "children")) {
+                SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, field_str, field_len);
+            }
+
+            RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
+            updated = true;
         }
-
-#if 0
-        fprintf(stderr, "%s:%d: Updated %.*s %s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, nodeId, field_str);
-#endif
-
-        RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
-        updated = true;
     }
 
     /*
@@ -806,7 +812,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 .$value_len = 0,
             };
 
-            err = SelvaModify_ModifySet(ctx, hierarchy, obj, id, aliases_field, &opSet);
+            err = SelvaModify_ModifySet(ctx, hierarchy, obj, nodeId, aliases_field, &opSet);
             if (err < 0) {
                 TO_STR(id);
 

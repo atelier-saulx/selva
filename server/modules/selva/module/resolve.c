@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include "redismodule.h"
+#include "selva.h"
 #include "alias.h"
 #include "arg_parser.h"
 #include "errors.h"
