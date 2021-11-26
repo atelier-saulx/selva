@@ -42,27 +42,27 @@ int delete_aliases(RedisModuleKey *aliases_key, struct SelvaSet *set) {
 /*
  * Caller must set the alias to the new node.
  */
-void update_alias(SelvaHierarchy *hierarchy, RedisModuleKey *alias_key, RedisModuleString *id, RedisModuleString *ref) {
-    RedisModuleString *orig = NULL;
+void update_alias(struct RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, RedisModuleKey *alias_key, const Selva_NodeId node_id, RedisModuleString *ref) {
+    RedisModuleString *old = NULL;
 
     /*
      * Remove the alias from the previous node.
      */
-    if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_NONE, ref, &orig, NULL)) {
-        if (orig) {
-            TO_STR(orig);
-            Selva_NodeId node_id;
-            struct SelvaHierarchyNode *node;
+    if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_NONE, ref, &old, NULL)) {
+        if (old) {
+            TO_STR(old);
+            Selva_NodeId old_node_id;
+            const struct SelvaHierarchyNode *old_node;
 
-            Selva_NodeIdCpy(node_id, orig_str);
-            node = SelvaHierarchy_FindNode(hierarchy, node_id);
-            if (node) {
-                struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+            Selva_NodeIdCpy(old_node_id, old_str);
+            old_node = SelvaHierarchy_FindNode(hierarchy, old_node_id);
+            if (old_node) {
+                struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(old_node);
 
                 SelvaObject_RemStringSetStr(obj, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD) - 1, ref);
             }
         }
     }
 
-    RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, ref, id, NULL);
+    RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, ref, RedisModule_CreateString(ctx, node_id, Selva_NodeIdLen(node_id)), NULL);
 }

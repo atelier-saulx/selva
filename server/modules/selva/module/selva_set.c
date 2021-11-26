@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include "cdefs.h"
+#include "selva.h"
 #include "errors.h"
 #include "redismodule.h"
 #include "alias.h"
