@@ -242,7 +242,7 @@ enum selva_op_repl_state handle_modify_arg_op_obj_meta(
     return SELVA_OP_REPL_STATE_REPLICATE;
 }
 
-static enum selva_op_repl_state modify_array_op(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct SelvaObject *obj, int active_insert_idx, int has_push, char type_code, RedisModuleString *field, RedisModuleString *value) {
+static enum selva_op_repl_state modify_array_op(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct SelvaObject *obj, int *active_insert_idx, int has_push, char type_code, RedisModuleString *field, RedisModuleString *value) {
     TO_STR(field, value);
     int idx = get_array_field_index(field_str, field_len);
     int new_len = get_array_field_start_idx(field_str, field_len);
@@ -261,9 +261,9 @@ static enum selva_op_repl_state modify_array_op(RedisModuleCtx *ctx, Selva_NodeI
     if (type_code == SELVA_MODIFY_ARG_STRING) {
         int err;
 
-        if (active_insert_idx == idx) {
+        if (*active_insert_idx == idx) {
             err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
-            active_insert_idx = -1;
+            *active_insert_idx = -1;
         } else {
             err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_STRING, idx, value);
         }
@@ -291,9 +291,9 @@ static enum selva_op_repl_state modify_array_op(RedisModuleCtx *ctx, Selva_NodeI
 
         memcpy(v.s, value_str, sizeof(v.d));
 
-        if (active_insert_idx == idx) {
+        if (*active_insert_idx == idx) {
             err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, v.p);
-            active_insert_idx = -1;
+            *active_insert_idx = -1;
         } else {
             err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_DOUBLE, idx, v.p);
         }
@@ -319,9 +319,9 @@ static enum selva_op_repl_state modify_array_op(RedisModuleCtx *ctx, Selva_NodeI
 
         memcpy(v.s, value_str, sizeof(v.ll));
 
-        if (active_insert_idx == idx) {
+        if (*active_insert_idx == idx) {
             err = SelvaObject_InsertArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, v.p);
-            active_insert_idx = -1;
+            *active_insert_idx = -1;
         } else {
             err = SelvaObject_AssignArrayIndexStr(obj, field_str, new_len, SELVA_OBJECT_LONGLONG, idx, v.p);
         }
@@ -681,7 +681,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         enum selva_op_repl_state repl_state = SELVA_OP_REPL_STATE_UNCHANGED;
 
         if (is_array_field(field_str, field_len)) {
-            repl_state = modify_array_op(ctx, nodeId, obj, active_insert_idx, has_push, type_code, field, value);
+            repl_state = modify_array_op(ctx, nodeId, obj, &active_insert_idx, has_push, type_code, field, value);
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
             TO_STR(value);
             uint32_t item_type;
