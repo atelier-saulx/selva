@@ -349,7 +349,7 @@ static int add_set_values(
     SelvaHierarchy *hierarchy,
     RedisModuleKey *alias_key,
     struct SelvaObject *obj,
-    Selva_NodeId node_id,
+    const Selva_NodeId node_id,
     const RedisModuleString *field,
     const char *value_ptr,
     size_t value_len,
@@ -677,7 +677,7 @@ static int update_set(
     RedisModuleCtx *ctx,
     SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
-    Selva_NodeId node_id,
+    const Selva_NodeId node_id,
     const RedisModuleString *field,
     const struct SelvaModify_OpSet *setOpts
 ) {
@@ -735,7 +735,7 @@ int SelvaModify_ModifySet(
     RedisModuleCtx *ctx,
     SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
-    Selva_NodeId node_id,
+    const Selva_NodeId node_id,
     const RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
@@ -857,7 +857,7 @@ int SelvaModify_ModifyDel(
     RedisModuleCtx *ctx,
     SelvaHierarchy *hierarchy,
     struct SelvaObject *obj,
-    Selva_NodeId node_id,
+    const Selva_NodeId node_id,
     const RedisModuleString *field
 ) {
     TO_STR(field);

@@ -14,7 +14,7 @@ void update_alias(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct RedisModuleKey *alias_key,
-        Selva_NodeId node_id,
+        const Selva_NodeId node_id,
         struct RedisModuleString *ref);
 
 #endif /* SELVA_ALIAS_H */
