@@ -67,8 +67,9 @@ struct SelvaModify_OpSet {
 int SelvaModify_ModifySet(
     struct RedisModuleCtx *ctx,
     struct SelvaHierarchy *hierarchy,
-    struct SelvaObject *obj,
     const Selva_NodeId node_id,
+    struct SelvaHierarchyNode *node,
+    struct SelvaObject *obj,
     const struct RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 );
@@ -76,9 +77,9 @@ int SelvaModify_ModifySet(
 int SelvaModify_ModifyDel(
     struct RedisModuleCtx *ctx,
     struct SelvaHierarchy *hierarchy,
+    struct SelvaHierarchyNode *node,
     struct SelvaObject *obj,
-    const Selva_NodeId node_id,
-    const struct RedisModuleString *field
+    const RedisModuleString *field
 );
 
 #endif /* SELVA_MODIFY_H */

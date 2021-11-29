@@ -224,15 +224,14 @@ struct SelvaHierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
 ssize_t SelvaModify_GetHierarchyDepth(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 #endif
 
-int SelvaModify_DelHierarchyChildren(
+void SelvaHierarchy_DelChildren(
         struct RedisModuleCtx *ctx,
-        SelvaHierarchy *hierarchy,
-        const Selva_NodeId id);
-
-int SelvaModify_DelHierarchyParents(
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node);
+void SelvaHierarchy_DelParents(
         struct RedisModuleCtx *ctx,
-        SelvaHierarchy *hierarchy,
-        const Selva_NodeId id);
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node);
 
 /**
  * Set node relationships relative to other existing nodes.

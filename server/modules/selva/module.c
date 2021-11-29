@@ -212,7 +212,6 @@ static void parse_alias_query(RedisModuleString **argv, int argc, SVector *out) 
 
 enum selva_op_repl_state handle_modify_arg_op_obj_meta(
         RedisModuleCtx *ctx,
-        Selva_NodeId nodeId,
         struct SelvaObject *obj,
         const RedisModuleString *field,
         const RedisModuleString *value) {
@@ -229,8 +228,7 @@ enum selva_op_repl_state handle_modify_arg_op_obj_meta(
     memcpy(&new_user_meta, value_str, sizeof(SelvaObjectMeta_t));
     err = SelvaObject_SetUserMeta(obj, field, new_user_meta, &old_user_meta);
     if (err) {
-        replyWithSelvaErrorf(ctx, err, "Failed to set key metadata (%.*s.%s)",
-                (int)SELVA_NODE_ID_SIZE, nodeId,
+        replyWithSelvaErrorf(ctx, err, "Failed to set key metadata (%s)",
                 RedisModule_StringPtrLen(field, NULL));
         return SELVA_OP_REPL_STATE_UNCHANGED;
     }
@@ -242,10 +240,18 @@ enum selva_op_repl_state handle_modify_arg_op_obj_meta(
     return SELVA_OP_REPL_STATE_REPLICATE;
 }
 
-static enum selva_op_repl_state modify_array_op(RedisModuleCtx *ctx, Selva_NodeId nodeId, struct SelvaObject *obj, int *active_insert_idx, int has_push, char type_code, RedisModuleString *field, RedisModuleString *value) {
+static enum selva_op_repl_state modify_array_op(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchyNode *node,
+        int *active_insert_idx,
+        int has_push,
+        char type_code,
+        RedisModuleString *field,
+        RedisModuleString *value) {
     TO_STR(field, value);
     int idx = get_array_field_index(field_str, field_len);
     int new_len = get_array_field_start_idx(field_str, field_len);
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
 
     if (idx == -1) {
         const int ary_len = (int)SelvaObject_GetArrayLenStr(obj, field_str, new_len);
@@ -331,7 +337,7 @@ static enum selva_op_repl_state modify_array_op(RedisModuleCtx *ctx, Selva_NodeI
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-        return handle_modify_arg_op_obj_meta(ctx, nodeId, obj, field, value);
+        return handle_modify_arg_op_obj_meta(ctx, obj, field, value);
     } else {
         replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
         return SELVA_OP_REPL_STATE_UNCHANGED;
@@ -340,7 +346,15 @@ static enum selva_op_repl_state modify_array_op(RedisModuleCtx *ctx, Selva_NodeI
     return SELVA_OP_REPL_STATE_UPDATED;
 }
 
-static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, Selva_NodeId nodeId, struct SelvaObject *obj, char type_code, RedisModuleString *field, RedisModuleString *value) {
+static enum selva_op_repl_state modify_op(
+        RedisModuleCtx *ctx,
+        SelvaHierarchy *hierarchy,
+        Selva_NodeId nodeId,
+        struct SelvaHierarchyNode *node,
+        char type_code,
+        RedisModuleString *field,
+        RedisModuleString *value) {
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
     TO_STR(field, value);
 
     if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
@@ -371,7 +385,7 @@ static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *h
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
 
-        err = SelvaModify_ModifySet(ctx, hierarchy, obj, nodeId, field, setOpts);
+        err = SelvaModify_ModifySet(ctx, hierarchy, nodeId, node, obj, field, setOpts);
         if (err == 0) {
             RedisModule_ReplyWithSimpleString(ctx, "OK");
             return SELVA_OP_REPL_STATE_UNCHANGED;
@@ -382,7 +396,7 @@ static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *h
     } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
         int err;
 
-        err = SelvaModify_ModifyDel(ctx, hierarchy, obj, nodeId, field);
+        err = SelvaModify_ModifyDel(ctx, hierarchy, node, obj, field);
         if (err == SELVA_ENOENT) {
             /* No need to replicate. */
             RedisModule_ReplyWithSimpleString(ctx, "OK");
@@ -481,7 +495,7 @@ static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *h
 
         SelvaObject_SetDouble(obj, field, d);
     } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-        return handle_modify_arg_op_obj_meta(ctx, nodeId, obj, field, value);
+        return handle_modify_arg_op_obj_meta(ctx, obj, field, value);
     } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
         uint32_t v;
         int err;
@@ -532,7 +546,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     SelvaHierarchy *hierarchy;
     RedisModuleString *id = NULL;
     RedisModuleKey *id_key = NULL;
-    struct SelvaObject *obj = NULL;
     SVECTOR_AUTOFREE(alias_query);
     int trigger_created = 0; /* Will be set to 1 if the node was created during this command. */
     bool new_alias = false; /* Set if $alias will be creating new alias(es). */
@@ -613,7 +626,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     Selva_NodeId nodeId;
-    const struct SelvaHierarchyNode *node;
+    struct SelvaHierarchyNode *node;
     const unsigned flags = parse_flags(argv[2]);
 
     Selva_RMString2NodeId(nodeId, id);
@@ -644,11 +657,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return REDISMODULE_OK;
     }
 
-    obj = SelvaHierarchy_GetNodeObject(node);
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {
-        SelvaNode_ClearFields(obj);
+        SelvaNode_ClearFields(SelvaHierarchy_GetNodeObject(node));
     }
 
     /*
@@ -689,7 +701,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         enum selva_op_repl_state repl_state = SELVA_OP_REPL_STATE_UNCHANGED;
 
         if (is_array_field(field_str, field_len)) {
-            repl_state = modify_array_op(ctx, nodeId, obj, &active_insert_idx, has_push, type_code, field, value);
+            repl_state = modify_array_op(ctx, node, &active_insert_idx, has_push, type_code, field, value);
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
             TO_STR(value);
             uint32_t item_type;
@@ -701,6 +713,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             memcpy(&item_type, value_str, sizeof(uint32_t));
             if (item_type == SELVA_OBJECT_OBJECT) {
+                struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
                 struct SelvaObject *new_obj;
                 int err;
 
@@ -736,8 +749,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             memcpy(&insert_idx, value_str + sizeof(uint32_t), sizeof(uint32_t));
 
             if (item_type == SELVA_OBJECT_OBJECT) {
-                int err;
+                struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
                 struct SelvaObject *new_obj = SelvaObject_New();
+                int err;
 
                 if (!new_obj) {
                     replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to push new object to array index (%.*s.%s)",
@@ -773,7 +787,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             bitmap_set(replset, i / 3 - 1);
             continue;
         } else {
-            repl_state = modify_op(ctx, hierarchy, nodeId, obj, type_code, field, value);
+            repl_state = modify_op(ctx, hierarchy, nodeId, node, type_code, field, value);
         }
 
         if (repl_state == SELVA_OP_REPL_STATE_REPLICATE) {
@@ -804,6 +818,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * query.
      */
     if (SVector_Size(&alias_query) > 0) {
+        struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
         RedisModuleString *aliases_field = RedisModule_CreateString(ctx, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD) - 1);
         struct SVectorIterator it;
         char *alias;
@@ -820,7 +835,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 .$value_len = 0,
             };
 
-            err = SelvaModify_ModifySet(ctx, hierarchy, obj, nodeId, aliases_field, &opSet);
+            err = SelvaModify_ModifySet(ctx, hierarchy, nodeId, node, obj, aliases_field, &opSet);
             if (err < 0) {
                 TO_STR(id);
 
@@ -836,6 +851,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     if (updated) {
+        struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
         struct timespec ts;
 
         clock_gettime(CLOCK_REALTIME, &ts);
