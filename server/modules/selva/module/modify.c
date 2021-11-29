@@ -159,18 +159,12 @@ static int update_hierarchy(
 static int update_edge(
     RedisModuleCtx *ctx,
     SelvaHierarchy *hierarchy,
-    const Selva_NodeId node_id,
+    struct SelvaHierarchyNode *node,
     const RedisModuleString *field,
     const struct SelvaModify_OpSet *setOpts
 ) {
-    struct SelvaHierarchyNode *node;
     const unsigned constraint_id = setOpts->edge_constraint_id;
     TO_STR(field);
-
-    node = SelvaHierarchy_FindNode(hierarchy, node_id);
-    if (unlikely(!node)) {
-        return SELVA_ENOENT;
-    }
 
     if (setOpts->$value_len > 0) {
         int res = 0;
@@ -734,8 +728,9 @@ static int update_set(
 int SelvaModify_ModifySet(
     RedisModuleCtx *ctx,
     SelvaHierarchy *hierarchy,
-    struct SelvaObject *obj,
     const Selva_NodeId node_id,
+    struct SelvaHierarchyNode *node,
+    struct SelvaObject *obj,
     const RedisModuleString *field,
     struct SelvaModify_OpSet *setOpts
 ) {
@@ -747,26 +742,25 @@ int SelvaModify_ModifySet(
 
         if (setOpts->delete_all) {
             /* If delete_all is set the other fields are ignored. */
-            int err;
-
             if (isChildren) {
-                err = SelvaModify_DelHierarchyChildren(ctx, hierarchy, node_id);
+                SelvaHierarchy_DelChildren(ctx, hierarchy, node);
+                /* TODO We'd potentially want to see the real number of deletions here. */
+                return 1;
             } else if (isParents) {
-                err = SelvaModify_DelHierarchyParents(ctx, hierarchy, node_id);
+                SelvaHierarchy_DelParents(ctx, hierarchy, node);
+                /* TODO We'd potentially want to see the real number of deletions here. */
+                return 1;
             } else {
-                err = Edge_ClearField(ctx, hierarchy, SelvaHierarchy_FindNode(hierarchy, node_id), field_str, field_len);
+                int err;
+
+                err = Edge_ClearField(ctx, hierarchy, node, field_str, field_len);
                 if (err >= 0) {
                     return err;
+                } else if (err == SELVA_ENOENT || err == SELVA_HIERARCHY_ENOENT) {
+                    return 0;
+                } else {
+                    return err;
                 }
-            }
-
-            /* TODO We'd potentially want to see the real number of deletions here. */
-            if (err == 0) {
-                return 1;
-            } else if (err == SELVA_ENOENT || err == SELVA_HIERARCHY_ENOENT) {
-                return 0;
-            } else {
-                return err;
             }
         } else if (isChildren || isParents) {
             return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
@@ -775,7 +769,7 @@ int SelvaModify_ModifySet(
              * Other graph fields are dynamic and implemented separately
              * from hierarchy.
              */
-            return update_edge(ctx, hierarchy, node_id, field, setOpts);
+            return update_edge(ctx, hierarchy, node, field, setOpts);
         }
     } else {
         if (setOpts->delete_all) {
@@ -819,67 +813,21 @@ int SelvaModify_ModifySet(
     }
 }
 
-void SelvaModify_ModifyIncrement(
-    struct SelvaObject *obj,
-    const RedisModuleString *field,
-    enum SelvaObjectType old_type,
-    const struct SelvaModify_OpIncrement *incrementOpts
-) {
-    /*
-     * Note: Do not cast the $increment or $default.
-     */
-    if (old_type == SELVA_OBJECT_LONGLONG) {
-        /*
-         * Giving a default value here isn't particularly useful but since we
-         * already know the type it's better to do this if..else anyway.
-         */
-        (void)SelvaObject_IncrementLongLong(obj, field, incrementOpts->$default, incrementOpts->$increment);
-    } else {
-        (void)SelvaObject_SetLongLong(obj, field, incrementOpts->$default);
-    }
-}
-
-void SelvaModify_ModifyIncrementDouble(
-    RedisModuleCtx *ctx __unused,
-    struct SelvaObject *obj,
-    const RedisModuleString *field,
-    enum SelvaObjectType old_type,
-    const struct SelvaModify_OpIncrementDouble *incrementOpts
-) {
-    if (old_type == SELVA_OBJECT_DOUBLE) {
-        (void)SelvaObject_IncrementDouble(obj, field, incrementOpts->$default, incrementOpts->$increment);
-    } else {
-        (void)SelvaObject_SetDouble(obj, field, incrementOpts->$default);
-    }
-}
-
 int SelvaModify_ModifyDel(
     RedisModuleCtx *ctx,
     SelvaHierarchy *hierarchy,
+    struct SelvaHierarchyNode *node,
     struct SelvaObject *obj,
-    const Selva_NodeId node_id,
     const RedisModuleString *field
 ) {
     TO_STR(field);
     int err = 0;
 
     if (!strcmp(field_str, "children")) {
-        err = SelvaModify_DelHierarchyChildren(ctx, hierarchy, node_id);
-        if (err) {
-            return err;
-        }
+        SelvaHierarchy_DelChildren(ctx, hierarchy, node);
     } else if (!strcmp(field_str, "parents")) {
-        if (!SelvaModify_DelHierarchyParents(ctx, hierarchy, node_id)) {
-            err = REDISMODULE_ERR;
-        }
+        SelvaHierarchy_DelParents(ctx, hierarchy, node);
     } else { /* It's either an edge field or an object field. */
-        struct SelvaHierarchyNode *node;
-
-        node = SelvaHierarchy_FindNode(hierarchy, node_id);
-        if (!node) {
-            return SELVA_ENOENT; /* Unlikely */
-        }
-
         err = Edge_DeleteField(ctx, hierarchy, node, field_str, field_len);
         if (err == SELVA_ENOENT) {
             /* Finally let's try if it's an object field. */

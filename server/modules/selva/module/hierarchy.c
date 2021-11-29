@@ -1095,36 +1095,18 @@ static void removeRelationships(
      */
 }
 
-int SelvaModify_DelHierarchyChildren(
+void SelvaHierarchy_DelChildren(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
-        const Selva_NodeId id) {
-    SelvaHierarchyNode *node;
-
-    node  = SelvaHierarchy_FindNode(hierarchy, id);
-    if (!node) {
-        return SELVA_HIERARCHY_ENOENT;
-    }
-
+        SelvaHierarchyNode *node) {
     removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
-
-    return 0;
 }
 
-int SelvaModify_DelHierarchyParents(
+void SelvaHierarchy_DelParents(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
-        const Selva_NodeId id) {
-    SelvaHierarchyNode *node;
-
-    node = SelvaHierarchy_FindNode(hierarchy, id);
-    if (!node) {
-        return SELVA_HIERARCHY_ENOENT;
-    }
-
+        SelvaHierarchyNode *node) {
     removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
-
-    return 0;
 }
 
 int SelvaModify_SetHierarchy(
