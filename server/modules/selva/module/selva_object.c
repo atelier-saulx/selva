@@ -929,6 +929,7 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
     }
 
     if (key->type == SELVA_OBJECT_NULL) {
+        key->type = SELVA_OBJECT_DOUBLE;
         key->emb_double_value = default_value;
     } else if (key->type == SELVA_OBJECT_DOUBLE) {
         key->emb_double_value += incr;
@@ -957,6 +958,7 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
     }
 
     if (key->type == SELVA_OBJECT_NULL) {
+        key->type = SELVA_OBJECT_LONGLONG;
         key->emb_ll_value = default_value;
     } else if (key->type == SELVA_OBJECT_LONGLONG) {
         key->emb_ll_value += incr;
