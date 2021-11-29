@@ -388,11 +388,7 @@ static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *h
             RedisModule_ReplyWithSimpleString(ctx, "OK");
             return SELVA_OP_REPL_STATE_UNCHANGED;
         } else if (err) {
-            TO_STR(field);
-            char err_msg[120];
-
-            snprintf(err_msg, sizeof(err_msg), "%s; Failed to delete the field: \"%s\"", getSelvaErrorStr(err), field_str);
-            RedisModule_ReplyWithError(ctx, err_msg);
+            replyWithSelvaErrorf(ctx, err, "Failed to delete the field: \"%.*s\"", (int)field_len, field_str);
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING ||
