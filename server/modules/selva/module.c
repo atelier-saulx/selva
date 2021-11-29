@@ -349,7 +349,7 @@ static enum selva_op_repl_state modify_array_op(
 static enum selva_op_repl_state modify_op(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
-        Selva_NodeId nodeId,
+        const Selva_NodeId nodeId,
         struct SelvaHierarchyNode *node,
         char type_code,
         RedisModuleString *field,
