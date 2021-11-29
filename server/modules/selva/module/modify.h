@@ -73,21 +73,6 @@ int SelvaModify_ModifySet(
     struct SelvaModify_OpSet *setOpts
 );
 
-void SelvaModify_ModifyIncrement(
-    struct SelvaObject *obj,
-    const struct RedisModuleString *field,
-    enum SelvaObjectType old_type,
-    const struct SelvaModify_OpIncrement *incrementOpts
-);
-
-void SelvaModify_ModifyIncrementDouble(
-    struct RedisModuleCtx *ctx,
-    struct SelvaObject *obj,
-    const struct RedisModuleString *field,
-    enum SelvaObjectType old_type,
-    const struct SelvaModify_OpIncrementDouble *incrementOpts
-);
-
 int SelvaModify_ModifyDel(
     struct RedisModuleCtx *ctx,
     struct SelvaHierarchy *hierarchy,

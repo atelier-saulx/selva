@@ -819,40 +819,6 @@ int SelvaModify_ModifySet(
     }
 }
 
-void SelvaModify_ModifyIncrement(
-    struct SelvaObject *obj,
-    const RedisModuleString *field,
-    enum SelvaObjectType old_type,
-    const struct SelvaModify_OpIncrement *incrementOpts
-) {
-    /*
-     * Note: Do not cast the $increment or $default.
-     */
-    if (old_type == SELVA_OBJECT_LONGLONG) {
-        /*
-         * Giving a default value here isn't particularly useful but since we
-         * already know the type it's better to do this if..else anyway.
-         */
-        (void)SelvaObject_IncrementLongLong(obj, field, incrementOpts->$default, incrementOpts->$increment);
-    } else {
-        (void)SelvaObject_SetLongLong(obj, field, incrementOpts->$default);
-    }
-}
-
-void SelvaModify_ModifyIncrementDouble(
-    RedisModuleCtx *ctx __unused,
-    struct SelvaObject *obj,
-    const RedisModuleString *field,
-    enum SelvaObjectType old_type,
-    const struct SelvaModify_OpIncrementDouble *incrementOpts
-) {
-    if (old_type == SELVA_OBJECT_DOUBLE) {
-        (void)SelvaObject_IncrementDouble(obj, field, incrementOpts->$default, incrementOpts->$increment);
-    } else {
-        (void)SelvaObject_SetDouble(obj, field, incrementOpts->$default);
-    }
-}
-
 int SelvaModify_ModifyDel(
     RedisModuleCtx *ctx,
     SelvaHierarchy *hierarchy,

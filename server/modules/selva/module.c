@@ -341,17 +341,26 @@ static enum selva_op_repl_state modify_array_op(RedisModuleCtx *ctx, Selva_NodeI
 }
 
 static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, Selva_NodeId nodeId, struct SelvaObject *obj, char type_code, RedisModuleString *field, RedisModuleString *value) {
-    const enum SelvaObjectType old_type = SelvaObject_GetType(obj, field);
     TO_STR(field, value);
 
     if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
         const struct SelvaModify_OpIncrement *incrementOpts = (const struct SelvaModify_OpIncrement *)value_str;
+        int err;
 
-        SelvaModify_ModifyIncrement(obj, field, old_type, incrementOpts);
+        err = SelvaObject_IncrementLongLong(obj, field, incrementOpts->$default, incrementOpts->$increment);
+        if (err) {
+            replyWithSelvaError(ctx, err);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
     } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE) {
         const struct SelvaModify_OpIncrementDouble *incrementOpts = (const struct SelvaModify_OpIncrementDouble*)value_str;
+        int err;
 
-        SelvaModify_ModifyIncrementDouble(ctx, obj, field, old_type, incrementOpts);
+        err = SelvaObject_IncrementDouble(obj, field, incrementOpts->$default, incrementOpts->$increment);
+        if (err) {
+            replyWithSelvaError(ctx, err);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
     } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
         struct SelvaModify_OpSet *setOpts;
         int err;
@@ -388,6 +397,7 @@ static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *h
         }
     } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING ||
             type_code == SELVA_MODIFY_ARG_STRING) {
+        const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
         RedisModuleString *old_value;
         RedisModuleString *shared;
         int err;
@@ -424,12 +434,14 @@ static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *h
         }
     } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
             type_code == SELVA_MODIFY_ARG_LONGLONG) {
+        const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
+        long long old_value;
+        long long ll = 0;
+
         if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG && old_type != SELVA_OBJECT_NULL) {
             RedisModule_ReplyWithSimpleString(ctx, "OK");
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
-
-        long long ll = 0;
 
         if (value_len != sizeof(long long)) {
             REPLY_WITH_ARG_TYPE_ERROR(ll);
@@ -438,7 +450,6 @@ static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *h
 
         memcpy(&ll, value_str, sizeof(ll));
 
-        long long old_value;
         if (old_type == SELVA_OBJECT_LONGLONG && !SelvaObject_GetLongLong(obj, field, &old_value)) {
             if (old_value == ll) {
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
@@ -449,12 +460,14 @@ static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *h
         SelvaObject_SetLongLong(obj, field, ll);
     } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE ||
             type_code == SELVA_MODIFY_ARG_DOUBLE) {
+        const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
+        double old_value;
+        double d = 0.0;
+
         if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE && old_type != SELVA_OBJECT_NULL) {
             RedisModule_ReplyWithSimpleString(ctx, "OK");
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
-
-        double d;
 
         if (value_len != sizeof(double)) {
             REPLY_WITH_ARG_TYPE_ERROR(d);
@@ -463,7 +476,6 @@ static enum selva_op_repl_state modify_op(RedisModuleCtx *ctx, SelvaHierarchy *h
 
         memcpy(&d, value_str, sizeof(d));
 
-        double old_value;
         if (old_type == SELVA_OBJECT_DOUBLE && !SelvaObject_GetDouble(obj, field, &old_value)) {
             if (old_value == d) {
                 RedisModule_ReplyWithSimpleString(ctx, "OK");
