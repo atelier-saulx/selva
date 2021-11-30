@@ -85,7 +85,10 @@ export default async function execTimeseries(
     ])
 
     const ts = Number(readLongLong(_ts))
-    ctx.meta.hasTimeseries = Math.max(ctx.meta.hasTimeseries || 0, ts)
+
+    if (ctx?.meta) {
+      ctx.meta.hasTimeseries = Math.max(ctx.meta.hasTimeseries || 0, ts)
+    }
 
     // console.log(
     //   'NOT FIRST EVAL OF TIMESERIES, GETTING CURRENT VALUE',
