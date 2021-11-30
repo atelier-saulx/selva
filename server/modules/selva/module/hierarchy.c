@@ -3093,6 +3093,63 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     return REDISMODULE_OK;
 }
 
+/*
+ * Get metadata of an edge.
+ *
+ * Reply format:
+ * SelvaObject
+ */
+int SelvaHierarchy_EdgeGetMetadataCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    Selva_NodeId src_node_id;
+    const RedisModuleString *field_name;
+    Selva_NodeId dst_node_id;
+    int err;
+
+    if (argc != 5) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    Selva_RMString2NodeId(src_node_id, argv[2]);
+    field_name = argv[3];
+    Selva_RMString2NodeId(dst_node_id, argv[4]);
+    TO_STR(field_name);
+
+    /*
+     * Open the Redis key.
+     */
+    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[1], REDISMODULE_READ);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
+    }
+
+    /*
+     * Find the node.
+     */
+    SelvaHierarchyNode *src_node = SelvaHierarchy_FindNode(hierarchy, src_node_id);
+    if (!src_node) {
+        return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
+    }
+
+    struct EdgeField *edge_field;
+    edge_field = Edge_GetField(src_node, field_name_str, field_name_len);
+    if (!edge_field) {
+        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "Edge field not found");
+    }
+
+    struct SelvaObject *edge_metadata;
+    err = Edge_GetFieldEdgeMetadata(edge_field, dst_node_id, 0, &edge_metadata);
+    if (err == SELVA_ENOENT) {
+        return RedisModule_ReplyWithNull(ctx);
+    } else if (err) { /* Also if the edge doesn't exist. */
+        return replyWithSelvaError(ctx, err);
+    }
+
+    SelvaObject_ReplyWithObject(ctx, NULL, edge_metadata, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+
+    return REDISMODULE_OK;
+}
+
 int SelvaHierarchy_CompressCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     int err;
@@ -3217,6 +3274,7 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         RedisModule_CreateCommand(ctx, "selva.hierarchy.children", SelvaHierarchy_ChildrenCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.edgelist", SelvaHierarchy_EdgeListCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.edgeget", SelvaHierarchy_EdgeGetCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.edgegetmetadata", SelvaHierarchy_EdgeGetMetadataCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.compress", SelvaHierarchy_CompressCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.listcompressed", SelvaHierarchy_ListCompressedCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;

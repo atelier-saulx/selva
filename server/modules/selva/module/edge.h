@@ -174,11 +174,22 @@ struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *node, const cha
 struct SelvaObject *Edge_GetFieldMetadata(struct EdgeField *edge_field, int create);
 
 /**
+ * Get a pointer to the metadata of an edge in the EdgeField.
+ */
+int Edge_GetFieldEdgeMetadata(struct EdgeField *edge_field, const Selva_NodeId dst_node_id, int create, struct SelvaObject **out);
+
+/**
+ * Delete all metadata from edge_field.
+ */
+void Edge_DeleteFieldMetadata(struct EdgeField *edge_field);
+
+/**
  * Check if an EdgeField has a reference to dst_node.
  * @returns 0 = not found;
  *          1 = found.
  */
 int Edge_Has(const struct EdgeField *edge_field, struct SelvaHierarchyNode *dst_node);
+int Edge_HasNodeId(const struct EdgeField *edge_field, const Selva_NodeId dst_node_id);
 
 /**
  * Add a new edge.

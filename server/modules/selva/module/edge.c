@@ -153,6 +153,44 @@ struct SelvaObject *Edge_GetFieldMetadata(struct EdgeField *edge_field, int crea
     return edge_field->metadata;
 }
 
+int Edge_GetFieldEdgeMetadata(struct EdgeField *edge_field, const Selva_NodeId dst_node_id, int create, struct SelvaObject **out) {
+    struct SelvaObject *edge_field_metadata;
+    struct SelvaObject *edge_metadata = NULL;
+    int err;
+
+    if (!Edge_HasNodeId(edge_field, dst_node_id)) {
+        return SELVA_HIERARCHY_ENOENT;
+    }
+
+    edge_field_metadata = Edge_GetFieldMetadata(edge_field, create);
+    if (!edge_field_metadata) {
+        return create ? SELVA_ENOMEM : SELVA_ENOENT;
+    }
+
+    err = SelvaObject_GetObjectStr(edge_field_metadata, dst_node_id, SELVA_NODE_ID_SIZE, &edge_metadata);
+    if (err == SELVA_ENOENT) {
+        if (!create) {
+            return SELVA_ENOENT;
+        }
+
+        edge_metadata = SelvaObject_New();
+        err = SelvaObject_SetObjectStr(edge_field_metadata, dst_node_id, SELVA_NODE_ID_SIZE, edge_metadata);
+        if (err) {
+            SelvaObject_Destroy(edge_metadata);
+            return err;
+        }
+    } else if (err) {
+        return err;
+    }
+
+    *out = edge_metadata;
+    return 0;
+}
+
+void Edge_DeleteFieldMetadata(struct EdgeField *edge_field) {
+    SelvaObject_Destroy(edge_field->metadata);
+}
+
 /**
  * Create a new edge field and store it on the hierarchy node.
  */
@@ -282,6 +320,13 @@ int Edge_Usage(const struct SelvaHierarchyNode *node) {
 
 int Edge_Has(const struct EdgeField *edge_field, struct SelvaHierarchyNode *dst_node) {
     return SVector_SearchIndex(&edge_field->arcs, dst_node) >= 0;
+}
+
+int Edge_HasNodeId(const struct EdgeField *edge_field, const Selva_NodeId dst_node_id) {
+    Selva_NodeId node_id;
+
+    memcpy(node_id, dst_node_id, SELVA_NODE_ID_SIZE);
+    return SVector_SearchIndex(&edge_field->arcs, node_id) >= 0;
 }
 
 /* RFE Optimize by taking edgeField as an arg. */
