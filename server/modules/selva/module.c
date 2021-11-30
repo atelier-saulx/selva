@@ -43,7 +43,7 @@
  * Modify op arg handler status.
  */
 enum selva_op_repl_state {
-    SELVA_OP_REPL_STATE_UNCHANGED,  /*!< No changes, do not replicate, reply with OK */
+    SELVA_OP_REPL_STATE_UNCHANGED,  /*!< No changes, do not replicate, reply with OK or ERR. */
     SELVA_OP_REPL_STATE_UPDATED,    /*!< Value changed, replicate, reply with UPDATED */
     SELVA_OP_REPL_STATE_REPLICATE,  /*!< Value might have changed, replicate, reply with OK */
 };
@@ -162,6 +162,38 @@ static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, co
           ((!op->$delete && op->$delete_len == 0) || (in_mem_range(op->$delete, op, data_len) && in_mem_range(op->$delete + op->$delete_len - 1,  op, data_len))) &&
           ((!op->$value  && op->$value_len == 0)  || (in_mem_range(op->$value,  op, data_len) && in_mem_range(op->$value  + op->$value_len  - 1,  op, data_len)))
        )) {
+        return NULL;
+    }
+
+    return op;
+}
+
+static struct SelvaModify_OpEdgeMeta *SelvaModify_OpEdgeMeta_align(RedisModuleCtx *ctx, const struct RedisModuleString *data) {
+    TO_STR(data);
+    struct SelvaModify_OpEdgeMeta *op;
+
+    /* TODO Support __ORDER_BIG_ENDIAN__ */
+    _Static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Only little endian host is supported");
+
+    if (!data_str && data_len < sizeof(struct SelvaModify_OpEdgeMeta)) {
+        return NULL;
+    }
+
+    op = RedisModule_PoolAlloc(ctx, data_len);
+    if (!op) {
+        return NULL;
+    }
+
+    memcpy(op, data_str, data_len);
+    if (!op->meta_field_name_str || !op->meta_field_value_str) {
+        return NULL;
+    }
+
+    op->meta_field_name_str = ((char *)op + (ptrdiff_t)op->meta_field_name_str);
+    op->meta_field_value_str = ((char *)op + (ptrdiff_t)op->meta_field_value_str);
+
+    if (!((in_mem_range(op->meta_field_name_str, op, data_len) && in_mem_range(op->meta_field_name_str + op->meta_field_name_len, op, data_len))) &&
+         ((in_mem_range(op->meta_field_value_str, op, data_len) && in_mem_range(op->meta_field_value_str + op->meta_field_value_len, op, data_len)))) {
         return NULL;
     }
 
@@ -524,6 +556,160 @@ static enum selva_op_repl_state modify_op(
     return SELVA_OP_REPL_STATE_UPDATED;
 }
 
+static enum selva_op_repl_state modify_edge_meta_op(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchyNode *node,
+        RedisModuleString *field,
+        RedisModuleString *raw_value) {
+    TO_STR(field);
+    struct EdgeField *edge_field;
+    struct SelvaObject *edge_metadata;
+    struct SelvaModify_OpEdgeMeta *op;
+    enum SelvaModify_OpEdgetMetaCode op_code;
+
+    edge_field = Edge_GetField(node, field_str, field_len);
+    if (!edge_field) {
+        replyWithSelvaErrorf(ctx, SELVA_ENOENT, "Edge field not found");
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
+    op = SelvaModify_OpEdgeMeta_align(ctx, raw_value);
+    if (!op) {
+        replyWithSelvaError(ctx, SELVA_EINVAL);
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
+    if (op->delete_all) {
+        Edge_DeleteFieldMetadata(edge_field);
+        return SELVA_OP_REPL_STATE_UPDATED;
+    }
+
+    edge_metadata = Edge_GetFieldMetadata(edge_field, 1);
+    if (!edge_metadata) {
+        replyWithSelvaError(ctx, SELVA_ENOMEM);
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
+    op_code = op->op_code;
+    if (op_code == SELVA_MODIFY_OP_EDGE_META_DEFAULT_STRING ||
+        op_code == SELVA_MODIFY_OP_EDGE_META_STRING) {
+        const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len);
+        RedisModuleString *old_value;
+        RedisModuleString *meta_field_value;
+        int err;
+
+        if (op_code == SELVA_MODIFY_OP_EDGE_META_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        if (old_type == SELVA_OBJECT_STRING && !SelvaObject_GetStringStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, &old_value)) {
+            TO_STR(old_value);
+
+            if (old_value_len == op->meta_field_value_len && !memcmp(old_value_str, op->meta_field_value_str, op->meta_field_value_len)) {
+                RedisModule_ReplyWithSimpleString(ctx, "OK");
+                return SELVA_OP_REPL_STATE_UNCHANGED;
+            }
+        }
+
+        meta_field_value = RedisModule_CreateString(NULL, op->meta_field_value_str, op->meta_field_value_len);
+        if (!meta_field_value) {
+            replyWithSelvaError(ctx, SELVA_ENOMEM);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        err = SelvaObject_SetStringStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, meta_field_value);
+        if (err) {
+            RedisModule_FreeString(NULL, meta_field_value);
+            replyWithSelvaErrorf(ctx, err, "Failed to set a string value");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else if (op_code == SELVA_MODIFY_OP_EDGE_META_DEFAULT_LONGLONG ||
+               op_code == SELVA_MODIFY_OP_EDGE_META_LONGLONG) {
+        long long ll;
+        int err;
+
+        if (op->meta_field_value_len != sizeof(ll)) {
+            REPLY_WITH_ARG_TYPE_ERROR(ll);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        memcpy(&ll, op->meta_field_value_str, sizeof(ll));
+
+        if (op_code == SELVA_MODIFY_OP_EDGE_META_DEFAULT_LONGLONG) {
+            err = SelvaObject_SetLongLongDefaultStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, ll);
+        } else {
+            long long old_value;
+
+            if (!SelvaObject_GetLongLong(edge_metadata, field, &old_value)) {
+                if (old_value == ll) {
+                    RedisModule_ReplyWithSimpleString(ctx, "OK");
+                    return SELVA_OP_REPL_STATE_UNCHANGED;
+                }
+            }
+
+            err = SelvaObject_SetLongLong(edge_metadata, field, ll);
+        }
+        if (err == SELVA_EEXIST) { /* Default handling */
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        } else if (err) {
+            replyWithSelvaError(ctx, err);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else if (op_code == SELVA_MODIFY_OP_EDGE_META_DEFAULT_DOUBLE ||
+               op_code == SELVA_MODIFY_OP_EDGE_META_DOUBLE) {
+        double d;
+        int err;
+
+        if (op->meta_field_value_len != sizeof(d)) {
+            REPLY_WITH_ARG_TYPE_ERROR(d);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+
+        memcpy(&d, op->meta_field_value_str, sizeof(d));
+
+        if (op_code == SELVA_MODIFY_OP_EDGE_META_DEFAULT_DOUBLE) {
+            err = SelvaObject_SetDoubleDefaultStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, d);
+        } else {
+            double old_value;
+
+            if (!SelvaObject_GetDouble(edge_metadata, field, &old_value)) {
+                if (old_value == d) {
+                    RedisModule_ReplyWithSimpleString(ctx, "OK");
+                    return SELVA_OP_REPL_STATE_UNCHANGED;
+                }
+            }
+
+            err = SelvaObject_SetDouble(edge_metadata, field, d);
+        }
+        if (err == SELVA_EEXIST) { /* Default handling. */
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        } else if (err) {
+            replyWithSelvaError(ctx, err);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else if (op_code == SELVA_MODIFY_OP_EDGE_META_DEL) {
+        int err;
+
+        err = SelvaObject_DelKeyStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len);
+        if (err == SELVA_ENOENT) {
+            /* No need to replicate. */
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        } else if (err) {
+            replyWithSelvaError(ctx, err);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else {
+        replyWithSelvaError(ctx, SELVA_EINTYPE);
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
+    return SELVA_OP_REPL_STATE_UPDATED;
+}
+
 /*
  * Request:
  * id, FLAGS type, field, value [, ... type, field, value]]
@@ -789,6 +975,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             /* This triplet needs to be replicated. */
             bitmap_set(replset, i / 3 - 1);
             continue;
+        } else if (type_code == SELVA_MODIFY_ARG_OP_EDGE_META) {
+            repl_state = modify_edge_meta_op(ctx, node, field, value);
         } else {
             repl_state = modify_op(ctx, hierarchy, nodeId, node, type_code, field, value);
         }

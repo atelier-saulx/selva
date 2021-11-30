@@ -153,6 +153,10 @@ struct SelvaObject *Edge_GetFieldMetadata(struct EdgeField *edge_field, int crea
     return edge_field->metadata;
 }
 
+void Edge_DeleteFieldMetadata(struct EdgeField *edge_field) {
+    SelvaObject_Destroy(edge_field->metadata);
+}
+
 /**
  * Create a new edge field and store it on the hierarchy node.
  */

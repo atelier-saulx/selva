@@ -174,6 +174,11 @@ struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *node, const cha
 struct SelvaObject *Edge_GetFieldMetadata(struct EdgeField *edge_field, int create);
 
 /**
+ * Delete all metadata from edge_field.
+ */
+void Edge_DeleteFieldMetadata(struct EdgeField *edge_field);
+
+/**
  * Check if an EdgeField has a reference to dst_node.
  * @returns 0 = not found;
  *          1 = found.
