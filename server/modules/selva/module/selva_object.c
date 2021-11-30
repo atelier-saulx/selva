@@ -861,6 +861,44 @@ int SelvaObject_SetDouble(struct SelvaObject *obj, const RedisModuleString *key_
     return SelvaObject_SetDoubleStr(obj, key_name_str, key_name_len, value);
 }
 
+int SelvaObject_SetDoubleDefaultStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    if (SelvaObject_GetTypeStr(obj, key_name_str, key_name_len) != SELVA_OBJECT_NULL) {
+        return SELVA_EEXIST;
+    }
+
+    /*
+     * Note that SELVA_OBJECT_GETKEY_CREATE makes get_key() to return an object
+     * for nested keys if the key didn't exist yet and clears any existing
+     * value, that's why we used SelvaObject_GetTypeStr() earlier instead of
+     * using key->type here.
+     */
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+    if (err) {
+        return err;
+    }
+
+    err = clear_key_value(key);
+    if (err) {
+        return err;
+    }
+
+    key->type = SELVA_OBJECT_DOUBLE;
+    key->emb_double_value = value;
+
+    return 0;
+}
+
+int SelvaObject_SetDoubleDefault(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+    TO_STR(key_name);
+
+    return SelvaObject_SetDoubleDefaultStr(obj, key_name_str, key_name_len, value);
+}
+
 int SelvaObject_SetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
     struct SelvaObjectKey *key;
     int err;
@@ -887,6 +925,44 @@ int SelvaObject_SetLongLong(struct SelvaObject *obj, const RedisModuleString *ke
     TO_STR(key_name);
 
     return SelvaObject_SetLongLongStr(obj, key_name_str, key_name_len, value);
+}
+
+int SelvaObject_SetLongLongDefaultStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    if (SelvaObject_GetTypeStr(obj, key_name_str, key_name_len) != SELVA_OBJECT_NULL) {
+        return SELVA_EEXIST;
+    }
+
+    /*
+     * Note that SELVA_OBJECT_GETKEY_CREATE makes get_key() to return an object
+     * for nested keys if the key didn't exist yet and clears any existing
+     * value, that's why we used SelvaObject_GetTypeStr() earlier instead of
+     * using key->type here.
+     */
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+    if (err) {
+        return err;
+    }
+
+    err = clear_key_value(key);
+    if (err) {
+        return err;
+    }
+
+    key->type = SELVA_OBJECT_LONGLONG;
+    key->emb_ll_value = value;
+
+    return 0;
+}
+
+int SelvaObject_SetLongLongDefault(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+    TO_STR(key_name);
+
+    return SelvaObject_SetLongLongDefaultStr(obj, key_name_str, key_name_len, value);
 }
 
 int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, RedisModuleString *value) {

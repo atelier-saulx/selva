@@ -443,57 +443,71 @@ static enum selva_op_repl_state modify_op(
             RedisModule_RetainString(ctx, value);
         }
     } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
-            type_code == SELVA_MODIFY_ARG_LONGLONG) {
-        const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
-        long long old_value;
-        long long ll = 0;
+               type_code == SELVA_MODIFY_ARG_LONGLONG) {
+        long long ll;
+        int err;
 
-        if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG && old_type != SELVA_OBJECT_NULL) {
-            RedisModule_ReplyWithSimpleString(ctx, "OK");
-            return SELVA_OP_REPL_STATE_UNCHANGED;
-        }
-
-        if (value_len != sizeof(long long)) {
+        if (value_len != sizeof(ll)) {
             REPLY_WITH_ARG_TYPE_ERROR(ll);
-            return 0;
+            return SELVA_OP_REPL_STATE_UNCHANGED;
         }
 
         memcpy(&ll, value_str, sizeof(ll));
 
-        if (old_type == SELVA_OBJECT_LONGLONG && !SelvaObject_GetLongLong(obj, field, &old_value)) {
-            if (old_value == ll) {
-                RedisModule_ReplyWithSimpleString(ctx, "OK");
-                return 0;
+        if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
+            err = SelvaObject_SetLongLongDefault(obj, field, ll);
+        } else {
+            long long old_value;
+
+            if (!SelvaObject_GetLongLong(obj, field, &old_value)) {
+                if (old_value == ll) {
+                    RedisModule_ReplyWithSimpleString(ctx, "OK");
+                    return SELVA_OP_REPL_STATE_UNCHANGED;
+                }
             }
+
+            err = SelvaObject_SetLongLong(obj, field, ll);
         }
-
-        SelvaObject_SetLongLong(obj, field, ll);
-    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE ||
-            type_code == SELVA_MODIFY_ARG_DOUBLE) {
-        const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
-        double old_value;
-        double d = 0.0;
-
-        if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE && old_type != SELVA_OBJECT_NULL) {
+        if (err == SELVA_EEXIST) { /* Default handling. */
             RedisModule_ReplyWithSimpleString(ctx, "OK");
             return SELVA_OP_REPL_STATE_UNCHANGED;
+        } else if (err) {
+            replyWithSelvaError(ctx, err);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
         }
+    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE ||
+               type_code == SELVA_MODIFY_ARG_DOUBLE) {
+        double d;
+        int err;
 
-        if (value_len != sizeof(double)) {
+        if (value_len != sizeof(d)) {
             REPLY_WITH_ARG_TYPE_ERROR(d);
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
 
         memcpy(&d, value_str, sizeof(d));
 
-        if (old_type == SELVA_OBJECT_DOUBLE && !SelvaObject_GetDouble(obj, field, &old_value)) {
-            if (old_value == d) {
-                RedisModule_ReplyWithSimpleString(ctx, "OK");
-                return SELVA_OP_REPL_STATE_UNCHANGED;
-            }
-        }
+        if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
+            err = SelvaObject_SetDoubleDefault(obj, field, d);
+        } else {
+            double old_value;
 
-        SelvaObject_SetDouble(obj, field, d);
+            if (!SelvaObject_GetDouble(obj, field, &old_value)) {
+                if (old_value == d) {
+                    RedisModule_ReplyWithSimpleString(ctx, "OK");
+                    return SELVA_OP_REPL_STATE_UNCHANGED;
+                }
+            }
+
+            err = SelvaObject_SetDouble(obj, field, d);
+        }
+        if (err == SELVA_EEXIST) { /* Default handling. */
+            RedisModule_ReplyWithSimpleString(ctx, "OK");
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        } else if (err) {
+            replyWithSelvaError(ctx, err);
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
     } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
         return handle_modify_arg_op_obj_meta(ctx, obj, field, value);
     } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
