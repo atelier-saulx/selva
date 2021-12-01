@@ -103,7 +103,7 @@ static struct EdgeField *alloc_EdgeField(const Selva_NodeId src_node_id, const s
 
 struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *src_node, const char *field_name_str, size_t field_name_len) {
     const struct SelvaHierarchyMetadata *src_metadata;
-    struct EdgeField *src_edge_field;
+    struct SelvaObject *edges;
     int err;
 
     /* Some callers expect that src_node can be NULL. */
@@ -115,12 +115,15 @@ struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *src_node, const
      * The edges object is allocated lazily so the called might need to allocate it.
      */
     src_metadata = SelvaHierarchy_GetNodeMetadataByPtr(src_node);
-    if (!src_metadata->edge_fields.edges) {
+    edges = src_metadata->edge_fields.edges;
+    if (!edges) {
         return NULL;
     }
 
     void *p;
-    err = SelvaObject_GetPointerStr(src_metadata->edge_fields.edges, field_name_str, field_name_len, &p);
+    struct EdgeField *src_edge_field;
+
+    err = SelvaObject_GetPointerStr(edges, field_name_str, field_name_len, &p);
     src_edge_field = p;
     if (err) {
         return NULL;

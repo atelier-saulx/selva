@@ -124,7 +124,7 @@ test.serial('basic edge ops', async (t) => {
     ]
   )
 
-  await t.throwsAsync(() => client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'ma2', 'a'))
+  await t.deepEqual(await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'ma2', 'a'), null)
 
   t.deepEqual(
     await client.redis.selva_hierarchy_edgeget('___selva_hierarchy', 'ma2', 'a.b'),
