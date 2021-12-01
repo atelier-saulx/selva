@@ -566,6 +566,7 @@ static enum selva_op_repl_state modify_edge_meta_op(
     struct SelvaObject *edge_metadata;
     struct SelvaModify_OpEdgeMeta *op;
     enum SelvaModify_OpEdgetMetaCode op_code;
+    int err;
 
     edge_field = Edge_GetField(node, field_str, field_len);
     if (!edge_field) {
@@ -584,9 +585,9 @@ static enum selva_op_repl_state modify_edge_meta_op(
         return SELVA_OP_REPL_STATE_UPDATED;
     }
 
-    edge_metadata = Edge_GetFieldMetadata(edge_field, 1);
-    if (!edge_metadata) {
-        replyWithSelvaError(ctx, SELVA_ENOMEM);
+    err = Edge_GetFieldEdgeMetadata(edge_field, op->dst_node_id, 1, &edge_metadata);
+    if (err) {
+        replyWithSelvaError(ctx, err);
         return SELVA_OP_REPL_STATE_UNCHANGED;
     }
 

@@ -44,6 +44,7 @@ const selva_commands = [
   'selva.hierarchy.children',
   'selva.hierarchy.del',
   'selva.hierarchy.edgeget',
+  'selva.hierarchy.edgegetmetadata',
   'selva.hierarchy.edgelist',
   'selva.hierarchy.find',
   'selva.hierarchy.findin',
