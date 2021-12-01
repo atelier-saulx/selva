@@ -1076,6 +1076,34 @@ int SelvaObject_GetObject(struct SelvaObject *obj, const RedisModuleString *key_
     return SelvaObject_GetObjectStr(obj, key_name_str, key_name_len, out);
 }
 
+int SelvaObject_SetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject *value) {
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+    if (err) {
+        return err;
+    }
+
+    err = clear_key_value(key);
+    if (err) {
+        return err;
+    }
+
+    key->type = SELVA_OBJECT_OBJECT;
+    key->value = value;
+
+    return 0;
+}
+
+int SelvaObject_SetObject(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObject *value) {
+    TO_STR(key_name);
+
+    return SelvaObject_SetObjectStr(obj, key_name_str, key_name_len, value);
+}
+
 static int get_selva_set_modify(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
     TO_STR(key_name);
     struct SelvaObjectKey *key;
