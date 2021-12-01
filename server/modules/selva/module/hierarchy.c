@@ -3088,32 +3088,21 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
      * Find the node.
      */
     Selva_NodeId nodeId;
+    const SelvaHierarchyNode *node;
 
     Selva_RMString2NodeId(nodeId, argv[2]);
-    SelvaHierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+    node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
     }
 
-    struct SelvaObject *obj = node->metadata.edge_fields.edges;
-    if (!obj) {
-        /* No custom edges set. */
-        return RedisModule_ReplyWithNull(ctx);
-    }
-
-    const RedisModuleString *key_name = argv[3];
+    const RedisModuleString *field_name = argv[3];
+    TO_STR(field_name);
     const struct EdgeField *edge_field;
-    void *p;
-    int err;
 
-    err = SelvaObject_GetPointer(obj, key_name, &p);
-    edge_field = p;
-    if (err) {
-        if (err == SELVA_ENOENT) {
-            return RedisModule_ReplyWithNull(ctx);
-        } else {
-            return replyWithSelvaError(ctx, err);
-        }
+    edge_field = Edge_GetField(node, field_name_str, field_name_len);
+    if (!edge_field) {
+        return RedisModule_ReplyWithNull(ctx);
     }
 
     const struct SVector *arcs = &edge_field->arcs;
