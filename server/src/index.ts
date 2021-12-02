@@ -30,7 +30,7 @@ const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   if (!parsedOpts.host) {
     const network = os.networkInterfaces()
     let ip
-    for (let key in network) {
+    for (const key in network) {
       const r = network[key].find(
         (v) => v.family === 'IPv4' && v.internal === false
       )

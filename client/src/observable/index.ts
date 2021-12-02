@@ -273,19 +273,13 @@ export class Observable {
         resolve: ([data, version]) => {
           if (data) {
             const obj = JSON.parse(data)
-            // obj.version = version
             if (obj.payload && obj.payload.___$error___) {
               if (onError) {
                 onError(parseError(obj))
               }
             } else {
-              // obj.payload
               onNext(obj.payload, version)
             }
-          } else {
-            // maybe not send this
-            // console.log('no datax...')
-            // onNext(data)
           }
         },
         reject: onError,
@@ -391,13 +385,6 @@ export class Observable {
                 }
                 this.emitUpdate(obj.payload, version)
               }
-            } else {
-              // maybe not send this
-              // console.log('no datax...')
-              // if (this.useCache) {
-              //   this.storeInCache(data, version)
-              // }
-              // this.emitUpdate(data, version)
             }
           },
           reject: (err) => this.emitError(err),
@@ -548,16 +535,9 @@ export class Observable {
       } else if (channel === incomingChannel) {
         // msg is checksum
         // will also add diff maybe? or store the last diff?
-        // console.log('Incoming msg for observable', msg)
         const versions = JSON.parse(msg)
         if (versions && versions[0] === this.version) {
-          // console.log(
-          //   'Subs manager send current version (with no update)',
-          //   this.options,
-          //   this.uuid,
-          //   this.version,
-          //   versions
-          // )
+          // is the same ignore
         } else {
           this.getValue(versions)
         }
