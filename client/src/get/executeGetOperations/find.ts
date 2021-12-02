@@ -25,7 +25,7 @@ import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 import { mkIndex } from './indexing'
 
-function makeFieldsString(
+export function makeFieldsString(
   schema: Schema,
   fieldsByType: Map<string, Set<string>>
 ): [string, string] {
@@ -81,7 +81,7 @@ function makeFieldsString(
   return ['fields', str]
 }
 
-function parseGetOpts(
+export function parseGetOpts(
   props: GetOptions,
   path: string,
   type: string = '$any',

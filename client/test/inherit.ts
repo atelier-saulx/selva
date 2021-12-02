@@ -334,6 +334,8 @@ test.serial('$field +  multiple options', async (t) => {
     },
   })
 
+  await wait(100)
+
   await client.set({
     $id: 'reA',
     layout: {

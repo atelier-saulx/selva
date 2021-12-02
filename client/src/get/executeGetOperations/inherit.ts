@@ -18,6 +18,20 @@ import {
 import { Schema, FieldSchema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
 import { buildResultFromIdFieldAndValue, makeLangArg } from './util'
+import { parseGetOpts, makeFieldsString } from './find'
+
+function fieldsArg(
+  schema: Schema,
+  op: GetOperationInherit,
+  fields: string[]
+): [string, string] {
+  if (op.props.$fieldsByType) {
+    const [f] = parseGetOpts(op.props, '')
+    return makeFieldsString(schema, f)
+  }
+
+  return ['fields', fields ? fields.join('\n') : '']
+}
 
 function makeRealKeys(
   props: GetOptions,
@@ -321,8 +335,7 @@ async function inheritItem(
     'ancestors',
     'limit',
     1,
-    'fields',
-    fields ? fields.join('\n') : '',
+    ...fieldsArg(client.schemas[ctx.db], op, fields),
     op.id,
     ...rpn
   )
@@ -574,7 +587,9 @@ export default async function inherit(
         type: 'bfs_expression',
         id: op.id,
         traversal: `{"parents","${op.sourceField}"}`,
-        fields: fields.map((f: string) => f.substring(op.sourceField.length + 1)),
+        fields: fields.map((f: string) =>
+          f.substring(op.sourceField.length + 1)
+        ),
         rpn: ast2rpn(
           client.schemas[ctx.db].types,
           {
