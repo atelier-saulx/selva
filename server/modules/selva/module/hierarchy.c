@@ -3097,10 +3097,19 @@ int SelvaHierarchy_EdgeGetCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
  */
 int SelvaHierarchy_EdgeGetMetadataCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    Selva_NodeId src_node_id;
+    const RedisModuleString *field_name;
+    Selva_NodeId dst_node_id;
+    int err;
 
     if (argc != 5) {
         return RedisModule_WrongArity(ctx);
     }
+
+    Selva_RMString2NodeId(src_node_id, argv[2]);
+    field_name = argv[3];
+    Selva_RMString2NodeId(dst_node_id, argv[4]);
+    TO_STR(field_name);
 
     /*
      * Open the Redis key.
@@ -3113,32 +3122,22 @@ int SelvaHierarchy_EdgeGetMetadataCommand(RedisModuleCtx *ctx, RedisModuleString
     /*
      * Find the node.
      */
-    Selva_NodeId src_node_id;
-
-    Selva_RMString2NodeId(src_node_id, argv[2]);
     SelvaHierarchyNode *src_node = SelvaHierarchy_FindNode(hierarchy, src_node_id);
     if (!src_node) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
     }
 
-    const RedisModuleString *field_name = argv[3];
-    TO_STR(field_name);
     struct EdgeField *edge_field;
-
     edge_field = Edge_GetField(src_node, field_name_str, field_name_len);
     if (!edge_field) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "Edge field not found");
     }
 
-    Selva_NodeId dst_node_id;
     struct SelvaObject *edge_metadata;
-    int err;
-
-    Selva_RMString2NodeId(dst_node_id, argv[4]);
     err = Edge_GetFieldEdgeMetadata(edge_field, dst_node_id, 0, &edge_metadata);
     if (err == SELVA_ENOENT) {
         return RedisModule_ReplyWithNull(ctx);
-    } else { /* Also if the edge doesn't exist. */
+    } else if (err) { /* Also if the edge doesn't exist. */
         return replyWithSelvaError(ctx, err);
     }
 

@@ -587,7 +587,7 @@ static enum selva_op_repl_state modify_edge_meta_op(
 
     err = Edge_GetFieldEdgeMetadata(edge_field, op->dst_node_id, 1, &edge_metadata);
     if (err) {
-        replyWithSelvaError(ctx, err);
+        replyWithSelvaErrorf(ctx, err, "Failed to get the metadata object");
         return SELVA_OP_REPL_STATE_UNCHANGED;
     }
 
@@ -642,14 +642,14 @@ static enum selva_op_repl_state modify_edge_meta_op(
         } else {
             long long old_value;
 
-            if (!SelvaObject_GetLongLong(edge_metadata, field, &old_value)) {
+            if (!SelvaObject_GetLongLongStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, &old_value)) {
                 if (old_value == ll) {
                     RedisModule_ReplyWithSimpleString(ctx, "OK");
                     return SELVA_OP_REPL_STATE_UNCHANGED;
                 }
             }
 
-            err = SelvaObject_SetLongLong(edge_metadata, field, ll);
+            err = SelvaObject_SetLongLongStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, ll);
         }
         if (err == SELVA_EEXIST) { /* Default handling */
             RedisModule_ReplyWithSimpleString(ctx, "OK");
@@ -675,14 +675,14 @@ static enum selva_op_repl_state modify_edge_meta_op(
         } else {
             double old_value;
 
-            if (!SelvaObject_GetDouble(edge_metadata, field, &old_value)) {
+            if (!SelvaObject_GetDoubleStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, &old_value)) {
                 if (old_value == d) {
                     RedisModule_ReplyWithSimpleString(ctx, "OK");
                     return SELVA_OP_REPL_STATE_UNCHANGED;
                 }
             }
 
-            err = SelvaObject_SetDouble(edge_metadata, field, d);
+            err = SelvaObject_SetDoubleStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, d);
         }
         if (err == SELVA_EEXIST) { /* Default handling. */
             RedisModule_ReplyWithSimpleString(ctx, "OK");

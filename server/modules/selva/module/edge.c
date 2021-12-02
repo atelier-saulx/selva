@@ -163,7 +163,7 @@ int Edge_GetFieldEdgeMetadata(struct EdgeField *edge_field, const Selva_NodeId d
     }
 
     edge_field_metadata = Edge_GetFieldMetadata(edge_field, create);
-    if (!edge_metadata) {
+    if (!edge_field_metadata) {
         return create ? SELVA_ENOMEM : SELVA_ENOENT;
     }
 
