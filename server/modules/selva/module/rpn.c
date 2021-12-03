@@ -175,16 +175,6 @@ void _rpn_auto_free_ctx(void *p) {
     rpn_destroy(ctx);
 }
 
-void rpn_set_hierarchy_node(struct rpn_ctx *ctx, const struct SelvaHierarchyNode *node) {
-    ctx->node = node;
-    ctx->obj = SelvaHierarchy_GetNodeObject(node);
-}
-
-/* TODO obj should be const but selva_object isn't good with conts atm. */
-void rpn_set_obj(struct rpn_ctx *ctx, struct SelvaObject *obj) {
-    ctx->obj = obj;
-}
-
 /*
  * TODO We should decide and be consistent about when the d value is set as NaN
  * and when as nan_undefined. Once that is done we can also start utilizing it

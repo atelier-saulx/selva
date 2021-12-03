@@ -67,8 +67,14 @@ void rpn_destroy(struct rpn_ctx *ctx);
  * An operand requiring a node pointer will return RPN_ERR_ILLOPN if the pointer
  * is not set.
  */
-void rpn_set_hierarchy_node(struct rpn_ctx *ctx, const struct SelvaHierarchyNode *node);
-void rpn_set_obj(struct rpn_ctx *ctx, struct SelvaObject *obj);
+static inline void rpn_set_hierarchy_node(struct rpn_ctx *ctx, const struct SelvaHierarchyNode *node) {
+    ctx->node = node;
+}
+
+static inline void rpn_set_obj(struct rpn_ctx *ctx, struct SelvaObject *obj) {
+    /* TODO obj should be const but selva_object isn't good with const atm. */
+    ctx->obj = obj;
+}
 
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t size, unsigned flags);
 enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, struct RedisModuleString *rms);

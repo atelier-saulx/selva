@@ -397,6 +397,54 @@ test.serial('find can do nested traversals', async (t) => {
   )
 })
 
+test.serial('find can select with edge metadata', async (t) => {
+  const client = connect({ port })
+
+  // Create nodes
+  await client.redis.selva_modify('root', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('ma1', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('ma2', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('ma3', '', '0', 'o.a', 'hello')
+  await client.redis.selva_modify('ma4', '', '0', 'o.a', 'hello')
+
+  // Create edges
+  await client.redis.selva_modify('ma1', '',
+    '5', 'a.b', createRecord(setRecordDefCstring, {
+      op_set_type: 1,
+      delete_all: 0,
+      constraint_id: 0,
+      $add: toCArr(['ma2', 'ma3', 'ma4']),
+      $delete: null,
+      $value: null,
+    }),
+    'G', 'a.b', createRecord(edgeMetaDef, {
+      op_code: 4,
+      delete_all: 0,
+      dst_node_id: 'ma3',
+      meta_field_name: 'key',
+      meta_field_value: Buffer.from([0x39, 0x05, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]),
+    })
+  )
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'expression', '{"a.b"}', 'edge_filter', '"key" g #1337 F', 'fields', 'id', 'ma1'),
+    [
+      [
+        'ma3', [ 'id', 'ma3' ]
+      ],
+    ]
+  )
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs_expression', '{"a.b"}', 'edge_filter', '"key" g #1337 F', 'fields', 'id', 'ma1'),
+    [
+      [
+        'ma3', [ 'id', 'ma3' ]
+      ],
+    ]
+  )
+})
+
 test.serial('missing edges are added automatically', async (t) => {
   const client = connect({ port })
 
