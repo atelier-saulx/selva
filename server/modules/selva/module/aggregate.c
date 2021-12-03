@@ -215,6 +215,7 @@ static int AggregateCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
         /* Set node_id to the register */
         rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
         rpn_set_hierarchy_node(rpn_ctx, node);
+        rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
 
         /*
          * Resolve the expression and get the result.
@@ -759,9 +760,9 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
 
             err = SelvaHierarchy_TraverseField(hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
-            err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
+            err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, NULL, NULL, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) {
-            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, &cb);
+            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, NULL, NULL, &cb);
         } else {
             err = SelvaHierarchy_Traverse(hierarchy, nodeId, dir, &cb);
         }

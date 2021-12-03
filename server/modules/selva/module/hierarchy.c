@@ -1797,6 +1797,89 @@ out:
     Trx_End(&(hierarchy)->trx_state, &trx_cur)
 
 /**
+ * Get the next vector to be traversed.
+ * @param node is the current node the traversal is visiting.
+ * @param field is the next field to be traversed.
+ * @param[out] field_type returns the type of the field being traversed.
+ */
+static SVector *get_adj_vec(SelvaHierarchyNode *node, const char *field_str, size_t field_len, enum SelvaTraversal *field_type) {
+    if (field_len == 8 && !strncmp("children", field_str, 8)) {
+        *field_type = SELVA_HIERARCHY_TRAVERSAL_CHILDREN;
+        return &node->children;
+    } else if (field_len == 7 && !strncmp("parents", field_str, 7)) {
+        *field_type = SELVA_HIERARCHY_TRAVERSAL_PARENTS;
+        return &node->parents;
+    } else {
+        /* Try EdgeField */
+        struct EdgeField *edge_field;
+
+        edge_field = Edge_GetField(node, field_str, field_len);
+        if (edge_field) {
+            *field_type = SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD;
+            return &edge_field->arcs;
+        }
+    }
+
+    *field_type = SELVA_HIERARCHY_TRAVERSAL_NONE;
+    return NULL;
+}
+
+/**
+ * Execute an edge filter for the node.
+ * @param ctx is a pointer to the Redis context.
+ * @param edge_filter_ctx is a context for the filter.
+ * @param edge_filter is a pointer to the compiled edge filter.
+ * @param adj_vec is a pointer to the arcs vector field of an EdgeField structure.
+ * @param node is a pointer to the node the edge is pointing to.
+ */
+static int exec_edge_filter(
+        struct RedisModuleCtx *ctx,
+        struct rpn_ctx *edge_filter_ctx,
+        const struct rpn_expression *edge_filter,
+        const SVector *adj_vec,
+        const SelvaHierarchyNode *node) {
+    struct EdgeField *edge_field = containerof(adj_vec, struct EdgeField, arcs);
+    struct SelvaObject *edge_metadata;
+    int err;
+
+    err = Edge_GetFieldEdgeMetadata(edge_field, node->id, 0, &edge_metadata);
+    if (err == SELVA_HIERARCHY_ENOENT || err == SELVA_ENOENT) {
+#if 0
+        fprintf(stderr, "No metadata for this edge: %.*s.%s -> %.*s\n",
+                (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID, //TODO head->id,
+                "", // TODO RedisModule_StringPtrLen(field, NULL),
+                (int)SELVA_NODE_ID_SIZE, node->id);
+#endif
+        /* TODO Should probably run the filter with an empty object. */
+        return 0;
+    } else if (err) {
+        /* TODO Error handling */
+#if 0
+        fprintf(stderr, "%s:%d: Failed to get edge metadata %.*s.%s -> %.*s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID, // TODO head->id,
+                "", // TODO RedisModule_StringPtrLen(field, NULL),
+                (int)SELVA_NODE_ID_SIZE, node->id);
+#endif
+        return 0;
+    } else {
+        enum rpn_error rpn_err;
+        int res;
+
+        rpn_set_reg(edge_filter_ctx, 0, node->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
+        rpn_set_hierarchy_node(edge_filter_ctx, node);
+        rpn_set_obj(edge_filter_ctx, edge_metadata);
+
+        rpn_err = rpn_bool(ctx, edge_filter_ctx, edge_filter, &res); /* TODO Handle RPN errors. */
+        if (!rpn_err && res) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/**
  * BFS from a given head node towards its descendants or ancestors.
  */
 static __hot int bfs(
@@ -1861,30 +1944,14 @@ static int bfs_edge(
     return 0;
 }
 
-static SVector *get_adj_vec(SelvaHierarchyNode *node, const char *field_name_str, size_t field_name_len) {
-    if (field_name_len == 8 && !strncmp("children", field_name_str, 8)) {
-        return &node->children;
-    } else if (field_name_len == 7 && !strncmp("parents", field_name_str, 7)) {
-        return &node->parents;
-    } else {
-        /* Try EdgeField */
-        struct EdgeField *edge_field;
-
-        edge_field = Edge_GetField(node, field_name_str, field_name_len);
-        if (edge_field) {
-            return &edge_field->arcs;
-        }
-    }
-
-    return NULL;
-}
-
 static int bfs_expression(
         RedisModuleCtx *redis_ctx,
         SelvaHierarchy *hierarchy,
         SelvaHierarchyNode *head,
         struct rpn_ctx *rpn_ctx,
         const struct rpn_expression *rpn_expr,
+        struct rpn_ctx *edge_filter_ctx,
+        const struct rpn_expression *edge_filter,
         const struct SelvaHierarchyCallback * restrict cb) {
     BFS_TRAVERSE(hierarchy, head, cb) {
         enum rpn_error rpn_err;
@@ -1893,8 +1960,9 @@ static int bfs_expression(
 
         SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
 
-        rpn_set_hierarchy_node(rpn_ctx, node);
         rpn_set_reg(rpn_ctx, 0, node->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
+        rpn_set_hierarchy_node(rpn_ctx, node);
+        rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
         rpn_err = rpn_selvaset(redis_ctx, rpn_ctx, rpn_expr, &fields);
         if (rpn_err) {
             fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",
@@ -1910,13 +1978,29 @@ static int bfs_expression(
             const RedisModuleString *field = field_el->value_rms;
             TO_STR(field);
             const SVector *adj_vec;
+            enum SelvaTraversal field_type;
+            struct SVectorIterator it;
+            SelvaHierarchyNode *adj;
 
-            adj_vec = get_adj_vec(node, field_str, field_len);
+            adj_vec = get_adj_vec(node, field_str, field_len, &field_type);
             if (!adj_vec) {
                 continue;
             }
 
-            BFS_VISIT_ADJACENTS(field_str, field_len, adj_vec);
+            SVector_ForeachBegin(&it, adj_vec);
+            while ((adj = SVector_Foreach(&it))) {
+                /*
+                 * If the field is an edge field we can filter edges by the
+                 * edge metadata.
+                 */
+                if (field_type == SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD && edge_filter &&
+                    !Trx_HasVisited(&trx_cur, &adj->trx_label) && /* skip if already visited. */
+                    !exec_edge_filter(redis_ctx, edge_filter_ctx, edge_filter, adj_vec, adj)) {
+                    continue;
+                }
+
+                BFS_VISIT_ADJACENT(field_str, field_len, adj);
+            }
         }
 
         SelvaSet_Destroy(&fields);
@@ -2149,7 +2233,9 @@ int SelvaHierarchy_TraverseExpression(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         struct rpn_ctx *rpn_ctx,
-        struct rpn_expression *rpn_expr,
+        const struct rpn_expression *rpn_expr,
+        struct rpn_ctx *edge_filter_ctx,
+        const struct rpn_expression *edge_filter,
         const struct SelvaHierarchyCallback *cb) {
     SelvaHierarchyNode *head;
     struct trx trx_cur;
@@ -2168,8 +2254,9 @@ int SelvaHierarchy_TraverseExpression(
 
     SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
 
-    rpn_set_hierarchy_node(rpn_ctx, head);
     rpn_set_reg(rpn_ctx, 0, head->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
+    rpn_set_hierarchy_node(rpn_ctx, head);
+    rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(head));
     rpn_err = rpn_selvaset(ctx, rpn_ctx, rpn_expr, &fields);
     if (rpn_err) {
         fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",
@@ -2186,16 +2273,27 @@ int SelvaHierarchy_TraverseExpression(
         const SVector *adj_vec;
         struct SVectorIterator it;
         SelvaHierarchyNode *adj;
+        enum SelvaTraversal field_type;
 
         /* Get an SVector for the field. */
-        adj_vec = get_adj_vec(head, field_str, field_len);
+        adj_vec = get_adj_vec(head, field_str, field_len, &field_type);
         if (!adj_vec) {
             continue;
         }
 
         /* Visit each node in this field. */
         SVector_ForeachBegin(&it, adj_vec);
-        while((adj = SVector_Foreach(&it))) {
+        while ((adj = SVector_Foreach(&it))) {
+            /*
+             * If the field is an edge field we can filter edges by the
+             * edge metadata.
+             */
+            if (field_type == SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD && edge_filter &&
+                !Trx_HasVisited(&trx_cur, &adj->trx_label) && /* skip if already visited. */
+                !exec_edge_filter(ctx, edge_filter_ctx, edge_filter, adj_vec, adj)) {
+                continue;
+            }
+
             if (Trx_Visit(&trx_cur, &adj->trx_label)) {
                 if (cb->node_cb(adj, cb->node_arg)) {
                     Trx_End(&hierarchy->trx_state, &trx_cur);
@@ -2215,6 +2313,8 @@ int SelvaHierarchy_TraverseExpressionBfs(
         const Selva_NodeId id,
         struct rpn_ctx *rpn_ctx,
         const struct rpn_expression *rpn_expr,
+        struct rpn_ctx *edge_filter_ctx,
+        const struct rpn_expression *edge_filter,
         const struct SelvaHierarchyCallback *cb) {
     SelvaHierarchyNode *head;
 
@@ -2223,7 +2323,7 @@ int SelvaHierarchy_TraverseExpressionBfs(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    return bfs_expression(ctx, hierarchy, head, rpn_ctx, rpn_expr, cb);
+    return bfs_expression(ctx, hierarchy, head, rpn_ctx, rpn_expr, edge_filter_ctx, edge_filter, cb);
 }
 
 int SelvaModify_TraverseArray(
@@ -3126,7 +3226,7 @@ int SelvaHierarchy_EdgeGetMetadataCommand(RedisModuleCtx *ctx, RedisModuleString
     /*
      * Find the node.
      */
-    SelvaHierarchyNode *src_node = SelvaHierarchy_FindNode(hierarchy, src_node_id);
+    const SelvaHierarchyNode *src_node = SelvaHierarchy_FindNode(hierarchy, src_node_id);
     if (!src_node) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
     }
