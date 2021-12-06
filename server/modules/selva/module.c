@@ -192,8 +192,8 @@ static struct SelvaModify_OpEdgeMeta *SelvaModify_OpEdgeMeta_align(RedisModuleCt
     op->meta_field_name_str = ((char *)op + (ptrdiff_t)op->meta_field_name_str);
     op->meta_field_value_str = ((char *)op + (ptrdiff_t)op->meta_field_value_str);
 
-    if (!((in_mem_range(op->meta_field_name_str, op, data_len) && in_mem_range(op->meta_field_name_str + op->meta_field_name_len, op, data_len))) &&
-         ((in_mem_range(op->meta_field_value_str, op, data_len) && in_mem_range(op->meta_field_value_str + op->meta_field_value_len, op, data_len)))) {
+    if (!((in_mem_range(op->meta_field_name_str,  op, data_len) && in_mem_range(op->meta_field_name_str  + op->meta_field_name_len  - 1, op, data_len)) &&
+          (in_mem_range(op->meta_field_value_str, op, data_len) && in_mem_range(op->meta_field_value_str + op->meta_field_value_len - 1, op, data_len)))) {
         return NULL;
     }
 
