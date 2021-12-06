@@ -564,7 +564,7 @@ static enum selva_op_repl_state modify_edge_meta_op(
     TO_STR(field);
     struct EdgeField *edge_field;
     struct SelvaObject *edge_metadata;
-    struct SelvaModify_OpEdgeMeta *op;
+    const struct SelvaModify_OpEdgeMeta *op;
     enum SelvaModify_OpEdgetMetaCode op_code;
     int err;
 
@@ -597,7 +597,6 @@ static enum selva_op_repl_state modify_edge_meta_op(
         const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len);
         RedisModuleString *old_value;
         RedisModuleString *meta_field_value;
-        int err;
 
         if (op_code == SELVA_MODIFY_OP_EDGE_META_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
             RedisModule_ReplyWithSimpleString(ctx, "OK");
@@ -628,7 +627,6 @@ static enum selva_op_repl_state modify_edge_meta_op(
     } else if (op_code == SELVA_MODIFY_OP_EDGE_META_DEFAULT_LONGLONG ||
                op_code == SELVA_MODIFY_OP_EDGE_META_LONGLONG) {
         long long ll;
-        int err;
 
         if (op->meta_field_value_len != sizeof(ll)) {
             REPLY_WITH_ARG_TYPE_ERROR(ll);
@@ -661,7 +659,6 @@ static enum selva_op_repl_state modify_edge_meta_op(
     } else if (op_code == SELVA_MODIFY_OP_EDGE_META_DEFAULT_DOUBLE ||
                op_code == SELVA_MODIFY_OP_EDGE_META_DOUBLE) {
         double d;
-        int err;
 
         if (op->meta_field_value_len != sizeof(d)) {
             REPLY_WITH_ARG_TYPE_ERROR(d);
@@ -692,8 +689,6 @@ static enum selva_op_repl_state modify_edge_meta_op(
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (op_code == SELVA_MODIFY_OP_EDGE_META_DEL) {
-        int err;
-
         err = SelvaObject_DelKeyStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len);
         if (err == SELVA_ENOENT) {
             /* No need to replicate. */
