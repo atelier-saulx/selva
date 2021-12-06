@@ -1983,7 +1983,7 @@ static int bfs_expression(
                 continue;
             }
 
-            SVector_ForeachBegin(&it, (adj_vec));
+            SVector_ForeachBegin(&it, adj_vec);
             while ((adj = SVector_Foreach(&it))) {
                 /*
                  * If the field is an edge field we can filter edges by the
@@ -3222,7 +3222,7 @@ int SelvaHierarchy_EdgeGetMetadataCommand(RedisModuleCtx *ctx, RedisModuleString
     /*
      * Find the node.
      */
-    SelvaHierarchyNode *src_node = SelvaHierarchy_FindNode(hierarchy, src_node_id);
+    const SelvaHierarchyNode *src_node = SelvaHierarchy_FindNode(hierarchy, src_node_id);
     if (!src_node) {
         return replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);
     }
