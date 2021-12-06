@@ -1828,7 +1828,12 @@ static SVector *get_adj_vec(SelvaHierarchyNode *node, const char *field_str, siz
  * @param adj_vec is a pointer to the arcs vector field of an EdgeField structure.
  * @param node is a pointer to the node the edge is pointing to.
  */
-static int exec_edge_filter(struct RedisModuleCtx *ctx, struct rpn_ctx *edge_filter_ctx, struct rpn_expression *edge_filter, const SVector *adj_vec, SelvaHierarchyNode *node) {
+static int exec_edge_filter(
+        struct RedisModuleCtx *ctx,
+        struct rpn_ctx *edge_filter_ctx,
+        const struct rpn_expression *edge_filter,
+        const SVector *adj_vec,
+        const SelvaHierarchyNode *node) {
     struct EdgeField *edge_field = containerof(adj_vec, struct EdgeField, arcs);
     struct SelvaObject *edge_metadata;
     int err;
