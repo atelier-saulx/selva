@@ -28,6 +28,11 @@
 #include "traversal.h"
 #include "find_index.h"
 
+enum SelvaFindMetaFlags {
+    SELVA_FIND_META_FLAG_ORIGIN = 0x01,
+    SELVA_FIND_META_FLAG_EDGE = 0x02,
+};
+
 static int send_node_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
@@ -1244,20 +1249,21 @@ static size_t FindCommand_PrintOrderedArrayResult(
 
 /**
  * Find node(s) matching the query.
- * SELVA.HIERARCHY.find lang REDIS_KEY dir [field_name/expr] [edge_filter expr] [index [expr]] [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] NODE_IDS [expression] [args...]
- *                                     |   |                 |                  |              |                      |             |            |            |                    |        |            |
- * Traversal method/direction --------/    |                 |                  |              |                      |             |            |            |                    |        |            |
- * Traversed field or expression ---------/                  |                  |              |                      |             |            |            |                    |        |            |
- * Expression to decide whether and edge should be taken ---/                   |              |                      |             |            |            |                    |        |            |
- * Indexing hint --------------------------------------------------------------/               |                      |             |            |            |                    |        |            |
- * Sort order of the results -----------------------------------------------------------------/                       |             |            |            |                    |        |            |
- * Skip the first 1234 - 1 results ----------------------------------------------------------------------------------/              |            |            |                    |        |            |
- * Limit the number of results (Optional) -----------------------------------------------------------------------------------------/             |            |                    |        |            |
- * Merge fields. fields option must be set. ----------------------------------------------------------------------------------------------------/             |                    |        |            |
- * Return field values instead of node names ----------------------------------------------------------------------------------------------------------------/                     |        |            |
- * One or more node IDs concatenated (10 chars per ID) ---------------------------------------------------------------------------------------------------------------------------/         |            |
- * RPN filter expression ------------------------------------------------------------------------------------------------------------------------------------------------------------------/             |
- * Register arguments for the RPN filter ---------------------------------------------------------------------------------------------------------------------------------------------------------------/
+ * SELVA.HIERARCHY.find lang REDIS_KEY dir [field_name/expr] [edge_filter expr] [index [expr]] [order field asc|desc] [offset 1234] [limit 1234] [merge path] [meta 0] [fields field_names] NODE_IDS [expression] [args...]
+ *                                     |   |                 |                  |              |                      |             |            |            |        |                    |        |            |
+ * Traversal method/direction --------/    |                 |                  |              |                      |             |            |            |        |                    |        |            |
+ * Traversed field or expression ---------/                  |                  |              |                      |             |            |            |        |                    |        |            |
+ * Expression to decide whether and edge should be taken ---/                   |              |                      |             |            |            |        |                    |        |            |
+ * Indexing hint --------------------------------------------------------------/               |                      |             |            |            |        |                    |        |            |
+ * Sort order of the results -----------------------------------------------------------------/                       |             |            |            |        |                    |        |            |
+ * Skip the first 1234 - 1 results ----------------------------------------------------------------------------------/              |            |            |        |                    |        |            |
+ * Limit the number of results (Optional) -----------------------------------------------------------------------------------------/             |            |        |                    |        |            |
+ * Merge fields. fields option must be set. ----------------------------------------------------------------------------------------------------/             |        |                    |        |            |
+ * Return metada data. origin = source field and node used to visit this node. edge = edge metadata object; -------------------------------------------------/         |                    |        |            |
+ * Return field values instead of node names -------------------------------------------------------------------------------------------------------------------------/                     |        |            |
+ * One or more node IDs concatenated (10 chars per ID) ------------------------------------------------------------------------------------------------------------------------------------/         |            |
+ * RPN filter expression ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------/             |
+ * Register arguments for the RPN filter ------------------------------------------------------------------------------------------------------------------------------------------------------------------------/
  *
  * The traversed field is typically either ancestors or descendants but it can
  * be any hierarchy or edge field.
@@ -1283,6 +1289,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     int ARGV_LIMIT_NUM       = 5;
     int ARGV_MERGE_TXT       = 4;
     int ARGV_MERGE_VAL       = 5;
+    int ARGV_META_TXT        = 4;
+    int ARGV_META_VAL        = 5;
     int ARGV_FIELDS_TXT      = 4;
     int ARGV_FIELDS_VAL      = 5;
     int ARGV_NODE_IDS        = 4;
@@ -1302,6 +1310,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     ARGV_LIMIT_NUM += i; \
     ARGV_MERGE_TXT += i; \
     ARGV_MERGE_VAL += i; \
+    ARGV_META_TXT += i; \
+    ARGV_META_VAL += i; \
     ARGV_FIELDS_TXT += i; \
     ARGV_FIELDS_VAL += i; \
     ARGV_NODE_IDS += i; \
@@ -1475,6 +1485,25 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             SHIFT_ARGS(2);
         }
     }
+
+    /*
+     * Parse meta.
+     */
+    enum SelvaFindMetaFlags meta_flags = 0;
+    if (argc > ARGV_META_VAL) {
+        ssize_t v;
+
+        err = SelvaArgParser_IntOpt(&v, "meta", argv[ARGV_META_TXT], argv[ARGV_META_VAL]);
+        if (err != SELVA_ENOENT) {
+            if (err < 0) {
+                return replyWithSelvaErrorf(ctx, err, "invalid meta flags");
+            }
+
+            meta_flags = (typeof(meta_flags))v;
+            SHIFT_ARGS(2);
+        }
+    }
+
 
     /*
      * Parse fields.
