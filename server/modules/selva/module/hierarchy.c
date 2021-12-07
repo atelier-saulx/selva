@@ -79,12 +79,6 @@ enum SelvaHierarchyNode_Relationship {
 
 typedef void (*HierarchyNode_HeadCallback)(SelvaHierarchyNode *node, void *arg);
 
-/**
- * Called for each node found during a traversal.
- * @returns 0 to continue the traversal; 1 to interrupt the traversal.
- */
-typedef int (*HierarchyNode_Callback)(SelvaHierarchyNode *node, void *arg);
-
 typedef void (*HierarchyNode_ChildCallback)(SelvaHierarchyNode *parent, SelvaHierarchyNode *child, void *arg);
 
 typedef struct TraversalCallback {
@@ -97,7 +91,7 @@ typedef struct TraversalCallback {
     /**
      * Called for each node in the hierarchy.
      */
-    HierarchyNode_Callback node_cb;
+    SelvaHierarchyNodeCallback node_cb;
     void * node_arg;
 
     /**
@@ -1600,7 +1594,7 @@ static int dfs(
         const TraversalCallback * restrict cb) {
     size_t offset;
     HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : &HierarchyNode_HeadCallback_Dummy;
-    HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
+    SelvaHierarchyNodeCallback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
     HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : &HierarchyNode_ChildCallback_Dummy;
 
     switch (dir) {
@@ -1677,7 +1671,7 @@ static int full_dfs(SelvaHierarchy *hierarchy, const TraversalCallback * restric
     SVECTOR_AUTOFREE(stack);
 
     HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : &HierarchyNode_HeadCallback_Dummy;
-    HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
+    SelvaHierarchyNodeCallback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
     HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : &HierarchyNode_ChildCallback_Dummy;
 
     if (unlikely(!SVector_Init(&stack, selva_glob_config.hierarchy_expected_resp_len, NULL))) {
@@ -1746,7 +1740,7 @@ out:
 
 #define BFS_TRAVERSE(hierarchy, head, cb) \
     HierarchyNode_HeadCallback head_cb = (cb)->head_cb ? (cb)->head_cb : HierarchyNode_HeadCallback_Dummy; \
-    HierarchyNode_Callback node_cb = (cb)->node_cb ? (cb)->node_cb : HierarchyNode_Callback_Dummy; \
+    SelvaHierarchyNodeCallback node_cb = (cb)->node_cb ? (cb)->node_cb : HierarchyNode_Callback_Dummy; \
     HierarchyNode_ChildCallback child_cb = (cb)->child_cb ? (cb)->child_cb : HierarchyNode_ChildCallback_Dummy; \
     \
     SVECTOR_AUTOFREE(_bfs_q); \
@@ -2012,17 +2006,6 @@ static int traverse_edge_field(
     return 0;
 }
 
-/*
- * A little trampoline to hide the scary internals of the hierarchy
- * implementation from the innocent users just wanting to traverse the
- * hierarchy.
- */
-static __hot int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaHierarchyNode *node, void *arg) {
-    struct SelvaHierarchyCallback *cb = (struct SelvaHierarchyCallback *)arg;
-
-    return cb->node_cb(node, cb->node_arg);
-}
-
 static int traverse_bfs_edge_field(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
@@ -2032,8 +2015,8 @@ static int traverse_bfs_edge_field(
     const TraversalCallback tcb = {
         .head_cb = NULL,
         .head_arg = NULL,
-        .node_cb = SelvaModify_TraverseHierarchy_cb_wrapper,
-        .node_arg = (void *)cb,
+        .node_cb = cb->node_cb,
+        .node_arg = cb->node_arg,
         .child_cb = NULL,
         .child_arg = NULL,
     };
@@ -2084,8 +2067,8 @@ int SelvaModify_TraverseHierarchy(
     const TraversalCallback tcb = {
         .head_cb = NULL,
         .head_arg = NULL,
-        .node_cb = SelvaModify_TraverseHierarchy_cb_wrapper,
-        .node_arg = (void *)cb,
+        .node_cb = cb->node_cb,
+        .node_arg = cb->node_arg,
         .child_cb = NULL,
         .child_arg = NULL,
     };
@@ -2242,8 +2225,8 @@ int SelvaHierarchy_TraverseExpressionBfs(
     const TraversalCallback tcb = {
         .head_cb = NULL,
         .head_arg = NULL,
-        .node_cb = SelvaModify_TraverseHierarchy_cb_wrapper,
-        .node_arg = (void *)cb,
+        .node_cb = cb->node_cb,
+        .node_arg = cb->node_arg,
         .child_cb = NULL,
         .child_arg = NULL,
     };

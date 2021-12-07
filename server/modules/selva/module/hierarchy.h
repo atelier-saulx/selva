@@ -150,10 +150,10 @@ struct SelvaHierarchy {
  * Called for each node found during a traversal.
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */
-typedef int (*SelvaHierarchyCallback)(struct SelvaHierarchyNode *node, void *arg);
+typedef int (*SelvaHierarchyNodeCallback)(struct SelvaHierarchyNode *node, void *arg);
 
 struct SelvaHierarchyCallback {
-    SelvaHierarchyCallback node_cb;
+    SelvaHierarchyNodeCallback node_cb;
     void * node_arg;
 };
 
