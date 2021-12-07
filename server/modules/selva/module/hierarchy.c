@@ -1749,8 +1749,8 @@ out:
     HierarchyNode_Callback node_cb = (cb)->node_cb ? (cb)->node_cb : HierarchyNode_Callback_Dummy; \
     HierarchyNode_ChildCallback child_cb = (cb)->child_cb ? (cb)->child_cb : HierarchyNode_ChildCallback_Dummy; \
     \
-    SVECTOR_AUTOFREE(q); \
-    if (unlikely(!SVector_Init(&q, selva_glob_config.hierarchy_expected_resp_len, NULL))) { \
+    SVECTOR_AUTOFREE(_bfs_q); \
+    if (unlikely(!SVector_Init(&_bfs_q, selva_glob_config.hierarchy_expected_resp_len, NULL))) { \
         return SELVA_HIERARCHY_ENOMEM; \
     } \
     \
@@ -1760,10 +1760,10 @@ out:
     } \
     \
     Trx_Visit(&trx_cur, &(head)->trx_label); \
-    SVector_Insert(&q, (head)); \
+    SVector_Insert(&_bfs_q, (head)); \
     head_cb((head), (cb)->head_arg); \
-    while (SVector_Size(&q) > 0) { \
-        SelvaHierarchyNode *node = SVector_Shift(&q);
+    while (SVector_Size(&_bfs_q) > 0) { \
+        SelvaHierarchyNode *node = SVector_Shift(&_bfs_q);
 
 #define BFS_VISIT_NODE() \
         if (node_cb(node, cb->node_arg)) { \
@@ -1771,23 +1771,27 @@ out:
             return 0; \
         }
 
-#define BFS_VISIT_ADJACENT(adj_vec) do { \
-        struct SVectorIterator it; \
-        \
-        SVector_ForeachBegin(&it, (adj_vec)); \
-        SelvaHierarchyNode *adj; \
-        while ((adj = SVector_Foreach(&it))) { \
-            if (Trx_Visit(&trx_cur, &adj->trx_label)) { \
-                if (adj->flags.detached) { \
-                    int subtree_err = restore_subtree(hierarchy, adj->id); \
-                    if (subtree_err) { \
-                        Trx_End(&(hierarchy)->trx_state, &trx_cur); \
-                        return subtree_err; \
-                    } \
+#define BFS_VISIT_ADJACENT(adj_node) do { \
+        if (Trx_Visit(&trx_cur, &(adj_node)->trx_label)) { \
+            if ((adj_node)->flags.detached) { \
+                int subtree_err = restore_subtree(hierarchy, (adj_node)->id); \
+                if (subtree_err) { \
+                    Trx_End(&(hierarchy)->trx_state, &trx_cur); \
+                    return subtree_err; \
                 } \
-                child_cb(node, adj, cb->child_arg); \
-                SVector_Insert(&q, adj); \
             } \
+            child_cb(node, (adj_node), cb->child_arg); \
+            SVector_Insert(&_bfs_q, (adj_node)); \
+        } \
+    } while (0)
+
+#define BFS_VISIT_ADJACENTS(adj_vec) do { \
+        struct SVectorIterator _bfs_visit_it; \
+        \
+        SVector_ForeachBegin(&_bfs_visit_it, (adj_vec)); \
+        SelvaHierarchyNode *_adj; \
+        while ((_adj = SVector_Foreach(&_bfs_visit_it))) { \
+            BFS_VISIT_ADJACENT(_adj); \
         } \
     } while (0)
 
@@ -1820,7 +1824,7 @@ static __hot int bfs(
         const SVector *adj_vec = (SVector *)((char *)node + offset);
 
         BFS_VISIT_NODE();
-        BFS_VISIT_ADJACENT(adj_vec);
+        BFS_VISIT_ADJACENTS(adj_vec);
     } BFS_TRAVERSE_END(hierarchy);
 
     return 0;
@@ -1848,7 +1852,7 @@ static int bfs_edge(
             continue;
         }
 
-        BFS_VISIT_ADJACENT(&edge_field->arcs);
+        BFS_VISIT_ADJACENTS(&edge_field->arcs);
     } BFS_TRAVERSE_END(hierarchy);
 
     return 0;
@@ -1910,7 +1914,7 @@ static int bfs_expression(
                 continue;
             }
 
-            BFS_VISIT_ADJACENT(adj_vec);
+            BFS_VISIT_ADJACENTS(adj_vec);
         }
 
         SelvaSet_Destroy(&fields);
