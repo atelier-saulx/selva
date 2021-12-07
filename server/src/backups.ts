@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs'
 import { join as pathJoin } from 'path'
-import { createClient } from 'redis'
+import { SelvaClient } from '@saulx/selva'
 
 let LAST_BACKUP_TIMESTAMP: number = 0
 let LAST_RUN: number = Date.now()
@@ -38,25 +38,16 @@ export async function loadBackup(redisDir: string, backupFns: BackupFns) {
 }
 
 export async function saveAndBackUp(
+  client: SelvaClient,
   redisDir: string,
-  redisPort: number,
   backupFns: BackupFns
 ): Promise<void> {
-  const client = createClient({ port: redisPort })
-
   try {
-    await new Promise<void>((resolve, reject) => {
-      client.save((err) => {
-        if (err) reject(err)
-        else resolve()
-      })
-    })
+    await client.redis.save()
     await backupFns.sendBackup(pathJoin(redisDir, 'dump.rdb'))
   } catch (e) {
     console.error(`Failed to back up ${e.stack}`)
     throw e
-  } finally {
-    client.quit()
   }
 }
 

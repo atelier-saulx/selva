@@ -183,7 +183,7 @@ export class SelvaServer extends EventEmitter {
       throw new Error(`No backup options supplied`)
     }
 
-    await saveAndBackUp(this.backupDir, this.port, this.backupFns)
+    await saveAndBackUp(this.selvaClient, this.backupDir, this.backupFns)
   }
 }
 
