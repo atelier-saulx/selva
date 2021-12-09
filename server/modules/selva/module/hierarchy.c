@@ -77,36 +77,6 @@ enum SelvaHierarchyNode_Relationship {
     RELATIONSHIP_CHILD,
 };
 
-typedef void (*HierarchyNode_HeadCallback)(SelvaHierarchyNode *node, void *arg);
-
-/**
- * Called for each node found during a traversal.
- * @returns 0 to continue the traversal; 1 to interrupt the traversal.
- */
-typedef int (*HierarchyNode_Callback)(SelvaHierarchyNode *node, void *arg);
-
-typedef void (*HierarchyNode_ChildCallback)(SelvaHierarchyNode *parent, SelvaHierarchyNode *child, void *arg);
-
-typedef struct TraversalCallback {
-    /**
-     * Called for each orphan head in the hierarchy.
-     */
-    HierarchyNode_HeadCallback head_cb;
-    void * head_arg;
-
-    /**
-     * Called for each node in the hierarchy.
-     */
-    HierarchyNode_Callback node_cb;
-    void * node_arg;
-
-    /**
-     * Called for each child of current node.
-     */
-    HierarchyNode_ChildCallback child_cb;
-    void * child_arg;
-} TraversalCallback;
-
 /**
  * Structure for traversal cb of verifyDetachableSubtree().
  */
@@ -1572,7 +1542,7 @@ int SelvaModify_DelHierarchyNode(
     return SelvaModify_DelHierarchyNodeP(ctx, hierarchy, node, flags, NULL);
 }
 
-static void HierarchyNode_HeadCallback_Dummy(SelvaHierarchyNode *node, void *arg) {
+static void SelvaHierarchyHeadCallback_Dummy(SelvaHierarchyNode *node, void *arg) {
     REDISMODULE_NOT_USED(node);
     REDISMODULE_NOT_USED(arg);
 }
@@ -1584,7 +1554,7 @@ static int HierarchyNode_Callback_Dummy(SelvaHierarchyNode *node, void *arg) {
     return 0;
 }
 
-static void HierarchyNode_ChildCallback_Dummy(SelvaHierarchyNode *parent, SelvaHierarchyNode *child, void *arg) {
+static void SelvaHierarchyChildCallback_Dummy(SelvaHierarchyNode *parent, SelvaHierarchyNode *child, void *arg) {
     REDISMODULE_NOT_USED(parent);
     REDISMODULE_NOT_USED(child);
     REDISMODULE_NOT_USED(arg);
@@ -1597,11 +1567,11 @@ static int dfs(
         SelvaHierarchy *hierarchy,
         SelvaHierarchyNode *head,
         enum SelvaHierarchyNode_Relationship dir,
-        const TraversalCallback * restrict cb) {
+        const struct SelvaHierarchyCallback * restrict cb) {
+    SelvaHierarchyHeadCallback head_cb = cb->head_cb ? cb->head_cb : &SelvaHierarchyHeadCallback_Dummy;
+    SelvaHierarchyNodeCallback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
+    SelvaHierarchyChildCallback child_cb = cb->child_cb ? cb->child_cb : &SelvaHierarchyChildCallback_Dummy;
     size_t offset;
-    HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : &HierarchyNode_HeadCallback_Dummy;
-    HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
-    HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : &HierarchyNode_ChildCallback_Dummy;
 
     switch (dir) {
     case RELATIONSHIP_PARENT:
@@ -1672,13 +1642,12 @@ out:
 /**
  * Traverse through all nodes of the hierarchy from heads to leaves.
  */
-static int full_dfs(SelvaHierarchy *hierarchy, const TraversalCallback * restrict cb) {
+static int full_dfs(SelvaHierarchy *hierarchy, const struct SelvaHierarchyCallback * restrict cb) {
+    SelvaHierarchyHeadCallback head_cb = cb->head_cb ? cb->head_cb : &SelvaHierarchyHeadCallback_Dummy;
+    SelvaHierarchyNodeCallback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
+    SelvaHierarchyChildCallback child_cb = cb->child_cb ? cb->child_cb : &SelvaHierarchyChildCallback_Dummy;
     SelvaHierarchyNode *head;
     SVECTOR_AUTOFREE(stack);
-
-    HierarchyNode_HeadCallback head_cb = cb->head_cb ? cb->head_cb : &HierarchyNode_HeadCallback_Dummy;
-    HierarchyNode_Callback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
-    HierarchyNode_ChildCallback child_cb = cb->child_cb ? cb->child_cb : &HierarchyNode_ChildCallback_Dummy;
 
     if (unlikely(!SVector_Init(&stack, selva_glob_config.hierarchy_expected_resp_len, NULL))) {
         return SELVA_HIERARCHY_ENOMEM;
@@ -1745,9 +1714,9 @@ out:
 }
 
 #define BFS_TRAVERSE(hierarchy, head, cb) \
-    HierarchyNode_HeadCallback head_cb = (cb)->head_cb ? (cb)->head_cb : HierarchyNode_HeadCallback_Dummy; \
-    HierarchyNode_Callback node_cb = (cb)->node_cb ? (cb)->node_cb : HierarchyNode_Callback_Dummy; \
-    HierarchyNode_ChildCallback child_cb = (cb)->child_cb ? (cb)->child_cb : HierarchyNode_ChildCallback_Dummy; \
+    SelvaHierarchyHeadCallback head_cb = (cb)->head_cb ? (cb)->head_cb : SelvaHierarchyHeadCallback_Dummy; \
+    SelvaHierarchyNodeCallback node_cb = (cb)->node_cb ? (cb)->node_cb : HierarchyNode_Callback_Dummy; \
+    SelvaHierarchyChildCallback child_cb = (cb)->child_cb ? (cb)->child_cb : SelvaHierarchyChildCallback_Dummy; \
     \
     SVECTOR_AUTOFREE(_bfs_q); \
     if (unlikely(!SVector_Init(&_bfs_q, selva_glob_config.hierarchy_expected_resp_len, NULL))) { \
@@ -1806,7 +1775,7 @@ static __hot int bfs(
         SelvaHierarchy *hierarchy,
         SelvaHierarchyNode *head,
         enum SelvaHierarchyNode_Relationship dir,
-        const TraversalCallback * restrict cb) {
+        const struct SelvaHierarchyCallback * restrict cb) {
     size_t offset;
 
     switch (dir) {
@@ -1835,7 +1804,7 @@ static int bfs_edge(
         SelvaHierarchyNode *head,
         const char *field_name_str,
         size_t field_name_len,
-        const TraversalCallback * restrict cb) {
+        const struct SelvaHierarchyCallback * restrict cb) {
     BFS_TRAVERSE(hierarchy, head, cb) {
         const struct EdgeField *edge_field;
 
@@ -1884,7 +1853,7 @@ static int bfs_expression(
         SelvaHierarchyNode *head,
         struct rpn_ctx *rpn_ctx,
         const struct rpn_expression *rpn_expr,
-        const TraversalCallback * restrict cb) {
+        const struct SelvaHierarchyCallback * restrict cb) {
     BFS_TRAVERSE(hierarchy, head, cb) {
         enum rpn_error rpn_err;
         struct SelvaSet fields;
@@ -1926,7 +1895,7 @@ static int bfs_expression(
 static int traverse_adjacent(
         SelvaHierarchyNode *head,
         enum SelvaTraversal dir,
-        const TraversalCallback *tcb) {
+        const struct SelvaHierarchyCallback *tcb) {
     const SVector *adjVec;
     struct SVectorIterator it;
     SelvaHierarchyNode *node;
@@ -2012,31 +1981,12 @@ static int traverse_edge_field(
     return 0;
 }
 
-/*
- * A little trampoline to hide the scary internals of the hierarchy
- * implementation from the innocent users just wanting to traverse the
- * hierarchy.
- */
-static __hot int SelvaModify_TraverseHierarchy_cb_wrapper(SelvaHierarchyNode *node, void *arg) {
-    struct SelvaHierarchyCallback *cb = (struct SelvaHierarchyCallback *)arg;
-
-    return cb->node_cb(node, cb->node_arg);
-}
-
 static int traverse_bfs_edge_field(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         const char *field_name_str,
         size_t field_name_len,
         const struct SelvaHierarchyCallback *cb) {
-    const TraversalCallback tcb = {
-        .head_cb = NULL,
-        .head_arg = NULL,
-        .node_cb = SelvaModify_TraverseHierarchy_cb_wrapper,
-        .node_arg = (void *)cb,
-        .child_cb = NULL,
-        .child_arg = NULL,
-    };
     SelvaHierarchyNode *head;
 
     head = SelvaHierarchy_FindNode(hierarchy, id);
@@ -2044,7 +1994,7 @@ static int traverse_bfs_edge_field(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    return bfs_edge(hierarchy, head, field_name_str, field_name_len, &tcb);
+    return bfs_edge(hierarchy, head, field_name_str, field_name_len, cb);
 }
 
 static int traverse_array(
@@ -2081,14 +2031,6 @@ int SelvaModify_TraverseHierarchy(
         const Selva_NodeId id,
         enum SelvaTraversal dir,
         const struct SelvaHierarchyCallback *cb) {
-    const TraversalCallback tcb = {
-        .head_cb = NULL,
-        .head_arg = NULL,
-        .node_cb = SelvaModify_TraverseHierarchy_cb_wrapper,
-        .node_arg = (void *)cb,
-        .child_cb = NULL,
-        .child_arg = NULL,
-    };
     SelvaHierarchyNode *head;
     int err;
 
@@ -2110,22 +2052,22 @@ int SelvaModify_TraverseHierarchy(
         break;
     case SELVA_HIERARCHY_TRAVERSAL_CHILDREN:
     case SELVA_HIERARCHY_TRAVERSAL_PARENTS:
-        err = traverse_adjacent(head, dir, &tcb);
+        err = traverse_adjacent(head, dir, cb);
         break;
     case SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS:
-        err = bfs(hierarchy, head, RELATIONSHIP_PARENT, &tcb);
+        err = bfs(hierarchy, head, RELATIONSHIP_PARENT, cb);
         break;
     case SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS:
-        err = bfs(hierarchy, head, RELATIONSHIP_CHILD, &tcb);
+        err = bfs(hierarchy, head, RELATIONSHIP_CHILD, cb);
         break;
     case SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS:
-        err = dfs(hierarchy, head, RELATIONSHIP_PARENT, &tcb);
+        err = dfs(hierarchy, head, RELATIONSHIP_PARENT, cb);
         break;
      case SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS:
-        err = dfs(hierarchy, head, RELATIONSHIP_CHILD, &tcb);
+        err = dfs(hierarchy, head, RELATIONSHIP_CHILD, cb);
         break;
      case SELVA_HIERARCHY_TRAVERSAL_DFS_FULL:
-        err = full_dfs(hierarchy, &tcb);
+        err = full_dfs(hierarchy, cb);
         break;
      default:
         /* Should probably use some other traversal function. */
@@ -2239,14 +2181,6 @@ int SelvaHierarchy_TraverseExpressionBfs(
         struct rpn_ctx *rpn_ctx,
         const struct rpn_expression *rpn_expr,
         const struct SelvaHierarchyCallback *cb) {
-    const TraversalCallback tcb = {
-        .head_cb = NULL,
-        .head_arg = NULL,
-        .node_cb = SelvaModify_TraverseHierarchy_cb_wrapper,
-        .node_arg = (void *)cb,
-        .child_cb = NULL,
-        .child_arg = NULL,
-    };
     SelvaHierarchyNode *head;
 
     head = SelvaHierarchy_FindNode(hierarchy, id);
@@ -2254,7 +2188,7 @@ int SelvaHierarchy_TraverseExpressionBfs(
         return SELVA_HIERARCHY_ENOENT;
     }
 
-    return bfs_expression(ctx, hierarchy, head, rpn_ctx, rpn_expr, &tcb);
+    return bfs_expression(ctx, hierarchy, head, rpn_ctx, rpn_expr, cb);
 }
 
 int SelvaModify_TraverseArray(
@@ -2493,7 +2427,7 @@ static void HierarchyRDBSaveChild(SelvaHierarchyNode *parent, SelvaHierarchyNode
 
 static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
     SelvaHierarchy *hierarchy = (SelvaHierarchy *)value;
-    const TraversalCallback cb = {
+    const struct SelvaHierarchyCallback cb = {
         .head_cb = NULL,
         .head_arg = NULL,
         .node_cb = HierarchyRDBSaveNode,
@@ -2581,7 +2515,7 @@ static void Hierarchy_SubtreeRDBSave(RedisModuleIO *io, void *value) {
     struct SelvaHierarchySubtree *subtree = (struct SelvaHierarchySubtree *)value;
     SelvaHierarchy *hierarchy = subtree->hierarchy;
     struct SelvaHierarchyNode *node = subtree->node;
-    const TraversalCallback cb = {
+    const struct SelvaHierarchyCallback cb = {
         .head_cb = NULL,
         .head_arg = NULL,
         .node_cb = HierarchyRDBSaveNode,
@@ -2664,7 +2598,7 @@ static int verifyDetachableSubtree(SelvaHierarchy *hierarchy, struct SelvaHierar
         .err = 0,
         .head = node,
     };
-    const TraversalCallback cb = {
+    const struct SelvaHierarchyCallback cb = {
         .head_cb = NULL,
         .head_arg = NULL,
         .node_cb = verifyDetachableSubtreeNodeCb,

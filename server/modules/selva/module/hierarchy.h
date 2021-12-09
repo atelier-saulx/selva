@@ -147,14 +147,46 @@ struct SelvaHierarchy {
 };
 
 /**
+ * Called for the first node in the traversal.
+ * This is typically the node that was given as an argument to a traversal function.
+ * @param node a pointer to the node.
+ * @param arg a pointer to head_arg give in SelvaHierarchyCallback structure.
+ */
+typedef void (*SelvaHierarchyHeadCallback)(struct SelvaHierarchyNode *node, void *arg);
+
+/**
  * Called for each node found during a traversal.
+ * @param node a pointer to the node.
+ * @param arg a pointer to node_arg give in SelvaHierarchyCallback structure.
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */
-typedef int (*SelvaHierarchyCallback)(struct SelvaHierarchyNode *node, void *arg);
+typedef int (*SelvaHierarchyNodeCallback)(struct SelvaHierarchyNode *node, void *arg);
+
+/**
+ * Called for each adjacent node during a traversal.
+ * @param node a pointer to the node.
+ * @param arg a pointer to child_arg give in SelvaHierarchyCallback structure.
+ */
+typedef void (*SelvaHierarchyChildCallback)(struct SelvaHierarchyNode *parent, struct SelvaHierarchyNode *child, void *arg);
 
 struct SelvaHierarchyCallback {
-    SelvaHierarchyCallback node_cb;
+    /**
+     * Called for each orphan head in the hierarchy.
+     */
+    SelvaHierarchyHeadCallback head_cb;
+    void * head_arg;
+
+    /**
+     * Called for each node in the hierarchy.
+     */
+    SelvaHierarchyNodeCallback node_cb;
     void * node_arg;
+
+    /**
+     * Called for each child of current node.
+     */
+    SelvaHierarchyChildCallback child_cb;
+    void * child_arg;
 };
 
 typedef int (*SelvaModify_ArrayObjectCallback)(struct SelvaObject *obj, void *arg);
