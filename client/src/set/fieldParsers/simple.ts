@@ -51,7 +51,8 @@ export const verifiers = {
     return typeof payload === 'string' && validURL(payload)
   },
   email: (payload: string) => {
-    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    const re =
+      /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
     return re.test(payload.toLowerCase())
   },
   number: (payload: number) => {
@@ -67,7 +68,7 @@ export const verifiers = {
     return typeof payload === 'number'
   },
   type: (payload: string) => {
-    return typeof payload === 'string' && payload.length < 20
+    return typeof payload === 'string'
   },
   id: (payload: string) => {
     return typeof payload === 'string' && payload.length < 20
