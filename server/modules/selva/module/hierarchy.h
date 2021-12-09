@@ -146,15 +146,34 @@ struct SelvaHierarchy {
     } index_detached;
 };
 
+typedef void (*SelvaHierarchyHeadCallback)(struct SelvaHierarchyNode *node, void *arg);
+
 /**
  * Called for each node found during a traversal.
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */
 typedef int (*SelvaHierarchyNodeCallback)(struct SelvaHierarchyNode *node, void *arg);
 
+typedef void (*SelvaHierarchyChildCallback)(struct SelvaHierarchyNode *parent, struct SelvaHierarchyNode *child, void *arg);
+
 struct SelvaHierarchyCallback {
+    /**
+     * Called for each orphan head in the hierarchy.
+     */
+    SelvaHierarchyHeadCallback head_cb;
+    void * head_arg;
+
+    /**
+     * Called for each node in the hierarchy.
+     */
     SelvaHierarchyNodeCallback node_cb;
     void * node_arg;
+
+    /**
+     * Called for each child of current node.
+     */
+    SelvaHierarchyChildCallback child_cb;
+    void * child_arg;
 };
 
 typedef int (*SelvaModify_ArrayObjectCallback)(struct SelvaObject *obj, void *arg);
