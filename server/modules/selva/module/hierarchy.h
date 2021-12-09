@@ -146,14 +146,27 @@ struct SelvaHierarchy {
     } index_detached;
 };
 
+/**
+ * Called for the first node in the traversal.
+ * This is typically the node that was given as an argument to a traversal function.
+ * @param node a pointer to the node.
+ * @param arg a pointer to head_arg give in SelvaHierarchyCallback structure.
+ */
 typedef void (*SelvaHierarchyHeadCallback)(struct SelvaHierarchyNode *node, void *arg);
 
 /**
  * Called for each node found during a traversal.
+ * @param node a pointer to the node.
+ * @param arg a pointer to node_arg give in SelvaHierarchyCallback structure.
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */
 typedef int (*SelvaHierarchyNodeCallback)(struct SelvaHierarchyNode *node, void *arg);
 
+/**
+ * Called for each adjacent node during a traversal.
+ * @param node a pointer to the node.
+ * @param arg a pointer to child_arg give in SelvaHierarchyCallback structure.
+ */
 typedef void (*SelvaHierarchyChildCallback)(struct SelvaHierarchyNode *parent, struct SelvaHierarchyNode *child, void *arg);
 
 struct SelvaHierarchyCallback {
