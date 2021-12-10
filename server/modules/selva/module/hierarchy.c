@@ -1572,12 +1572,17 @@ static int dfs(
     SelvaHierarchyNodeCallback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
     SelvaHierarchyChildCallback child_cb = cb->child_cb ? cb->child_cb : &SelvaHierarchyChildCallback_Dummy;
     size_t offset;
+    struct SelvaHierarchyTraversalMetadata child_metadata;
 
     switch (dir) {
     case RELATIONSHIP_PARENT:
+        child_metadata.origin_field_str = (const char *)"parents";
+        child_metadata.origin_field_len = 7;
         offset = offsetof(SelvaHierarchyNode, parents);
         break;
     case RELATIONSHIP_CHILD:
+        child_metadata.origin_field_str = (const char *)"children";
+        child_metadata.origin_field_len = 8;
         offset = offsetof(SelvaHierarchyNode, children);
         break;
     default:
@@ -1626,11 +1631,8 @@ static int dfs(
                     }
                 }
 
-                const struct SelvaHierarchyTraversalMetadata metadata = {
-                    .parent = node,
-                };
-
-                child_cb(&metadata, adj, cb->child_arg);
+                child_metadata.origin_node = node;
+                child_cb(&child_metadata, adj, cb->child_arg);
 
                 /* Add to the stack of unvisited nodes */
                 SVector_Insert(&stack, adj);
@@ -1664,6 +1666,10 @@ static int full_dfs(SelvaHierarchy *hierarchy, const struct SelvaHierarchyCallba
 
     int err = 0;
     struct SVectorIterator it;
+    struct SelvaHierarchyTraversalMetadata child_metadata = {
+        .origin_field_str = (const char *)"children",
+        .origin_field_len = 8,
+    };
 
     SVector_ForeachBegin(&it, &hierarchy->heads);
     while ((head = SVector_Foreach(&it))) {
@@ -1703,11 +1709,8 @@ static int full_dfs(SelvaHierarchy *hierarchy, const struct SelvaHierarchyCallba
                         }
                     }
 
-                    const struct SelvaHierarchyTraversalMetadata metadata = {
-                        .parent = node,
-                    };
-
-                    child_cb(&metadata, adj, cb->child_arg);
+                    child_metadata.origin_node = node; /* parent */
+                    child_cb(&child_metadata, adj, cb->child_arg);
 
                     /* Add to the stack of unvisited nodes */
                     SVector_Insert(&stack, adj);
@@ -1748,7 +1751,7 @@ out:
             return 0; \
         }
 
-#define BFS_VISIT_ADJACENT(adj_node) do { \
+#define BFS_VISIT_ADJACENT(_origin_field_str, _origin_field_len, adj_node) do { \
         if (Trx_Visit(&trx_cur, &(adj_node)->trx_label)) { \
             if ((adj_node)->flags.detached) { \
                 int subtree_err = restore_subtree(hierarchy, (adj_node)->id); \
@@ -1758,20 +1761,22 @@ out:
                 } \
             } \
             const struct SelvaHierarchyTraversalMetadata _cb_metadata = { \
-                .parent = node, \
+                .origin_field_str = (_origin_field_str), \
+                .origin_field_len = (_origin_field_len), \
+                .origin_node = node, \
             }; \
             child_cb(&_cb_metadata, (adj_node), cb->child_arg); \
             SVector_Insert(&_bfs_q, (adj_node)); \
         } \
     } while (0)
 
-#define BFS_VISIT_ADJACENTS(adj_vec) do { \
+#define BFS_VISIT_ADJACENTS(origin_field_str, origin_field_len, adj_vec) do { \
         struct SVectorIterator _bfs_visit_it; \
         \
         SVector_ForeachBegin(&_bfs_visit_it, (adj_vec)); \
         SelvaHierarchyNode *_adj; \
         while ((_adj = SVector_Foreach(&_bfs_visit_it))) { \
-            BFS_VISIT_ADJACENT(_adj); \
+            BFS_VISIT_ADJACENT((origin_field_str), (origin_field_len), _adj); \
         } \
     } while (0)
 
@@ -1787,13 +1792,19 @@ static __hot int bfs(
         SelvaHierarchyNode *head,
         enum SelvaHierarchyNode_Relationship dir,
         const struct SelvaHierarchyCallback * restrict cb) {
+    const char *origin_field_str;
+    size_t origin_field_len;
     size_t offset;
 
     switch (dir) {
     case RELATIONSHIP_PARENT:
+        origin_field_str = (const char *)"parents";
+        origin_field_len = 7;
         offset = offsetof(SelvaHierarchyNode, parents);
         break;
     case RELATIONSHIP_CHILD:
+        origin_field_str = (const char *)"children";
+        origin_field_len = 8;
         offset = offsetof(SelvaHierarchyNode, children);
         break;
     default:
@@ -1804,7 +1815,7 @@ static __hot int bfs(
         const SVector *adj_vec = (SVector *)((char *)node + offset);
 
         BFS_VISIT_NODE();
-        BFS_VISIT_ADJACENTS(adj_vec);
+        BFS_VISIT_ADJACENTS(origin_field_str, origin_field_len, adj_vec);
     } BFS_TRAVERSE_END(hierarchy);
 
     return 0;
@@ -1832,24 +1843,22 @@ static int bfs_edge(
             continue;
         }
 
-        BFS_VISIT_ADJACENTS(&edge_field->arcs);
+        BFS_VISIT_ADJACENTS(field_name_str, field_name_len, &edge_field->arcs);
     } BFS_TRAVERSE_END(hierarchy);
 
     return 0;
 }
 
-static SVector *get_adj_vec(SelvaHierarchyNode *node, const RedisModuleString *field) {
-    TO_STR(field);
-
-    if (field_len == 8 && !strncmp("children", field_str, 8)) {
+static SVector *get_adj_vec(SelvaHierarchyNode *node, const char *field_name_str, size_t field_name_len) {
+    if (field_name_len == 8 && !strncmp("children", field_name_str, 8)) {
         return &node->children;
-    } else if (field_len == 7 && !strncmp("parents", field_str, 7)) {
+    } else if (field_name_len == 7 && !strncmp("parents", field_name_str, 7)) {
         return &node->parents;
     } else {
         /* Try EdgeField */
         struct EdgeField *edge_field;
 
-        edge_field = Edge_GetField(node, field_str, field_len);
+        edge_field = Edge_GetField(node, field_name_str, field_name_len);
         if (edge_field) {
             return &edge_field->arcs;
         }
@@ -1887,14 +1896,15 @@ static int bfs_expression(
 
         SELVA_SET_RMS_FOREACH(field_el, &fields) {
             const RedisModuleString *field = field_el->value_rms;
+            TO_STR(field);
             const SVector *adj_vec;
 
-            adj_vec = get_adj_vec(node, field);
+            adj_vec = get_adj_vec(node, field_str, field_len);
             if (!adj_vec) {
                 continue;
             }
 
-            BFS_VISIT_ADJACENTS(adj_vec);
+            BFS_VISIT_ADJACENTS(field_str, field_len, adj_vec);
         }
 
         SelvaSet_Destroy(&fields);
@@ -2159,12 +2169,13 @@ int SelvaHierarchy_TraverseExpression(
     /* For each field in the set. */
     SELVA_SET_RMS_FOREACH(field_el, &fields) {
         const RedisModuleString *field = field_el->value_rms;
+        TO_STR(field);
         const SVector *adj_vec;
         struct SVectorIterator it;
         SelvaHierarchyNode *adj;
 
         /* Get an SVector for the field. */
-        adj_vec = get_adj_vec(head, field);
+        adj_vec = get_adj_vec(head, field_str, field_len);
         if (!adj_vec) {
             continue;
         }
