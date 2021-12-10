@@ -1331,12 +1331,14 @@ int SelvaObject_GetArrayIndexAsSelvaObject(struct SelvaObject *obj, const char *
 
 int SelvaObject_GetArrayIndexAsLongLong(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, long long *out) {
     void *lptr;
-    int err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_LONGLONG, &lptr);
+    int err;
+    long long l;
+
+    err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_LONGLONG, &lptr);
     if (err) {
         return err;
     }
 
-    long long l;
     memcpy(&l, lptr, sizeof(long long));
     *out = l;
     return 0;
@@ -1344,12 +1346,14 @@ int SelvaObject_GetArrayIndexAsLongLong(struct SelvaObject *obj, const char *key
 
 int SelvaObject_GetArrayIndexAsDouble(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, double *out) {
     void *dptr;
-    int err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_DOUBLE, &dptr);
+    int err;
+    double d;
+
+    err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_DOUBLE, &dptr);
     if (err) {
         return err;
     }
 
-    double d;
     memcpy(&d, dptr, sizeof(double));
     *out = d;
     return 0;
@@ -1459,12 +1463,6 @@ int SelvaObject_AssignArrayIndex(struct SelvaObject *obj, const RedisModuleStrin
     return SelvaObject_AssignArrayIndexStr(obj, key_name_str, key_name_len, subtype, idx, p);
 }
 
-int SelvaObject_InsertArrayIndex(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, size_t idx, void *p) {
-    TO_STR(key_name);
-
-    return SelvaObject_AssignArrayIndexStr(obj, key_name_str, key_name_len, subtype, idx, p);
-}
-
 int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, size_t idx, void *p) {
     struct SelvaObjectKey *key;
     int err;
@@ -1493,7 +1491,13 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     return 0;
 }
 
-int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx) {
+int SelvaObject_InsertArrayIndex(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, size_t idx, void *p) {
+    TO_STR(key_name);
+
+    return SelvaObject_InsertArrayIndexStr(obj, key_name_str, key_name_len, subtype, idx, p);
+}
+
+int SelvaObject_RemoveArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -1515,6 +1519,12 @@ int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const char *key_name_s
     SVector_RemoveIndex(key->array, idx);
 
     return 0;
+}
+
+int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const RedisModuleString *key_name, size_t idx) {
+    TO_STR(key_name);
+
+    return SelvaObject_RemoveArrayIndexStr(obj, key_name_str, key_name_len, idx);
 }
 
 int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType *out_subtype, SVector **out_p) {
@@ -1560,6 +1570,7 @@ size_t SelvaObject_GetArrayLenStr(struct SelvaObject *obj, const char *key_name_
 
 size_t SelvaObject_GetArrayLen(struct SelvaObject *obj, const RedisModuleString *key_name) {
     TO_STR(key_name);
+
     return SelvaObject_GetArrayLenStr(obj, key_name_str, key_name_len);
 }
 

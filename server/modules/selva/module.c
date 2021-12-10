@@ -519,7 +519,7 @@ static enum selva_op_repl_state modify_op(
 
         memcpy(&v, value_str, sizeof(uint32_t));
 
-        err = SelvaObject_RemoveArrayIndex(obj, field_str, field_len, v);
+        err = SelvaObject_RemoveArrayIndexStr(obj, field_str, field_len, v);
         if (err) {
             replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",
                     (int)field_len, field_str);
