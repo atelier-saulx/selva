@@ -1554,8 +1554,8 @@ static int HierarchyNode_Callback_Dummy(SelvaHierarchyNode *node, void *arg) {
     return 0;
 }
 
-static void SelvaHierarchyChildCallback_Dummy(SelvaHierarchyNode *parent, SelvaHierarchyNode *child, void *arg) {
-    REDISMODULE_NOT_USED(parent);
+static void SelvaHierarchyChildCallback_Dummy(const struct SelvaHierarchyTraversalMetadata *metadata, SelvaHierarchyNode *child, void *arg) {
+    REDISMODULE_NOT_USED(metadata);
     REDISMODULE_NOT_USED(child);
     REDISMODULE_NOT_USED(arg);
 }
@@ -1626,7 +1626,11 @@ static int dfs(
                     }
                 }
 
-                child_cb(node, adj, cb->child_arg);
+                const struct SelvaHierarchyTraversalMetadata metadata = {
+                    .parent = node,
+                };
+
+                child_cb(&metadata, adj, cb->child_arg);
 
                 /* Add to the stack of unvisited nodes */
                 SVector_Insert(&stack, adj);
@@ -1699,7 +1703,11 @@ static int full_dfs(SelvaHierarchy *hierarchy, const struct SelvaHierarchyCallba
                         }
                     }
 
-                    child_cb(node, adj, cb->child_arg);
+                    const struct SelvaHierarchyTraversalMetadata metadata = {
+                        .parent = node,
+                    };
+
+                    child_cb(&metadata, adj, cb->child_arg);
 
                     /* Add to the stack of unvisited nodes */
                     SVector_Insert(&stack, adj);
@@ -1749,7 +1757,10 @@ out:
                     return subtree_err; \
                 } \
             } \
-            child_cb(node, (adj_node), cb->child_arg); \
+            const struct SelvaHierarchyTraversalMetadata _cb_metadata = { \
+                .parent = node, \
+            }; \
+            child_cb(&_cb_metadata, (adj_node), cb->child_arg); \
             SVector_Insert(&_bfs_q, (adj_node)); \
         } \
     } while (0)
@@ -2418,8 +2429,8 @@ static int HierarchyRDBSaveNode(SelvaHierarchyNode *node, void *arg) {
     return 0;
 }
 
-static void HierarchyRDBSaveChild(SelvaHierarchyNode *parent, SelvaHierarchyNode *child, void *arg) {
-    REDISMODULE_NOT_USED(parent);
+static void HierarchyRDBSaveChild(const struct SelvaHierarchyTraversalMetadata *metadata, SelvaHierarchyNode *child, void *arg) {
+    REDISMODULE_NOT_USED(metadata);
     RedisModuleIO *io = (RedisModuleIO *)arg;
 
     RedisModule_SaveStringBuffer(io, child->id, SELVA_NODE_ID_SIZE);
