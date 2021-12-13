@@ -30,7 +30,7 @@ int SelvaResolve_NodeId(
     }
 
     for (size_t i = 0; i < nr_ids; i++) {
-        RedisModuleString *id = ids[i];
+        const RedisModuleString *id = ids[i];
         TO_STR(id);
 
         /* First check if it's a nodeId. */

@@ -3,9 +3,9 @@ unusedFunction // This will be reported in the build anyway but without macro st
 unreachableCode // Lot of useless warnings
 varFuncNullUB // Can't find anything backing this claim and indeed passing NULL is often suggested in UNIX docs
 cert-API01-C
-cert-EXP05-C:rmutil/sds.h
+cert-EXP05-C:lib/rmutil/sds.h
 cert-EXP05-C:include/redismodule.h
 unusedStructMember:modify/rpn.c
 internalAstError:modify/hierarchy.c
 internalAstError:module.c
-internalAstError:util/svector.c
+internalAstError:lib/util/svector.c
