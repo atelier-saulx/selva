@@ -30,3 +30,24 @@
    fun:moduleLoadFromQueue
    fun:main
 }
+
+{
+   <memtest>
+   Memcheck:Cond
+   fun:memtest_compare
+   fun:memtest_compare_times
+   fun:memtest_preserving_test
+   fun:memtest_test_linux_anonymous_maps
+   fun:sigsegvHandler
+}
+
+{
+   <sigsegv_handler>
+   Memcheck:Cond
+   fun:__vfprintf_internal
+   fun:__vsnprintf_internal
+   fun:vsnprintf
+   fun:serverLog
+   fun:logStackContent
+   fun:sigsegvHandler
+}
