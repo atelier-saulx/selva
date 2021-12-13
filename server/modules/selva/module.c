@@ -54,7 +54,9 @@ SET_DECLARE(selva_onunld, Selva_Onunload);
  * This function depends on the argument order of selva.modify.
  */
 void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisModuleString **orig_argv) {
-    long long count = bitmap_popcount(replset);
+    const int leading_args = 3; /* [cmd_name, key, flags] */
+    const long long count = bitmap_popcount(replset);
+    RedisModuleString **argv;
 
     /*
      * TODO REDISMODULE_CTX_FLAGS_REPLICATED would be more appropriate here but it's
@@ -64,16 +66,7 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
         return; /* Skip. */
     }
 
-    /*
-     * Redis doesn't have an external API to call commands nor replication the
-     * same way as it delivers them. Also the API is quite horrible because it
-     * only provides variadic function for replication. Therefore, we need to
-     * do a little hack here make dynamic arguments work.
-     */
-    const int leading_args = 3; /* [cmd_name, key, flags] */
-    RedisModuleString **argv;
-
-    argv = RedisModule_PoolAlloc(ctx, ((size_t)((long long)leading_args + count)) * sizeof(RedisModuleString *));
+    argv = RedisModule_PoolAlloc(ctx, ((size_t)((long long)leading_args + 3 * count)) * sizeof(RedisModuleString *));
     if (!argv) {
         fprintf(stderr, "%s:%d: Replication error: %s\n",
                 __FILE__, __LINE__,
@@ -98,17 +91,6 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
         }
         i_arg_type += 3;
     }
-
-#if 0
-    fprintf(stderr, "%s:%d: Replicating: ", __FILE__, __LINE__);
-    for (int i = 0; i < argc; i++) {
-        RedisModuleString *arg = argv[i];
-        TO_STR(arg);
-
-        fwrite(arg_str, sizeof(char), arg_len, stderr);
-        fputc(' ', stderr);
-    }
-#endif
 
     RedisModule_ReplicateVerbatimArgs(ctx, argv, argc);
 }
