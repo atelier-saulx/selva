@@ -163,11 +163,20 @@ typedef void (*SelvaHierarchyHeadCallback)(struct SelvaHierarchyNode *node, void
 typedef int (*SelvaHierarchyNodeCallback)(struct SelvaHierarchyNode *node, void *arg);
 
 /**
+ * Traversal metadata for child/adjacent nodes.
+ */
+struct SelvaHierarchyTraversalMetadata {
+    const char *origin_field_str;
+    size_t origin_field_len;
+    struct SelvaHierarchyNode *origin_node;
+};
+
+/**
  * Called for each adjacent node during a traversal.
  * @param node a pointer to the node.
  * @param arg a pointer to child_arg give in SelvaHierarchyCallback structure.
  */
-typedef void (*SelvaHierarchyChildCallback)(struct SelvaHierarchyNode *parent, struct SelvaHierarchyNode *child, void *arg);
+typedef void (*SelvaHierarchyChildCallback)(const struct SelvaHierarchyTraversalMetadata *metadata, struct SelvaHierarchyNode *child, void *arg);
 
 struct SelvaHierarchyCallback {
     /**
