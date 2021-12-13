@@ -150,12 +150,8 @@ retry:
  * The key must be cleared before calling this function.
  */
 static int init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType subtype, size_t size) {
-    /*
-     * Type must be set before initializing the vector to avoid a situation
-     * where we'd have a key with an unknown value type.
-     */
-    key->type = SELVA_OBJECT_ARRAY;
-    key->subtype = subtype;
+    key->type = SELVA_OBJECT_NULL;
+    key->subtype = SELVA_OBJECT_NULL;
 
     key->array = RedisModule_Calloc(1, sizeof(SVector));
     if (!key->array) {
@@ -164,11 +160,12 @@ static int init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType su
 
     if (!SVector_Init(key->array, size, NULL)) {
         RedisModule_Free(key->array);
-        key->type = SELVA_OBJECT_NULL;
-        key->subtype = SELVA_OBJECT_NULL;
         key->array = NULL;
         return SELVA_ENOMEM;
     }
+
+    key->type = SELVA_OBJECT_ARRAY;
+    key->subtype = subtype;
 
     return 0;
 }
@@ -258,7 +255,9 @@ static int clear_key_value(struct SelvaObjectKey *key) {
          * In general default shouldn't be used because it may mask out missing
          * type handling but it's acceptable here.
          */
-        fprintf(stderr, "%s: Unknown object value type (%d)\n", __FILE__, (int)key->type);
+        fprintf(stderr, "%s:%d: Unknown object value type (%d)\n",
+                __FILE__, __LINE__,
+                (int)key->type);
         return SELVA_EINTYPE;
     }
 
@@ -453,8 +452,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             ary_idx = get_array_field_index(s, slen);
 
             if (ary_idx == -1) {
-                size_t ary_len = SelvaObject_GetArrayLenStr(obj, s, new_len);
-                ary_idx = ary_len - 1;
+                ary_idx = SelvaObject_GetArrayLenStr(obj, s, new_len) - 1;
             }
         }
 
