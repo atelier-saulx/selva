@@ -74,7 +74,6 @@ static struct EdgeFieldConstraint *create_constraint(const struct EdgeFieldDynCo
 
     p->constraint_id = EDGE_FIELD_CONSTRAINT_DYNAMIC;
     p->flags = params->flags | EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC;
-    memcpy(p->node_type, params->fwd_node_type, SELVA_NODE_TYPE_SIZE);
     p->field_name_str = (char *)p + sizeof(*p);
     p->field_name_len = fwd_field_name_len;
     memcpy(p->field_name_str, fwd_field_name_str, fwd_field_name_len);
@@ -170,8 +169,6 @@ static void *so_rdb_load(struct RedisModuleIO *io, int encver __unused, void *lo
     struct EdgeFieldDynConstraintParams params = { 0 };
 
     params.flags = RedisModule_LoadUnsigned(io);
-
-    /* create_constraint() doesn't need params.fwd_node_type */
 
     params.fwd_field_name = RedisModule_LoadString(io);
     if (params.flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {

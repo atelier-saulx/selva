@@ -52,8 +52,6 @@ struct EdgeFieldConstraint {
      */
     unsigned char flags;
 
-    Selva_NodeType node_type;
-
     /**
      * Forward traversing field of this constraint.
      */
