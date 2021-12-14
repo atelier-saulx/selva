@@ -156,11 +156,11 @@ int SelvaObject_GetString(struct SelvaObject *obj, const struct RedisModuleStrin
 int SelvaObject_SetDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value);
 int SelvaObject_SetDouble(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
 int SelvaObject_SetDoubleDefaultStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value);
-int SelvaObject_SetDoubleDefault(struct SelvaObject *obj, const RedisModuleString *key_name, double value);
+int SelvaObject_SetDoubleDefault(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
 int SelvaObject_SetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value);
 int SelvaObject_SetLongLong(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long value);
 int SelvaObject_SetLongLongDefaultStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value);
-int SelvaObject_SetLongLongDefault(struct SelvaObject *obj, const RedisModuleString *key_name, long long value);
+int SelvaObject_SetLongLongDefault(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long value);
 int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct RedisModuleString *value);
 /**
  * Set a string value.
@@ -177,7 +177,7 @@ int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct RedisMod
 int SelvaObject_GetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject **out);
 int SelvaObject_GetObject(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct SelvaObject **out);
 int SelvaObject_SetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject *value);
-int SelvaObject_SetObject(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObject *in);
+int SelvaObject_SetObject(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct SelvaObject *in);
 
 int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
 int SelvaObject_AddLongLongSet(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long value);
