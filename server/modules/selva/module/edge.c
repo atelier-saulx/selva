@@ -218,27 +218,22 @@ static int get_or_create_EdgeField(
         unsigned constraint_id,
         struct EdgeField **out) {
     Selva_NodeType node_type;
-    const struct EdgeFieldConstraint *constraint;
     struct EdgeField *edge_field;
 
     SelvaHierarchy_GetNodeType(node_type, node);
-    constraint = Edge_GetConstraint(constraints, constraint_id, node_type, field_name_str, field_name_len);
-    if (!constraint) {
-        return SELVA_EINVAL;
-    }
 
     edge_field = Edge_GetField(node, field_name_str, field_name_len);
     if (!edge_field) {
+        const struct EdgeFieldConstraint *constraint;
+
+        constraint = Edge_GetConstraint(constraints, constraint_id, node_type, field_name_str, field_name_len);
+        if (!constraint) {
+            return SELVA_EINVAL;
+        }
+
         edge_field = Edge_NewField(node, field_name_str, field_name_len, constraint);
         if (!edge_field) {
             return SELVA_ENOMEM;
-        }
-    } else {
-        if (edge_field->constraint != constraint) {
-            return SELVA_EINVAL;
-        }
-        if (SVector_Search(&edge_field->arcs, node)) {
-            return SELVA_EEXIST;
         }
     }
 
