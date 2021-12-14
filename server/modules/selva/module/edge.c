@@ -802,7 +802,7 @@ static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused vo
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
         const struct EdgeFieldConstraint *constraint = edgeField->constraint;
 
-        RedisModule_SaveStringBuffer(io, constraint->node_type, SELVA_NODE_TYPE_SIZE);
+        RedisModule_SaveStringBuffer(io, edgeField->src_node_id, SELVA_NODE_TYPE_SIZE);
         RedisModule_SaveStringBuffer(io, constraint->field_name_str, constraint->field_name_len);
     }
     RedisModule_SaveUnsigned(io, SVector_Size(&edgeField->arcs)); /* nr_edges */
