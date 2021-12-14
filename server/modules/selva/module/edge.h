@@ -16,6 +16,9 @@ struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct SelvaObject;
 
+/*
+ * Constraint ids.
+ */
 #define EDGE_FIELD_CONSTRAINT_ID_DEFAULT    0
 #define EDGE_FIELD_CONSTRAINT_SINGLE_REF    1
 #define EDGE_FIELD_CONSTRAINT_DYNAMIC       2
@@ -28,12 +31,14 @@ struct SelvaObject;
  * If one edge is removed the other edge is removed too. This flag requires
  * that fwd_field, and bck_field are set.
  */
-#define EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF       0x01 /*!< Single reference edge. */
-#define EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL    0x02 /*!< Bidirectional reference. */
-#define EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC          0x04 /*!< Lookup from dynamic constraints by node type and field_name. */
+enum EdgeFieldConstraintFlag {
+    EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF       = 0x01, /*!< Single reference edge. */
+    EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL    = 0x02, /*!< Bidirectional reference. */
+    EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC          = 0x04, /*!< Lookup from dynamic constraints by node type and field_name. */
+} __attribute__((packed));
 
 struct EdgeFieldDynConstraintParams {
-    unsigned char flags;
+    enum EdgeFieldConstraintFlag flags;
     Selva_NodeType fwd_node_type;
     struct RedisModuleString *fwd_field_name;
     struct RedisModuleString *bck_field_name;
@@ -50,7 +55,7 @@ struct EdgeFieldConstraint {
     /**
      * Constraint flags controlling the behaviour.
      */
-    unsigned char flags;
+    enum EdgeFieldConstraintFlag flags;
 
     Selva_NodeType node_type;
 

@@ -263,7 +263,7 @@ int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     }
 
     struct EdgeFieldDynConstraintParams params = {
-        .flags = (unsigned char)flags,
+        .flags = flags,
         .fwd_node_type = SELVA_TYPE_INITIALIZER(fwd_type),
         .fwd_field_name = argv[ARGV_FWD_FIELD],
         .bck_field_name = argv[ARGV_BCK_FIELD],
@@ -284,7 +284,6 @@ int Edge_ListConstraintsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     const int ARGV_REDIS_KEY = 1;
     int err;
 
-    fprintf(stderr, "argc: %d\n", argc);
     if (argc != 2) {
         return RedisModule_WrongArity(ctx);
     }
