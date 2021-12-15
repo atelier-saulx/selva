@@ -812,6 +812,131 @@ test.serial('bidirectional edge fields', async (t) => {
   )
 })
 
+test.serial('biedge missing symmetric constraint', async (t) => {
+  const client = connect({ port })
+
+  // Create dynamic constraints
+  await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
+      'te',
+      'players',
+      '2',
+      'team',
+  )
+
+  // Create nodes
+  await client.redis.selva_modify('root', '', '0', 'o.a', 'root')
+  await client.redis.selva_modify('te1', '', '0', 'o.a', 'dun')
+  await client.redis.selva_modify('pl1', '', '0', 'o.a', 'dan')
+
+  const res = await client.redis.selva_modify('te1', '', '5', 'players', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: toCArr(['pl1']),
+    $delete: null,
+    $value: null,
+  }))
+  t.true(res[1] instanceof Error)
+})
+
+test.serial('edge type constraints', async (t) => {
+  const client = connect({ port })
+
+  // Create dynamic constraints
+  await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
+      'ro', // source node type
+      'teams', // source field name
+      '0', // constraint flags
+      '', // bck field name
+      'te' // dst node type
+  )
+  await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
+      'te',
+      'players',
+      '2',
+      'team',
+      'pl',
+  )
+  await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
+      'pl',
+      'team',
+      '2',
+      'players',
+      'te',
+  )
+
+  // Create nodes
+  await client.redis.selva_modify('root', '', '0', 'o.a', 'root')
+  await client.redis.selva_modify('te1', '', '0', 'o.a', 'dun')
+  await client.redis.selva_modify('pl1', '', '0', 'o.a', 'dan')
+  await client.redis.selva_modify('pl2', '', '0', 'o.a', 'dandan')
+
+  let res;
+
+  // FAIL
+  res = await client.redis.selva_modify('root', '', '5', 'teams', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: toCArr(['pl1']),
+    $delete: null,
+    $value: null,
+  }))
+  t.true(res[1] instanceof Error)
+  // PASS
+  res = await client.redis.selva_modify('root', '', '5', 'teams', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: toCArr(['te1']),
+    $delete: null,
+    $value: null,
+  }))
+  t.deepEqual(res[1], 'UPDATED')
+
+  // FAIL
+  res = await client.redis.selva_modify('te1', '', '5', 'players', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: toCArr(['root']),
+    $delete: null,
+    $value: null,
+  }))
+  t.true(res[1] instanceof Error)
+  // PASS
+  res = await client.redis.selva_modify('te1', '', '5', 'players', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: toCArr(['pl1']),
+    $delete: null,
+    $value: null,
+  }))
+  t.deepEqual(res[1], 'UPDATED')
+
+  // FAIL
+  res = await client.redis.selva_modify('pl2', '', '5', 'team', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: toCArr(['root']),
+    $delete: null,
+    $value: null,
+  }))
+  t.true(res[1] instanceof Error)
+  // PASS
+  res = await client.redis.selva_modify('pl2', '', '5', 'team', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: toCArr(['te1']),
+    $delete: null,
+    $value: null,
+  }))
+  t.deepEqual(res[1], 'UPDATED')
+})
+
 test.serial('wildcard find with edge fields', async (t) => {
   const client = connect({ port })
 

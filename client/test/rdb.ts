@@ -187,30 +187,61 @@ test.serial('can reload from RDB', async (t) => {
     }
   })
 
-  await client.set({
-    $id: 'viTest',
+  await client.redis.save()
+  await wait(1000)
+  await restartServer()
+  await client.destroy()
+  await wait(5000)
+  client = connect({ port })
+
+  t.deepEqual(await client.get({ $id: 'viTest', $all: true, parents: true }), {
+    id: 'viTest',
+    type: 'lekkerType',
+    parents: ['root'],
     title: { en: 'hello' },
     stringAry: ['hello', 'world'],
     doubleAry: [1.0, 2.1, 3.2],
     intAry: [7, 6, 5, 4, 3, 2, 999],
-    children: [
+    objAry: [
       {
-        type: 'lekkerType',
-        title: { en: 'hello' },
-        children: [
-          {
-            type: 'lekkerType',
-            title: { en: 'hello' },
-          },
-          {
-            type: 'lekkerType',
-            title: { en: 'hallo' },
-          },
-        ]
-      }
-    ]
+        textyText: {
+          en: 'hello 1',
+          de: 'hallo 1',
+        },
+        strField: 'string value hello 1',
+        numField: 112,
+      },
+      {
+        textyText: {
+          en: 'hello 2',
+          de: 'hallo 2',
+        },
+        strField: 'string value hello 2',
+        numField: 113,
+      },
+    ],
   })
 
+  t.deepEqual(await client.get({ $id: 'viLink1', $all: true, lekkerLink: true, fren: true }), {
+    id: 'viLink1',
+    type: 'lekkerType',
+    title: { en: 'hi' },
+    lekkerLink: 'viLink2',
+    fren: 'viLink3',
+  })
+  t.deepEqual(await client.get({ $id: 'viLink2', $all: true, lekkerLink: true, fren: true }), {
+    id: 'viLink2',
+    type: 'lekkerType',
+    title: { en: 'yo' },
+    lekkerLink: 'viLink1',
+  })
+  t.deepEqual(await client.get({ $id: 'viLink3', $all: true, lekkerLink: true, fren: true }), {
+    id: 'viLink3',
+    type: 'lekkerType',
+    title: { en: 'sup' },
+  })
+
+  // Do it again
   await client.redis.save()
   await wait(1000)
   await restartServer()
