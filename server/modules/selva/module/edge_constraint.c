@@ -291,7 +291,7 @@ int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     };
 
     if (argc > ARGC_DST_NODE_TYPE) {
-        RedisModuleString *dst_node_type = argv[ARGC_DST_NODE_TYPE];
+        const RedisModuleString *dst_node_type = argv[ARGC_DST_NODE_TYPE];
         TO_STR(dst_node_type);
 
         if (dst_node_type_len != SELVA_NODE_TYPE_SIZE) {
