@@ -232,8 +232,8 @@ retry:
 
 error:
     ASYNC_TASK_LOG("Thread restarting... Ran for %ld minutes", (cur_time.tv_sec - start_time.tv_sec) / 60);
-    thread_ids[thread_idx] = 0;
     redisFree(ctx);
+    thread_ids[thread_idx] = 0; /* Make it restart. */
 
     return NULL;
 }
