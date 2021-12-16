@@ -245,7 +245,18 @@ int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len) {
 
     for (size_t i = 0; i < ASYNC_TASK_HIREDIS_WORKER_COUNT; i++) {
         if (thread_ids[i] == 0) {
-            pthread_create(&thread_ids[i], NULL, SelvaModify_AsyncTaskWorkerMain, (void *)i);
+            pthread_attr_t attr;
+            pthread_t tid;
+
+            pthread_attr_init(&attr);
+            pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+            if (!pthread_create(&tid, &attr, SelvaModify_AsyncTaskWorkerMain, (void *)i)) {
+                thread_ids[i] = tid;
+            } else {
+                fprintf(stderr, "%s:%d: Failed to create worked_id: %zu\n",
+                        __FILE__, __LINE__,
+                        i);
+            }
         }
     }
 
