@@ -7,7 +7,8 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.14.168",
-    "@saulx/selva-server": "9.1.6"
+    "@saulx/selva-server": "9.1.6",
+    "fs-extra": "^10.0.0"
   },
   "dependencies": {
     "chokidar": "^3.5.1",
