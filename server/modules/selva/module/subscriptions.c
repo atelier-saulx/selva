@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
 
 #include <assert.h>
 #include <stddef.h>
@@ -1630,14 +1631,21 @@ static void defer_array_field_change_events(
         const struct Selva_SubscriptionMarkers *sub_markers,
         const char *field_str,
         size_t field_len) {
-    int ary_field_len = get_array_field_start_idx(field_str, field_len);
+    const char *ary_field_start = (const char *)memrchr(field_str, '[', field_len);
+    ssize_t ary_field_len;
+
+    if (ary_field_start) {
+        ary_field_len = ary_field_start - field_str;
+    } else {
+        ary_field_len = -1;
+    }
 
     if (ary_field_len > 0) {
         char ary_field_str[ary_field_len + 1];
         int path_field_len = -1;
-        char *path_field_start = NULL;
+        const char *path_field_start = NULL;
 
-        path_field_start = strchr(field_str + ary_field_len, ']');
+        path_field_start = (const char *)memrchr(field_str + ary_field_len, ']', field_len - ary_field_len);
         if (path_field_start) {
             path_field_start++;
             /* path part */
@@ -1670,7 +1678,7 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         const struct SelvaHierarchyNode *node,
         const char *field_str,
         size_t field_len) {
-    if (strchr(field_str, '[')) {
+    if (memrchr(field_str, '[', field_len)) {
         /* Array */
         /* Detached markers. */
         defer_array_field_change_events(ctx, hierarchy, node, &hierarchy->subs.detached_markers, field_str, field_len);

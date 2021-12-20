@@ -616,6 +616,32 @@ static char *pointer_values(void) {
     return NULL;
 }
 
+static char * set_invalid_array_key_1(void)
+{
+    const char key_name_str[] = "x]";
+    const size_t key_name_len = sizeof(key_name_str) - 1;
+    double v = 0.0;
+    int err;
+
+    err = SelvaObject_SetDoubleStr(root_obj, key_name_str, key_name_len, 1.0);
+    pu_assert_equal("no error", err, SELVA_EINVAL);
+
+    return NULL;
+}
+
+static char * set_invalid_array_key_2(void)
+{
+    const char key_name_str[] = "x.y]";
+    const size_t key_name_len = sizeof(key_name_str) - 1;
+    double v = 0.0;
+    int err;
+
+    err = SelvaObject_SetDoubleStr(root_obj, key_name_str, key_name_len, 1.0);
+    pu_assert_equal("no error", err, SELVA_EINVAL);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(setget_double, PU_RUN);
@@ -630,4 +656,6 @@ void all_tests(void)
     pu_def_test(delete_nested_key, PU_RUN);
     pu_def_test(string_array, PU_RUN);
     pu_def_test(pointer_values, PU_RUN);
+    pu_def_test(set_invalid_array_key_1, PU_RUN);
+    pu_def_test(set_invalid_array_key_2, PU_RUN);
 }
