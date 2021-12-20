@@ -41,15 +41,17 @@ IDIR := $(patsubst %,-I%,$(INCLUDE_DIR))
 CFLAGS += $(IDIR) -include tunables.h \
 	-O2 \
 	-fPIC \
-	-fno-strict-aliasing \
-	-D REDISMODULE_EXPERIMENTAL_API=1
+	-fno-strict-aliasing
 LIBDIR := $(patsubst %,lib/%,$(LIBS))
 SHOBJ_LDLIBS := -lc -lhiredis -lcrypto -lssl
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
+	CFLAGS += -include include/linux_cdefs.h
 	SHOBJ_CFLAGS ?= -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Bsymbolic
-else # macOS
+endif
+ifeq ($(uname_S),Darwin) # macOS
+	CFLAGS += -include include/macos_cdefs.h
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
 	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib /usr/local/Cellar/openssl@1.1/1.1.1k/lib

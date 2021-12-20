@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <limits.h>
 #include <stdalign.h>
@@ -447,9 +449,11 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         ssize_t ary_idx = -1;
         int err;
 
-        if (is_array_field(s, slen)) {
-            new_len = get_array_field_start_idx(s, slen);
-            ary_idx = get_array_field_index(s, slen);
+        const int ary_err = get_array_field_index(s, slen, &ary_idx);
+        if (ary_err == -2) {
+            return SELVA_EINVAL;
+        } else if (ary_err == 0) {
+            new_len = (const char *)memrchr(s, '[', slen) - s;
 
             if (ary_idx == -1) {
                 ary_idx = SelvaObject_GetArrayLenStr(obj, s, new_len) - 1;
@@ -656,6 +660,7 @@ static struct SelvaObjectKey *find_key(struct SelvaObject *obj, const char *key_
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
     SELVA_TRACE_BEGIN_AUTO(SelvaObject_get_key);
+    int ary_err;
     struct SelvaObjectKey *key;
 
     /* Prefetch seems to help just a little bit here. */
@@ -670,8 +675,12 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
     }
 
     /* just return the actual array type if getting type of an array field directly. */
-    if (is_array_field(key_name_str, key_name_len)) {
-        key_name_len = get_array_field_start_idx(key_name_str, key_name_len);
+
+    ary_err = get_array_field_index(key_name_str, key_name_len, NULL);
+    if (ary_err == -2) {
+        return SELVA_EINVAL;
+    } else if (ary_err == 0) {
+        key_name_len = (const char *)memrchr(key_name_str, '[', key_name_len) - key_name_str;
     }
 
     key = find_key(obj, key_name_str, key_name_len);
