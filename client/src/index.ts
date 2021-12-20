@@ -49,6 +49,8 @@ import { SetMetaResponse } from './set/types'
 
 export * as constants from './constants'
 
+export { SchemaOptions } from './schema/types'
+
 let clientId = 0
 
 export class SelvaClient extends EventEmitter {

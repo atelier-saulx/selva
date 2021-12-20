@@ -1,15 +1,6 @@
-import { Types, TypeSchema, FieldSchema } from './types'
+import { FieldSchema } from './types'
 
 export * from './types'
-
-export type SchemaOptions = {
-  sha?: string
-  languages?: string[]
-  types?: Types
-  rootType?: Pick<TypeSchema, 'fields'>
-  idSeedCounter?: number
-  prefixToTypeMapping?: Record<string, string>
-}
 
 export const defaultFields: Record<string, FieldSchema> = {
   id: {
