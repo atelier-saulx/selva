@@ -18,6 +18,9 @@ OBJS := \
 	strnstr.o \
 	svector.o \
 	trx.o
+ifeq ($(uname_S),Darwin) # macOS
+	OBJS += memrchr.o
+endif
 
 all: libutil.a
 
