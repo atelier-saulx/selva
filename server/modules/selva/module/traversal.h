@@ -12,7 +12,7 @@ enum SelvaTraversalAlgo {
 
 /**
  * Hierarchy traversal order.
- * Recognized by SelvaModify_TraverseHierarchy().
+ * Recognized by SelvaHierarchy_Traverse().
  */
 enum SelvaTraversal {
     SELVA_HIERARCHY_TRAVERSAL_NONE =            0x0000, /*!< Do nothing. */

@@ -1542,9 +1542,11 @@ int SelvaModify_DelHierarchyNode(
     return SelvaModify_DelHierarchyNodeP(ctx, hierarchy, node, flags, NULL);
 }
 
-static void SelvaHierarchyHeadCallback_Dummy(SelvaHierarchyNode *node, void *arg) {
+static int SelvaHierarchyHeadCallback_Dummy(SelvaHierarchyNode *node, void *arg) {
     REDISMODULE_NOT_USED(node);
     REDISMODULE_NOT_USED(arg);
+
+    return 0;
 }
 
 static int HierarchyNode_Callback_Dummy(SelvaHierarchyNode *node, void *arg) {
@@ -1601,7 +1603,9 @@ static int dfs(
     }
 
     SVector_Insert(&stack, head);
-    head_cb(head, cb->head_arg);
+    if (head_cb(head, cb->head_arg)) {
+        return 0;
+    }
 
     while (SVector_Size(&stack) > 0) {
         SelvaHierarchyNode *node;
@@ -1686,7 +1690,9 @@ static int full_dfs(SelvaHierarchy *hierarchy, const struct SelvaHierarchyCallba
             }
         }
 
-        head_cb(head, cb->head_arg);
+        if (head_cb(head, cb->head_arg)) {
+            return 0;
+        }
 
         while (SVector_Size(&stack) > 0) {
             SelvaHierarchyNode *node = SVector_Pop(&stack);
@@ -1741,7 +1747,7 @@ out:
     \
     Trx_Visit(&trx_cur, &(head)->trx_label); \
     SVector_Insert(&_bfs_q, (head)); \
-    head_cb((head), (cb)->head_arg); \
+    if (head_cb((head), (cb)->head_arg)) { return 0; } \
     while (SVector_Size(&_bfs_q) > 0) { \
         SelvaHierarchyNode *node = SVector_Shift(&_bfs_q);
 
@@ -1916,25 +1922,30 @@ static int bfs_expression(
 static int traverse_adjacent(
         SelvaHierarchyNode *head,
         enum SelvaTraversal dir,
-        const struct SelvaHierarchyCallback *tcb) {
+        const struct SelvaHierarchyCallback *cb) {
     const SVector *adjVec;
     struct SVectorIterator it;
     SelvaHierarchyNode *node;
 
-    assert(tcb->node_cb);
-
-    if (dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN) {
-        adjVec = &head->children;
-    } else if (dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS) {
-        adjVec = &head->parents;
-    } else {
-        return SELVA_HIERARCHY_EINVAL;
+    if (cb->head_cb && cb->head_cb(head, cb->head_arg)) {
+        return 0;
     }
 
-    SVector_ForeachBegin(&it, adjVec);
-    while ((node = SVector_Foreach(&it))) {
-        if (tcb->node_cb(node, tcb->node_arg)) {
-            return 0;
+    if (cb->node_cb) {
+        if (dir == SELVA_HIERARCHY_TRAVERSAL_CHILDREN) {
+            adjVec = &head->children;
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_PARENTS) {
+            adjVec = &head->parents;
+        } else {
+            return SELVA_HIERARCHY_EINVAL;
+        }
+
+        SVector_ForeachBegin(&it, adjVec);
+        while ((node = SVector_Foreach(&it))) {
+            /* RFE Should we also call child_cb? */
+            if (cb->node_cb(node, cb->node_arg)) {
+                return 0;
+            }
         }
     }
 
@@ -1943,12 +1954,16 @@ static int traverse_adjacent(
 
 static int traverse_ref(
         SelvaHierarchy *hierarchy,
-        const SelvaHierarchyNode *head,
+        SelvaHierarchyNode *head,
         const char *ref_field_str,
         size_t ref_field_len,
         const struct SelvaHierarchyCallback *cb) {
     struct SelvaObject *head_obj = head->obj;
     struct SelvaSet *ref_set;
+
+    if (cb->head_cb && cb->head_cb(head, cb->head_arg)) {
+        return 0;
+    }
 
     ref_set = SelvaObject_GetSetStr(head_obj, ref_field_str, ref_field_len);
     if (!ref_set) {
@@ -1980,11 +1995,15 @@ static int traverse_ref(
 }
 
 static int traverse_edge_field(
-        const SelvaHierarchyNode *head,
+        SelvaHierarchyNode *head,
         const char *ref_field_str,
         size_t ref_field_len,
         const struct SelvaHierarchyCallback *cb) {
     const struct EdgeField *edge_field;
+
+    if (cb->head_cb && cb->head_cb(head, cb->head_arg)) {
+        return 0;
+    }
 
     edge_field = Edge_GetField(head, ref_field_str, ref_field_len);
     if (edge_field) {
@@ -2047,7 +2066,7 @@ static int traverse_array(
     return 0;
 }
 
-int SelvaModify_TraverseHierarchy(
+int SelvaHierarchy_Traverse(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaTraversal dir,
@@ -2101,14 +2120,14 @@ int SelvaModify_TraverseHierarchy(
     return err;
 }
 
-int SelvaModify_TraverseHierarchyField(
+int SelvaHierarchy_TraverseField(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaTraversal dir,
         const char *field_name_str,
         size_t field_name_len,
         const struct SelvaHierarchyCallback *cb) {
-    const SelvaHierarchyNode *head;
+    SelvaHierarchyNode *head;
 
     head = SelvaHierarchy_FindNode(hierarchy, id);
     if (!head) {

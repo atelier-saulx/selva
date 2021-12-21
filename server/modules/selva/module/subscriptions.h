@@ -236,18 +236,6 @@ int Selva_Subscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy);
 void SelvaSubscriptions_DestroyAll(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy);
 
 /**
- * Do a traversal over the given marker.
- * Bear in mind that cb is passed directly to the hierarchy traversal, thus any
- * filter set in the marker is not executed and the callback must execute the
- * filter if required.
- */
-int SelvaSubscriptions_TraverseMarker(
-        struct RedisModuleCtx *ctx,
-        struct SelvaHierarchy *hierarchy,
-        struct Selva_SubscriptionMarker *marker,
-        const struct SelvaHierarchyCallback *cb);
-
-/**
  * Refresh a marker by id.
  * Note that in contrary to other refresh functions this one will only traverse
  * and refresh a single marker of the given subscription.

@@ -1696,7 +1696,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             TO_STR(ref_field);
 
             SELVA_TRACE_BEGIN(cmd_find_refs);
-            err = SelvaModify_TraverseHierarchyField(hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
+            err = SelvaHierarchy_TraverseField(hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
             SELVA_TRACE_END(cmd_find_refs);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
             SELVA_TRACE_BEGIN(cmd_find_bfs_expression);
@@ -1708,7 +1708,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             SELVA_TRACE_END(cmd_find_traversal_expression);
         } else {
             SELVA_TRACE_BEGIN(cmd_find_rest);
-            err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
+            err = SelvaHierarchy_Traverse(hierarchy, nodeId, dir, &cb);
             SELVA_TRACE_END(cmd_find_rest);
         }
         for (int j = 0; j < nr_index_hints; j++) {
