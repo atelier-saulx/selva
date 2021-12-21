@@ -1604,7 +1604,8 @@ static int dfs(
 
     SVector_Insert(&stack, head);
     if (head_cb(head, cb->head_arg)) {
-        return 0;
+        err = 0;
+        goto out;
     }
 
     while (SVector_Size(&stack) > 0) {
@@ -1691,7 +1692,8 @@ static int full_dfs(SelvaHierarchy *hierarchy, const struct SelvaHierarchyCallba
         }
 
         if (head_cb(head, cb->head_arg)) {
-            return 0;
+            err = 0;
+            goto out;
         }
 
         while (SVector_Size(&stack) > 0) {
@@ -1747,7 +1749,7 @@ out:
     \
     Trx_Visit(&trx_cur, &(head)->trx_label); \
     SVector_Insert(&_bfs_q, (head)); \
-    if (head_cb((head), (cb)->head_arg)) { return 0; } \
+    if (head_cb((head), (cb)->head_arg)) { Trx_End(&hierarchy->trx_state, &trx_cur); return 0; } \
     while (SVector_Size(&_bfs_q) > 0) { \
         SelvaHierarchyNode *node = SVector_Shift(&_bfs_q);
 
