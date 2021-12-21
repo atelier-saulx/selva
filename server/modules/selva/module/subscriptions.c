@@ -1331,9 +1331,13 @@ void SelvaSubscriptions_InheritEdge(
 
     SVector_ForeachBegin(&it, &src_markers->vec);
     while ((marker = SVector_Foreach(&it))) {
-        if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD && !strcmp(field_str, marker->ref_field)) {
-            set_marker(dst_markers, marker);
-            traversing = 1;
+        if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD) {
+            const size_t ref_field_len = strlen(marker->ref_field);
+
+            if (field_len == ref_field_len && !strncmp(field_str, marker->ref_field, ref_field_len)) {
+                set_marker(dst_markers, marker);
+                traversing = 1;
+            }
         }
     }
 
