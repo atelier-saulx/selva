@@ -399,7 +399,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         .node_arg = &args,
     };
 
-    err = SelvaModify_TraverseHierarchy(hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
+    err = SelvaHierarchy_Traverse(hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
     RedisModule_ReplySetArrayLength(ctx, args.nr_results);
 
     if (err) {

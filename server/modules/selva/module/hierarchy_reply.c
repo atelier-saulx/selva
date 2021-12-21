@@ -73,7 +73,7 @@ int HierarchyReply_WithTraversal(
      * [nodeId1, nodeId2,.. nodeIdn]
      */
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-    err = SelvaModify_TraverseHierarchy(hierarchy, nodeId, dir, &cb);
+    err = SelvaHierarchy_Traverse(hierarchy, nodeId, dir, &cb);
     RedisModule_ReplySetArrayLength(ctx, args.len);
 
     return err;

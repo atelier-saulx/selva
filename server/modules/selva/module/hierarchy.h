@@ -152,7 +152,7 @@ struct SelvaHierarchy {
  * @param node a pointer to the node.
  * @param arg a pointer to head_arg give in SelvaHierarchyCallback structure.
  */
-typedef void (*SelvaHierarchyHeadCallback)(struct SelvaHierarchyNode *node, void *arg);
+typedef int (*SelvaHierarchyHeadCallback)(struct SelvaHierarchyNode *node, void *arg);
 
 /**
  * Called for each node found during a traversal.
@@ -403,12 +403,12 @@ static inline int SelvaHierarchy_NodeExists(SelvaHierarchy *hierarchy, const Sel
  */
 ssize_t SelvaModify_GetHierarchyHeads(SelvaHierarchy *hierarchy, Selva_NodeId **res);
 
-int SelvaModify_TraverseHierarchy(
+int SelvaHierarchy_Traverse(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaTraversal dir,
         const struct SelvaHierarchyCallback *cb);
-int SelvaModify_TraverseHierarchyField(
+int SelvaHierarchy_TraverseField(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaTraversal dir,
