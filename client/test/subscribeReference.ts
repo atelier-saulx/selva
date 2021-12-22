@@ -57,7 +57,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.only('subscription to a reference', async (t) => {
+test.serial('subscription to a reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const menuItem = await client.set({
     $id: 'ma1',
