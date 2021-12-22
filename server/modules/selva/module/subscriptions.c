@@ -957,15 +957,14 @@ static int SelvaSubscriptions_TraverseMarker(
             err = SELVA_ENOMEM;
         }
     } else {
-        if (!err) {
-            /*
-             * We might end up here also when dir is one of the previous
-             * ones but ref_field was not set, or when dir is otherwise
-             * invalid but all of these will be handled propely by the
-             * following function.
-             */
-            err = SelvaHierarchy_Traverse(hierarchy, marker->node_id, dir, &cb);
-        }
+        /*
+         * The rest of the traversal directions are handled by the following
+         * function.
+         * We might also end up here when dir is one of the previous ones but
+         * some other condition was false, or when dir is invalid. All possible
+         * invalid cases will be handled propely by the following function.
+         */
+        err = SelvaHierarchy_Traverse(hierarchy, marker->node_id, dir, &cb);
     }
     if (err) {
 #if 0
