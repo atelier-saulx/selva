@@ -2,6 +2,11 @@
 #ifndef _TYPESTR_H_
 #define _TYPESTR_H_
 
+/**
+ * Get type of a variable as a string.
+ * @param v is a variable.
+ * @returns a C string.
+ */
 #define typeof_str(v) _Generic((0, v), \
     char: "char", \
     signed char: "signed char", \
