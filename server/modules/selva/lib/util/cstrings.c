@@ -54,7 +54,7 @@ int stringlist_searchn(const char *list, const char *str, size_t n) {
         return 0;
     }
 
-	while (*s1 != '\0') {
+    while (*s1 != '\0') {
 		ssize_t i = n;
 		const char *s2 = str;
 
