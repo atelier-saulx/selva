@@ -5,6 +5,11 @@
 #include <sys/mman.h>
 #include "mempool.h"
 
+/**
+ * Slab descriptor for a mempool.
+ * This struct is used to temporarily hold the slab size information shared by
+ * all slabs in a pool.
+ */
 struct slab_info {
     size_t total_bytes;
     size_t chunk_size;
@@ -12,6 +17,9 @@ struct slab_info {
     size_t nr_objects;
 };
 
+/**
+ * Calculate slab_info for mempool.
+ */
 static struct slab_info slab_info(const struct mempool * restrict mempool) {
     const size_t chunk_size = sizeof(struct mempool_object) + mempool->obj_size;
     const size_t nr_total = (mempool->slab_size - sizeof(struct mempool_slab)) / chunk_size;
@@ -25,6 +33,7 @@ static struct slab_info slab_info(const struct mempool * restrict mempool) {
 }
 
 void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size) {
+    /* mempool is 32bit internally. */
     assert(slab_size < UINT32_MAX);
     assert(obj_size < UINT32_MAX);
 
@@ -34,7 +43,10 @@ void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size) {
     LIST_INIT(&mempool->free_objects);
 }
 
-static void mempool_free_slab(struct mempool *mempool, struct mempool_slab *slab) {
+/**
+ * Free slab that was allocated in mempool
+ */
+static void mempool_free_slab(const struct mempool *mempool, struct mempool_slab *slab) {
     (void)munmap(slab, mempool->slab_size);
 }
 
@@ -60,7 +72,11 @@ void mempool_gc(struct mempool *mempool) {
     struct mempool_slab *slab;
     struct mempool_slab *slab_temp;
 
-	SLIST_FOREACH_SAFE(slab, &mempool->slabs, next_slab, slab_temp) {
+    /*
+     * Go through all the slabs and find the ones that have no object
+     * allocations.
+     */
+    SLIST_FOREACH_SAFE(slab, &mempool->slabs, next_slab, slab_temp) {
         if (slab->nr_free == info.nr_objects) {
 
             SLIST_REMOVE(&mempool->slabs, slab, mempool_slab, next_slab);
