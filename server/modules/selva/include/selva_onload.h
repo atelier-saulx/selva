@@ -6,12 +6,18 @@
 
 struct RedisModuleCtx;
 
-typedef int Selva_Onload(struct RedisModuleCtx *ctx);
-typedef int Selva_Onunload(void);
+typedef int Selva_Onload(struct RedisModuleCtx *ctx); /*!< Onload function. */
+typedef int Selva_Onunload(void); /*!< Onunload function. */
 
+/**
+ * Run fun when the module is loading.
+ */
 #define SELVA_ONLOAD(fun) \
     DATA_SET(selva_onload, fun)
 
+/**
+ * Run fun when the module is unloading.
+ */
 #define SELVA_ONUNLOAD(fun) \
     DATA_SET(selva_onunld, fun)
 
