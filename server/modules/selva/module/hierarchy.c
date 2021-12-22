@@ -1925,9 +1925,10 @@ static void traverse_adjacents(
         const SVector *adj_vec,
         const struct SelvaHierarchyCallback *cb) {
     struct SVectorIterator it;
-    SelvaHierarchyNode *node;
 
     if (cb->node_cb) {
+        SelvaHierarchyNode *node;
+
         SVector_ForeachBegin(&it, adj_vec);
         while ((node = SVector_Foreach(&it))) {
             /* RFE Should we also call child_cb? */
