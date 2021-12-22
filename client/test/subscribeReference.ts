@@ -341,3 +341,65 @@ test.serial('subscription to inherit an edge', async (t) => {
 
   await client.destroy()
 })
+
+test.serial('multiple references to a single node', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+  const sport = await client.set({
+    $language: 'en',
+    type: 'sport',
+    title: 'football',
+  })
+  const venue = await client.set({
+    $language: 'en',
+    type: 'venue',
+    title: 'Ipurua Stadium',
+  })
+
+  for (let i = 0; i < 2000; i++) {
+    await client.set({
+      $language: 'en',
+      type: 'match',
+      title: `football match ${i}`,
+      parents: [sport],
+      venue: venue,
+    })
+  }
+
+  const matchIds = (await client.get({
+    $id: sport,
+    children: true,
+  })).children
+
+  const subs = matchIds.map((id) => {
+    const obs = client.observe({
+      $id: id,
+      $language: 'en',
+      title: true,
+      venue: { title: true },
+    })
+
+    let i = 0;
+    return obs.subscribe((v) => {
+      t.regex(v.title, /^football match /)
+      if (i == 0) {
+        t.deepEqual(v.venue.title, 'Ipurua Stadium')
+      } else if (i == 1) {
+        t.deepEqual(v.venue.title, 'Some Stadium')
+      } else {
+        t.fail()
+      }
+      i++
+    })
+  })
+
+  await wait(5000)
+  await client.set({
+    $id: venue,
+    $language: 'en',
+    title: 'Some Stadium',
+  })
+  await wait(500)
+  subs.map((sub) => sub.unsubscribe())
+
+  await client.destroy()
+})
