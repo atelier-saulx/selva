@@ -96,7 +96,7 @@ void mempool_gc(struct mempool *mempool) {
 
             mempool_free_slab(mempool, slab);
         }
-	}
+    }
 }
 
 /**
