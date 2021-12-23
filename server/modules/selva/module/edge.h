@@ -217,7 +217,8 @@ int Edge_DeleteField(
  * @param node is a pointer to the node.
  * @returns Returns the number of references from other nodes.
  */
-int Edge_Refcount(struct SelvaHierarchyNode *node);
+size_t Edge_Refcount(struct SelvaHierarchyNode *node);
+
 void replyWithEdgeField(struct RedisModuleCtx *ctx, struct EdgeField *edge_field);
 
 int Edge_RdbLoad(struct RedisModuleIO *io, int encver, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node);
