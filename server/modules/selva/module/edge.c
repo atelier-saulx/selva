@@ -212,6 +212,9 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaHierarchyN
     }
 }
 
+/**
+ * Get an existing edge_field from node or create a new one.
+ */
 static int get_or_create_EdgeField(
         const struct EdgeFieldConstraints *constraints,
         struct SelvaHierarchyNode *node,
@@ -377,14 +380,20 @@ int Edge_Add(
     return err;
 }
 
+/*
+ * Remove origin references to src_edge_field from dst_node.
+ * Origin references are needed to know the origin of an edge. This allows
+ * things like removing edges from both ways.
+ * This function should be only called when an edge is being deleted.
+ */
 static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaHierarchyNode *dst_node) {
-    struct SelvaHierarchyMetadata *metadata;
+    struct SelvaHierarchyMetadata *dst_metadata;
     enum SelvaObjectType out_subtype;
     SVector *origin_fields;
     int err;
 
-    metadata = SelvaHierarchy_GetNodeMetadataByPtr(dst_node);
-    err = SelvaObject_GetArrayStr(metadata->edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, &out_subtype, &origin_fields);
+    dst_metadata = SelvaHierarchy_GetNodeMetadataByPtr(dst_node);
+    err = SelvaObject_GetArrayStr(dst_metadata->edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE, &out_subtype, &origin_fields);
     if (err) {
         return err;
     }
@@ -394,6 +403,7 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaHiera
 
     /*
      * Delete the edge origin reference from the destination.
+     * The same origin node might point dst_node from multiple edge fields.
      */
     if (SVector_Size(origin_fields) == 1) {
         /*
@@ -401,9 +411,9 @@ static int remove_origin_ref(struct EdgeField *src_edge_field, struct SelvaHiera
          * edge_field, as it should be so if all the ref counting is done
          * correctly.
          */
-        SelvaObject_DelKeyStr(metadata->edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE);
+        SelvaObject_DelKeyStr(dst_metadata->edge_fields.origins, src_edge_field->src_node_id, SELVA_NODE_ID_SIZE);
     } else {
-        /* Otherwise remove the specific edge_field from the SVector. */
+        /* Otherwise remove the specific edge_field from the origin_fields SVector. */
         ssize_t i;
 
         i = SVector_SearchIndex(origin_fields, src_edge_field);
@@ -494,6 +504,7 @@ int Edge_Delete(
         Selva_NodeId dst_node_id) {
     Selva_NodeId src_node_id;
     struct SelvaHierarchyNode *dst_node;
+    const struct EdgeFieldConstraint *src_constraint = edge_field->constraint;
     int err;
 
     SelvaHierarchy_GetNodeId(src_node_id, src_node);
@@ -513,6 +524,9 @@ int Edge_Delete(
         SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, src_node);
     }
 
+    /*
+     * Reference to the origin can be deleted now.
+     */
     err = remove_origin_ref(edge_field, dst_node);
     if (err) {
         return err;
@@ -525,13 +539,13 @@ int Edge_Delete(
 
     /*
      * For bidirectional edge fields we need to also remove the edge directed
-     * back from the destination node.
+     * back to src_node from dst_node.
      */
-    const struct EdgeFieldConstraint *src_constraint = edge_field->constraint;
+    src_constraint = edge_field->constraint;
     if (src_constraint && src_constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
-        struct EdgeField *bck_edge_field;
         const char *bck_field_name_str = src_constraint->bck_field_name_str;
         size_t bck_field_name_len = src_constraint->bck_field_name_len;
+        struct EdgeField *bck_edge_field;
 
         bck_edge_field = Edge_GetField(dst_node, bck_field_name_str, bck_field_name_len);
         if (bck_edge_field) {
@@ -542,18 +556,30 @@ int Edge_Delete(
             }
         }
     } else if (!src_constraint) {
-        fprintf(stderr, "%s:%d: Source field constraint not set\n",
-                __FILE__, __LINE__);
+        /* Every edge_field should have a reference to its constraint. */
+        fprintf(stderr, "%s:%d: Source field constraint not set. node: %.*s (edge_field: %p) -> %.*s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, src_node_id,
+                edge_field,
+                (int)SELVA_NODE_ID_SIZE, dst_node_id);
     }
 
     return 0;
 }
 
+/**
+ * Delete all edges of edge_field.
+ * @returns the number of edges deleted.
+ */
 static int clear_field(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *src_node, struct EdgeField *edge_field) {
     SVECTOR_AUTOFREE(arcs);
     struct SVectorIterator it;
     const struct SelvaHierarchyNode *dst_node;
+    int err = 0;
 
+    /*
+     * Clone the arcs vector to be safe with deletes.
+     */
     if (unlikely(!SVector_Clone(&arcs, &edge_field->arcs, NULL))) {
         return SELVA_ENOMEM;
     }
@@ -561,7 +587,6 @@ static int clear_field(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, st
     SVector_ForeachBegin(&it, &arcs);
     while ((dst_node = SVector_Foreach(&it))) {
         Selva_NodeId dst_node_id;
-        int err;
 
         SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
         err = Edge_Delete(
@@ -571,13 +596,20 @@ static int clear_field(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, st
                 src_node,
                 dst_node_id);
         if (err) {
-            fprintf(stderr, "%s:%d:%s: Unable to delete an edge: %s\n",
+            Selva_NodeId src_node_id;
+
+            SelvaHierarchy_GetNodeId(src_node_id, src_node);
+            fprintf(stderr, "%s:%d:%s: Unable to delete an edge %.*s (edge_field: %p) -> %.*s: %s\n",
                     __FILE__, __LINE__, __func__,
+                    (int)SELVA_NODE_ID_SIZE, src_node_id,
+                    edge_field,
+                    (int)SELVA_NODE_ID_SIZE, dst_node_id,
                     getSelvaErrorStr(err));
         }
     }
 
-    return (int)SVector_Size(&arcs);
+    /* Return only the last error. */
+    return (err) ? err : (int)SVector_Size(&arcs);
 }
 
 static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, struct SelvaObject *obj) {
@@ -588,7 +620,9 @@ static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierar
     it = SelvaObject_ForeachBegin(obj);
     while ((p = SelvaObject_ForeachValueType(obj, &it, NULL, &type))) {
         if (type == SELVA_OBJECT_POINTER) {
-            clear_field(ctx, hierarchy, node, p);
+            /* The pointer value is a pointer to an edge_field. */
+            /* RFE Presumably we can get away with any errors? */
+            (void)clear_field(ctx, hierarchy, node, p);
         } else if (type == SELVA_OBJECT_OBJECT) {
             _clear_all_fields(ctx, hierarchy, node, p);
         } else {
@@ -599,6 +633,9 @@ static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierar
     }
 }
 
+/**
+ * Clear all edge fields of node.
+ */
 static void clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
     struct SelvaObject *obj = SelvaHierarchy_GetNodeMetadataByPtr(node)->edge_fields.edges;
 
@@ -611,14 +648,11 @@ int Edge_ClearField(
         struct SelvaHierarchyNode *src_node,
         const char *field_name_str,
         size_t field_name_len) {
-    Selva_NodeType node_type;
     struct EdgeField *src_edge_field;
 
     if (!src_node) {
         return SELVA_ENOENT;
     }
-
-    SelvaHierarchy_GetNodeType(node_type, src_node);
 
     src_edge_field = Edge_GetField(src_node, field_name_str, field_name_len);
     if (!src_edge_field) {
@@ -634,17 +668,20 @@ int Edge_DeleteField(
         struct SelvaHierarchyNode *src_node,
         const char *field_name_str,
         size_t field_name_len) {
-    Selva_NodeType src_node_type;
     const struct EdgeField *src_edge_field;
     int res;
-
-    SelvaHierarchy_GetNodeType(src_node_type, src_node);
 
     src_edge_field = Edge_GetField(src_node, field_name_str, field_name_len);
     if (!src_edge_field) {
         return SELVA_ENOENT;
     }
 
+    /*
+     * The field should be empty before its deleted from the edges object
+     * because EdgeField_Free() can't call clear_field(). That's because
+     * clear_field() requires RedisModuleCtx structure, which we don't want to
+     * pass there.
+     */
     res = Edge_ClearField(ctx, hierarchy, src_node, field_name_str, field_name_len);
     if (res < 0) {
         return res;
@@ -662,14 +699,14 @@ int Edge_DeleteField(
     return 0;
 }
 
-int Edge_Refcount(struct SelvaHierarchyNode *node) {
+size_t Edge_Refcount(struct SelvaHierarchyNode *node) {
     struct SelvaHierarchyMetadata *metadata;
-    int refcount = 0;
+    size_t refcount = 0;
 
     metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 
     if (metadata->edge_fields.origins) {
-        refcount = (int)SelvaObject_Len(metadata->edge_fields.origins, NULL);
+        refcount = SelvaObject_Len(metadata->edge_fields.origins, NULL);
     }
 
     return refcount;
@@ -696,6 +733,9 @@ void replyWithEdgeField(struct RedisModuleCtx *ctx, struct EdgeField *edge_field
     EdgeField_Reply(ctx, edge_field);
 }
 
+/**
+ * Used by SelvaObject.
+ */
 static void EdgeField_Free(void *p) {
     struct EdgeField *edge_field = (struct EdgeField *)p;
 
@@ -704,18 +744,24 @@ static void EdgeField_Free(void *p) {
      * before this function is called, and thus we avoid passing the context.
      */
 #if 0
-    clear_all_fields(ctx, hierarchy, node, edge_field);
+    clear_field(ctx, hierarchy, node, edge_field);
 #endif
     SVector_Destroy(&edge_field->arcs);
     RedisModule_Free(p);
 }
 
+/**
+ * Used by SelvaObject.
+ */
 static size_t EdgeField_Len(void *p) {
     const struct EdgeField *edge_field = (struct EdgeField *)p;
 
     return SVector_Size(&edge_field->arcs);
 }
 
+/**
+ * Context for RDB loading edges objects.
+ */
 struct EdgeField_load_data {
     struct SelvaHierarchy *hierarchy;
     struct SelvaHierarchyNode *src_node;
