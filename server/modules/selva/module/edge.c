@@ -86,7 +86,7 @@ SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_edge);
 /**
  * Allocate a new EdgeField struct and initialize it.
  */
-static struct EdgeField *alloc_EdgeField(const Selva_NodeId src_node_id, const struct EdgeFieldConstraint *constraint, size_t initial_size) {
+__attribute__((nonnull (1, 2))) static struct EdgeField *alloc_EdgeField(const Selva_NodeId src_node_id, const struct EdgeFieldConstraint *constraint, size_t initial_size) {
     struct EdgeField *edgeField;
 
     assert(constraint);
@@ -137,7 +137,7 @@ struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *src_node, const
 /**
  * Create a new edge field and store it on the hierarchy node.
  */
-static struct EdgeField *Edge_NewField(
+__attribute__((nonnull (1, 4))) static struct EdgeField *Edge_NewField(
         struct SelvaHierarchyNode *node,
         const char *field_name_str,
         size_t field_name_len,
@@ -278,8 +278,6 @@ int Edge_Add(
     const struct EdgeFieldConstraint *constraint;
     struct EdgeField *src_edge_field = NULL;
     int err;
-
-    assert(hierarchy);
 
     /*
      * Get src_edge_field
