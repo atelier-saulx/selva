@@ -128,7 +128,7 @@ static void migrate_arr_to_rbtree(SVector *vec) {
 
     void **pp;
     for (typeof(pp) pp_end = (typeof(pp))vec_arr + vec_last, pp = (typeof(pp))vec_arr;
-         (void **)pp < (void **)pp_end;
+         pp < pp_end;
          pp++) {
         (void)rbtree_insert(vec, *pp);
     }
