@@ -509,6 +509,10 @@ static inline void rmHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     SVector_Remove(&hierarchy->heads, node);
 }
 
+/**
+ * Delete all aliases from the aliases key.
+ * Note that this function doesn't delete the aliases from the node object.
+ */
 static void delete_node_aliases(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     struct SelvaSet *node_aliases_set;
 
