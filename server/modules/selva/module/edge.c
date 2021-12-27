@@ -504,7 +504,7 @@ int Edge_Delete(
         Selva_NodeId dst_node_id) {
     Selva_NodeId src_node_id;
     struct SelvaHierarchyNode *dst_node;
-    const struct EdgeFieldConstraint *src_constraint = edge_field->constraint;
+    const struct EdgeFieldConstraint *src_constraint;
     int err;
 
     SelvaHierarchy_GetNodeId(src_node_id, src_node);
