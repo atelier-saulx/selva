@@ -1062,7 +1062,7 @@ int SelvaSubscriptions_Refresh(RedisModuleCtx *ctx, struct SelvaHierarchy *hiera
     return refreshSubscription(ctx, hierarchy, sub);
 }
 
-void SelvaSubscriptions_RefreshByMarker(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, SVector *markers) {
+void SelvaSubscriptions_RefreshByMarker(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const SVector *markers) {
     struct SVectorIterator it;
     struct Selva_SubscriptionMarker *marker;
 

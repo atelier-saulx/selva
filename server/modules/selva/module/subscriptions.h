@@ -260,7 +260,7 @@ int SelvaSubscriptions_Refresh(
 void SelvaSubscriptions_RefreshByMarker(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        struct SVector *markers);
+        const struct SVector *markers);
 
 /**
  * Delete a subsscription and all of its markers by subscription id.
