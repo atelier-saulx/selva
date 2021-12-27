@@ -294,7 +294,7 @@ int SelvaSubscriptions_DeleteMarkerByPtr(
  */
 int Selva_AddSubscriptionAliasMarker(
         struct SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
         struct RedisModuleString *alias_name,
         Selva_NodeId node_id);
@@ -306,7 +306,7 @@ int Selva_AddSubscriptionAliasMarker(
  */
 int SelvaSubscriptions_AddCallbackMarker(
         struct SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
         unsigned short marker_flags,
         Selva_NodeId node_id,

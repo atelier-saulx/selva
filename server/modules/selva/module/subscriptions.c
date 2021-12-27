@@ -620,7 +620,7 @@ static struct Selva_Subscription *create_subscription(
 
 static int new_marker(
         struct SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
         unsigned short flags,
         Selva_SubscriptionMarkerAction *marker_action,
@@ -719,7 +719,7 @@ static void marker_set_traversal_expression(struct Selva_SubscriptionMarker *mar
 
 int Selva_AddSubscriptionAliasMarker(
         SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
         RedisModuleString *alias_name,
         Selva_NodeId node_id
@@ -805,7 +805,7 @@ out:
 
 int SelvaSubscriptions_AddCallbackMarker(
         SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
         unsigned short marker_flags,
         Selva_NodeId node_id,
