@@ -449,7 +449,7 @@ void SelvaSubscriptions_DestroyAll(RedisModuleCtx *ctx, SelvaHierarchy *hierarch
 }
 
 static void init_node_metadata_subs(
-        Selva_NodeId id __unused,
+        const Selva_NodeId id __unused,
         struct SelvaHierarchyMetadata *metadata) {
     int err;
 
