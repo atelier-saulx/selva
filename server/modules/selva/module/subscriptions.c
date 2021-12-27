@@ -380,8 +380,8 @@ static void destroy_all_sub_markers(RedisModuleCtx *ctx, SelvaHierarchy *hierarc
     struct Selva_Subscription *sub;
     struct Selva_Subscription *next;
 
-	for (sub = RB_MIN(hierarchy_subscriptions_tree, subs_head); sub != NULL; sub = next) {
-		next = RB_NEXT(hierarchy_subscriptions_tree, subs_head, sub);
+    for (sub = RB_MIN(hierarchy_subscriptions_tree, subs_head); sub != NULL; sub = next) {
+        next = RB_NEXT(hierarchy_subscriptions_tree, subs_head, sub);
         destroy_sub(ctx, hierarchy, sub);
     }
 }
