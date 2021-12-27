@@ -36,27 +36,27 @@
 
 char * strnstr(const char *s, const char *find, size_t slen)
 {
-	char c;
+    char c;
 
-	if ((c = *find++) != '\0') {
-		size_t len = strlen(find);
+    if ((c = *find++) != '\0') {
+        size_t len = strlen(find);
 
-		do {
+        do {
             char sc;
 
-			do {
-				if (slen-- < 1 || (sc = *s++) == '\0') {
-					return NULL;
+            do {
+                if (slen-- < 1 || (sc = *s++) == '\0') {
+                    return NULL;
                 }
-			} while (sc != c);
+            } while (sc != c);
 
-			if (len > slen) {
-				return NULL;
+            if (len > slen) {
+                return NULL;
             }
 
-		} while (strncmp(s, find, len) != 0);
-		s--;
-	}
+        } while (strncmp(s, find, len) != 0);
+        s--;
+    }
 
-	return (char *)s;
+    return (char *)s;
 }
