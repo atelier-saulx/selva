@@ -110,6 +110,7 @@ test-gcov: test
 	./coverage.sh
 
 clean: FORCE
+	$(RM) version.c
 	find . -type f -name "*.a" -exec rm -f {} \;
 	find . -type f -name "*.o" -exec rm -f {} \;
 	find . -type f -name "*.so" -exec rm -f {} \;
