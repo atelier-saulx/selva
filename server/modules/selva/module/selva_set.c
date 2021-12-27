@@ -173,9 +173,9 @@ static void SelvaSet_DestroyDouble(struct SelvaSet *set) {
     struct SelvaSetElement *el;
     struct SelvaSetElement *next;
 
-	for (el = RB_MIN(SelvaSetDouble, head); el != NULL; el = next) {
-		next = RB_NEXT(SelvaSetDouble, head, el);
-		RB_REMOVE(SelvaSetDouble, head, el);
+    for (el = RB_MIN(SelvaSetDouble, head); el != NULL; el = next) {
+        next = RB_NEXT(SelvaSetDouble, head, el);
+        RB_REMOVE(SelvaSetDouble, head, el);
 
         SelvaSet_DestroyElement(el);
     }
@@ -187,9 +187,9 @@ static void SelvaSet_DestroyLongLong(struct SelvaSet *set) {
     struct SelvaSetElement *el;
     struct SelvaSetElement *next;
 
-	for (el = RB_MIN(SelvaSetLongLong, head); el != NULL; el = next) {
-		next = RB_NEXT(SelvaSetLongLong, head, el);
-		RB_REMOVE(SelvaSetLongLong, head, el);
+    for (el = RB_MIN(SelvaSetLongLong, head); el != NULL; el = next) {
+        next = RB_NEXT(SelvaSetLongLong, head, el);
+        RB_REMOVE(SelvaSetLongLong, head, el);
 
         SelvaSet_DestroyElement(el);
     }
@@ -201,9 +201,9 @@ static void SelvaSet_DestroyNodeId(struct SelvaSet *set) {
     struct SelvaSetElement *el;
     struct SelvaSetElement *next;
 
-	for (el = RB_MIN(SelvaSetNodeId, head); el != NULL; el = next) {
-		next = RB_NEXT(SelvaSetNodeId, head, el);
-		RB_REMOVE(SelvaSetNodeId, head, el);
+    for (el = RB_MIN(SelvaSetNodeId, head); el != NULL; el = next) {
+        next = RB_NEXT(SelvaSetNodeId, head, el);
+        RB_REMOVE(SelvaSetNodeId, head, el);
 
         SelvaSet_DestroyElement(el);
     }
