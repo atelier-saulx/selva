@@ -3182,7 +3182,7 @@ static void SelvaVersion_AuxSave(RedisModuleIO *io, int when __unused) {
 }
 
 static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
-    RedisModuleTypeMethods tm = {
+    RedisModuleTypeMethods mtm = {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
         .rdb_load = Hierarchy_RDBLoad,
         .rdb_save = Hierarchy_RDBSave,
@@ -3198,7 +3198,7 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         .rdb_save = Hierarchy_SubtreeRDBSave,
     };
 
-    HierarchyType = RedisModule_CreateDataType(ctx, "hierarchy", HIERARCHY_ENCODING_VERSION, &tm);
+    HierarchyType = RedisModule_CreateDataType(ctx, "hierarchy", HIERARCHY_ENCODING_VERSION, &mtm);
     if (HierarchyType == NULL) {
         return REDISMODULE_ERR;
     }
