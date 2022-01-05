@@ -922,7 +922,12 @@ static ssize_t send_node_object_merge(
     return res;
 }
 
-static int exec_fields_expression(struct RedisModuleCtx *redis_ctx, struct SelvaHierarchyNode *node, struct rpn_ctx *rpn_ctx, struct rpn_expression *expr, struct SelvaObject *fields) {
+static int exec_fields_expression(
+        struct RedisModuleCtx *redis_ctx,
+        const struct SelvaHierarchyNode *node,
+        struct rpn_ctx *rpn_ctx,
+        const struct rpn_expression *expr,
+        struct SelvaObject *fields) {
     Selva_NodeId nodeId;
     struct SelvaSet set;
     enum rpn_error rpn_err;
