@@ -3,6 +3,10 @@
 #define _UTIL_CDEFS_H_
 
 #if defined(__GNUC__) && !defined(__clang__)
+/**
+ * The char array isn't a NUL terminated C-string.
+ * Using this attribute will help to get better warnings at compilation time.
+ */
 #define __nonstring __attribute__((nonstring))
 #else
 #define __nonstring
@@ -27,53 +31,103 @@
     29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, \
     12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0
 
+/**
+ * Get the struct that contains `m`.
+ * This macro can be only used if we know for certain that `x` is a pointer to
+ * the member `m` in type `s`.
+ * @param x is a pointer to the member `m` in a struct of type `s`.
+ * @param s is a struct type.
+ * @param m is the name of the member in `s`.
+ */
 #define containerof(x, s, m) ({                     \
         const __typeof(((s *)0)->m) *__x = (x);     \
         ((s *)((uint8_t *)(__x) - offsetof(s, m))); \
 })
 
+/**
+ * It's likely that `x` is always truthy in runtime.
+ */
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
 #ifndef __GLOBL1
 #define  __GLOBL1(sym) __asm__(".globl " #sym)
+
+/**
+ * Make the symbol `sym` visible to the linker.
+ */
 #define  __GLOBL(sym) __GLOBL1(sym)
 #endif
 
 #ifndef __used
+/**
+ * The function or variable is used.
+ * Inform the compiler that the fuction is used and the code must be emitted
+ * even if the function name is not referenced.
+ */
 #define __used __attribute__((__used__))
 #endif
 
 #ifndef __unused
+/**
+ * The function or variable is unused on purpose.
+ */
 #define __unused __attribute__((__unused__))
 #endif
 
 #ifndef __section
+/**
+ * Store the variable or function in a named section.
+ */
 #define __section(x) __attribute__((__section__(x)))
 #endif
 
+/**
+ * A function that must be called before `main()`.
+ * The function is called automatically before executing `main()`.
+ */
 #define __constructor   __attribute__((constructor))
+
+/**
+ * A function that must be called after `main()` exits.
+ * The function is called automatically after `main()` exits.
+ */
 #define __destructor    __attribute__((destructor))
 
 #ifndef __hot
+/**
+ * Inform the compiler that the function is a hotspot.
+ * Hot functions might be placed closely together in memory to improve locality.
+ */
 #define __hot __attribute__((hot))
 #endif
 #ifndef __cold
+/**
+ * Inform the compiler that the function is unlikely to be executed.
+ */
 #define __cold __attribute__((cold))
 #endif
 
+/**
+ * Get the number of elements in an array.
+ */
 #define num_elem(x) (sizeof(x) / sizeof(*(x)))
 
+/**
+ * Returns the smaller of the given values.
+ */
 #define min(a, b) \
     ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
        _a < _b ? _a : _b; })
 
+/**
+ * Returns the greater of the given values.
+ */
 #define max(a, b) \
     ({ __typeof__ (a) _a = (a); \
       __typeof__ (b) _b = (b); \
       _a > _b ? _a : _b; })
-
 
 #define TO_STR_1(_var) \
     size_t _var##_len; \
@@ -99,6 +153,13 @@
     TO_STR_1(_var) \
     TO_STR_6(__VA_ARGS__)
 
+/**
+ * Create C-string pointer variable(s) from `RedisModuleString` pointer(s).
+ * If `name` is a pointer to `RedisModuleString` then this macro will define
+ * symbols `name_str` and `name_len`. `name_str` is a `const char` pointer to
+ * the C-string representation of `name` and `name_len` is a `size_t` variable
+ * containing the the length of `name`.
+ */
 #define TO_STR(...) \
         CONCATENATE(TO_STR_, UTIL_NARG(__VA_ARGS__))(__VA_ARGS__)
 
