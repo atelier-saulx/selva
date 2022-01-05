@@ -309,7 +309,7 @@ int SelvaSubscriptions_AddCallbackMarker(
         const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
         unsigned short marker_flags,
-        Selva_NodeId node_id,
+        const Selva_NodeId node_id,
         enum SelvaTraversal dir,
         const char *dir_field,
         const char *dir_expression_str,
