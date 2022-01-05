@@ -41,13 +41,13 @@ IDIR := $(patsubst %,-I%,$(INCLUDE_DIR))
 CFLAGS += $(IDIR) -include tunables.h \
 	-O2 \
 	-fPIC \
-	-fno-strict-aliasing \
-	-fisolate-erroneous-paths-attribute
+	-fno-strict-aliasing
 LIBDIR := $(patsubst %,lib/%,$(LIBS))
 SHOBJ_LDLIBS := -lc -lhiredis -lcrypto -lssl
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
-	CFLAGS += -include include/linux_cdefs.h
+	CFLAGS += -include include/linux_cdefs.h \
+			  -fisolate-erroneous-paths-attribute
 	SHOBJ_CFLAGS ?= -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Bsymbolic
 endif
