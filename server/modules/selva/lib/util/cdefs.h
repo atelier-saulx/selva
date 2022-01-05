@@ -52,11 +52,20 @@
 
 #ifndef __GLOBL1
 #define  __GLOBL1(sym) __asm__(".globl " #sym)
-
 /**
  * Make the symbol `sym` visible to the linker.
  */
 #define  __GLOBL(sym) __GLOBL1(sym)
+#endif
+
+#ifndef __weak_sym
+/**
+ * Emit the declaration as a weak symbol.
+ * A weak symbol can be overridden at linking. This is particularly useful for
+ * functions.
+ *
+ */
+#define __weak_sym __attribute__((weak))
 #endif
 
 #ifndef __used
@@ -101,11 +110,21 @@
  */
 #define __hot __attribute__((hot))
 #endif
+
 #ifndef __cold
 /**
  * Inform the compiler that the function is unlikely to be executed.
  */
 #define __cold __attribute__((cold))
+#endif
+
+#ifndef __packed
+/**
+ * Use the minimum required memory to represent the type.
+ * The enum, union, structure, or a structure member should have the smallest
+ * possible alignment.
+ */
+#define __packed __attribute__((packed))
 #endif
 
 /**

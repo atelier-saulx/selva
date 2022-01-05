@@ -19,7 +19,7 @@ enum SelvaObjectType {
     SELVA_OBJECT_SET = 5,
     SELVA_OBJECT_ARRAY = 6,
     SELVA_OBJECT_POINTER = 7,
-} __attribute__((packed));
+} __packed;
 
 #define SELVA_OBJECT_REPLY_SPLICE_FLAG 0x01 /*!< Set if the path should be spliced to start from the first wildcard. */
 #define SELVA_OBJECT_REPLY_BINUMF_FLAG 0x02 /*!< Send numeric fields in an LE binary format. */

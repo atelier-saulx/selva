@@ -40,11 +40,11 @@ const char *getSelvaErrorStr(int err) {
 }
 
 /* declared as weak so the unit tests can override it. */
-__attribute__((weak)) int replyWithSelvaError(RedisModuleCtx *ctx, int err) {
+__weak_sym int replyWithSelvaError(RedisModuleCtx *ctx, int err) {
     return RedisModule_ReplyWithError(ctx, getSelvaErrorStr(err));
 }
 
-__attribute__((weak)) int replyWithSelvaErrorf(RedisModuleCtx *ctx, int selvaErr, const char *fmt, ...) {
+__weak_sym int replyWithSelvaErrorf(RedisModuleCtx *ctx, int selvaErr, const char *fmt, ...) {
     va_list args;
     char buf[512];
     const char *msg;

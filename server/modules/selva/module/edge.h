@@ -35,7 +35,7 @@ enum EdgeFieldConstraintFlag {
     EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF       = 0x01, /*!< Single reference edge. */
     EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL    = 0x02, /*!< Bidirectional reference. */
     EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC          = 0x04, /*!< Lookup from dynamic constraints by node type and field_name. */
-} __attribute__((packed));
+} __packed;
 
 struct EdgeFieldDynConstraintParams {
     enum EdgeFieldConstraintFlag flags;
