@@ -2,7 +2,7 @@
 #include "trx.h"
 
 int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx) {
-    const trxid_t cl = (trxid_t)1 << __builtin_popcount(state->cl);
+    const trxid_t cl = (trxid_t)1 << __builtin_popcountl(state->cl);
 
     if (cl == (trxid_t)1 << (sizeof(trxid_t) * 8 - 1)) {
         return -1;

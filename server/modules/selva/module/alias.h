@@ -8,8 +8,21 @@ struct RedisModuleString;
 struct SelvaHierarchy;
 struct SelvaSet;
 
+/**
+ * Open the aliases key.
+ */
 struct RedisModuleKey *open_aliases_key(struct RedisModuleCtx *ctx);
+
+/**
+ * Remove aliases listed in set.
+ * Caller must update the node aliases if necessary.
+ */
 int delete_aliases(struct RedisModuleKey *aliases_key, struct SelvaSet *set);
+
+/**
+ * Update alias into the aliases key and remove the previous alias.
+ * Caller must set the alias to the new node.
+ */
 void update_alias(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,

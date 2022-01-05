@@ -41,7 +41,8 @@ IDIR := $(patsubst %,-I%,$(INCLUDE_DIR))
 CFLAGS += $(IDIR) -include tunables.h \
 	-O2 \
 	-fPIC \
-	-fno-strict-aliasing
+	-fno-strict-aliasing \
+	-fisolate-erroneous-paths-attribute
 LIBDIR := $(patsubst %,lib/%,$(LIBS))
 SHOBJ_LDLIBS := -lc -lhiredis -lcrypto -lssl
 # Compile flags for linux / osx
@@ -110,6 +111,7 @@ test-gcov: test
 	./coverage.sh
 
 clean: FORCE
+	$(RM) version.c
 	find . -type f -name "*.a" -exec rm -f {} \;
 	find . -type f -name "*.o" -exec rm -f {} \;
 	find . -type f -name "*.so" -exec rm -f {} \;

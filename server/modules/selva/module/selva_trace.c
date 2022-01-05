@@ -1,5 +1,8 @@
 #include "selva_trace.h"
 
+/*
+ * The initialization code needs to be compiled only if tracing is enabled.
+ */
 #ifdef SELVA_TRACE
 SET_DECLARE(selva_trace, struct SelvaTrace);
 __itt_domain* selva_trace_domain;

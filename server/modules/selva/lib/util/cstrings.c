@@ -55,47 +55,47 @@ int stringlist_searchn(const char *list, const char *str, size_t n) {
     }
 
     while (*s1 != '\0') {
-		ssize_t i = n;
-		const char *s2 = str;
+        ssize_t i = n;
+        const char *s2 = str;
 
-		while (i-- >= 0 && *s1 && *s2 && *s1++ == *s2++);
-		--s1;
-		--s2;
+        while (i-- >= 0 && *s1 && *s2 && *s1++ == *s2++);
+        --s1;
+        --s2;
 
-		if (i == (ssize_t)(-1) &&
+        if (i == (ssize_t)(-1) &&
             ((s1[0] == '\n' || s1[0] == '\0') ||
              (s1[1] == '\0' || s1[1] == '\n'))) {
-			return 1;
-		}
+            return 1;
+        }
 
-		/* Skip the rest of the current field */
-		while (*s1 != '\0') {
-			s1++;
-			if (*s1 == '\n') {
-				s1++;
-				break;
-			}
-		}
-	}
+        /* Skip the rest of the current field */
+        while (*s1 != '\0') {
+            s1++;
+            if (*s1 == '\n') {
+                s1++;
+                break;
+            }
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 size_t substring_count(const char *string, const char *substring, size_t n) {
-	size_t l1, l2;
-	size_t count = 0;
+    size_t l1, l2;
+    size_t count = 0;
 
-	l1 = n;
-	l2 = strlen(substring);
+    l1 = n;
+    l2 = strlen(substring);
 
-	for (size_t i = 0; i < l1 - l2; i++) {
-		if (strstr(string + i, substring) == string + i) {
-			count++;
-			i = i + l2 - 1;
-		}
-	}
+    for (size_t i = 0; i < l1 - l2; i++) {
+        if (strstr(string + i, substring) == string + i) {
+            count++;
+            i = i + l2 - 1;
+        }
+    }
 
-	return count;
+    return count;
 }
 
 int get_array_field_index(const char *field_str, size_t field_len, ssize_t *res) {
@@ -134,13 +134,13 @@ int ch_count(const char *s, char ch) {
 }
 
 char *ch_replace(char *s, size_t n, char orig_ch, char new_ch) {
-	char * const e = s + n;
+    char * const e = s + n;
 
-	for (char *p = s, c = *s; p != e && c != '\0'; c = *++p) {
-		if (c == orig_ch) {
-			*p = new_ch;
-		}
-	}
+    for (char *p = s, c = *s; p != e && c != '\0'; c = *++p) {
+        if (c == orig_ch) {
+            *p = new_ch;
+        }
+    }
 
-	return s;
+    return s;
 }

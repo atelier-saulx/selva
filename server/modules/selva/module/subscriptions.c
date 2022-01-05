@@ -380,8 +380,8 @@ static void destroy_all_sub_markers(RedisModuleCtx *ctx, SelvaHierarchy *hierarc
     struct Selva_Subscription *sub;
     struct Selva_Subscription *next;
 
-	for (sub = RB_MIN(hierarchy_subscriptions_tree, subs_head); sub != NULL; sub = next) {
-		next = RB_NEXT(hierarchy_subscriptions_tree, subs_head, sub);
+    for (sub = RB_MIN(hierarchy_subscriptions_tree, subs_head); sub != NULL; sub = next) {
+        next = RB_NEXT(hierarchy_subscriptions_tree, subs_head, sub);
         destroy_sub(ctx, hierarchy, sub);
     }
 }
@@ -449,7 +449,7 @@ void SelvaSubscriptions_DestroyAll(RedisModuleCtx *ctx, SelvaHierarchy *hierarch
 }
 
 static void init_node_metadata_subs(
-        Selva_NodeId id __unused,
+        const Selva_NodeId id __unused,
         struct SelvaHierarchyMetadata *metadata) {
     int err;
 
@@ -620,7 +620,7 @@ static struct Selva_Subscription *create_subscription(
 
 static int new_marker(
         struct SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
         unsigned short flags,
         Selva_SubscriptionMarkerAction *marker_action,
@@ -719,7 +719,7 @@ static void marker_set_traversal_expression(struct Selva_SubscriptionMarker *mar
 
 int Selva_AddSubscriptionAliasMarker(
         SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
         RedisModuleString *alias_name,
         Selva_NodeId node_id
@@ -805,7 +805,7 @@ out:
 
 int SelvaSubscriptions_AddCallbackMarker(
         SelvaHierarchy *hierarchy,
-        Selva_SubscriptionId sub_id,
+        const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
         unsigned short marker_flags,
         Selva_NodeId node_id,
@@ -1062,7 +1062,7 @@ int SelvaSubscriptions_Refresh(RedisModuleCtx *ctx, struct SelvaHierarchy *hiera
     return refreshSubscription(ctx, hierarchy, sub);
 }
 
-void SelvaSubscriptions_RefreshByMarker(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, SVector *markers) {
+void SelvaSubscriptions_RefreshByMarker(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const SVector *markers) {
     struct SVectorIterator it;
     struct Selva_SubscriptionMarker *marker;
 

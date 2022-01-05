@@ -184,7 +184,7 @@ int Edge_Add(
         const char *field_name_str,
         size_t field_name_len,
         struct SelvaHierarchyNode *src_node,
-        struct SelvaHierarchyNode *dst_node);
+        struct SelvaHierarchyNode *dst_node) __attribute__((nonnull (1, 2)));
 int Edge_Delete(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
