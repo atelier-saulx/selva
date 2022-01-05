@@ -5,6 +5,8 @@ import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
+const langs = ['en', 'a', 'b', 'c', 'd', 'e', 'f']
+
 let srv
 let port: number
 test.before(async (t) => {
@@ -14,7 +16,7 @@ test.before(async (t) => {
   })
   const client = connect({ port })
   await client.updateSchema({
-    languages: ['en'],
+    languages: langs,
     types: {
       sport: {
         prefix: 'sp',
@@ -153,21 +155,21 @@ test.serial('subscription to a reference', async (t) => {
     [
       [
         'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
-        'marker_id: 961614000',
-        'flags: 0x0004',
-        'node_id: "ma2"',
-        'dir: node',
-        'filter_expression: unset',
-        'fields: "title\nvenue"',
-      ],
-      [
-        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
         'marker_id: 1217403185',
         'flags: 0x0004',
         'node_id: "ma2"',
         'dir: edge_field',
         'filter_expression: unset',
         'fields: "title\nseats"',
+      ],
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 961614000',
+        'flags: 0x0004',
+        'node_id: "ma2"',
+        'dir: node',
+        'filter_expression: unset',
+        'fields: "title\nvenue"',
       ],
     ]
   )
@@ -187,6 +189,15 @@ test.serial('subscription to a reference', async (t) => {
     [
       [
         'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 1217403185',
+        'flags: 0x0004',
+        'node_id: "ma2"',
+        'dir: edge_field',
+        'filter_expression: unset',
+        'fields: "title\nseats"',
+      ],
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
         'marker_id: 961614000',
         'flags: 0x0004',
         'node_id: "ma2"',
@@ -200,15 +211,6 @@ test.serial('subscription to a reference', async (t) => {
         'flags: 0x0004',
         'node_id: "ve1"',
         'dir: node',
-        'filter_expression: unset',
-        'fields: "title\nseats"',
-      ],
-      [
-        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
-        'marker_id: 1217403185',
-        'flags: 0x0004',
-        'node_id: "ma2"',
-        'dir: edge_field',
         'filter_expression: unset',
         'fields: "title\nseats"',
       ],
@@ -227,6 +229,15 @@ test.serial('subscription to a reference', async (t) => {
     [
       [
         'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
+        'marker_id: 1217403185',
+        'flags: 0x0004',
+        'node_id: "ma2"',
+        'dir: edge_field',
+        'filter_expression: unset',
+        'fields: "title\nseats"',
+      ],
+      [
+        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
         'marker_id: 961614000',
         'flags: 0x0004',
         'node_id: "ma2"',
@@ -240,15 +251,6 @@ test.serial('subscription to a reference', async (t) => {
         'flags: 0x0004',
         'node_id: "ve2"',
         'dir: node',
-        'filter_expression: unset',
-        'fields: "title\nseats"',
-      ],
-      [
-        'sub_id: 6e32369d0504c49bca32c9818804dc10b3bdd7b59e50e387164f178e1ac770a6',
-        'marker_id: 1217403185',
-        'flags: 0x0004',
-        'node_id: "ma2"',
-        'dir: edge_field',
         'filter_expression: unset',
         'fields: "title\nseats"',
       ],
@@ -343,62 +345,85 @@ test.serial('subscription to inherit an edge', async (t) => {
 })
 
 test.serial('multiple references to a single node', async (t) => {
+  const MATCHES_COUNT = 100
   const client = connect({ port }, { loglevel: 'info' })
   const sport = await client.set({
+    $alias: 'sporty',
     $language: 'en',
     type: 'sport',
     title: 'football',
   })
   const venue = await client.set({
+    $alias: 'venuey.venue',
     $language: 'en',
     type: 'venue',
     title: 'Ipurua Stadium',
   })
 
-  for (let i = 0; i < 2000; i++) {
-    await client.set({
-      $language: 'en',
-      type: 'match',
-      title: `football match ${i}`,
-      parents: [sport],
-      venue: venue,
-    })
+  for (let i = 0; i < MATCHES_COUNT; i++) {
+    for (const lang of langs) {
+      await client.set({
+        $alias: 'match.' + i,
+        $language: lang,
+        type: 'match',
+        title: `football match ${i}`,
+        parents: [sport],
+        venue: venue,
+      })
+    }
   }
 
-  const matchIds = (await client.get({
-    $id: sport,
-    children: true,
-  })).children
-
-  const subs = matchIds.map((id) => {
-    const obs = client.observe({
-      $id: id,
-      $language: 'en',
-      title: true,
-      venue: { title: true },
+  const matchIds = (
+    await client.get({
+      $id: sport,
+      children: true,
     })
+  ).children
 
-    let i = 0;
-    return obs.subscribe((v) => {
-      t.regex(v.title, /^football match /)
-      if (i == 0) {
-        t.deepEqual(v.venue.title, 'Ipurua Stadium')
-      } else if (i == 1) {
-        t.deepEqual(v.venue.title, 'Some Stadium')
-      } else {
-        t.fail()
-      }
-      i++
-    })
+  let count = 0
+  const subs = []
+  matchIds.forEach((id, idx) => {
+    for (const lang of langs) {
+      const obs = client.observe({
+        $alias: 'match.' + idx,
+        $language: lang,
+        title: true,
+        venue: { title: true },
+      })
+
+      let i = 0
+      subs.push(
+        obs.subscribe((v) => {
+          t.regex(v.title, /^football match /)
+          if (i == 0) {
+            t.deepEqual(v.venue.title, 'Ipurua Stadium')
+          } else if (i >= 1 && i <= 10) {
+            t.deepEqual(v.venue.title, 'Some Stadium' + i)
+          } else {
+            t.fail()
+          }
+          i++
+          count++
+        })
+      )
+    }
   })
 
-  await wait(5000)
-  await client.set({
-    $id: venue,
-    $language: 'en',
-    title: 'Some Stadium',
-  })
+  for (let i = 1; i < 10; i++) {
+    await wait(5000)
+    for (const lang of langs) {
+      await client.set({
+        $alias: 'venuey.venue',
+        $language: lang,
+        title: 'Some Stadium' + i,
+      })
+    }
+  }
+
   await wait(500)
+
+  t.deepEqual(count, MATCHES_COUNT * langs.length * 10)
+
   subs.map((sub) => sub.unsubscribe())
 
   await client.destroy()
