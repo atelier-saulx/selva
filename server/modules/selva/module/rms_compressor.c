@@ -28,15 +28,22 @@ int rms_compress(struct compressed_rms *out, RedisModuleString *in) {
     }
 
     if (compressed_size == 0) {
-        /* No compression was achieved. */
+        /*
+         * No compression was achieved.
+         * Therefore we use the original uncompressed string.
+         * */
         compressed_size = in_len;
         out->uncompressed_size = -1;
         out->rms = RedisModule_HoldString(NULL, in);
     } else {
+        /*
+         * The string was compressed.
+         */
         out->uncompressed_size = in_len;
         out->rms = RedisModule_CreateString(NULL, compressed_str, compressed_size);
     }
 
+    /* TODO Return via an argument. */
     fprintf(stderr, "%s:%d: Compression ratio: %.2f:1\n",
             __FILE__, __LINE__,
             (double)in_len / (double)compressed_size);
