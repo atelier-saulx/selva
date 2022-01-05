@@ -1333,7 +1333,7 @@ cont:
     } while (1);
 }
 
-static enum rpn_error compile_push_literal(struct rpn_expression *expr, int i, struct rpn_operand *v) {
+static enum rpn_error compile_push_literal(struct rpn_expression *expr, size_t i, struct rpn_operand *v) {
     if (i >= RPN_MAX_D) {
         return RPN_ERR_BADSTK;
     }
@@ -1344,7 +1344,7 @@ static enum rpn_error compile_push_literal(struct rpn_expression *expr, int i, s
     return RPN_ERR_OK;
 }
 
-static enum rpn_error compile_num_literal(struct rpn_expression *expr, int i, const char *str, size_t len) {
+static enum rpn_error compile_num_literal(struct rpn_expression *expr, size_t i, const char *str, size_t len) {
     char s[len + 1];
     char *e;
     double d;
@@ -1368,7 +1368,7 @@ static enum rpn_error compile_num_literal(struct rpn_expression *expr, int i, co
     return compile_push_literal(expr, i, v);
 }
 
-static enum rpn_error compile_str_literal(struct rpn_expression *expr, int i, const char *str, size_t len) {
+static enum rpn_error compile_str_literal(struct rpn_expression *expr, size_t i, const char *str, size_t len) {
     size_t size = len + 1;
     RESULT_OPERAND(v);
 
@@ -1381,7 +1381,7 @@ static enum rpn_error compile_str_literal(struct rpn_expression *expr, int i, co
     return compile_push_literal(expr, i, v);
 }
 
-static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, int i, const char *str, size_t len) {
+static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size_t i, const char *str, size_t len) {
     const char type = *str;
     RESULT_OPERAND(v);
 
