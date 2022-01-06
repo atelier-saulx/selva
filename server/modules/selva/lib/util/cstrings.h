@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2020-2021 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef _UTIL_CSTRINGS_H_
 #define _UTIL_CSTRINGS_H_

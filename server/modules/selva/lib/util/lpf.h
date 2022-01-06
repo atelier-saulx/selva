@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2021 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef _UTIL_LPF_H_
 #define _UTIL_LPF_H_

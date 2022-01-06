@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2020-2021 SAULX
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #pragma once
 #ifndef _UTIL_CDEFS_H_
 #define _UTIL_CDEFS_H_

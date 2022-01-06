@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 include ../../common.mk
 
 RM_INCLUDE_DIR := ../../include

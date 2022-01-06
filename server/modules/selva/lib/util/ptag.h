@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2021 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef _SELVA_PTAG_H_
 #define _SELVA_PTAG_H_

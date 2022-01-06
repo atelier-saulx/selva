@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2021 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>

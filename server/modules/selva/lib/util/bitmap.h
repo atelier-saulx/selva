@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2021 SAULX
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #pragma once
 #ifndef BITMAP_H
 #define BITMAP_H
