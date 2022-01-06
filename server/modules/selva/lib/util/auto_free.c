@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2021 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include "redismodule.h"
 #include "auto_free.h"
 

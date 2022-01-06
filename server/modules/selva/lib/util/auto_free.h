@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2021 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef AUTO_FREE_H
 #define AUTO_FREE_H

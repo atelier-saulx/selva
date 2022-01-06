@@ -1,4 +1,5 @@
 /*-
+ * Copyright (c) 2020 SAULX
  * Copyright (c) 2015 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
  * Copyright (c) 1991, 1993
  *        The Regents of the University of California.  All rights reserved.
@@ -28,6 +29,7 @@
  * SUCH DAMAGE.
  *
  *        @(#)queue.h        8.5 (Berkeley) 8/20/94
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef _SYS_QUEUE_H_

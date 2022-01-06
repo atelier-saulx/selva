@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2021 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef _UTIL_POPTOP_H_
 #define _UTIL_POPTOP_H_

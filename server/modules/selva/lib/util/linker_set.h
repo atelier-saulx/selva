@@ -5,6 +5,7 @@
  *
  * @brief   Linker sets.
  * @section LICENSE
+ * Copyright (c) 2020 SAULX
  * Copyright (c) 2018 Olli Vanhoja <olli.vanhoja@gmail.com>
  * Copyright (c) 2015 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
  * Copyright (c) 1999 John D. Polstra
@@ -31,6 +32,8 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
  */
 
 #ifndef _SYS_LINKER_SET_H_
