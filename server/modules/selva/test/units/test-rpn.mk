@@ -3,6 +3,7 @@ SRC-rpn += ../subscriptions-mock.c
 SRC-rpn += ../../lib/rmutil/sds.c
 SRC-rpn += ../../lib/util/cstrings.c
 SRC-rpn += ../../lib/util/mempool.c
+SRC-rpn += ../../lib/util/memrchr.c
 SRC-rpn += ../../lib/util/strnstr.c
 SRC-rpn += ../../lib/util/svector.c
 SRC-rpn += ../../module/shared.c

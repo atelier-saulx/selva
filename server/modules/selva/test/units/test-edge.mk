@@ -17,6 +17,7 @@ SRC-edge += ../../lib/rmutil/sds.c
 SRC-edge += ../../lib/util/auto_free.c
 SRC-edge += ../../lib/util/cstrings.c
 SRC-edge += ../../lib/util/mempool.c
+SRC-edge += ../../lib/util/memrchr.c
 SRC-edge += ../../lib/util/strnstr.c
 SRC-edge += ../../lib/util/svector.c
 SRC-edge += ../../lib/util/trx.c

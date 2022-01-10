@@ -121,7 +121,7 @@ void Selva_Subscriptions_DeferTriggerEvents(
 void SelvaSubscriptions_RefreshByMarker(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        SVector *markers) {
+        const SVector *markers) {
     return;
 }
 
