@@ -1,0 +1,1791 @@
+SPDXVersion: SPDX-2.2
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: selva-module
+DocumentNamespace: https://spdx.org/spdxdocs
+Creator: Organization: SAULX
+Created: 2022-01-07T21:00:39Z
+
+##### Package: selva-module
+
+PackageName: selva-module
+SPDXID: SPDXRef-Package-selva-module
+PackageDownloadLocation: NONE
+FilesAnalyzed: true
+PackageLicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+PackageLicenseInfoFromFiles: NOASSERTION
+PackageLicenseDeclared: (MIT WITH selva-exception) OR AGPL-3.0-only
+PackageCopyrightText: NOASSERTION
+
+Relationship: SPDXRef-DOCUMENT DESCRIBES SPDXRef-Package-selva-module
+
+FileName: ../binaries/linux_x64/libhiredis.so
+SPDXID: SPDXRef-libhiredis-binary
+FileType: BINARY
+FileChecksum: SHA1: 3ce221745138464d1659902639e286015f485d64
+LicenseConcluded: BSD-3-Clause
+LicenseInfoInFile: NOASSERTION
+FileCopyrightText: NOASSERTION
+
+FileName: ../binaries/linux_x64/redis-server-selva
+SPDXID: SPDXRef-main-binary
+FileType: BINARY
+FileChecksum: SHA1: 386fc7177e882925755f7a95fdbd8c04211c2562
+LicenseConcluded: BSD-3-Clause
+LicenseInfoInFile: NOASSERTION
+FileCopyrightText: NOASSERTION
+
+FileName: tunables.h
+SPDXID: SPDXRef-7992d6a47d67f0029fd0e72540988c325e8e8864-src
+FileType: SOURCE
+FileChecksum: SHA1: 7992d6a47d67f0029fd0e72540988c325e8e8864
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/rms_compressor.h
+SPDXID: SPDXRef-e18421750a7c723a7ac9ccca41ac40f13d6823c9-src
+FileType: SOURCE
+FileChecksum: SHA1: e18421750a7c723a7ac9ccca41ac40f13d6823c9
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_object.h
+SPDXID: SPDXRef-b559f28237f70adea4b056b6962ffedddf44af9f-src
+FileType: SOURCE
+FileChecksum: SHA1: b559f28237f70adea4b056b6962ffedddf44af9f
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/async_task.h
+SPDXID: SPDXRef-044e0678812454cc063e0a74c393a12210c8e3f5-src
+FileType: SOURCE
+FileChecksum: SHA1: 044e0678812454cc063e0a74c393a12210c8e3f5
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/comparator.h
+SPDXID: SPDXRef-fc21f730093478b4d56eed952a7ee2ea7e633ea6-src
+FileType: SOURCE
+FileChecksum: SHA1: fc21f730093478b4d56eed952a7ee2ea7e633ea6
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/subscriptions.h
+SPDXID: SPDXRef-629c7fefb45f925cc77a3754cf193672f6e1212d-src
+FileType: SOURCE
+FileChecksum: SHA1: 629c7fefb45f925cc77a3754cf193672f6e1212d
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_lang.h
+SPDXID: SPDXRef-68aa94532c8b89245e23677629fd532217318e46-src
+FileType: SOURCE
+FileChecksum: SHA1: 68aa94532c8b89245e23677629fd532217318e46
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/shared.h
+SPDXID: SPDXRef-7615f197e07991cad1e8d11fbc017512011a7abf-src
+FileType: SOURCE
+FileChecksum: SHA1: 7615f197e07991cad1e8d11fbc017512011a7abf
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/arg_parser.h
+SPDXID: SPDXRef-144bdbec5c23b89e87bd6f0d562f3b20f35c1971-src
+FileType: SOURCE
+FileChecksum: SHA1: 144bdbec5c23b89e87bd6f0d562f3b20f35c1971
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/hierarchy.h
+SPDXID: SPDXRef-bb87b3687783364474d62953c2df45a2619e1823-src
+FileType: SOURCE
+FileChecksum: SHA1: bb87b3687783364474d62953c2df45a2619e1823
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/modify.h
+SPDXID: SPDXRef-320d64a41b76ae26d7b3c3dfef61f9e810220ea9-src
+FileType: SOURCE
+FileChecksum: SHA1: 320d64a41b76ae26d7b3c3dfef61f9e810220ea9
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/rpn.h
+SPDXID: SPDXRef-1bcbb1e64ce1693bde4afb1f137610d8b43e43fd-src
+FileType: SOURCE
+FileChecksum: SHA1: 1bcbb1e64ce1693bde4afb1f137610d8b43e43fd
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/alias.h
+SPDXID: SPDXRef-1d2e97f3ed87cd366f3ad12b320534d87cdaf15e-src
+FileType: SOURCE
+FileChecksum: SHA1: 1d2e97f3ed87cd366f3ad12b320534d87cdaf15e
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/resolve.h
+SPDXID: SPDXRef-f89214bacca6e7260a72e12b40041b333b913451-src
+FileType: SOURCE
+FileChecksum: SHA1: f89214bacca6e7260a72e12b40041b333b913451
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/edge.h
+SPDXID: SPDXRef-ef9104b69f604310542bb1ba3b8b7baeebe717dd-src
+FileType: SOURCE
+FileChecksum: SHA1: ef9104b69f604310542bb1ba3b8b7baeebe717dd
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/traversal.h
+SPDXID: SPDXRef-4e420b3cfd720079dc300282fe710335bcbb29fc-src
+FileType: SOURCE
+FileChecksum: SHA1: 4e420b3cfd720079dc300282fe710335bcbb29fc
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/config.h
+SPDXID: SPDXRef-12083e0276043ed87eb90a544a6d19a95ad91d09-src
+FileType: SOURCE
+FileChecksum: SHA1: 12083e0276043ed87eb90a544a6d19a95ad91d09
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/errors.h
+SPDXID: SPDXRef-1ec4777c69ffdc94786126ab62bebb3329ff0433-src
+FileType: SOURCE
+FileChecksum: SHA1: 1ec4777c69ffdc94786126ab62bebb3329ff0433
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/find_index.h
+SPDXID: SPDXRef-b0912abcf29400d7a1ecefdae9c9f352f57db9e7-src
+FileType: SOURCE
+FileChecksum: SHA1: b0912abcf29400d7a1ecefdae9c9f352f57db9e7
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_node.h
+SPDXID: SPDXRef-8f41766eab595ba3c6c8b5229052f6104cf615d2-src
+FileType: SOURCE
+FileChecksum: SHA1: 8f41766eab595ba3c6c8b5229052f6104cf615d2
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_set.h
+SPDXID: SPDXRef-a02a34d45313e6e799c18b8bd3084b85b5b6dab9-src
+FileType: SOURCE
+FileChecksum: SHA1: a02a34d45313e6e799c18b8bd3084b85b5b6dab9
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_trace.h
+SPDXID: SPDXRef-a00962a6ecbb0f7748f6167bfe92dab4e82a6074-src
+FileType: SOURCE
+FileChecksum: SHA1: a00962a6ecbb0f7748f6167bfe92dab4e82a6074
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/hierarchy_detached.h
+SPDXID: SPDXRef-5941267c4a7a61dea7e35ccc915a6b3a5a82fed3-src
+FileType: SOURCE
+FileChecksum: SHA1: 5941267c4a7a61dea7e35ccc915a6b3a5a82fed3
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/punit/punit.h
+SPDXID: SPDXRef-ff29a0af1d59d8bf75abbfb8727dfebc5116db75-src
+FileType: SOURCE
+FileChecksum: SHA1: ff29a0af1d59d8bf75abbfb8727dfebc5116db75
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: <text>Copyright (c) 2013, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi></text>
+
+FileName: test/punit/unixunit.h
+SPDXID: SPDXRef-70bd60fbee3fc924f861867eaa8a46eb4521a77e-src
+FileType: SOURCE
+FileChecksum: SHA1: 70bd60fbee3fc924f861867eaa8a46eb4521a77e
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: <text>Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi></text>
+
+FileName: test/redis-rdb.h
+SPDXID: SPDXRef-9f434022c4e23065807099f8dc0e54679c0c9b63-src
+FileType: SOURCE
+FileChecksum: SHA1: 9f434022c4e23065807099f8dc0e54679c0c9b63
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/hierarchy-utils.h
+SPDXID: SPDXRef-03a878c0b4ad52c92d7fe820472d21a52838d6cf-src
+FileType: SOURCE
+FileChecksum: SHA1: 03a878c0b4ad52c92d7fe820472d21a52838d6cf
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/common/common_defs.h
+SPDXID: SPDXRef-5395a4785a7ad1bfc6b3e54e938e894597ed0ffc-src
+FileType: SOURCE
+FileChecksum: SHA1: 5395a4785a7ad1bfc6b3e54e938e894597ed0ffc
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/common/compiler_gcc.h
+SPDXID: SPDXRef-be9f9c0752e41f654be3e2f4f8dbb7fdfd6db065-src
+FileType: SOURCE
+FileChecksum: SHA1: be9f9c0752e41f654be3e2f4f8dbb7fdfd6db065
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/common/compiler_msc.h
+SPDXID: SPDXRef-2ea2ea5e8e68e005b58a64b78a54c5b59c9982b7-src
+FileType: SOURCE
+FileChecksum: SHA1: 2ea2ea5e8e68e005b58a64b78a54c5b59c9982b7
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/adler32_vec_template.h
+SPDXID: SPDXRef-eaaf2d8bccee90e20223c4aa907dddd39a94c264-src
+FileType: SOURCE
+FileChecksum: SHA1: eaaf2d8bccee90e20223c4aa907dddd39a94c264
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/arm/adler32_impl.h
+SPDXID: SPDXRef-8856a21757f2c835bc02968e67b74a83b966eaa9-src
+FileType: SOURCE
+FileChecksum: SHA1: 8856a21757f2c835bc02968e67b74a83b966eaa9
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/arm/cpu_features.h
+SPDXID: SPDXRef-b354ad0b058d79a81daf26d1db586729d449c6bf-src
+FileType: SOURCE
+FileChecksum: SHA1: b354ad0b058d79a81daf26d1db586729d449c6bf
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/arm/crc32_impl.h
+SPDXID: SPDXRef-64b97dd5e9c75a4c0892870640a8b8ffae500648-src
+FileType: SOURCE
+FileChecksum: SHA1: 64b97dd5e9c75a4c0892870640a8b8ffae500648
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/arm/matchfinder_impl.h
+SPDXID: SPDXRef-8772233501d761b61f22223c05a7a0a5aa66da71-src
+FileType: SOURCE
+FileChecksum: SHA1: 8772233501d761b61f22223c05a7a0a5aa66da71
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/bt_matchfinder.h
+SPDXID: SPDXRef-d1be98ef7ba19fe42d520cfa408fca6718c18fba-src
+FileType: SOURCE
+FileChecksum: SHA1: d1be98ef7ba19fe42d520cfa408fca6718c18fba
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/cpu_features_common.h
+SPDXID: SPDXRef-f3cb3774abe423a67f6801a0f47d2ccedb1709ba-src
+FileType: SOURCE
+FileChecksum: SHA1: f3cb3774abe423a67f6801a0f47d2ccedb1709ba
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/crc32_table.h
+SPDXID: SPDXRef-d1a338f9bf8649734c63afb697028f505c4f867e-src
+FileType: SOURCE
+FileChecksum: SHA1: d1a338f9bf8649734c63afb697028f505c4f867e
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/crc32_vec_template.h
+SPDXID: SPDXRef-74cd1f0e487740fe095da08aa4890f5fba468d48-src
+FileType: SOURCE
+FileChecksum: SHA1: 74cd1f0e487740fe095da08aa4890f5fba468d48
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/decompress_template.h
+SPDXID: SPDXRef-a02d519398e70f52bd0c746197203ff8195361d3-src
+FileType: SOURCE
+FileChecksum: SHA1: a02d519398e70f52bd0c746197203ff8195361d3
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/deflate_compress.h
+SPDXID: SPDXRef-af7f77089878ae8ed354f5adc0ee0f4cbe5dfd49-src
+FileType: SOURCE
+FileChecksum: SHA1: af7f77089878ae8ed354f5adc0ee0f4cbe5dfd49
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/deflate_constants.h
+SPDXID: SPDXRef-440e144450254c4956e7780f65ea337c5d66b38f-src
+FileType: SOURCE
+FileChecksum: SHA1: 440e144450254c4956e7780f65ea337c5d66b38f
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/gzip_constants.h
+SPDXID: SPDXRef-71f4ca66645bc76ff8e6400f696b21d5b7e24887-src
+FileType: SOURCE
+FileChecksum: SHA1: 71f4ca66645bc76ff8e6400f696b21d5b7e24887
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/hc_matchfinder.h
+SPDXID: SPDXRef-266acd5f4185b33ed0318595ccb5c7e523c99171-src
+FileType: SOURCE
+FileChecksum: SHA1: 266acd5f4185b33ed0318595ccb5c7e523c99171
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/lib_common.h
+SPDXID: SPDXRef-423c28b84aa16c01c2dd2e4c1cec60cedc5c24a0-src
+FileType: SOURCE
+FileChecksum: SHA1: 423c28b84aa16c01c2dd2e4c1cec60cedc5c24a0
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/matchfinder_common.h
+SPDXID: SPDXRef-66d9bdc749479e41128d48449e5fe960bad03388-src
+FileType: SOURCE
+FileChecksum: SHA1: 66d9bdc749479e41128d48449e5fe960bad03388
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/unaligned.h
+SPDXID: SPDXRef-82c304784c911392a4638bc87ea1edd9437bfa23-src
+FileType: SOURCE
+FileChecksum: SHA1: 82c304784c911392a4638bc87ea1edd9437bfa23
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/x86/adler32_impl.h
+SPDXID: SPDXRef-3669a3c887f3b3a616898dcfdda23aaec48c8384-src
+FileType: SOURCE
+FileChecksum: SHA1: 3669a3c887f3b3a616898dcfdda23aaec48c8384
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/x86/cpu_features.h
+SPDXID: SPDXRef-c59ede6b18d63b49f317d9f0967edc567af08c22-src
+FileType: SOURCE
+FileChecksum: SHA1: c59ede6b18d63b49f317d9f0967edc567af08c22
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/x86/crc32_impl.h
+SPDXID: SPDXRef-4e1dc9d6ccfcc091263eb16c74a4fa297b713f57-src
+FileType: SOURCE
+FileChecksum: SHA1: 4e1dc9d6ccfcc091263eb16c74a4fa297b713f57
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/x86/crc32_pclmul_template.h
+SPDXID: SPDXRef-5a3c5692c442bc84440a690f64e444e744e87202-src
+FileType: SOURCE
+FileChecksum: SHA1: 5a3c5692c442bc84440a690f64e444e744e87202
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/x86/decompress_impl.h
+SPDXID: SPDXRef-c2a5d8e95ee8bb0a3a09d3cd1c01de5ccff806d7-src
+FileType: SOURCE
+FileChecksum: SHA1: c2a5d8e95ee8bb0a3a09d3cd1c01de5ccff806d7
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/x86/matchfinder_impl.h
+SPDXID: SPDXRef-d56eb3d0dbcb9422f5ff819ed4d6544b9bc56db8-src
+FileType: SOURCE
+FileChecksum: SHA1: d56eb3d0dbcb9422f5ff819ed4d6544b9bc56db8
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/zlib_constants.h
+SPDXID: SPDXRef-57c65e6c9efb10697a0c714b6c4017432e94b619-src
+FileType: SOURCE
+FileChecksum: SHA1: 57c65e6c9efb10697a0c714b6c4017432e94b619
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/libdeflate.h
+SPDXID: SPDXRef-29dac22b612189168e844a109f491ba349e466f9-src
+FileType: SOURCE
+FileChecksum: SHA1: 29dac22b612189168e844a109f491ba349e466f9
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/prog_util.h
+SPDXID: SPDXRef-01ce79bd16d000e459aa99e08b8381a5ffdfd26c-src
+FileType: SOURCE
+FileChecksum: SHA1: 01ce79bd16d000e459aa99e08b8381a5ffdfd26c
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/test_util.h
+SPDXID: SPDXRef-e027eb51cae9f685412fc50e6aefea89fa5789dc-src
+FileType: SOURCE
+FileChecksum: SHA1: e027eb51cae9f685412fc50e6aefea89fa5789dc
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/alloc.h
+SPDXID: SPDXRef-3c330ff5806b33c095cefa7f14d7f80faf6f12b7-src
+FileType: SOURCE
+FileChecksum: SHA1: 3c330ff5806b33c095cefa7f14d7f80faf6f12b7
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/heap.h
+SPDXID: SPDXRef-55509b7294103f17e5eb062a75d83f50d561a182-src
+FileType: SOURCE
+FileChecksum: SHA1: 55509b7294103f17e5eb062a75d83f50d561a182
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/logging.h
+SPDXID: SPDXRef-4124aaf58b72ac6d6da54f69f866da7073c8420f-src
+FileType: SOURCE
+FileChecksum: SHA1: 4124aaf58b72ac6d6da54f69f866da7073c8420f
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/periodic.h
+SPDXID: SPDXRef-1ba0d2cf3fd7049b4695a99b2353bdba4b72f777-src
+FileType: SOURCE
+FileChecksum: SHA1: 1ba0d2cf3fd7049b4695a99b2353bdba4b72f777
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/priority_queue.h
+SPDXID: SPDXRef-729e2de486380204dc07fafd10c045fcee32cb91-src
+FileType: SOURCE
+FileChecksum: SHA1: 729e2de486380204dc07fafd10c045fcee32cb91
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/sds.h
+SPDXID: SPDXRef-ec6876ad0d4abdc0c5e61b933f8d8c295ca5e549-src
+FileType: SOURCE
+FileChecksum: SHA1: ec6876ad0d4abdc0c5e61b933f8d8c295ca5e549
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: <text>Copyright (c) 2006-2015, Salvatore Sanfilippo <antirez at gmail dot com>
+Copyright (c) 2015, Oran Agra
+Copyright (c) 2015, Redis Labs, Inc</text>
+
+FileName: lib/rmutil/sdsalloc.h
+SPDXID: SPDXRef-3d5791b6ae828a6cb851026308d70f6856d316d7-src
+FileType: SOURCE
+FileChecksum: SHA1: 3d5791b6ae828a6cb851026308d70f6856d316d7
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: <text>Copyright (c) 2006-2015, Salvatore Sanfilippo <antirez at gmail dot com>
+Copyright (c) 2015, Redis Labs, Inc</text>
+
+FileName: lib/rmutil/strings.h
+SPDXID: SPDXRef-2a2ad94f7a90243bff4e50b3ea3ee109a77deefa-src
+FileType: SOURCE
+FileChecksum: SHA1: 2a2ad94f7a90243bff4e50b3ea3ee109a77deefa
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/test.h
+SPDXID: SPDXRef-fd7cd82116a5a8af2d376d2e4637000c6faae8cc-src
+FileType: SOURCE
+FileChecksum: SHA1: fd7cd82116a5a8af2d376d2e4637000c6faae8cc
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/test_util.h
+SPDXID: SPDXRef-ad75e31237d1b09194edfeb8950549bc45643ae8-src
+FileType: SOURCE
+FileChecksum: SHA1: ad75e31237d1b09194edfeb8950549bc45643ae8
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/util.h
+SPDXID: SPDXRef-a2b977116ee948e6ca0f1c025df8dd1819ade0e5-src
+FileType: SOURCE
+FileChecksum: SHA1: a2b977116ee948e6ca0f1c025df8dd1819ade0e5
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/vector.h
+SPDXID: SPDXRef-b4a6139d1d96b4df7dd031402a78067511388b8f-src
+FileType: SOURCE
+FileChecksum: SHA1: b4a6139d1d96b4df7dd031402a78067511388b8f
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/util/linker_set.h
+SPDXID: SPDXRef-a66c857c3361115f4a0d27b9afaf70dc80208d23-src
+FileType: SOURCE
+FileChecksum: SHA1: a66c857c3361115f4a0d27b9afaf70dc80208d23
+LicenseConcluded: BSD-2-Clause
+LicenseInfoInFile: BSD-2-Clause
+FileCopyrightText: <text>Copyright (c) 2020 SAULX
+Copyright (c) 2018 Olli Vanhoja <olli.vanhoja@gmail.com>
+Copyright (c) 2015 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+Copyright (c) 1999 John D. Polstra
+Copyright (c) 1999,2001 Peter Wemm <peter@FreeBSD.org></text>
+
+FileName: lib/util/trx.h
+SPDXID: SPDXRef-5d0c92e9ffd69169b8014b76bc7f56d553abc76d-src
+FileType: SOURCE
+FileChecksum: SHA1: 5d0c92e9ffd69169b8014b76bc7f56d553abc76d
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX</text>
+
+FileName: lib/util/tree.h
+SPDXID: SPDXRef-fd600f297a963207033f7bdc55cff24e84987f8f-src
+FileType: SOURCE
+FileChecksum: SHA1: fd600f297a963207033f7bdc55cff24e84987f8f
+LicenseConcluded: BSD-2-Clause-FreeBSD
+LicenseInfoInFile: BSD-2-Clause-FreeBSD
+FileCopyrightText: NONE
+
+FileName: lib/util/auto_free.h
+SPDXID: SPDXRef-5253ea7a8a3be0f3a71fb700e1c3714d5ae8d85b-src
+FileType: SOURCE
+FileChecksum: SHA1: 5253ea7a8a3be0f3a71fb700e1c3714d5ae8d85b
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2021 SAULX</text>
+
+FileName: lib/util/base64.h
+SPDXID: SPDXRef-c355b25201859b5570e230baf3d51f06025f4b6c-src
+FileType: SOURCE
+FileChecksum: SHA1: c355b25201859b5570e230baf3d51f06025f4b6c
+LicenseConcluded: BSD-3-Clause 
+LicenseInfoInFile: BSD-3-Clause 
+FileCopyrightText: NONE
+
+FileName: lib/util/cstrings.h
+SPDXID: SPDXRef-d39c80af4f92c640f295e356365a86bcf7aca3c0-src
+FileType: SOURCE
+FileChecksum: SHA1: d39c80af4f92c640f295e356365a86bcf7aca3c0
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX</text>
+
+FileName: lib/util/funmap.h
+SPDXID: SPDXRef-188be1d1f2d73fb37732492a78d40e1915e6ace7-src
+FileType: SOURCE
+FileChecksum: SHA1: 188be1d1f2d73fb37732492a78d40e1915e6ace7
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2021 SAULX</text>
+
+FileName: lib/util/mempool.h
+SPDXID: SPDXRef-c4766a2a2b1c79d0d1926704aec1f37024ef20d8-src
+FileType: SOURCE
+FileChecksum: SHA1: c4766a2a2b1c79d0d1926704aec1f37024ef20d8
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX</text>
+
+FileName: lib/util/ptag.h
+SPDXID: SPDXRef-c7e64252a1d416194e7bf87df3da6db96032724c-src
+FileType: SOURCE
+FileChecksum: SHA1: c7e64252a1d416194e7bf87df3da6db96032724c
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2021 SAULX</text>
+
+FileName: lib/util/cdefs.h
+SPDXID: SPDXRef-2fe358db95d119931397add0a7e42e61e123637f-src
+FileType: SOURCE
+FileChecksum: SHA1: 2fe358db95d119931397add0a7e42e61e123637f
+LicenseConcluded: BSD-2-Clause
+LicenseInfoInFile: BSD-2-Clause
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX</text>
+
+FileName: lib/util/poptop.h
+SPDXID: SPDXRef-1beb89137d11e378b2d9e91cc395cd04b4ebc942-src
+FileType: SOURCE
+FileChecksum: SHA1: 1beb89137d11e378b2d9e91cc395cd04b4ebc942
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2021 SAULX</text>
+
+FileName: lib/util/svector.h
+SPDXID: SPDXRef-bdf73c1cc7c635020af029121525b24df47ba942-src
+FileType: SOURCE
+FileChecksum: SHA1: bdf73c1cc7c635020af029121525b24df47ba942
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX</text>
+
+FileName: lib/util/bitmap.h
+SPDXID: SPDXRef-896de0b6254d0a1070529733021b630a42b2b3d5-src
+FileType: SOURCE
+FileChecksum: SHA1: 896de0b6254d0a1070529733021b630a42b2b3d5
+LicenseConcluded: BSD-2-Clause
+LicenseInfoInFile: BSD-2-Clause
+FileCopyrightText: <text>Copyright (c) 2021 SAULX</text>
+
+FileName: lib/util/queue.h
+SPDXID: SPDXRef-a3fa472682f3b3830ac04bc6cf17c7f4b9eaf225-src
+FileType: SOURCE
+FileChecksum: SHA1: a3fa472682f3b3830ac04bc6cf17c7f4b9eaf225
+LicenseConcluded: BSD-3-Clause
+LicenseInfoInFile: BSD-3-Clause
+FileCopyrightText: <text>Copyright (c) 2020 SAULX
+Copyright (c) 2015 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+Copyright (c) 1991, 1993</text>
+
+FileName: lib/util/lpf.h
+SPDXID: SPDXRef-1671dc86fa13e26538800ceadc6ff483f9888a7c-src
+FileType: SOURCE
+FileChecksum: SHA1: 1671dc86fa13e26538800ceadc6ff483f9888a7c
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2021 SAULX</text>
+
+FileName: lib/util/queue_r.h
+SPDXID: SPDXRef-5e695ce84769b3e4f9b9c4d5299505113b623e6f-src
+FileType: SOURCE
+FileChecksum: SHA1: 5e695ce84769b3e4f9b9c4d5299505113b623e6f
+LicenseConcluded: BSD-2-Clause
+LicenseInfoInFile: BSD-2-Clause
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX
+Copyright (c) 2013, 2015, 2016 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+Copyright (c) 2012, 2013 Ninjaware Oy,</text>
+
+FileName: include/endian.h
+SPDXID: SPDXRef-656f601cc591586ac02c8b5c595137febe3cb0bd-src
+FileType: SOURCE
+FileChecksum: SHA1: 656f601cc591586ac02c8b5c595137febe3cb0bd
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: include/redismodule.h
+SPDXID: SPDXRef-3c6a5736d36c3acfbc7870185d780fc45ba40619-src
+FileType: SOURCE
+FileChecksum: SHA1: 3c6a5736d36c3acfbc7870185d780fc45ba40619
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: include/selva.h
+SPDXID: SPDXRef-f18439f1d68e8afc14e8220a8d13d72850f10ff8-src
+FileType: SOURCE
+FileChecksum: SHA1: f18439f1d68e8afc14e8220a8d13d72850f10ff8
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: include/linux_cdefs.h
+SPDXID: SPDXRef-373f67345ae72029ea031712f7e59f53b56ecd2c-src
+FileType: SOURCE
+FileChecksum: SHA1: 373f67345ae72029ea031712f7e59f53b56ecd2c
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: include/macos_cdefs.h
+SPDXID: SPDXRef-a6504a6118eb1f76ac98326e3c943c8e96b180fb-src
+FileType: SOURCE
+FileChecksum: SHA1: a6504a6118eb1f76ac98326e3c943c8e96b180fb
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: include/selva_onload.h
+SPDXID: SPDXRef-001cc28c11d8ac0871110b0d0b3dc86186cea5cc-src
+FileType: SOURCE
+FileChecksum: SHA1: 001cc28c11d8ac0871110b0d0b3dc86186cea5cc
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: include/typestr.h
+SPDXID: SPDXRef-f12e0bb253444136455eaf02aac797db42463615-src
+FileType: SOURCE
+FileChecksum: SHA1: f12e0bb253444136455eaf02aac797db42463615
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: version.c
+SPDXID: SPDXRef-7ded1663a7824b4f213aafa2ca508199c6cbc7e1-src
+FileType: SOURCE
+FileChecksum: SHA1: 7ded1663a7824b4f213aafa2ca508199c6cbc7e1
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/hierarchy_detached.c
+SPDXID: SPDXRef-666ff4088a1025a2baccc918f878433b653a117d-src
+FileType: SOURCE
+FileChecksum: SHA1: 666ff4088a1025a2baccc918f878433b653a117d
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_trace.c
+SPDXID: SPDXRef-cd9a1b560acc1b80dba715a0b1bfee18533df7e1-src
+FileType: SOURCE
+FileChecksum: SHA1: cd9a1b560acc1b80dba715a0b1bfee18533df7e1
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/modify.c
+SPDXID: SPDXRef-2975d57a9c57fb5218cd8e679a3a4dcf3f4a200e-src
+FileType: SOURCE
+FileChecksum: SHA1: 2975d57a9c57fb5218cd8e679a3a4dcf3f4a200e
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_type.c
+SPDXID: SPDXRef-1d29018445779b7ae1e1d8ae7cf03257f98b182e-src
+FileType: SOURCE
+FileChecksum: SHA1: 1d29018445779b7ae1e1d8ae7cf03257f98b182e
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/comparator.c
+SPDXID: SPDXRef-4a2d16833bdbb9bd1d7acfec6f385f8545c44a09-src
+FileType: SOURCE
+FileChecksum: SHA1: 4a2d16833bdbb9bd1d7acfec6f385f8545c44a09
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/async_task.c
+SPDXID: SPDXRef-a2f4f45f813006107e43bfb72ea6e404ab50be67-src
+FileType: SOURCE
+FileChecksum: SHA1: a2f4f45f813006107e43bfb72ea6e404ab50be67
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/edge.c
+SPDXID: SPDXRef-44040fa618d793dd212321e89e7629a78c6ecd28-src
+FileType: SOURCE
+FileChecksum: SHA1: 44040fa618d793dd212321e89e7629a78c6ecd28
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/aggregate.c
+SPDXID: SPDXRef-1299f6ead2b7aa50f680cd072ac0c699986a4d13-src
+FileType: SOURCE
+FileChecksum: SHA1: 1299f6ead2b7aa50f680cd072ac0c699986a4d13
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_set.c
+SPDXID: SPDXRef-b82b109be56c297866c52beab3493c9fb97ff051-src
+FileType: SOURCE
+FileChecksum: SHA1: b82b109be56c297866c52beab3493c9fb97ff051
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/alias.c
+SPDXID: SPDXRef-3695f219cae3b4f18a7b01a1c3d9c268c383c62a-src
+FileType: SOURCE
+FileChecksum: SHA1: 3695f219cae3b4f18a7b01a1c3d9c268c383c62a
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/rpn.c
+SPDXID: SPDXRef-a1e7d29a420740043169b11457cc85de770e5b65-src
+FileType: SOURCE
+FileChecksum: SHA1: a1e7d29a420740043169b11457cc85de770e5b65
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/find.c
+SPDXID: SPDXRef-800d85d0e194c18f8a2abcf7f6e03b5c19e560e3-src
+FileType: SOURCE
+FileChecksum: SHA1: 800d85d0e194c18f8a2abcf7f6e03b5c19e560e3
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_object.c
+SPDXID: SPDXRef-0c43999b8496a75cf0c7e0c60bd304303813153a-src
+FileType: SOURCE
+FileChecksum: SHA1: 0c43999b8496a75cf0c7e0c60bd304303813153a
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/hierarchy.c
+SPDXID: SPDXRef-6c25b32f311f0b709e4b247aa09b3a2755c93f1c-src
+FileType: SOURCE
+FileChecksum: SHA1: 6c25b32f311f0b709e4b247aa09b3a2755c93f1c
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/shared.c
+SPDXID: SPDXRef-7a2fa452f6b52f6922e147549eae7b56cefdfad1-src
+FileType: SOURCE
+FileChecksum: SHA1: 7a2fa452f6b52f6922e147549eae7b56cefdfad1
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/hierarchy_reply.c
+SPDXID: SPDXRef-76f01b07729b4100fd8849ef53bee8c4a3751ad7-src
+FileType: SOURCE
+FileChecksum: SHA1: 76f01b07729b4100fd8849ef53bee8c4a3751ad7
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/config.c
+SPDXID: SPDXRef-6be22bab87c019df2e8653cad5d681869020f0b7-src
+FileType: SOURCE
+FileChecksum: SHA1: 6be22bab87c019df2e8653cad5d681869020f0b7
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/edge_constraint.c
+SPDXID: SPDXRef-4b1b603f65fbc726a119294da573a7a5f4dcd5f8-src
+FileType: SOURCE
+FileChecksum: SHA1: 4b1b603f65fbc726a119294da573a7a5f4dcd5f8
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/resolve.c
+SPDXID: SPDXRef-c048b5b5f9ff0ac54667819b1e629d158ebb9770-src
+FileType: SOURCE
+FileChecksum: SHA1: c048b5b5f9ff0ac54667819b1e629d158ebb9770
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/rms_compressor.c
+SPDXID: SPDXRef-97b25c6d3c25f423129bd25c831f2ae550c73bb3-src
+FileType: SOURCE
+FileChecksum: SHA1: 97b25c6d3c25f423129bd25c831f2ae550c73bb3
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_node.c
+SPDXID: SPDXRef-7423593ed22a4edb553049d1a61a87da36bf2f21-src
+FileType: SOURCE
+FileChecksum: SHA1: 7423593ed22a4edb553049d1a61a87da36bf2f21
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/errors.c
+SPDXID: SPDXRef-7ad3da6ee04f9ed1920963e433f37123b0b88996-src
+FileType: SOURCE
+FileChecksum: SHA1: 7ad3da6ee04f9ed1920963e433f37123b0b88996
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/arg_parser.c
+SPDXID: SPDXRef-ffc843a11a511c4ab518bed03f3db64351ac191c-src
+FileType: SOURCE
+FileChecksum: SHA1: ffc843a11a511c4ab518bed03f3db64351ac191c
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/find_index.c
+SPDXID: SPDXRef-9b28cf59e6e8a4b1cd115a9837a1b6e086c630ce-src
+FileType: SOURCE
+FileChecksum: SHA1: 9b28cf59e6e8a4b1cd115a9837a1b6e086c630ce
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/rpn_eval.c
+SPDXID: SPDXRef-0776fe61e7eebb1860e473ec1645bef16dc822d6-src
+FileType: SOURCE
+FileChecksum: SHA1: 0776fe61e7eebb1860e473ec1645bef16dc822d6
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/traversal.c
+SPDXID: SPDXRef-b7e5bf7c4bb3564dec6642e8570ef090099b317f-src
+FileType: SOURCE
+FileChecksum: SHA1: b7e5bf7c4bb3564dec6642e8570ef090099b317f
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/subscriptions.c
+SPDXID: SPDXRef-408c8dad54d44b329f58dd53358c41b681e00d8d-src
+FileType: SOURCE
+FileChecksum: SHA1: 408c8dad54d44b329f58dd53358c41b681e00d8d
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_lang.c
+SPDXID: SPDXRef-e5f57dfc8d9ab2dc2ef91366a5ddeb6f18372736-src
+FileType: SOURCE
+FileChecksum: SHA1: e5f57dfc8d9ab2dc2ef91366a5ddeb6f18372736
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/selva_object_commands.c
+SPDXID: SPDXRef-6d5a8f474747995e7e738a14b3a03adc3c91005e-src
+FileType: SOURCE
+FileChecksum: SHA1: 6d5a8f474747995e7e738a14b3a03adc3c91005e
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module/inherit.c
+SPDXID: SPDXRef-5dc73401eb92bb396435b1a65c15ee669630d268-src
+FileType: SOURCE
+FileChecksum: SHA1: 5dc73401eb92bb396435b1a65c15ee669630d268
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-rpn.c
+SPDXID: SPDXRef-76a0449109af265da91c88eb6c1adda3a04404ae-src
+FileType: SOURCE
+FileChecksum: SHA1: 76a0449109af265da91c88eb6c1adda3a04404ae
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-poptop.c
+SPDXID: SPDXRef-5ba1375a065c467429f550c6de99404c7c5f1bc2-src
+FileType: SOURCE
+FileChecksum: SHA1: 5ba1375a065c467429f550c6de99404c7c5f1bc2
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-hierarchy.c
+SPDXID: SPDXRef-96bd7f60e266fa1b9aa1118ee72bf3c23ad4c4fc-src
+FileType: SOURCE
+FileChecksum: SHA1: 96bd7f60e266fa1b9aa1118ee72bf3c23ad4c4fc
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-bitmap.c
+SPDXID: SPDXRef-b0c3fef62b9513c556249f5260eb1f6f1c407bf7-src
+FileType: SOURCE
+FileChecksum: SHA1: b0c3fef62b9513c556249f5260eb1f6f1c407bf7
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-cstrings.c
+SPDXID: SPDXRef-185a334715b5bce0b39081d38364230e15cfb6b9-src
+FileType: SOURCE
+FileChecksum: SHA1: 185a334715b5bce0b39081d38364230e15cfb6b9
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-queue_r.c
+SPDXID: SPDXRef-3e4b49fb003dbac834703542fd5a60e27b4224f5-src
+FileType: SOURCE
+FileChecksum: SHA1: 3e4b49fb003dbac834703542fd5a60e27b4224f5
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-svector.c
+SPDXID: SPDXRef-8ae103722ff673d7f7f31eb890736026bf3eccb6-src
+FileType: SOURCE
+FileChecksum: SHA1: 8ae103722ff673d7f7f31eb890736026bf3eccb6
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-selva_object.c
+SPDXID: SPDXRef-c1e61ae77f9acabec67800f3f5f3b7eaed2aed86-src
+FileType: SOURCE
+FileChecksum: SHA1: c1e61ae77f9acabec67800f3f5f3b7eaed2aed86
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-edge.c
+SPDXID: SPDXRef-d182a69d068a56b81b9e7b01608147c0b1ee4a5d-src
+FileType: SOURCE
+FileChecksum: SHA1: d182a69d068a56b81b9e7b01608147c0b1ee4a5d
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-mempool.c
+SPDXID: SPDXRef-1a76a74f5fbafa8e5f4c7bfbfda27cbba706ec16-src
+FileType: SOURCE
+FileChecksum: SHA1: 1a76a74f5fbafa8e5f4c7bfbfda27cbba706ec16
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/units/test-selva_set.c
+SPDXID: SPDXRef-abfd3e12efa02c90111d0f00f16bd4b7a25453c7-src
+FileType: SOURCE
+FileChecksum: SHA1: abfd3e12efa02c90111d0f00f16bd4b7a25453c7
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/examples/test_example.c
+SPDXID: SPDXRef-4f5c1f251c123cfa080926890920bff536760ca2-src
+FileType: SOURCE
+FileChecksum: SHA1: 4f5c1f251c123cfa080926890920bff536760ca2
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/punit/unixunit.c
+SPDXID: SPDXRef-246f5d1b0a332a1633ed796d9abb79c21b71f524-src
+FileType: SOURCE
+FileChecksum: SHA1: 246f5d1b0a332a1633ed796d9abb79c21b71f524
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: <text>Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi></text>
+
+FileName: test/punit/punit.c
+SPDXID: SPDXRef-98804127b419219be68481d48e469b2452bf7c97-src
+FileType: SOURCE
+FileChecksum: SHA1: 98804127b419219be68481d48e469b2452bf7c97
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: <text>Copyright (c) 2913, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi></text>
+
+FileName: test/punit_tests/test_arrays.c
+SPDXID: SPDXRef-a0ffecc1f53acffb735a3a13506b14e894241c5a-src
+FileType: SOURCE
+FileChecksum: SHA1: a0ffecc1f53acffb735a3a13506b14e894241c5a
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/punit_tests/test_doubles.c
+SPDXID: SPDXRef-b1fb889151244a8cddd123baa3fb3e1eb1cd96b4-src
+FileType: SOURCE
+FileChecksum: SHA1: b1fb889151244a8cddd123baa3fb3e1eb1cd96b4
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/punit_tests/test_equal.c
+SPDXID: SPDXRef-f4d8be4fe2ff38ee9ef495ee1d53ab5ef9bba755-src
+FileType: SOURCE
+FileChecksum: SHA1: f4d8be4fe2ff38ee9ef495ee1d53ab5ef9bba755
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/punit_tests/test_null.c
+SPDXID: SPDXRef-b2ee8a9ded9b969aa72a7d142ee47195409158a0-src
+FileType: SOURCE
+FileChecksum: SHA1: b2ee8a9ded9b969aa72a7d142ee47195409158a0
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/punit_tests/test_strarrays.c
+SPDXID: SPDXRef-74c15f06b97c3563a6b851ce34e278fc07c7d74a-src
+FileType: SOURCE
+FileChecksum: SHA1: 74c15f06b97c3563a6b851ce34e278fc07c7d74a
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/punit_tests/test_strings.c
+SPDXID: SPDXRef-9fdf0bdd6ad72ef20a8797bd6d52c285b3202573-src
+FileType: SOURCE
+FileChecksum: SHA1: 9fdf0bdd6ad72ef20a8797bd6d52c285b3202573
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/punit_tests/test_unix_stdin.c
+SPDXID: SPDXRef-7c98e550226e9327e2d46b31d2adac82d58a4442-src
+FileType: SOURCE
+FileChecksum: SHA1: 7c98e550226e9327e2d46b31d2adac82d58a4442
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/find-index-mock.c
+SPDXID: SPDXRef-ab3ad6351b839b424f4ed2d108b2f25bce86b192-src
+FileType: SOURCE
+FileChecksum: SHA1: ab3ad6351b839b424f4ed2d108b2f25bce86b192
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/hierarchy-mock.c
+SPDXID: SPDXRef-32f8033ebb7e9388ec57245fc88906a6428c536e-src
+FileType: SOURCE
+FileChecksum: SHA1: 32f8033ebb7e9388ec57245fc88906a6428c536e
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/hierarchy-utils.c
+SPDXID: SPDXRef-9f6a41afff5747b0d8e4efe77c8c4791c429f884-src
+FileType: SOURCE
+FileChecksum: SHA1: 9f6a41afff5747b0d8e4efe77c8c4791c429f884
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/redis-alloc.c
+SPDXID: SPDXRef-fbe24ee27e8a20fd7f269412bc8b62214a360ba1-src
+FileType: SOURCE
+FileChecksum: SHA1: fbe24ee27e8a20fd7f269412bc8b62214a360ba1
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/redis-rdb.c
+SPDXID: SPDXRef-5f5dd2709463ad26f936200f32872f837cb0403b-src
+FileType: SOURCE
+FileChecksum: SHA1: 5f5dd2709463ad26f936200f32872f837cb0403b
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/rms_compressor-mock.c
+SPDXID: SPDXRef-849d9e79d04d4491ab7ce88afd3cc6472ab3db43-src
+FileType: SOURCE
+FileChecksum: SHA1: 849d9e79d04d4491ab7ce88afd3cc6472ab3db43
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/rpn-mock.c
+SPDXID: SPDXRef-d0504b7d76cde3176f2ee8572c5f41b5d7164d10-src
+FileType: SOURCE
+FileChecksum: SHA1: d0504b7d76cde3176f2ee8572c5f41b5d7164d10
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/edge-mock.c
+SPDXID: SPDXRef-c029c1e5986ee9b2345e241070a2caac863335ff-src
+FileType: SOURCE
+FileChecksum: SHA1: c029c1e5986ee9b2345e241070a2caac863335ff
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/subscriptions-mock.c
+SPDXID: SPDXRef-fd04a4539c5831a17c3814724cf52db0324a0c30-src
+FileType: SOURCE
+FileChecksum: SHA1: fd04a4539c5831a17c3814724cf52db0324a0c30
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/errors-mock.c
+SPDXID: SPDXRef-ccba9a67a14f14967824a27f3cc0697a2b9ba7b7-src
+FileType: SOURCE
+FileChecksum: SHA1: ccba9a67a14f14967824a27f3cc0697a2b9ba7b7
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: test/hierarchy_detached-mock.c
+SPDXID: SPDXRef-9ef8f4460cb5271f9f3ff94c400751c8ec2f62af-src
+FileType: SOURCE
+FileChecksum: SHA1: 9ef8f4460cb5271f9f3ff94c400751c8ec2f62af
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: module.c
+SPDXID: SPDXRef-f74af512afd0665f8ed8eeaa7fcd6a070569aeae-src
+FileType: SOURCE
+FileChecksum: SHA1: f74af512afd0665f8ed8eeaa7fcd6a070569aeae
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/adler32.c
+SPDXID: SPDXRef-6c1583884f6f3c49b5b671f1feb74f0033bd6aaf-src
+FileType: SOURCE
+FileChecksum: SHA1: 6c1583884f6f3c49b5b671f1feb74f0033bd6aaf
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/arm/cpu_features.c
+SPDXID: SPDXRef-127af28ca1e3b555f8905000c2997f7e97be7942-src
+FileType: SOURCE
+FileChecksum: SHA1: 127af28ca1e3b555f8905000c2997f7e97be7942
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/crc32.c
+SPDXID: SPDXRef-c6d033d66e2a841cf12c4fa562b4d96d08eb8678-src
+FileType: SOURCE
+FileChecksum: SHA1: c6d033d66e2a841cf12c4fa562b4d96d08eb8678
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/deflate_compress.c
+SPDXID: SPDXRef-ebaea223d0a6c83a12e4e88bf0b6b43daeda0f77-src
+FileType: SOURCE
+FileChecksum: SHA1: ebaea223d0a6c83a12e4e88bf0b6b43daeda0f77
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/deflate_decompress.c
+SPDXID: SPDXRef-879197a3714d55c50aa89848eb52034ec78e10ab-src
+FileType: SOURCE
+FileChecksum: SHA1: 879197a3714d55c50aa89848eb52034ec78e10ab
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/gzip_compress.c
+SPDXID: SPDXRef-e6c0c1f0f66af54b361d1219d5da7f859c56b271-src
+FileType: SOURCE
+FileChecksum: SHA1: e6c0c1f0f66af54b361d1219d5da7f859c56b271
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/gzip_decompress.c
+SPDXID: SPDXRef-6520bf281a5f3b4700bc5f93bba11d68069b971d-src
+FileType: SOURCE
+FileChecksum: SHA1: 6520bf281a5f3b4700bc5f93bba11d68069b971d
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/utils.c
+SPDXID: SPDXRef-23704ceed4abb940e49d02ea017602e82da1fe66-src
+FileType: SOURCE
+FileChecksum: SHA1: 23704ceed4abb940e49d02ea017602e82da1fe66
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/x86/cpu_features.c
+SPDXID: SPDXRef-b40c855bbee6f57df7fc9f4727c54e4940f3a120-src
+FileType: SOURCE
+FileChecksum: SHA1: b40c855bbee6f57df7fc9f4727c54e4940f3a120
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/zlib_compress.c
+SPDXID: SPDXRef-9eb1f53ddb3734e9d7e6ab6d176119f37904224d-src
+FileType: SOURCE
+FileChecksum: SHA1: 9eb1f53ddb3734e9d7e6ab6d176119f37904224d
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/lib/zlib_decompress.c
+SPDXID: SPDXRef-95cee34ae2246a712a855c6ab9f7e571bad1dc13-src
+FileType: SOURCE
+FileChecksum: SHA1: 95cee34ae2246a712a855c6ab9f7e571bad1dc13
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/benchmark.c
+SPDXID: SPDXRef-539286a485ee307dd33b7c2047532dbd3b49a0c3-src
+FileType: SOURCE
+FileChecksum: SHA1: 539286a485ee307dd33b7c2047532dbd3b49a0c3
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/checksum.c
+SPDXID: SPDXRef-65ede7e882227d0dd4f5db192afbec85b72c2296-src
+FileType: SOURCE
+FileChecksum: SHA1: 65ede7e882227d0dd4f5db192afbec85b72c2296
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/gzip.c
+SPDXID: SPDXRef-ed036105c2e124001c0ce7d042b040bc81a1a24e-src
+FileType: SOURCE
+FileChecksum: SHA1: ed036105c2e124001c0ce7d042b040bc81a1a24e
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/prog_util.c
+SPDXID: SPDXRef-8922292ef8266f38eaf298b2ff8e677deaefee42-src
+FileType: SOURCE
+FileChecksum: SHA1: 8922292ef8266f38eaf298b2ff8e677deaefee42
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/test_checksums.c
+SPDXID: SPDXRef-20c779287710eb56ce5c857d2a7a8292080939a6-src
+FileType: SOURCE
+FileChecksum: SHA1: 20c779287710eb56ce5c857d2a7a8292080939a6
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/test_custom_malloc.c
+SPDXID: SPDXRef-4b37582a85ab21f03010453f81ac673e334174b9-src
+FileType: SOURCE
+FileChecksum: SHA1: 4b37582a85ab21f03010453f81ac673e334174b9
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/test_incomplete_codes.c
+SPDXID: SPDXRef-5044f27e51f184183fa17c5cda67b1a711193b54-src
+FileType: SOURCE
+FileChecksum: SHA1: 5044f27e51f184183fa17c5cda67b1a711193b54
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/test_litrunlen_overflow.c
+SPDXID: SPDXRef-84e2e9a9d321738761b0013863532355a6aa291b-src
+FileType: SOURCE
+FileChecksum: SHA1: 84e2e9a9d321738761b0013863532355a6aa291b
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/test_slow_decompression.c
+SPDXID: SPDXRef-76b9e0575a4b502d9750a1bc8ef15860a2ee788c-src
+FileType: SOURCE
+FileChecksum: SHA1: 76b9e0575a4b502d9750a1bc8ef15860a2ee788c
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/test_trailing_bytes.c
+SPDXID: SPDXRef-7372d9e3f310dfdc6f43841aa100ca79e6b2bd17-src
+FileType: SOURCE
+FileChecksum: SHA1: 7372d9e3f310dfdc6f43841aa100ca79e6b2bd17
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/test_util.c
+SPDXID: SPDXRef-6e05f7d6542150615b8e4a7706af8c94d74f84d8-src
+FileType: SOURCE
+FileChecksum: SHA1: 6e05f7d6542150615b8e4a7706af8c94d74f84d8
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/programs/tgetopt.c
+SPDXID: SPDXRef-95d1e10cd513b2bee715254f055142a3eee32b00-src
+FileType: SOURCE
+FileChecksum: SHA1: 95d1e10cd513b2bee715254f055142a3eee32b00
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/scripts/afl-fuzz/deflate_compress/fuzz.c
+SPDXID: SPDXRef-0d53560758bc981410bac9a4e99cc6a4fa70664e-src
+FileType: SOURCE
+FileChecksum: SHA1: 0d53560758bc981410bac9a4e99cc6a4fa70664e
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/scripts/afl-fuzz/deflate_decompress/fuzz.c
+SPDXID: SPDXRef-ff018eb1ee90a197948122c07526296ad87f461b-src
+FileType: SOURCE
+FileChecksum: SHA1: ff018eb1ee90a197948122c07526296ad87f461b
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/scripts/afl-fuzz/gzip_decompress/fuzz.c
+SPDXID: SPDXRef-a5d6d9e738e75601b4f1323af22d198c0d6023f8-src
+FileType: SOURCE
+FileChecksum: SHA1: a5d6d9e738e75601b4f1323af22d198c0d6023f8
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/scripts/afl-fuzz/zlib_decompress/fuzz.c
+SPDXID: SPDXRef-7a63040675fc826bf1eb42a40968751fcaf1c7f2-src
+FileType: SOURCE
+FileChecksum: SHA1: 7a63040675fc826bf1eb42a40968751fcaf1c7f2
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/scripts/gen_crc32_multipliers.c
+SPDXID: SPDXRef-2201707f23bf15210dee50ac2ee4731f23c1505f-src
+FileType: SOURCE
+FileChecksum: SHA1: 2201707f23bf15210dee50ac2ee4731f23c1505f
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/deflate/scripts/gen_crc32_table.c
+SPDXID: SPDXRef-77b07b234819442d43d2ec3f758ca27a5bc39db7-src
+FileType: SOURCE
+FileChecksum: SHA1: 77b07b234819442d43d2ec3f758ca27a5bc39db7
+LicenseConcluded: MIT
+(MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/alloc.c
+SPDXID: SPDXRef-9e15ac6456dee5c95bc976d9440774fead572621-src
+FileType: SOURCE
+FileChecksum: SHA1: 9e15ac6456dee5c95bc976d9440774fead572621
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/heap.c
+SPDXID: SPDXRef-83f56b84eda011dce84cb275c479ce2dbe83fa51-src
+FileType: SOURCE
+FileChecksum: SHA1: 83f56b84eda011dce84cb275c479ce2dbe83fa51
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/periodic.c
+SPDXID: SPDXRef-184d9e570f16b611b8d131b3d2965801ea92bebe-src
+FileType: SOURCE
+FileChecksum: SHA1: 184d9e570f16b611b8d131b3d2965801ea92bebe
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/priority_queue.c
+SPDXID: SPDXRef-05d412587684af85ab37f23e8efe3ad2f37e57f4-src
+FileType: SOURCE
+FileChecksum: SHA1: 05d412587684af85ab37f23e8efe3ad2f37e57f4
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/sds.c
+SPDXID: SPDXRef-e0123c092f798a2ab8e7f74272d93b382be13682-src
+FileType: SOURCE
+FileChecksum: SHA1: e0123c092f798a2ab8e7f74272d93b382be13682
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: <text>Copyright (c) 2006-2015, Salvatore Sanfilippo <antirez at gmail dot com>
+Copyright (c) 2015, Oran Agra
+Copyright (c) 2015, Redis Labs, Inc</text>
+
+FileName: lib/rmutil/strings.c
+SPDXID: SPDXRef-bc28ab1619afb279cb138cfe88b5d457f959c734-src
+FileType: SOURCE
+FileChecksum: SHA1: bc28ab1619afb279cb138cfe88b5d457f959c734
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/test_heap.c
+SPDXID: SPDXRef-78b1ffee36c29618ffb2a6a1ed442a8e6804e95a-src
+FileType: SOURCE
+FileChecksum: SHA1: 78b1ffee36c29618ffb2a6a1ed442a8e6804e95a
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/test_periodic.c
+SPDXID: SPDXRef-1174d6b49252d094b1abb1da5c9c441c6515c070-src
+FileType: SOURCE
+FileChecksum: SHA1: 1174d6b49252d094b1abb1da5c9c441c6515c070
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/test_priority_queue.c
+SPDXID: SPDXRef-efd5c6c4ca173d16e7d46fd1ee9406a11adad6bf-src
+FileType: SOURCE
+FileChecksum: SHA1: efd5c6c4ca173d16e7d46fd1ee9406a11adad6bf
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/test_vector.c
+SPDXID: SPDXRef-7bcdf172aab7cc1e24466e31ced2ecb86bffb9d1-src
+FileType: SOURCE
+FileChecksum: SHA1: 7bcdf172aab7cc1e24466e31ced2ecb86bffb9d1
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/util.c
+SPDXID: SPDXRef-948aecbda6a356ead89dc2bf503a2ba92023faab-src
+FileType: SOURCE
+FileChecksum: SHA1: 948aecbda6a356ead89dc2bf503a2ba92023faab
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/rmutil/vector.c
+SPDXID: SPDXRef-f7e976119892a389676c2cd54714e1fb35b28dfc-src
+FileType: SOURCE
+FileChecksum: SHA1: f7e976119892a389676c2cd54714e1fb35b28dfc
+LicenseConcluded: (MIT WITH selva-exception) OR AGPL-3.0-only
+LicenseInfoInFile: NONE
+FileCopyrightText: NONE
+
+FileName: lib/util/queue_r.c
+SPDXID: SPDXRef-e2923540b491d849aadcf2b9d4f9febcde0c86d2-src
+FileType: SOURCE
+FileChecksum: SHA1: e2923540b491d849aadcf2b9d4f9febcde0c86d2
+LicenseConcluded: BSD-2-Clause
+LicenseInfoInFile: BSD-2-Clause
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX
+Copyright (c) 2013 - 2015, 2017 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+Copyright (c) 2012, 2013 Ninjaware Oy</text>
+
+FileName: lib/util/strnstr.c
+SPDXID: SPDXRef-10881382e152379c560ba152c443e97da6479271-src
+FileType: SOURCE
+FileChecksum: SHA1: 10881382e152379c560ba152c443e97da6479271
+LicenseConcluded: BSD-3-Clause
+LicenseInfoInFile: BSD-3-Clause
+FileCopyrightText: <text>Copyright (c) 2021 SAULX
+Copyright (c) 2015 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+Copyright (c) 2001 Mike Barcroft <mike@FreeBSD.org>
+Copyright (c) 1990, 1993</text>
+
+FileName: lib/util/auto_free.c
+SPDXID: SPDXRef-a0ca268856cd37d4267bc07d749b9afe4fa3e679-src
+FileType: SOURCE
+FileChecksum: SHA1: a0ca268856cd37d4267bc07d749b9afe4fa3e679
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2021 SAULX</text>
+
+FileName: lib/util/bitmap.c
+SPDXID: SPDXRef-f421fcd8a149ed31f6c2aa68a67ff2bdd9add854-src
+FileType: SOURCE
+FileChecksum: SHA1: f421fcd8a149ed31f6c2aa68a67ff2bdd9add854
+LicenseConcluded: BSD-2-Clause
+LicenseInfoInFile: BSD-2-Clause
+FileCopyrightText: <text>Copyright (c) 2021 SAULX
+Copyright (c) 2019 Olli Vanhoja <olli.vanhoja@alumni.helsinki.fi>
+Copyright (c) 2013 - 2016 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi></text>
+
+FileName: lib/util/mempool.c
+SPDXID: SPDXRef-9d6ef9011145089be8d4473e349b58af15f90e86-src
+FileType: SOURCE
+FileChecksum: SHA1: 9d6ef9011145089be8d4473e349b58af15f90e86
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX</text>
+
+FileName: lib/util/memrchr.c
+SPDXID: SPDXRef-de0a1b2fc96fb71d665079784795ff9cabe701f0-src
+FileType: SOURCE
+FileChecksum: SHA1: de0a1b2fc96fb71d665079784795ff9cabe701f0
+LicenseConcluded: ISC
+LicenseInfoInFile: ISC
+FileCopyrightText: <text>Copyright (c) 2021 SAULX
+Copyright (c) 2007 Todd C. Miller <Todd.Miller@courtesan.com></text>
+
+FileName: lib/util/svector.c
+SPDXID: SPDXRef-12562a044f6d721c1e278eacc1721534be3940e6-src
+FileType: SOURCE
+FileChecksum: SHA1: 12562a044f6d721c1e278eacc1721534be3940e6
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX</text>
+
+FileName: lib/util/cstrings.c
+SPDXID: SPDXRef-c30808e08a7f364468829996f79e34497fec5377-src
+FileType: SOURCE
+FileChecksum: SHA1: c30808e08a7f364468829996f79e34497fec5377
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX</text>
+
+FileName: lib/util/lpf.c
+SPDXID: SPDXRef-97231157ec72c5bc1ebaa5300631e8d314d04c55-src
+FileType: SOURCE
+FileChecksum: SHA1: 97231157ec72c5bc1ebaa5300631e8d314d04c55
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2021 SAULX</text>
+
+FileName: lib/util/poptop.c
+SPDXID: SPDXRef-9aeb8c5081e24da9fd59a38def6128354178cdf5-src
+FileType: SOURCE
+FileChecksum: SHA1: 9aeb8c5081e24da9fd59a38def6128354178cdf5
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2021 SAULX</text>
+
+FileName: lib/util/trx.c
+SPDXID: SPDXRef-9068968d53efc8fb6dd59764c37c96965d502f16-src
+FileType: SOURCE
+FileChecksum: SHA1: 9068968d53efc8fb6dd59764c37c96965d502f16
+LicenseConcluded: MIT
+LicenseInfoInFile: MIT
+FileCopyrightText: <text>Copyright (c) 2020-2021 SAULX</text>
+
+FileName: lib/util/base64.c
+SPDXID: SPDXRef-61a145dacbb9fa5786f42533b96c04fe91a2fb77-src
+FileType: SOURCE
+FileChecksum: SHA1: 61a145dacbb9fa5786f42533b96c04fe91a2fb77
+LicenseConcluded: BSD-3-Clause
+LicenseInfoInFile: BSD-3-Clause
+FileCopyrightText: <text>Copyright (c) 2021 SAULX
+Copyright (c) 2005-2011, Jouni Malinen <j@w1.fi></text>
+
