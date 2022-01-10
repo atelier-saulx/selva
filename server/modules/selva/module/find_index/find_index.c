@@ -26,16 +26,24 @@
  */
 struct SelvaFindIndexControlBlock {
     struct {
+        /**
+         * Marker id is selected.
+         * `marker_id` in this struct is valid only if this flag is set.
+         */
         unsigned is_valid_marked_id : 1;
+        /**
+         * A timer has been registered and timer_id is valid.
+         */
         unsigned is_valid_timer_id : 1;
         /**
          * Indexing is active.
-         * The index res set is actively being updated although res can be invalid
-         * from time to time, meaning that the index is currently invalid.
+         * The index `res` set is actively being updated although `res` can be
+         * invalid from time to time, meaning that the index is currently
+         * invalid.
          */
         unsigned is_active : 1;
         /**
-         * res set is considered valid.
+         * `res` set is considered valid.
          */
         unsigned is_valid : 1;
     };
@@ -49,6 +57,10 @@ struct SelvaFindIndexControlBlock {
      * Timer refreshing this index control block.
      */
     RedisModuleTimerID timer_id;
+
+    /**
+     * Index result set size accounting.
+     */
     struct {
         /**
          * The number of nodes selected to the find result.
@@ -56,7 +68,7 @@ struct SelvaFindIndexControlBlock {
          * the hierarchy.
          */
         float take_max;
-        float take_max_ave;
+        float take_max_ave; /*!< Average of `take_max` over time. */
 
         /**
          * The full search space size.
@@ -64,14 +76,14 @@ struct SelvaFindIndexControlBlock {
          * without indexing.
          */
         float tot_max;
-        float tot_max_ave;
+        float tot_max_ave; /*!< Average of `tot_max` over time. */
 
         /**
          * The number of nodes taken from the res when the index is valid.
          * This is updated when the index is valid.
          */
         float ind_take_max;
-        float ind_take_max_ave;
+        float ind_take_max_ave; /*!< Average of `ind_take` over time. */
     } find_acc;
 
     /**
@@ -85,13 +97,13 @@ struct SelvaFindIndexControlBlock {
     /*
      * Traversal.
      */
-    Selva_NodeId node_id;
-    enum SelvaTraversal dir;
+    Selva_NodeId node_id; /*!< Starting node_id. */
+    enum SelvaTraversal dir; /*!< Traversal direction for the index. */
     union {
-        RedisModuleString *dir_field;
-        RedisModuleString *dir_expression;
+        RedisModuleString *dir_field; /*!< Traversal field. */
+        RedisModuleString *dir_expression; /*!< Traversal direction rpn expression. */
     };
-    RedisModuleString *filter;
+    RedisModuleString *filter; /*!< Indexing rpn filter. */
     /*
      * End of Traversal.
      */
@@ -112,7 +124,7 @@ struct icb_proc_args {
 };
 
 struct indexing_timer_args {
-    int active;
+    int active; /*!< The timer is active. This is used for lazy cleanup. */
     struct SelvaHierarchy *hierarchy;
 };
 
@@ -120,7 +132,7 @@ static float lpf_a; /*!< Popularity count average dampening coefficient. */
 Selva_SubscriptionId find_index_sub_id; /* zeroes. */
 
 /*
- * Trace hangles.
+ * Trace handles.
  */
 SELVA_TRACE_HANDLE(FindIndex_AutoIndex);
 SELVA_TRACE_HANDLE(FindIndex_icb_proc);
