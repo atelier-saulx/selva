@@ -11,7 +11,6 @@
 #include "redismodule.h"
 #include "errors.h"
 #include "hierarchy.h"
-#include "selva_node.h"
 #include "selva_object.h"
 #include "selva_set.h"
 #include "rpn.h"

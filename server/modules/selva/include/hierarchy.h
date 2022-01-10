@@ -265,6 +265,8 @@ struct SelvaHierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
 ssize_t SelvaModify_GetHierarchyDepth(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 #endif
 
+int SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj);
+
 void SelvaHierarchy_DelChildren(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,

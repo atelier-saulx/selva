@@ -12,7 +12,6 @@
 #include "hierarchy.h"
 #include "modify.h"
 #include "rpn.h"
-#include "selva_node.h"
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"

@@ -17,7 +17,6 @@
 #include "hierarchy.h"
 #include "modify.h"
 #include "rms.h"
-#include "selva_node.h"
 #include "selva_object.h"
 #include "selva_trace.h"
 #include "subscriptions.h"
@@ -845,7 +844,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {
-        SelvaNode_ClearFields(SelvaHierarchy_GetNodeObject(node));
+        SelvaHierarchy_ClearNodeFields(SelvaHierarchy_GetNodeObject(node));
     }
 
     /*
