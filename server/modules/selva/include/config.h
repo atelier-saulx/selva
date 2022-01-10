@@ -4,6 +4,10 @@
 
 struct RedisModuleString;
 
+/**
+ * A structure type of global config params that can be changed at startup.
+ * See tunables.h for the description and default values of these parameters.
+ */
 struct selva_glob_config {
     size_t hierarchy_initial_vector_len;
     size_t hierarchy_expected_resp_len;
