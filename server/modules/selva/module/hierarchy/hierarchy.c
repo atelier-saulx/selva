@@ -12,7 +12,7 @@
 #include "alias.h"
 #include "async_task.h"
 #include "cdefs.h"
-#include "rms_compressor.h"
+#include "rms.h"
 #include "errors.h"
 #include "edge.h"
 #include "modify.h"

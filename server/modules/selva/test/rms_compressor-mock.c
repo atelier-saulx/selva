@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "redismodule.h"
-#include "rms_compressor.h"
+#include "rms.h"
 
 int rms_compress(struct compressed_rms *out, RedisModuleString *in) {
     return 0;

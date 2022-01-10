@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2021-2022 SAULX
+ * SPDX-License-Identifier: (MIT WITH selva-exception) OR AGPL-3.0-only
+ */
 #pragma once
 #ifndef _FIND_INDEX_H_
 #define _FIND_INDEX_H_

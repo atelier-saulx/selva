@@ -4,7 +4,7 @@
 #include "cdefs.h"
 #include "auto_free.h"
 #include "errors.h"
-#include "rms_compressor.h"
+#include "rms.h"
 
 int rms_compress(struct compressed_rms *out, RedisModuleString *in) {
     struct libdeflate_compressor *compressor;
