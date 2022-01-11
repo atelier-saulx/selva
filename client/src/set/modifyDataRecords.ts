@@ -39,6 +39,14 @@ export const setRecordDefInt64 = compile([
   { name: '$value', type: 'int64_p' },
 ])
 
+export const edgeMetaDef = compile([
+  { name: 'op_code', type: 'int8' },
+  { name: 'delete_all', type: 'int8' },
+  { name: 'dst_node_id', type: 'cstring', size: 10 }, // TODO NODE_ID_SIZE
+  { name: 'meta_field_name', type: 'cstring_p' },
+  { name: 'meta_field_value', type: 'cstring_p' },
+])
+
 export const incrementDef = compile([
   { name: '$default', type: 'int64' },
   { name: '$increment', type: 'int64' },

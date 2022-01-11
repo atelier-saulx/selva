@@ -102,6 +102,7 @@ struct EdgeField {
     const struct EdgeFieldConstraint *constraint; /*!< A pointer to the constraint of this edge field. */
     struct SVector arcs; /*!< Pointers to hierarchy nodes. */
     Selva_NodeId src_node_id; /*!< Source/owner nodeId of this edge field. */
+    struct SelvaObject *metadata; /*!< Metadata organized by dst_node_id. Can be NULL. */
 };
 
 /*
@@ -165,11 +166,30 @@ int Edge_Usage(const struct SelvaHierarchyNode *node);
 struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *node, const char *field_name_str, size_t field_name_len);
 
 /**
+ * Get a pointer to the metadata object of an EdgeField.
+ * @param edge_field is a pointer to the EdgeField.
+ * @param create if set the object will be created if it didn't exist before.
+ * @returns A pointer to the metadata object; Otherwise a NULL pointer is returned.
+ */
+struct SelvaObject *Edge_GetFieldMetadata(struct EdgeField *edge_field, int create);
+
+/**
+ * Get a pointer to the metadata of an edge in the EdgeField.
+ */
+int Edge_GetFieldEdgeMetadata(struct EdgeField *edge_field, const Selva_NodeId dst_node_id, int create, struct SelvaObject **out);
+
+/**
+ * Delete all metadata from edge_field.
+ */
+void Edge_DeleteFieldMetadata(struct EdgeField *edge_field);
+
+/**
  * Check if an EdgeField has a reference to dst_node.
  * @returns 0 = not found;
  *          1 = found.
  */
 int Edge_Has(const struct EdgeField *edge_field, struct SelvaHierarchyNode *dst_node);
+int Edge_HasNodeId(const struct EdgeField *edge_field, const Selva_NodeId dst_node_id);
 
 /**
  * Add a new edge.
