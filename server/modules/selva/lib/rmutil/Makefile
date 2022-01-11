@@ -3,7 +3,7 @@ ifndef RM_INCLUDE_DIR
 	RM_INCLUDE_DIR=../../include
 endif
 
-CFLAGS ?= -g -fPIC -O3 -std=gnu99 -Wall -Wno-unused-function
+CFLAGS ?= -g -fPIC -O3 -std=gnu99 -Wall -Wno-unused-function -fvisibility=hidden
 CFLAGS += -I$(RM_INCLUDE_DIR)
 CC := gcc
 

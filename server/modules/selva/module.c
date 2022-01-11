@@ -1081,7 +1081,7 @@ static int my_RedisModuleEventCallback(RedisModuleCtx *ctx, RedisModuleEvent eid
     (void)RedisModule_SubscribeToServerEvent(ctx, RedisModuleEvent_Shutdown, my_RedisModuleEventCallback);
 #endif
 
-int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+SELVA_EXPORT int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int err;
 
     fprintf(stderr, "Selva version: %s\n", selva_version);
