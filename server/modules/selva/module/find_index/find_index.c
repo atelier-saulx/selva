@@ -14,6 +14,7 @@
 #include "poptop.h"
 #include "errors.h"
 #include "hierarchy.h"
+#include "ida.h"
 #include "selva.h"
 #include "selva_object.h"
 #include "selva_onload.h"
@@ -192,15 +193,13 @@ static RedisModuleString *build_name(
 }
 
 static int set_marker_id(struct SelvaHierarchy *hierarchy, struct SelvaFindIndexControlBlock *icb) {
-    int next = bitmap_ffs(hierarchy->dyn_index.find_marker_id_stack);
+    const int next = ida_alloc(hierarchy->dyn_index.ida);
 
     if (next < 0) {
-        return SELVA_ENOBUFS;
+        return next;
     }
 
     icb->marker_id = next;
-    bitmap_clear(hierarchy->dyn_index.find_marker_id_stack, next);
-
     icb->is_valid_marked_id = 1;
 
     return 0;
@@ -418,7 +417,7 @@ static int destroy_index_cb(
         }
 
         if (icb->is_valid_marked_id) {
-            bitmap_set(hierarchy->dyn_index.find_marker_id_stack, icb->marker_id);
+            ida_free(hierarchy->dyn_index.ida, icb->marker_id);
         }
     }
 
@@ -828,14 +827,9 @@ int SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
         return SELVA_ENOMEM;
     }
 
-    hierarchy->dyn_index.find_marker_id_stack = RedisModule_Alloc(BITMAP_ALLOC_SIZE(FIND_INDICES_MAX_HINTS));
-    if (!hierarchy->dyn_index.find_marker_id_stack) {
+    hierarchy->dyn_index.ida = ida_init(FIND_INDICES_MAX_HINTS);
+    if (!hierarchy->dyn_index.ida) {
         return SELVA_ENOMEM;
-    }
-
-    hierarchy->dyn_index.find_marker_id_stack->nbits = FIND_INDICES_MAX_HINTS;
-    for (size_t i = 0; i < FIND_INDICES_MAX_HINTS; i++) {
-        bitmap_set(hierarchy->dyn_index.find_marker_id_stack, i);
     }
 
     /*
@@ -890,6 +884,7 @@ void SelvaFindIndex_Deinit(struct SelvaHierarchy *hierarchy) {
         SelvaObject_Destroy(hierarchy->dyn_index.index_map);
     }
     poptop_deinit(&hierarchy->dyn_index.top_indices);
+    ida_destroy(hierarchy->dyn_index.ida);
 
     if (hierarchy->dyn_index.indexing_timer_args) {
         /*

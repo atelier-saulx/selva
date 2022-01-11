@@ -21,6 +21,7 @@ OBJS := \
 	module/hierarchy/hierarchy_detached.o \
 	module/hierarchy/hierarchy_reply.o \
 	module/hierarchy/traversal.o \
+	module/ida.o \
 	module/inherit.o \
 	module/modify.o \
 	module/resolve.o \

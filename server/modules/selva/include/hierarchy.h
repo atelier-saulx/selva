@@ -18,6 +18,7 @@ struct RedisModuleString;
 struct SelvaHierarchy;
 typedef struct SelvaHierarchy SelvaHierarchy;
 struct SelvaHierarchyNode;
+struct ida;
 
 /* Forward declarations for metadata */
 /* ... */
@@ -124,7 +125,7 @@ struct SelvaHierarchy {
 
     struct {
         int nr_indices; /*!< Total number of active indices. */
-        struct bitmap *find_marker_id_stack;
+        struct ida *ida;
         struct poptop top_indices; /*!< A list of top requested indices. */
 
         struct indexing_timer_args *indexing_timer_args;

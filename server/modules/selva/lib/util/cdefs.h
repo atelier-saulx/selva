@@ -138,6 +138,11 @@
 #define num_elem(x) (sizeof(x) / sizeof(*(x)))
 
 /**
+ * Size of struct field.
+ */
+#define sizeof_field(t, f) (sizeof(((t*)0)->f))
+
+/**
  * Returns the smaller of the given values.
  */
 #define min(a, b) \
