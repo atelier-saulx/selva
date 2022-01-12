@@ -203,31 +203,26 @@ static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *m
     return match;
 }
 
-/**
- * Match subscription marker with the RPN expression filter.
- */
 int Selva_SubscriptionFilterMatch(RedisModuleCtx *ctx, const struct SelvaHierarchyNode *node, struct Selva_SubscriptionMarker *marker) {
     struct rpn_ctx *filter_ctx = marker->filter_ctx;
-    Selva_NodeId node_id;
-    int res = 0;
-    int err;
+    int res = 1; /* When no filter is set the result should be true. */
 
-    /* When no filter is set the result should be true. */
-    if (!filter_ctx) {
-        return 1;
-    }
+    if (filter_ctx) {
+        Selva_NodeId node_id;
+        int err;
 
-    SelvaHierarchy_GetNodeId(node_id, node);
-    rpn_set_reg(filter_ctx, 0, node_id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
-    rpn_set_hierarchy_node(filter_ctx, node);
-    rpn_set_obj(filter_ctx, SelvaHierarchy_GetNodeObject(node));
-    err = rpn_bool(ctx, filter_ctx, marker->filter_expression, &res);
-    if (err) {
-        fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node_id,
-                rpn_str_error[err]);
-        return 0;
+        SelvaHierarchy_GetNodeId(node_id, node);
+        rpn_set_reg(filter_ctx, 0, node_id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
+        rpn_set_hierarchy_node(filter_ctx, node);
+        rpn_set_obj(filter_ctx, SelvaHierarchy_GetNodeObject(node));
+        err = rpn_bool(ctx, filter_ctx, marker->filter_expression, &res);
+        if (err) {
+            fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, node_id,
+                    rpn_str_error[err]);
+            res = 0;
+        }
     }
 
     return res;
