@@ -1455,8 +1455,7 @@ static void copy_nodeIds(Selva_NodeId *dst, const struct SVector *vec) {
 
     SVector_ForeachBegin(&it, vec);
     while ((node = SVector_Foreach(&it))) {
-        memcpy(dst, node->id, SELVA_NODE_ID_SIZE);
-        dst++;
+        memcpy(dst++, node->id, SELVA_NODE_ID_SIZE);
     }
 }
 

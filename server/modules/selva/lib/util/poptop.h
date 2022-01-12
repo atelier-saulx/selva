@@ -51,7 +51,7 @@ struct poptop {
  * An iterator for `struct poptop`.
  * Note that the elements in the poptop list are not returned in any
  * particular order.
- * @param _el_ is a pointer to a `poptop_list_el` structure.
+ * @param[out] _el_ is a pointer to a `poptop_list_el` structure. Can be NULL.
  * @param _l_ is a pointer to the poptop instance to be iterated over.
  */
 #define POPTOP_FOREACH(_el_, _l_) \
@@ -77,6 +77,7 @@ void poptop_deinit(struct poptop *l);
 
 /**
  * Add an element to the top list if it's above the self-determined score limit.
+ * If the element already exists the score is updated.
  * @param l is a pointer to the poptop structure.
  */
 void poptop_maybe_add(struct poptop * restrict l, float score, void * restrict p);
