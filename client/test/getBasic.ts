@@ -931,18 +931,18 @@ test.serial('get - references', async (t) => {
     refs: [id1, id11],
   })
 
-  // this should no longer work (we don't return ref/refs types with $all by default
-  // t.deepEqualIgnoreOrder(
-  //   await client.get({
-  //     $id: id2,
-  //     $all: true,
-  //   }),
-  //   {
-  //     id: id2,
-  //     type: 'lekkerType',
-  //     refs: [id1, id11],
-  //   }
-  // )
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: id2,
+      $all: true,
+    }),
+    {
+      id: id2,
+      type: 'lekkerType',
+      // this should no longer work (we don't return ref/refs types with $all by default
+      // refs: [id1, id11],
+    }
+  )
 
   client.destroy()
 })
