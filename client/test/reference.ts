@@ -610,6 +610,39 @@ test.serial('list of simple singular reference', async (t) => {
     }
   )
 
+  await client.set({
+    $id: 'maA',
+    bidirClub: 'clA',
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'clA',
+      $all: true,
+      specialMatch: {
+        $all: true,
+        bidirClub: {
+          $all: true,
+        },
+      },
+    }),
+    {
+      id: 'clA',
+      type: 'club',
+      title: { en: 'yesh club' },
+      specialMatch: {
+        id: 'maA',
+        title: { en: 'yesh match' },
+        type: 'match',
+        bidirClub: {
+          id: 'clA',
+          type: 'club',
+          title: { en: 'yesh club' },
+        },
+      },
+    }
+  )
+
   t.deepEqual(
     await client.get({
       $id: 'root',
