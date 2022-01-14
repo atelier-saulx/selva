@@ -68,7 +68,9 @@ const all = (
           key !== 'children' &&
           key !== 'parents' &&
           key !== 'ancestors' &&
-          key !== 'descendants'
+          key !== 'descendants' &&
+          typeSchema.fields[key].type !== 'reference' &&
+          typeSchema.fields[key].type !== 'references'
         ) {
           ops.push({
             type: 'db',
@@ -98,6 +100,11 @@ const all = (
     if (fieldSchema.type === 'object') {
       for (const key in fieldSchema.properties) {
         if (props[key] === undefined) {
+          const keySchema = fieldSchema.properties[key]
+          if (['reference', 'references'].includes(keySchema.type)) {
+            return
+          }
+
           ops.push({
             type: 'db',
             id,
@@ -132,7 +139,7 @@ const all = (
         field: field.slice(1),
         sourceField: field.slice(1),
         fromReference: true,
-        props: { $all: true },
+        props: Object.assign({}, props, { $all: true }),
       })
     }
   }
