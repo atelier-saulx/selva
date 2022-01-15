@@ -1015,6 +1015,7 @@ static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) 
                     err = send_node_fields(args->ctx, args->lang, args->hierarchy, node, fields, args->excluded_fields);
                 }
             } else {
+                /* Otherwise the nodeId is sent. */
                 RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
                 err = 0;
             }
@@ -1682,10 +1683,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .acc_tot = 0,
             .acc_take = 0,
         };
-        const struct SelvaHierarchyCallback cb = {
-            .node_cb = FindCommand_NodeCb,
-            .node_arg = &args,
-        };
 
         if (limit == 0) {
             break;
@@ -1711,12 +1708,15 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 if (node) {
                     /*
                      * Note that we don't break here on limit because limit and
-                     * indexing aren't compatible, unless limit is used together
+                     * indexing are incompatible, unless limit is used together
                      * with order.
+                     * The reason is that we can't guarantee that the returned nodes
+                     * would be the exactly same with and without indexing.
                      */
                     (void)FindCommand_NodeCb(node, &args);
                 }
             }
+            err = 0;
             SELVA_TRACE_END(cmd_find_index);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             const struct SelvaModify_ArrayObjectCallback ary_cb = {
@@ -1732,24 +1732,58 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                     SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                     SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))
                    && ref_field) {
+            const struct SelvaHierarchyCallback cb = {
+                .node_cb = FindCommand_NodeCb,
+                .node_arg = &args,
+            };
             TO_STR(ref_field);
 
             SELVA_TRACE_BEGIN(cmd_find_refs);
             err = SelvaHierarchy_TraverseField(hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
             SELVA_TRACE_END(cmd_find_refs);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+            const struct SelvaHierarchyCallback cb = {
+                .node_cb = FindCommand_NodeCb,
+                .node_arg = &args,
+            };
+
             SELVA_TRACE_BEGIN(cmd_find_bfs_expression);
             err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, edge_filter_ctx, edge_filter, &cb);
             SELVA_TRACE_END(cmd_find_bfs_expression);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) {
+            const struct SelvaHierarchyCallback cb = {
+                .node_cb = FindCommand_NodeCb,
+                .node_arg = &args,
+            };
+
             SELVA_TRACE_BEGIN(cmd_find_traversal_expression);
             err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, edge_filter_ctx, edge_filter, &cb);
             SELVA_TRACE_END(cmd_find_traversal_expression);
         } else {
+            const struct SelvaHierarchyCallback cb = {
+                .node_cb = FindCommand_NodeCb,
+                .node_arg = &args,
+            };
+
             SELVA_TRACE_BEGIN(cmd_find_rest);
             err = SelvaHierarchy_Traverse(hierarchy, nodeId, dir, &cb);
             SELVA_TRACE_END(cmd_find_rest);
         }
+        if (err != 0) {
+            /*
+             * We can't send an error to the client at this point so we'll just log
+             * it and ignore the error.
+             */
+            fprintf(stderr, "%s:%d: Find failed. err: %s dir: %s node_id: \"%.*s\"\n",
+                    __FILE__, __LINE__,
+                    getSelvaErrorStr(err),
+                    SelvaTraversal_Dir2str(dir),
+                    (int)SELVA_NODE_ID_SIZE, nodeId);
+        }
+
+        /*
+         * Do index accounting.
+         */
         for (int j = 0; j < nr_index_hints; j++) {
             struct SelvaFindIndexControlBlock *icb = ind_icb[j];
 
@@ -1767,22 +1801,11 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 SelvaFind_Acc(icb, 0, args.acc_tot);
             }
         }
-        if (err != 0) {
-            /*
-             * We can't send an error to the client at this point so we'll just log
-             * it and ignore the error.
-             */
-            fprintf(stderr, "%s:%d: Find failed. err: %s dir: %s node_id: \"%.*s\"\n",
-                    __FILE__, __LINE__,
-                    getSelvaErrorStr(err),
-                    SelvaTraversal_Dir2str(dir),
-                    (int)SELVA_NODE_ID_SIZE, nodeId);
-        }
     }
 
     /*
-     * If an ordered request was requested then nothing was send to the client yet
-     * and we need to do it now.
+     * If an ordered response was requested then nothing was sent to the client
+     * yet and we need to do it now.
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
         SELVA_TRACE_BEGIN(cmd_find_sort_result);
