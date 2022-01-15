@@ -385,6 +385,9 @@ test.serial('get - basic value types timeseries', async (t) => {
 
   const obs = client.observe({
     $id: 'viA',
+    id: true,
+    title: true,
+    value: true,
     values: {
       $field: 'value',
       $list: { $limit: 5 },
