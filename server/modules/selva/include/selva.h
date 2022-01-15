@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#define SELVA_EXPORT __attribute__((__visibility__("default")))
+
 #define SELVA_NODE_ID_SIZE      10ul /* Must be at least sizeof(void *) */
 #define SELVA_NODE_TYPE_SIZE    2
 #define ROOT_NODE_ID            "root\0\0\0\0\0\0"
