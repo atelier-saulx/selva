@@ -1,7 +1,7 @@
 # find the OS
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
-CFLAGS := -std=gnu99 -Wall -Wextra -Wno-unused-value
+CFLAGS := -std=gnu99 -Wall -Wextra -Wno-unused-value -fvisibility=hidden
 
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
