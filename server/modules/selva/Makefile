@@ -12,29 +12,28 @@ OBJS := \
 	module/async_task.o \
 	module/comparator.o \
 	module/config.o \
-	module/edge.o \
-	module/edge_constraint.o \
+	module/edge/edge.o \
+	module/edge/edge_constraint.o \
 	module/errors.o \
 	module/find.o \
-	module/find_index.o \
-	module/hierarchy.o \
-	module/hierarchy_detached.o \
-	module/hierarchy_reply.o \
+	module/find_index/find_index.o \
+	module/hierarchy/hierarchy.o \
+	module/hierarchy/hierarchy_detached.o \
+	module/hierarchy/hierarchy_reply.o \
+	module/hierarchy/traversal.o \
 	module/inherit.o \
 	module/modify.o \
 	module/resolve.o \
-	module/rms_compressor.o \
-	module/rpn.o \
-	module/rpn_eval.o \
+	module/rms/rms_compressor.o \
+	module/rms/shared.o \
+	module/rpn/rpn.o \
+	module/rpn/rpn_eval.o \
 	module/selva_lang.o \
-	module/selva_node.o \
-	module/selva_object.o \
-	module/selva_object_commands.o \
+	module/selva_object/selva_object.o \
+	module/selva_object/selva_object_commands.o \
 	module/selva_set.o \
 	module/selva_trace.o \
 	module/selva_type.o \
-	module/shared.o \
-	module/traversal.o \
 	module/subscriptions.o
 
 IDIR := $(patsubst %,-I%,$(INCLUDE_DIR))

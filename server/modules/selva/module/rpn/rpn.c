@@ -11,7 +11,6 @@
 #include "redismodule.h"
 #include "errors.h"
 #include "hierarchy.h"
-#include "selva_node.h"
 #include "selva_object.h"
 #include "selva_set.h"
 #include "rpn.h"
@@ -329,7 +328,7 @@ static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
     }
 
     v->flags.in_use = 1;
-	ctx->stack[ctx->depth++] = v;
+    ctx->stack[ctx->depth++] = v;
 
     return RPN_ERR_OK;
 }
@@ -425,7 +424,7 @@ static enum rpn_error push_selva_set_result(struct rpn_ctx *ctx, struct SelvaSet
 }
 
 static struct rpn_operand *pop(struct rpn_ctx *ctx) {
-	if (!ctx->depth) {
+    if (!ctx->depth) {
         return NULL;
     }
 
@@ -437,7 +436,7 @@ static struct rpn_operand *pop(struct rpn_ctx *ctx) {
 
     v->flags.in_use = 0;
 
-	return v;
+    return v;
 }
 
 static void clear_stack(struct rpn_ctx *ctx) {
@@ -1609,9 +1608,9 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                 return err;
             }
         }
-	}
+    }
 
-	if (ctx->depth != 1) {
+    if (ctx->depth != 1) {
         clear_stack(ctx);
         return RPN_ERR_BADSTK;
     }

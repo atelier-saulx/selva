@@ -11,11 +11,11 @@
 #include "endian.h"
 #include "cstrings.h"
 #include "errors.h"
+#include "rms.h"
 #include "selva_set.h"
 #include "selva_trace.h"
 #include "svector.h"
 #include "tree.h"
-#include "shared.h"
 #include "selva_object.h"
 
 #define SELVA_OBJECT_KEY_MAX            USHRT_MAX /*!< Maximum length of a key including dots and array notation. */
