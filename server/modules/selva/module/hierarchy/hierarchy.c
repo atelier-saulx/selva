@@ -12,13 +12,12 @@
 #include "alias.h"
 #include "async_task.h"
 #include "cdefs.h"
-#include "rms_compressor.h"
+#include "rms.h"
 #include "errors.h"
 #include "edge.h"
 #include "modify.h"
 #include "rpn.h"
 #include "config.h"
-#include "selva_node.h"
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_trace.h"
@@ -501,6 +500,20 @@ struct SelvaHierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
     return &node->metadata;
 }
 
+static const char * const excluded_fields[] = {
+    SELVA_ID_FIELD,
+    SELVA_TYPE_FIELD,
+    SELVA_CREATED_AT_FIELD,
+    SELVA_ALIASES_FIELD,
+    NULL
+};
+
+int SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj) {
+    SelvaObject_Clear(obj, excluded_fields);
+
+    return 0;
+}
+
 static inline void mkHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     (void)SVector_InsertFast(&hierarchy->heads, node);
 }
@@ -553,7 +566,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierar
      * Never delete the root node.
      */
     if (is_root) {
-        SelvaNode_ClearFields(obj);
+        SelvaHierarchy_ClearNodeFields(obj);
     } else {
         removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
 

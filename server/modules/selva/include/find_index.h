@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2021-2022 SAULX
+ * SPDX-License-Identifier: (MIT WITH selva-exception) OR AGPL-3.0-only
+ */
 #pragma once
 #ifndef _FIND_INDEX_H_
 #define _FIND_INDEX_H_
@@ -26,6 +30,12 @@ int SelvaFind_AutoIndex(
         struct RedisModuleString *filter,
         struct SelvaFindIndexControlBlock **icb_out,
         struct SelvaSet **out);
+
+/**
+ * Update indexing accounting.
+ * @param acc_take is the number of nodes taken from the original set.
+ * @param acc_tot is the total number of nodes in the original set.
+ */
 void SelvaFind_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t acc_take, size_t acc_tot);
 
 #endif /* _FIND_INDEX_H_ */

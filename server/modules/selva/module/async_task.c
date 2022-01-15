@@ -38,6 +38,35 @@
 #define WORKER_TIME_SOURCE CLOCK_REALTIME
 #endif
 
+/**
+ * Subscription event type.
+ */
+enum SelvaModify_AsyncEventType {
+    SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE,
+    SELVA_MODIFY_ASYNC_TASK_SUB_TRIGGER,
+};
+
+/**
+ * Internal descriptor for events.
+ */
+struct SelvaModify_AsyncTask {
+    enum SelvaModify_AsyncEventType type;
+
+    union {
+        /* SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE */
+        struct {
+            Selva_SubscriptionId sub_id;
+            Selva_SubscriptionMarkerId marker_id;
+        } sub_update;
+        /* SELVA_MODIFY_ASYNC_TASK_SUB_TRIGGER */
+        struct {
+            Selva_SubscriptionId sub_id;
+            Selva_SubscriptionMarkerId marker_id;
+            Selva_NodeId node_id;
+        } sub_trigger;
+    };
+};
+
 static uint64_t total_publishes;
 static uint64_t missed_publishes;
 
@@ -238,7 +267,7 @@ error:
     return NULL;
 }
 
-int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len) {
+static int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len) {
     if (ASYNC_TASK_DEBUG_DROP_ALL) {
         return 0;
     }
@@ -305,6 +334,7 @@ void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {
         .type = SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE,
     };
 
+    /* TODO if payload_str was aligned properly we could locate the struct directly inside it. */
     memcpy(publish_task.sub_update.sub_id, sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
     memcpy(ptr, &total_len, sizeof(int32_t));
     ptr += sizeof(int32_t);
@@ -323,6 +353,7 @@ void SelvaModify_PublishSubscriptionTrigger(const Selva_SubscriptionId sub_id, c
         .type = SELVA_MODIFY_ASYNC_TASK_SUB_TRIGGER,
     };
 
+    /* TODO if payload_str was aligned properly we could locate the struct directly inside it. */
     memcpy(publish_task.sub_trigger.sub_id, sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
     memcpy(publish_task.sub_trigger.node_id, node_id, SELVA_NODE_ID_SIZE);
     memcpy(ptr, &total_len, sizeof(int32_t));

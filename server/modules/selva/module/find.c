@@ -16,7 +16,6 @@
 #include "selva.h"
 #include "config.h"
 #include "selva_lang.h"
-#include "selva_node.h"
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"

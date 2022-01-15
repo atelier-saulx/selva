@@ -1,7 +1,7 @@
 #include "selva_set.h"
 #include "redismodule.h"
 #include "cdefs.h"
-#include "shared.h"
+#include "rms.h"
 
 #define SELVA_SHARED_KEY_STR "type"
 #define SELVA_SHARED_KEY_LEN 4

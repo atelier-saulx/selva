@@ -5,6 +5,11 @@
 #include "svector.h"
 #include "arg_parser.h"
 
+struct RedisModuleString;
+struct RedisModuleCtx;
+struct SelvaHierarchy;
+struct SelvaHierarchyNode;
+
 enum SelvaTraversalAlgo {
     HIERARCHY_BFS,
     HIERARCHY_DFS,
@@ -62,11 +67,6 @@ enum SelvaResultOrder {
 };
 
 typedef int (*orderFunc)(const void ** restrict a_raw, const void ** restrict b_raw);
-
-struct RedisModuleString;
-struct RedisModuleCtx;
-struct SelvaHierarchy;
-struct SelvaHierarchyNode;
 
 extern const struct SelvaArgParser_EnumType merge_types[3];
 

@@ -9,7 +9,6 @@
 #include "errors.h"
 #include "hierarchy.h"
 #include "modify.h"
-#include "selva_node.h"
 #include "selva_object.h"
 #include "selva_set.h"
 #include "comparator.h"

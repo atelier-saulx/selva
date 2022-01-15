@@ -3,7 +3,7 @@
 #include <math.h>
 #include <time.h>
 #include "cdefs.h"
-#include "module/config.h"
+#include "config.h"
 #include "redismodule.h"
 #include "cstrings.h"
 #include "libdeflate.h"
@@ -12,15 +12,14 @@
 #include "selva_onload.h"
 #include "svector.h"
 #include "bitmap.h"
-#include "module/errors.h"
-#include "module/async_task.h"
-#include "module/hierarchy.h"
-#include "module/modify.h"
-#include "module/selva_node.h"
-#include "module/selva_object.h"
-#include "module/selva_trace.h"
-#include "module/shared.h"
-#include "module/subscriptions.h"
+#include "errors.h"
+#include "async_task.h"
+#include "hierarchy.h"
+#include "modify.h"
+#include "rms.h"
+#include "selva_object.h"
+#include "selva_trace.h"
+#include "subscriptions.h"
 
 #define FLAG_NO_ROOT    0x01
 #define FLAG_NO_MERGE   0x02
@@ -845,7 +844,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
 
     if (!trigger_created && FISSET_NO_MERGE(flags)) {
-        SelvaNode_ClearFields(SelvaHierarchy_GetNodeObject(node));
+        SelvaHierarchy_ClearNodeFields(SelvaHierarchy_GetNodeObject(node));
     }
 
     /*

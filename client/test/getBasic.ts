@@ -939,7 +939,8 @@ test.serial('get - references', async (t) => {
     {
       id: id2,
       type: 'lekkerType',
-      refs: [id1, id11],
+      // this should no longer work (we don't return ref/refs types with $all by default
+      // refs: [id1, id11],
     }
   )
 
