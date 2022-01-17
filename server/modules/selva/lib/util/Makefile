@@ -16,7 +16,7 @@ OBJS := \
 	mempool.o \
 	poptop.o \
 	queue_r.o \
-	strnstr.o \
+	strnstrn.o \
 	svector.o \
 	trx.o
 ifeq ($(uname_S),Darwin) # macOS

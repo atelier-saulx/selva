@@ -21,7 +21,7 @@ size_t substring_count(const char *string, const char *substring, size_t n);
  * Find the first occurrence of find in s, where the search is limited to the
  * first slen characters of s.
  */
-char * strnstr(const char *s, const char *find, size_t slen);
+char * strnstrn(const char *s, size_t s_len, const char *find, size_t find_len);
 
 int get_array_field_index(const char *field_str, size_t field_len, ssize_t *res);
 

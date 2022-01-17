@@ -164,7 +164,7 @@ static int send_edge_field(
     size_t next_prefix_len;
 
     if (field_prefix_str) {
-        const char *s = strnstr(field_str, ".", field_len);
+        const char *s = strnstrn(field_str, field_len, ".", 1);
         const int n = s ? (int)(s - field_str) + 1 : (int)field_len;
         const RedisModuleString *next_prefix;
 
@@ -274,6 +274,7 @@ static int send_node_field(
      */
     if (strstr(field_str, ".*.")) {
         long resp_count = 0;
+
         err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err && err != SELVA_ENOENT) {
             fprintf(stderr, "%s:%d: Sending wildcard field %.*s of %.*s failed: %s\n",
