@@ -298,7 +298,6 @@ int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
             return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "destination node type");
         }
 
-        fprintf(stderr, "dest node type constraint added \"%.*s\"\n", 2, dst_node_type_str);
         memcpy(params.dst_node_type, dst_node_type_str, SELVA_NODE_TYPE_SIZE);
     }
 
