@@ -129,8 +129,9 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             long resp_count = 0;
 
             RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-            err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, okey_str, okey_len,
-                                                 &resp_count, -1, SELVA_OBJECT_REPLY_SPLICE_FLAG | SELVA_OBJECT_REPLY_BINUMF_FLAG);
+            err = SelvaObject_ReplyWithWildcardStr(ctx, lang, obj, okey_str, okey_len,
+                                                   &resp_count, -1,
+                                                   SELVA_OBJECT_REPLY_SPLICE_FLAG | SELVA_OBJECT_REPLY_BINUMF_FLAG);
             if (err == SELVA_ENOENT) {
                 /* Keep looking. */
                 RedisModule_ReplySetArrayLength(ctx, resp_count);

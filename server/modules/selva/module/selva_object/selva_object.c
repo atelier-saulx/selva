@@ -2218,7 +2218,7 @@ int SelvaObject_ReplyWithObject(
     }
 }
 
-int SelvaObject_GetWithWildcardStr(
+int SelvaObject_ReplyWithWildcardStr(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         struct SelvaObject *obj,
@@ -2230,8 +2230,12 @@ int SelvaObject_GetWithWildcardStr(
     const size_t idx = strnstrn(okey_str, okey_len, ".*.", 3) - okey_str + 1; /* .*. => *. */
 
     if (idx > SELVA_OBJECT_KEY_MAX) {
-        /* Assume strnstrn() returned the NULL pointer. */
-        return SELVA_EINVAL;
+        /*
+         * Assume strnstrn() returned the NULL pointer.
+         * The error here matches what get_key() would send,
+         * thus not introducing a new error code.
+         */
+        return SELVA_ENAMETOOLONG;
     }
 
     /* Path before the wildcard character. */
@@ -2270,10 +2274,10 @@ int SelvaObject_GetWithWildcardStr(
 
             if (strnstrn(new_field, new_field_len, ".*.", 3)) {
                 /* Recurse for nested wildcards while keeping the resolved path. */
-                SelvaObject_GetWithWildcardStr(ctx, lang, obj, new_field, new_field_len,
-                                               resp_count,
-                                               resp_path_start_idx == -1 ? idx : resp_path_start_idx,
-                                               flags);
+                SelvaObject_ReplyWithWildcardStr(ctx, lang, obj, new_field, new_field_len,
+                                                 resp_count,
+                                                 resp_path_start_idx == -1 ? idx : resp_path_start_idx,
+                                                 flags);
                 continue;
             }
 

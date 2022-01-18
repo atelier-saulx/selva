@@ -275,7 +275,7 @@ static int send_node_field(
     if (strstr(field_str, ".*.")) {
         long resp_count = 0;
 
-        err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err && err != SELVA_ENOENT) {
             fprintf(stderr, "%s:%d: Sending wildcard field %.*s of %.*s failed: %s\n",
                     __FILE__, __LINE__,
@@ -482,7 +482,7 @@ static int send_array_object_field(
     if (strstr(field_str, ".*.")) {
         long resp_count = 0;
 
-        err = SelvaObject_GetWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err && err != SELVA_ENOENT) {
             fprintf(stderr, "%s:%d: Sending wildcard field %.*s in array object failed: %s\n",
                     __FILE__, __LINE__,

@@ -255,7 +255,7 @@ int SelvaObject_SetUserMeta(struct SelvaObject *obj, const struct RedisModuleStr
 /**
  * @param flags Accepts SELVA_OBJECT_REPLY_SPLICE_FLAG and other reply flags.
  */
-int SelvaObject_GetWithWildcardStr(
+int SelvaObject_ReplyWithWildcardStr(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
         struct SelvaObject *obj,
