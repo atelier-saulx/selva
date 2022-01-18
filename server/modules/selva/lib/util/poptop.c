@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 SAULX
+ * Copyright (c) 2021-2022 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -143,6 +143,8 @@ void *poptop_maintenance_drop(struct poptop *l) {
     struct poptop_list_el *list = l->list;
     size_t n = l->max_size;
     float cut_limit = l->cut_limit;
+
+    /* TODO Don't drop anything if it's not full? */
 
     for (size_t i = 0; i < n; i++) {
         struct poptop_list_el *el = &list[i];
