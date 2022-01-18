@@ -1,3 +1,4 @@
+import { open } from 'fs/promises'
 import test from 'ava'
 import { performance } from 'perf_hooks'
 import { connect } from '../../src/index'
@@ -18,7 +19,7 @@ test.before(async (t) => {
     selvaOptions: ['FIND_INDICES_MAX', '100', 'FIND_INDEXING_INTERVAL', '1000', 'FIND_INDEXING_ICB_UPDATE_INTERVAL', '500', 'FIND_INDEXING_POPULARITY_AVE_PERIOD', '3', 'FIND_INDEXING_THRESHOLD', '0'],
   })
 
-  await wait(100);
+  await wait(100)
 })
 
 test.beforeEach(async (t) => {
@@ -44,9 +45,6 @@ test.beforeEach(async (t) => {
     },
   })
 
-  // A small delay is needed after setting the schema
-  await wait(100);
-
   await client.destroy()
 })
 
@@ -64,15 +62,46 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('slow traversal and fast index', async (t) => {
-  const client = connect({ port })
-  const START = 0
-  const N = 2000000 // 500000
-  const STEP = 500000 // 2500
+test.serial('perf - indexing', async (t) => {
+  const START = 0 // Graph size factor in the first step
+  const STOP = 800000 // Graph size factor in the last step
+  const NR_STEPS = 8 // Number of steps between START and STOP
+  const STEP = Math.round((STOP - START) / NR_STEPS) // Step size
+  const ITER = 500 // Number of iterations
 
-  console.log('n', 'noIndexTime', 'indexTime')
-  for (let n = START; n <= N; n += STEP) {
+  if (STEP <= 0) {
+      throw new Error('STEP must be greater than zero')
+  }
+  console.error('STEP:', STEP)
+
+  const client = connect({ port })
+  const file = await open(`perf-indexing_${new Date().toISOString()}.csv`, 'w')
+  const writeLine = async (...l) => {
+    console.log(l)
+    await file.write(Buffer.from(l.join(',') + '\n'))
+  }
+
+  await writeLine('n', 'nrNodes', 'resultLen', 'noIndexTime', 'indexTime')
+
+  for (let n = START; n <= STOP; n += STEP) {
+    // Format the query
+    const filter = `"ma" e P #${n / 2 + 999} "value" g #${n / 2 - 1000} i #2 "value" g E L M M`
+    const indexFilter = ['"ma" e P', `#${n / 2 + 999} "value" g #${n / 2 - 1000} i`, '#2 "value" g E L'].map((s) => ['index', s]).flat()
+    const order = [] // 'value', 'asc'
+    const fields = [] // 'value'
+    const baseQuery = [
+        ...(order.length > 0 ? ['order', ...order] : []),
+        ...(fields.length > 0 ? ['fields', fields.join('\n')] : []),
+        'root',
+        filter,
+    ]
+
+    // Delete all nodes.
+    // This works if all nodes were created as descendants of the root nodes.
     await client.delete('root')
+
+    // Create nodes
+    console.error('n:', n)
     for (let i = 1; i < n + 1; i++) {
       await client.set({
         type: 'match',
@@ -87,38 +116,39 @@ test.serial('slow traversal and fast index', async (t) => {
         ]
       })
     }
-    console.log('nr match nodes:', (await client.redis.keys('ma*')).length)
+    console.error('nodes created')
 
-    //const filter = '#10 "value" g E L'
-    const filter = `#${n / 2 + 999} "value" g #${n / 2 - 1000} i #2 "value" g E L M`
-    //const filter = `"value" g #${n / 2} F`
-    const order = [] // 'order', 'value', 'asc'
-    const fields = ['id'] // 'value'
+    // nr of match nodes
+    const nrNodes = (await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'root', '"ma" e')).length
+
+    // Test without indexing
+    console.error('test without indexing')
+    let resultLen
     const noIndexStart = performance.now()
-    for (let i = 0; i < 500; i++) {
-      const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', ...order, 'fields', ...fields, 'root', filter)
+    for (let i = 0; i < ITER; i++) {
+      const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', ...baseQuery)
+      resultLen = r.length
     }
     const noIndexEnd = performance.now()
     const noIndexTime = noIndexEnd - noIndexStart
 
-    for (let i = 0; i < 500; i++) {
-      const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', filter, ...order, 'fields', ...fields, 'root', filter)
+    // Ensure that the index is created before the test run
+    console.error('create index')
+    for (let i = 0; i < ITER; i++) {
+      const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', ...indexFilter, ...baseQuery)
     }
     await wait(2e3)
+
+    // Test with indexing
+    console.error('test with indexing')
     const indexStart = performance.now()
-    for (let i = 0; i < 500; i++) {
-      const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', filter, ...order, 'fields', ...fields, 'root', filter)
+    for (let i = 0; i < ITER; i++) {
+      const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', ...indexFilter, ...baseQuery)
     }
     const indexEnd = performance.now()
     const indexTime = indexEnd - indexStart
 
-    //t.deepEqual(
-    //  (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
-    //  [ 'root.I.IzEwICJ2YWx1ZSIgZyBFIEw=', `${expected.length}` ]
-    //)
-
-    console.log(n, noIndexTime, indexTime)
-    //t.assert(noIndexTime > 2 * indexTime, 'find from index is at least twice as fast')
+    await writeLine(n, nrNodes, resultLen, noIndexTime, indexTime)
 
     // Flush indices
     const list = await client.redis.selva_index_list('___selva_hierarchy')
@@ -127,4 +157,7 @@ test.serial('slow traversal and fast index', async (t) => {
         await client.redis.selva_index_del('___selva_hierarchy', list[i])
     }
   }
+
+  await file.close()
+  t.pass()
 })
