@@ -670,7 +670,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         return SELVA_ENAMETOOLONG;
     }
 
-    if (strnstr(key_name_str, ".", key_name_len)) {
+    if (strnstrn(key_name_str, key_name_len, ".", 1)) {
         return get_key_obj(obj, key_name_str, key_name_len, flags, out);
     }
 
@@ -2218,7 +2218,7 @@ int SelvaObject_ReplyWithObject(
     }
 }
 
-int SelvaObject_GetWithWildcardStr(
+int SelvaObject_ReplyWithWildcardStr(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         struct SelvaObject *obj,
@@ -2227,7 +2227,16 @@ int SelvaObject_GetWithWildcardStr(
         long *resp_count,
         int resp_path_start_idx,
         unsigned int flags) {
-    const size_t idx = strnstr(okey_str, ".*.", okey_len) - okey_str + 1; /* .*. => *. */
+    const size_t idx = strnstrn(okey_str, okey_len, ".*.", 3) - okey_str + 1; /* .*. => *. */
+
+    if (idx > SELVA_OBJECT_KEY_MAX) {
+        /*
+         * Assume strnstrn() returned the NULL pointer.
+         * The error here matches what get_key() would send,
+         * thus not introducing a new error code.
+         */
+        return SELVA_ENAMETOOLONG;
+    }
 
     /* Path before the wildcard character. */
     const size_t before_len = idx - 1;
@@ -2263,12 +2272,12 @@ int SelvaObject_GetWithWildcardStr(
                     (int)obj_key_len, obj_key_name_str,
                     (int)after_len, after);
 
-            if (strnstr(new_field, ".*.", new_field_len)) {
+            if (strnstrn(new_field, new_field_len, ".*.", 3)) {
                 /* Recurse for nested wildcards while keeping the resolved path. */
-                SelvaObject_GetWithWildcardStr(ctx, lang, obj, new_field, new_field_len,
-                                               resp_count,
-                                               resp_path_start_idx == -1 ? idx : resp_path_start_idx,
-                                               flags);
+                SelvaObject_ReplyWithWildcardStr(ctx, lang, obj, new_field, new_field_len,
+                                                 resp_count,
+                                                 resp_path_start_idx == -1 ? idx : resp_path_start_idx,
+                                                 flags);
                 continue;
             }
 

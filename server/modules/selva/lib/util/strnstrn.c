@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2021 SAULX
+ * Copyright (c) 2021-2022 SAULX
  * Copyright (c) 2015 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
  * Copyright (c) 2001 Mike Barcroft <mike@FreeBSD.org>
  * Copyright (c) 1990, 1993
@@ -36,28 +36,29 @@
  */
 
 #include <string.h>
+#include "cdefs.h"
 
-char * strnstr(const char *s, const char *find, size_t slen)
+__hot char * strnstrn(const char *s, size_t s_len, const char *find, size_t find_len)
 {
     char c;
 
-    if ((c = *find++) != '\0') {
-        size_t len = strlen(find);
+    if (likely(find_len > 0 && (c = *find++) != '\0')) {
+        find_len--;
 
         do {
             char sc;
 
             do {
-                if (slen-- < 1 || (sc = *s++) == '\0') {
+                if (s_len-- < 1 || (sc = *s++) == '\0') {
                     return NULL;
                 }
             } while (sc != c);
 
-            if (len > slen) {
+            if (find_len > s_len) {
                 return NULL;
             }
 
-        } while (strncmp(s, find, len) != 0);
+        } while (strncmp(s, find, find_len) != 0);
         s--;
     }
 
