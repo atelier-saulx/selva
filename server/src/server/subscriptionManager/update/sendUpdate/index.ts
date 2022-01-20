@@ -94,8 +94,10 @@ const sendUpdate = async (
     }
     console.error('SUBSCRIPTION ERROR', payload, getOptions)
 
-    subscription.beingProcessed = false
-    return
+    if (currentVersion) {
+      subscription.beingProcessed = false
+      return
+    }
   }
 
   if (payload.$ignore === true) {
