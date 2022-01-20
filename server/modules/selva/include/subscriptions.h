@@ -337,7 +337,13 @@ void SelvaSubscriptions_ClearAllMarkers(
         struct SelvaHierarchyNode *node);
 
 /**
- * Test if the filter defined in the marker matches.
+ * Test if the RPN filter defined in the marker matches.
+ * This function is particularly useful for the callback function of a callback
+ * marker (added with SelvaSubscriptions_AddCallbackMarker()) as in that case
+ * the filter is not executed by the subscriptions system.
+ * @param ctx is a pointer to the redis context.
+ * @param node is a pointer to the node the filter should be executed against.
+ * @param marker is a pointer to the subscription marker.
  */
 int Selva_SubscriptionFilterMatch(struct RedisModuleCtx *ctx, const struct SelvaHierarchyNode *node, struct Selva_SubscriptionMarker *marker);
 

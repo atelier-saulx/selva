@@ -37,6 +37,7 @@ test.beforeEach(async (t) => {
         fields: {
           title: { type: 'text' },
           value: { type: 'number' },
+          strValue: { type: 'string' },
           description: { type: 'text' },
         },
       },
@@ -65,7 +66,7 @@ test.after(async (t) => {
 
 test.serial('create and destroy an index', async (t) => {
   const client = connect({ port })
-  const q = ['', '___selva_hierarchy', 'descendants', 'index', '"value" g #20 I', 'fields', 'value', 'root', '"value" g #10 I']
+  const q = ['', '___selva_hierarchy', 'descendants', 'index', '"value" g #20 I', 'fields', 'strValue', 'root', '"value" g #10 I']
   const expected = [ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' ]
 
   for (let i = 0; i < 100; i++) {
@@ -73,6 +74,7 @@ test.serial('create and destroy an index', async (t) => {
       type: 'match',
       title: { en: 'a', de: 'b', nl: 'c' },
       value: i,
+      strValue: `${i}`,
     })
   }
 
@@ -127,21 +129,24 @@ test.serial('add and delete nodes in an index', async (t) => {
       type: 'match',
       title: { en: 'a', de: 'b', nl: 'c' },
       value: 81,
+      strValue: '81',
     },
     {
       type: 'match',
       title: { en: 'a', de: 'b', nl: 'c' },
       value: 82,
+      strValue: '82',
     },
     {
       type: 'match',
       title: { en: 'a', de: 'b', nl: 'c' },
       value: 93,
+      strValue: '93',
     }
   ].map((v) => client.set(v)))
 
   for (let i = 0; i < 500; i++) {
-    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', '"value" g #80 H', 'fields', 'value', 'root', '"value" g #90 I')
+    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', '"value" g #80 H', 'fields', 'strValue', 'root', '"value" g #90 I')
     t.deepEqualIgnoreOrder(r.map((v) => v[1][1]), [
       '81',
       '82',
@@ -149,7 +154,7 @@ test.serial('add and delete nodes in an index', async (t) => {
   }
   await wait(2e3)
   for (let i = 0; i < 500; i++) {
-    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', '"value" g #80 H', 'fields', 'value', 'root', '"value" g #90 I')
+    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', '"value" g #80 H', 'fields', 'strValue', 'root', '"value" g #90 I')
     t.deepEqualIgnoreOrder(r.map((v) => v[1][1]), [
       '81',
       '82',
@@ -159,9 +164,10 @@ test.serial('add and delete nodes in an index', async (t) => {
   await client.set({
     type: 'match',
     value: 84,
+    strValue: '84',
   })
 
-  const r1 = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', '"value" g #80 H', 'fields', 'value', 'root', '"value" g #90 I')
+  const r1 = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', '"value" g #80 H', 'fields', 'strValue', 'root', '"value" g #90 I')
   t.deepEqualIgnoreOrder(r1.map((v) => v[1][1]), [
     '81',
     '82',
@@ -170,7 +176,7 @@ test.serial('add and delete nodes in an index', async (t) => {
 
   await client.delete({ $id: ids[1] })
 
-  const r2 = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', '"value" g #80 H', 'fields', 'value', 'root', '"value" g #90 I')
+  const r2 = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'index', '"value" g #80 H', 'fields', 'strValue', 'root', '"value" g #90 I')
   t.deepEqualIgnoreOrder(r2.map((v) => v[1][1]), [
     '81',
     '84',
@@ -187,16 +193,19 @@ test.serial('traversal expression with index', async (t) => {
       type: 'match',
       title: { en: 'a', de: 'b', nl: 'c' },
       value: i,
+      strValue: `${i}`,
       parents: [
         {
           type: 'match',
           value: i - N,
+          strValue: `${i - N}`,
         }
       ],
       children: [
         {
           type: 'match',
           value: i + N,
+          strValue: `${i + N}`,
         }
       ]
     })
@@ -216,13 +225,14 @@ test.serial('traversal expression with index', async (t) => {
       return arr
   })(-N, 2 * N)
 
+  const q = ['', '___selva_hierarchy', 'bfs_expression', '{"parents","children"}', 'index', '#4 "value" g E', 'order', 'value', 'asc', 'fields', 'strValue', id, '#2 "value" g E']
   for (let i = 0; i < 500; i++) {
-    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs_expression', '{"parents","children"}', 'index', '#4 "value" g E', 'order', 'value', 'asc', 'fields', 'value', id, '#2 "value" g E')
+    const r = await client.redis.selva_hierarchy_find(...q)
     t.deepEqual(r.map((v) => Number(v[1][1])), expected)
   }
   await wait(2e3)
   for (let i = 0; i < 500; i++) {
-    const r = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'bfs_expression', '{"parents","children"}', 'index', '#4 "value" g E', 'order', 'value', 'asc', 'fields', 'value', id, '#2 "value" g E')
+    const r = await client.redis.selva_hierarchy_find(...q)
     t.deepEqual(r.map((v) => Number(v[1][1])), expected)
   }
 

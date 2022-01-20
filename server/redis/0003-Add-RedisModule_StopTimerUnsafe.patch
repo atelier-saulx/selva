@@ -1,0 +1,64 @@
+From 0a81478e7b65c2934ae0dc13d2903838b1de07c1 Mon Sep 17 00:00:00 2001
+From: Olli Vanhoja <olli.vanhoja@gmail.com>
+Date: Thu, 13 Jan 2022 11:59:48 +0100
+Subject: [PATCH] Add RedisModule_StopTimerUnsafe()
+
+It's not necessary to pass ctx when stopping a timer and sometimes
+we don't have that pointer at hand.
+---
+ src/module.c      | 11 +++++++++++
+ src/redismodule.h |  2 ++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/src/module.c b/src/module.c
+index 22a6817fa..b20dd1462 100644
+--- a/src/module.c
++++ b/src/module.c
+@@ -5550,6 +5550,16 @@ int RM_StopTimer(RedisModuleCtx *ctx, RedisModuleTimerID id, void **data) {
+     return REDISMODULE_OK;
+ }
+ 
++int RM_StopTimerUnsafe(RedisModuleTimerID id, void **data) {
++    RedisModuleTimer *timer = raxFind(Timers,(unsigned char*)&id,sizeof(id));
++    if (timer == raxNotFound)
++        return REDISMODULE_ERR;
++    if (data) *data = timer->data;
++    raxRemove(Timers,(unsigned char*)&id,sizeof(id),NULL);
++    zfree(timer);
++    return REDISMODULE_OK;
++}
++
+ /* Obtain information about a timer: its remaining time before firing
+  * (in milliseconds), and the private data pointer associated with the timer.
+  * If the timer specified does not exist or belongs to a different module
+@@ -8254,6 +8264,7 @@ void moduleRegisterCoreAPI(void) {
+     REGISTER_API(FreeClusterNodesList);
+     REGISTER_API(CreateTimer);
+     REGISTER_API(StopTimer);
++    REGISTER_API(StopTimerUnsafe);
+     REGISTER_API(GetTimerInfo);
+     REGISTER_API(GetMyClusterID);
+     REGISTER_API(GetClusterSize);
+diff --git a/src/redismodule.h b/src/redismodule.h
+index 56e2d3dba..bfe59ec5c 100644
+--- a/src/redismodule.h
++++ b/src/redismodule.h
+@@ -734,6 +734,7 @@ REDISMODULE_API char ** (*RedisModule_GetClusterNodesList)(RedisModuleCtx *ctx,
+ REDISMODULE_API void (*RedisModule_FreeClusterNodesList)(char **ids) REDISMODULE_ATTR;
+ REDISMODULE_API RedisModuleTimerID (*RedisModule_CreateTimer)(RedisModuleCtx *ctx, mstime_t period, RedisModuleTimerProc callback, void *data) REDISMODULE_ATTR;
+ REDISMODULE_API int (*RedisModule_StopTimer)(RedisModuleCtx *ctx, RedisModuleTimerID id, void **data) REDISMODULE_ATTR;
++REDISMODULE_API int (*RedisModule_StopTimerUnsafe)(RedisModuleTimerID id, void **data) REDISMODULE_ATTR;
+ REDISMODULE_API int (*RedisModule_GetTimerInfo)(RedisModuleCtx *ctx, RedisModuleTimerID id, uint64_t *remaining, void **data) REDISMODULE_ATTR;
+ REDISMODULE_API const char * (*RedisModule_GetMyClusterID)(void) REDISMODULE_ATTR;
+ REDISMODULE_API size_t (*RedisModule_GetClusterSize)(void) REDISMODULE_ATTR;
+@@ -985,6 +986,7 @@ static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver, int
+     REDISMODULE_GET_API(FreeClusterNodesList);
+     REDISMODULE_GET_API(CreateTimer);
+     REDISMODULE_GET_API(StopTimer);
++    REDISMODULE_GET_API(StopTimerUnsafe);
+     REDISMODULE_GET_API(GetTimerInfo);
+     REDISMODULE_GET_API(GetMyClusterID);
+     REDISMODULE_GET_API(GetClusterSize);
+-- 
+2.30.2
+

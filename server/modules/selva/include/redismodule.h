@@ -734,6 +734,7 @@ REDISMODULE_API char ** (*RedisModule_GetClusterNodesList)(RedisModuleCtx *ctx, 
 REDISMODULE_API void (*RedisModule_FreeClusterNodesList)(char **ids) REDISMODULE_ATTR;
 REDISMODULE_API RedisModuleTimerID (*RedisModule_CreateTimer)(RedisModuleCtx *ctx, mstime_t period, RedisModuleTimerProc callback, void *data) REDISMODULE_ATTR;
 REDISMODULE_API int (*RedisModule_StopTimer)(RedisModuleCtx *ctx, RedisModuleTimerID id, void **data) REDISMODULE_ATTR;
+REDISMODULE_API int (*RedisModule_StopTimerUnsafe)(RedisModuleTimerID id, void **data) REDISMODULE_ATTR;
 REDISMODULE_API int (*RedisModule_GetTimerInfo)(RedisModuleCtx *ctx, RedisModuleTimerID id, uint64_t *remaining, void **data) REDISMODULE_ATTR;
 REDISMODULE_API const char * (*RedisModule_GetMyClusterID)(void) REDISMODULE_ATTR;
 REDISMODULE_API size_t (*RedisModule_GetClusterSize)(void) REDISMODULE_ATTR;
@@ -985,6 +986,7 @@ static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver, int 
     REDISMODULE_GET_API(FreeClusterNodesList);
     REDISMODULE_GET_API(CreateTimer);
     REDISMODULE_GET_API(StopTimer);
+    REDISMODULE_GET_API(StopTimerUnsafe);
     REDISMODULE_GET_API(GetTimerInfo);
     REDISMODULE_GET_API(GetMyClusterID);
     REDISMODULE_GET_API(GetClusterSize);

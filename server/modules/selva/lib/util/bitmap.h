@@ -25,14 +25,14 @@ struct bitmap {
     bitmap_t d[0];
 };
 
-#define CEILING(x,y) \
+#define BITMAP_CEILING(x, y) \
     (((x) + (y) - (size_t)1) / (y))
 
 /**
  * Byte size of a bitmap struct passable to a malloc()-like function.
  */
 #define BITMAP_ALLOC_SIZE(nbits) \
-    (sizeof(struct bitmap) + CEILING(max((size_t)(nbits), (size_t)8) / (size_t)8, sizeof(bitmap_t)) * sizeof(bitmap_t))
+    (sizeof(struct bitmap) + BITMAP_CEILING(max((size_t)(nbits), (size_t)8) / (size_t)8, sizeof(bitmap_t)) * sizeof(bitmap_t))
 
 /**
  * Get the status of a bit in a bitmap pointed by bitmap.

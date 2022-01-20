@@ -2,6 +2,7 @@
 #ifndef _SELVA_HIERARCHY_H_
 #define _SELVA_HIERARCHY_H_
 
+#include "redismodule.h"
 #include "linker_set.h"
 #include "selva.h"
 #include "svector.h"
@@ -18,6 +19,7 @@ struct RedisModuleString;
 struct SelvaHierarchy;
 typedef struct SelvaHierarchy SelvaHierarchy;
 struct SelvaHierarchyNode;
+struct ida;
 
 /* Forward declarations for metadata */
 /* ... */
@@ -124,10 +126,10 @@ struct SelvaHierarchy {
 
     struct {
         int nr_indices; /*!< Total number of active indices. */
-        struct bitmap *find_marker_id_stack;
+        int proc_timer_active; /*!< The indexing decission proc timer is active. */
+        RedisModuleTimerID proc_timer_id; /*!< The indexing decission proc timer id. */
+        struct ida *ida; /*!< Id allocator for subscription marker ids. */
         struct poptop top_indices; /*!< A list of top requested indices. */
-
-        struct indexing_timer_args *indexing_timer_args;
         struct SelvaObject *index_map;
     } dyn_index;
 
