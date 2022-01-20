@@ -29,6 +29,12 @@
 struct SelvaFindIndexControlBlock {
     struct {
         /**
+         * Permanently created by the user.
+         * Permanent ICBs are never destroyed and they are prioritized for
+         * indexing.
+         */
+        unsigned permanent : 1;
+        /**
          * Marker id is selected.
          * `marker_id` in this struct is valid only if this flag is set.
          */
@@ -46,14 +52,11 @@ struct SelvaFindIndexControlBlock {
         unsigned active : 1;
         /**
          * `res` set is considered valid.
+         * This can go 0 even when we are indexing if the `res` SelvaSet needs
+         * to be refreshed after a `SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY` event
+         * was received.
          */
         unsigned valid : 1;
-        /**
-         * Permanently created by the user.
-         * Permanent ICBs are never destroyed and they are prioritized for
-         * indexing.
-         */
-        unsigned permanent : 1;
     } flags;
 
     /**
@@ -122,8 +125,8 @@ struct SelvaFindIndexControlBlock {
 
     /**
      * Result set of the indexing clause.
-     * This can be NULL even when we are indexing if it needs to be refreshed
-     * after a SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY was received.
+     * Only valid if `flags.valid` is set.
+     * The elements in this set are Selva_NodeIds.
      */
     struct SelvaSet res;
 
@@ -228,7 +231,7 @@ static int skip_node(const struct SelvaFindIndexControlBlock *icb, const Selva_N
 }
 
 /**
- * A callback function to update index on changes in the hierarchy.
+ * A callback function to update the index on hierarchy changes.
  */
 static void update_index(
         RedisModuleCtx *ctx,
