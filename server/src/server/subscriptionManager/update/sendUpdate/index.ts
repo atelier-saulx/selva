@@ -95,7 +95,10 @@ const sendUpdate = async (
     console.error('SUBSCRIPTION ERROR', payload, getOptions)
 
     if (currentVersion) {
+      clearTimeout(time)
       subscription.beingProcessed = false
+      subscriptionManager.inProgressCount--
+      inProgressTriggers.delete(subscription.channel + ':' + nodeId)
       return
     }
   }
