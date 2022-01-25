@@ -1,18 +1,26 @@
 /*
- * Copyright (c) 2021 SAULX
+ * Copyright (c) 2021-2022 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
 #ifndef _UTIL_LPF_H_
 #define _UTIL_LPF_H_
 
+/**
+ * Calculate the alpha coefficient for the lpf.
+ */
 static inline float lpf_geta(float period, float sample_interval) {
-    const float km1 = period / sample_interval;
-    const float a = km1 / (km1 + 1.0f);
-
-    return a;
+    return __builtin_epxf(-(sample_interval / period));
 }
 
-float lpf_calc_next(float a, float prev, float sample);
+/**
+ * Calculate the next output value of the lpf.
+ * @param prev is the previous output of this function.
+ * @param a is the coefficient calculated by lpf_geta().
+ * @param sample is the current sample.
+ */
+static inline float lpf_calc_next(float a, float prev, float sample) {
+    return a * prev + (1.0f - a) * sample;
+}
 
 #endif /* _UTIL_LPF_H_ */
