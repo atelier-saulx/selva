@@ -8,6 +8,10 @@ struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *node, const cha
     return NULL;
 }
 
+int Edge_GetFieldEdgeMetadata(struct EdgeField *edge_field, const Selva_NodeId dst_node_id, int create, struct SelvaObject **out) {
+    return 0;
+}
+
 size_t Edge_Refcount(struct SelvaHierarchyNode *node) {
     return 0;
 }
