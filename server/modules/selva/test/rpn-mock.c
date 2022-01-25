@@ -6,8 +6,6 @@ const char *rpn_str_error[] = {"", ""};
 
 struct rpn_ctx *rpn_init(int nr_reg) { return NULL; }
 void rpn_destroy(struct rpn_ctx *ctx) {}
-void rpn_set_hierarchy_node(struct rpn_ctx *ctx, const struct SelvaHierarchyNode *node) {}
-void rpn_set_obj(struct rpn_ctx *ctx, struct SelvaObject *obj) {}
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t slen, unsigned flags) { return 1; }
 struct rpn_expression *rpn_compile(const char *input) { return NULL; }
 enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, int *out) { return 1; }

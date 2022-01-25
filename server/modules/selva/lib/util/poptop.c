@@ -9,13 +9,17 @@
 #include "redismodule.h"
 #include "poptop.h"
 
+/**
+ * Struct used for the return value of poptop_find().
+ */
 struct poptop_loc {
     struct poptop_list_el *found;
     struct poptop_list_el *next_free;
 };
 
-int poptop_init(struct poptop *l, size_t max_size, float initial_cut) {
+int poptop_init(struct poptop *l, unsigned int max_size, float initial_cut) {
     l->max_size = max_size;
+    l->current_size = 0;
     l->cut_limit = initial_cut;
     l->list = RedisModule_Calloc(max_size, sizeof(struct poptop_list_el));
 
@@ -28,12 +32,12 @@ void poptop_deinit(struct poptop *l) {
 }
 
 static struct poptop_loc poptop_find(struct poptop * restrict l, const void * restrict p) {
-    size_t n = l->max_size;
+    const typeof(l->max_size) n = l->max_size;
     struct poptop_list_el *list = l->list;
     struct poptop_list_el *found = NULL;
     struct poptop_list_el *next_free = NULL;
 
-    for (size_t i = 0; i < n; i++) {
+    for (unsigned int i = 0; i < n; i++) {
         struct poptop_list_el *el = &list[i];
 
         if (!el->p && !next_free) {
@@ -62,6 +66,7 @@ void poptop_maybe_add(struct poptop * restrict l, float score, void * restrict p
     } else if (loc.next_free && score >= l->cut_limit) {
         loc.next_free->score = score;
         loc.next_free->p = p;
+        l->current_size++;
     }
 }
 
@@ -70,6 +75,7 @@ void poptop_remove(struct poptop * restrict l, const void * restrict p) {
 
     if (loc.found) {
         loc.found->p = NULL;
+        l->current_size--;
     }
 }
 
@@ -96,26 +102,13 @@ static inline void poptop_sort(struct poptop *l) {
 }
 
 /**
- * Find the last element in a sorted poptop list.
- */
-static size_t poptop_find_last(const struct poptop *l) {
-    const struct poptop_list_el *list = l->list;
-    size_t n = l->max_size;
-    size_t i = 0;
-
-    while (i < n && list[i].p) i++;
-
-    return i > 0 ? i - 1 : 0;
-}
-
-/**
  * Get the median score from a sorted poptop list.
  */
-static float poptop_median_score(const struct poptop *l, size_t last) {
+static float poptop_median_score(const struct poptop *l, unsigned int last) {
     float median;
 
     if (last & 1) { /* The number of elements (last + 1) is even. */
-        size_t i = (last + 1) >> 1;
+        unsigned int i = (last + 1) >> 1;
 
         median = (l->list[i].score + l->list[i - 1].score) / 2.0f;
     } else { /* The number of elements is odd. */
@@ -126,13 +119,9 @@ static float poptop_median_score(const struct poptop *l, size_t last) {
 }
 
 int poptop_maintenance(struct poptop *l) {
-    size_t last;
-
-    poptop_sort(l);
-    last = poptop_find_last(l);
-
-    if (last + 1 == l->max_size) {
-        l->cut_limit = poptop_median_score(l, last);
+    if (l->current_size == l->max_size) {
+        poptop_sort(l);
+        l->cut_limit = poptop_median_score(l, l->current_size - 1);
         return 1;
     } else {
         return 0;
@@ -141,12 +130,10 @@ int poptop_maintenance(struct poptop *l) {
 
 void *poptop_maintenance_drop(struct poptop *l) {
     struct poptop_list_el *list = l->list;
-    size_t n = l->max_size;
+    const typeof(l->max_size) n = l->max_size;
     float cut_limit = l->cut_limit;
 
-    /* TODO Don't drop anything if it's not full? */
-
-    for (size_t i = 0; i < n; i++) {
+    for (unsigned int i = 0; i < n; i++) {
         struct poptop_list_el *el = &list[i];
 
         if (el->p && el->score < cut_limit) {
@@ -154,6 +141,7 @@ void *poptop_maintenance_drop(struct poptop *l) {
 
             p = el->p;
             el->p = NULL;
+            l->current_size--;
 
             return p;
         }

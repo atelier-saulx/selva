@@ -10,7 +10,7 @@
  * Calculate the alpha coefficient for the lpf.
  */
 static inline float lpf_geta(float period, float sample_interval) {
-    return __builtin_epxf(-(sample_interval / period));
+    return __builtin_expf(-(sample_interval / period));
 }
 
 /**
