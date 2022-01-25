@@ -37,7 +37,11 @@ struct poptop {
     /**
      * Maximum size of the top list.
      */
-    size_t max_size;
+    unsigned int max_size;
+    /**
+     * Current number of elements on the top list.
+     */
+    unsigned int current_size;
     /**
      * Minimum score.
      * A long term minimum score for an element to get into and remain in the
@@ -67,7 +71,7 @@ struct poptop {
  * @param initial_cut is an initial value for the cut limit.
  * @returns 0 if succeed; Otherwise a non-zero value is returned.
  */
-int poptop_init(struct poptop *l, size_t max_size, float initial_cut);
+int poptop_init(struct poptop *l, unsigned int max_size, float initial_cut);
 
 /**
  * Deinit a poptop structure.
