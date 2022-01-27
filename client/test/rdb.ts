@@ -186,6 +186,16 @@ test.serial('can reload from RDB', async (t) => {
       title: { en: 'sup' },
     }
   })
+  await client.set({
+    $id: 'viLink4',
+    title: { en: 'hi' },
+    parents: [],
+    children: [],
+    lekkerLink: {
+      $id: 'viLink5',
+      title: { en: 'yo' }
+    },
+  })
 
   await client.redis.save()
   await wait(1000)
@@ -239,6 +249,12 @@ test.serial('can reload from RDB', async (t) => {
     id: 'viLink3',
     type: 'lekkerType',
     title: { en: 'sup' },
+  })
+  t.deepEqual(await client.get({ $id: 'viLink4', $all: true, lekkerLink: true }), {
+    id: 'viLink4',
+    type: 'lekkerType',
+    title: { en: 'hi' },
+    lekkerLink: 'viLink5',
   })
 
   // Do it again
