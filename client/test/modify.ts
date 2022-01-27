@@ -1,5 +1,5 @@
 import test from 'ava'
-import { readValue } from 'data-record'
+import { readString, readValue } from 'data-record'
 import './assertions'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
@@ -41,7 +41,7 @@ test.before(async (t) => {
   await client.updateSchema({
     languages: ['en', 'nl', 'de'],
     rootType: {
-      fields: { value: { type: 'number' } },
+      fields: { value: { type: 'number' }, hello: { type: 'url' } },
     },
     types: {
       match: {
@@ -268,14 +268,26 @@ test.serial('root', async (t) => {
   const root = await client.set({
     $id: 'root',
     value: 9001,
+    hello: 'http://example.com/hello--yo-yes',
   })
 
   t.deepEqual(root, 'root')
-  t.deepEqual(readDouble(await client.redis.selva_object_get('', 'root', 'value')), 9001)
+  t.deepEqual(
+    readDouble(await client.redis.selva_object_get('', 'root', 'value')),
+    9001
+  )
+
   t.deepEqual(
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
     [match]
   )
+
+  t.deepEqual(await client.get({ $id: 'root', $all: true }), {
+    id: 'root',
+    type: 'root',
+    value: 9001,
+    hello: 'http://example.com/hello--yo-yes',
+  })
 
   await client.delete('root')
   await client.destroy()
@@ -1548,7 +1560,10 @@ test.serial('$delete: true', async (t) => {
   })
 
   t.deepEqual(root, 'root')
-  t.deepEqual(readDouble(await client.redis.selva_object_get('', 'root', 'value')), 9001)
+  t.deepEqual(
+    readDouble(await client.redis.selva_object_get('', 'root', 'value')),
+    9001
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
     [match]
