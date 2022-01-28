@@ -63,13 +63,13 @@ test.serial('recon to new origin', async (t) => {
   })
   console.info('GET RESULT', x)
 
-  let p2 = await getPort({ port: client.servers.origins.default.port + 100 })
+  const p2 = await getPort({ port: client.servers.origins.default.port + 100 })
 
   kill()
 
-  await wait(5000)
+  await wait(3000)
 
-  const [, , kill2] = await worker(
+  await worker(
     async ({ connect, startOrigin }, { port, p2 }) => {
       const client = connect({ port })
       await startOrigin({
@@ -100,7 +100,6 @@ test.serial('recon to new origin', async (t) => {
     children: true,
   })
 
-  console.info()
   console.info('GET RESULT FLAP2', x2)
 
   await client.destroy()
