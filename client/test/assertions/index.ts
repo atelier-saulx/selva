@@ -105,35 +105,7 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
     // fn has to be a async function
     const body = fn.toString()
 
-    const script = context
-      ? `
-    const fn = ${body};
-    const selvaServer = require('@saulx/selva-server')
-    const selva = require('@saulx/selva')
-    const wait = (t = 100) => (new Promise(r => setTimeout(r, t)))
-
-    global.isWorker = true
-    const p = { wait }
-
-    for (let key in selva) {
-      p[key] = selva[key]
-    }
-
-    for (let key in selvaServer) {
-      p[key] = selvaServer[key]
-    }
-
-    const workers = require('worker_threads')
-    workers.parentPort.on('message', (context) => {
-      fn(p, context).then((v) => {
-        workers.parentPort.postMessage(v);
-      }).catch(err => {
-        throw err
-      })
-    })
-
-  `
-      : `
+    const script = `
       const fn = ${body};
       global.isWorker = true
 
@@ -152,9 +124,9 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
         p[key] = selvaServer[key]
       }
 
-      const workers = require('worker_threads')
-      fn(p).then((v) => {
-        workers.parentPort.postMessage(v);
+      const { workerData, parentPort } = require('worker_threads')
+      fn(p, workerData).then((v) => {
+        parentPort.postMessage(v);
       }).catch(err => {
         throw err
       })
@@ -168,12 +140,7 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
       fs.writeFileSync(join(tmp, id), script)
     }
 
-    const worker = new Worker(file)
-
-    if (context) {
-      worker.postMessage(context)
-    }
-
+    const worker = new Worker(file, { workerData: context || {} })
     beforeExit.do(() => {
       try {
         console.log('Before exit hook close worker')
