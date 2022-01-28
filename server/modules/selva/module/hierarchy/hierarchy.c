@@ -341,14 +341,10 @@ static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
 
         err = create_node_object(node);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to create a hash for \"%.*s\": %s\n",
+            fprintf(stderr, "%s:%d: Failed to create a node object for \"%.*s\": %s\n",
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, id,
                     selvaStrError[-err]);
-            /*
-             * RFE:
-             * This might just work even without the node so we don't fail hard.
-             */
         }
     }
 
@@ -519,7 +515,9 @@ static inline void mkHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
 }
 
 static inline void rmHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
-    SVector_Remove(&hierarchy->heads, node);
+    if (memcmp(node->id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+        SVector_Remove(&hierarchy->heads, node);
+    }
 }
 
 /**
@@ -723,12 +721,12 @@ static int cross_insert_children(
             }
         }
 
-        /* The child node is no longer an orphan */
-        if (SVector_Size(&child->parents) == 0) {
-            rmHead(hierarchy, child);
-        }
-
         if (SVector_InsertFast(&node->children, child) == NULL) {
+            /* The child node is no longer an orphan */
+            if (SVector_Size(&child->parents) == 0) {
+                rmHead(hierarchy, child);
+            }
+
             (void)SVector_InsertFast(&child->parents, node);
 
 #if 0
@@ -801,8 +799,8 @@ static int cross_insert_parents(
         return 0; /* No changes. */
     }
 
+    /* The node is no longer an orphan */
     if (SVector_Size(&node->parents) == 0) {
-        /* The node is no longer an orphan */
         rmHead(hierarchy, node);
     }
 
@@ -1076,10 +1074,9 @@ static void removeRelationships(
 
     SelvaSubscriptions_RefreshByMarker(ctx, hierarchy, &sub_markers);
 
-    /*
-     * After this the caller should call mkHead(hierarchy, node)
-     * if rel == RELATIONSHIP_CHILD.
-     */
+    if (rel == RELATIONSHIP_CHILD) {
+        mkHead(hierarchy, node);
+    }
 }
 
 void SelvaHierarchy_DelChildren(
@@ -1125,16 +1122,17 @@ int SelvaModify_SetHierarchy(
 
             return SELVA_HIERARCHY_EEXIST;
         }
+
+        if (nr_parents == 0) {
+            /* This node is orphan */
+            mkHead(hierarchy, node);
+        }
+
         res++;
     } else {
         /* Clear the existing node relationships */
         removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
         removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
-    }
-
-    if (nr_parents == 0) {
-        /* This node is orphan */
-        mkHead(hierarchy, node);
     }
 
     /*
@@ -1232,9 +1230,6 @@ int SelvaModify_SetHierarchyParents(
     if (nr_parents == 0) {
         /* Clear the existing node relationships. */
         removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
-
-        /* This node is orphan. */
-        mkHead(hierarchy, node);
 
         return 1; /* I guess we could deleting all as a single change. */
     }
