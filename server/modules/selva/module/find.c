@@ -42,7 +42,6 @@ static int send_all_node_data_fields(
         RedisModuleString *lang,
         SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
-        struct SelvaObject *obj,
         const char *field_prefix_str,
         size_t field_prefix_len,
         RedisModuleString *excluded_fields);
@@ -132,6 +131,11 @@ static int send_edge_field(
         return SELVA_EINTYPE;
     }
 
+    /*
+     * Note: The dst_node might be the same as node but this shouldn't case
+     * an infinite loop or any other issues as we'll be always cutting the
+     * field name shorter and thus the recursion should eventually stop.
+     */
     struct SelvaHierarchyNode *dst_node;
     dst_node = SVector_GetIndex(&edge_field->arcs, 0);
     if (!dst_node) {
@@ -144,14 +148,6 @@ static int send_edge_field(
                 off, field_str);
         return SELVA_ENOENT;
     }
-
-    /*
-     * Note: The dst_node might be the same as node but this shouldn't case
-     * an infinite loop or any other issues as we'll be always cutting the
-     * field name shorter and thus the recursion should eventually stop.
-     */
-    struct SelvaObject *dst_obj;
-    dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
 
     const char *next_field_str = field_str + off;
     size_t next_field_len = field_len - off;
@@ -182,7 +178,7 @@ static int send_edge_field(
         RedisModule_ReplyWithStringBuffer(ctx, next_prefix_str, next_prefix_len - 1);
         RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-        res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, dst_obj, NULL, 0, excluded_fields);
+        res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, NULL, 0, excluded_fields);
         if (res < 0) {
             res = 0;
         }
@@ -190,6 +186,8 @@ static int send_edge_field(
         RedisModule_ReplySetArrayLength(ctx, 2 * res);
         return 0;
     } else {
+        struct SelvaObject *dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
+
         return (send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field, excluded_fields) == 0) ? SELVA_ENOENT : 0;
     }
 }
@@ -215,8 +213,8 @@ static int send_node_field(
         size_t field_prefix_len,
         RedisModuleString *field,
         RedisModuleString *excluded_fields) {
-    TO_STR(field);
     Selva_NodeId nodeId;
+    TO_STR(field);
     int err;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
@@ -320,10 +318,10 @@ static int send_all_node_data_fields(
         RedisModuleString *lang,
         SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
-        struct SelvaObject *obj,
         const char *field_prefix_str,
         size_t field_prefix_len,
         RedisModuleString *excluded_fields) {
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
     void *iterator;
     const char *field_name_str;
     int nr_fields = 0;
@@ -352,9 +350,10 @@ static int send_all_node_data_fields(
             Selva_NodeId node_id;
 
             SelvaHierarchy_GetNodeId(node_id, node);
-            fprintf(stderr, "%s:%d: send_node_field(%.*s) failed: %s\n",
+            fprintf(stderr, "%s:%d: send_node_field(%.*s, %s) failed: %s\n",
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, node_id,
+                    RedisModule_StringPtrLen(field, NULL),
                     getSelvaErrorStr(res));
         }
     }
@@ -371,11 +370,9 @@ static int send_node_fields(
         RedisModuleString *excluded_fields) {
     const char wildcard[] = "*";
     Selva_NodeId nodeId;
-    struct SelvaObject *obj;
     int err;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
-    obj = SelvaHierarchy_GetNodeObject(node);
 
     /*
      * The response format:
@@ -403,6 +400,8 @@ static int send_node_fields(
         return fields_len;
     } else if (!excluded_fields && fields_len == 1 &&
                SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
+        struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+
         err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
             fprintf(stderr, "%s:%d: Failed to send all fields for node_id: \"%.*s\"\n",
@@ -412,6 +411,7 @@ static int send_node_fields(
     } else {
         _Static_assert(sizeof(wildcard) == 2, "Must be a single char");
         const char wildcard_ch = wildcard[0];
+        struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
         void *iterator;
         const SVector *vec;
         size_t nr_fields = 0;
@@ -429,7 +429,7 @@ static int send_node_fields(
                 int res;
 
                 if (field_len == 1 && field_str[0] == wildcard_ch) {
-                    res = send_all_node_data_fields(ctx, lang, hierarchy, node, obj, NULL, 0, excluded_fields);
+                    res = send_all_node_data_fields(ctx, lang, hierarchy, node, NULL, 0, excluded_fields);
                     if (res > 0) {
                         nr_fields += res;
                         /*

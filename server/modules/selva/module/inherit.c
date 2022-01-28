@@ -36,7 +36,6 @@ static int send_field_value(
         SelvaHierarchy *hierarchy,
         RedisModuleString *lang,
         const struct SelvaHierarchyNode *node,
-        const Selva_NodeId node_id,
         struct SelvaObject *obj,
         RedisModuleString *full_field,
         const char *field_str,
@@ -118,7 +117,7 @@ static int send_edge_field_deref_value(
             return SELVA_ENOENT; /* RFE Should we return SELVA_HIERARCHY_ENOENT? */
         }
 
-        return send_field_value(ctx, hierarchy, lang, node, nodeId, obj, full_field, field_str, field_len);
+        return send_field_value(ctx, hierarchy, lang, node, obj, full_field, field_str, field_len);
     }
 
     return 0;
@@ -127,7 +126,7 @@ static int send_edge_field_deref_value(
 static int send_object_field_value(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
-        const Selva_NodeId node_id,
+        const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
         RedisModuleString *full_field,
         const char *field_str,
@@ -135,6 +134,10 @@ static int send_object_field_value(
     int err = SELVA_ENOENT;
 
     if (!SelvaObject_ExistsStr(obj, field_str, field_len)) {
+        Selva_NodeId node_id;
+
+        SelvaHierarchy_GetNodeId(node_id, node);
+
         /*
          * Start a new array reply:
          * [node_id, field_name, field_value]
@@ -157,18 +160,22 @@ static int send_field_value(
         SelvaHierarchy *hierarchy,
         RedisModuleString *lang,
         const struct SelvaHierarchyNode *node,
-        const Selva_NodeId node_id,
         struct SelvaObject *obj,
         RedisModuleString *full_field,
         const char *field_str,
         size_t field_len) {
     struct EdgeField *edge_field;
+
     /*
      * If field is an edge field then the client wants to get the value of it,
      * usually an array of node ids.
      */
     edge_field = Edge_GetField(node, field_str, field_len);
     if (edge_field) {
+        Selva_NodeId node_id;
+
+        SelvaHierarchy_GetNodeId(node_id, node);
+
         return send_edge_field_value(ctx, node_id, full_field, edge_field);
     } else {
         /*
@@ -188,22 +195,23 @@ static int send_field_value(
     }
 
     /* Finally try from a node object field. */
-    return send_object_field_value(ctx, lang, node_id, obj, full_field, field_str, field_len);
+    return send_object_field_value(ctx, lang, node, obj, full_field, field_str, field_len);
 }
 
 static int InheritCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
     struct InheritCommand_Args *restrict args = (struct InheritCommand_Args *)arg;
     struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
-    Selva_NodeId nodeId;
     int err;
 
-    SelvaHierarchy_GetNodeId(nodeId, node);
 
     /*
      * Check that the node is of an accepted type.
      */
     if (likely(!args->first_node)) {
+        Selva_NodeId nodeId;
         int match = 0;
+
+        SelvaHierarchy_GetNodeId(nodeId, node);
 
         for (size_t i = 0; i < args->nr_types; i++) {
             match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
@@ -234,7 +242,7 @@ static int InheritCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
          */
         TO_STR(field_name);
         err = send_field_value(args->ctx, args->hierarchy, args->lang,
-                               node, nodeId, obj,
+                               node, obj,
                                field_name, /* Initially full_field is the same as field_name. */
                                field_name_str, field_name_len);
         if (err == 0) { /* found */
@@ -246,6 +254,10 @@ static int InheritCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
                 return 1;
             }
         } else if (err != SELVA_ENOENT) {
+            Selva_NodeId nodeId;
+
+            SelvaHierarchy_GetNodeId(nodeId, node);
+
             /*
              * SELVA_ENOENT is expected as not all nodes have all fields set;
              * Any other error is unexpected.
