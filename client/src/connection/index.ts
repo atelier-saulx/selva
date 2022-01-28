@@ -151,45 +151,56 @@ class Connection {
     }
   }
 
-  public startClientHb(uuid: string, id: string) {
+  public startClientHb(
+    uuid: string,
+    id: string,
+    fromReconnect: boolean = false
+  ) {
     if (this.clientHb[uuid]) {
-      this.clientHb[uuid].counter++
-      return
-    }
-    this.clientHb[uuid] = { counter: 0, timer: null }
-    this.clientHb[uuid].counter++
-    clearTimeout(this.clientHb[uuid].timer)
-    const setHeartbeat = () => {
-      // console.info('make make hb')
-      if (this.connected) {
+      if (fromReconnect) {
         this.command({
           id: id,
           command: 'hset',
           args: [CLIENTS, uuid, Date.now()],
         })
-        this.command({
-          command: 'publish',
-          id: id,
-          args: [
-            HEARTBEAT,
-            JSON.stringify({
-              client: uuid,
-              ts: Date.now(),
-            }),
-          ],
-        })
+      } else {
+        this.clientHb[uuid].counter++
       }
-      this.clientHb[uuid].timer = setTimeout(
-        setHeartbeat,
-        CLIENT_HEARTBEAT_TIMER
-      )
+    } else {
+      this.clientHb[uuid] = { counter: 0, timer: null }
+      this.clientHb[uuid].counter++
+      clearTimeout(this.clientHb[uuid].timer)
+      const setHeartbeat = () => {
+        if (this.connected) {
+          this.command({
+            id: id,
+            command: 'hset',
+            args: [CLIENTS, uuid, Date.now()],
+          })
+          this.command({
+            command: 'publish',
+            id: id,
+            args: [
+              HEARTBEAT,
+              JSON.stringify({
+                client: uuid,
+                ts: Date.now(),
+              }),
+            ],
+          })
+        }
+        this.clientHb[uuid].timer = setTimeout(
+          setHeartbeat,
+          CLIENT_HEARTBEAT_TIMER
+        )
+      }
+      this.command({
+        id: id,
+        command: 'hset',
+        args: [CLIENTS, uuid, Date.now()],
+      })
+      setHeartbeat()
     }
-    this.command({
-      id: id,
-      command: 'hset',
-      args: [CLIENTS, uuid, Date.now()],
-    })
-    setHeartbeat()
   }
 
   public isDestroyed: boolean = false
