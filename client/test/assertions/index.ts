@@ -96,7 +96,10 @@ Object.assign(Assertions.prototype, {
 
 const tmp = join(__dirname, '../../tmp')
 
-const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
+const worker = (
+  fn: Function,
+  context?: any
+): Promise<[any, Worker, () => void]> =>
   new Promise((resolve, reject) => {
     if (!fs.existsSync(tmp)) {
       fs.mkdirSync(tmp)
@@ -125,10 +128,23 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
       }
 
       const { workerData, parentPort } = require('worker_threads')
+      let cleanup
       fn(p, workerData).then((v) => {
+        if (typeof v === 'function') {
+          cleanup = v
+          v = null
+        }
         parentPort.postMessage(v);
       }).catch(err => {
         throw err
+      })
+
+      parentPort.on('message', async (msg) => {
+        if (msg === '___KILL___') {
+          await cleanup()
+          await wait(500)
+          process.exit()
+        }
       })
     `
 
@@ -148,8 +164,12 @@ const worker = (fn: Function, context?: any): Promise<[any, Worker]> =>
       } catch (_err) {}
     })
 
+    const kill = () => {
+      worker.postMessage('___KILL___')
+    }
+
     worker.on('message', (msg) => {
-      resolve([msg, worker])
+      resolve([msg, worker, kill])
     })
 
     worker.on('error', (err) => {
