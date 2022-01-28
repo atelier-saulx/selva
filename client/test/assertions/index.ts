@@ -141,8 +141,10 @@ const worker = (
 
       parentPort.on('message', async (msg) => {
         if (msg === '___KILL___') {
-          await cleanup()
-          await wait(500)
+          if (cleanup) {
+            await cleanup()
+            await wait(500)
+          }
           process.exit()
         }
       })
