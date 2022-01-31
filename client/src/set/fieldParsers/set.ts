@@ -102,7 +102,6 @@ export default async (
     const r: SetOptions = {}
 
     for (const k in payload) {
-      let valid = false
       if (k === '$add') {
         if (typeof payload[k] === 'object' && !Array.isArray(payload[k])) {
           // TODO: do these modify commands recursively and then populate the ids here
@@ -110,22 +109,14 @@ export default async (
         } else {
           r.$add = await verifySimple(payload[k], verify)
         }
-
-        valid = true
-      }
-
-      if (k === '$delete') {
+      } else if (k === '$delete') {
         if (payload.$delete === true) {
           // unsets are allowed
           r.delete_all = 1
         } else {
           r.$delete = await verifySimple(payload[k], verify)
         }
-
-        valid = true
-      }
-
-      if (!valid) {
+      } else {
         throw new Error(`Wrong key for set ${k}`)
       }
     }
