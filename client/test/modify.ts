@@ -464,6 +464,7 @@ test.serial('basic', async (t) => {
   await client.set({
     $id: person,
     parents: {
+      $add: ['root'],
       $delete: league,
     },
   })
@@ -476,7 +477,7 @@ test.serial('basic', async (t) => {
 
   t.deepEqual(
     await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, person),
-    [match],
+    [match, 'root'],
     'person has correct parents after $delete'
   )
 
@@ -503,6 +504,7 @@ test.serial('basic', async (t) => {
     $id: person,
     parents: {
       $add: league,
+      $delete: 'root',
     },
   })
 

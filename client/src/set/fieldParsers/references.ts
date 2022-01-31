@@ -60,19 +60,23 @@ const addParent = (
     } else if (Array.isArray(obj.parents)) {
       obj.parents.push(id)
     } else {
-      if (obj.parents.$add) {
-        if (typeof obj.parents.$add === 'string') {
-          obj.parents.$add = [obj.parents.$add, id]
-        } else {
-          obj.parents.$add.push(id)
-        }
-      } else if (obj.parents.$delete) {
-        obj.parents.$add.push(id)
-      } else if (obj.parents.$value) {
+      if (obj.parents.$value) {
         if (typeof obj.parents.$value === 'string') {
           obj.parents.$value = [obj.parents.$value, id]
         } else {
           obj.parents.$value.push(id)
+        }
+      } else {
+        if (obj.parents.$add) {
+          if (typeof obj.parents.$add === 'string') {
+            obj.parents.$add = [obj.parents.$add, id]
+          } else {
+            obj.parents.$add.push(id)
+          }
+        }
+
+        if (obj.parents.$delete) {
+          obj.parents.$add.push(id)
         }
       }
     }
