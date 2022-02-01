@@ -2,12 +2,13 @@ import { SelvaClient, ConnectOptions, ServerDescriptor } from '..'
 import { Connect } from '../types'
 import { createConnection, connections } from '../connection'
 import { REGISTRY_UPDATE } from '../constants'
-import getInitialRegistryServers from './getInitialRegistryServers'
+import getInitialRegistryServers from './getInitialRegistryServer'
 import addServer from './addServer'
 import removeServer from './removeServer'
 import { serverId } from '../util'
 import moveReplicas from './moveReplicas'
 import moveSubscriptionManager from './moveSubscriptionManager'
+import { startSync, stopSync } from './syncRegistry'
 
 const updateServerListeners = (selvaClient: SelvaClient) => {
   if (selvaClient.addServerUpdateListeners.length) {
@@ -89,11 +90,14 @@ const connectRegistry = (
       selvaClient.registryConnection.on(
         'connect',
         () => {
+          console.info('CONNECT')
+
           selvaClient.emit('connect', descriptor)
           getInitialRegistryServers(selvaClient).then(() => {
             selvaClient.emit('added-servers', { event: '*' })
             updateServerListeners(selvaClient)
           })
+          startSync(selvaClient)
         },
         selvaClient.selvaId
       )
@@ -105,7 +109,20 @@ const connectRegistry = (
           selvaClient.emit('added-servers', { event: '*' })
           updateServerListeners(selvaClient)
         })
+        startSync(selvaClient)
       }
+
+      // fix time
+
+      // start forced syncing
+      /*
+       getInitialRegistryServers(selvaClient).then(() => {
+          selvaClient.emit('added-servers', { event: '*' })
+          updateServerListeners(selvaClient)
+        })
+
+        also call this there
+      */
 
       const clear = () => {
         selvaClient.servers = {
@@ -119,6 +136,7 @@ const connectRegistry = (
           timeseriesQueues: {},
         }
         selvaClient.emit('removed-servers', { event: '*' })
+        stopSync(selvaClient)
       }
 
       selvaClient.registryConnection.on('close', clear, selvaClient.selvaId)
