@@ -38,14 +38,14 @@ const getServer = (
       if (type === 'timeseriesRegistry') {
         // just get first for now - never had more then one yet...
         // eslint-disable-next-line
-        for (let k in selvaClient.servers.tsRegisters) {
+        for (const k in selvaClient.servers.tsRegisters) {
           server = selvaClient.servers.tsRegisters[k]
           break
         }
       } else if (type === 'timeseriesQueue') {
         // just get first for now - never had more then one yet...
         // eslint-disable-next-line
-        for (let k in selvaClient.servers.timeseriesQueues) {
+        for (const k in selvaClient.servers.timeseriesQueues) {
           server = selvaClient.servers.timeseriesQueues[k]
           break
         }
