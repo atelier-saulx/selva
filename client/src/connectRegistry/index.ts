@@ -132,6 +132,8 @@ const connectRegistry = (
         'message',
         (channel, msg) => {
           if (channel === REGISTRY_UPDATE) {
+            console.info('REG INFO', channel, msg)
+
             const payload = JSON.parse(msg)
             const { event } = payload
             if (event === 'new') {
