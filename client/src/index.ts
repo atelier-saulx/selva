@@ -59,6 +59,12 @@ export class SelvaClient extends EventEmitter {
 
   public uuid: string
 
+  public registrySync: {
+    lastSync?: number
+    timer?: NodeJS.Timeout
+    isSyncing: boolean
+  }
+
   public observables: Map<string, Observable>
 
   // add these on the registry scince that is the thing that gets reused
@@ -139,7 +145,6 @@ export class SelvaClient extends EventEmitter {
   }
 
   connect(opts: ConnectOptions) {
-    console.log('maybe bit different name? connect :/')
     connectRegistry(this, opts)
     // diffrent name
   }
