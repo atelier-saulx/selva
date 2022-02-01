@@ -56,15 +56,11 @@ export default async function updateRegistry(
 
   const id = info.host + ':' + info.port
 
-  console.info('yesh want to make update times', info)
-
   const isNew = !(await client.redis.sismember(
     { type: 'registry' },
     'servers',
     id
   ))
-
-  console.info('yesh want to make update times', 'IS NEW', isNew)
 
   if (block(server)) {
     return
@@ -91,13 +87,10 @@ export default async function updateRegistry(
   }
 
   if (isNew) {
-    console.info('DO IT SEND REG UPDATE ???', info.port, info.type, info.name)
-
     // better codes
-    client.redis.publish(
+    await client.redis.publish(
       { type: 'registry' },
       constants.REGISTRY_UPDATE,
-      // maybe not nessecary to send all (?)
       JSON.stringify({
         event: 'new',
         server: {

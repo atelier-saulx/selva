@@ -26,6 +26,7 @@ const getInitialRegistryServers = async (selvaClient: SelvaClient) => {
         type,
         index: Number(index),
       }
+
       addServer(selvaClient, <ServerDescriptor>server)
     })
   )
