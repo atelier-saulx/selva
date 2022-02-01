@@ -8,7 +8,7 @@ implements parent and child constraints that have a very specific
 behavior when executing certain operations on the hierarchy.
 
 Hierarchy implements a number of different ways to traverse the graph
-utilizing no only the family tree -like relationships but also other
+utilizing not only the family tree -like relationships but also other
 possible reference and relationship types. The traversal methods can
 also filter out nodes from the results by using
 [RPN Filter Expressions](hierarchy/expressions.md) with the traversal
