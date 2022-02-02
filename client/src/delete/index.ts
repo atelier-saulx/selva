@@ -4,7 +4,7 @@ import { SelvaClient } from '..'
 async function deleteItem(
   client: SelvaClient,
   payload: DeleteOptions
-): Promise<boolean> {
+): Promise<number> {
   const db = typeof payload === 'string' ? 'default' : payload.$db || 'default'
   const flags = typeof payload === 'string' ? '' : payload.$recursive ? 'F' : '';
 
