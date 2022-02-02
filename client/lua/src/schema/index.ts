@@ -558,8 +558,8 @@ function findBidirectionalReferenceConfigurations(
           'selva.hierarchy.addconstraint',
           '___selva_hierarchy',
           <string>type.prefix,
+          'SB',
           path,
-          '3',
           f.bidirectional.fromField
         )
       } else if (f.type === 'references' && f.bidirectional) {
@@ -568,8 +568,8 @@ function findBidirectionalReferenceConfigurations(
           'selva.hierarchy.addconstraint',
           '___selva_hierarchy',
           <string>type.prefix,
+          'B',
           path,
-          '2',
           f.bidirectional.fromField
         )
       }
