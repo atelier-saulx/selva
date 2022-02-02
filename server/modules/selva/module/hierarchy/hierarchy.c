@@ -1536,6 +1536,9 @@ static int SelvaModify_DelHierarchyNodeP(
         }
     }
 
+    if ((flags & DEL_HIERARCHY_NODE_REPLY_IDS) != 0) {
+        RedisModule_ReplyWithStringBuffer(ctx, node->id, Selva_NodeIdLen(node->id));
+    }
     del_node(ctx, hierarchy, node);
 
     return nr_deleted + 1;
@@ -2955,7 +2958,18 @@ int SelvaHierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return REDISMODULE_OK;
     }
 
-    const char *flags = RedisModule_StringPtrLen(argv[2], NULL);
+    size_t flags_len;
+    const char *flags_str = RedisModule_StringPtrLen(argv[2], &flags_len);
+    enum SelvaModify_DelHierarchyNodeFlag flags = 0;
+
+    for (size_t i = 0; i < flags_len; i++) {
+        flags |= flags_str[i] == 'F' ? DEL_HIERARCHY_NODE_FORCE : 0;
+        flags |= flags_str[i] == 'I' ? DEL_HIERARCHY_NODE_REPLY_IDS : 0;
+    }
+
+    if ((flags & DEL_HIERARCHY_NODE_REPLY_IDS) != 0) {
+        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    }
 
     long long nr_deleted = 0;
     for (int i = 3; i < argc; i++) {
@@ -2963,11 +2977,12 @@ int SelvaHierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         int res;
 
         Selva_RMString2NodeId(nodeId, argv[i]);
-        res = SelvaModify_DelHierarchyNode(ctx, hierarchy, nodeId, flags[0] == 'F' ? DEL_HIERARCHY_NODE_FORCE : 0);
+        res = SelvaModify_DelHierarchyNode(ctx, hierarchy, nodeId, flags);
         if (res >= 0) {
             nr_deleted += res;
         } else {
             /* TODO How to handle the error correctly? */
+            /* DEL_HIERARCHY_NODE_REPLY_IDS would allow us to send errors. */
             if (res != SELVA_HIERARCHY_ENOENT) {
                 fprintf(stderr, "%s:%d: Failed to delete the node %.*s: %s\n",
                         __FILE__, __LINE__,
@@ -2977,7 +2992,11 @@ int SelvaHierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         }
     }
 
-    RedisModule_ReplyWithLongLong(ctx, nr_deleted);
+    if ((flags & DEL_HIERARCHY_NODE_REPLY_IDS) != 0) {
+        RedisModule_ReplySetArrayLength(ctx, nr_deleted);
+    } else {
+        RedisModule_ReplyWithLongLong(ctx, nr_deleted);
+    }
     RedisModule_ReplicateVerbatim(ctx);
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
 

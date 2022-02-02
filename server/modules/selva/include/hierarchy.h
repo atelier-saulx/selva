@@ -213,6 +213,7 @@ struct SelvaModify_ArrayObjectCallback {
 enum SelvaModify_DelHierarchyNodeFlag {
     DEL_HIERARCHY_NODE_FORCE = 0x01, /*!< Force delete regardless of existing parents and external edge references. */
     DEL_HIERARCHY_NODE_DETACH = 0x02, /*!< Delete, mark as detached. Note that this doesn't disable sending subscription events. */
+    DEL_HIERARCHY_NODE_REPLY_IDS = 0x04, /*!< Send the deleted nodeIds as a reply to the client. */
 };
 
 /**
