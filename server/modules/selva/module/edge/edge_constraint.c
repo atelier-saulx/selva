@@ -304,7 +304,7 @@ int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     for (size_t i = 0; i < flags_len; i++) {
         flags |= flags_str[i] == 'S' ? EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF : 0;
         flags |= flags_str[i] == 'B' ? EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL : 0;
-        flags |= flags_str[i] == 'D' ? EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC : 0; /* Not really necessary. */
+        flags |= flags_str[i] == 'D' ? EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC : 0; /* Implicit. */
     }
 
     if ((flags & ~(
