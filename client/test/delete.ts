@@ -293,3 +293,37 @@ test.serial('recursive delete', async (t) => {
   })
   t.deepEqualIgnoreOrder(res2, { things: [ { title: 'b' } ] })
 })
+
+test.serial('return the ids of deleted nodes', async (t) => {
+  const client = connect(
+    {
+      port,
+    },
+    { loglevel: 'info' }
+  )
+
+  const a = await client.set({
+    $id: 'vibbb8718c',
+    title: { en: 'a' },
+  })
+  const b = await client.set({
+    $id: 'vi24a54563',
+    title: { en: 'b' },
+  })
+  const x = await client.set({
+    $id: 'vi7af4ec50',
+    title: { en: 'x' },
+    parents: [ a ],
+  })
+  const y = await client.set({
+    $id: 'vic7956a5e',
+    title: { en: 'y' },
+    parents: [a, b],
+  })
+
+  const deleted = await client.delete({
+    $id: 'root',
+    $returnIds: true
+  })
+  t.deepEqualIgnoreOrder(deleted, [ 'vibbb8718c', 'vi24a54563', 'vi7af4ec50', 'vic7956a5e', 'root' ])
+})
