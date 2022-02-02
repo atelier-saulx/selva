@@ -137,7 +137,8 @@ test.serial('can delete root', async (t) => {
     [match]
   )
 
-  await client.delete('root')
+  const nrDeleted = await client.delete('root')
+  t.deepEqual(nrDeleted, 2)
   t.deepEqual(await client.redis.selva_object_get('', 'root'), ['id', 'root', 'type', 'root'])
 
   await client.destroy()
@@ -228,7 +229,8 @@ test.serial('tree delete', async (t) => {
   })
   t.deepEqual(res1.things.length, 26, 'found all children')
 
-  await client.delete(league)
+  const nrDeleted = await client.delete(league)
+  t.deepEqual(nrDeleted, 14)
 
   const res2 = await client.get({
     $id: 'root',
@@ -271,10 +273,11 @@ test.serial('recursive delete', async (t) => {
     parents: [a, b],
   })
 
-  await client.delete({
+  const nrDeleted = await client.delete({
     $id: a,
     $recursive: true,
   })
+  t.deepEqual(nrDeleted, 3)
 
   const res2 = await client.get({
     $id: 'root',

@@ -381,6 +381,7 @@ int SelvaModify_DelHierarchy(
  * Delete a node from the hierarchy.
  * @param force if non-zero the even children that have other relationships will
  *              be deleted.
+ * @returns The total number of nodes deleted; Otherwise an error code is returned.
  */
 int SelvaModify_DelHierarchyNode(
         struct RedisModuleCtx *ctx,

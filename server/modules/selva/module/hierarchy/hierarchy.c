@@ -1461,6 +1461,7 @@ static int SelvaModify_DelHierarchyNodeP(
         enum SelvaModify_DelHierarchyNodeFlag flags,
         void *opt_arg) {
     size_t nr_ids;
+    int nr_deleted = 0;
 
     assert(("hierarchy must be set", hierarchy));
     assert(("node must be set", node));
@@ -1526,8 +1527,10 @@ static int SelvaModify_DelHierarchyNodeP(
              */
             if ((flags & DEL_HIERARCHY_NODE_FORCE) || (SVector_Size(&child->parents) == 0 && Edge_Refcount(child) == 0)) {
                 err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, child, flags, opt_arg);
-                if (err) {
+                if (err < 0) {
                     return err;
+                } else {
+                    nr_deleted += err;
                 }
             }
         }
@@ -1535,7 +1538,7 @@ static int SelvaModify_DelHierarchyNodeP(
 
     del_node(ctx, hierarchy, node);
 
-    return 0;
+    return nr_deleted + 1;
 }
 
 int SelvaModify_DelHierarchyNode(
@@ -2865,6 +2868,7 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
 
     memcpy(node_id, node->id, SELVA_NODE_ID_SIZE);
     err = SelvaModify_DelHierarchyNodeP(ctx, hierarchy, node, DEL_HIERARCHY_NODE_FORCE | DEL_HIERARCHY_NODE_DETACH, compressed);
+    err = err < 0 ? err : 0;
     node = NULL;
     /*
      * Note that `compressed` must not be freed as it's actually stored now in
@@ -2956,11 +2960,20 @@ int SelvaHierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     long long nr_deleted = 0;
     for (int i = 3; i < argc; i++) {
         Selva_NodeId nodeId;
+        int res;
 
         Selva_RMString2NodeId(nodeId, argv[i]);
-
-        if (!SelvaModify_DelHierarchyNode(ctx, hierarchy, nodeId, flags[0] == 'F' ? DEL_HIERARCHY_NODE_FORCE : 0)) {
-            nr_deleted++;
+        res = SelvaModify_DelHierarchyNode(ctx, hierarchy, nodeId, flags[0] == 'F' ? DEL_HIERARCHY_NODE_FORCE : 0);
+        if (res >= 0) {
+            nr_deleted += res;
+        } else {
+            /* TODO How to handle the error correctly? */
+            if (res != SELVA_HIERARCHY_ENOENT) {
+                fprintf(stderr, "%s:%d: Failed to delete the node %.*s: %s\n",
+                        __FILE__, __LINE__,
+                        (int)SELVA_NODE_ID_SIZE, nodeId,
+                        getSelvaErrorStr(res));
+            }
         }
     }
 

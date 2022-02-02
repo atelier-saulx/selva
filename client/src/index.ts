@@ -183,7 +183,7 @@ export class SelvaClient extends EventEmitter {
     return setWithMeta(this, setOpts)
   }
 
-  async delete(deleteOpts: DeleteOptions): Promise<boolean> {
+  async delete(deleteOpts: DeleteOptions): Promise<number> {
     await this.initializeSchema(deleteOpts)
     return deleteItem(this, deleteOpts)
   }
