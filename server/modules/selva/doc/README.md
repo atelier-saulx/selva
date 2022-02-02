@@ -20,11 +20,12 @@ The serialization format of `hierarchy` is documented separately in
 
 ## Selva Object
 
-`SelvaObject` is a new Redis data type for storing object-like data in
-compute-efficient manner. It can currently store strings, integers, and
-doubles natively in the most efficient format for access and computation.
-Depending on the use case, the measured performance improvement over
-Redis hash type is 20 % - 25 %. It can potentially offer even greater
+`SelvaObject` is a new data type for storing object-like data in
+compute-efficient manner. In addition to in-memory storage it can
+be also serialized and deserialized. The type can currently store strings,
+integers, and doubles natively in the most efficient format for access and
+computation.  Depending on the use case, the measured performance improvement
+over Redis hash type is 20 % - 25 %. It can potentially offer even greater
 performance improvement, compared to hashes, in use cases where the data
 structure is accessed directly inside a Redis module.
 
