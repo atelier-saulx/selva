@@ -362,10 +362,19 @@ int Edge_Add(
     /*
      * Destination type constraint.
      */
-    if (constraint->dst_node_type[0] != '\0') {
+    if (constraint->dst_node_types) {
         Selva_NodeType dst_type;
+        SelvaHierarchy_GetNodeType(dst_type, dst_node);
+        int match = 0;
 
-        if (memcmp(SelvaHierarchy_GetNodeType(dst_type, dst_node), constraint->dst_node_type, SELVA_NODE_TYPE_SIZE)) {
+        for (size_t i = 0; constraint->dst_node_types[i] != '\0'; i += SELVA_NODE_TYPE_SIZE) {
+            if (!memcmp(dst_type, constraint->dst_node_types + i, SELVA_NODE_TYPE_SIZE)) {
+                match = 1;
+                break;
+            }
+        }
+
+        if (!match) {
             return SELVA_EINTYPE; /* dst_node has wrong type. */
         }
     }

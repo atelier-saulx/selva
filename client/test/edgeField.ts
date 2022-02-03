@@ -806,14 +806,14 @@ test.serial('bidirectional edge fields', async (t) => {
   // Create dynamic constraints
   await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
       'te', // source node type
+      'B', // constraint flags
       'players', // source field name
-      '2', // constraint flags
       'team' // bck field name
   )
   await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
       'pl',
+      'SB',
       'team',
-      '3',
       'players'
   )
 
@@ -913,8 +913,8 @@ test.serial('biedge missing symmetric constraint', async (t) => {
   // Create dynamic constraints
   await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
       'te',
+      'B',
       'players',
-      '2',
       'team',
   )
 
@@ -940,22 +940,29 @@ test.serial('edge type constraints', async (t) => {
   // Create dynamic constraints
   await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
       'ro', // source node type
+      'S', // constraint flags
+      'best', // source field name
+      '', // bck field name
+      'tepl' // dst node type
+  )
+  await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
+      'ro', // source node type
+      '', // constraint flags
       'teams', // source field name
-      '0', // constraint flags
       '', // bck field name
       'te' // dst node type
   )
   await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
       'te',
+      'B',
       'players',
-      '2',
       'team',
       'pl',
   )
   await client.redis.selva_hierarchy_addconstraint('___selva_hierarchy',
       'pl',
+      'B',
       'team',
-      '2',
       'players',
       'te',
   )
@@ -965,6 +972,7 @@ test.serial('edge type constraints', async (t) => {
   await client.redis.selva_modify('te1', '', '0', 'o.a', 'dun')
   await client.redis.selva_modify('pl1', '', '0', 'o.a', 'dan')
   await client.redis.selva_modify('pl2', '', '0', 'o.a', 'dandan')
+  await client.redis.selva_modify('in1', '', '0', 'o.a', 'dandan')
 
   let res;
 
@@ -988,6 +996,27 @@ test.serial('edge type constraints', async (t) => {
     $value: null,
   }))
   t.deepEqual(res[1], 'UPDATED')
+
+  // PASS
+  res = await client.redis.selva_modify('root', '', '5', 'best', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: null,
+    $delete: null,
+    $value: toCArr(['te1']),
+  }))
+  t.deepEqual(res[1], 'UPDATED')
+  // FAIl
+  res = await client.redis.selva_modify('root', '', '5', 'best', createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 2,
+    $add: null,
+    $delete: null,
+    $value: toCArr(['in1']),
+  }))
+  t.true(res[1] instanceof Error)
 
   // FAIL
   res = await client.redis.selva_modify('te1', '', '5', 'players', createRecord(setRecordDefCstring, {
