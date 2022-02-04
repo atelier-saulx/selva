@@ -24,6 +24,7 @@ OBJS := \
 	module/ida.o \
 	module/inherit.o \
 	module/modify.o \
+	module/modinfo.o \
 	module/resolve.o \
 	module/rms/rms_compressor.o \
 	module/rms/shared.o \

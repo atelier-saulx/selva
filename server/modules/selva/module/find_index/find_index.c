@@ -17,6 +17,7 @@
 #include "hierarchy.h"
 #include "ida.h"
 #include "selva.h"
+#include "modinfo.h"
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"
@@ -1217,19 +1218,13 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     return RedisModule_ReplyWithLongLong(ctx, 1);
 }
 
-static void mod_info(RedisModuleInfoCtx *ctx, int for_crash_report __unused) {
-    if (RedisModule_InfoAddSection(ctx, "selva") == REDISMODULE_ERR) {
-        return;
-    }
-    RedisModule_InfoBeginDictField(ctx, "index");
+static void mod_info(RedisModuleInfoCtx *ctx) {
     (void)RedisModule_InfoAddFieldDouble(ctx, "lpf_a", lpf_a);
-    RedisModule_InfoEndDictField(ctx);
 }
+SELVA_MODINFO("find_index", mod_info);
 
 static int FindIndex_OnLoad(RedisModuleCtx *ctx) {
     lpf_a = lpf_geta((float)selva_glob_config.find_indexing_popularity_ave_period, (float)selva_glob_config.find_indexing_icb_update_interval / 1000.0f);
-
-    RedisModule_RegisterInfoFunc(ctx, mod_info);
 
     if (RedisModule_CreateCommand(ctx, "selva.index.list", SelvaFindIndex_ListCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.index.new", SelvaFindIndex_NewCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
