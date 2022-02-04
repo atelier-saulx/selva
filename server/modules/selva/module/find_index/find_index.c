@@ -74,7 +74,7 @@ struct SelvaFindIndexControlBlock {
      */
     struct {
         /**
-         * The full search space size.
+         * The full search domain size.
          * This is the nubmer of nodes we must traverse to build the find result
          * without indexing.
          */
@@ -82,7 +82,7 @@ struct SelvaFindIndexControlBlock {
         float tot_max_ave; /*!< Average of `tot_max` over time. */
 
         /**
-         * The number of nodes selected to the find result.
+         * The number of nodes selected for the find result.
          * This number is updated when the index is not valid and we traversed
          * the hierarchy.
          */
@@ -91,7 +91,7 @@ struct SelvaFindIndexControlBlock {
 
         /**
          * The number of nodes taken from the `res` SelvaSet when the index is valid.
-         * This is updated when the index is valid.
+         * This is updated when the index is valid during a find.
          */
         float ind_take_max;
         float ind_take_max_ave; /*!< Average of `ind_take` over time. */
@@ -101,7 +101,7 @@ struct SelvaFindIndexControlBlock {
      * Hint popularity counter.
      */
     struct {
-        int cur; /*!< Times the hint has been seen during current period. */
+        int cur; /*!< Times the hint has been seen during the current period. */
         float ave; /*!< Average times seen over a period of time (FIND_INDEXING_POPULARITY_AVE_PERIOD). */
     } pop_count;
 
