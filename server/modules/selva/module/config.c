@@ -3,6 +3,7 @@
 #include <redismodule.h>
 #include "cdefs.h"
 #include "errors.h"
+#include "modinfo.h"
 #include "config.h"
 
 struct selva_glob_config selva_glob_config = {
@@ -36,7 +37,7 @@ static int parse_int(void *dst, const RedisModuleString *src) {
         return SELVA_EINVAL;
     }
 
-    *d = (size_t)v;
+    *d = (int)v;
 
     return 0;
 }
@@ -91,3 +92,19 @@ int parse_config_args(RedisModuleString **argv, int argc) {
 
     return 0;
 }
+
+static void mod_info(RedisModuleInfoCtx *ctx) {
+    for (size_t i = 0; i < num_elem(cfg_map); i++) {
+        struct cfg const * const cfg = &cfg_map[i];
+        char *name = (char *)cfg->name;
+
+        if (cfg->parse == &parse_size_t) {
+            (void)RedisModule_InfoAddFieldULongLong(ctx, name, *(size_t *)cfg->dp);
+        } else if (cfg->parse == &parse_int) {
+            (void)RedisModule_InfoAddFieldLongLong(ctx, name, *(int *)cfg->dp);
+        } else {
+            (void)RedisModule_InfoAddFieldCString(ctx, name, "Unsupported type");
+        }
+    }
+}
+SELVA_MODINFO("config", mod_info);
