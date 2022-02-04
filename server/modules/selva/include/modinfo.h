@@ -20,7 +20,7 @@ struct SelvaModinfo {
  * Provide module information.
  */
 #define SELVA_MODINFO(_name_, fun)          \
-    static struct SelvaModinfo _modinfo = { \
+    static const struct SelvaModinfo _modinfo = { \
         .name = (const char * const)_name_, \
         .fn = fun,                          \
     };                                      \
