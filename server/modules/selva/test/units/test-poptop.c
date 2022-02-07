@@ -100,7 +100,7 @@ static char * test_add_too_many(void)
     err = poptop_init(&l, 5, 0.0f);
     pu_assert_equal("initialized", err, 0);
 
-    for (int i = 0; i < num_elem(d); i++) {
+    for (size_t i = 0; i < num_elem(d); i++) {
         poptop_maybe_add(&l, (float)i, d + i);
     }
 
@@ -157,7 +157,7 @@ static char * test_foreach(void)
     err = poptop_init(&l, 10, 5.0f);
     pu_assert_equal("initialized", err, 0);
 
-    for (int i = 0; i < num_elem(d); i++) {
+    for (size_t i = 0; i < num_elem(d); i++) {
         poptop_maybe_add(&l, (float)i, d + i);
     }
 
@@ -242,7 +242,7 @@ static char * test_maintenance(void)
     err = poptop_init(&l, 10, 0.0f);
     pu_assert_equal("initialized", err, 0);
 
-    for (int i = 0; i < num_elem(d); i++) {
+    for (size_t i = 0; i < num_elem(d); i++) {
         poptop_maybe_add(&l, (float)i, d + i);
     }
 

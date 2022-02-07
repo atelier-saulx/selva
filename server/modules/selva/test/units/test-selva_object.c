@@ -604,10 +604,12 @@ static char *pointer_values(void) {
     ssize_t len = SelvaObject_LenStr(root_obj, "mykey", 5);
     pu_assert_equal("got correct len", len, 42);
 
-    struct data *p;
+    void *p;
+    struct data *dp;
     err = SelvaObject_GetPointerStr(root_obj, "mykey", 5, &p);
+    dp = (struct data *)p;
     pu_assert_equal("no error when getting a pointer", err, 0);
-    pu_assert_ptr_equal("got a pointer to the same data", p, &d);
+    pu_assert_ptr_equal("got a pointer to the same data", dp, &d);
 
     err = SelvaObject_DelKeyStr(root_obj, "mykey", 5);
     pu_assert_equal("no error when deleting", err, 0);
@@ -620,7 +622,6 @@ static char * set_invalid_array_key_1(void)
 {
     const char key_name_str[] = "x]";
     const size_t key_name_len = sizeof(key_name_str) - 1;
-    double v = 0.0;
     int err;
 
     err = SelvaObject_SetDoubleStr(root_obj, key_name_str, key_name_len, 1.0);
@@ -633,7 +634,6 @@ static char * set_invalid_array_key_2(void)
 {
     const char key_name_str[] = "x.y]";
     const size_t key_name_len = sizeof(key_name_str) - 1;
-    double v = 0.0;
     int err;
 
     err = SelvaObject_SetDoubleStr(root_obj, key_name_str, key_name_len, 1.0);
