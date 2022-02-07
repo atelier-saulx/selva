@@ -615,7 +615,44 @@ static int is_text_field(struct SelvaObject *obj, const char *key_name_str, size
     return meta == SELVA_OBJECT_META_SUBTYPE_TEXT;
 }
 
-static ssize_t send_merge_all(
+static int send_merge_text(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        Selva_NodeId nodeId,
+        struct SelvaObject *fields,
+        struct SelvaObject *obj,
+        RedisModuleString *obj_path,
+        size_t *nr_fields_out) {
+    int err;
+
+    if (SelvaObject_GetType(fields, obj_path) != SELVA_OBJECT_LONGLONG) {
+        ++*nr_fields_out;
+
+        /*
+         * Start a new array reply:
+         * [node_id, field_name, field_value]
+         */
+        RedisModule_ReplyWithArray(ctx, 3);
+
+        RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
+        RedisModule_ReplyWithString(ctx, obj_path);
+        err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        if (err) {
+            fprintf(stderr, "%s:%d: Failed to send \"%s\" (text) of node_id: \"%.*s\": %s\n",
+                    __FILE__, __LINE__,
+                    RedisModule_StringPtrLen(obj_path, NULL),
+                    (int)SELVA_NODE_ID_SIZE, nodeId,
+                    getSelvaErrorStr(err));
+        } else {
+            /* Mark the key as sent. */
+            (void)SelvaObject_SetLongLong(fields, obj_path, 1);
+        }
+    }
+
+    return 0;
+}
+
+static int send_merge_all(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         Selva_NodeId nodeId,
@@ -677,7 +714,7 @@ static ssize_t send_merge_all(
     return 0;
 }
 
-static ssize_t send_named_merge(
+static int send_named_merge(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         Selva_NodeId nodeId,
@@ -742,7 +779,7 @@ static ssize_t send_named_merge(
     return 0;
 }
 
-static ssize_t send_deep_merge(
+static int send_deep_merge(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         Selva_NodeId nodeId,
@@ -828,7 +865,7 @@ static ssize_t send_deep_merge(
     return 0;
 }
 
-static ssize_t send_node_object_merge(
+static int send_node_object_merge(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         const struct SelvaHierarchyNode *node,
@@ -872,54 +909,27 @@ static ssize_t send_node_object_merge(
      *   ]
      * ```
      */
-
-    ssize_t res;
     if ((merge_strategy == MERGE_STRATEGY_ALL || merge_strategy == MERGE_STRATEGY_DEEP) &&
         is_text_field(node_obj, obj_path_str, obj_path_len)) {
         /*
          * If obj is a text field we can just send it directly and skip the rest of
          * the processing.
          */
-        if (SelvaObject_GetType(fields, obj_path) != SELVA_OBJECT_LONGLONG) {
-            ++*nr_fields_out;
-
-            /*
-             * Start a new array reply:
-             * [node_id, field_name, field_value]
-             */
-            RedisModule_ReplyWithArray(ctx, 3);
-
-            RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId));
-            RedisModule_ReplyWithString(ctx, obj_path);
-            err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
-            if (err) {
-                TO_STR(obj_path);
-
-                fprintf(stderr, "%s:%d: Failed to send \"%s\" (text) of node_id: \"%.*s\"\n",
-                        __FILE__, __LINE__,
-                        obj_path_str,
-                        (int)SELVA_NODE_ID_SIZE, nodeId);
-            } else {
-                /* Mark the key as sent. */
-                (void)SelvaObject_SetLongLong(fields, obj_path, 1);
-            }
-        }
-
-        res = 0;
+        err = send_merge_text(ctx, lang, nodeId, fields, obj, obj_path, nr_fields_out);
     } else if (merge_strategy == MERGE_STRATEGY_ALL) {
         /* Send all keys from the nested object. */
-        res = send_merge_all(ctx, lang, nodeId, fields, obj, obj_path, nr_fields_out);
+        err = send_merge_all(ctx, lang, nodeId, fields, obj, obj_path, nr_fields_out);
     } else if (merge_strategy == MERGE_STRATEGY_NAMED) {
         /* Send named keys from the nested object. */
-        res = send_named_merge(ctx, lang, nodeId, fields, obj, obj_path, nr_fields_out);
+        err = send_named_merge(ctx, lang, nodeId, fields, obj, obj_path, nr_fields_out);
     } else if (merge_strategy == MERGE_STRATEGY_DEEP) {
         /* Deep merge all keys and nested objects. */
-        res = send_deep_merge(ctx, lang, nodeId, fields, obj, obj_path, nr_fields_out);
+        err = send_deep_merge(ctx, lang, nodeId, fields, obj, obj_path, nr_fields_out);
     } else {
-        res = replyWithSelvaErrorf(ctx, SELVA_ENOTSUP, "Merge strategy not supported: %d\n", (int)merge_strategy);
+        err = replyWithSelvaErrorf(ctx, SELVA_ENOTSUP, "Merge strategy not supported: %d\n", (int)merge_strategy);
     }
 
-    return res;
+    return err;
 }
 
 static int exec_fields_expression(
