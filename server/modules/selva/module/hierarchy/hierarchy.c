@@ -1988,18 +1988,20 @@ static int bfs_expression(
         BFS_VISIT_NODE();
 
         SELVA_SET_RMS_FOREACH(field_el, &fields) {
-            const RedisModuleString *field = field_el->value_rms;
-            TO_STR(field);
-            const SVector *adj_vec;
+            size_t field_len;
+            const char *field_str = RedisModule_StringPtrLen(field_el->value_rms, &field_len);
             enum SelvaTraversal field_type;
+            const SVector *adj_vec;
             struct SVectorIterator it;
             SelvaHierarchyNode *adj;
 
+            /* Get an SVector for the field. */
             adj_vec = get_adj_vec(node, field_str, field_len, &field_type);
             if (!adj_vec) {
                 continue;
             }
 
+            /* Visit each node in this field. */
             SVector_ForeachBegin(&it, adj_vec);
             while ((adj = SVector_Foreach(&it))) {
                 /*
@@ -2281,12 +2283,12 @@ int SelvaHierarchy_TraverseExpression(
 
     /* For each field in the set. */
     SELVA_SET_RMS_FOREACH(field_el, &fields) {
-        const RedisModuleString *field = field_el->value_rms;
-        TO_STR(field);
+        size_t field_len;
+        const char *field_str = RedisModule_StringPtrLen(field_el->value_rms, &field_len);
+        enum SelvaTraversal field_type;
         const SVector *adj_vec;
         struct SVectorIterator it;
         SelvaHierarchyNode *adj;
-        enum SelvaTraversal field_type;
 
         /* Get an SVector for the field. */
         adj_vec = get_adj_vec(head, field_str, field_len, &field_type);
