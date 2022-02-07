@@ -27,6 +27,19 @@
 #include "traversal.h"
 #include "find_index.h"
 
+#define WILDCARD_CHAR '*'
+
+/*
+ * Trace handles.
+ */
+SELVA_TRACE_HANDLE(cmd_find_array);
+SELVA_TRACE_HANDLE(cmd_find_bfs_expression);
+SELVA_TRACE_HANDLE(cmd_find_index);
+SELVA_TRACE_HANDLE(cmd_find_refs);
+SELVA_TRACE_HANDLE(cmd_find_rest);
+SELVA_TRACE_HANDLE(cmd_find_sort_result);
+SELVA_TRACE_HANDLE(cmd_find_traversal_expression);
+
 static int send_node_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
@@ -45,17 +58,6 @@ static int send_all_node_data_fields(
         const char *field_prefix_str,
         size_t field_prefix_len,
         RedisModuleString *excluded_fields);
-
-/*
- * Trace handles.
- */
-SELVA_TRACE_HANDLE(cmd_find_array);
-SELVA_TRACE_HANDLE(cmd_find_bfs_expression);
-SELVA_TRACE_HANDLE(cmd_find_index);
-SELVA_TRACE_HANDLE(cmd_find_refs);
-SELVA_TRACE_HANDLE(cmd_find_rest);
-SELVA_TRACE_HANDLE(cmd_find_sort_result);
-SELVA_TRACE_HANDLE(cmd_find_traversal_expression);
 
 static int send_hierarchy_field(
         RedisModuleCtx *ctx,
@@ -361,6 +363,58 @@ static int send_all_node_data_fields(
     return nr_fields;
 }
 
+/**
+ * Send named fields.
+ * Should be only used by send_node_fields().
+ */
+static void send_node_fields_named(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        struct SelvaObject *fields,
+        RedisModuleString *excluded_fields) {
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    void *iterator;
+    const SVector *vec;
+    size_t nr_fields = 0;
+
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+
+    iterator = SelvaObject_ForeachBegin(fields);
+    while ((vec = SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
+        struct SVectorIterator it;
+        RedisModuleString *field;
+
+        SVector_ForeachBegin(&it, vec);
+        while ((field = SVector_Foreach(&it))) {
+            TO_STR(field);
+            int res;
+
+            if (field_len == 1 && field_str[0] == WILDCARD_CHAR) {
+                res = send_all_node_data_fields(ctx, lang, hierarchy, node, NULL, 0, excluded_fields);
+                if (res > 0) {
+                    nr_fields += res;
+                    /*
+                     * An interesting case here is a list like this:
+                     * `title\n*`
+                     * that would send the same field twice.
+                     */
+                    break;
+                }
+            } else {
+                res = send_node_field(ctx, lang, hierarchy, node, obj, NULL, 0, field, excluded_fields);
+                if (res > 0) {
+                    nr_fields += res;
+                    break; /* Only send one of the fields in the list. */
+                }
+            }
+        }
+    }
+
+    RedisModule_ReplySetArrayLength(ctx, 2 * nr_fields);
+}
+
 static int send_node_fields(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
@@ -368,7 +422,7 @@ static int send_node_fields(
         struct SelvaHierarchyNode *node,
         struct SelvaObject *fields,
         RedisModuleString *excluded_fields) {
-    const char wildcard[] = "*";
+    const char wildcard[2] = { WILDCARD_CHAR, '\0' };
     Selva_NodeId nodeId;
     int err;
 
@@ -409,47 +463,7 @@ static int send_node_fields(
                     (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     } else {
-        _Static_assert(sizeof(wildcard) == 2, "Must be a single char");
-        const char wildcard_ch = wildcard[0];
-        struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
-        void *iterator;
-        const SVector *vec;
-        size_t nr_fields = 0;
-
-        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-
-        iterator = SelvaObject_ForeachBegin(fields);
-        while ((vec = SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
-            struct SVectorIterator it;
-            RedisModuleString *field;
-
-            SVector_ForeachBegin(&it, vec);
-            while ((field = SVector_Foreach(&it))) {
-                TO_STR(field);
-                int res;
-
-                if (field_len == 1 && field_str[0] == wildcard_ch) {
-                    res = send_all_node_data_fields(ctx, lang, hierarchy, node, NULL, 0, excluded_fields);
-                    if (res > 0) {
-                        nr_fields += res;
-                        /*
-                         * An interesting case here is a list like this:
-                         * `title\n*`
-                         * that would send the same field twice.
-                         */
-                        break;
-                    }
-                } else {
-                    res = send_node_field(ctx, lang, hierarchy, node, obj, NULL, 0, field, excluded_fields);
-                    if (res > 0) {
-                        nr_fields += res;
-                        break; /* Only send one of the fields in the list. */
-                    }
-                }
-            }
-        }
-
-        RedisModule_ReplySetArrayLength(ctx, 2 * nr_fields);
+        send_node_fields_named(ctx, lang, hierarchy, node, fields, excluded_fields);
     }
 
     return 0;
