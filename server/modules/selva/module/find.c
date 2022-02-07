@@ -1938,7 +1938,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         }
     }
 
-    size_t nr_reg = argc - ARGV_FILTER_ARGS + 1;
+    int nr_reg = argc - ARGV_FILTER_ARGS + 1;
     struct rpn_ctx *rpn_ctx = rpn_init(nr_reg);
     if (!rpn_ctx) {
         return replyWithSelvaError(ctx, SELVA_ENOMEM);
