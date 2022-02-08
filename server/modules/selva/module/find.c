@@ -1026,16 +1026,16 @@ static int print_node(
 }
 
 static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
-    Selva_NodeId nodeId;
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
 
-    SelvaHierarchy_GetNodeId(nodeId, node);
-
     args->acc_tot++;
     if (take && rpn_ctx) {
+        Selva_NodeId nodeId;
         int err;
+
+        SelvaHierarchy_GetNodeId(nodeId, node);
 
         /* Set node_id to the register */
         rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
@@ -1067,7 +1067,11 @@ static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) 
 
             err = print_node(args->ctx, args->lang, args->hierarchy, node, &args->send_param, args->merge_nr_fields);
             if (err) {
+                Selva_NodeId nodeId;
+
                 RedisModule_ReplyWithNull(args->ctx);
+
+                SelvaHierarchy_GetNodeId(nodeId, node);
                 fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                         __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, nodeId,
@@ -1087,14 +1091,18 @@ static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) 
             if (item) {
                 SVector_InsertFast(args->order_result, item);
             } else {
+                Selva_NodeId nodeId;
+
                 /*
                  * It's not so easy to make the response fail at this point.
                  * Given that we shouldn't generally even end up here in real
                  * life, it's fairly ok to just log the error and return what
                  * we can.
                  */
-                fprintf(stderr, "%s:%d: Out of memory while creating an ordered result item\n",
-                        __FILE__, __LINE__);
+                SelvaHierarchy_GetNodeId(nodeId, node);
+                fprintf(stderr, "%s:%d: Out of memory while creating an ordered result item for %.*s\n",
+                        __FILE__, __LINE__,
+                        (int)SELVA_NODE_ID_SIZE, nodeId);
             }
         }
     }
