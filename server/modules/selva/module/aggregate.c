@@ -53,7 +53,7 @@ static int agg_fn_count_uniq_obj(struct SelvaObject *obj __unused, struct Aggreg
 }
 
 static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
-    struct SelvaObject *fields_obj = args->find_args.fields;
+    struct SelvaObject *fields_obj = args->find_args.send_param.fields;
     SVector *fields;
     const RedisModuleString *field;
     int err;
@@ -93,7 +93,7 @@ static int agg_fn_avg_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
 }
 
 static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
-    struct SelvaObject *fields_obj = args->find_args.fields;
+    struct SelvaObject *fields_obj = args->find_args.send_param.fields;
     SVector *fields = NULL;
     const RedisModuleString *field;
     int err;
@@ -135,7 +135,7 @@ static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
 }
 
 static int agg_fn_max_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
-    struct SelvaObject *fields_obj = args->find_args.fields;
+    struct SelvaObject *fields_obj = args->find_args.send_param.fields;
     SVector *fields = NULL;
     const RedisModuleString *field;
     int err;
@@ -726,8 +726,8 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
-            .fields = fields,
-            .excluded_fields = NULL,
+            .send_param.fields = fields,
+            .send_param.excluded_fields = NULL,
             .merge_nr_fields = &merge_nr_fields,
             .order_field = order_by_field,
             .order_result = &order_result,
@@ -789,7 +789,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             .find_args = {
                 /* we always need context. */
                 .ctx = ctx,
-                .fields = fields
+                .send_param.fields = fields
             }
         };
 
@@ -1018,11 +1018,11 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
-            .merge_strategy = MERGE_STRATEGY_NONE,
-            .merge_path = NULL,
-            .merge_nr_fields = 0,
-            .fields = fields,
-            .excluded_fields = NULL,
+            .send_param.merge_strategy = MERGE_STRATEGY_NONE,
+            .send_param.merge_path = NULL,
+            .merge_nr_fields = NULL,
+            .send_param.fields = fields,
+            .send_param.excluded_fields = NULL,
             .order_field = order_by_field,
             .order_result = &order_result,
         };
@@ -1048,8 +1048,8 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .find_args = {
                 /* we always need context */
                 .ctx = ctx,
-                .fields = fields,
-                .excluded_fields = NULL,
+                .send_param.fields = fields,
+                .send_param.excluded_fields = NULL,
             }
         };
 

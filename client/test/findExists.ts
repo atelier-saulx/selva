@@ -378,6 +378,35 @@ test.serial('find - text exists field', async (t) => {
     ]
   )
 
+  // TODO: make a separate test case from this
+  t.deepEqual(
+    (
+      await client.get({
+        $id: 'root',
+        id: true,
+        items: {
+          id: true,
+          name: true,
+          $fieldsByType: {
+            match: { id: true, name: true, description: true },
+          },
+          $list: {
+            $sort: { $field: 'name', $order: 'asc' },
+            $find: {
+              $traverse: 'children',
+            },
+          },
+        },
+      })
+    ).items,
+    [
+      { id: 'le1', name: 'league 1' },
+      { id: 'ma1', description: { en: 'match 1' } },
+      { id: 'ma2', name: 'match 2' },
+      { id: 'sp1', name: 'special 1' },
+    ]
+  )
+
   t.deepEqualIgnoreOrder(
     await client.get({
       $language: 'en',
