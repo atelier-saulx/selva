@@ -58,18 +58,12 @@ static int deref_single_ref(
         const struct EdgeField *edge_field,
         Selva_NodeId node_id_out,
         struct SelvaObject **obj_out) {
-    const struct EdgeFieldConstraint *constraint = edge_field->constraint;
-    const struct SelvaHierarchyNode *node;
+    struct SelvaHierarchyNode *node;
+    int err;
 
-    if (constraint) {
-        if (!(constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
-            return SELVA_EINVAL; /* We can only deref fields from a single ref. */
-        }
-    }
-
-    node = SVector_GetIndex(&edge_field->arcs, 0);
-    if (!node) {
-        return SELVA_ENOENT;
+    err = Edge_DerefSingleRef(edge_field, &node);
+    if (err) {
+        return err;
     }
 
     SelvaHierarchy_GetNodeId(node_id_out, node);
@@ -202,7 +196,6 @@ static int InheritCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
     struct InheritCommand_Args *restrict args = (struct InheritCommand_Args *)arg;
     struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
     int err;
-
 
     /*
      * Check that the node is of an accepted type.

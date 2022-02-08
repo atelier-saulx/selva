@@ -329,6 +329,27 @@ int Edge_HasNodeId(const struct EdgeField *edge_field, const Selva_NodeId dst_no
     return SVector_SearchIndex(&edge_field->arcs, node_id) >= 0;
 }
 
+int Edge_DerefSingleRef(const struct EdgeField *edge_field, struct SelvaHierarchyNode **node_out) {
+    const struct EdgeFieldConstraint *constraint = edge_field->constraint;
+    struct SelvaHierarchyNode *node;
+
+    if (constraint) {
+        if (!(constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
+            return SELVA_EINTYPE; /* Not a single ref. */
+        }
+    }
+
+    node = SVector_GetIndex(&edge_field->arcs, 0);
+    if (!node) {
+        return SELVA_ENOENT;
+    }
+
+    if (node_out) {
+        *node_out = node;
+    }
+    return 0;
+}
+
 /* RFE Optimize by taking edgeField as an arg. */
 int Edge_Add(
         RedisModuleCtx *ctx,

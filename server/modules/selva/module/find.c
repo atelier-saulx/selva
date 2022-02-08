@@ -96,7 +96,6 @@ static int send_edge_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         SelvaHierarchy *hierarchy,
-        struct SelvaHierarchyNode *node,
         struct SelvaObject *edges,
         const char *field_prefix_str,
         size_t field_prefix_len,
@@ -129,26 +128,15 @@ static int send_edge_field(
         return 0;
     }
 
-    if (!edge_field->constraint || !(edge_field->constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF)) {
-        return SELVA_EINTYPE;
-    }
-
     /*
      * Note: The dst_node might be the same as node but this shouldn't case
      * an infinite loop or any other issues as we'll be always cutting the
      * field name shorter and thus the recursion should eventually stop.
      */
     struct SelvaHierarchyNode *dst_node;
-    dst_node = SVector_GetIndex(&edge_field->arcs, 0);
-    if (!dst_node) {
-        Selva_NodeId node_id;
-
-        SelvaHierarchy_GetNodeId(node_id, node);
-        fprintf(stderr, "%s:%d: Edge %.*s.%.*s shouldn't contain NULL arcs\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node_id,
-                off, field_str);
-        return SELVA_ENOENT;
+    int err = Edge_DerefSingleRef(edge_field, &dst_node);
+    if (err) {
+        return err;
     }
 
     const char *next_field_str = field_str + off;
@@ -173,7 +161,6 @@ static int send_edge_field(
         next_prefix_len = off;
     }
 
-    /* TODO could close the key */
     if (next_field_len == 1 && next_field_str[0] == '*') {
         int res;
 
@@ -259,7 +246,7 @@ static int send_node_field(
         struct SelvaObject *edges = metadata->edge_fields.edges;
 
         if (edges) {
-            err = send_edge_field(ctx, lang, hierarchy, node, edges, field_prefix_str, field_prefix_len, field, excluded_fields);
+            err = send_edge_field(ctx, lang, hierarchy, edges, field_prefix_str, field_prefix_len, field, excluded_fields);
             if (err == 0) {
                return 1;
             } else if (err != SELVA_ENOENT) {
