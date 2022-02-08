@@ -70,21 +70,9 @@ typedef int (*orderFunc)(const void ** restrict a_raw, const void ** restrict b_
 
 extern const struct SelvaArgParser_EnumType merge_types[3];
 
-struct FindCommand_Args {
-    struct RedisModuleCtx *ctx;
-    struct RedisModuleString *lang;
-    struct SelvaHierarchy *hierarchy;
-
-    ssize_t *nr_nodes; /*!< Number of nodes in the result. */
-    ssize_t offset; /*!< Start from nth node. */
-    ssize_t *limit; /*!< Limit the number of result. */
-
-    struct rpn_ctx *rpn_ctx;
-    const struct rpn_expression *filter;
-
+struct SelvaNodeSendParam {
     enum SelvaMergeStrategy merge_strategy;
     struct RedisModuleString *merge_path;
-    size_t *merge_nr_fields;
 
     /**
      * Field names.
@@ -107,6 +95,19 @@ struct FindCommand_Args {
      * fields have been already sent.
      */
     struct SelvaObject *fields;
+
+    /**
+     * Field names expression context for `fields_expression`.
+     */
+    struct rpn_ctx *fields_rpn_ctx;
+
+    /**
+     * Field names expression.
+     * Another way to select which fields should be returned to the client is
+     * using an RPN expression that returns a set on field names.
+     */
+    struct rpn_expression *fields_expression;
+
     /**
      * Fields that should be excluded when `fields` contains a wildcard.
      * The list should delimit the excluded fields in the following way:
@@ -115,16 +116,22 @@ struct FindCommand_Args {
      * ```
      */
     struct RedisModuleString *excluded_fields;
-    /**
-     * Field names expression context for `fields_expression`.
-     */
-    struct rpn_ctx *fields_rpn_ctx;
-    /**
-     * Field names expression.
-     * Another way to select which fields should be returned to the client is
-     * using an RPN expression that returns a set on field names.
-     */
-    struct rpn_expression *fields_expression;
+};
+
+struct FindCommand_Args {
+    struct RedisModuleCtx *ctx;
+    struct RedisModuleString *lang;
+    struct SelvaHierarchy *hierarchy;
+
+    ssize_t *nr_nodes; /*!< Number of nodes in the result. */
+    ssize_t offset; /*!< Start from nth node. */
+    ssize_t *limit; /*!< Limit the number of result. */
+
+    struct rpn_ctx *rpn_ctx;
+    const struct rpn_expression *filter;
+
+    struct SelvaNodeSendParam send_param;
+    size_t *merge_nr_fields;
 
     const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
     SVector *order_result; /*!< Results of the find wrapped in TraversalOrderedItem structs.
