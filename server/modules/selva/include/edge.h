@@ -192,6 +192,14 @@ int Edge_Has(const struct EdgeField *edge_field, struct SelvaHierarchyNode *dst_
 int Edge_HasNodeId(const struct EdgeField *edge_field, const Selva_NodeId dst_node_id);
 
 /**
+ * Deref the node from a single ref edge field.
+ * @param edge_field is a pointer to the edge field.
+ * @param[out] node_out is se to the the pointer to a node edge_field is pointing to. Can be NULL.
+ * @returns 0 if succeed and node_out was set; SELVA_EINTYPE if edge_field is not a single ref field; SELVA_ENOENT if edge_field was empty.
+ */
+int Edge_DerefSingleRef(const struct EdgeField *edge_field, struct SelvaHierarchyNode **node_out);
+
+/**
  * Add a new edge.
  * If the field doesn't exist it will be created using the given constraint_id.
  * If the field exists but the constraint_id doesn't match to the currently set
