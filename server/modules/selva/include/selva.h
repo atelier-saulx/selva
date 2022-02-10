@@ -20,11 +20,23 @@
  */
 #define HIERARCHY_DEFAULT_KEY "___selva_hierarchy"
 
-#define SELVA_ID_FIELD         "id"
-#define SELVA_TYPE_FIELD       "type"
-#define SELVA_ALIASES_FIELD    "aliases"
-#define SELVA_CREATED_AT_FIELD "createdAt"
-#define SELVA_UPDATED_AT_FIELD "updatedAt"
+/**
+ * Reserved field names.
+ * @addtogroup selva_reserved_field_names
+ * @{
+ */
+#define SELVA_ID_FIELD          "id"
+#define SELVA_TYPE_FIELD        "type"
+#define SELVA_ALIASES_FIELD     "aliases"
+#define SELVA_PARENTS_FIELD     "parents"
+#define SELVA_CHILDREN_FIELD    "children"
+#define SELVA_ANCESTORS_FIELD   "ancestors"
+#define SELVA_DESCENDANTS_FIELD "descendants"
+#define SELVA_CREATED_AT_FIELD  "createdAt"
+#define SELVA_UPDATED_AT_FIELD  "updatedAt"
+/**
+ * @}
+ */
 
 /*
  * Defines for SelvaObject user meta

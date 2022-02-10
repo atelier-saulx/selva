@@ -67,6 +67,8 @@ static int send_hierarchy_field(
         const char *field_str,
         size_t field_len) {
 #define SEND_FIELD_NAME() RedisModule_ReplyWithString(ctx, full_field_name)
+#define IS_FIELD(name) \
+    (field_len == (sizeof(name) - 1) && !memcmp(field_str, name, sizeof(name) - 1))
 
     /*
      * Check if the field name is a hierarchy field name.
@@ -74,22 +76,23 @@ static int send_hierarchy_field(
      * seems to give us a much better branch prediction success rate and
      * this function is pretty hot.
      */
-    if (field_len == 9 && !memcmp(field_str, "ancestors", 9)) {
+    if (IS_FIELD(SELVA_ANCESTORS_FIELD)) {
         SEND_FIELD_NAME();
         return HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
-    } else if (field_len == 8 && !memcmp(field_str, "children", 8)) {
+    } else if (IS_FIELD(SELVA_CHILDREN_FIELD)) {
         SEND_FIELD_NAME();
         return HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
-    } else if (field_len == 11 && !memcmp(field_str, "descendants", 11)) {
+    } else if (IS_FIELD(SELVA_DESCENDANTS_FIELD)) {
         SEND_FIELD_NAME();
         return HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
-    } else if (field_len == 7 && !memcmp(field_str, "parents", 7)) {
+    } else if (IS_FIELD(SELVA_PARENTS_FIELD)) {
         SEND_FIELD_NAME();
         return HierarchyReply_WithTraversal(ctx, hierarchy, nodeId, 0, NULL, SELVA_HIERARCHY_TRAVERSAL_PARENTS);
     }
 
     return SELVA_ENOENT;
 #undef SEND_FIELD_NAME
+#undef IS_FIELD
 }
 
 static int send_edge_field(

@@ -649,7 +649,10 @@ static inline void publishAncestorsUpdate(
         struct SelvaHierarchy *hierarchy,
         const SelvaHierarchyNode *node) {
     if (ctx && !isRdbLoading(ctx)) {
-        SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, "ancestors", 9);
+        const char *field_str = SELVA_ANCESTORS_FIELD;
+        const size_t field_len = sizeof(SELVA_ANCESTORS_FIELD) - 1;
+
+        SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, field_str, field_len);
     }
 }
 
@@ -658,7 +661,10 @@ static inline void publishDescendantsUpdate(
         struct SelvaHierarchy *hierarchy,
         const SelvaHierarchyNode *node) {
     if (ctx && !isRdbLoading(ctx)) {
-        SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, "descendants", 11);
+        const char *field_str = SELVA_DESCENDANTS_FIELD;
+        const size_t field_len = sizeof(SELVA_DESCENDANTS_FIELD) - 1;
+
+        SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, field_str, field_len);
     }
 }
 
@@ -667,7 +673,10 @@ static inline void publishChildrenUpdate(
         struct SelvaHierarchy *hierarchy,
         const SelvaHierarchyNode *node) {
     if (ctx && !isRdbLoading(ctx)) {
-        SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, "children", 8);
+        const char *field_str = SELVA_CHILDREN_FIELD;
+        const size_t field_len = sizeof(SELVA_CHILDREN_FIELD) - 1;
+
+        SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, field_str, field_len);
     }
 }
 
@@ -676,7 +685,10 @@ static inline void publishParentsUpdate(
         struct SelvaHierarchy *hierarchy,
         const SelvaHierarchyNode *node) {
     if (ctx && !isRdbLoading(ctx)) {
-        SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, "parents", 7);
+        const char *field_str = SELVA_PARENTS_FIELD;
+        const size_t field_len = sizeof(SELVA_PARENTS_FIELD) - 1;
+
+        SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, field_str, field_len);
     }
 }
 
@@ -1200,7 +1212,7 @@ static int remove_missing(
 #if 0
             fprintf(stderr, "%s:%d: Removing %.*s.%s.%.*s\n", __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, node->id,
-                    rel == RELATIONSHIP_CHILD ? "parents" : "children",
+                    rel == RELATIONSHIP_CHILD ? SELVA_PARENTS_FIELD : SELVA_CHILDREN_FIELD,
                     (int)SELVA_NODE_ID_SIZE, adj->id);
 #endif
 
@@ -1595,13 +1607,13 @@ static int dfs(
 
     switch (dir) {
     case RELATIONSHIP_PARENT:
-        child_metadata.origin_field_str = (const char *)"parents";
-        child_metadata.origin_field_len = 7;
+        child_metadata.origin_field_str = (const char *)SELVA_PARENTS_FIELD;
+        child_metadata.origin_field_len = sizeof(SELVA_PARENTS_FIELD) - 1;
         offset = offsetof(SelvaHierarchyNode, parents);
         break;
     case RELATIONSHIP_CHILD:
-        child_metadata.origin_field_str = (const char *)"children";
-        child_metadata.origin_field_len = 8;
+        child_metadata.origin_field_str = (const char *)SELVA_CHILDREN_FIELD;
+        child_metadata.origin_field_len = sizeof(SELVA_CHILDREN_FIELD) - 1;
         offset = offsetof(SelvaHierarchyNode, children);
         break;
     default:
@@ -1816,10 +1828,13 @@ out:
  * @param[out] field_type returns the type of the field being traversed.
  */
 static SVector *get_adj_vec(SelvaHierarchyNode *node, const char *field_str, size_t field_len, enum SelvaTraversal *field_type) {
-    if (field_len == 8 && !strncmp("children", field_str, 8)) {
+#define IS_FIELD(name) \
+    (field_len == (sizeof(name) - 1) && !memcmp(name, field_str, sizeof(name) - 1))
+
+    if (IS_FIELD(SELVA_CHILDREN_FIELD)) {
         *field_type = SELVA_HIERARCHY_TRAVERSAL_CHILDREN;
         return &node->children;
-    } else if (field_len == 7 && !strncmp("parents", field_str, 7)) {
+    } else if (IS_FIELD(SELVA_PARENTS_FIELD)) {
         *field_type = SELVA_HIERARCHY_TRAVERSAL_PARENTS;
         return &node->parents;
     } else {
@@ -1835,6 +1850,7 @@ static SVector *get_adj_vec(SelvaHierarchyNode *node, const char *field_str, siz
 
     *field_type = SELVA_HIERARCHY_TRAVERSAL_NONE;
     return NULL;
+#undef IS_FIELD
 }
 
 /**
@@ -1906,13 +1922,13 @@ static __hot int bfs(
 
     switch (dir) {
     case RELATIONSHIP_PARENT:
-        origin_field_str = (const char *)"parents";
-        origin_field_len = 7;
+        origin_field_str = (const char *)SELVA_PARENTS_FIELD;
+        origin_field_len = sizeof(SELVA_PARENTS_FIELD) - 1;
         offset = offsetof(SelvaHierarchyNode, parents);
         break;
     case RELATIONSHIP_CHILD:
-        origin_field_str = (const char *)"children";
-        origin_field_len = 8;
+        origin_field_str = (const char *)SELVA_CHILDREN_FIELD;
+        origin_field_len = sizeof(SELVA_CHILDREN_FIELD) - 1;
         offset = offsetof(SelvaHierarchyNode, children);
         break;
     default:
@@ -2358,11 +2374,14 @@ int SelvaModify_TraverseArray(
 }
 
 int SelvaHierarchy_IsNonEmptyField(const struct SelvaHierarchyNode *node, const char *field_str, size_t field_len) {
-    if ((field_len == 7 && !strncmp("parents", field_str, 7)) ||
-        (field_len == 9 && !strncmp("ancestors", field_str, 9))) {
+#define IS_FIELD(name) \
+    (field_len == (sizeof(name) - 1) && !memcmp(name, field_str, sizeof(name) - 1))
+
+    if (IS_FIELD(SELVA_PARENTS_FIELD) ||
+        IS_FIELD(SELVA_ANCESTORS_FIELD)) {
         return SVector_Size(&node->parents) > 0;
-    } else if ((field_len == 8 && !strncmp("children", field_str, 8)) ||
-               (field_len == 11 && !strncmp("descendants", field_str, 11))) {
+    } else if (IS_FIELD(SELVA_CHILDREN_FIELD) ||
+               IS_FIELD(SELVA_DESCENDANTS_FIELD)) {
         return SVector_Size(&node->children) > 0;
     } else if (field_len > 0) {
         /*
@@ -2379,6 +2398,7 @@ int SelvaHierarchy_IsNonEmptyField(const struct SelvaHierarchyNode *node, const 
     }
 
     return 0;
+#undef IS_FIELD
 }
 
 int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
