@@ -10,11 +10,6 @@ struct RedisModuleCtx;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 
-enum SelvaTraversalAlgo {
-    HIERARCHY_BFS,
-    HIERARCHY_DFS,
-};
-
 /**
  * Hierarchy traversal order.
  * Recognized by SelvaHierarchy_Traverse().
