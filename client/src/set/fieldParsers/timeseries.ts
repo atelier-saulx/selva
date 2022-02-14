@@ -1,7 +1,7 @@
 import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
-import { Schema, TypeSchema, FieldSchema } from '../../schema'
+import { Schema, FieldSchema } from '../../schema'
 import fieldParsers from '.'
 
 import { longLongDef } from '../modifyDataRecords'

@@ -10,9 +10,6 @@ test.serial('schemas - custom validation', async (t) => {
     port,
   })
   const client = connect({ port })
-  // schema updates (and migrations)
-
-  // custom vaildation
 
   try {
     await client.updateSchema({
@@ -23,6 +20,12 @@ test.serial('schemas - custom validation', async (t) => {
             image: {
               type: 'string',
               meta: 'image',
+            },
+            set: {
+              type: 'set',
+              items: {
+                type: 'string',
+              },
             },
             obj: {
               type: 'object',
@@ -54,10 +57,6 @@ test.serial('schemas - custom validation', async (t) => {
     return true
   }
 
-  // await client.set({
-  //   $id: 'root',
-  // })
-
   await client.set({
     type: 'thing',
     image: 'yes',
@@ -67,6 +66,7 @@ test.serial('schemas - custom validation', async (t) => {
         snurk: 'hello',
       },
     },
+    set: ['yes'],
   })
 
   await wait(1000)

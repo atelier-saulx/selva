@@ -31,7 +31,8 @@ export default async (
   payload: SetOptions,
   result: (string | Buffer)[],
   fields: FieldSchemaArrayLike,
-  type: string
+  type: string,
+  lang: string
 ): Promise<number> => {
   const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
   if (!typeSchema) {
@@ -47,6 +48,21 @@ export default async (
     throw new Error(`Cannot find parser for ${fieldType}`)
   }
 
+  let verifyWrapped = verifySimple
+
+  if (client.validator) {
+    // need to maybe cahce these (else what the point doing it here)
+    verifyWrapped = async (
+      payload: SetOptions,
+      verify: (p: SetOptions) => Promise<any>
+    ): Promise<any> => {
+      if (!client.validator(schema, type, field.split('.'), payload, lang)) {
+        throw new Error('Invalid field "set" from custom validator')
+      }
+      return verifySimple(payload, verify)
+    }
+  }
+
   // 'string' is just a guess here if we don't know the type but it's probably the right one
   // @ts-ignore
   const elementType = typeSchema.fields[field]?.items?.type || 'string'
@@ -60,8 +76,8 @@ export default async (
         // type
         OPT_SET_TYPE.double,
         // verify
-        // eslint-disable-next-line no-sequences
         async (v: SetOptions) => (
+          // eslint-disable-next-line no-sequences
           await parser(client, schema, 'value', v, [], fields, type), v
         ),
         // toCArr
@@ -75,8 +91,8 @@ export default async (
         // type
         OPT_SET_TYPE.long_long,
         // verify
-        // eslint-disable-next-line no-sequences
         async (v: SetOptions) => (
+          // eslint-disable-next-line no-sequences
           await parser(client, schema, 'value', v, [], fields, type), v
         ),
         // toCArr
@@ -107,14 +123,14 @@ export default async (
           // TODO: do these modify commands recursively and then populate the ids here
           // r.$add = [await parseSetObject(client, payload[k], schema)]
         } else {
-          r.$add = await verifySimple(payload[k], verify)
+          r.$add = await verifyWrapped(payload[k], verify)
         }
       } else if (k === '$delete') {
         if (payload.$delete === true) {
           // unsets are allowed
           r.delete_all = 1
         } else {
-          r.$delete = await verifySimple(payload[k], verify)
+          r.$delete = await verifyWrapped(payload[k], verify)
         }
       } else {
         throw new Error(`Wrong key for set ${k}`)
@@ -133,7 +149,7 @@ export default async (
       })
     )
   } else {
-    const value = await verifySimple(payload, verify)
+    const value = await verifyWrapped(payload, verify)
     result.push(
       '5',
       field,
