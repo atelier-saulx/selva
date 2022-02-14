@@ -268,6 +268,7 @@ SelvaHierarchy *SelvaModify_OpenHierarchy(RedisModuleCtx *ctx, RedisModuleString
 }
 
 static int create_node_object(SelvaHierarchyNode *node) {
+    const long long now = ts_now();
     RedisModuleString *node_name;
     int err;
 
@@ -302,6 +303,9 @@ static int create_node_object(SelvaHierarchyNode *node) {
             return err;
         }
     }
+
+    SelvaObject_SetLongLongStr(node->obj, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, now);
+    SelvaObject_SetLongLongStr(node->obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, now);
 
     return 0;
 }
@@ -363,16 +367,9 @@ static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
  * Actions that must be executed for a new node.
  * Generally this must be always called after newNode() unless we are RDB loading.
  */
-static void new_node_actions(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
-        struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
-        const long long now = ts_now();
-
-        SelvaObject_SetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, now);
+static void new_node_events(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
         SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1);
-
-        SelvaObject_SetLongLongStr(obj, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, now);
         SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1);
-
         SelvaSubscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
         SelvaSubscriptions_DeferMissingAccessorEvents(hierarchy, node->id, SELVA_NODE_ID_SIZE);
 }
@@ -1143,7 +1140,9 @@ int SelvaModify_SetHierarchy(
             return SELVA_HIERARCHY_ENOMEM;
         }
 
-        new_node_actions(ctx, hierarchy, node);
+        if (!isRdbLoading(ctx)) {
+            new_node_events(ctx, hierarchy, node);
+        }
         isNewNode = 1;
     }
 
@@ -1359,7 +1358,7 @@ int SelvaHierarchy_UpsertNode(
       * database.
       */
      if (!isLoading) {
-        new_node_actions(ctx, hierarchy, node);
+        new_node_events(ctx, hierarchy, node);
      }
 
      /*

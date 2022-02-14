@@ -375,6 +375,7 @@ test.serial('createdAt not set if nothing changed', async (t) => {
     type: 'person',
     title: 'yesh',
   })
+  await wait(2)
   const after = Date.now()
 
   let result = await client.get({
