@@ -1,6 +1,6 @@
 import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
-import { Schema, TypeSchema, FieldSchemaObject } from '../../schema'
+import { Schema, FieldSchemaObject } from '../../schema'
 import fieldParsers from '.'
 
 export default async (
@@ -26,7 +26,7 @@ export default async (
   }
 
   let addedFields = 0
-  for (let key in payload) {
+  for (const key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {
         // NOP

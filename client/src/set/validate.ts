@@ -173,22 +173,13 @@ export default async function parseSetObject(
           ${ALLOWED_OPTIONS_DOCS}`)
       }
     } else if (!fields[key]) {
+      // make this a bit nicer
+
       throw new Error(`
         Cannot find field ${key} in ${type}. Did you mean one of the following properties?
 ${allowedFieldsDoc(schemas, type)}
         `)
     } else {
-      console.info(
-        '???zxxxxxzzx',
-        schemas,
-        key,
-        payload[key],
-        result,
-        fields[key],
-        type,
-        $lang
-      )
-
       const fn = fieldParsers[fields[key].type]
       await fn(
         client,

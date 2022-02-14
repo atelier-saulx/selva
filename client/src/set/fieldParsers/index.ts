@@ -12,7 +12,7 @@ import object from './object'
 import record from './record'
 import array from './array'
 import timeseries from './timeseries'
-import { deepCopy, deepMerge } from '@saulx/utils'
+import { deepMerge } from '@saulx/utils'
 import { getNestedField, setNestedResult } from '../../get/utils'
 
 type FieldParserFn = (

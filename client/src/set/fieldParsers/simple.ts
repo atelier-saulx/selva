@@ -1,7 +1,7 @@
 import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
-import { TypeSchema, Schema, FieldSchemaOther } from '../../schema'
+import { Schema, FieldSchemaOther } from '../../schema'
 import digest from '../../digest'
 import {
   incrementDef,
@@ -97,6 +97,7 @@ const parsers = {}
 
 for (const key in verifiers) {
   const verify = verifiers[key]
+
   const valueType: string = ['boolean', 'int', 'timestamp'].includes(key)
     ? '3'
     : ['float', 'number'].includes(key)
@@ -107,20 +108,34 @@ for (const key in verifiers) {
   const converter = converters[key]
 
   parsers[key] = (
-    _client: SelvaClient,
-    _schemas: Schema,
+    client: SelvaClient,
+    schemas: Schema,
     field: string,
     payload: SetOptions,
     result: (string | Buffer)[],
-    _fields: FieldSchemaOther,
-    _type: string
+    fields: FieldSchemaOther,
+    type: string
   ) => {
-    let keyname: string = field
+    const keyname: string = field
     let value: string | null = null
+
+    let wrappedVerify = verify
+
+    if (client.validator) {
+      wrappedVerify = (p) => {
+        // need to get $db
+        // would also be nice to be able to do type conversions potentialy
+        console.info('XXXXXXXXXXXyes', schemas, field, payload, type)
+
+        // client.validator(schemas)
+
+        return verify(p)
+      }
+    }
 
     if (!noOptions && typeof payload === 'object') {
       let hasKeys = false
-      for (let k in payload) {
+      for (const k in payload) {
         value = payload[k]
         hasKeys = true
         if (isNumber && k === '$increment') {
@@ -131,7 +146,7 @@ for (const key in verifiers) {
 
             value = `___selva_$ref:${payload[k].$ref}`
           } else {
-            if (!verify(payload[k])) {
+            if (!wrappedVerify(payload[k])) {
               throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
             } else if (
               converter &&
@@ -140,8 +155,7 @@ for (const key in verifiers) {
               value = converter(payload[k])
             }
 
-            //console.log(payload)
-            if (key == 'int') {
+            if (key === 'int') {
               result.push(
                 '4',
                 field,
@@ -184,7 +198,7 @@ for (const key in verifiers) {
       }
 
       if (payload.$default) {
-        if (verify(payload.$default)) {
+        if (wrappedVerify(payload.$default)) {
           if (converter) {
             value = converter(payload.$default)
           } else {
@@ -209,7 +223,7 @@ for (const key in verifiers) {
       if (!hasKeys) {
         throw new Error(`Incorrect payload empty object for field ${field}`)
       }
-    } else if (verify(payload)) {
+    } else if (wrappedVerify(payload)) {
       if (converter) {
         value = converter(payload)
       } else {

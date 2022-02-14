@@ -24,6 +24,22 @@ test.serial('schemas - custom validation', async (t) => {
               type: 'string',
               meta: 'image',
             },
+            obj: {
+              type: 'object',
+              properties: {
+                flap: {
+                  type: 'string',
+                },
+                x: {
+                  type: 'object',
+                  properties: {
+                    snurk: {
+                      type: 'string',
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -33,7 +49,8 @@ test.serial('schemas - custom validation', async (t) => {
   }
 
   client.validator = (schema, type, path, value) => {
-    console.info('yes', schema, type, path, value)
+    console.info('yesVALIDATOPR', schema, type, path, value)
+    // custom messages as well...
     return true
   }
 
@@ -41,15 +58,18 @@ test.serial('schemas - custom validation', async (t) => {
   //   $id: 'root',
   // })
 
-  console.info('yes?')
   await client.set({
     type: 'thing',
     image: 'yes',
+    obj: {
+      flap: 'x',
+      x: {
+        snurk: 'hello',
+      },
+    },
   })
 
   await wait(1000)
-
-  // add some tests for it
 
   await client.destroy()
   await server.destroy()
