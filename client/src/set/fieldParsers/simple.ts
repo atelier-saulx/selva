@@ -73,6 +73,7 @@ export const verifiers = {
   },
 }
 
+// maybe need to make this configurable as well...
 // also need to make this accessable
 const converters = {
   digest,
@@ -109,12 +110,13 @@ for (const key in verifiers) {
 
   parsers[key] = (
     client: SelvaClient,
-    schemas: Schema,
+    schema: Schema,
     field: string,
     payload: SetOptions,
     result: (string | Buffer)[],
-    fields: FieldSchemaOther,
-    type: string
+    _fields: FieldSchemaOther,
+    type: string,
+    lang: string
   ) => {
     const keyname: string = field
     let value: string | null = null
@@ -123,7 +125,8 @@ for (const key in verifiers) {
 
     if (client.validator) {
       wrappedVerify = (p) => {
-        if (!client.validator(schemas, type, field.split('.'), payload)) {
+        // language?
+        if (!client.validator(schema, type, field.split('.'), payload, lang)) {
           return false
         }
         return verify(p)
