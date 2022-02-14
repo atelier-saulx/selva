@@ -123,12 +123,9 @@ for (const key in verifiers) {
 
     if (client.validator) {
       wrappedVerify = (p) => {
-        // need to get $db
-        // would also be nice to be able to do type conversions potentialy
-        console.info('XXXXXXXXXXXyes', schemas, field, payload, type)
-
-        // client.validator(schemas)
-
+        if (!client.validator(schemas, type, field.split('.'), payload)) {
+          return false
+        }
         return verify(p)
       }
     }
