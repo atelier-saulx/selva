@@ -5,6 +5,7 @@ import {
   ServerType,
   ServerSelector,
   ServerSelectOptions,
+  Validator,
 } from './types'
 import digest from './digest'
 import Redis from './redis'
@@ -64,6 +65,8 @@ export class SelvaClient extends EventEmitter {
     timer?: NodeJS.Timeout
     isSyncing: boolean
   }
+
+  public validator: Validator
 
   public observables: Map<string, Observable>
 
@@ -335,5 +338,6 @@ export {
   RedisCommand,
   Connection,
   Observable,
+  Validator,
   moduleId,
 }

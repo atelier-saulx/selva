@@ -1,3 +1,5 @@
+import { Schema } from '.'
+
 export type LogEntry = { level: LogLevel; msg: string; clientId: string }
 export type LogLevel = 'info' | 'notice' | 'warning' | 'error' | 'off'
 
@@ -48,3 +50,9 @@ export type ServerDescriptor = {
 export type Servers = Record<string, Record<string, ServerDescriptor[]>>
 
 export type ServersById = Record<string, ServerDescriptor>
+
+export type Validator = (
+  schema: Schema,
+  type: string,
+  path: string[]
+) => boolean

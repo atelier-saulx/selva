@@ -20,16 +20,13 @@ function allowedFieldsDoc(schemas: Schema, type?: string): string {
   if (type) {
     typeSchema = schemas.types[type]
   }
-
   if (typeSchema) {
     let str = ''
     for (const key in typeSchema.fields) {
       str += `        - ${key}: ${typeSchema.fields[key].type} \n`
     }
-
     return str
   }
-
   return ''
 }
 
@@ -87,7 +84,7 @@ export default async function parseSetObject(
     )
   }
 
-  let fields = schema.fields
+  const fields = schema.fields
 
   if (!payload.updatedAt && fields.updatedAt?.type === 'timestamp') {
     result[0] += 'u'
@@ -96,7 +93,7 @@ export default async function parseSetObject(
     result[0] += 'c'
   }
 
-  for (let key in payload) {
+  for (const key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {
         if (!(payload[key] === true || payload[key] === false)) {
