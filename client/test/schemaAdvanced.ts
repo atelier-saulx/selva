@@ -10,39 +10,52 @@ test.serial('schemas - custom validation', async (t) => {
     port,
   })
   const client = connect({ port })
-
   // schema updates (and migrations)
 
   // custom vaildation
 
-  client.updateSchema({
-    types: {
-      thing: {
-        prefix: 'th',
-        fields: {
-          image: {
-            type: 'string',
-            meta: 'image',
+  try {
+    await client.updateSchema({
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            image: {
+              type: 'string',
+              meta: 'image',
+            },
           },
         },
       },
-    },
-  })
+    })
+  } catch (err) {
+    console.error('????', err)
+  }
 
-  // client.validator = (schema, type, path, value) => {
-  //  somethign like this
-  // }
+  client.validator = (schema, type, path, value) => {
+    console.info('yes', schema, type, path, value)
+    return true
+  }
 
+  // await client.set({
+  //   $id: 'root',
+  // })
+
+  console.info('yes?')
   await client.set({
-    $id: 'root',
+    type: 'thing',
+    image: 'yes',
   })
 
   await wait(1000)
 
   // add some tests for it
+
   await client.destroy()
   await server.destroy()
   await t.connectionsAreEmpty()
+
+  t.pass('yes')
 })
 
 // test.serial('schemas - updates and migrations', async (t) => {

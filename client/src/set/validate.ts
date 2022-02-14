@@ -178,6 +178,17 @@ export default async function parseSetObject(
 ${allowedFieldsDoc(schemas, type)}
         `)
     } else {
+      console.info(
+        '???zxxxxxzzx',
+        schemas,
+        key,
+        payload[key],
+        result,
+        fields[key],
+        type,
+        $lang
+      )
+
       const fn = fieldParsers[fields[key].type]
       await fn(
         client,

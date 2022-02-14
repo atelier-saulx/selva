@@ -54,5 +54,6 @@ export type ServersById = Record<string, ServerDescriptor>
 export type Validator = (
   schema: Schema,
   type: string,
-  path: string[]
+  path: string[],
+  value: any
 ) => boolean
