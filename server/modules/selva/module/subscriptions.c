@@ -184,10 +184,10 @@ static int field_match(const char *list, const char *field_str, size_t field_len
 
 static int contains_hierarchy_fields(const char *list) {
     return list[0] == '\0' /* wildcard */ ||
-           field_match(list, "ancestors", 9) ||
-           field_match(list, "children", 8) ||
-           field_match(list, "descendants", 11) ||
-           field_match(list, "parents", 7);
+           field_match(list, SELVA_ANCESTORS_FIELD, sizeof(SELVA_ANCESTORS_FIELD) - 1) ||
+           field_match(list, SELVA_CHILDREN_FIELD, sizeof(SELVA_CHILDREN_FIELD) - 1) ||
+           field_match(list, SELVA_DESCENDANTS_FIELD, sizeof(SELVA_DESCENDANTS_FIELD) - 1) ||
+           field_match(list, SELVA_PARENTS_FIELD, sizeof(SELVA_PARENTS_FIELD) - 1);
 }
 
 /**

@@ -989,7 +989,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
              * Publish that the field was changed.
              * Hierarchy handles events for parents and children.
              */
-            if (strcmp(field_str, "parents") && strcmp(field_str, "children")) {
+            if (strcmp(field_str, SELVA_PARENTS_FIELD) && strcmp(field_str, SELVA_CHILDREN_FIELD)) {
                 SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, field_str, field_len);
             }
 

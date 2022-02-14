@@ -283,26 +283,29 @@ size_t inheritHierarchyFields(
 
         err = 1; /* This value will help us know if something matched. */
 
+#define IS_FIELD(name) \
+        (!strcmp(field_name_str, name))
+
         /*
          * If the field_name is a hierarchy field the reply format is:
          * [node_id, field_name, [nodeId1, nodeId2,.. nodeIdn]]
          */
-        if (!strcmp(field_name_str, "ancestors")) {
+        if (IS_FIELD(SELVA_ANCESTORS_FIELD)) {
             RedisModule_ReplyWithArray(ctx, 3);
             RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
             RedisModule_ReplyWithString(ctx, field_name);
             err = HierarchyReply_WithTraversal(ctx, hierarchy, node_id, nr_types, types, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS);
-        } else if (!strcmp(field_name_str, "children")) {
+        } else if (IS_FIELD(SELVA_CHILDREN_FIELD)) {
             RedisModule_ReplyWithArray(ctx, 3);
             RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
             RedisModule_ReplyWithString(ctx, field_name);
             err = HierarchyReply_WithTraversal(ctx, hierarchy, node_id, nr_types, types, SELVA_HIERARCHY_TRAVERSAL_CHILDREN);
-        } else if (!strcmp(field_name_str, "descendants")) {
+        } else if (IS_FIELD(SELVA_DESCENDANTS_FIELD)) {
             RedisModule_ReplyWithArray(ctx, 3);
             RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
             RedisModule_ReplyWithString(ctx, field_name);
             err = HierarchyReply_WithTraversal(ctx, hierarchy, node_id, nr_types, types, SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS);
-        } else if (!strcmp(field_name_str, "parents")) {
+        } else if (IS_FIELD(SELVA_PARENTS_FIELD)) {
             RedisModule_ReplyWithArray(ctx, 3);
             RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
             RedisModule_ReplyWithString(ctx, field_name);
@@ -322,6 +325,7 @@ size_t inheritHierarchyFields(
     }
 
     return nr_presolved;
+#undef IS_FIELD
 }
 
 /**
