@@ -51,12 +51,16 @@ test.serial('schemas - custom validation', async (t) => {
     console.error('????', err)
   }
 
+  // .validate
+  // .isValid({ $id: 'flap', nurp: 100 })
+  //
   client.validator = (schema, type, path, value) => {
     console.info('yesVALIDATOPR', schema, type, path, value)
     // custom messages as well...
     return true
   }
 
+  // high level validator
   await client.set({
     type: 'thing',
     image: 'yes',
