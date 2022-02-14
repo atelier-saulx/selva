@@ -89,13 +89,6 @@ export default async function parseSetObject(
 
   let fields = schema.fields
 
-  if (!payload.updatedAt && fields.updatedAt?.type === 'timestamp') {
-    result[0] += 'u'
-  }
-  if (!payload.createdAt && fields.createdAt?.type === 'timestamp') {
-    result[0] += 'c'
-  }
-
   for (let key in payload) {
     if (key[0] === '$') {
       if (key === '$merge') {

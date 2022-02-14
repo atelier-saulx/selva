@@ -8,7 +8,7 @@
 struct SelvaHierarchy;
 struct SelvaHierarchyMetadata;
 
-int Selva_Subscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy) {
+int SelvaSubscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
 
     hierarchy->subs.missing = SelvaObject_New();
@@ -110,7 +110,7 @@ void SelvaSubscriptions_DeferHierarchyDeletionEvents(
     return;
 }
 
-void Selva_Subscriptions_DeferTriggerEvents(
+void SelvaSubscriptions_DeferTriggerEvents(
         struct RedisModuleCtx *redis_ctx,
         struct SelvaHierarchy *hierarchy,
         const struct SelvaHierarchyNode *node,

@@ -22,10 +22,11 @@
 #include "selva_onload.h"
 #include "selva_trace.h"
 #include "find_index.h"
+#include "timestamp.h"
 #include "selva_set.h"
-#include "traversal.h"
 #include "subscriptions.h"
 #include "svector.h"
+#include "traversal.h"
 #include "hierarchy.h"
 #include "hierarchy_detached.h"
 
@@ -178,7 +179,7 @@ SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     }
 
     Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
-    Selva_Subscriptions_InitHierarchy(hierarchy);
+    SelvaSubscriptions_InitHierarchy(hierarchy);
 
     if (SelvaFindIndex_Init(ctx, hierarchy)) {
         SelvaModify_DestroyHierarchy(hierarchy);
@@ -356,6 +357,24 @@ static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
     }
 
     return node;
+}
+
+/**
+ * Actions that must be executed for a new node.
+ * Generally this must be always called after newNode() unless we are RDB loading.
+ */
+static void new_node_actions(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
+        struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+        const long long now = ts_now();
+
+        SelvaObject_SetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, now);
+        SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1);
+
+        SelvaObject_SetLongLongStr(obj, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, now);
+        SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1);
+
+        SelvaSubscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
+        SelvaSubscriptions_DeferMissingAccessorEvents(hierarchy, node->id, SELVA_NODE_ID_SIZE);
 }
 
 static void SelvaModify_DestroyNode(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
@@ -550,7 +569,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierar
     is_root = !memcmp(id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
 
     if (likely(ctx)) {
-        Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_DELETED);
+        SelvaSubscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_DELETED);
     }
 
     removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
@@ -1124,7 +1143,7 @@ int SelvaModify_SetHierarchy(
             return SELVA_HIERARCHY_ENOMEM;
         }
 
-        SelvaSubscriptions_DeferMissingAccessorEvents(hierarchy, id, SELVA_NODE_ID_SIZE);
+        new_node_actions(ctx, hierarchy, node);
         isNewNode = 1;
     }
 
@@ -1340,7 +1359,7 @@ int SelvaHierarchy_UpsertNode(
       * database.
       */
      if (!isLoading) {
-        SelvaSubscriptions_DeferMissingAccessorEvents(hierarchy, id, SELVA_NODE_ID_SIZE);
+        new_node_actions(ctx, hierarchy, node);
      }
 
      /*

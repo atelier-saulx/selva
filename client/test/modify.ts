@@ -88,7 +88,6 @@ test.before(async (t) => {
           reffyRef: {
             type: 'reference',
           },
-          createdAt: { type: 'timestamp' },
         },
       },
       league: {
@@ -97,7 +96,6 @@ test.before(async (t) => {
           title: {
             type: 'text',
           },
-          createdAt: { type: 'number' },
         },
       },
       person: {
@@ -106,8 +104,6 @@ test.before(async (t) => {
           title: {
             type: 'text',
           },
-          createdAt: { type: 'timestamp' },
-          updatedAt: { type: 'timestamp' },
         },
       },
       someTestThing: {
@@ -1216,144 +1212,6 @@ test.serial('automatic child creation', async (t) => {
   await client.destroy()
 })
 
-test.serial('createdAt set if defined as timestamp', async (t) => {
-  const client = connect({
-    port,
-  })
-
-  const before = Date.now()
-  const match = await client.set({
-    $language: 'en',
-    type: 'match',
-    title: 'yesh',
-  })
-  const after = Date.now()
-
-  const result = await client.get({
-    $language: 'en',
-    $id: match,
-    id: true,
-    title: true,
-    createdAt: true,
-    updatedAt: true,
-  })
-
-  const createdAt = result.createdAt
-  delete result.createdAt
-
-  t.deepEqual(result, {
-    id: match,
-    title: 'yesh',
-  })
-
-  t.true(
-    typeof createdAt === 'number' && createdAt <= after && createdAt >= before
-  )
-
-  await client.delete('root')
-  await client.destroy()
-})
-
-test.serial('createdAt+updatedAt set if defined as timestamp', async (t) => {
-  const client = connect({
-    port,
-  })
-
-  const before = Date.now()
-  const person = await client.set({
-    $language: 'en',
-    type: 'person',
-    title: 'yesh',
-  })
-  const after = Date.now()
-
-  const result = await client.get({
-    $language: 'en',
-    $id: person,
-    id: true,
-    title: true,
-    createdAt: true,
-    updatedAt: true,
-  })
-
-  const createdAt = result.createdAt
-  const updatedAt = result.updatedAt
-  delete result.createdAt
-  delete result.updatedAt
-
-  t.deepEqual(result, {
-    id: person,
-    title: 'yesh',
-  })
-
-  t.true(
-    typeof createdAt === 'number' && createdAt <= after && createdAt >= before
-  )
-
-  t.deepEqual(createdAt, updatedAt)
-
-  await client.delete('root')
-  await client.destroy()
-})
-
-test.serial('createdAt not set if not timestamp type', async (t) => {
-  const client = connect({
-    port,
-  })
-
-  const league = await client.set({
-    $language: 'en',
-    type: 'league',
-    title: 'yesh',
-  })
-
-  const result = await client.get({
-    $language: 'en',
-    $id: league,
-    id: true,
-    title: true,
-    createdAt: true,
-  })
-
-  t.deepEqual(result, {
-    id: league,
-    title: 'yesh',
-  })
-
-  await client.delete('root')
-  await client.destroy()
-})
-
-test.serial('createdAt not set if provided in modify props', async (t) => {
-  const client = connect({
-    port,
-  })
-
-  const match = await client.set({
-    $language: 'en',
-    type: 'match',
-    title: 'yesh',
-    createdAt: 12345,
-  })
-
-  const result = await client.get({
-    $language: 'en',
-    $id: match,
-    id: true,
-    title: true,
-    createdAt: true,
-  })
-
-  t.deepEqual(result, {
-    id: match,
-    title: 'yesh',
-    createdAt: 12345,
-  })
-
-  await client.delete('root')
-  await client.destroy()
-})
-
 test.serial('Set empty object', async (t) => {
   const client = connect({
     port,
@@ -1470,75 +1328,6 @@ test.serial('can disable autoadding of root', async (t) => {
     await client.redis.selva_hierarchy_parents(DEFAULT_HIERARCHY, 'maMatch3'),
     [m3]
   )
-
-  await client.delete('root')
-  await client.destroy()
-})
-
-test.serial('createdAt not set if nothing changed', async (t) => {
-  const client = connect({
-    port,
-  })
-
-  const before = Date.now()
-  const person = await client.set({
-    $language: 'en',
-    type: 'person',
-    title: 'yesh',
-  })
-  const after = Date.now()
-
-  let result = await client.get({
-    $language: 'en',
-    $id: person,
-    id: true,
-    title: true,
-    createdAt: true,
-    updatedAt: true,
-  })
-
-  let createdAt = result.createdAt
-  let updatedAt = result.updatedAt
-  delete result.createdAt
-  delete result.updatedAt
-
-  t.deepEqual(result, {
-    id: person,
-    title: 'yesh',
-  })
-
-  t.true(
-    typeof createdAt === 'number' && createdAt <= after && createdAt >= before
-  )
-
-  t.deepEqual(createdAt, updatedAt)
-
-  await client.set({
-    $language: 'en',
-    type: 'person',
-    title: 'yesh',
-    children: [],
-  })
-
-  result = await client.get({
-    $language: 'en',
-    $id: person,
-    id: true,
-    title: true,
-    createdAt: true,
-    updatedAt: true,
-  })
-
-  createdAt = result.createdAt
-  updatedAt = result.updatedAt
-  delete result.createdAt
-  delete result.updatedAt
-
-  t.true(
-    typeof createdAt === 'number' && createdAt <= after && createdAt >= before
-  )
-
-  t.deepEqual(createdAt, updatedAt)
 
   await client.delete('root')
   await client.destroy()

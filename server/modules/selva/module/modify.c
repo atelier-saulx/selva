@@ -329,7 +329,7 @@ static void selva_set_defer_alias_change_events(
     SELVA_SET_RMS_FOREACH(el, aliases) {
         RedisModuleString *alias_name = el->value_rms;
 
-        Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, alias_name);
+        SelvaSubscriptions_DeferAliasChangeEvents(ctx, hierarchy, alias_name);
     }
 }
 
@@ -395,7 +395,7 @@ static int add_set_values(
 
                 /* Add to the global aliases hash. */
                 if (alias_key) {
-                    Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
+                    SelvaSubscriptions_DeferAliasChangeEvents(ctx, hierarchy, ref);
 
                     update_alias(ctx, hierarchy, alias_key, node_id, ref);
                 }
@@ -440,7 +440,7 @@ static int add_set_values(
                     SelvaSet_DestroyElement(SelvaSet_Remove(objSet, el));
 
                     if (alias_key) {
-                        Selva_Subscriptions_DeferAliasChangeEvents(ctx, hierarchy, el);
+                        SelvaSubscriptions_DeferAliasChangeEvents(ctx, hierarchy, el);
                         RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, el, REDISMODULE_HASH_DELETE, NULL);
                     }
 

@@ -37,6 +37,11 @@
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
 #define SELVA_OBJECT_GETKEY_PARTIAL     0x4 /*!< Return a partial result, the last key found and the offset in the key_name_str. */
 
+/**
+ * These fields are excluded from Redis replies by default.
+ */
+#define SELVA_OBJECT_REPLY_HIDDEN_FIELDS SELVA_CREATED_AT_FIELD "\n" SELVA_UPDATED_AT_FIELD
+
 RB_HEAD(SelvaObjectKeys, SelvaObjectKey);
 
 struct SelvaObjectKey {
@@ -86,7 +91,7 @@ SELVA_OBJECT_POINTER_OPTS(default_ptr_opts);
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
 static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key, unsigned flags);
-static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, unsigned flags);
+static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, unsigned flags, const char *excluded);
 static void *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data);
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
@@ -2075,7 +2080,7 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
                 continue;
             }
 
-            replyWithObject(ctx, lang, o, flags);
+            replyWithObject(ctx, lang, o, flags, NULL);
         } while (!SVector_Done(&it));
 
         RedisModule_ReplySetArrayLength(ctx, n);
@@ -2134,7 +2139,7 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
 
                 RedisModule_ReplyWithNull(ctx);
             } else {
-                replyWithObject(ctx, lang, key->value, flags);
+                replyWithObject(ctx, lang, key->value, flags, NULL);
             }
         } else {
             RedisModule_ReplyWithNull(ctx);
@@ -2162,13 +2167,20 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
     }
 }
 
-static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, unsigned flags) {
+static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, unsigned flags, const char *excluded) {
     struct SelvaObjectKey *key;
     size_t n = 0;
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
+        const char *name_str = key->name;
+        const size_t name_len = key->name_len;
+
+        if (excluded && stringlist_searchn(excluded, name_str, name_len)) {
+            continue;
+        }
+
         RedisModule_ReplyWithStringBuffer(ctx, key->name, key->name_len);
         replyWithKeyValue(ctx, lang, key, flags);
 
@@ -2189,7 +2201,7 @@ int SelvaObject_ReplyWithObjectStr(
     int err;
 
     if (!key_name_str) {
-        replyWithObject(ctx, lang, obj, flags);
+        replyWithObject(ctx, lang, obj, flags, SELVA_OBJECT_REPLY_HIDDEN_FIELDS);
         return 0;
     }
 
@@ -2213,7 +2225,7 @@ int SelvaObject_ReplyWithObject(
         TO_STR(key_name);
         return SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len, flags);
     } else {
-        replyWithObject(ctx, lang, obj, flags);
+        replyWithObject(ctx, lang, obj, flags, SELVA_OBJECT_REPLY_HIDDEN_FIELDS);
         return 0;
     }
 }
