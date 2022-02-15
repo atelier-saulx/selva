@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stddef.h>
+#include <unistd.h>
 #include "cdefs.h"
 #include "config.h"
 #include "redismodule.h"
@@ -44,29 +45,51 @@ enum selva_op_repl_state {
     SELVA_OP_REPL_STATE_REPLICATE,  /*!< Value might have changed, replicate, reply with OK */
 };
 
+/**
+ * Struct type for replicating the automatic timestamps.
+ */
+struct replicate_ts {
+    int8_t created;
+    int8_t updated;
+    long long created_at;
+    long long updated_at;
+};
+
 SET_DECLARE(selva_onload, Selva_Onload);
 SET_DECLARE(selva_onunld, Selva_Onunload);
 
 SELVA_TRACE_HANDLE(cmd_modify);
 
+/**
+ * Get the replicate_ts struct.
+ */
+void get_replicate_ts(struct replicate_ts *rs, struct SelvaHierarchyNode *node, bool created, bool updated) {
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    rs->created = created ? 1 : 0;
+    rs->updated = updated ? 1 : 0;
+
+    if (created) {
+        (void)SelvaObject_GetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, &rs->created_at);
+    }
+    if (updated) {
+        (void)SelvaObject_GetLongLongStr(obj, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, &rs->updated_at);
+    }
+}
+
 /*
  * Replicate the selva.modify command.
  * This function depends on the argument order of selva.modify.
  */
-void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisModuleString **orig_argv) {
+void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisModuleString **orig_argv, struct replicate_ts *rs) {
     const int leading_args = 3; /* [cmd_name, key, flags] */
     const long long count = bitmap_popcount(replset);
     RedisModuleString **argv;
 
-    /*
-     * TODO REDISMODULE_CTX_FLAGS_REPLICATED would be more appropriate here but it's
-     * unclear whether it's available only in newer server versions.
-     */
-    if ((RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_SLAVE) || count == 0) {
+    if (count == 0 && !rs->created && !rs->updated) {
         return; /* Skip. */
     }
 
-    argv = RedisModule_PoolAlloc(ctx, ((size_t)((long long)leading_args + 3 * count)) * sizeof(RedisModuleString *));
+    argv = RedisModule_PoolAlloc(ctx, ((size_t)((long long)leading_args + 3 * count + (rs->created + rs->updated) * 3)) * sizeof(RedisModuleString *));
     if (!argv) {
         fprintf(stderr, "%s:%d: Replication error: %s\n",
                 __FILE__, __LINE__,
@@ -91,6 +114,29 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
         }
         i_arg_type += 3;
     }
+
+    if (rs->created) {
+        const size_t size = sizeof(rs->created_at);
+        char v[size];
+
+        memcpy(v, &rs->created_at, size);
+        argv[argc++] = RedisModule_CreateString(ctx, "3", 1);
+        argv[argc++] = RedisModule_CreateString(ctx, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1);
+        argv[argc++] = RedisModule_CreateString(ctx, v, size);
+    }
+    if (rs->updated) {
+        const size_t size = sizeof(rs->updated_at);
+        char v[size];
+
+        memcpy(v, &rs->updated_at, size);
+        argv[argc++] = RedisModule_CreateString(ctx, "3", 1);
+        argv[argc++] = RedisModule_CreateString(ctx, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1);
+        argv[argc++] = RedisModule_CreateString(ctx, v, size);
+    }
+
+#if DEBUG_MODIFY_REPLICATION_DELAY_NS > 0
+    usleep(DEBUG_MODIFY_REPLICATION_DELAY_NS);
+#endif
 
     RedisModule_ReplicateVerbatimArgs(ctx, argv, argc);
 }
@@ -724,7 +770,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_AutoMemory(ctx);
     SelvaHierarchy *hierarchy;
     RedisModuleString *id = NULL;
-    RedisModuleKey *id_key = NULL;
     SVECTOR_AUTOFREE(alias_query);
     bool created = false; /* Will be set if the node was created during this command. */
     bool updated = false;
@@ -1031,30 +1076,35 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
     }
 
+    if (updated && !created) {
+        /*
+         * If nodeId wasn't created by this command call but it was updated
+         * then we need to defer the updated trigger.
+         */
+        SelvaSubscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
 
-    if (updated) {
-        struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
-
-        if (!created) {
+        if (!(RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_REPLICATED)) {
+            struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
             const long long now = ts_now();
 
             /*
-             * If nodeId wasn't created by this command call but it was updated
-             * then we need to defer the updated trigger.
-             */
-            SelvaSubscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
-
-            /*
-             * If it was created then the field was already updated.
+             * If the node was created then the field was already updated by hierarchy.
+             * If the command was replicated then the master should send us the correct
+             * timestamp.
              */
             SelvaObject_SetLongLongStr(obj, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, now);
             SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1);
         }
     }
 
-    replicateModify(ctx, replset, argv);
+    if (RedisModule_GetContextFlags(ctx) & REDISMODULE_CTX_FLAGS_MASTER) {
+        struct replicate_ts replicate_ts;
+
+        get_replicate_ts(&replicate_ts, node, created, updated);
+        replicateModify(ctx, replset, argv, &replicate_ts);
+    }
+
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
-    RedisModule_CloseKey(id_key);
 
     return REDISMODULE_OK;
 }
