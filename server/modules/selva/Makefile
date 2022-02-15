@@ -36,7 +36,8 @@ OBJS := \
 	module/selva_set.o \
 	module/selva_trace.o \
 	module/selva_type.o \
-	module/subscriptions.o
+	module/subscriptions.o \
+	module/timestamp.o
 
 IDIR := $(patsubst %,-I%,$(INCLUDE_DIR))
 CFLAGS += $(IDIR) -include tunables.h \

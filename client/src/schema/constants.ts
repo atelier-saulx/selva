@@ -31,6 +31,12 @@ export const defaultFields: Record<string, FieldSchema> = {
     type: 'set',
     items: { type: 'string' },
   },
+  createdAt: {
+    type: 'timestamp',
+  },
+  updatedAt: {
+    type: 'timestamp',
+  },
 }
 
 export const rootDefaultFields: Record<string, FieldSchema> = {
@@ -45,5 +51,11 @@ export const rootDefaultFields: Record<string, FieldSchema> = {
   },
   descendants: {
     type: 'references',
+  },
+  createdAt: {
+    type: 'timestamp',
+  },
+  updatedAt: {
+    type: 'timestamp',
   },
 }

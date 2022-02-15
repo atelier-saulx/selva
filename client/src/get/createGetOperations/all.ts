@@ -69,6 +69,8 @@ const all = (
           key !== 'parents' &&
           key !== 'ancestors' &&
           key !== 'descendants' &&
+          key !== 'updatedAt' &&
+          key !== 'createdAt' &&
           typeSchema.fields[key].type !== 'reference' &&
           typeSchema.fields[key].type !== 'references'
         ) {

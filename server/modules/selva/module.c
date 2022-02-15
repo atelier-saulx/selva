@@ -1,7 +1,7 @@
 #define _GNU_SOURCE
 
 #include <math.h>
-#include <time.h>
+#include <stddef.h>
 #include "cdefs.h"
 #include "config.h"
 #include "redismodule.h"
@@ -15,6 +15,7 @@
 #include "errors.h"
 #include "async_task.h"
 #include "hierarchy.h"
+#include "timestamp.h"
 #include "modify.h"
 #include "rms.h"
 #include "selva_object.h"
@@ -25,15 +26,11 @@
 #define FLAG_NO_MERGE   0x02
 #define FLAG_CREATE     0x03
 #define FLAG_UPDATE     0x04
-#define FLAG_CREATED_AT 0x08
-#define FLAG_UPDATED_AT 0x10
 
 #define FISSET_NO_ROOT(m) (((m) & FLAG_NO_ROOT) == FLAG_NO_ROOT)
 #define FISSET_NO_MERGE(m) (((m) & FLAG_NO_MERGE) == FLAG_NO_MERGE)
 #define FISSET_CREATE(m) (((m) & FLAG_CREATE) == FLAG_CREATE)
 #define FISSET_UPDATE(m) (((m) & FLAG_UPDATE) == FLAG_UPDATE)
-#define FISSET_CREATED_AT(m) (((m) & FLAG_CREATED_AT) == FLAG_CREATED_AT)
-#define FISSET_UPDATED_AT(m) (((m) & FLAG_UPDATED_AT) == FLAG_UPDATED_AT)
 
 #define REPLY_WITH_ARG_TYPE_ERROR(v) \
     replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: %s", typeof_str(v))
@@ -125,8 +122,6 @@ static int parse_flags(const RedisModuleString *arg) {
         flags |= arg_str[i] == 'M' ? FLAG_NO_MERGE : 0;
         flags |= arg_str[i] == 'C' ? FLAG_CREATE : 0;
         flags |= arg_str[i] == 'U' ? FLAG_UPDATE : 0;
-        flags |= arg_str[i] == 'c' ? FLAG_CREATED_AT : 0;
-        flags |= arg_str[i] == 'u' ? FLAG_UPDATED_AT : 0;
     }
 
     return flags;
@@ -731,7 +726,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModuleString *id = NULL;
     RedisModuleKey *id_key = NULL;
     SVECTOR_AUTOFREE(alias_query);
-    int trigger_created = 0; /* Will be set to 1 if the node was created during this command. */
+    bool created = false; /* Will be set if the node was created during this command. */
+    bool updated = false;
     bool new_alias = false; /* Set if $alias will be creating new alias(es). */
     int err = 0;
 
@@ -834,7 +830,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         if (unlikely(!node)) {
             return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "A node that was just created was lost immediately");
         }
-        trigger_created = 1;
+        created = true;
     } else if (FISSET_CREATE(flags)) {
         /* if the specified id exists but $operation: 'insert' specified. */
         RedisModule_ReplyWithNull(ctx);
@@ -843,7 +839,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
 
-    if (!trigger_created && FISSET_NO_MERGE(flags)) {
+    if (!created && FISSET_NO_MERGE(flags)) {
         SelvaHierarchy_ClearNodeFields(SelvaHierarchy_GetNodeObject(node));
     }
 
@@ -864,7 +860,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     replset->nbits = nr_triplets;
     bitmap_erase(replset);
 
-    bool updated = false;
     int has_push = 0;
     int active_insert_idx = -1;
 
@@ -1036,30 +1031,24 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
     }
 
+
     if (updated) {
         struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
-        struct timespec ts;
 
-        clock_gettime(CLOCK_REALTIME, &ts);
-        const long long now = (long long)ts.tv_sec * 1000 + (long long)ts.tv_nsec / 1000000;
+        if (!created) {
+            const long long now = ts_now();
 
-        if (FISSET_UPDATED_AT(flags)) {
-            /* `updatedAt` is always updated on change. */
+            /*
+             * If nodeId wasn't created by this command call but it was updated
+             * then we need to defer the updated trigger.
+             */
+            SelvaSubscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
+
+            /*
+             * If it was created then the field was already updated.
+             */
             SelvaObject_SetLongLongStr(obj, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, now);
             SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1);
-        }
-
-        if (trigger_created) {
-            if (FISSET_CREATED_AT(flags)) {
-                SelvaObject_SetLongLongStr(obj, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, now);
-            }
-            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
-        } else {
-            /*
-             * If nodeId wasn't created by this command call then it was an
-             * update.
-             */
-            Selva_Subscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
         }
     }
 

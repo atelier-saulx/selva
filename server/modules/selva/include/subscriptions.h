@@ -228,7 +228,7 @@ Selva_SubscriptionMarkerId Selva_GenSubscriptionMarkerId(Selva_SubscriptionMarke
 /**
  * Init subscriptions data structures in the hierarchy.
  */
-int Selva_Subscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy);
+int SelvaSubscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy);
 
 /**
  * Destroy all data structures of the subscriptions subsystem and cancel all deferred events.
@@ -410,11 +410,11 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         const struct SelvaHierarchyNode *node,
         const char *field_str,
         size_t field_len);
-void Selva_Subscriptions_DeferAliasChangeEvents(
+void SelvaSubscriptions_DeferAliasChangeEvents(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct RedisModuleString *alias_name);
-void Selva_Subscriptions_DeferTriggerEvents(
+void SelvaSubscriptions_DeferTriggerEvents(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const struct SelvaHierarchyNode *node,

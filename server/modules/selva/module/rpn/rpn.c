@@ -13,6 +13,7 @@
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"
+#include "timestamp.h"
 #include "rpn.h"
 
 #define RPN_ASSERTS         0
@@ -1147,16 +1148,7 @@ static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, stru
 }
 
 static enum rpn_error rpn_op_get_clock_realtime(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
-    struct timespec t;
-    long long ts;
-
-    if (clock_gettime(CLOCK_REALTIME, &t)) {
-        return RPN_ERR_NOTSUP; /* RFE New error code? */
-    }
-
-    ts = t.tv_sec * 1000 + lround((double)t.tv_nsec / 1.0e6);
-
-    return push_int_result(ctx, ts);
+    return push_int_result(ctx, ts_now());
 }
 
 static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {

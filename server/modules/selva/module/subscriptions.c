@@ -427,7 +427,7 @@ static int SelvaSubscriptions_InitDeferredEvents(struct SelvaHierarchy *hierarch
            ? SELVA_SUBSCRIPTIONS_ENOMEM : 0;
 }
 
-int Selva_Subscriptions_InitHierarchy(SelvaHierarchy *hierarchy) {
+int SelvaSubscriptions_InitHierarchy(SelvaHierarchy *hierarchy) {
     int err = 0;
 
     RB_INIT(&hierarchy->subs.head);
@@ -1729,7 +1729,7 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
 /**
  * Defer alias events and wipeout markers of the subscriptions hit.
  */
-void Selva_Subscriptions_DeferAliasChangeEvents(
+void SelvaSubscriptions_DeferAliasChangeEvents(
         RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         RedisModuleString *alias_name) {
@@ -1775,7 +1775,7 @@ void Selva_Subscriptions_DeferAliasChangeEvents(
     }
 }
 
-void Selva_Subscriptions_DeferTriggerEvents(
+void SelvaSubscriptions_DeferTriggerEvents(
         RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const struct SelvaHierarchyNode *node,
