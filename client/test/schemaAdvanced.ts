@@ -76,17 +76,12 @@ test.serial('schemas - custom validation', async (t) => {
         },
       },
     })
-  } catch (err) {
-    console.error('????', err)
-  }
+  } catch (err) {}
 
-  // .validate
-  // .isValid({ $id: 'flap', nurp: 100 })
-  //
+  const info = []
+
   client.validator = (schema, type, path, value, lang) => {
-    // maybe but the type in there?
-    console.info('-->', type, path, value, lang)
-    // custom messages as well...
+    info.push([type, ...path])
     return true
   }
 
@@ -118,7 +113,7 @@ test.serial('schemas - custom validation', async (t) => {
     },
   })
 
-  // validate children
+  console.info(info)
 
   await wait(1000)
 
