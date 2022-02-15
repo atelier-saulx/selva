@@ -96,7 +96,7 @@ static struct EdgeFieldConstraint *create_constraint(const struct EdgeFieldDynCo
     p->flags = params->flags | EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC;
     memcpy(p->src_node_type, params->src_node_type, SELVA_NODE_TYPE_SIZE);
 
-    if (dst_node_types_str) {
+    if (dst_node_types_str && dst_node_types_len > 0) {
         memcpy(p->dst_node_types, dst_node_types_str, dst_node_types_len);
         p->dst_node_types[dst_node_types_len] = '\0';
         p->dst_node_types[dst_node_types_len + 1] = '\0';
@@ -209,7 +209,12 @@ static void rdb_save_src_node_type(struct RedisModuleIO *io, const Selva_NodeTyp
 }
 
 static void rdb_save_dst_node_types(struct RedisModuleIO *io, const char *types) {
-    RedisModule_SaveStringBuffer(io, types, strlen(types));
+    if (types) {
+        RedisModule_SaveStringBuffer(io, types, strlen(types));
+    } else {
+        RedisModule_SaveStringBuffer(io, "", 0);
+    }
+
 }
 
 /**
