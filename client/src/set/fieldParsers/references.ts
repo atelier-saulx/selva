@@ -1,10 +1,8 @@
 import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
-import { _set } from '../index'
 import { SetOptions } from '../types'
 import { getNestedSchema } from '../../get/utils'
 import { Schema, FieldSchemaReferences } from '../../schema'
-import parseSetObject from '../validate'
 import { verifiers } from './simple'
 import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
 
@@ -186,21 +184,32 @@ export default async (
   payload: SetOptions,
   result: (string | Buffer)[],
   fields: FieldSchemaReferences,
-  _type: string,
+  type: string,
   $lang?: string
 ): Promise<number> => {
   let noRoot = false
   const r: SetOptions = {}
   const isEmpty = (v: any) => !v || !v.length
 
+  let validate
+  if (client.validator) {
+    validate = (value: string[]) => {
+      if (!client.validator(schema, type, field.split('.'), value, $lang)) {
+        throw new Error('Invalid field "references" from custom validator')
+      }
+    }
+  }
+
   if (
     typeof payload === 'object' &&
     !Array.isArray(payload) &&
     payload !== null
   ) {
+    // VERIFY
+
     let hasKeys = false
     result[field] = {}
-    for (let k in payload) {
+    for (const k in payload) {
       if (k === '$add') {
         if (typeof payload[k] === 'object' && !Array.isArray(payload[k])) {
           r.$add = [payload[k]]
@@ -209,6 +218,8 @@ export default async (
           r.$add = payload[k]
           hasKeys = true
         }
+
+        validate(r.$add)
       } else if (k === '$delete') {
         if (payload.$delete === true) {
           r.delete_all = 1
@@ -225,6 +236,8 @@ export default async (
           r.$value = payload[k]
           hasKeys = true
         }
+
+        validate(r.$value)
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
           throw new Error(
@@ -299,6 +312,9 @@ export default async (
     } else {
       r = payload
     }
+
+    validate(payload)
+
     const $value = await toCArr(
       client,
       field,

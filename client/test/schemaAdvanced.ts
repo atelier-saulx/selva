@@ -13,6 +13,7 @@ test.serial('schemas - custom validation', async (t) => {
 
   try {
     await client.updateSchema({
+      languages: ['en'],
       types: {
         thing: {
           prefix: 'th',
@@ -26,6 +27,12 @@ test.serial('schemas - custom validation', async (t) => {
               items: {
                 type: 'string',
               },
+            },
+            t: {
+              type: 'text',
+            },
+            snurky: {
+              type: 'references',
             },
             obj: {
               type: 'object',
@@ -54,11 +61,13 @@ test.serial('schemas - custom validation', async (t) => {
   // .validate
   // .isValid({ $id: 'flap', nurp: 100 })
   //
-  client.validator = (schema, type, path, value) => {
-    console.info('yesVALIDATOPR', schema, type, path, value)
+  client.validator = (schema, type, path, value, lang) => {
+    console.info('yesVALIDATOPR', type, path, value, lang)
     // custom messages as well...
     return true
   }
+
+  const id = await client.set({ type: 'thing' })
 
   // high level validator
   await client.set({
@@ -70,8 +79,16 @@ test.serial('schemas - custom validation', async (t) => {
         snurk: 'hello',
       },
     },
+    t: {
+      en: 'flap',
+    },
     set: ['yes'],
+    children: {
+      $add: [id],
+    },
   })
+
+  // validate children
 
   await wait(1000)
 
