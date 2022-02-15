@@ -7,7 +7,8 @@ import { wait, validateFieldName } from '../util'
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
 type SchemaMutations = {
-  type: 'field'
+  mutation: 'field'
+  type: string
   path: string[]
   old: FieldSchema
   new: FieldSchema
@@ -116,6 +117,7 @@ export function newSchemaDefinition(
           `root.${fieldName}`,
           oldSchema.rootType.fields[fieldName],
           newSchema.rootType.fields[fieldName],
+          'root',
           mutations
         )
       } else {
@@ -185,6 +187,7 @@ function newTypeDefinition(
         `${fieldName}`,
         oldType.fields[fieldName],
         newType.fields[fieldName],
+        typeName,
         mutations
       )
     } else {
@@ -207,24 +210,19 @@ function newFieldDefinition(
   fieldPath: string,
   oldField: FieldSchema,
   newField: FieldSchema,
+  typeName: string,
   mutations: SchemaMutations
 ): FieldSchema {
   // herew we want to return
 
   if (oldField.type !== newField.type) {
     mutations.push({
-      type: 'field',
-
+      mutation: 'field',
+      type: typeName, // add type
       path: fieldPath.split('.'),
-
       old: oldField,
-
       new: newField,
     })
-
-    // throw new Error(
-    //   `Path ${fieldPath} has mismatching types, trying to change ${oldField.type} to ${newField.type}`
-    // )
   }
 
   if (
@@ -238,6 +236,7 @@ function newFieldDefinition(
           `${fieldPath}.${fieldName}`,
           oldField.properties[fieldName],
           (<any>newField).properties[fieldName],
+          typeName,
           mutations
         )
       } else {
@@ -269,11 +268,15 @@ function newFieldDefinition(
     (oldField.type === 'set' || oldField.type === 'array') &&
     oldField.items.type !== (<any>newField).items.type
   ) {
-    throw new Error(
-      `Path ${fieldPath} has mismatching types, trying to change collection with type ${
-        oldField.items.type
-      } to type ${(<any>newField).items.type}`
-    )
+    // add mutation
+
+    mutations.push({
+      mutation: 'field',
+      path: fieldPath.split('.'),
+      type: typeName,
+      old: oldField,
+      new: newField,
+    })
   }
 
   if (!(<any>newField).search) {
@@ -309,7 +312,19 @@ export async function updateSchema(
   console.info('MUTATIONS--->', mutations)
 
   if (mutations.length) {
-    throw new Error(JSON.stringify(mutations))
+    let str = ''
+
+    for (const mutation of mutations) {
+      str += `\n    Change type "${mutation.type}", field "${mutation.path.join(
+        '.'
+      )}" from ${mutation.old.type} to ${mutation.new.type}`
+    }
+
+    throw new Error(
+      `Update schema got ${mutations.length} changed field${
+        mutations.length > 1 ? 's' : ''
+      }${str}`
+    )
   }
 
   try {
