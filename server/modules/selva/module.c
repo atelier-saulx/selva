@@ -116,20 +116,22 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
     }
 
     if (rs->created) {
+        const char op[2] = { SELVA_MODIFY_ARG_LONGLONG, '\0' };
         const size_t size = sizeof(rs->created_at);
         char v[size];
 
         memcpy(v, &rs->created_at, size);
-        argv[argc++] = RedisModule_CreateString(ctx, "3", 1);
+        argv[argc++] = RedisModule_CreateString(ctx, op, 1);
         argv[argc++] = RedisModule_CreateString(ctx, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1);
         argv[argc++] = RedisModule_CreateString(ctx, v, size);
     }
     if (rs->updated) {
+        const char op[2] = { SELVA_MODIFY_ARG_LONGLONG, '\0' };
         const size_t size = sizeof(rs->updated_at);
         char v[size];
 
         memcpy(v, &rs->updated_at, size);
-        argv[argc++] = RedisModule_CreateString(ctx, "3", 1);
+        argv[argc++] = RedisModule_CreateString(ctx, op, 1);
         argv[argc++] = RedisModule_CreateString(ctx, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1);
         argv[argc++] = RedisModule_CreateString(ctx, v, size);
     }
