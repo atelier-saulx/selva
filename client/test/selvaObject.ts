@@ -97,7 +97,7 @@ test.serial('get all', async (t) => {
 test.serial('obj len', async (t) => {
   const client = connect({ port })
 
-  t.deepEqual(await client.redis.selva_object_len('maTest0001'), 3)
+  t.deepEqual(await client.redis.selva_object_len('maTest0001'), 5)
 })
 
 test.serial('string len', async (t) => {
