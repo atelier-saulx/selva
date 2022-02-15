@@ -9,74 +9,8 @@ import {
   longLongDef,
   doubleDef,
 } from '../modifyDataRecords'
+import * as verifiers from '@saulx/validators'
 
-// add these verifiers in a package e.g. saulx/validators
-const isUrlRe =
-  /^((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)$/i
-
-const validURL = (str: string): boolean => {
-  return isUrlRe.test(str)
-}
-
-/*
- | 'id'
-  | 'digest'
-  | 'timestamp'
-  | 'url'
-  | 'email'
-  | 'phone'
-  | 'geo' - still missing
-  | 'type'
-*/
-
-export const verifiers = {
-  digest: (payload: string) => {
-    return typeof payload === 'string'
-  },
-  string: (payload: string) => {
-    return typeof payload === 'string'
-  },
-  phone: (payload: string) => {
-    // phone is wrong
-    return typeof payload === 'string' && payload.length < 30
-  },
-  timestamp: (payload: 'now' | number) => {
-    return (
-      payload === 'now' ||
-      (typeof payload === 'number' && Number.isInteger(payload))
-    )
-  },
-  url: (payload: string) => {
-    return typeof payload === 'string' && validURL(payload)
-  },
-  email: (payload: string) => {
-    const re =
-      typeof payload === 'string' &&
-      /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-    return re.test(payload.toLowerCase())
-  },
-  number: (payload: number) => {
-    return typeof payload === 'number' && !isNaN(payload)
-  },
-  boolean: (payload: boolean) => {
-    return typeof payload === 'boolean'
-  },
-  float: (payload: number) => {
-    return typeof payload === 'number' && !isNaN(payload)
-  },
-  int: (payload: number) => {
-    return typeof payload === 'number'
-  },
-  type: (payload: string) => {
-    return typeof payload === 'string'
-  },
-  id: (payload: string) => {
-    return typeof payload === 'string' && payload.length < 20
-  },
-}
-
-// maybe need to make this configurable as well...
-// also need to make this accessable
 const converters = {
   digest,
   timestamp: (payload: 'now' | number): Buffer =>

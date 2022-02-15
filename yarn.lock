@@ -205,6 +205,11 @@
   dependencies:
     is-plain-obj "^3.0.0"
 
+"@saulx/validators@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@saulx/validators/-/validators-1.0.0.tgz#203438fdf474c4980b4dc45f7d4860463a6e1534"
+  integrity sha512-aorh0mJMrUybk1R6mbXO5orL3TIN+MRoGj+sSNYwPI6D/a1FDxaElN6uUzA/wN1/TYdxzKPZ6C812r+iS7g6Vg==
+
 "@sindresorhus/fnv1a@^2.0.1":
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@sindresorhus/fnv1a/-/fnv1a-2.0.1.tgz#2aefdfa7eb5b7f29a7936978218e986c70c603fc"
