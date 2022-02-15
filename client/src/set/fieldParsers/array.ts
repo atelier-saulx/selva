@@ -95,6 +95,14 @@ export default async (
   type: string,
   $lang?: string
 ): Promise<number> => {
+  // check where validation goes wrong for arrays...
+  if (
+    client.validator &&
+    !client.validator(schema, type, field.split('.'), payload, $lang)
+  ) {
+    throw new Error('Incorrect payload for "array" from custom validator')
+  }
+
   const arr = payload
   if (!Array.isArray(arr)) {
     if (payload.$delete === true) {

@@ -28,6 +28,16 @@ test.serial('schemas - custom validation', async (t) => {
                 type: 'string',
               },
             },
+            list: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  x: { type: 'number' },
+                  y: { type: 'number' },
+                },
+              },
+            },
             t: {
               type: 'text',
             },
@@ -86,6 +96,12 @@ test.serial('schemas - custom validation', async (t) => {
   await client.set({
     type: 'thing',
     image: 'yes',
+    list: [
+      {
+        x: 1,
+        y: 1,
+      },
+    ],
     flara: id,
     obj: {
       flap: 'x',
