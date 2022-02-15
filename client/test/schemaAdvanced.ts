@@ -80,10 +80,10 @@ test.serial('schemas - custom validation', async (t) => {
 
   const info = []
 
-  client.validator = (schema, type, path, value, lang) => {
+  client.setCustomValidator((schema, type, path, value, lang) => {
     info.push([type, ...path])
     return true
-  }
+  })
 
   const id = await client.set({ type: 'thing' })
 

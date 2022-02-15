@@ -29,21 +29,13 @@ import id from './id'
 import { DeleteOptions, deleteItem } from './delete'
 import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
-
 import { waitUntilEvent } from './util'
-
 import hardDisconnect from './hardDisconnect'
-
 import { connections, Connection, createConnection } from './connection'
-
 import { Observable, createObservable } from './observable'
-
 import connectRegistry from './connectRegistry'
-
 import destroy from './destroy'
-
 import { v4 as uuidv4 } from 'uuid'
-
 import getServer from './getServer'
 import { ObservableOptions, ObsSettings } from './observable/types'
 import { SetMetaResponse } from './set/types'
@@ -67,6 +59,36 @@ export class SelvaClient extends EventEmitter {
   }
 
   public validator: Validator
+
+  public setCustomValidator(validator: Validator) {
+    this.validator = (
+      schema: Schema,
+      type: string,
+      path: string[],
+      value: any,
+      language: string
+    ) => {
+      let pCopied = false
+      for (let i = 0; i < path.length; i++) {
+        if (
+          typeof path[i] === 'string' &&
+          path[i].includes('[') &&
+          /\[[\d]+\]/.test(path[i])
+        ) {
+          if (!pCopied) {
+            path = [...path]
+            pCopied = true
+          }
+          const x = path[i].split('[')
+          path[i] = x[0]
+          // @ts-ignore
+          path.splice(i + 1, 0, Number(x[1].slice(0, -1)))
+          i++
+        }
+      }
+      return validator(schema, type, path, value, language)
+    }
+  }
 
   public observables: Map<string, Observable>
 
