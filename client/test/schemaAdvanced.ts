@@ -155,13 +155,33 @@ test.only('schemas - hard override', async (t) => {
           fields: {
             image: {
               type: 'string',
-              meta: 'image',
             },
           },
         },
       },
     })
-  } catch (err) {}
+  } catch (err) {
+    console.info('--', err)
+  }
+
+  await wait(1000)
+
+  try {
+    await client.updateSchema({
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            image: {
+              type: 'number',
+            },
+          },
+        },
+      },
+    })
+  } catch (err) {
+    console.info('--', err)
+  }
 
   await wait(1000)
 

@@ -6,7 +6,18 @@ import { wait, validateFieldName } from '../util'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
+type SchemaMutations = {
+  type: 'field'
+  path: string[]
+  old: FieldSchema
+  new: FieldSchema
+}[]
+
+// just return whats different
+
 function validateNewFields(obj: TypeSchema | FieldSchema, path: string) {
+  // validate array?
+
   if ((<any>obj).type) {
     const field = <FieldSchema>obj
     if (
@@ -14,6 +25,7 @@ function validateNewFields(obj: TypeSchema | FieldSchema, path: string) {
       (field.type === 'json' && field.properties)
     ) {
       for (const propName in field.properties) {
+        // this is fine to throw
         validateFieldName(path, propName)
         validateNewFields(field.properties[propName], `${path}.${propName}`)
       }
@@ -39,10 +51,18 @@ function validateNewFields(obj: TypeSchema | FieldSchema, path: string) {
   }
 }
 
+// here we have to do that it just collects the data of what changed (instead of the error)
+// then you get the option to say return whats changed and then you can decide to force it
+
+// think about mutate in between? before updating the schema :/
+// lock db while migrating :/
+
 export function newSchemaDefinition(
   oldSchema: Schema,
   newSchema: Schema
-): Schema {
+): { schema: Schema; mutations: SchemaMutations } {
+  const mutations: SchemaMutations = []
+
   const schema: Schema = {
     sha: oldSchema.sha,
     rootType: oldSchema.rootType,
@@ -58,7 +78,8 @@ export function newSchemaDefinition(
       schema.types[typeName] = newTypeDefinition(
         typeName,
         oldSchema.types[typeName],
-        newSchema.types[typeName]
+        newSchema.types[typeName],
+        mutations
       )
     } else {
       schema.types[typeName] = oldSchema.types[typeName]
@@ -94,7 +115,8 @@ export function newSchemaDefinition(
         typeDef.fields[fieldName] = newFieldDefinition(
           `root.${fieldName}`,
           oldSchema.rootType.fields[fieldName],
-          newSchema.rootType.fields[fieldName]
+          newSchema.rootType.fields[fieldName],
+          mutations
         )
       } else {
         typeDef.fields[fieldName] = oldSchema.rootType.fields[fieldName]
@@ -112,7 +134,7 @@ export function newSchemaDefinition(
     schema.rootType = oldSchema.rootType
   }
 
-  return schema
+  return { schema, mutations }
 }
 
 function newLanguages(oldLangs: string[], newLangs: string[]): string[] {
@@ -135,7 +157,8 @@ function newLanguages(oldLangs: string[], newLangs: string[]): string[] {
 function newTypeDefinition(
   typeName: string,
   oldType: TypeSchema,
-  newType: TypeSchema
+  newType: TypeSchema,
+  mutations: SchemaMutations
 ): TypeSchema {
   const typeDef: TypeSchema = {
     fields: {},
@@ -161,7 +184,8 @@ function newTypeDefinition(
       typeDef.fields[fieldName] = newFieldDefinition(
         `${fieldName}`,
         oldType.fields[fieldName],
-        newType.fields[fieldName]
+        newType.fields[fieldName],
+        mutations
       )
     } else {
       typeDef.fields[fieldName] = oldType.fields[fieldName]
@@ -182,12 +206,25 @@ function newTypeDefinition(
 function newFieldDefinition(
   fieldPath: string,
   oldField: FieldSchema,
-  newField: FieldSchema
+  newField: FieldSchema,
+  mutations: SchemaMutations
 ): FieldSchema {
+  // herew we want to return
+
   if (oldField.type !== newField.type) {
-    throw new Error(
-      `Path ${fieldPath} has mismatching types, trying to change ${oldField.type} to ${newField.type}`
-    )
+    mutations.push({
+      type: 'field',
+
+      path: fieldPath.split('.'),
+
+      old: oldField,
+
+      new: newField,
+    })
+
+    // throw new Error(
+    //   `Path ${fieldPath} has mismatching types, trying to change ${oldField.type} to ${newField.type}`
+    // )
   }
 
   if (
@@ -200,7 +237,8 @@ function newFieldDefinition(
         props[fieldName] = newFieldDefinition(
           `${fieldPath}.${fieldName}`,
           oldField.properties[fieldName],
-          (<any>newField).properties[fieldName]
+          (<any>newField).properties[fieldName],
+          mutations
         )
       } else {
         props[fieldName] = oldField.properties[fieldName]
@@ -263,10 +301,16 @@ export async function updateSchema(
     props.types = {}
   }
 
-  const newSchema = newSchemaDefinition(
+  const { schema: newSchema, mutations } = newSchemaDefinition(
     (await client.getSchema(selector.name)).schema,
     <Schema>props
   )
+
+  console.info('MUTATIONS--->', mutations)
+
+  if (mutations.length) {
+    throw new Error(JSON.stringify(mutations))
+  }
 
   try {
     const updated = await client.redis.evalsha(
