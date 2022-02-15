@@ -75,11 +75,11 @@ export default async (
     payload = { [$lang]: payload }
   }
 
-  if (client.validator) {
-    if (!client.validator(schema, type, field.split('.'), payload, $lang)) {
-      throw new Error('Invalid field "text" from custom validator')
-    }
-    verify(payload, false, lang)
+  if (
+    client.validator &&
+    !client.validator(schema, type, field.split('.'), payload, $lang)
+  ) {
+    throw new Error('Incorrect payload for "text" from custom validator')
   }
 
   verify(payload, false, lang)

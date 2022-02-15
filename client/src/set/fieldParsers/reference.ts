@@ -1,9 +1,8 @@
 import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
-import parseSetObject from '../validate'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaReferences } from '../../schema'
-import { getTypeFromId, getNestedSchema } from '../../get/utils'
+import { getNestedSchema } from '../../get/utils'
 import { verifiers } from './simple'
 import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
 
@@ -24,14 +23,15 @@ export default async (
   payload: SetOptions,
   result: (string | Buffer)[],
   fields: FieldSchemaReferences,
-  _type: string,
+  type: string,
   $lang?: string
 ): Promise<number> => {
   let id
+
   if (typeof payload === 'object') {
     if (Array.isArray(payload)) {
       throw new Error(
-        `Wrong payload for reference ${JSON.stringify(
+        `Incorrect payload for reference ${JSON.stringify(
           payload
         )}, should be an object or id string`
       )
@@ -48,6 +48,15 @@ export default async (
 
     if ((<any>result).$db) {
       payload.$db = (<any>result).$db
+    }
+
+    if (
+      client.validator &&
+      !client.validator(schema, type, field.split('.'), payload, $lang)
+    ) {
+      throw new Error(
+        'Incorrect payload for "reference" (object) from custom validator'
+      )
     }
 
     if (!payload.$id && payload.$alias) {
@@ -75,16 +84,25 @@ export default async (
   } else {
     if (typeof payload !== 'string') {
       throw new Error(
-        `Wrong payload for reference ${JSON.stringify(
+        `Incorrect payload for reference ${JSON.stringify(
           payload
         )}, should be an object or id string`
       )
     }
-
+    if (
+      client.validator &&
+      !client.validator(schema, type, field.split('.'), payload, $lang)
+    ) {
+      throw new Error(
+        'Incorrect payload for "reference" (id) from custom validator'
+      )
+    }
     id = verifySimple(payload)
   }
 
   if (fields.bidirectional) {
+    // ADD VERIFY
+
     const fromField = fields.bidirectional.fromField
     const targetField = getNestedSchema(schema, id, fromField)
     if (
@@ -93,7 +111,7 @@ export default async (
       !targetField.bidirectional
     ) {
       throw new Error(
-        `Wrong payload for reference ${JSON.stringify(
+        `Incorrect payload for reference ${JSON.stringify(
           payload
         )}, bidirectional reference requires a bidirectional target field ${fromField} for id ${id}`
       )

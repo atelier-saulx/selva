@@ -21,6 +21,14 @@ export default async (
     result.push('7', field, 'O')
     return 0
   }
+
+  if (
+    client.validator &&
+    !client.validator(schema, type, field.split('.'), payload, $lang)
+  ) {
+    throw new Error('Incorrect payload for "object" from custom validator')
+  }
+
   if (payload.$merge === false) {
     result.push('7', field, 'O')
   }
@@ -36,7 +44,7 @@ export default async (
       } else if (key === '$delete') {
         // NOP - dead branch
       } else {
-        throw new Error(`Wrong option on object ${key}`)
+        throw new Error(`Incorrect option on object ${key}`)
       }
     } else if (!fields.properties[key]) {
       throw new Error(`Cannot find field ${key} in ${type} for object`)

@@ -10,6 +10,7 @@ import {
   doubleDef,
 } from '../modifyDataRecords'
 
+// add these verifiers in a package e.g. saulx/validators
 const isUrlRe =
   /^((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)$/i
 
@@ -50,6 +51,7 @@ export const verifiers = {
   },
   email: (payload: string) => {
     const re =
+      typeof payload === 'string' &&
       /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
     return re.test(payload.toLowerCase())
   },
@@ -121,18 +123,6 @@ for (const key in verifiers) {
     const keyname: string = field
     let value: string | null = null
 
-    let wrappedVerify = verify
-
-    if (client.validator) {
-      wrappedVerify = (p) => {
-        // language?
-        if (!client.validator(schema, type, field.split('.'), payload, lang)) {
-          return false
-        }
-        return verify(p)
-      }
-    }
-
     if (!noOptions && typeof payload === 'object') {
       let hasKeys = false
       for (const k in payload) {
@@ -146,7 +136,17 @@ for (const key in verifiers) {
 
             value = `___selva_$ref:${payload[k].$ref}`
           } else {
-            if (!wrappedVerify(payload[k])) {
+            if (
+              client.validator
+                ? client.validator(
+                    schema,
+                    type,
+                    field.split('.'),
+                    payload[k],
+                    lang
+                  ) && verify(payload[k])
+                : verify(payload[k])
+            ) {
               throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
             } else if (
               converter &&
@@ -198,7 +198,17 @@ for (const key in verifiers) {
       }
 
       if (payload.$default) {
-        if (wrappedVerify(payload.$default)) {
+        if (
+          client.validator
+            ? client.validator(
+                schema,
+                type,
+                field.split('.'),
+                payload.$default,
+                lang
+              ) && verify(payload.$default)
+            : verify(payload.$default)
+        ) {
           if (converter) {
             value = converter(payload.$default)
           } else {
@@ -223,7 +233,12 @@ for (const key in verifiers) {
       if (!hasKeys) {
         throw new Error(`Incorrect payload empty object for field ${field}`)
       }
-    } else if (wrappedVerify(payload)) {
+    } else if (
+      client.validator
+        ? client.validator(schema, type, field.split('.'), payload, lang) &&
+          verify(payload)
+        : verify(payload)
+    ) {
       if (converter) {
         value = converter(payload)
       } else {

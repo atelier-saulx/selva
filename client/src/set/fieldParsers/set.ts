@@ -48,21 +48,6 @@ export default async (
     throw new Error(`Cannot find parser for ${fieldType}`)
   }
 
-  let verifyWrapped = verifySimple
-
-  if (client.validator) {
-    // need to maybe cahce these (else what the point doing it here)
-    verifyWrapped = async (
-      payload: SetOptions,
-      verify: (p: SetOptions) => Promise<any>
-    ): Promise<any> => {
-      if (!client.validator(schema, type, field.split('.'), payload, lang)) {
-        throw new Error('Invalid field "set" from custom validator')
-      }
-      return verifySimple(payload, verify)
-    }
-  }
-
   // 'string' is just a guess here if we don't know the type but it's probably the right one
   // @ts-ignore
   const elementType = typeSchema.fields[field]?.items?.type || 'string'
@@ -123,14 +108,22 @@ export default async (
           // TODO: do these modify commands recursively and then populate the ids here
           // r.$add = [await parseSetObject(client, payload[k], schema)]
         } else {
-          r.$add = await verifyWrapped(payload[k], verify)
+          if (
+            client.validator &&
+            !client.validator(schema, type, field.split('.'), r.$add, lang)
+          ) {
+            throw new Error(
+              'Wrong payload for "set.$add" from custom validator'
+            )
+          }
+          r.$add = await verifySimple(payload[k], verify)
         }
       } else if (k === '$delete') {
         if (payload.$delete === true) {
           // unsets are allowed
           r.delete_all = 1
         } else {
-          r.$delete = await verifyWrapped(payload[k], verify)
+          r.$delete = await verifySimple(payload[k], verify)
         }
       } else {
         throw new Error(`Wrong key for set ${k}`)
@@ -149,7 +142,13 @@ export default async (
       })
     )
   } else {
-    const value = await verifyWrapped(payload, verify)
+    if (
+      client.validator &&
+      !client.validator(schema, type, field.split('.'), payload, lang)
+    ) {
+      throw new Error('Wrong payload for "set" from custom validator')
+    }
+    const value = await verifySimple(payload, verify)
     result.push(
       '5',
       field,

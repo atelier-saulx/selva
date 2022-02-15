@@ -1,6 +1,6 @@
 import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
-import { Schema, TypeSchema, FieldSchemaArrayLike } from '../../schema'
+import { Schema, FieldSchemaArrayLike } from '../../schema'
 import fieldParsers from '.'
 
 const ITEM_TYPES: Record<string, number> = {
@@ -74,6 +74,16 @@ async function sendInsert(
     $lang
   )
 }
+
+// add validation for array (missing)
+/*
+if (
+    client.validator &&
+    !client.validator(schema, type, field.split('.'), payload, $lang)
+  ) {
+    throw new Error('Incorrect payload for "json" from custom validator')
+  }
+*/
 
 export default async (
   client: SelvaClient,

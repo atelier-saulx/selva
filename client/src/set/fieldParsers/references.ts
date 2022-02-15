@@ -152,6 +152,8 @@ const toCArr = async (
   }
 
   if (fields.bidirectional) {
+    // ADD VERIFY
+
     const fromField = fields.bidirectional.fromField
 
     for (const id of ids) {
@@ -191,22 +193,11 @@ export default async (
   const r: SetOptions = {}
   const isEmpty = (v: any) => !v || !v.length
 
-  let validate
-  if (client.validator) {
-    validate = (value: string[]) => {
-      if (!client.validator(schema, type, field.split('.'), value, $lang)) {
-        throw new Error('Invalid field "references" from custom validator')
-      }
-    }
-  }
-
   if (
     typeof payload === 'object' &&
     !Array.isArray(payload) &&
     payload !== null
   ) {
-    // VERIFY
-
     let hasKeys = false
     result[field] = {}
     for (const k in payload) {
@@ -219,7 +210,14 @@ export default async (
           hasKeys = true
         }
 
-        validate(r.$add)
+        if (
+          client.validator &&
+          !client.validator(schema, type, field.split('.'), r.$add, $lang)
+        ) {
+          throw new Error(
+            'Incorrect payload for "references.$add" from custom validator'
+          )
+        }
       } else if (k === '$delete') {
         if (payload.$delete === true) {
           r.delete_all = 1
@@ -237,18 +235,27 @@ export default async (
           hasKeys = true
         }
 
-        validate(r.$value)
+        if (
+          client.validator &&
+          !client.validator(schema, type, field.split('.'), r.$value, $lang)
+        ) {
+          throw new Error(
+            'Incorrect payload for "references.$value" from custom validator'
+          )
+        }
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
           throw new Error(
-            `Wrong payload for references ${JSON.stringify(payload)}`
+            `Incorrect payload for references ${JSON.stringify(payload)}`
           )
         }
         r.$hierarchy = payload[k]
         hasKeys = true
       } else if (k === '$noRoot') {
         if (typeof payload[k] !== 'boolean') {
-          throw new Error(`Wrong payload type for $noRoot in references ${k}`)
+          throw new Error(
+            `Incorrect payload type for $noRoot in references ${k}`
+          )
         }
 
         r.$noRoot = payload[k]
@@ -259,7 +266,7 @@ export default async (
       } else if (k === '$_itemCount') {
         // ignore this internal field if setting with a split payload
       } else {
-        throw new Error(`Wrong key for references ${k}`)
+        throw new Error(`Incorrect key for references ${k}`)
       }
     }
 
@@ -313,7 +320,12 @@ export default async (
       r = payload
     }
 
-    validate(payload)
+    if (
+      client.validator &&
+      !client.validator(schema, type, field.split('.'), payload, $lang)
+    ) {
+      throw new Error('Invalid field "references" from custom validator')
+    }
 
     const $value = await toCArr(
       client,
