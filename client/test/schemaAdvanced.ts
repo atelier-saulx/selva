@@ -137,8 +137,4 @@ test.serial('schemas - custom validation', async (t) => {
   await client.destroy()
   await server.destroy()
   await t.connectionsAreEmpty()
-
-  t.pass('yes')
 })
-
-// test.serial('schemas - updates and migrations', async (t) => {
