@@ -113,7 +113,24 @@ test.serial('schemas - custom validation', async (t) => {
     },
   })
 
-  console.info(info)
+  t.deepEqual(info, [
+    ['thing', 'type'],
+    ['thing', 'type'],
+    ['thing', 'image'],
+    ['thing', 'list'],
+    ['thing', 'list', 0],
+    ['thing', 'list', 0, 'x'],
+    ['thing', 'list', 0, 'y'],
+    ['thing', 'flara'],
+    ['thing', 'obj'],
+    ['thing', 'obj', 'flap'],
+    ['thing', 'obj', 'x'],
+    ['thing', 'obj', 'x', 'snurk'],
+    ['thing', 't'],
+    ['thing', 'set'],
+    ['thing', 'value'],
+    ['thing', 'children'],
+  ])
 
   await wait(1000)
 
