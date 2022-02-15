@@ -138,3 +138,36 @@ test.serial('schemas - custom validation', async (t) => {
   await server.destroy()
   await t.connectionsAreEmpty()
 })
+
+test.only('schemas - hard override', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+
+  try {
+    await client.updateSchema({
+      languages: ['en'],
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            image: {
+              type: 'string',
+              meta: 'image',
+            },
+          },
+        },
+      },
+    })
+  } catch (err) {}
+
+  await wait(1000)
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})

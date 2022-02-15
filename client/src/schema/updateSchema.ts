@@ -1,13 +1,6 @@
 import { SelvaClient } from '../'
 import { SCRIPT } from '../constants'
-import {
-  Schema,
-  TypeSchema,
-  FieldSchema,
-  rootDefaultFields,
-  SchemaOptions,
-  FIELD_TYPES,
-} from '.'
+import { Schema, TypeSchema, FieldSchema, SchemaOptions, FIELD_TYPES } from '.'
 import { ServerSelector } from '../types'
 import { wait, validateFieldName } from '../util'
 
@@ -258,6 +251,7 @@ function newFieldDefinition(
   return newField
 }
 
+// allow overwriting schemas
 export async function updateSchema(
   client: SelvaClient,
   props: SchemaOptions,
