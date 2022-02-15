@@ -3,7 +3,7 @@ import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { getNestedSchema } from '../../get/utils'
 import { Schema, FieldSchemaReferences } from '../../schema'
-import { verifiers } from './simple'
+import * as verifiers from '@saulx/validators'
 import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
 
 const id = verifiers.id

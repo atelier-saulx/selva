@@ -2,7 +2,7 @@ import { SetOptions } from './types'
 import { Schema, TypeSchema } from '../schema'
 import { SelvaClient } from '..'
 import fieldParsers from './fieldParsers'
-import { verifiers } from './fieldParsers/simple'
+import * as verifiers from '@saulx/validators'
 
 const ALLOWED_OPTIONS_DOCS = `
 Record identification (if neither $id or $alias is provided, 'root' id is assumed)
