@@ -80,7 +80,7 @@ void get_replicate_ts(struct replicate_ts *rs, struct SelvaHierarchyNode *node, 
  * Replicate the selva.modify command.
  * This function depends on the argument order of selva.modify.
  */
-void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisModuleString **orig_argv, struct replicate_ts *rs) {
+void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisModuleString **orig_argv, const struct replicate_ts *rs) {
     const int leading_args = 3; /* [cmd_name, key, flags] */
     const long long count = bitmap_popcount(replset);
     RedisModuleString **argv;
