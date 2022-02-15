@@ -69,7 +69,7 @@
     "typescript-to-lua": "^0.30.1"
   },
   "dependencies": {
-    "@saulx/validators": "^1.0.0",
+    "@saulx/validators": "^1.0.1",
     "pg": "8.7.1",
     "pg-native": "3.0.0",
     "squel": "^5.13.0",
