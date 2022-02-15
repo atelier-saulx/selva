@@ -37,11 +37,6 @@
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
 #define SELVA_OBJECT_GETKEY_PARTIAL     0x4 /*!< Return a partial result, the last key found and the offset in the key_name_str. */
 
-/**
- * These fields are excluded from Redis replies by default.
- */
-#define SELVA_OBJECT_REPLY_HIDDEN_FIELDS SELVA_CREATED_AT_FIELD "\n" SELVA_UPDATED_AT_FIELD
-
 RB_HEAD(SelvaObjectKeys, SelvaObjectKey);
 
 struct SelvaObjectKey {
@@ -60,7 +55,7 @@ struct SelvaObjectKey {
         struct SelvaSet selva_set; /*!< SELVA_OBJECT_SET */
         SVector *array; /*!< SELVA_OBJECT_ARRAY */
     };
-    char name[0]; /*!< Name of the key. */
+    char name[0]; /*!< Name of the key. nul terminated. */
 };
 
 struct SelvaObject {
@@ -2201,7 +2196,7 @@ int SelvaObject_ReplyWithObjectStr(
     int err;
 
     if (!key_name_str) {
-        replyWithObject(ctx, lang, obj, flags, SELVA_OBJECT_REPLY_HIDDEN_FIELDS);
+        replyWithObject(ctx, lang, obj, flags, SELVA_HIDDEN_FIELDS);
         return 0;
     }
 
@@ -2225,7 +2220,7 @@ int SelvaObject_ReplyWithObject(
         TO_STR(key_name);
         return SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len, flags);
     } else {
-        replyWithObject(ctx, lang, obj, flags, SELVA_OBJECT_REPLY_HIDDEN_FIELDS);
+        replyWithObject(ctx, lang, obj, flags, SELVA_HIDDEN_FIELDS);
         return 0;
     }
 }

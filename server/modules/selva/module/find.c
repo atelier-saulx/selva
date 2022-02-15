@@ -325,12 +325,7 @@ static int send_all_node_data_fields(
         int res;
 
         field = RedisModule_CreateString(ctx, field_name_str, field_name_len);
-        if (!field) {
-            /*
-             * Resist the devil, and he will flee from you.
-             * We are probably going to crash soon and there is no way out at
-             * this point, so let's just ignore this ever happened.
-             */
+        if (!field || stringlist_searchn(SELVA_HIDDEN_FIELDS, field_name_str, field_name_len)) {
             continue;
         }
 

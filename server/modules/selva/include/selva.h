@@ -38,6 +38,11 @@
  * @}
  */
 
+/**
+ * These fields are excluded from Redis replies by default.
+ */
+#define SELVA_HIDDEN_FIELDS SELVA_CREATED_AT_FIELD "\n" SELVA_UPDATED_AT_FIELD
+
 /*
  * Defines for SelvaObject user meta
  */
