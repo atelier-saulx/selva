@@ -13,6 +13,12 @@
  */
 #define MEM_DEBUG 1
 
+/**
+ * Add delay to the replication of the Modify command.
+ * Unit is nanoseconds. Normally this should be set to 0.
+ */
+#define DEBUG_MODIFY_REPLICATION_DELAY_NS 0
+
 /*
  * SVector tunables.
  */

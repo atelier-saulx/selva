@@ -2652,3 +2652,89 @@ test.serial('replicate hierarchy parents with modify', async (t) => {
     ['ma1']
   )
 })
+
+// Note that this test is only doing anything meaningful if DEBUG_MODIFY_REPLICATION_DELAY_NS
+// is set greater than 1 ms.
+test.serial('createdAt and updatedAt replication', async (t) => {
+  let resultOrigin, updatedAtOrigin, createdAtOrigin, resultReplica, updatedAtReplica, createdAtReplica
+
+  // Create
+  t.deepEqual(
+    await Promise.all([
+      new Promise((resolve, reject) =>
+        rclientOrigin.send_command(
+          'selva.modify',
+          ['grphnode_a', '', '0', 'title.en', 'lol'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+    ]),
+    [
+      ['grphnode_a', 'UPDATED'],
+    ]
+  )
+  await wait(20)
+
+  resultOrigin = await new Promise((resolve, reject) =>
+    rclientOrigin.send_command(
+      'selva.hierarchy.find',
+      ['', '___selva_hierarchy', 'descendants', 'fields', 'updatedAt\ncreatedAt', 'root'],
+      (err, res) => (err ? reject(err) : resolve(res))
+    )
+  )
+  updatedAtOrigin = Number(resultOrigin[0][1][1].readBigInt64LE(0))
+  createdAtOrigin = Number(resultOrigin[0][1][3].readBigInt64LE(0))
+
+  resultReplica = await new Promise((resolve, reject) =>
+    rclientReplica.send_command(
+      'selva.hierarchy.find',
+      ['', '___selva_hierarchy', 'descendants', 'fields', 'updatedAt\ncreatedAt', 'root'],
+      (err, res) => (err ? reject(err) : resolve(res))
+    )
+  )
+  updatedAtReplica = Number(resultReplica[0][1][1].readBigInt64LE(0))
+  createdAtReplica = Number(resultReplica[0][1][3].readBigInt64LE(0))
+
+  t.deepEqual(updatedAtOrigin, updatedAtReplica)
+  t.deepEqual(createdAtOrigin, createdAtReplica)
+
+  // Update
+  await wait(20)
+  t.deepEqual(
+    await Promise.all([
+      new Promise((resolve, reject) =>
+        rclientOrigin.send_command(
+          'selva.modify',
+          ['grphnode_a', '', '0', 'title.en', 'haha'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+    ]),
+    [
+      ['grphnode_a', 'UPDATED'],
+    ]
+  )
+  await wait(20)
+
+  resultOrigin = await new Promise((resolve, reject) =>
+    rclientOrigin.send_command(
+      'selva.hierarchy.find',
+      ['', '___selva_hierarchy', 'descendants', 'fields', 'updatedAt', 'root'],
+      (err, res) => (err ? reject(err) : resolve(res))
+    )
+  )
+  updatedAtOrigin = Number(resultOrigin[0][1][1].readBigInt64LE(0))
+
+  resultReplica = await new Promise((resolve, reject) =>
+    rclientReplica.send_command(
+      'selva.hierarchy.find',
+      ['', '___selva_hierarchy', 'descendants', 'fields', 'updatedAt\ncreatedAt', 'root'],
+      (err, res) => (err ? reject(err) : resolve(res))
+    )
+  )
+  updatedAtReplica = Number(resultReplica[0][1][1].readBigInt64LE(0))
+  createdAtReplica = Number(resultReplica[0][1][3].readBigInt64LE(0))
+
+  t.deepEqual(updatedAtOrigin, updatedAtReplica)
+  t.deepEqual(createdAtOrigin, createdAtReplica)
+})

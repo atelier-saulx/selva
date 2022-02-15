@@ -484,3 +484,41 @@ test.serial('automatic child creation and timestamps', async (t) => {
 
   await client.destroy()
 })
+
+test.serial('createdAt can be modified', async (t) => {
+  const client = connect({
+    port,
+  })
+
+  const before = Date.now()
+  const person = await client.set({
+    $language: 'en',
+    type: 'person',
+    title: 'yesh',
+  })
+  await wait(2)
+  const after = Date.now()
+
+  let result = await client.get({
+    $id: person,
+    createdAt: true,
+  })
+
+  let createdAt = result.createdAt
+  t.true(createdAt <= after && createdAt >= before)
+
+  await client.set({
+    $id: person,
+    createdAt: 1000,
+  })
+  result = await client.get({
+    $id: person,
+    createdAt: true,
+  })
+
+  createdAt = result.createdAt
+  t.deepEqual(createdAt, 1000)
+
+  await client.delete('root')
+  await client.destroy()
+})
