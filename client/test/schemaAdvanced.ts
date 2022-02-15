@@ -34,6 +34,18 @@ test.serial('schemas - custom validation', async (t) => {
             snurky: {
               type: 'references',
             },
+            flara: {
+              type: 'reference',
+              bidirectional: {
+                fromField: 'flarb',
+              },
+            },
+            flarb: {
+              type: 'reference',
+              bidirectional: {
+                fromField: 'flara',
+              },
+            },
             obj: {
               type: 'object',
               properties: {
@@ -62,7 +74,8 @@ test.serial('schemas - custom validation', async (t) => {
   // .isValid({ $id: 'flap', nurp: 100 })
   //
   client.validator = (schema, type, path, value, lang) => {
-    console.info('yesVALIDATOPR', type, path, value, lang)
+    // maybe but the type in there?
+    console.info('-->', type, path, value, lang)
     // custom messages as well...
     return true
   }
@@ -73,6 +86,7 @@ test.serial('schemas - custom validation', async (t) => {
   await client.set({
     type: 'thing',
     image: 'yes',
+    flara: id,
     obj: {
       flap: 'x',
       x: {
