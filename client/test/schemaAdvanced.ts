@@ -139,6 +139,7 @@ test.serial('schemas - custom validation', async (t) => {
   await t.connectionsAreEmpty()
 })
 
+// serial
 test.only('schemas - hard override', async (t) => {
   const port = await getPort()
   const server = await start({

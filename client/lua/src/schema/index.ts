@@ -137,7 +137,6 @@ function verifyLanguages(oldSchema: Schema, newSchema: Schema): string | null {
           return null
         }
       }
-
       return `New schema definition missing existing language option ${lang}`
     }
   }
