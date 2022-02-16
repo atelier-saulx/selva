@@ -182,7 +182,7 @@ test.only('schemas - hard override', async (t) => {
     })
   )
 
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 10; i++) {
     const q = []
     for (let i = 0; i < 1000; i++) {
       q.push(
@@ -232,8 +232,7 @@ test.only('schemas - hard override', async (t) => {
     }
   )
 
-  // hello....
-  const xx = await client.get({
+  const results = await client.get({
     nodes: {
       id: true,
       flap: true,
@@ -249,13 +248,10 @@ test.only('schemas - hard override', async (t) => {
     },
   })
 
-  console.info('xxx', xx)
-
-  // batch per 5k
-  // (old) => {
-  // if non existing remove field
-  //   return { type: old.type, image: '!' + old.image }
-  // }
+  for (const n of results.nodes) {
+    t.is(typeof n.image, 'number')
+    t.is(typeof n.flap, 'string')
+  }
 
   await client.destroy()
   await server.destroy()
