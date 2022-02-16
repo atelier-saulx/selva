@@ -64,10 +64,11 @@ static int send_hierarchy_field(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId nodeId,
-        RedisModuleString *full_field_name,
+        const char *full_field_name_str,
+        size_t full_field_name_len,
         const char *field_str,
         size_t field_len) {
-#define SEND_FIELD_NAME() RedisModule_ReplyWithString(ctx, full_field_name)
+#define SEND_FIELD_NAME() RedisModule_ReplyWithStringBuffer(ctx, full_field_name_str, full_field_name_len)
 #define IS_FIELD(name) \
     (field_len == (sizeof(name) - 1) && !memcmp(field_str, name, sizeof(name) - 1))
 
@@ -182,8 +183,8 @@ static int send_edge_field(
     }
 }
 
-static int is_excluded_field(RedisModuleString *excluded_fields, RedisModuleString *field_name) {
-    TO_STR(excluded_fields, field_name);
+static int is_excluded_field(RedisModuleString *excluded_fields, const char *field_name_str, size_t field_name_len) {
+    TO_STR(excluded_fields);
     const char *r;
 
     /* RMS always ends with '\0', so let's utilize that. */
@@ -205,26 +206,27 @@ static int send_node_field(
         size_t field_len,
         RedisModuleString *excluded_fields) {
     Selva_NodeId nodeId;
-    RedisModuleString *full_field_name;
+    const char *full_field_name_str;
+    size_t full_field_name_len;
     int err;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
 
     if (field_prefix_str) {
+        RedisModuleString *full_field_name;
+
         full_field_name = RedisModule_CreateStringPrintf(ctx, "%.*s%s", (int)field_prefix_len, field_prefix_str, field_str);
+        if (!full_field_name) {
+            return SELVA_ENOMEM;
+        }
+
+        full_field_name_str = RedisModule_StringPtrLen(full_field_name, &full_field_name_len);
     } else {
-        /*
-         * TODO It would be nice if we wouldn't need to allocate this but
-         * currently there is no easy way to avoid. We'd need to rethink
-         * the exclude list comparison.
-         */
-        full_field_name = RedisModule_CreateString(ctx, field_str, field_len);
-    }
-    if (!full_field_name) {
-        return SELVA_ENOMEM;
+        full_field_name_str = field_str;
+        full_field_name_len = field_len;
     }
 
-    if (excluded_fields && is_excluded_field(excluded_fields, full_field_name)) {
+    if (excluded_fields && is_excluded_field(excluded_fields, full_field_name_str, full_field_name_len)) {
         /*
          * This field should be excluded from the results.
          */
@@ -234,7 +236,7 @@ static int send_node_field(
     /*
      * Check if the field name is a hierarchy field name.
      */
-    err = send_hierarchy_field(ctx, hierarchy, nodeId, full_field_name, field_str, field_len);
+    err = send_hierarchy_field(ctx, hierarchy, nodeId, full_field_name_str, full_field_name_len, field_str, field_len);
     if (err == 0) {
         return 1;
     } else if (err != SELVA_ENOENT) {
