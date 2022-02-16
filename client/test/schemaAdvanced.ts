@@ -202,6 +202,9 @@ test.only('schemas - hard override', async (t) => {
         thing: {
           prefix: 'th',
           fields: {
+            flap: {
+              type: 'string',
+            },
             image: {
               type: 'number',
             },
@@ -212,18 +215,20 @@ test.only('schemas - hard override', async (t) => {
     'default',
     true,
     (old) => {
+      // delete is also a thing
       const num = parseInt(old.image.replace(/[^0-9]/g, ''), 10)
       return {
         image: num || 0,
+        flap: old.image,
       }
     }
   )
 
   // hello....
-  console.info('flap flap')
   const xx = await client.get({
     nodes: {
       id: true,
+      flap: true,
       image: true,
       $list: {
         $offset: 0,
