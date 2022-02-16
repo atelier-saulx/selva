@@ -260,22 +260,22 @@ test.only('schemas - hard override', async (t) => {
     }
   )
 
-  const xx = await client.get({
-    nodes: {
-      id: true,
-      image: true,
-      $list: {
-        $offset: 0,
-        $limit: 5000,
-        $find: {
-          $traverse: 'descendants',
-          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
-        },
-      },
-    },
-  })
+  // const xx = await client.get({
+  //   nodes: {
+  //     id: true,
+  //     image: true,
+  //     $list: {
+  //       $offset: 0,
+  //       $limit: 5000,
+  //       $find: {
+  //         $traverse: 'descendants',
+  //         $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+  //       },
+  //     },
+  //   },
+  // })
 
-  console.info('xxx', xx)
+  // console.info('xxx', xx)
 
   // batch per 5k
   // (old) => {

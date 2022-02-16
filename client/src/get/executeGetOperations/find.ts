@@ -5,7 +5,15 @@ import {
   GetOptions,
   TraverseByType,
 } from '../types'
-import { readLongLong, sourceFieldToFindArgs, typeCast } from './'
+import {
+  readLongLong,
+  sourceFieldToFindArgs,
+  typeCast,
+  executeNestedGetOperations,
+  ExecContext,
+  sourceFieldToDir,
+  addMarker,
+} from './'
 import {
   ast2rpn,
   Fork,
@@ -14,14 +22,14 @@ import {
   convertNow,
   bfsExpr2rpn,
 } from '@saulx/selva-query-ast-parser'
+
 import {
-  executeNestedGetOperations,
-  ExecContext,
-  sourceFieldToDir,
-  addMarker,
-} from './'
-import { padId, joinIds, EMPTY_ID } from '../utils'
-import { setNestedResult, getNestedSchema } from '../utils'
+  setNestedResult,
+  getNestedSchema,
+  padId,
+  joinIds,
+  EMPTY_ID,
+} from '../utils'
 import { makeLangArg } from './util'
 import { mkIndex } from './indexing'
 
@@ -92,7 +100,7 @@ function parseGetOpts(
   boolean
 ] {
   const pathPrefix = path === '' ? '' : path + '.'
-  let fields: Map<string, Set<string>> = new Map()
+  const fields: Map<string, Set<string>> = new Map()
   if (!fields.has(type)) {
     fields.set(type, new Set())
   }
@@ -316,7 +324,7 @@ async function checkForNextRefresh(
         $field: f.$field,
       }
 
-      let newFork: Fork = {
+      const newFork: Fork = {
         isFork: true,
         $and: [withoutTimebased, newFilter],
       }
@@ -326,7 +334,7 @@ async function checkForNextRefresh(
       }
 
       const args = ast2rpn(client.schemas[ctx.db].types, newFork, lang)
-      let ids = await client.redis.selva_hierarchy_find(
+      const ids = await client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
         makeLangArg(client.schemas[ctx.db].languages, lang),
         '___selva_hierarchy',
@@ -373,7 +381,7 @@ async function checkForNextRefresh(
         v = v.replace('now+', 'now-')
       }
 
-      let converted = convertNow(v, time)
+      const converted = convertNow(v, time)
       // console.log('TIME NOW', Date.now())
       // console.log('NEXT TIME', time)
       // console.log('ADJUSTED', converted)
@@ -389,11 +397,10 @@ export const findIds = async (
   client: SelvaClient,
   op: GetOperationFind,
   lang: string,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedSchema?: Schema
 ): Promise<string[]> => {
-  const { db, subId } = ctx
-
-  let sourceField: string = <string>op.sourceField
+  const sourceField: string = <string>op.sourceField
   if (typeof op.props.$list === 'object' && op.props.$list.$inherit) {
     const res = await executeNestedGetOperations(
       client,
@@ -406,7 +413,9 @@ export const findIds = async (
         },
       },
       lang,
-      ctx
+      ctx,
+      false,
+      passedSchema
     )
 
     op.inKeys = res.result
@@ -548,11 +557,11 @@ const findFields = async (
   op: GetOperationFind,
   lang: string,
   ctx: ExecContext,
-  fieldsOpt: Map<string, Set<string>>
+  fieldsOpt: Map<string, Set<string>>,
+  passedSchema?: Schema
 ): Promise<string[]> => {
-  const { db, subId } = ctx
+  const sourceField: string = <string>op.sourceField
 
-  let sourceField: string = <string>op.sourceField
   if (typeof op.props.$list === 'object' && op.props.$list.$inherit) {
     const res = await executeNestedGetOperations(
       client,
@@ -572,7 +581,7 @@ const findFields = async (
   }
 
   const args = op.filter
-    ? ast2rpn(client.schemas[ctx.db].types, op.filter, lang)
+    ? ast2rpn((passedSchema || client.schemas[ctx.db]).types, op.filter, lang)
     : ['#1']
   // console.log('ARGS', args)
   if (op.inKeys) {
@@ -612,7 +621,7 @@ const findFields = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      ...makeFieldsString(client.schemas[ctx.db], fieldsOpt),
+      ...makeFieldsString(passedSchema || client.schemas[ctx.db], fieldsOpt),
       joinIds(op.inKeys),
       ...args
     )
@@ -643,7 +652,7 @@ const findFields = async (
           endLen--
         }
         const id = op.id.slice(i, endLen)
-        const schema = client.schemas[ctx.db]
+        const schema = passedSchema || client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
 
         const r = await addMarker(client, ctx, {
@@ -668,7 +677,7 @@ const findFields = async (
         ctx.hasFindMarkers = true
       }
     } else {
-      const schema = client.schemas[ctx.db]
+      const schema = passedSchema || client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
       const added = await addMarker(client, ctx, {
         ...sourceFieldToDir(
@@ -688,7 +697,7 @@ const findFields = async (
       }
     }
 
-    const schema = client.schemas[ctx.db]
+    const schema = passedSchema || client.schemas[ctx.db]
     const sourceFieldSchema = op.nested
       ? null
       : getNestedSchema(schema, op.id, sourceField)
@@ -733,14 +742,14 @@ const executeFindOperation = async (
   client: SelvaClient,
   op: GetOperationFind,
   lang: string,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedSchema?: Schema
 ): Promise<GetResult> => {
-  const schema = client.schemas[ctx.db]
+  const schema = passedSchema || client.schemas[ctx.db]
 
   if (op.nested) {
-    let ids = await findIds(client, op, lang, ctx)
+    let ids = await findIds(client, op, lang, ctx, passedSchema)
     let nestedOperation = op.nested
-    let prevIds = ids
     while (nestedOperation) {
       ids = await findIds(
         client,
@@ -748,10 +757,9 @@ const executeFindOperation = async (
           id: joinIds(ids),
         }),
         lang,
-        ctx
+        ctx,
+        passedSchema
       )
-      prevIds = ids
-
       nestedOperation = nestedOperation.nested
     }
 
@@ -787,7 +795,7 @@ const executeFindOperation = async (
   const [fieldOpts, fieldMapping, additionalGets] = parseGetOpts(op.props, '')
 
   if (additionalGets) {
-    let ids = await findIds(client, op, lang, ctx)
+    const ids = await findIds(client, op, lang, ctx, passedSchema)
     const allResults = []
     for (const id of ids) {
       const realOpts: any = {}
@@ -805,7 +813,9 @@ const executeFindOperation = async (
           ...realOpts,
         },
         lang,
-        ctx
+        ctx,
+        false,
+        passedSchema
       )
 
       allResults.push(fieldResults)
@@ -818,11 +828,18 @@ const executeFindOperation = async (
     return allResults
   }
 
-  let results: any[] = await findFields(client, op, lang, ctx, fieldOpts)
+  const results: any[] = await findFields(
+    client,
+    op,
+    lang,
+    ctx,
+    fieldOpts,
+    passedSchema
+  )
 
   const allMappings = new Set(Object.keys(fieldMapping))
   const result = []
-  for (let entry of results) {
+  for (const entry of results) {
     const [id, fieldResults] = entry
     const entryRes: any = {}
 

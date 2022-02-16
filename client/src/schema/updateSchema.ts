@@ -308,8 +308,10 @@ export async function updateSchema(
     props.types = {}
   }
 
+  const oldSchema = (await client.getSchema(selector.name)).schema
+
   const { schema: newSchema, mutations } = newSchemaDefinition(
-    (await client.getSchema(selector.name)).schema,
+    oldSchema,
     <Schema>props
   )
 
@@ -371,7 +373,7 @@ export async function updateSchema(
   }
 
   if (allowMutations && handleMutations && mutations.length) {
-    await mutate(client, mutations, handleMutations)
+    await mutate(selector.name, client, mutations, handleMutations, oldSchema)
   }
 
   return mutations

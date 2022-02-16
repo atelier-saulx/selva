@@ -1,12 +1,17 @@
-import { SchemaMutations } from '.'
+import { Schema, SchemaMutations } from '.'
 import { SelvaClient } from '..'
 
+import executeGetOperations from '../get/executeGetOperations'
+import createGetOperations from '../get/createGetOperations'
+
 export default async (
+  db: string,
   client: SelvaClient,
   mutations: SchemaMutations,
   handleMutations: (old: { [field: string]: any }) => {
     [field: string]: any
-  }
+  },
+  oldSchema?: Schema
 ): Promise<void> => {
   console.info('????????????', mutations)
   const setObject: { [key: string]: any } = {}
@@ -59,11 +64,58 @@ export default async (
       },
     }
 
+    const op = createGetOperations(
+      client,
+      {
+        ...gets[type],
+        $list: {
+          $offset: page * 5000,
+          $limit: 5000,
+          $find: {
+            $traverse: 'descendants',
+            $filter: {
+              $operator: '=',
+              $field: 'type',
+              $value: type,
+            },
+          },
+        },
+      },
+      'root',
+      '.nodes',
+      db,
+      undefined,
+      oldSchema
+    )
+
+    console.log(op)
+
+    const r = await executeGetOperations(
+      client,
+      undefined,
+      {
+        db,
+        meta: {},
+        originDescriptors: {},
+      },
+      op,
+      false,
+      oldSchema
+    )
+
+    console.info('????????????', r)
+
+    // get + old schema
+
     // need to call get with a different schema...
 
-    const existing = await client.get(query)
-    console.dir(existing, { depth: 10 })
-    console.dir(query, { depth: 10 })
+    // call get directly - need to be able to pass custom schema
+
+    // oldSchema
+
+    // const existing = await get(query)
+    // console.dir(existing, { depth: 10 })
+    // console.dir(query, { depth: 10 })
   }
 
   console.info(gets)

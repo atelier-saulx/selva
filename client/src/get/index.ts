@@ -177,6 +177,8 @@ async function get(
   const lang = newProps.$language
   let resultMeta: any = {}
 
+  // ctx.schema
+
   ctx = {
     db,
     subId,

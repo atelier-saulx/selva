@@ -26,6 +26,7 @@ export type ExecContext = {
   nodeMarkers?: Record<string, Set<string>>
   hasFindMarkers?: boolean
 }
+
 export type TraversalType =
   | 'none'
   | 'node'
@@ -169,17 +170,17 @@ export async function addMarker(
     return false
   }
 
-  //const shouldHaveRef = ['ref', 'bfs_edge_field'].includes(marker.type)
-  //if (shouldHaveRef && (!marker.refField || marker.traversal) ||
+  // const shouldHaveRef = ['ref', 'bfs_edge_field'].includes(marker.type)
+  // if (shouldHaveRef && (!marker.refField || marker.traversal) ||
   //    !shouldHaveRef && marker.refField) {
   //    throw new Error(`Invalid params for a "${marker.type}" marker`)
-  //}
+  // }
 
-  //const shouldHaveTraversal = marker.type == 'bfs_expression'
-  //if (shouldHaveTraversal && (!marker.traversal || marker.refField) ||
+  // const shouldHaveTraversal = marker.type == 'bfs_expression'
+  // if (shouldHaveTraversal && (!marker.traversal || marker.refField) ||
   //    !shouldHaveTraversal && marker.traversal) {
   //    throw new Error(`Invalid params for a "${marker.type}" marker`)
-  //}
+  // }
 
   const schema = client.schemas[ctx.db]
   const fieldSchema = getNestedSchema(schema, marker.id, marker.refField)
@@ -394,7 +395,7 @@ export const TYPE_CASTS: Record<
           return
         }
 
-        let fieldSchema = getNestedSchema(schema, id, f)
+        const fieldSchema = getNestedSchema(schema, id, f)
         if (!fieldSchema) {
           throw new Error(
             'Cannot find field type ' + id + ` ${f} - getNestedSchema`
@@ -410,7 +411,7 @@ export const TYPE_CASTS: Record<
         //   fieldSchema = fieldSchema.items
         // }
 
-        if (lang && 'text' === fieldSchema.type && Array.isArray(val)) {
+        if (lang && fieldSchema.type === 'text' && Array.isArray(val)) {
           const txtObj = {}
           parse(txtObj, f, val)
 
@@ -549,7 +550,6 @@ const TYPE_TO_SPECIAL_OP: Record<
     field: string,
     lang?: string
   ) => {
-    const { db } = ctx
     const paddedId = id.padEnd(10, '\0')
 
     if (field === 'ancestors') {
@@ -587,7 +587,7 @@ const TYPE_TO_SPECIAL_OP: Record<
         id,
         field
       )
-      if (!r || r.length == 1) {
+      if (!r || r.length === 1) {
         return null
       }
       r.shift()
@@ -602,8 +602,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     lang?: string
   ) => {
     const { db } = ctx
-
-    let args = [makeLangArg(client.schemas[ctx.db].languages, lang), id]
+    const args = [makeLangArg(client.schemas[ctx.db].languages, lang), id]
     if (lang) {
       args.push(`${field}.${lang}`)
       if (client.schemas[db].languages) {
@@ -636,7 +635,8 @@ export const executeNestedGetOperations = async (
   props: GetOptions,
   lang: string | undefined,
   ctx: ExecContext,
-  runAsNested: boolean = true
+  runAsNested: boolean = true,
+  schema?: Schema
 ): Promise<GetResult> => {
   const id = await resolveId(client, props)
   if (!id) return null
@@ -645,7 +645,8 @@ export const executeNestedGetOperations = async (
     props.$language || lang,
     ctx,
     createGetOperations(client, props, id, '', ctx.db),
-    runAsNested
+    runAsNested,
+    schema
   )
 }
 
@@ -655,7 +656,8 @@ export const executeGetOperation = async (
   lang: string,
   ctx: ExecContext,
   op: GetOperation,
-  nested?: boolean
+  nested?: boolean,
+  schema?: Schema
 ): Promise<any> => {
   if (op.type === 'value') {
     return op.value
@@ -676,7 +678,7 @@ export const executeGetOperation = async (
           )
         : await client.redis.selva_object_get(
             ctx.originDescriptors[ctx.db] || { name: ctx.db },
-            makeLangArg(client.schemas[ctx.db].languages, lang),
+            makeLangArg((schema || client.schemas[ctx.db]).languages, lang),
             op.id,
             ...field
           )
@@ -713,7 +715,9 @@ export const executeGetOperation = async (
         props,
         lang,
         ctx,
-        op.fromReference === true ? false : true
+        // eslint-disable-next-line
+        op.fromReference === true ? false : true,
+        schema
       )
     } else {
       const id = await resolveId(client, op.props)
@@ -729,13 +733,15 @@ export const executeGetOperation = async (
     return Promise.all(
       op.props.map((p) => {
         if (p.$id) {
-          return executeNestedGetOperations(client, p, lang, ctx)
+          return executeNestedGetOperations(client, p, lang, ctx, false, schema)
         } else {
           return executeNestedGetOperations(
             client,
             Object.assign({}, p, { $id: op.id }),
             lang,
-            ctx
+            ctx,
+            false,
+            schema
           )
         }
       })
@@ -744,7 +750,7 @@ export const executeGetOperation = async (
     if (op.isTimeseries) {
       return timeseries(client, op, lang, ctx)
     } else {
-      return find(client, op, lang, ctx)
+      return find(client, op, lang, ctx, schema)
     }
   } else if (op.type === 'aggregate') {
     if (op.isTimeseries) {
@@ -769,7 +775,7 @@ export const executeGetOperation = async (
 
     if (Array.isArray(op.sourceField)) {
       fieldSchema = getNestedSchema(
-        client.schemas[db],
+        schema || client.schemas[db],
         op.id,
         op.sourceField[0]
       )
@@ -791,7 +797,7 @@ export const executeGetOperation = async (
 
           return client.redis.selva_object_get(
             ctx.originDescriptors[ctx.db] || { name: ctx.db },
-            makeLangArg(client.schemas[ctx.db].languages, lang),
+            makeLangArg((schema || client.schemas[ctx.db]).languages, lang),
             op.id,
             f
           )
@@ -804,7 +810,11 @@ export const executeGetOperation = async (
         bufferNodeMarker(ctx, op.id, <string>op.sourceField)
       }
 
-      fieldSchema = getNestedSchema(client.schemas[db], op.id, op.sourceField)
+      fieldSchema = getNestedSchema(
+        schema || client.schemas[db],
+        op.id,
+        op.sourceField
+      )
 
       if (!fieldSchema) {
         return null
@@ -816,7 +826,7 @@ export const executeGetOperation = async (
       } else {
         r = await client.redis.selva_object_get(
           ctx.originDescriptors[ctx.db] || { name: ctx.db },
-          makeLangArg(client.schemas[ctx.db].languages, lang),
+          makeLangArg((schema || client.schemas[ctx.db]).languages, lang),
           op.id,
           op.sourceField
         )
@@ -828,7 +838,7 @@ export const executeGetOperation = async (
         r,
         op.id,
         Array.isArray(op.sourceField) ? op.sourceField[0] : op.sourceField,
-        client.schemas[ctx.db],
+        schema || client.schemas[ctx.db],
         lang
       )
     } else if (op.default) {
@@ -844,14 +854,15 @@ export default async function executeGetOperations(
   lang: string | undefined,
   ctx: ExecContext,
   ops: GetOperation[],
-  nested?: boolean
+  nested?: boolean,
+  schema?: Schema
 ): Promise<GetResult> {
   const o: GetResult = {}
 
   const results = await Promise.all(
-    ops.map((op) => executeGetOperation(client, lang, ctx, op, nested))
+    ops.map((op) => executeGetOperation(client, lang, ctx, op, nested, schema))
   )
-  results.map((r, i) => {
+  results.forEach((r, i) => {
     if (
       ops[i].field === '' &&
       // @ts-ignore

@@ -1,4 +1,4 @@
-import { SelvaClient } from '../../'
+import { Schema, SelvaClient } from '../../'
 import { GetOperation, GetOptions } from '../types'
 
 import find from './find'
@@ -15,9 +15,12 @@ export default function createGetOperations(
   id: string,
   field: string,
   db: string,
-  ops: GetOperation[] = []
+  ops: GetOperation[] = [],
+  schema?: Schema
 ): GetOperation[] {
-  const schema = client.schemas[db]
+  if (!schema) {
+    schema = client.schemas[db]
+  }
 
   // TODO: handle single case of $fieldsByType here based on type of passed id
   if (props.$value) {
