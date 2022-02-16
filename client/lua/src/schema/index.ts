@@ -195,7 +195,8 @@ function checkField(
   changedSearchIndexes: Record<string, boolean>,
   timeseries: Timeseries,
   oldField: FieldSchema,
-  newField: FieldSchema
+  newField: FieldSchema,
+  allowMutations: boolean
 ): string | null {
   if (!oldField) {
     findFieldConfigurations(
@@ -211,11 +212,13 @@ function checkField(
     return `New schema missing field ${path} for type ${type}`
   }
 
-  // if (oldField.type !== newField.type) {
-  //   return `Cannot change existing type for ${type} field ${path} changing from ${oldField.type} to ${newField.type}`
-  // }
+  if (!allowMutations && oldField.type !== newField.type) {
+    return `Cannot change existing type for ${type} field ${path} changing from ${oldField.type} to ${newField.type}`
+  }
 
   if (newField.type !== 'object' && newField.type !== 'set') {
+    // TODO: Remove all these search things
+    // eslint-disable-next-line
     let searchRaw: SearchRaw | undefined = undefined
     if (newField.search) {
       searchRaw = newField.search = convertSearch(newField)
@@ -262,7 +265,8 @@ function checkField(
           changedSearchIndexes,
           timeseries,
           (<any>oldField).properties[key],
-          newField.properties[key]
+          newField.properties[key],
+          allowMutations
         ))
       ) {
         return err
@@ -278,7 +282,8 @@ function checkField(
         changedSearchIndexes,
         timeseries,
         (<any>oldField).items,
-        newField.items
+        newField.items,
+        allowMutations
       ))
     ) {
       return err
@@ -286,22 +291,25 @@ function checkField(
   } else if (newField.type === 'reference' || newField.type === 'references') {
     const castedOld = <FieldSchemaReferences>oldField
     if (!newField.bidirectional && castedOld.bidirectional) {
-      // return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
-      //   // @ts-ignore
-      //   oldField.bidirectional
-      // )} to null}. This will be supported in the future.`
+      if (!allowMutations) {
+        return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
+          // @ts-ignore
+          oldField.bidirectional
+        )} to null}. This will be supported in the future.`
+      }
     } else if (newField.bidirectional && castedOld.bidirectional) {
       if (
         newField.bidirectional.fromField !== castedOld.bidirectional.fromField
       ) {
-        // return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
-        //   // @ts-ignore
-        //   oldField.bidirectional
-        // )} to null}. This will be supported in the future.`
+        if (!allowMutations) {
+          return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
+            // @ts-ignore
+            oldField.bidirectional
+          )} to null}. This will be supported in the future.`
+        }
       }
     }
   }
-
   return null
 }
 
@@ -311,7 +319,8 @@ function checkNestedChanges(
   newType: TypeSchema,
   searchIndexes: SearchIndexes,
   changedIndexes: Record<string, boolean>,
-  timeseries: Timeseries
+  timeseries: Timeseries,
+  allowMutations: boolean
 ): null | string {
   for (const field in oldType.fields) {
     if (!newType.fields) {
@@ -328,7 +337,8 @@ function checkNestedChanges(
         changedIndexes,
         timeseries,
         oldType.fields[field],
-        newType.fields[field]
+        newType.fields[field],
+        allowMutations
       )
 
       if (err) {
@@ -360,7 +370,8 @@ function verifyTypes(
   changedSearchIndexes: Record<string, boolean>,
   timeseries: Timeseries,
   oldSchema: Schema,
-  newSchema: Schema
+  newSchema: Schema,
+  allowMutations: boolean
 ): string | null {
   // make sure that new schema has all the old fields and that their nested changes don't change existing fields
   for (const type in oldSchema.types) {
@@ -376,7 +387,8 @@ function verifyTypes(
       newSchema.types[type],
       searchIndexes,
       changedSearchIndexes,
-      timeseries
+      timeseries,
+      allowMutations
     )
 
     if (err) {
@@ -421,7 +433,8 @@ function verifyTypes(
     newSchema.rootType,
     {}, // skip indexing for root
     {},
-    timeseries
+    timeseries,
+    allowMutations
   )
 
   if (err) {
@@ -593,7 +606,8 @@ export function verifyAndEnsureRequiredFields(
   changedSearchIndexes: Record<string, boolean>,
   timeseries: Timeseries,
   oldSchema: Schema,
-  newSchema: Schema
+  newSchema: Schema,
+  allowMutations: boolean
 ): string | null {
   let err: string | null
 
@@ -611,7 +625,8 @@ export function verifyAndEnsureRequiredFields(
       changedSearchIndexes,
       timeseries,
       oldSchema,
-      newSchema
+      newSchema,
+      allowMutations
     ))
   ) {
     return err
@@ -675,7 +690,9 @@ export function updateSchema(opts: {
     ]
   }
 
+  // TODO: remove this
   const searchIndexes = getSearchIndexes()
+
   const timeseries = getTimeseries()
 
   const err = verifyAndEnsureRequiredFields(
@@ -683,15 +700,20 @@ export function updateSchema(opts: {
     changedSearchIndexes,
     timeseries,
     oldSchema,
-    schema
+    schema,
+    allowMutations
   )
   if (err) {
     return [null, err]
   }
 
   checkLanguageChange(changedSearchIndexes, searchIndexes, oldSchema, schema)
+
+  // TODO: remove this
   updateSearchIndexes(changedSearchIndexes, searchIndexes, schema)
+
   updateHierarchies(oldSchema, schema)
+
   const saved = saveSchema(schema, searchIndexes, timeseries)
   return [saved, null]
 }
