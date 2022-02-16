@@ -87,6 +87,7 @@ export default async (
       }
       await Promise.all(setQ)
 
+      // progress listener
       console.info(`Set mutation batch #${page} ${page * pageAmount}`)
 
       if (r.nodes.length === pageAmount) {
