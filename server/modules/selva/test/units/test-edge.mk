@@ -20,3 +20,4 @@ SRC-edge += ../../module/rms/shared.c
 SRC-edge += ../../module/selva_object/selva_object.c
 SRC-edge += ../../module/selva_set.c
 SRC-edge += ../../module/selva_type.c
+SRC-edge += ../../module/timestamp.c

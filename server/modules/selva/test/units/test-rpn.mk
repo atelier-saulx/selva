@@ -11,6 +11,7 @@ SRC-rpn += ../../module/rpn/rpn.c
 SRC-rpn += ../../module/selva_object/selva_object.c
 SRC-rpn += ../../module/selva_set.c
 SRC-rpn += ../../module/selva_type.c
+SRC-rpn += ../../module/timestamp.c
 SRC-rpn += ../errors-mock.c
 SRC-rpn += ../hierarchy-mock.c
 SRC-rpn += ../redis-alloc.c

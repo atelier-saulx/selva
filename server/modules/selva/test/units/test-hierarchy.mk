@@ -16,3 +16,4 @@ SRC-hierarchy += ../../module/rms/shared.c
 SRC-hierarchy += ../../module/selva_object/selva_object.c
 SRC-hierarchy += ../../module/selva_set.c
 SRC-hierarchy += ../../module/selva_type.c
+SRC-hierarchy += ../../module/timestamp.c
