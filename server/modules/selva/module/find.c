@@ -186,17 +186,6 @@ static int send_edge_field(
     }
 }
 
-static int is_excluded_field(RedisModuleString *excluded_fields, const char *field_name_str, size_t field_name_len) {
-    TO_STR(excluded_fields);
-    const char *r;
-
-    /* RMS always ends with '\0', so let's utilize that. */
-    r = memmem(excluded_fields_str, excluded_fields_len, field_name_str, field_name_len + 1);
-
-    /* The list is made in a way that each element is delimited by '\0' from beginning and end. */
-    return r && *(r - 1) == '\0';
-}
-
 static int send_node_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
@@ -208,6 +197,7 @@ static int send_node_field(
         const char *field_str,
         size_t field_len,
         RedisModuleString *excluded_fields) {
+    TO_STR(excluded_fields);
     Selva_NodeId nodeId;
     const char *full_field_name_str;
     size_t full_field_name_len;
@@ -229,7 +219,7 @@ static int send_node_field(
         full_field_name_len = field_len;
     }
 
-    if (excluded_fields && is_excluded_field(excluded_fields, full_field_name_str, full_field_name_len)) {
+    if (excluded_fields && stringlist_searchn(excluded_fields_str, full_field_name_str, full_field_name_len)) {
         /*
          * This field should be excluded from the results.
          */
