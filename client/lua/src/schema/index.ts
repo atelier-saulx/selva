@@ -314,9 +314,9 @@ function checkNestedChanges(
   timeseries: Timeseries
 ): null | string {
   for (const field in oldType.fields) {
-    // if (!newType.fields) {
-    //   return `Can not reset fields to empty for type ${type}`
-    // }
+    if (!newType.fields) {
+      return `Can not reset fields to empty for type ${type}`
+    }
 
     if (!newType.fields[field]) {
       return `Field ${field} for type ${type} missing in new schema`
@@ -364,9 +364,9 @@ function verifyTypes(
 ): string | null {
   // make sure that new schema has all the old fields and that their nested changes don't change existing fields
   for (const type in oldSchema.types) {
-    // if (!newSchema.types[type]) {
-    //   return `New schema definition missing existing type ${type}`
-    // }
+    if (!newSchema.types[type]) {
+      return `New schema definition missing existing type ${type}`
+    }
 
     // make sure that we're not changing type schemas that already exist
     // Note: prefix equality is verified in ensurePrefixes()
@@ -411,9 +411,9 @@ function verifyTypes(
   }
 
   // crheck root type
-  // if (!newSchema.rootType) {
-  //   return `New schema definition missing existing type for root (schema.rootType)`
-  // }
+  if (!newSchema.rootType) {
+    return `New schema definition missing existing type for root (schema.rootType)`
+  }
 
   const err = checkNestedChanges(
     'root',
@@ -660,12 +660,15 @@ function checkLanguageChange(
 }
 
 // add 'override' option
-export function updateSchema(
-  newSchema: Schema
-): [string | null, string | null] {
+export function updateSchema(opts: {
+  schema: Schema
+  allowMutations: boolean
+}): [string | null, string | null] {
+  const { schema, allowMutations } = opts
+
   const changedSearchIndexes: Record<string, boolean> = {}
   const oldSchema: Schema = getSchema()
-  if (oldSchema.sha && newSchema.sha !== oldSchema.sha) {
+  if (oldSchema.sha && schema.sha !== oldSchema.sha) {
     return [
       null,
       'SHA mismatch: trying to update an older schema version, please re-fetch and try again',
@@ -680,15 +683,15 @@ export function updateSchema(
     changedSearchIndexes,
     timeseries,
     oldSchema,
-    newSchema
+    schema
   )
   if (err) {
     return [null, err]
   }
 
-  checkLanguageChange(changedSearchIndexes, searchIndexes, oldSchema, newSchema)
-  updateSearchIndexes(changedSearchIndexes, searchIndexes, newSchema)
-  updateHierarchies(oldSchema, newSchema)
-  const saved = saveSchema(newSchema, searchIndexes, timeseries)
+  checkLanguageChange(changedSearchIndexes, searchIndexes, oldSchema, schema)
+  updateSearchIndexes(changedSearchIndexes, searchIndexes, schema)
+  updateHierarchies(oldSchema, schema)
+  const saved = saveSchema(schema, searchIndexes, timeseries)
   return [saved, null]
 }
