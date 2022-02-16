@@ -166,6 +166,10 @@ test.only('schemas - hard override', async (t) => {
 
   await wait(1000)
 
+  /*
+    - 
+  */
+
   t.throwsAsync(
     client.updateSchema({
       types: {
