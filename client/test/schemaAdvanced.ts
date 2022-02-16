@@ -182,6 +182,18 @@ test.only('schemas - hard override', async (t) => {
     })
   )
 
+  const q = []
+  for (let i = 0; i < 10e3; i++) {
+    q.push(
+      client.set({
+        type: 'thing',
+        image: 'flap',
+      })
+    )
+  }
+
+  await Promise.all(q)
+
   await wait(1000)
 
   await client.updateSchema(
@@ -198,14 +210,31 @@ test.only('schemas - hard override', async (t) => {
       },
     },
     'default',
-    true,
-    (old) => {
-      console.info('hello old', old)
-      return {
-        image: '!' + old.image,
-      }
-    }
+    true
+    // (old) => {
+    //   console.info('hello old', old)
+    //   return {
+    //     image: '!' + old.image,
+    //   }
+    // }
   )
+
+  const x = await client.get({
+    nodes: {
+      id: true,
+      image: true,
+      $list: {
+        $offset: 0,
+        $limit: 5000,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+        },
+      },
+    },
+  })
+
+  console.log(x)
 
   // batch per 5k
   // (old) => {
