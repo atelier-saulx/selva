@@ -275,7 +275,7 @@ test.only('schemas - hard override', async (t) => {
     },
   })
 
-  console.log('xxx', xx)
+  console.info('xxx', xx)
 
   // batch per 5k
   // (old) => {
