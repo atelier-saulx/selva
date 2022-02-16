@@ -225,10 +225,19 @@ export class SelvaClient extends EventEmitter {
   async updateSchema(
     opts: SchemaOptions,
     name: string = 'default',
-    allowMutations: boolean = false
+    allowMutations: boolean = false,
+    handleMutations?: (old: { [field: string]: any }) => {
+      [field: string]: any
+    }
   ): Promise<SchemaMutations> {
     await this.initializeSchema({ $db: name }, false)
-    return updateSchema(this, opts, { name, type: 'origin' }, allowMutations)
+    return updateSchema(
+      this,
+      opts,
+      { name, type: 'origin' },
+      allowMutations,
+      handleMutations
+    )
   }
 
   async waitUntilEvent(event: string): Promise<void> {

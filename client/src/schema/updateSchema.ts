@@ -10,6 +10,7 @@ import {
 } from '.'
 import { ServerSelector } from '../types'
 import { wait, validateFieldName } from '../util'
+import mutate from './mutate'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
@@ -297,6 +298,9 @@ export async function updateSchema(
   props: SchemaOptions,
   selector: ServerSelector,
   allowMutations: boolean = false,
+  handleMutations?: (old: { [field: string]: any }) => {
+    [field: string]: any
+  },
   retry?: number
 ): Promise<SchemaMutations> {
   retry = retry || 0
@@ -349,7 +353,14 @@ export async function updateSchema(
         )
       }
       await wait(retry * 200)
-      await updateSchema(client, props, selector, allowMutations, retry + 1)
+      await updateSchema(
+        client,
+        props,
+        selector,
+        allowMutations,
+        handleMutations,
+        retry + 1
+      )
     } else {
       if (e.code === 'NR_CLOSED') {
         // canhappen with load and eval script
@@ -357,6 +368,10 @@ export async function updateSchema(
         throw e
       }
     }
+  }
+
+  if (allowMutations && handleMutations && mutations.length) {
+    await mutate(client, mutations, handleMutations)
   }
 
   return mutations

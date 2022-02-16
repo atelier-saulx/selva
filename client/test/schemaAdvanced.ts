@@ -184,8 +184,7 @@ test.only('schemas - hard override', async (t) => {
 
   await wait(1000)
 
-  // fix in updateSchema?
-  const mutations = await client.updateSchema(
+  await client.updateSchema(
     {
       types: {
         thing: {
@@ -199,10 +198,20 @@ test.only('schemas - hard override', async (t) => {
       },
     },
     'default',
-    true
+    true,
+    (old) => {
+      console.info('hello old', old)
+      return {
+        image: '!' + old.image,
+      }
+    }
   )
 
-  console.info(mutations)
+  // batch per 5k
+  // (old) => {
+  // if non existing remove field
+  //   return { type: old.type, image: '!' + old.image }
+  // }
 
   await client.destroy()
   await server.destroy()
