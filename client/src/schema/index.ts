@@ -2,6 +2,14 @@ import { Types, TypeSchema, FieldSchema } from './types'
 
 export * from './types'
 
+export type SchemaMutations = {
+  mutation: 'field'
+  type: string
+  path: string[]
+  old: FieldSchema
+  new: FieldSchema
+}[]
+
 export type SchemaOptions = {
   sha?: string
   languages?: string[]

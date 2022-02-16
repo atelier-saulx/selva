@@ -1,18 +1,17 @@
 import { SelvaClient } from '../'
 import { SCRIPT } from '../constants'
-import { Schema, TypeSchema, FieldSchema, SchemaOptions, FIELD_TYPES } from '.'
+import {
+  Schema,
+  TypeSchema,
+  FieldSchema,
+  SchemaOptions,
+  FIELD_TYPES,
+  SchemaMutations,
+} from '.'
 import { ServerSelector } from '../types'
 import { wait, validateFieldName } from '../util'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
-
-type SchemaMutations = {
-  mutation: 'field'
-  type: string
-  path: string[]
-  old: FieldSchema
-  new: FieldSchema
-}[]
 
 // just return whats different
 
@@ -297,8 +296,9 @@ export async function updateSchema(
   client: SelvaClient,
   props: SchemaOptions,
   selector: ServerSelector,
+  noErrorOnMutation: boolean = false,
   retry?: number
-) {
+): Promise<SchemaMutations> {
   retry = retry || 0
   if (!props.types) {
     props.types = {}
@@ -309,17 +309,13 @@ export async function updateSchema(
     <Schema>props
   )
 
-  console.info('MUTATIONS--->', mutations)
-
-  if (mutations.length) {
+  if (!noErrorOnMutation && mutations.length) {
     let str = ''
-
     for (const mutation of mutations) {
       str += `\n    Change type "${mutation.type}", field "${mutation.path.join(
         '.'
       )}" from ${mutation.old.type} to ${mutation.new.type}`
     }
-
     throw new Error(
       `Update schema got ${mutations.length} changed field${
         mutations.length > 1 ? 's' : ''
@@ -352,7 +348,7 @@ export async function updateSchema(
       }
       // await this.getSchema()
       await wait(retry * 200)
-      await updateSchema(client, props, selector, retry + 1)
+      await updateSchema(client, props, selector, noErrorOnMutation, retry + 1)
     } else {
       if (e.code === 'NR_CLOSED') {
         // canhappen with load and eval script
@@ -361,4 +357,6 @@ export async function updateSchema(
       }
     }
   }
+
+  return mutations
 }

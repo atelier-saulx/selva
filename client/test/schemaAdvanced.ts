@@ -166,8 +166,8 @@ test.only('schemas - hard override', async (t) => {
 
   await wait(1000)
 
-  try {
-    await client.updateSchema({
+  t.throwsAsync(
+    client.updateSchema({
       types: {
         thing: {
           prefix: 'th',
@@ -179,11 +179,29 @@ test.only('schemas - hard override', async (t) => {
         },
       },
     })
-  } catch (err) {
-    console.info('--', err)
-  }
+  )
 
   await wait(1000)
+
+  // fix in updateSchema?
+  const mutations = await client.updateSchema(
+    {
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            image: {
+              type: 'number',
+            },
+          },
+        },
+      },
+    },
+    'default',
+    true
+  )
+
+  console.info(mutations)
 
   await client.destroy()
   await server.destroy()

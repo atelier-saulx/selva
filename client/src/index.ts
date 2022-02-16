@@ -13,6 +13,7 @@ import {
   GetSchemaResult,
   SchemaOptions,
   Id,
+  SchemaMutations,
   Schema,
   FieldSchema,
 } from './schema'
@@ -223,10 +224,11 @@ export class SelvaClient extends EventEmitter {
 
   async updateSchema(
     opts: SchemaOptions,
-    name: string = 'default'
-  ): Promise<void> {
+    name: string = 'default',
+    allowMutations: boolean = false
+  ): Promise<SchemaMutations> {
     await this.initializeSchema({ $db: name }, false)
-    return updateSchema(this, opts, { name, type: 'origin' })
+    return updateSchema(this, opts, { name, type: 'origin' }, allowMutations)
   }
 
   async waitUntilEvent(event: string): Promise<void> {
