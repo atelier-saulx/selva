@@ -178,8 +178,11 @@ static int send_edge_field(
         return 0;
     } else {
         struct SelvaObject *dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
+        int res;
 
-        return (send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field_str, next_field_len, excluded_fields) == 0) ? SELVA_ENOENT : 0;
+        res = send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field_str, next_field_len, excluded_fields);
+
+        return res == 0 ? SELVA_ENOENT : 0;
     }
 }
 
