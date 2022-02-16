@@ -167,10 +167,6 @@ test.only('schemas - hard override', async (t) => {
 
   await wait(1000)
 
-  /*
-    - 
-  */
-
   t.throwsAsync(
     client.updateSchema({
       types: {
@@ -187,53 +183,16 @@ test.only('schemas - hard override', async (t) => {
   )
 
   const q = []
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 100e3; i++) {
     q.push(
       client.set({
         type: 'thing',
-        image: 'flap',
+        image: 'flap ' + i,
       })
     )
   }
 
   await Promise.all(q)
-
-  // const x = await client.get({
-  //   nodes: {
-  //     id: true,
-  //     image: true,
-  //     $list: {
-  //       $offset: 0,
-  //       $limit: 5000,
-  //       $find: {
-  //         $traverse: 'descendants',
-  //         $filter: { $operator: '=', $field: 'type', $value: 'thing' },
-  //       },
-  //     },
-  //   },
-  // })
-
-  // lets delete before updating the actual schema...
-  // pretty difficult cant keep it in mem
-
-  // seems the get need to use the old schema
-  //  its in the get query where it goes wrong - so parse the get before doing it
-
-  // const q2 = []
-  // for (const y of x.nodes) {
-  //   q2.push(
-  //     client.set({
-  //       $id: y.id,
-  //       image: { $delete: true },
-  //     })
-  //   )
-  // }
-
-  // try {
-  //   await Promise.all(q2)
-  // } catch (err) {
-  //   console.info('????????', err)
-  // }
 
   await wait(1000)
 
@@ -253,29 +212,31 @@ test.only('schemas - hard override', async (t) => {
     'default',
     true,
     (old) => {
-      console.info('hello old', old)
+      const num = parseInt(old.image.replace(/[^0-9]/g, ''), 10)
       return {
-        image: '!' + old.image,
+        image: num || 0,
       }
     }
   )
 
-  // const xx = await client.get({
-  //   nodes: {
-  //     id: true,
-  //     image: true,
-  //     $list: {
-  //       $offset: 0,
-  //       $limit: 5000,
-  //       $find: {
-  //         $traverse: 'descendants',
-  //         $filter: { $operator: '=', $field: 'type', $value: 'thing' },
-  //       },
-  //     },
-  //   },
-  // })
+  // hello....
+  console.info('flap flap')
+  const xx = await client.get({
+    nodes: {
+      id: true,
+      image: true,
+      $list: {
+        $offset: 0,
+        $limit: 10,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+        },
+      },
+    },
+  })
 
-  // console.info('xxx', xx)
+  console.info('xxx', xx)
 
   // batch per 5k
   // (old) => {

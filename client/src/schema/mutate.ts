@@ -4,6 +4,8 @@ import { SelvaClient } from '..'
 import executeGetOperations from '../get/executeGetOperations'
 import createGetOperations from '../get/createGetOperations'
 
+const pageAmount = 1e3
+
 export default async (
   db: string,
   client: SelvaClient,
@@ -13,9 +15,6 @@ export default async (
   },
   oldSchema?: Schema
 ): Promise<void> => {
-  console.info('????????????', mutations)
-  const setObject: { [key: string]: any } = {}
-
   const gets = {}
 
   for (const f of mutations) {
@@ -39,86 +38,69 @@ export default async (
 
   for (const type in gets) {
     // delete if its a different field name...
-
     let page = 0
 
-    // 5k
+    let finished = false
 
-    // this get needs to be different....
-
-    const query = {
-      nodes: {
-        ...gets[type],
-        $list: {
-          $offset: page * 5000,
-          $limit: 5000,
-          $find: {
-            $traverse: 'descendants',
-            $filter: {
-              $operator: '=',
-              $field: 'type',
-              $value: type,
+    while (!finished) {
+      const op = createGetOperations(
+        client,
+        {
+          ...gets[type],
+          $list: {
+            $offset: page * pageAmount,
+            $limit: pageAmount,
+            $find: {
+              $traverse: 'descendants',
+              $filter: {
+                $operator: '=',
+                $field: 'type',
+                $value: type,
+              },
             },
           },
         },
-      },
-    }
-
-    const op = createGetOperations(
-      client,
-      {
-        ...gets[type],
-        $list: {
-          $offset: page * 5000,
-          $limit: 5000,
-          $find: {
-            $traverse: 'descendants',
-            $filter: {
-              $operator: '=',
-              $field: 'type',
-              $value: type,
-            },
-          },
-        },
-      },
-      'root',
-      '.nodes',
-      db,
-      undefined,
-      oldSchema
-    )
-
-    console.log(op)
-
-    const r = await executeGetOperations(
-      client,
-      undefined,
-      {
+        'root',
+        '.nodes',
         db,
-        meta: {},
-        originDescriptors: {},
-      },
-      op,
-      false,
-      oldSchema
-    )
+        undefined,
+        oldSchema
+      )
+      const r = await executeGetOperations(
+        client,
+        undefined,
+        {
+          db,
+          meta: {},
+          originDescriptors: {},
+        },
+        op,
+        false,
+        oldSchema
+      )
 
-    console.info('????????????', r)
+      const setQ = []
 
-    // get + old schema
+      for (const node of r.nodes) {
+        // if false remove all mutations
+        setQ.push(
+          client.set({ $id: node.id, ...handleMutations(node), $db: db })
+        )
+      }
+      await Promise.all(setQ)
 
-    // need to call get with a different schema...
+      console.info(`Set mutation batch #${page} ${page * pageAmount}`)
 
-    // call get directly - need to be able to pass custom schema
-
-    // oldSchema
-
-    // const existing = await get(query)
-    // console.dir(existing, { depth: 10 })
-    // console.dir(query, { depth: 10 })
+      if (r.nodes.length === pageAmount) {
+        page++
+      } else {
+        finished = true
+        break
+      }
+    }
   }
 
-  console.info(gets)
+  console.info('RDY!')
 
   // for (const mutation)
 }
