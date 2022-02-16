@@ -135,7 +135,7 @@ int SelvaArgsParser_StringSetList(
     }
 
     if (excluded_out) {
-        excl = RedisModule_CreateString(ctx, "", 1);
+        excl = RedisModule_CreateString(ctx, "", 0);
         if (!excl) {
             goto fail;
         }

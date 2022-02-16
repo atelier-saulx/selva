@@ -197,7 +197,6 @@ static int send_node_field(
         const char *field_str,
         size_t field_len,
         RedisModuleString *excluded_fields) {
-    TO_STR(excluded_fields);
     Selva_NodeId nodeId;
     const char *full_field_name_str;
     size_t full_field_name_len;
@@ -219,11 +218,15 @@ static int send_node_field(
         full_field_name_len = field_len;
     }
 
-    if (excluded_fields && stringlist_searchn(excluded_fields_str, full_field_name_str, full_field_name_len)) {
-        /*
-         * This field should be excluded from the results.
-         */
-        return 0;
+    if (excluded_fields) {
+        TO_STR(excluded_fields);
+
+        if (stringlist_searchn(excluded_fields_str, full_field_name_str, full_field_name_len)) {
+            /*
+             * This field should be excluded from the results.
+             */
+            return 0;
+        }
     }
 
     /*
