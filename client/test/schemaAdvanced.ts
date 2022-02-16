@@ -182,7 +182,7 @@ test.only('schemas - hard override', async (t) => {
     })
   )
 
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 100; i++) {
     const q = []
     for (let i = 0; i < 1000; i++) {
       q.push(
