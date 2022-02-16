@@ -211,9 +211,9 @@ function checkField(
     return `New schema missing field ${path} for type ${type}`
   }
 
-  if (oldField.type !== newField.type) {
-    return `Cannot change existing type for ${type} field ${path} changing from ${oldField.type} to ${newField.type}`
-  }
+  // if (oldField.type !== newField.type) {
+  //   return `Cannot change existing type for ${type} field ${path} changing from ${oldField.type} to ${newField.type}`
+  // }
 
   if (newField.type !== 'object' && newField.type !== 'set') {
     let searchRaw: SearchRaw | undefined = undefined
@@ -231,13 +231,13 @@ function checkField(
         searchTypeChanged(searchRaw.type, oldField.search.type)
       ) {
         // TODO: add support for changing schema types', which means recreating index
-        return `Can not change existing search types for ${path} in type ${type}, changing from ${cjson.encode(
-          // @ts-ignore
-          oldField.search.type
-        )} to ${cjson.encode(
-          // @ts-ignore
-          searchRaw && searchRaw.type
-        )}. This will be supported in the future.`
+        // return `Can not change existing search types for ${path} in type ${type}, changing from ${cjson.encode(
+        //   // @ts-ignore
+        //   oldField.search.type
+        // )} to ${cjson.encode(
+        //   // @ts-ignore
+        //   searchRaw && searchRaw.type
+        // )}. This will be supported in the future.`
       }
 
       searchIndexes[index] = searchIndexes[index] || {}
@@ -286,18 +286,18 @@ function checkField(
   } else if (newField.type === 'reference' || newField.type === 'references') {
     const castedOld = <FieldSchemaReferences>oldField
     if (!newField.bidirectional && castedOld.bidirectional) {
-      return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
-        // @ts-ignore
-        oldField.bidirectional
-      )} to null}. This will be supported in the future.`
+      // return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
+      //   // @ts-ignore
+      //   oldField.bidirectional
+      // )} to null}. This will be supported in the future.`
     } else if (newField.bidirectional && castedOld.bidirectional) {
       if (
         newField.bidirectional.fromField !== castedOld.bidirectional.fromField
       ) {
-        return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
-          // @ts-ignore
-          oldField.bidirectional
-        )} to null}. This will be supported in the future.`
+        // return `Can not change existing edge directionality for ${path} in type ${type}, changing from ${cjson.encode(
+        //   // @ts-ignore
+        //   oldField.bidirectional
+        // )} to null}. This will be supported in the future.`
       }
     }
   }
@@ -314,9 +314,9 @@ function checkNestedChanges(
   timeseries: Timeseries
 ): null | string {
   for (const field in oldType.fields) {
-    if (!newType.fields) {
-      return `Can not reset fields to empty for type ${type}`
-    }
+    // if (!newType.fields) {
+    //   return `Can not reset fields to empty for type ${type}`
+    // }
 
     if (!newType.fields[field]) {
       return `Field ${field} for type ${type} missing in new schema`
@@ -364,9 +364,9 @@ function verifyTypes(
 ): string | null {
   // make sure that new schema has all the old fields and that their nested changes don't change existing fields
   for (const type in oldSchema.types) {
-    if (!newSchema.types[type]) {
-      return `New schema definition missing existing type ${type}`
-    }
+    // if (!newSchema.types[type]) {
+    //   return `New schema definition missing existing type ${type}`
+    // }
 
     // make sure that we're not changing type schemas that already exist
     // Note: prefix equality is verified in ensurePrefixes()
@@ -411,9 +411,9 @@ function verifyTypes(
   }
 
   // crheck root type
-  if (!newSchema.rootType) {
-    return `New schema definition missing existing type for root (schema.rootType)`
-  }
+  // if (!newSchema.rootType) {
+  //   return `New schema definition missing existing type for root (schema.rootType)`
+  // }
 
   const err = checkNestedChanges(
     'root',
@@ -659,6 +659,7 @@ function checkLanguageChange(
   }
 }
 
+// add 'override' option
 export function updateSchema(
   newSchema: Schema
 ): [string | null, string | null] {

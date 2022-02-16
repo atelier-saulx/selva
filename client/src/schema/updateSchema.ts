@@ -329,6 +329,7 @@ export async function updateSchema(
       `${SCRIPT}:update-schema`, // TODO: or should we just evaluate the sha here. maybe not if it's not connected yet? ... we can also just re-queue it
       0,
       `${client.loglevel}:${client.uuid}`,
+      // array where you have an option to NOT fail
       JSON.stringify(newSchema)
     )
 
