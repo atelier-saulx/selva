@@ -253,6 +253,36 @@ test.only('schemas - hard override', async (t) => {
     t.is(typeof n.flap, 'string')
   }
 
+  await client.updateSchema(
+    {
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            image2: {
+              type: 'number',
+            },
+            image: {
+              // something like this
+              $delete: true,
+              // type: 'number',
+            },
+          },
+        },
+      },
+    },
+    'default',
+    true,
+    (old) => {
+      // something like this?
+      // need more info 'changed field' 'delete field' etc
+      return {
+        image2: old.image,
+        image: { $delete: true },
+      }
+    }
+  )
+
   await client.destroy()
   await server.destroy()
   await t.connectionsAreEmpty()
