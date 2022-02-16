@@ -23,7 +23,6 @@ export default async (
         id: true,
       }
     }
-
     let x = gets[f.type]
     for (let i = 0; i < f.path.length - 1; i++) {
       const p = f.path[i]
@@ -33,7 +32,6 @@ export default async (
       x = x[p]
     }
     x[f.path[f.path.length - 1]] = true
-    // console.info(f.path)
   }
 
   for (const type in gets) {
@@ -107,8 +105,4 @@ export default async (
       }
     }
   }
-
-  console.info('RDY!')
-
-  // for (const mutation)
 }
