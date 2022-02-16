@@ -4,7 +4,7 @@ import { SelvaClient } from '..'
 import executeGetOperations from '../get/executeGetOperations'
 import createGetOperations from '../get/createGetOperations'
 
-const pageAmount = 1e3
+const pageAmount = 3e3
 
 export default async (
   db: string,
@@ -92,6 +92,14 @@ export default async (
       console.info(`Set mutation batch #${page} ${page * pageAmount}`)
 
       if (r.nodes.length === pageAmount) {
+        try {
+          if (global.gc) {
+            global.gc()
+          }
+        } catch (err) {
+          console.error(`Cannot manualy gc`, err)
+        }
+
         page++
       } else {
         finished = true
