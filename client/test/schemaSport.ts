@@ -1,6 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
-import { Schema, SchemaOptions, Fields, FieldSchema } from '../src/schema'
+import { SchemaOptions, Fields, FieldSchema } from '../src/schema'
 import { start } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
@@ -12,7 +12,7 @@ test.serial('schemas - sport', async (t) => {
   })
   const client = connect({ port })
 
-  await new Promise((resolve, _reject) => {
+  await new Promise((resolve) => {
     setTimeout(resolve, 100)
   })
 
@@ -369,11 +369,8 @@ test.serial('schemas - sport', async (t) => {
   }
 
   await client.updateSchema(schema)
-
-  const { schema: schemaResult, searchIndexes } = await client.getSchema()
+  await client.getSchema()
   await client.destroy()
-
   await server.destroy()
-
   await t.connectionsAreEmpty()
 })

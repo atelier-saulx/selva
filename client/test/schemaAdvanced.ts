@@ -182,17 +182,25 @@ test.only('schemas - hard override', async (t) => {
     })
   )
 
-  const q = []
-  for (let i = 0; i < 100e3; i++) {
-    q.push(
-      client.set({
-        type: 'thing',
-        image: 'flap ' + i,
-      })
-    )
+  for (let i = 0; i < 1000; i++) {
+    const q = []
+    for (let i = 0; i < 1000; i++) {
+      q.push(
+        client.set({
+          type: 'thing',
+          image: 'flap ' + i,
+        })
+      )
+    }
+    await Promise.all(q)
+    try {
+      if (global.gc) {
+        global.gc()
+      }
+    } catch (err) {
+      console.error(`Cannot manualy gc`, err)
+    }
   }
-
-  await Promise.all(q)
 
   await wait(1000)
 
