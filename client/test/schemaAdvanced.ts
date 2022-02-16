@@ -194,39 +194,42 @@ test.only('schemas - hard override', async (t) => {
 
   await Promise.all(q)
 
-  const x = await client.get({
-    nodes: {
-      id: true,
-      image: true,
-      $list: {
-        $offset: 0,
-        $limit: 5000,
-        $find: {
-          $traverse: 'descendants',
-          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
-        },
-      },
-    },
-  })
+  // const x = await client.get({
+  //   nodes: {
+  //     id: true,
+  //     image: true,
+  //     $list: {
+  //       $offset: 0,
+  //       $limit: 5000,
+  //       $find: {
+  //         $traverse: 'descendants',
+  //         $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+  //       },
+  //     },
+  //   },
+  // })
 
   // lets delete before updating the actual schema...
   // pretty difficult cant keep it in mem
 
-  const q2 = []
-  for (const y of x.nodes) {
-    q2.push(
-      client.set({
-        $id: y.id,
-        image: { $delete: true },
-      })
-    )
-  }
+  // seems the get need to use the old schema
+  //  its in the get query where it goes wrong - so parse the get before doing it
 
-  try {
-    await Promise.all(q2)
-  } catch (err) {
-    console.info('????????', err)
-  }
+  // const q2 = []
+  // for (const y of x.nodes) {
+  //   q2.push(
+  //     client.set({
+  //       $id: y.id,
+  //       image: { $delete: true },
+  //     })
+  //   )
+  // }
+
+  // try {
+  //   await Promise.all(q2)
+  // } catch (err) {
+  //   console.info('????????', err)
+  // }
 
   await wait(1000)
 
@@ -244,13 +247,13 @@ test.only('schemas - hard override', async (t) => {
       },
     },
     'default',
-    true
-    // (old) => {
-    //   console.info('hello old', old)
-    //   return {
-    //     image: '!' + old.image,
-    //   }
-    // }
+    true,
+    (old) => {
+      console.info('hello old', old)
+      return {
+        image: '!' + old.image,
+      }
+    }
   )
 
   const xx = await client.get({

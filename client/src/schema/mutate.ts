@@ -39,6 +39,8 @@ export default async (
 
     // 5k
 
+    // this get needs to be different....
+
     const query = {
       nodes: {
         ...gets[type],
@@ -56,6 +58,8 @@ export default async (
         },
       },
     }
+
+    // need to call get with a different schema...
 
     const existing = await client.get(query)
     console.dir(existing, { depth: 10 })
