@@ -87,7 +87,7 @@ export default async (
       }
       await Promise.all(setQ)
 
-      // progress listener
+      // progress listener maybe?
       console.info(`Set mutation batch #${page} ${page * pageAmount}`)
 
       if (r.nodes.length === pageAmount) {
@@ -98,7 +98,6 @@ export default async (
         } catch (err) {
           console.error(`Cannot manualy gc`, err)
         }
-
         page++
       } else {
         finished = true
