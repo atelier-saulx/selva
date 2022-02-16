@@ -10,6 +10,7 @@ import {
 } from '.'
 import { ServerSelector } from '../types'
 import { wait, validateFieldName } from '../util'
+import mutate from './mutate'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
@@ -296,7 +297,10 @@ export async function updateSchema(
   client: SelvaClient,
   props: SchemaOptions,
   selector: ServerSelector,
-  noErrorOnMutation: boolean = false,
+  allowMutations: boolean = false,
+  handleMutations?: (old: { [field: string]: any }) => {
+    [field: string]: any
+  },
   retry?: number
 ): Promise<SchemaMutations> {
   retry = retry || 0
@@ -309,7 +313,7 @@ export async function updateSchema(
     <Schema>props
   )
 
-  if (!noErrorOnMutation && mutations.length) {
+  if (!allowMutations && mutations.length) {
     let str = ''
     for (const mutation of mutations) {
       str += `\n    Change type "${mutation.type}", field "${mutation.path.join(
@@ -324,12 +328,14 @@ export async function updateSchema(
   }
 
   try {
+    // only place wherw we call update-schema
     const updated = await client.redis.evalsha(
       selector,
       `${SCRIPT}:update-schema`, // TODO: or should we just evaluate the sha here. maybe not if it's not connected yet? ... we can also just re-queue it
       0,
       `${client.loglevel}:${client.uuid}`,
-      JSON.stringify(newSchema)
+      // array where you have an option to NOT fail
+      JSON.stringify({ schema: newSchema, allowMutations })
     )
 
     if (updated) {
@@ -346,9 +352,15 @@ export async function updateSchema(
           `Unable to update schema after ${MAX_SCHEMA_UPDATE_RETRIES} attempts`
         )
       }
-      // await this.getSchema()
       await wait(retry * 200)
-      await updateSchema(client, props, selector, noErrorOnMutation, retry + 1)
+      await updateSchema(
+        client,
+        props,
+        selector,
+        allowMutations,
+        handleMutations,
+        retry + 1
+      )
     } else {
       if (e.code === 'NR_CLOSED') {
         // canhappen with load and eval script
@@ -356,6 +368,10 @@ export async function updateSchema(
         throw e
       }
     }
+  }
+
+  if (allowMutations && handleMutations && mutations.length) {
+    await mutate(client, mutations, handleMutations)
   }
 
   return mutations

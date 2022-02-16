@@ -139,6 +139,7 @@ test.serial('schemas - custom validation', async (t) => {
   await t.connectionsAreEmpty()
 })
 
+// serial
 test.only('schemas - hard override', async (t) => {
   const port = await getPort()
   const server = await start({
@@ -185,10 +186,58 @@ test.only('schemas - hard override', async (t) => {
     })
   )
 
+  const q = []
+  for (let i = 0; i < 10; i++) {
+    q.push(
+      client.set({
+        type: 'thing',
+        image: 'flap',
+      })
+    )
+  }
+
+  await Promise.all(q)
+
+  // const x = await client.get({
+  //   nodes: {
+  //     id: true,
+  //     image: true,
+  //     $list: {
+  //       $offset: 0,
+  //       $limit: 5000,
+  //       $find: {
+  //         $traverse: 'descendants',
+  //         $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+  //       },
+  //     },
+  //   },
+  // })
+
+  // lets delete before updating the actual schema...
+  // pretty difficult cant keep it in mem
+
+  // seems the get need to use the old schema
+  //  its in the get query where it goes wrong - so parse the get before doing it
+
+  // const q2 = []
+  // for (const y of x.nodes) {
+  //   q2.push(
+  //     client.set({
+  //       $id: y.id,
+  //       image: { $delete: true },
+  //     })
+  //   )
+  // }
+
+  // try {
+  //   await Promise.all(q2)
+  // } catch (err) {
+  //   console.info('????????', err)
+  // }
+
   await wait(1000)
 
-  // fix in updateSchema?
-  const mutations = await client.updateSchema(
+  await client.updateSchema(
     {
       types: {
         thing: {
@@ -202,10 +251,37 @@ test.only('schemas - hard override', async (t) => {
       },
     },
     'default',
-    true
+    true,
+    (old) => {
+      console.info('hello old', old)
+      return {
+        image: '!' + old.image,
+      }
+    }
   )
 
-  console.info(mutations)
+  const xx = await client.get({
+    nodes: {
+      id: true,
+      image: true,
+      $list: {
+        $offset: 0,
+        $limit: 5000,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+        },
+      },
+    },
+  })
+
+  console.log('xxx', xx)
+
+  // batch per 5k
+  // (old) => {
+  // if non existing remove field
+  //   return { type: old.type, image: '!' + old.image }
+  // }
 
   await client.destroy()
   await server.destroy()
