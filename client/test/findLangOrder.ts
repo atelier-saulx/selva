@@ -44,7 +44,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('$lang should change the order when relevant', async (t) => {
+test[process.platform === "darwin" ? 'skip' : 'serial']('$lang should change the order when relevant', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
