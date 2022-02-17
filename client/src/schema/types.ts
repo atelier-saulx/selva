@@ -125,7 +125,7 @@ export type InputTypeSchema = {
 }
 
 export type SchemaDelOpts = {
-  fields: Record<string, string[]>
+  fields: Record<string, string[][]>
   types: string[]
 }
 

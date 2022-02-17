@@ -240,11 +240,13 @@ export class SelvaClient extends EventEmitter {
       types: [],
     }
 
-    // need to walk
     for (const t in opts.types) {
-      const f = extractSchemaDelOpts(opts.types[t])
+      // if opts.type === $delete
 
-      console.info(f)
+      const f = extractSchemaDelOpts(opts.types[t])
+      if (f.length) {
+        delOpts.fields[t] = f
+      }
     }
 
     return updateSchema(
@@ -260,16 +262,6 @@ export class SelvaClient extends EventEmitter {
   async waitUntilEvent(event: string): Promise<void> {
     return waitUntilEvent(this, event)
   }
-
-  // subscribeSchema(name: string = 'default'): Observable<Schema> {
-  //   //  call this observeSchema....
-  //   console.warn('subscribeSchema changed to observeSchema will be removed in future versions')
-  //   return observeSchema(this, name)
-  // }
-
-  // observeSchema(name: string = 'default'): Observable<Schema> {
-  //   return observeSchema(this, name)
-  // }
 
   public subscribeSchema(name: string = 'default'): Observable {
     const props: ObservableOptions = {
