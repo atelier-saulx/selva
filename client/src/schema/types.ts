@@ -4,7 +4,6 @@ export type TypesDb = { idSize: number } & { [key: string]: string }
 
 export type GetSchemaResult = {
   schema: Schema
-  searchIndexes: SearchIndexes
 }
 
 export const FIELD_TYPES = [
@@ -48,40 +47,9 @@ export type FieldType =
   | 'type'
   | 'timestamp'
 
-export type SearchSchema = Record<string, string[]>
 export type TimeSeriesFields = Record<string, FieldSchema>
 
-export type SearchIndexes = Record<string, SearchSchema>
 export type Timeseries = Record<string, TimeSeriesFields> // by type to record of fields that are time series
-
-export type Search =
-  | {
-      index?: string
-      type: (
-        | 'EXISTS'
-        | 'TAG'
-        | 'TEXT'
-        | 'NUMERIC'
-        | 'SORTABLE'
-        | 'TEXT-LANGUAGE'
-        | 'TEXT-LANGUAGE-SUG'
-      )[]
-    }
-  | true
-
-export type SearchRaw = {
-  index?: string
-  type: (
-    | 'EXISTS'
-    | 'TAG'
-    | 'TEXT'
-    | 'NUMERIC'
-    | 'SORTABLE'
-    | 'TEXT-LANGUAGE'
-    | 'GEO'
-    | 'TEXT-LANGUAGE-SUG'
-  )[]
-}
 
 export type FieldSchemaObject = {
   type: 'object'
@@ -97,7 +65,6 @@ export type FieldSchemaJson = {
   properties?: {
     [key: string]: FieldSchema
   }
-  search?: SearchRaw | Search
   meta?: any
   timeseries?: boolean
 }
@@ -105,7 +72,6 @@ export type FieldSchemaJson = {
 export type FieldSchemaRecord = {
   type: 'record'
   values: FieldSchema
-  search?: SearchRaw | Search
   meta?: any
   timeseries?: boolean
 }
@@ -115,13 +81,11 @@ export type FieldSchemaReferences = {
   bidirectional?: {
     fromField: string
   }
-  search?: SearchRaw | Search
   meta?: any
   timeseries?: boolean
 }
 
 export type FieldSchemaOther = {
-  search?: SearchRaw | Search
   type: FieldType
   meta?: any
   timeseries?: boolean
