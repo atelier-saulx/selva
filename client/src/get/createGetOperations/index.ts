@@ -26,27 +26,27 @@ export default function createGetOperations(
   if (props.$value) {
     ops.push({
       type: 'value',
-      field: field.substr(1),
+      field: field.slice(1),
       value: props.$value,
     })
   } else if (props.$raw) {
     ops.push({
       type: 'raw',
       id,
-      field: field.substr(1),
-      sourceField: props.$raw === true ? field.substr(1) : props.$raw,
+      field: field.slice(1),
+      sourceField: props.$raw === true ? field.slice(1) : props.$raw,
     })
   } else if (props.$id && field) {
     ops.push({
       type: 'nested_query',
-      field: field.substr(1),
+      field: field.slice(1),
       props,
     })
   } else if (Array.isArray(props)) {
     ops.push({
       type: 'array_query',
       id,
-      field: field.substr(1),
+      field: field.slice(1),
       props,
     })
   } else if (props.$list) {
@@ -59,8 +59,8 @@ export default function createGetOperations(
     ops.push({
       type: 'db',
       id,
-      field: field.substr(1),
-      sourceField: props.$field || field.substr(1),
+      field: field.slice(1),
+      sourceField: props.$field || field.slice(1),
       default: props.$default,
     })
   } else if (props.$inherit) {
@@ -90,7 +90,7 @@ export default function createGetOperations(
     if (fs && fs.type === 'reference') {
       ops.push({
         type: 'nested_query',
-        field: field.substr(1),
+        field: field.slice(1),
         props: Object.assign({}, props, { $field: undefined }),
         id,
         sourceField: props.$field,
@@ -103,28 +103,28 @@ export default function createGetOperations(
     ops.push({
       type: 'db',
       id,
-      field: field.substr(1),
+      field: field.slice(1),
       sourceField: <string[]>props.$field,
     })
   } else if (typeof props === 'object') {
-    const fs = getNestedSchema(schema, id, field.substr(1))
+    const fs = getNestedSchema(schema, id, field.slice(1))
 
     if (fs && fs.type === 'reference') {
       if (props.$flatten) {
-        const parts = field.substr(1).split('.')
+        const parts = field.slice(1).split('.')
         const flattened = parts.slice(0, parts.length - 1).join('.')
         ops.push({
           type: 'nested_query',
           field: flattened,
           props,
           id,
-          sourceField: field.substr(1),
+          sourceField: field.slice(1),
           fromReference: true,
         })
       } else {
         ops.push({
           type: 'nested_query',
-          field: field.substr(1),
+          field: field.slice(1),
           props,
           id,
           fromReference: true,
@@ -156,8 +156,8 @@ export default function createGetOperations(
     ops.push({
       type: 'db',
       id,
-      field: field.substr(1),
-      sourceField: field.substr(1),
+      field: field.slice(1),
+      sourceField: field.slice(1),
     })
   }
   return ops

@@ -21,7 +21,7 @@ const createAggregateOperation = (
   const fieldSchema = getNestedSchema(
     client.schemas[db],
     id,
-    <string>props.$field || field.substr(1)
+    <string>props.$field || field.slice(1)
   )
 
   const isTimeseries = fieldSchema && fieldSchema.timeseries
@@ -29,8 +29,8 @@ const createAggregateOperation = (
     type: 'aggregate',
     id,
     props,
-    field: field.substr(1),
-    sourceField: field.substr(1),
+    field: field.slice(1),
+    sourceField: field.slice(1),
     recursive: !!aggregate.$recursive,
     options: {
       limit: limit || aggregate.$limit || -1,

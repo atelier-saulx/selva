@@ -385,7 +385,7 @@ export const TYPE_CASTS: Record<
     const parse = (o, field: string, arr: string[]) =>
       arr.forEach((key, i, arr) => {
         const f = field.includes('.*.')
-          ? `${field.substr(0, field.indexOf('*') - 1)}.${key}`
+          ? `${field.substring(0, field.indexOf('*') - 1)}.${key}`
           : `${field}.${key}`
 
         if ((i & 1) === 1) return
@@ -871,7 +871,7 @@ export default async function executeGetOperations(
       Object.assign(o, r)
     } else if (r !== null && r !== undefined) {
       if (ops[i].field.includes('.*.')) {
-        const f = ops[i].field.substr(0, ops[i].field.indexOf('*') - 1)
+        const f = ops[i].field.substring(0, ops[i].field.indexOf('*') - 1)
         const current = getNestedField(o, f)
         setNestedResult(o, f, deepMerge({}, current, r))
       } else {

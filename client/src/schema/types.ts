@@ -6,6 +6,7 @@ export type GetSchemaResult = {
   schema: Schema
 }
 
+// maybe reduce the types here... (e.g. email / phone)
 export const FIELD_TYPES = [
   'float',
   'boolean',
@@ -92,7 +93,6 @@ export type FieldSchemaOther = {
 }
 
 export type FieldSchemaArrayLike = {
-  search?: { index?: string; type: 'TAG'[] }
   type: 'set' | 'array'
   items: FieldSchema
   meta?: any

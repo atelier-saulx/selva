@@ -20,7 +20,7 @@ const createFindOperation = (
   const fieldSchema = getNestedSchema(
     client.schemas[db],
     id,
-    <string>find.$traverse || field.substr(1)
+    <string>find.$traverse || field.slice(1)
   )
 
   const isTimeseries = fieldSchema && fieldSchema.timeseries
@@ -30,8 +30,8 @@ const createFindOperation = (
     id,
     props,
     single,
-    field: field.substr(1),
-    sourceField: field.substr(1),
+    field: field.slice(1),
+    sourceField: field.slice(1),
     recursive: find.$recursive,
     options: {
       limit,

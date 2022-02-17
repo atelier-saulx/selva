@@ -1,4 +1,4 @@
-import { Schema, Types } from '~selva/schema/index'
+import { Schema } from '~selva/schema/index'
 import { isEqual } from '../util'
 
 function updateHierarchiesForType(_typeName: string): void {

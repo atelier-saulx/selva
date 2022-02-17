@@ -13,7 +13,7 @@ const list = (
   const fieldSchema = getNestedSchema(
     client.schemas[db],
     id,
-    <string>props.$field || field.substr(1)
+    <string>props.$field || field.slice(1)
   )
 
   const isTimeseries = fieldSchema && fieldSchema.timeseries
@@ -23,8 +23,8 @@ const list = (
       type: 'find',
       id,
       props,
-      field: field.substr(1),
-      sourceField: <string>props.$field || field.substr(1),
+      field: field.slice(1),
+      sourceField: <string>props.$field || field.slice(1),
       options: {
         limit: -1, // no limit
         offset: 0,
@@ -49,8 +49,8 @@ const list = (
       type: 'find',
       id,
       props,
-      field: field.substr(1),
-      sourceField: <string>props.$field || field.substr(1),
+      field: field.slice(1),
+      sourceField: <string>props.$field || field.slice(1),
       options: {
         limit: props.$list.$limit || -1,
         offset: props.$list.$offset || 0,

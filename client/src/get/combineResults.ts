@@ -40,7 +40,7 @@ export default async function combineResults(
             return
           }
 
-          const parts = q.path.substr(1).split('.')
+          const parts = q.path.slice(1).split('.')
 
           if (parts[0] === 'listResult') {
             parts.shift()
