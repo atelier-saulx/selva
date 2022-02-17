@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -27,38 +26,38 @@ test.beforeEach(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       club: {
         prefix: 'cl',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       team: {
         prefix: 'te',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
           flupriflu: { type: 'string' },
-          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          date: { type: 'number' },
           // need to warn if you change this!!!
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          value: { type: 'number' },
+          status: { type: 'number' },
         },
       },
       video: {
         prefix: 'vi',
         fields: {
           title: { type: 'text' },
-          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          date: { type: 'number' },
           // making it different here should tell you something or at least take it over
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          value: { type: 'number' },
         },
       },
     },
@@ -131,7 +130,8 @@ test.beforeEach(async (t) => {
       children: genMatches(amount),
     }),
   ])
-  console.log(
+
+  console.info(
     `Set ${Math.floor((amount * 2 + vids) / 100) / 10}k nested`,
     Date.now() - d,
     'ms'
@@ -167,8 +167,8 @@ test.serial('find - descendants', async (t) => {
     await wait(2e3)
 
     // // extra option in find is index or auto from fields
-    let d = Date.now()
-    const { items: results } = await client.get({
+    const d = Date.now()
+    await client.get({
       items: {
         name: true,
         value: true,
@@ -228,11 +228,7 @@ test.serial('find - descendants', async (t) => {
       },
     })
 
-    console.log('Executing query (1100 resuls)', Date.now() - d, 'ms')
-
-    const matches = results.filter((v) => v.type === 'match')
-    const videos = results.filter((v) => v.type === 'video')
-    const league = results.filter((v) => v.type === 'league')
+    console.info('Executing query (1100 resuls)', Date.now() - d, 'ms')
 
     // t.is(matches.length, 997, 'query result matches')
     // t.is(videos.length, 3, 'query result videos')
@@ -374,7 +370,6 @@ test.serial('find - descendants', async (t) => {
 
     await wait(2000)
 
-    //@ts-ignore
     t.deepEqual(empty, [], 'does not throw for TAG fields')
 
     await wait(2000)

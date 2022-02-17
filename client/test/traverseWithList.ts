@@ -2,7 +2,6 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
-import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -18,7 +17,7 @@ test.before(async (t) => {
       custom: {
         prefix: 'cu',
         fields: {
-          value: { type: 'number', search: true },
+          value: { type: 'number' },
           age: { type: 'number' },
           auth: {
             type: 'json',

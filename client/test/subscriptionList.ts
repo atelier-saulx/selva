@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -20,10 +19,10 @@ test.before(async (t) => {
         prefix: 'ma',
         fields: {
           title: { type: 'text' },
-          name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          name: { type: 'string' },
+          value: { type: 'number' },
+          status: { type: 'number' },
+          date: { type: 'number' },
         },
       },
     },
@@ -61,7 +60,7 @@ test.serial('subscription list', async (t) => {
   await wait(500)
 
   // without sort
-  const flap = await client.get({
+  await client.get({
     $includeMeta: true,
     children: {
       name: true,
@@ -70,7 +69,7 @@ test.serial('subscription list', async (t) => {
     },
   })
 
-  const ff = await client.get({
+  await client.get({
     $includeMeta: true,
     children: {
       name: true,

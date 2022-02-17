@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -20,10 +19,10 @@ test.before(async (t) => {
         prefix: 'ma',
         fields: {
           title: { type: 'text' },
-          name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          name: { type: 'string' },
+          value: { type: 'number' },
+          status: { type: 'number' },
+          date: { type: 'number' },
         },
       },
     },
@@ -35,7 +34,7 @@ test.after(async (t) => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
+  console.info('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
@@ -43,7 +42,7 @@ test.after(async (t) => {
 
 test.serial('subscription validation error', async (t) => {
   const client = connect({ port })
-  var errorCnt = 0
+  let errorCnt = 0
   client
     .observe({
       $db: {},
@@ -85,8 +84,7 @@ test.serial(
   'subscription initialization with multiple subscribers',
   async (t) => {
     const client = connect({ port })
-    var errorCnt = 0
-    var cnt = 0
+    let cnt = 0
     const id = await client.set({
       type: 'match',
       title: { en: 'snurfels' },
@@ -101,7 +99,7 @@ test.serial(
           cnt++
         },
         () => {
-          errorCnt++
+          // errorCnt++
         }
       )
     await wait(1000)
@@ -115,7 +113,7 @@ test.serial(
           cnt++
         },
         () => {
-          errorCnt++
+          // errorCnt++
         }
       )
     await wait(1000)
@@ -132,7 +130,6 @@ test.serial(
 
 test.serial('subscription error on subs manager', async (t) => {
   const client = connect({ port })
-  var errorCnt = 0
   const results = []
   client
     .observe({
@@ -152,32 +149,11 @@ test.serial('subscription error on subs manager', async (t) => {
       },
       (err) => {
         console.error(err)
-        errorCnt++
+        // errorCnt++
       }
     )
   await wait(1000)
   t.deepEqual(results, [{ $isNull: true }], 'correct isNull on unexisting item')
 
-  // TODO: yes?
-  // client
-  //   .observe({
-  //     $id: 'adx',
-  //     $language: 'en',
-  //     yizi: {
-  //       title: true,
-  //       $inherit: {
-  //         $item: 'club'
-  //       }
-  //     }
-  //   })
-  //   .subscribe(
-  //     v => {},
-  //     err => {
-  //       console.log(err.message)
-  //       errorCnt++
-  //     }
-  //   )
-  // await wait(1000)
-  // t.is(errorCnt, 1)
   await client.destroy()
 })

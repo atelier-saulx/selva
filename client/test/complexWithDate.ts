@@ -27,7 +27,6 @@ test.before(async (t) => {
           title: {
             type: 'text',
             meta: { type: 'title' },
-            search: { type: ['TEXT-LANGUAGE-SUG'] },
           },
         },
       },
@@ -42,15 +41,12 @@ test.before(async (t) => {
           title: {
             type: 'text',
             meta: { type: 'title' },
-            search: { type: ['TEXT-LANGUAGE-SUG'] },
           },
           date: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           published: {
             type: 'boolean',
-            search: { type: ['TAG'] },
             meta: { type: 'enabled' },
           },
         },
@@ -66,7 +62,6 @@ test.before(async (t) => {
           title: {
             type: 'text',
             meta: { type: 'title' },
-            search: { type: ['TEXT-LANGUAGE-SUG'] },
           },
         },
       },

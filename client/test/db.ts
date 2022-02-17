@@ -20,7 +20,7 @@ test.before(async (t) => {
       sport: {
         prefix: 'sp',
         fields: {
-          value: { type: 'number', search: true },
+          value: { type: 'number' },
           rando: { type: 'string' },
           matches: { type: 'references' },
           match: { type: 'reference' },
@@ -42,7 +42,7 @@ test.before(async (t) => {
           prefix: 'ma',
           fields: {
             rando: { type: 'string' },
-            value: { type: 'number', search: true },
+            value: { type: 'number' },
             sport: { type: 'reference' },
             sports: { type: 'references' },
           },

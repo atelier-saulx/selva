@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -28,7 +27,6 @@ test.before(async (t) => {
           title: { type: 'text' },
           published: {
             type: 'boolean',
-            search: { type: ['TAG'] },
           },
         },
       },

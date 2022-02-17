@@ -7,9 +7,8 @@ import {
   startOrigin,
   startRegistry,
 } from '@saulx/selva-server'
-import './assertions'
 import getPort from 'get-port'
-import { wait, worker, removeDump } from './assertions'
+import { wait, removeDump } from './assertions'
 import { join } from 'path'
 const dir = join(process.cwd(), 'tmp', 'subscribe-nested-find-test')
 
@@ -41,22 +40,22 @@ test.serial('get - correct order', async (t) => {
       folder: {
         prefix: 'fl',
         fields: {
-          published: { type: 'boolean', search: true },
-          title: { type: 'text', search: true },
+          published: { type: 'boolean' },
+          title: { type: 'text' },
         },
       },
       region: {
         prefix: 're',
         fields: {
-          published: { type: 'boolean', search: true },
-          title: { type: 'text', search: true },
+          published: { type: 'boolean' },
+          title: { type: 'text' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          published: { type: 'boolean', search: true },
-          title: { type: 'text', search: true },
+          published: { type: 'boolean' },
+          title: { type: 'text' },
         },
       },
     },

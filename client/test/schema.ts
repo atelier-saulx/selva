@@ -2,7 +2,6 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { Schema, SchemaOptions, Fields } from '../src/schema'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -30,9 +29,7 @@ test.serial('schemas - basic', async (t) => {
   })
   const client = connect({ port })
 
-  await new Promise((resolve, _reject) => {
-    setTimeout(resolve, 100)
-  })
+  await wait(100)
 
   const defaultFields: Fields = {
     id: {
@@ -40,10 +37,6 @@ test.serial('schemas - basic', async (t) => {
     },
     type: {
       type: 'type',
-      search: {
-        index: 'default',
-        type: ['TAG'],
-      },
     },
     title: {
       type: 'text',
@@ -66,10 +59,6 @@ test.serial('schemas - basic', async (t) => {
     },
     name: {
       type: 'string',
-      search: {
-        index: 'default',
-        type: ['TAG'],
-      },
     },
   }
 
@@ -144,7 +133,6 @@ test.serial('schemas - basic', async (t) => {
             properties: {
               snurkels: {
                 type: 'string',
-                search: { type: ['TAG'] },
               },
             },
           },
@@ -159,7 +147,6 @@ test.serial('schemas - basic', async (t) => {
               },
               hls: {
                 type: 'url',
-                search: { index: 'hls', type: ['TEXT'] },
               },
               pano: {
                 type: 'url',
@@ -188,7 +175,7 @@ test.serial('schemas - basic', async (t) => {
 
   await client.updateSchema(schema)
 
-  const { schema: schemaResult, searchIndexes } = await client.getSchema()
+  const { schema: schemaResult } = await client.getSchema()
 
   // make sure meta is accessible
   t.deepEqual(schemaResult.types.match.fields.smurky.meta, {
@@ -207,15 +194,6 @@ test.serial('schemas - basic', async (t) => {
     Object.keys(schema.types),
     ['league', 'person', 'video', 'vehicle', 'family', 'match'],
     'correct type map'
-  )
-
-  t.deepEqual(
-    searchIndexes,
-    {
-      default: { type: ['TAG'], 'flurpy.snurkels': ['TAG'], name: ['TAG'] },
-      hls: { 'video.hls': ['TEXT'] },
-    },
-    'searchIndexes are equal'
   )
 
   // t.true(
@@ -306,7 +284,6 @@ test.serial('schemas - basic', async (t) => {
               properties: {
                 snurkels: {
                   type: 'string',
-                  search: { type: ['TEXT'] },
                 },
               },
             },
@@ -427,24 +404,6 @@ test.serial('schemas - basic', async (t) => {
     e.stack.includes(`Field niceObject.helloBad has an unsupported field type`)
   )
 
-  // const info2 = await client.redis.command(
-  //   { name: 'default' },
-  //   'FT.INFO',
-  //   'default'
-  // )
-  // const fields2 = info2[info2.indexOf('fields') + 1]
-  //
-  // does not drop and create a new one for now...
-  // t.deepEqual(
-  //   fields2,
-  //   [
-  //     ['type', 'type', 'TAG', 'SEPARATOR', ','],
-  //     ['name', 'type', 'TAG', 'SEPARATOR', ','],
-  //     ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
-  //   ],
-  //   'change fields in the index - does not drop index yet so stays the same!'
-  // )
-
   await client.updateSchema({
     types: {
       match: {
@@ -454,7 +413,6 @@ test.serial('schemas - basic', async (t) => {
             properties: {
               snurpie: {
                 type: 'string',
-                search: { type: ['TEXT'] },
               },
             },
           },
@@ -463,24 +421,6 @@ test.serial('schemas - basic', async (t) => {
     },
   })
 
-  // const info = await client.redis.command(
-  //   { name: 'default' },
-  //   'FT.INFO',
-  //   'default'
-  // )
-  // const fields = info[info.indexOf('fields') + 1]
-
-  // t.deepEqual(
-  //   fields,
-  //   [
-  //     ['type', 'type', 'TAG', 'SEPARATOR', ','],
-  //     ['name', 'type', 'TAG', 'SEPARATOR', ','],
-  //     ['flurpy.snurkels', 'type', 'TAG', 'SEPARATOR', ','],
-  //     ['flurpy.snurpie', 'type', 'TEXT', 'WEIGHT', '1'],
-  //   ],
-  //   'add fields to the index'
-  // )
-
   t.deepEqual(
     (await client.getSchema()).schema.types.match.fields.flurpy,
     {
@@ -488,15 +428,9 @@ test.serial('schemas - basic', async (t) => {
       properties: {
         snurkels: {
           type: 'string',
-          search: {
-            type: ['TAG'],
-          },
         },
         snurpie: {
           type: 'string',
-          search: {
-            type: ['TEXT'],
-          },
         },
       },
     },

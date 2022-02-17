@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -21,9 +20,8 @@ test.before(async (t) => {
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] },
           },
-          published: { type: 'boolean', search: { type: ['TAG'] } },
+          published: { type: 'boolean' },
           awayTeam: { type: 'reference' },
           homeTeam: { type: 'reference' },
           image: {
@@ -72,8 +70,8 @@ test.before(async (t) => {
         prefix: 'te',
         fields: {
           updatedAt: {
-            type: 'timestamp'
-          }
+            type: 'timestamp',
+          },
         },
       },
       competition: {
@@ -91,7 +89,7 @@ test.after(async (t) => {
   const client = connect({ port })
   const d = Date.now()
   await client.delete('root')
-  console.log('removed', Date.now() - d, 'ms')
+  console.info('removed', Date.now() - d, 'ms')
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
@@ -203,12 +201,11 @@ test.serial('Subscribe to updatedAt', async (t) => {
   const obs = client.observe({
     $id: team1,
     updatedAt: true,
-    //name: true,
   })
-  let ts = 0;
+  let ts = 0
   const sub = obs.subscribe((v) => {
     if (ts === 0) {
-       ts = v.updatedAt
+      ts = v.updatedAt
     } else {
       t.assert(v.updatedAt > ts, 'updatedAt should have changed')
     }

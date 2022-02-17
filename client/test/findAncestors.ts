@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -27,32 +26,32 @@ test.beforeEach(async (t) => {
       region: {
         prefix: 're',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          name: { type: 'string' },
+          value: { type: 'number' },
         },
       },
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          value: { type: 'number' },
         },
       },
       club: {
         prefix: 'cl',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       season: {
         prefix: 'se',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       team: {
         prefix: 'te',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       match: {
@@ -61,15 +60,15 @@ test.beforeEach(async (t) => {
         },
         prefix: 'ma',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } },
+          value: { type: 'number' },
+          status: { type: 'number' },
         },
       },
     },
   })
 
   // A small delay is needed after setting the schema
-  await new Promise((r) => setTimeout(r, 100))
+  await wait(100)
 
   await client.destroy()
 })
@@ -247,7 +246,6 @@ test.serial('find - ancestors', async (t) => {
 
 test.serial.skip('find - ancestors - regions', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
-  const teams = []
 
   const regions = await Promise.all([
     client.set({
@@ -313,7 +311,6 @@ test.serial.skip('find - ancestors - regions', async (t) => {
 
 test.serial.skip('find - ancestors - regions - no wrapping', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
-  const teams = []
 
   const regions = await Promise.all([
     client.set({

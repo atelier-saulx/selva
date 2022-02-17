@@ -4,7 +4,6 @@ import { start, startOrigin } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
 import { FieldSchemaArrayLike } from '../src/schema'
-import { wait } from '../src/util'
 
 let srv1
 let srv2

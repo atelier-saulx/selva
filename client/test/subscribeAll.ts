@@ -7,9 +7,8 @@ import {
   startOrigin,
   startRegistry,
 } from '@saulx/selva-server'
-import './assertions'
 import getPort from 'get-port'
-import { wait, worker, removeDump } from './assertions'
+import { wait, removeDump } from './assertions'
 import { join } from 'path'
 const dir = join(process.cwd(), 'tmp', 'subscribe-all-test')
 
@@ -45,8 +44,8 @@ test.serial('no json parsing', async (t) => {
       match: {
         prefix: 'ma',
         fields: {
-          published: { type: 'boolean', search: true },
-          buttonText: { type: 'text', search: true },
+          published: { type: 'boolean' },
+          buttonText: { type: 'text' },
         },
       },
     },
