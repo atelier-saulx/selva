@@ -18,6 +18,10 @@
 #include "tree.h"
 #include "selva_object.h"
 
+#define MOD_AL(x, y) ((x) & (y - 1)) /* x % bytes */
+#define PAD(size, al) MOD_AL((al - MOD_AL(size, al)), al)
+#define ALIGNED_SIZE(size, al) (size + PAD(size, al))
+
 #define SELVA_OBJECT_KEY_MAX            USHRT_MAX /*!< Maximum length of a key including dots and array notation. */
 #define SELVA_OBJECT_SIZE_MAX           0x7FFFFFFF /*!< Maximum number of keys in a SelvaObject. */
 /**
@@ -28,9 +32,9 @@
 #define NR_EMBEDDED_KEYS                4
 /**
  * Maximum length of the name of an embedded key.
- * Must align nicely with the SelvaObject structure.
+ * Must align nicely with the SelvaObject structure. This is ensured by the macros.
  */
-#define EMBEDDED_NAME_MAX               8
+#define EMBEDDED_NAME_MAX               ALIGNED_SIZE(9, alignof(struct SelvaObjectKey))
 #define EMBEDDED_KEY_SIZE               (sizeof(struct SelvaObjectKey) + EMBEDDED_NAME_MAX)
 
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
@@ -62,7 +66,7 @@ struct SelvaObject {
     uint32_t obj_size;
     uint32_t emb_res;
     struct SelvaObjectKeys keys_head;
-    char emb_keys[NR_EMBEDDED_KEYS * EMBEDDED_KEY_SIZE];
+    _Alignas(struct SelvaObjectKey) char emb_keys[NR_EMBEDDED_KEYS * EMBEDDED_KEY_SIZE];
 };
 
 struct so_type_name {
@@ -396,6 +400,11 @@ static int insert_new_key(struct SelvaObject *obj, const char *name_str, size_t 
     if (!key) {
         return SELVA_ENOMEM;
     }
+#if 0
+    if ((char *)key >= obj->emb_keys && (char *)key < obj->emb_keys + sizeof(obj->emb_keys)) {
+        fprintf(stderr, "Key \"%.*s\" is embedded %zu\n", (int)name_len, name_str, EMBEDDED_NAME_MAX);
+    }
+#endif
 
     /*
      * Initialize and insert.
@@ -636,7 +645,7 @@ static struct SelvaObjectKey *find_key_emb(struct SelvaObject *obj, const char *
 
 static struct SelvaObjectKey *find_key_rb(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     const size_t key_size = sizeof(struct SelvaObjectKey) + key_name_len + 1;
-    char buf[key_size] __attribute__((aligned(alignof(struct SelvaObjectKey))));
+    _Alignas(struct SelvaObjectKey) char buf[key_size];
     struct SelvaObjectKey *filter = (struct SelvaObjectKey *)buf;
 
     memset(filter, 0, key_size);
