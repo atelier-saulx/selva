@@ -157,7 +157,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('find compression perf - descendants', async (t) => {
+test.serial('perf: find compression perf - descendants', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await wait(2e3)
 

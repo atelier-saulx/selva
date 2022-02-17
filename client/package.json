@@ -38,8 +38,10 @@
   "ava": {
     "files": [
       "test/**/*.ts",
-      "!test/assertions",
-      "!test/performance"
+      "!test/assertions"
+    ],
+    "match": [
+      "!perf:*"
     ],
     "concurrency": 1,
     "extensions": [
