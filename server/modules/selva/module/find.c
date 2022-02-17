@@ -48,7 +48,8 @@ static int send_node_field(
         struct SelvaObject *obj,
         const char *field_prefix_str,
         size_t field_prefix_len,
-        RedisModuleString *field,
+        const char *field_str,
+        size_t field_len,
         RedisModuleString *excluded_fields);
 static int send_all_node_data_fields(
         RedisModuleCtx *ctx,
@@ -63,10 +64,11 @@ static int send_hierarchy_field(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId nodeId,
-        RedisModuleString *full_field_name,
+        const char *full_field_name_str,
+        size_t full_field_name_len,
         const char *field_str,
         size_t field_len) {
-#define SEND_FIELD_NAME() RedisModule_ReplyWithString(ctx, full_field_name)
+#define SEND_FIELD_NAME() RedisModule_ReplyWithStringBuffer(ctx, full_field_name_str, full_field_name_len)
 #define IS_FIELD(name) \
     (field_len == (sizeof(name) - 1) && !memcmp(field_str, name, sizeof(name) - 1))
 
@@ -102,11 +104,11 @@ static int send_edge_field(
         struct SelvaObject *edges,
         const char *field_prefix_str,
         size_t field_prefix_len,
-        RedisModuleString *field,
+        const char *field_str,
+        size_t field_len,
         RedisModuleString *excluded_fields) {
     struct EdgeField *edge_field;
     void *p;
-    TO_STR(field);
 
     int off = SelvaObject_GetPointerPartialMatchStr(edges, field_str, field_len, &p);
     edge_field = p;
@@ -115,18 +117,19 @@ static int send_edge_field(
     } else if (!edge_field) {
         return SELVA_ENOENT;
     } else if (off == 0) {
-        RedisModuleString *act_field_name;
-
         if (field_prefix_str) {
+            RedisModuleString *act_field_name;
+
             act_field_name = RedisModule_CreateStringPrintf(ctx, "%.*s%s", (int)field_prefix_len, field_prefix_str, field_str);
             if (!act_field_name) {
                 return SELVA_ENOMEM;
             }
+
+            RedisModule_ReplyWithString(ctx, act_field_name);
         } else {
-            act_field_name = field;
+            RedisModule_ReplyWithStringBuffer(ctx, field_str, field_len);
         }
 
-        RedisModule_ReplyWithString(ctx, act_field_name);
         replyWithEdgeField(ctx, edge_field);
         return 0;
     }
@@ -144,10 +147,6 @@ static int send_edge_field(
 
     const char *next_field_str = field_str + off;
     size_t next_field_len = field_len - off;
-    RedisModuleString *next_field = RedisModule_CreateString(ctx, next_field_str, next_field_len);
-    if (!next_field) {
-        return SELVA_ENOMEM;
-    }
 
     const char *next_prefix_str;
     size_t next_prefix_len;
@@ -179,20 +178,12 @@ static int send_edge_field(
         return 0;
     } else {
         struct SelvaObject *dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
+        int res;
 
-        return (send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field, excluded_fields) == 0) ? SELVA_ENOENT : 0;
+        res = send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field_str, next_field_len, excluded_fields);
+
+        return res == 0 ? SELVA_ENOENT : 0;
     }
-}
-
-static int is_excluded_field(RedisModuleString *excluded_fields, RedisModuleString *field_name) {
-    TO_STR(excluded_fields, field_name);
-    const char *r;
-
-    /* RMS always ends with '\0', so let's utilize that. */
-    r = memmem(excluded_fields_str, excluded_fields_len, field_name_str, field_name_len + 1);
-
-    /* The list is made in a way that each element is delimited by '\0' from beginning and end. */
-    return r && *(r - 1) == '\0';
 }
 
 static int send_node_field(
@@ -203,35 +194,45 @@ static int send_node_field(
         struct SelvaObject *obj,
         const char *field_prefix_str,
         size_t field_prefix_len,
-        RedisModuleString *field,
+        const char *field_str,
+        size_t field_len,
         RedisModuleString *excluded_fields) {
     Selva_NodeId nodeId;
-    TO_STR(field);
+    const char *full_field_name_str;
+    size_t full_field_name_len;
     int err;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
 
-    RedisModuleString *full_field_name;
     if (field_prefix_str) {
+        RedisModuleString *full_field_name;
+
         full_field_name = RedisModule_CreateStringPrintf(ctx, "%.*s%s", (int)field_prefix_len, field_prefix_str, field_str);
         if (!full_field_name) {
             return SELVA_ENOMEM;
         }
+
+        full_field_name_str = RedisModule_StringPtrLen(full_field_name, &full_field_name_len);
     } else {
-        full_field_name = field;
+        full_field_name_str = field_str;
+        full_field_name_len = field_len;
     }
 
-    if (excluded_fields && is_excluded_field(excluded_fields, full_field_name)) {
-        /*
-         * This field should be excluded from the results.
-         */
-        return 0;
+    if (excluded_fields) {
+        TO_STR(excluded_fields);
+
+        if (stringlist_searchn(excluded_fields_str, full_field_name_str, full_field_name_len)) {
+            /*
+             * This field should be excluded from the results.
+             */
+            return 0;
+        }
     }
 
     /*
      * Check if the field name is a hierarchy field name.
      */
-    err = send_hierarchy_field(ctx, hierarchy, nodeId, full_field_name, field_str, field_len);
+    err = send_hierarchy_field(ctx, hierarchy, nodeId, full_field_name_str, full_field_name_len, field_str, field_len);
     if (err == 0) {
         return 1;
     } else if (err != SELVA_ENOENT) {
@@ -249,7 +250,7 @@ static int send_node_field(
         struct SelvaObject *edges = metadata->edge_fields.edges;
 
         if (edges) {
-            err = send_edge_field(ctx, lang, hierarchy, edges, field_prefix_str, field_prefix_len, field, excluded_fields);
+            err = send_edge_field(ctx, lang, hierarchy, edges, field_prefix_str, field_prefix_len, field_str, field_len, excluded_fields);
             if (err == 0) {
                return 1;
             } else if (err != SELVA_ENOENT) {
@@ -283,7 +284,7 @@ static int send_node_field(
 
     if (field_len >= 2 && field_str[field_len - 2] == '.' && field_str[field_len - 1] == '*') {
         field_len -= 2;
-    } else if (SelvaObject_Exists(obj, field)) {
+    } else if (SelvaObject_ExistsStr(obj, field_str, field_len)) {
         /* Field didn't exist in the node. */
         return 0;
     }
@@ -321,20 +322,13 @@ static int send_all_node_data_fields(
     iterator = SelvaObject_ForeachBegin(obj);
     while ((field_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
         size_t field_name_len = strlen(field_name_str);
-        RedisModuleString *field;
         int res;
 
-        field = RedisModule_CreateString(ctx, field_name_str, field_name_len);
-        if (!field) {
-            /*
-             * Resist the devil, and he will flee from you.
-             * We are probably going to crash soon and there is no way out at
-             * this point, so let's just ignore this ever happened.
-             */
+        if (stringlist_searchn(SELVA_HIDDEN_FIELDS, field_name_str, field_name_len)) {
             continue;
         }
 
-        res = send_node_field(ctx, lang, hierarchy, node, obj, field_prefix_str, field_prefix_len, field, excluded_fields);
+        res = send_node_field(ctx, lang, hierarchy, node, obj, field_prefix_str, field_prefix_len, field_name_str, field_name_len, excluded_fields);
         if (res >= 0) {
             nr_fields += res;
         } else {
@@ -342,10 +336,10 @@ static int send_all_node_data_fields(
             Selva_NodeId node_id;
 
             SelvaHierarchy_GetNodeId(node_id, node);
-            fprintf(stderr, "%s:%d: send_node_field(%.*s, %s) failed: %s\n",
+            fprintf(stderr, "%s:%d: send_node_field(%.*s, %.*s) failed: %s\n",
                     __FILE__, __LINE__,
                     (int)SELVA_NODE_ID_SIZE, node_id,
-                    RedisModule_StringPtrLen(field, NULL),
+                    (int)field_name_len, field_name_str,
                     getSelvaErrorStr(res));
         }
     }
@@ -393,7 +387,7 @@ static void send_node_fields_named(
                     break;
                 }
             } else {
-                res = send_node_field(ctx, lang, hierarchy, node, obj, NULL, 0, field, excluded_fields);
+                res = send_node_field(ctx, lang, hierarchy, node, obj, NULL, 0, field_str, field_len, excluded_fields);
                 if (res > 0) {
                     nr_fields += res;
                     break; /* Only send one of the fields in the list. */

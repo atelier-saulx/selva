@@ -135,7 +135,7 @@ int SelvaArgsParser_StringSetList(
     }
 
     if (excluded_out) {
-        excl = RedisModule_CreateString(ctx, "", 1);
+        excl = RedisModule_CreateString(ctx, "", 0);
         if (!excl) {
             goto fail;
         }
@@ -189,8 +189,10 @@ int SelvaArgsParser_StringSetList(
                 if (el_len > 0) { /* Skip empty elements. */
                     if (excl && cur_el[0] == excl_prefix) {
                         if (el_len > 1) {
+                            const char sep[] = { set_separator };
+
                             if (RedisModule_StringAppendBuffer(ctx, excl, cur_el + 1, el_len - 1) ||
-                                RedisModule_StringAppendBuffer(ctx, excl, "", 1)) {
+                                RedisModule_StringAppendBuffer(ctx, excl, sep, 1)) {
                                 goto fail;
                             }
                             nr_excl++;
