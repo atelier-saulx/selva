@@ -48,7 +48,6 @@ export default function createInheritOperation(
 ): void {
   if (typeof inherit === 'object' && inherit.$item) {
     let p: GetOptions = props
-
     if (props.$all) {
       const newKeys = makeAll(
         client,
@@ -56,11 +55,11 @@ export default function createInheritOperation(
         field,
         <string>props.$field,
         db,
-        props
+        props,
+        passedOnSchema
       )
       p = newKeys || props
     }
-
     ops.push({
       type: 'inherit',
       id,
@@ -73,7 +72,6 @@ export default function createInheritOperation(
         : (inherit.$required && [inherit.$required]) || undefined,
       types: Array.isArray(inherit.$item) ? inherit.$item : [inherit.$item],
     })
-
     return
   }
 

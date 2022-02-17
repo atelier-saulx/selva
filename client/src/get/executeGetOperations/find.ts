@@ -112,14 +112,12 @@ function parseGetOpts(
     }
   > = nestedMapping || {}
 
-  let hasAll = false
-
   for (const k in props) {
     if ((k === '$list' || k === '$find') && pathPrefix === '') {
       // ignore
     } else if (props.$list && k === '$field' && pathPrefix === '') {
       // ignore
-    } else if (!hasAll && !k.startsWith('$') && props[k] === true) {
+    } else if (!k.startsWith('$') && props[k] === true) {
       fields.get(type).add(pathPrefix + k)
     } else if (props[k] === false) {
       fields.get(type).add(`!${pathPrefix + k}`)
@@ -132,17 +130,14 @@ function parseGetOpts(
             mapping[f] = { targetField: [path] }
             return
           }
-
           if (!mapping[f].targetField) {
             mapping[f].targetField = [path]
             return
           }
-
           mapping[f].targetField.push(path)
         })
       } else {
         fields.get(type).add($field)
-
         if (!mapping[$field]) {
           mapping[$field] = { targetField: [path] }
         } else if (!mapping[$field].targetField) {
@@ -153,7 +148,6 @@ function parseGetOpts(
       }
     } else if (k === '$default') {
       fields.get(type).add(path)
-
       const $default = props[k]
       if (!mapping[path]) {
         mapping[path] = { default: $default }
@@ -161,9 +155,7 @@ function parseGetOpts(
         mapping[path].default = $default
       }
     } else if (path === '' && k === '$all') {
-      // fields = new Set(['*'])
       fields.get(type).add('*')
-      // hasAll = true
     } else if (k === '$all') {
       fields.get(type).add(path + '.*')
     } else if (k === '$fieldsByType') {
@@ -174,17 +166,14 @@ function parseGetOpts(
           t,
           nestedMapping
         )
-
         if (hasSpecial) {
           return [fields, mapping, true]
         }
-
         for (const [type, nestedFields] of nestedFieldsMap.entries()) {
           const set = fields.get(type) || new Set()
           for (const f of nestedFields.values()) {
             set.add(f)
           }
-
           fields.set(type, set)
         }
       }
@@ -197,17 +186,14 @@ function parseGetOpts(
         type,
         mapping
       )
-
       if (hasSpecial) {
         return [fields, mapping, true]
       }
-
       for (const [type, nestedFields] of nestedFieldsMap.entries()) {
         const set = fields.get(type) || new Set()
         for (const f of nestedFields.values()) {
           set.add(f)
         }
-
         fields.set(type, set)
       }
     }

@@ -516,7 +516,8 @@ const TYPE_TO_SPECIAL_OP: Record<
     ctx: ExecContext,
     id: string,
     field: string,
-    _lang?: string
+    _lang?: string,
+    schema?: Schema
   ) => Promise<any>
 > = {
   id: async (
@@ -524,7 +525,8 @@ const TYPE_TO_SPECIAL_OP: Record<
     ctx: ExecContext,
     id: string,
     field: string,
-    _lang?: string
+    lang?: string,
+    schema?: Schema
   ) => {
     return id
   },
@@ -533,7 +535,8 @@ const TYPE_TO_SPECIAL_OP: Record<
     ctx: ExecContext,
     id: string,
     field: string,
-    lang?: string
+    lang?: string,
+    schema?: Schema
   ) => {
     const r = await client.redis.selva_hierarchy_edgeget(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
@@ -548,10 +551,10 @@ const TYPE_TO_SPECIAL_OP: Record<
     ctx: ExecContext,
     id: string,
     field: string,
-    lang?: string
+    lang?: string,
+    schema?: Schema
   ) => {
     const paddedId = id.padEnd(10, '\0')
-
     if (field === 'ancestors') {
       return client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
@@ -599,14 +602,20 @@ const TYPE_TO_SPECIAL_OP: Record<
     ctx: ExecContext,
     id: string,
     field: string,
-    lang?: string
+    lang?: string,
+    schema?: Schema
   ) => {
     const { db } = ctx
-    const args = [makeLangArg(client.schemas[ctx.db].languages, lang), id]
+
+    if (!schema) {
+      schema = client.schemas[db]
+    }
+
+    const args = [makeLangArg(schema.languages, lang), id]
     if (lang) {
       args.push(`${field}.${lang}`)
-      if (client.schemas[db].languages) {
-        args.push(...client.schemas[db].languages.map((l) => `${field}.${l}`))
+      if (schema.languages) {
+        args.push(...schema.languages.map((l) => `${field}.${l}`))
       }
     } else {
       args.push(field)
@@ -726,7 +735,17 @@ export const executeGetOperation = async (
         client,
         op.props.$language || lang,
         ctx,
-        createGetOperations(client, op.props, id, '', ctx.db)
+        createGetOperations(
+          client,
+          op.props,
+          id,
+          '',
+          ctx.db,
+          undefined,
+          schema
+        ),
+        false,
+        schema
       )
     }
   } else if (op.type === 'array_query') {
@@ -754,9 +773,10 @@ export const executeGetOperation = async (
     }
   } else if (op.type === 'aggregate') {
     if (op.isTimeseries) {
+      // add this later...
       return timeseries(client, op, lang, ctx)
     } else {
-      return aggregate(client, op, lang, ctx)
+      return aggregate(client, op, lang, ctx, schema)
     }
   } else if (op.type === 'inherit') {
     return inherit(client, op, lang, ctx)
@@ -792,7 +812,7 @@ export const executeGetOperation = async (
             bufferNodeMarker(ctx, op.id, f)
           }
           if (specialOp) {
-            return specialOp(client, ctx, op.id, f, lang)
+            return specialOp(client, ctx, op.id, f, lang, schema)
           }
 
           return client.redis.selva_object_get(
