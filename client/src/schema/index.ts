@@ -1,4 +1,4 @@
-import { Types, TypeSchema, FieldSchema } from './types'
+import { Types, TypeSchema, FieldSchema, InputTypes } from './types'
 
 export * from './types'
 
@@ -22,6 +22,15 @@ export type SchemaOptions = {
   sha?: string
   languages?: string[]
   types?: Types
+  rootType?: Pick<TypeSchema, 'fields'>
+  idSeedCounter?: number
+  prefixToTypeMapping?: Record<string, string>
+}
+
+export type SchemaOpts = {
+  sha?: string
+  languages?: string[]
+  types?: InputTypes
   rootType?: Pick<TypeSchema, 'fields'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>

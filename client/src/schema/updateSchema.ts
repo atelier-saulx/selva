@@ -6,6 +6,7 @@ import {
   FieldSchema,
   SchemaOptions,
   FIELD_TYPES,
+  SchemaDelOpts,
   SchemaMutations,
 } from '.'
 import { ServerSelector } from '../types'
@@ -294,6 +295,7 @@ export async function updateSchema(
   handleMutations?: (old: { [field: string]: any }) => {
     [field: string]: any
   },
+  delOpts?: SchemaDelOpts,
   retry?: number
 ): Promise<SchemaMutations> {
   retry = retry || 0
@@ -360,6 +362,7 @@ export async function updateSchema(
         selector,
         allowMutations,
         handleMutations,
+        delOpts,
         retry + 1
       )
     } else {

@@ -11,10 +11,12 @@ import digest from './digest'
 import Redis from './redis'
 import {
   GetSchemaResult,
+  SchemaDelOpts,
   SchemaOptions,
   Id,
   SchemaMutations,
   Schema,
+  SchemaOpts,
   FieldSchema,
 } from './schema'
 import { FieldSchemaObject } from './schema/types'
@@ -40,6 +42,7 @@ import { v4 as uuidv4 } from 'uuid'
 import getServer from './getServer'
 import { ObservableOptions, ObsSettings } from './observable/types'
 import { SetMetaResponse } from './set/types'
+import extractSchemaDelOpts from './schema/extractSchemaDelOpts'
 
 export * as constants from './constants'
 
@@ -223,7 +226,7 @@ export class SelvaClient extends EventEmitter {
   }
 
   async updateSchema(
-    opts: SchemaOptions,
+    opts: SchemaOpts,
     name: string = 'default',
     allowMutations: boolean = false,
     handleMutations?: (old: { [field: string]: any }) => {
@@ -231,12 +234,26 @@ export class SelvaClient extends EventEmitter {
     }
   ): Promise<SchemaMutations> {
     await this.initializeSchema({ $db: name }, false)
+
+    const delOpts: SchemaDelOpts = {
+      fields: {},
+      types: [],
+    }
+
+    // need to walk
+    for (const t in opts.types) {
+      const f = extractSchemaDelOpts(opts.types[t])
+
+      console.info(f)
+    }
+
     return updateSchema(
       this,
-      opts,
+      <SchemaOptions>opts,
       { name, type: 'origin' },
       allowMutations,
-      handleMutations
+      handleMutations,
+      delOpts
     )
   }
 

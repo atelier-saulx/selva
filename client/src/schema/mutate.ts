@@ -18,20 +18,22 @@ export default async (
   const gets = {}
 
   for (const f of mutations) {
-    if (!gets[f.type]) {
-      gets[f.type] = {
-        id: true,
+    if (f.mutation === 'change_field') {
+      if (!gets[f.type]) {
+        gets[f.type] = {
+          id: true,
+        }
       }
-    }
-    let x = gets[f.type]
-    for (let i = 0; i < f.path.length - 1; i++) {
-      const p = f.path[i]
-      if (!x[p]) {
-        x[p] = {}
+      let x = gets[f.type]
+      for (let i = 0; i < f.path.length - 1; i++) {
+        const p = f.path[i]
+        if (!x[p]) {
+          x[p] = {}
+        }
+        x = x[p]
       }
-      x = x[p]
+      x[f.path[f.path.length - 1]] = true
     }
-    x[f.path[f.path.length - 1]] = true
   }
 
   for (const type in gets) {
