@@ -55,7 +55,8 @@ async function mergeObj(
   op: GetOperationInherit,
   _schema: Schema,
   lang: string,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedOnSchema?: Schema
 ): Promise<GetResult> {
   const remapped: Record<string, string> = {}
   const [props, defaults] = makeRealKeys(op.props, op.field, true)
@@ -101,7 +102,7 @@ async function mergeObj(
     })
   }
 
-  const rpn = ast2rpn(client.schemas[ctx.db].types, fork)
+  const rpn = ast2rpn((passedOnSchema || client.schemas[ctx.db]).types, fork)
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
@@ -124,7 +125,7 @@ async function mergeObj(
 
   const res = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
-    makeLangArg(client.schemas[ctx.db].languages, lang),
+    makeLangArg((passedOnSchema || client.schemas[ctx.db]).languages, lang),
     '___selva_hierarchy',
     'ancestors',
     'offset',
@@ -142,7 +143,8 @@ async function mergeObj(
     field,
     res,
     defaults,
-    lang
+    lang,
+    passedOnSchema
   )
 
   return o
@@ -153,7 +155,8 @@ async function deepMergeObj(
   op: GetOperationInherit,
   _schema: Schema,
   lang: string,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedOnSchema?: Schema
 ): Promise<GetResult> {
   const remapped: Record<string, string> = {}
   const [props, defaults] = makeRealKeys(op.props, op.field, true)
@@ -203,12 +206,17 @@ async function deepMergeObj(
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
-    const added = await addMarker(client, ctx, {
-      type: 'ancestors',
-      id: op.id,
-      fields,
-      rpn,
-    })
+    const added = await addMarker(
+      client,
+      ctx,
+      {
+        type: 'ancestors',
+        id: op.id,
+        fields,
+        rpn,
+      },
+      passedOnSchema
+    )
 
     if (added) {
       client.redis.selva_subscriptions_refresh(
@@ -239,7 +247,9 @@ async function deepMergeObj(
     remapped,
     field,
     res,
-    defaults
+    defaults,
+    undefined,
+    passedOnSchema
   )
   return o
 }
@@ -248,7 +258,8 @@ async function inheritItem(
   client: SelvaClient,
   op: GetOperationInherit,
   lang: string,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedOnSchema?: Schema
 ): Promise<GetResult> {
   const schema = client.schemas[ctx.db]
 
@@ -293,16 +304,21 @@ async function inheritItem(
     }
   }
 
-  const rpn = ast2rpn(client.schemas[ctx.db].types, fork)
+  const rpn = ast2rpn((passedOnSchema || client.schemas[ctx.db]).types, fork)
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
-    const added = await addMarker(client, ctx, {
-      type: 'ancestors',
-      id: op.id,
-      fields,
-      rpn,
-    })
+    const added = await addMarker(
+      client,
+      ctx,
+      {
+        type: 'ancestors',
+        id: op.id,
+        fields,
+        rpn,
+      },
+      passedOnSchema
+    )
 
     if (added) {
       client.redis.selva_subscriptions_refresh(
@@ -316,7 +332,7 @@ async function inheritItem(
 
   const [results] = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
-    makeLangArg(client.schemas[ctx.db].languages, lang),
+    makeLangArg((passedOnSchema || client.schemas[ctx.db]).languages, lang),
     '___selva_hierarchy',
     'ancestors',
     'limit',
@@ -486,14 +502,14 @@ export default async function inherit(
       op.merge === true &&
       (!fs || fs.type === 'object' || fs.type === 'record')
     ) {
-      return mergeObj(client, op, schema, lang, ctx)
+      return mergeObj(client, op, schema, lang, ctx, passedOnSchema)
     }
 
     if (
       op.deepMerge === true &&
       (!fs || fs.type === 'object' || fs.type === 'record')
     ) {
-      return deepMergeObj(client, op, schema, lang, ctx)
+      return deepMergeObj(client, op, schema, lang, ctx, passedOnSchema)
     }
 
     if (ctx.subId) {
