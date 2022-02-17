@@ -309,6 +309,8 @@ export async function updateSchema(
     )
   }
 
+  console.info(delOpts)
+
   if (!props.types) {
     props.types = {}
   }
