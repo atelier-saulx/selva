@@ -1891,23 +1891,13 @@ static int exec_edge_filter(
 
     err = Edge_GetFieldEdgeMetadata(edge_field, node->id, 0, &edge_metadata);
     if (err == SELVA_HIERARCHY_ENOENT || err == SELVA_ENOENT) {
-#if 0
-        fprintf(stderr, "No metadata for this edge: %.*s.%s -> %.*s\n",
-                (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID, //TODO head->id,
-                "", // TODO RedisModule_StringPtrLen(field, NULL),
-                (int)SELVA_NODE_ID_SIZE, node->id);
-#endif
         /* TODO Should probably run the filter with an empty object. */
         return 0;
     } else if (err) {
-        /* TODO Error handling */
-#if 0
-        fprintf(stderr, "%s:%d: Failed to get edge metadata %.*s.%s -> %.*s\n",
+        fprintf(stderr, "%s:%d: Failed to get edge metadata %.*s -> %.*s\n",
                 __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, EMPTY_NODE_ID, // TODO head->id,
-                "", // TODO RedisModule_StringPtrLen(field, NULL),
+                (int)SELVA_NODE_ID_SIZE, edge_field->src_node_id,
                 (int)SELVA_NODE_ID_SIZE, node->id);
-#endif
         return 0;
     } else {
         enum rpn_error rpn_err;
