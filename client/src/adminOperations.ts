@@ -78,7 +78,7 @@ export async function deleteField(
 
   const parts = name.split('.')
   let it: any = typeSchema
-  let fieldPart: any = {}
+  const fieldPart: any = {}
   let fIt: any = fieldPart
   for (let i = 0; i < parts.length; i++) {
     const acc = it.fields || it.properties || it
@@ -96,6 +96,7 @@ export async function deleteField(
     fIt = fIt[parts[i]]
   }
 
+  // thus becomes redundant with the schema mutations
   const allItems = await client.get({
     $db: selector.name,
     items: {
@@ -140,6 +141,7 @@ export async function deleteField(
   )
 }
 
+// same here - becomes redundant
 export async function castField(
   client: SelvaClient,
   type: string,

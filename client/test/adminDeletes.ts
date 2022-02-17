@@ -4,6 +4,7 @@ import { start, startOrigin } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
 import { FieldSchemaArrayLike } from '../src/schema'
+import { wait } from '../src/util'
 
 let srv1
 let srv2
@@ -64,11 +65,7 @@ test.before(async (t) => {
 })
 
 test.after(async (t) => {
-  const client = connect({ port: port1 })
-  await client.delete('root')
   await srv1.destroy()
-  await client.delete({ $id: 'root', $db: 'matchdb' })
-  await client.destroy()
   await srv2.destroy()
   await t.connectionsAreEmpty()
 })
