@@ -280,7 +280,8 @@ async function checkForNextRefresh(
   sourceField: string,
   paddedIds: string,
   ast: Fork,
-  lang?: string
+  lang?: string,
+  passedSchema?: Schema
 ): Promise<void> {
   if (!ctx.subId) {
     return
@@ -319,14 +320,18 @@ async function checkForNextRefresh(
         newFork.$and = [newFilter]
       }
 
-      const args = ast2rpn(client.schemas[ctx.db].types, newFork, lang)
+      const args = ast2rpn(
+        (passedSchema || client.schemas[ctx.db]).types,
+        newFork,
+        lang
+      )
       const ids = await client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        makeLangArg(client.schemas[ctx.db].languages, lang),
+        makeLangArg((passedSchema || client.schemas[ctx.db]).languages, lang),
         '___selva_hierarchy',
         // TODO: needs byType expression
         ...sourceFieldToFindArgs(
-          client.schemas[ctx.db],
+          passedSchema || client.schemas[ctx.db],
           null,
           sourceField,
           false
@@ -353,7 +358,10 @@ async function checkForNextRefresh(
         readLongLong(
           await client.redis.selva_object_get(
             ctx.originDescriptors[ctx.db] || { name: ctx.db },
-            makeLangArg(client.schemas[ctx.db].languages, lang),
+            makeLangArg(
+              (passedSchema || client.schemas[ctx.db]).languages,
+              lang
+            ),
             id,
             f.$field
           )
@@ -560,16 +568,17 @@ const findFields = async (
         },
       },
       lang,
-      ctx
+      ctx,
+      false,
+      passedSchema
     )
-
     op.inKeys = res.result
   }
 
   const args = op.filter
     ? ast2rpn((passedSchema || client.schemas[ctx.db]).types, op.filter, lang)
     : ['#1']
-  // console.log('ARGS', args)
+
   if (op.inKeys) {
     if (ctx.subId) {
       let added = false
@@ -618,7 +627,8 @@ const findFields = async (
       sourceField,
       joinIds(op.inKeys),
       op.filter,
-      lang
+      lang,
+      passedSchema
     )
 
     return result
@@ -766,7 +776,9 @@ const executeFindOperation = async (
             ...realOpts,
           },
           lang,
-          ctx
+          ctx,
+          false,
+          passedSchema
         )
       })
     )

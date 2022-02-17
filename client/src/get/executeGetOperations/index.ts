@@ -40,6 +40,7 @@ export type TraversalType =
   | 'bfs_edge_field'
   | 'bfs_expression'
   | 'expression'
+
 export type SubscriptionMarker = {
   type: TraversalType
   refField?: string
@@ -164,7 +165,8 @@ export function sourceFieldToFindArgs(
 export async function addMarker(
   client: SelvaClient,
   ctx: ExecContext,
-  marker: SubscriptionMarker
+  marker: SubscriptionMarker,
+  passedOnSchema?: Schema
 ): Promise<boolean> {
   if (!ctx.subId) {
     return false
@@ -182,17 +184,22 @@ export async function addMarker(
   //    throw new Error(`Invalid params for a "${marker.type}" marker`)
   // }
 
-  const schema = client.schemas[ctx.db]
+  const schema = passedOnSchema || client.schemas[ctx.db]
   const fieldSchema = getNestedSchema(schema, marker.id, marker.refField)
   if (fieldSchema && fieldSchema.type === 'array') {
     const nestedFields = marker.fields.map((f) => {
       return `${marker.refField}[n].${f}`
     })
-    return addMarker(client, ctx, {
-      type: 'node',
-      id: marker.id,
-      fields: nestedFields,
-    })
+    return addMarker(
+      client,
+      ctx,
+      {
+        type: 'node',
+        id: marker.id,
+        fields: nestedFields,
+      },
+      passedOnSchema
+    )
   }
 
   const markerId = adler32(marker)
@@ -248,7 +255,8 @@ export function bufferNodeMarker(
 
 async function addNodeMarkers(
   client: SelvaClient,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedOnSchema?: Schema
 ): Promise<number> {
   if (!ctx.nodeMarkers) {
     return
@@ -259,11 +267,16 @@ async function addNodeMarkers(
     await Promise.all(
       Object.entries(ctx.nodeMarkers).map(async ([id, fields]) => {
         count++
-        return addMarker(client, ctx, {
-          type: 'node',
-          id,
-          fields: [...fields.values()],
-        })
+        return addMarker(
+          client,
+          ctx,
+          {
+            type: 'node',
+            id,
+            fields: [...fields.values()],
+          },
+          passedOnSchema
+        )
       })
     )
 
@@ -653,7 +666,7 @@ export const executeNestedGetOperations = async (
     client,
     props.$language || lang,
     ctx,
-    createGetOperations(client, props, id, '', ctx.db),
+    createGetOperations(client, props, id, '', ctx.db, undefined, schema),
     runAsNested,
     schema
   )
@@ -696,12 +709,17 @@ export const executeGetOperation = async (
         bufferNodeMarker(ctx, op.id, ...field)
         await Promise.all(
           field.map((f) => {
-            return addMarker(client, ctx, {
-              id: op.id,
-              type: 'edge_field',
-              refField: f, // TODO: use expression?
-              fields: Object.keys(op.props).filter((f) => !f.startsWith('$')),
-            })
+            return addMarker(
+              client,
+              ctx,
+              {
+                id: op.id,
+                type: 'edge_field',
+                refField: f, // TODO: use expression?
+                fields: Object.keys(op.props).filter((f) => !f.startsWith('$')),
+              },
+              schema
+            )
           })
         )
 
@@ -779,7 +797,7 @@ export const executeGetOperation = async (
       return aggregate(client, op, lang, ctx, schema)
     }
   } else if (op.type === 'inherit') {
-    return inherit(client, op, lang, ctx)
+    return inherit(client, op, lang, ctx, schema)
   } else if (op.type === 'raw') {
     return await client.redis.selva_object_get(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
