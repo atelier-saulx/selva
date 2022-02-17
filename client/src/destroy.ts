@@ -1,11 +1,14 @@
 import { SelvaClient } from '.'
 import { connections } from './connection'
 import { wait } from './util'
+import { stopSync } from './connectRegistry/syncRegistry'
 
 export default async (selvaClient: SelvaClient) => {
   if (selvaClient.isDestroyed) {
     return
   }
+
+  stopSync(selvaClient)
   selvaClient.isDestroyed = true
 
   if (selvaClient.observables) {
