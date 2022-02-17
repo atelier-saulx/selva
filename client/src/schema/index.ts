@@ -2,13 +2,21 @@ import { Types, TypeSchema, FieldSchema } from './types'
 
 export * from './types'
 
-export type SchemaMutations = {
-  mutation: 'field'
-  type: string
-  path: string[]
-  old: FieldSchema
-  new: FieldSchema
-}[]
+export type SchemaMutations = (
+  | {
+      mutation: 'delete_type'
+      type: string
+      old: FieldSchema
+      new: FieldSchema
+    }
+  | {
+      mutation: 'change_field' | 'remove_field'
+      type: string
+      path: string[]
+      old: FieldSchema
+      new: FieldSchema
+    }
+)[]
 
 export type SchemaOptions = {
   sha?: string

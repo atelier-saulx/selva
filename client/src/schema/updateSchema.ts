@@ -217,7 +217,7 @@ function newFieldDefinition(
 
   if (oldField.type !== newField.type) {
     mutations.push({
-      mutation: 'field',
+      mutation: 'change_field',
       type: typeName, // add type
       path: fieldPath.split('.'),
       old: oldField,
@@ -271,7 +271,7 @@ function newFieldDefinition(
     // add mutation
 
     mutations.push({
-      mutation: 'field',
+      mutation: 'change_field',
       path: fieldPath.split('.'),
       type: typeName,
       old: oldField,
@@ -286,7 +286,6 @@ function newFieldDefinition(
   return newField
 }
 
-// allow overwriting schemas
 export async function updateSchema(
   client: SelvaClient,
   props: SchemaOptions,
@@ -312,9 +311,15 @@ export async function updateSchema(
   if (!allowMutations && mutations.length) {
     let str = ''
     for (const mutation of mutations) {
-      str += `\n    Change type "${mutation.type}", field "${mutation.path.join(
-        '.'
-      )}" from ${mutation.old.type} to ${mutation.new.type}`
+      if (mutation.mutation === 'delete_type') {
+        str += `\n    Delete type "${mutation.type}`
+      } else {
+        str += `\n    ${
+          mutation.mutation === 'change_field' ? 'Change' : 'Delete'
+        } "${mutation.type}", field "${mutation.path.join('.')}" from ${
+          mutation.old.type
+        } to ${mutation.new.type}`
+      }
     }
     throw new Error(
       `Update schema got ${mutations.length} changed field${

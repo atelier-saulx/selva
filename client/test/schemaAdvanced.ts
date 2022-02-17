@@ -139,8 +139,7 @@ test.serial('schemas - custom validation', async (t) => {
   await t.connectionsAreEmpty()
 })
 
-// serial
-test.only('schemas - hard override', async (t) => {
+test.serial('schemas - hard override', async (t) => {
   const port = await getPort()
   const server = await start({
     port,
@@ -253,20 +252,75 @@ test.only('schemas - hard override', async (t) => {
     t.is(typeof n.flap, 'string')
   }
 
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})
+
+test.only('schemas - remove fields', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+
+  try {
+    await client.updateSchema({
+      languages: ['en'],
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            image: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    })
+  } catch (err) {
+    console.info('--', err)
+  }
+
+  await wait(1000)
+
+  for (let i = 0; i < 10; i++) {
+    const q = []
+    for (let i = 0; i < 1000; i++) {
+      q.push(
+        client.set({
+          type: 'thing',
+          image: 'flap ' + i,
+        })
+      )
+    }
+    await Promise.all(q)
+    try {
+      if (global.gc) {
+        global.gc()
+      }
+    } catch (err) {
+      console.error(`Cannot manualy gc`, err)
+    }
+  }
+
+  await wait(1000)
+
   await client.updateSchema(
     {
       types: {
         thing: {
           prefix: 'th',
           fields: {
-            image2: {
-              type: 'number',
+            flap: {
+              type: 'string',
             },
-            // image: {
-            // something like this
-            // $delete: true,
-            // type: 'number',
-            // },
+            image: {
+              // create a mutation for this
+              $delete: true,
+            },
           },
         },
       },
@@ -274,14 +328,30 @@ test.only('schemas - hard override', async (t) => {
     'default',
     true,
     (old) => {
-      // something like this?
-      // need more info 'changed field' 'delete field' etc
       return {
-        image2: old.image,
-        image: { $delete: true },
+        flap: old.image,
       }
     }
   )
+
+  const results = await client.get({
+    nodes: {
+      id: true,
+      flap: true,
+      $list: {
+        $offset: 0,
+        $limit: 10,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+        },
+      },
+    },
+  })
+
+  for (const n of results.nodes) {
+    t.is(typeof n.flap, 'string')
+  }
 
   await client.destroy()
   await server.destroy()
