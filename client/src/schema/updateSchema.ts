@@ -299,6 +299,16 @@ export async function updateSchema(
   retry?: number
 ): Promise<SchemaMutations> {
   retry = retry || 0
+
+  if (
+    !allowMutations &&
+    (Object.keys(delOpts.fields).length || delOpts.types.length)
+  ) {
+    throw new Error(
+      'Cannot delete fields from schema if "AllowMutations" is not available'
+    )
+  }
+
   if (!props.types) {
     props.types = {}
   }
