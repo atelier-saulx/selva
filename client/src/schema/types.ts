@@ -138,7 +138,7 @@ export type InputSchema = Schema & {
 export const isDeleteField = (
   fieldSchema: FieldSchema | DeleteField
 ): fieldSchema is DeleteField => {
-  return '$delete' in fieldSchema
+  return !!(<DeleteField>fieldSchema).$delete
 }
 
 export type Fields = Record<string, FieldSchema>
