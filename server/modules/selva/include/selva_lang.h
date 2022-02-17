@@ -13,6 +13,9 @@
 
 /**
  * Get locale for a lang string.
+ * @param lang_str is a pointer to the language name.
+ * @param lang_len is the length of lang_str excluding any possible nul-character(s).
+ * @returns a POSIX locale.
  */
 locale_t SelvaLang_GetLocale(const char *lang_str, size_t lang_len);
 
