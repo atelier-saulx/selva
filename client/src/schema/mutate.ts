@@ -50,7 +50,7 @@ export default async (
         y[f.path[f.path.length - 1]] = { $delete: true }
         x[f.path[f.path.length - 1]] = true
       } else {
-        let x = gets[f.type]
+        let x = gets[f.type].query
         for (let i = 0; i < f.path.length - 1; i++) {
           const p = f.path[i]
           if (!x[p]) {

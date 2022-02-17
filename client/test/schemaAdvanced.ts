@@ -259,7 +259,7 @@ test.serial('schemas - hard override', async (t) => {
   t.pass()
 })
 
-test.only('schemas - remove fields', async (t) => {
+test.serial('schemas - remove fields', async (t) => {
   const port = await getPort()
   const server = await start({
     port,

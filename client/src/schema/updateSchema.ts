@@ -362,8 +362,6 @@ export async function updateSchema(
   }
 
   try {
-    console.dir(newSchema, { depth: 10 })
-
     // only place wherw we call update-schema
     const updated = await client.redis.evalsha(
       selector,
