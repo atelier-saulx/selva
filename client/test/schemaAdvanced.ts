@@ -308,7 +308,7 @@ test.serial('schemas - remove fields', async (t) => {
 
   await wait(1000)
 
-  await client.updateSchema(
+  const mut = await client.updateSchema(
     {
       types: {
         thing: {
@@ -318,7 +318,6 @@ test.serial('schemas - remove fields', async (t) => {
               type: 'string',
             },
             image: {
-              // create a mutation for this
               $delete: true,
             },
           },
@@ -333,6 +332,8 @@ test.serial('schemas - remove fields', async (t) => {
       }
     }
   )
+
+  console.info(mut)
 
   const results = await client.get({
     nodes: {

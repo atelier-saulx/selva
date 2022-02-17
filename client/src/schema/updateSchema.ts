@@ -8,6 +8,7 @@ import {
   FIELD_TYPES,
   SchemaDelOpts,
   SchemaMutations,
+  isDeleteField,
 } from '.'
 import { ServerSelector } from '../types'
 import { wait, validateFieldName } from '../util'
@@ -242,6 +243,9 @@ function newFieldDefinition(
   mutations: SchemaMutations
 ): FieldSchema {
   // herew we want to return
+  if (isDeleteField(newField)) {
+    return
+  }
 
   if (oldField.type !== newField.type) {
     mutations.push({
