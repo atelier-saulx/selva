@@ -40,9 +40,6 @@
       "test/**/*.ts",
       "!test/assertions"
     ],
-    "match": [
-      "!perf:*"
-    ],
     "concurrency": 1,
     "extensions": [
       "ts"

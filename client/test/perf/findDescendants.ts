@@ -157,7 +157,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('perf: find descendants', async (t) => {
+test.serial.failing('perf: find descendants', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await wait(2e3)
 
