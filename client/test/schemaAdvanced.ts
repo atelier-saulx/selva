@@ -262,11 +262,11 @@ test.only('schemas - hard override', async (t) => {
             image2: {
               type: 'number',
             },
-            image: {
-              // something like this
-              $delete: true,
-              // type: 'number',
-            },
+            // image: {
+            // something like this
+            // $delete: true,
+            // type: 'number',
+            // },
           },
         },
       },

@@ -279,12 +279,6 @@ function newFieldDefinition(
     })
   }
 
-  if (!(<any>newField).search) {
-    if (oldField.search) {
-      ;(<any>newField).search = oldField.search
-    }
-  }
-
   if (!newField.meta && oldField.meta) {
     newField.meta = oldField.meta
   }
