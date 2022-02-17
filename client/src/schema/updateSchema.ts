@@ -61,7 +61,8 @@ function validateNewFields(obj: TypeSchema | FieldSchema, path: string) {
 
 export function newSchemaDefinition(
   oldSchema: Schema,
-  newSchema: Schema
+  newSchema: Schema,
+  delOpts: SchemaDelOpts
 ): { schema: Schema; mutations: SchemaMutations } {
   const mutations: SchemaMutations = []
 
@@ -74,6 +75,19 @@ export function newSchemaDefinition(
     ),
     types: {},
   }
+
+  for (const t in delOpts.fields) {
+    for (const p of delOpts.fields[t]) {
+      mutations.push({
+        mutation: 'remove_field',
+        type: t,
+        old: oldSchema.types[t].fields[p[0]],
+        path: p,
+      })
+    }
+  }
+
+  console.info(mutations)
 
   for (const typeName in oldSchema.types) {
     if (newSchema.types[typeName]) {
@@ -291,25 +305,14 @@ export async function updateSchema(
   client: SelvaClient,
   props: SchemaOptions,
   selector: ServerSelector,
+  delOpts: SchemaDelOpts,
   allowMutations: boolean = false,
   handleMutations?: (old: { [field: string]: any }) => {
     [field: string]: any
   },
-  delOpts?: SchemaDelOpts,
   retry?: number
 ): Promise<SchemaMutations> {
   retry = retry || 0
-
-  if (
-    !allowMutations &&
-    (Object.keys(delOpts.fields).length || delOpts.types.length)
-  ) {
-    throw new Error(
-      'Cannot delete fields from schema if "AllowMutations" is not available'
-    )
-  }
-
-  console.dir(delOpts, { depth: 10 })
 
   if (!props.types) {
     props.types = {}
@@ -319,20 +322,23 @@ export async function updateSchema(
 
   const { schema: newSchema, mutations } = newSchemaDefinition(
     oldSchema,
-    <Schema>props
+    <Schema>props,
+    delOpts
   )
 
   if (!allowMutations && mutations.length) {
     let str = ''
     for (const mutation of mutations) {
-      if (mutation.mutation === 'delete_type') {
+      if (mutation.mutation === 'remove_field') {
+        str += `\n    Remove "${mutation.type}", field "${mutation.path.join(
+          '.'
+        )}" from ${mutation.old.type}`
+      } else if (mutation.mutation === 'delete_type') {
         str += `\n    Delete type "${mutation.type}`
       } else {
-        str += `\n    ${
-          mutation.mutation === 'change_field' ? 'Change' : 'Delete'
-        } "${mutation.type}", field "${mutation.path.join('.')}" from ${
-          mutation.old.type
-        } to ${mutation.new.type}`
+        str += `\n    Change "${mutation.type}", field "${mutation.path.join(
+          '.'
+        )}" from ${mutation.old.type} to ${mutation.new.type}`
       }
     }
     throw new Error(
@@ -372,9 +378,9 @@ export async function updateSchema(
         client,
         props,
         selector,
+        delOpts,
         allowMutations,
         handleMutations,
-        delOpts,
         retry + 1
       )
     } else {

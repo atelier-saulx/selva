@@ -253,9 +253,9 @@ export class SelvaClient extends EventEmitter {
       this,
       <SchemaOptions>opts,
       { name, type: 'origin' },
+      delOpts,
       allowMutations,
-      handleMutations,
-      delOpts
+      handleMutations
     )
   }
 

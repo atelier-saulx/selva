@@ -6,15 +6,19 @@ export type SchemaMutations = (
   | {
       mutation: 'delete_type'
       type: string
-      old: FieldSchema
-      new: FieldSchema
     }
   | {
-      mutation: 'change_field' | 'remove_field'
+      mutation: 'change_field'
       type: string
       path: string[]
       old: FieldSchema
       new: FieldSchema
+    }
+  | {
+      mutation: 'remove_field'
+      type: string
+      path: string[]
+      old: FieldSchema
     }
 )[]
 
