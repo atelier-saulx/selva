@@ -1,8 +1,7 @@
 import { Find, GetOperationFind, GetOptions, Sort } from '../types'
 import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
-import { getNestedSchema } from '../utils'
-import { SelvaClient } from '../..'
-import { isTraverseByType } from '../utils'
+import { getNestedSchema, isTraverseByType } from '../utils'
+import { Schema, SelvaClient } from '../..'
 
 const createFindOperation = (
   client: SelvaClient,
@@ -15,10 +14,11 @@ const createFindOperation = (
   limit: number = single ? 1 : -1,
   offset: number = 0,
   sort?: Sort | Sort[],
-  isNested?: boolean
+  isNested?: boolean,
+  passedOnSchema?: Schema
 ): GetOperationFind => {
   const fieldSchema = getNestedSchema(
-    client.schemas[db],
+    passedOnSchema || client.schemas[db],
     id,
     <string>find.$traverse || field.slice(1)
   )
@@ -54,7 +54,6 @@ const createFindOperation = (
 
   if (find.$filter) {
     const ast = createAst(find.$filter)
-
     if (ast) {
       optimizeTypeFilters(ast)
       findOperation.filter = ast
@@ -75,7 +74,8 @@ const createFindOperation = (
       limit,
       offset,
       find.$find.$find ? undefined : sort,
-      true
+      true,
+      passedOnSchema
     )
   }
 

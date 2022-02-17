@@ -1,12 +1,10 @@
 import { Schema, SelvaClient } from '../../'
 import { GetOperation, GetOptions } from '../types'
-
 import find from './find'
 import aggregate from './aggregate'
 import list from './list'
 import all from './all'
 import createInheritOperation from './inherit'
-
 import { getNestedSchema } from '../utils'
 
 export default function createGetOperations(
@@ -16,11 +14,9 @@ export default function createGetOperations(
   field: string,
   db: string,
   ops: GetOperation[] = [],
-  schema?: Schema
+  passedOnSchema?: Schema
 ): GetOperation[] {
-  if (!schema) {
-    schema = client.schemas[db]
-  }
+  const schema = passedOnSchema || client.schemas[db]
 
   // TODO: handle single case of $fieldsByType here based on type of passed id
   if (props.$value) {
@@ -54,7 +50,20 @@ export default function createGetOperations(
   } else if (props.$find) {
     ops.push(find(client, db, props.$find, props, id, field, true))
   } else if (props.$aggregate) {
-    ops.push(aggregate(client, db, props.$aggregate, props, id, field))
+    ops.push(
+      aggregate(
+        client,
+        db,
+        props.$aggregate,
+        props,
+        id,
+        field,
+        undefined,
+        undefined,
+        undefined,
+        passedOnSchema
+      )
+    )
   } else if (props.$default) {
     ops.push({
       type: 'db',
@@ -71,7 +80,8 @@ export default function createGetOperations(
       id,
       field.slice(1),
       db,
-      ops
+      ops,
+      passedOnSchema
     )
   } else if (props.$all) {
     if (props.$field) {
@@ -138,7 +148,15 @@ export default function createGetOperations(
       if (key.startsWith('$')) {
         continue
       }
-      createGetOperations(client, props[key], id, field + '.' + key, db, ops)
+      createGetOperations(
+        client,
+        props[key],
+        id,
+        field + '.' + key,
+        db,
+        ops,
+        passedOnSchema
+      )
     }
 
     if (props.$fieldsByType) {
@@ -149,7 +167,15 @@ export default function createGetOperations(
 
       const additionalFields = props.$fieldsByType[type]
       if (additionalFields) {
-        createGetOperations(client, additionalFields, id, field, db, ops)
+        createGetOperations(
+          client,
+          additionalFields,
+          id,
+          field,
+          db,
+          ops,
+          passedOnSchema
+        )
       }
     }
   } else {

@@ -1,4 +1,4 @@
-import { SelvaClient } from '../..'
+import { Schema, SelvaClient } from '../..'
 import { GetOperation, GetOptions } from '../types'
 import { getNestedSchema } from '../utils'
 import find from './find'
@@ -8,10 +8,11 @@ const list = (
   db: string,
   props: GetOptions,
   id: string,
-  field: string
+  field: string,
+  passedOnSchema?: Schema
 ): GetOperation => {
   const fieldSchema = getNestedSchema(
-    client.schemas[db],
+    passedOnSchema || client.schemas[db],
     id,
     <string>props.$field || field.slice(1)
   )
@@ -42,7 +43,9 @@ const list = (
       false,
       props.$list.$limit,
       props.$list.$offset,
-      props.$list.$sort
+      props.$list.$sort,
+      false,
+      passedOnSchema
     )
   } else {
     return {
