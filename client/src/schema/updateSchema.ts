@@ -309,7 +309,7 @@ export async function updateSchema(
     )
   }
 
-  console.info(delOpts)
+  console.dir(delOpts, { depth: 10 })
 
   if (!props.types) {
     props.types = {}
