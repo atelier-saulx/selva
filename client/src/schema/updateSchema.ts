@@ -76,19 +76,6 @@ export function newSchemaDefinition(
     types: {},
   }
 
-  for (const t in delOpts.fields) {
-    for (const p of delOpts.fields[t]) {
-      mutations.push({
-        mutation: 'remove_field',
-        type: t,
-        old: oldSchema.types[t].fields[p[0]],
-        path: p,
-      })
-    }
-  }
-
-  console.info(mutations)
-
   for (const typeName in oldSchema.types) {
     if (newSchema.types[typeName]) {
       schema.types[typeName] = newTypeDefinition(
@@ -149,6 +136,32 @@ export function newSchemaDefinition(
     schema.rootType = typeDef
   } else {
     schema.rootType = oldSchema.rootType
+  }
+
+  // also do types
+
+  for (const t in delOpts.fields) {
+    for (const p of delOpts.fields[t]) {
+      mutations.push({
+        mutation: 'remove_field',
+        type: t,
+        old: oldSchema.types[t].fields[p[0]],
+        path: p,
+      })
+
+      if (p.length === 1) {
+        delete schema.types[t].fields[p[0]]
+      } else {
+        // walk
+
+        // const f = schema.types[t].fields[p[0]]
+
+        console.info('fix object delete!')
+        // if (f.type === 'object')
+
+        // now we have to find it...
+      }
+    }
   }
 
   return { schema, mutations }
@@ -349,6 +362,8 @@ export async function updateSchema(
   }
 
   try {
+    console.dir(newSchema, { depth: 10 })
+
     // only place wherw we call update-schema
     const updated = await client.redis.evalsha(
       selector,
