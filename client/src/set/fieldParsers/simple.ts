@@ -76,10 +76,10 @@ for (const key in verifiers) {
                     schema,
                     type,
                     field.split('.'),
-                    payload[k],
+                    payload[k].$increment,
                     lang
-                  ) && verify(payload[k])
-                : verify(payload[k])
+                  ) && verify(payload[k].$increment)
+                : verify(payload[k].$increment)
             ) {
               throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
             } else if (
