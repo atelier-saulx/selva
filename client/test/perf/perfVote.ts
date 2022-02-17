@@ -52,7 +52,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('voting w/parsers', async (t) => {
+test.serial('perf: voting w/parsers', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const sh = await Promise.all([

@@ -62,7 +62,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('perf - indexing', async (t) => {
+test.serial('perf: indexing', async (t) => {
   const START = 0 // Graph size factor in the first step
   const STOP = 800000 // Graph size factor in the last step
   const NR_STEPS = 8 // Number of steps between START and STOP
