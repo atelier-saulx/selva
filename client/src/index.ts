@@ -202,9 +202,9 @@ export class SelvaClient extends EventEmitter {
     return get(this, getOpts)
   }
 
-  async set(setOpts: SetOptions): Promise<Id | undefined> {
+  async set(setOpts: SetOptions, schema?: Schema): Promise<Id | undefined> {
     await this.initializeSchema(setOpts)
-    return set(this, setOpts)
+    return set(this, setOpts, schema)
   }
 
   async setWithMeta(setOpts: SetOptions): Promise<SetMetaResponse | undefined> {

@@ -336,8 +336,8 @@ test.only('schemas - remove fields', async (t) => {
 
   const results = await client.get({
     nodes: {
-      id: true,
-      flap: true,
+      $all: true,
+      image: true,
       $list: {
         $offset: 0,
         $limit: 10,
@@ -350,6 +350,7 @@ test.only('schemas - remove fields', async (t) => {
   })
 
   for (const n of results.nodes) {
+    t.false('image' in n)
     t.is(typeof n.flap, 'string')
   }
 

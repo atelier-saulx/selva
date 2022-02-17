@@ -121,7 +121,7 @@ function checkField(
   if (!oldField) {
     findFieldConfigurations(newField, type, path, timeseries, allowMutations)
     return null
-  } else if (!newField) {
+  } else if (!newField && !allowMutations) {
     return `New schema missing field ${path} for type ${type}`
   }
 
@@ -196,10 +196,16 @@ function checkNestedChanges(
 ): null | string {
   for (const field in oldType.fields) {
     if (!newType.fields) {
+      if (allowMutations) {
+        return null
+      }
       return `Can not reset fields to empty for type ${type}`
     }
 
     if (!newType.fields[field]) {
+      if (allowMutations) {
+        return null
+      }
       return `Field ${field} for type ${type} missing in new schema`
     } else {
       const err = checkField(
@@ -241,7 +247,7 @@ function verifyTypes(
 ): string | null {
   // make sure that new schema has all the old fields and that their nested changes don't change existing fields
   for (const type in oldSchema.types) {
-    if (!newSchema.types[type]) {
+    if (!allowMutations && !newSchema.types[type]) {
       return `New schema definition missing existing type ${type}`
     }
 

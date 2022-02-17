@@ -18,21 +18,48 @@ export default async (
   const gets = {}
 
   for (const f of mutations) {
-    if (f.mutation === 'change_field') {
+    if (f.mutation === 'change_field' || f.mutation === 'remove_field') {
       if (!gets[f.type]) {
         gets[f.type] = {
-          id: true,
+          query: {
+            id: true,
+          },
+          setOp: null,
         }
       }
-      let x = gets[f.type]
-      for (let i = 0; i < f.path.length - 1; i++) {
-        const p = f.path[i]
-        if (!x[p]) {
-          x[p] = {}
+
+      if (f.mutation === 'remove_field') {
+        if (!gets[f.type].setOp) {
+          gets[f.type].setOp = {}
         }
-        x = x[p]
+
+        let x = gets[f.type].query
+        let y = gets[f.type].setOp
+
+        for (let i = 0; i < f.path.length - 1; i++) {
+          const p = f.path[i]
+          if (!x[p]) {
+            x[p] = {}
+          }
+          if (!y[p]) {
+            y[p] = {}
+          }
+          y = y[p]
+          x = x[p]
+        }
+        y[f.path[f.path.length - 1]] = { $delete: true }
+        x[f.path[f.path.length - 1]] = true
+      } else {
+        let x = gets[f.type]
+        for (let i = 0; i < f.path.length - 1; i++) {
+          const p = f.path[i]
+          if (!x[p]) {
+            x[p] = {}
+          }
+          x = x[p]
+        }
+        x[f.path[f.path.length - 1]] = true
       }
-      x[f.path[f.path.length - 1]] = true
     }
   }
 
@@ -46,7 +73,7 @@ export default async (
       const op = createGetOperations(
         client,
         {
-          ...gets[type],
+          ...gets[type].query,
           $list: {
             $offset: page * pageAmount,
             $limit: pageAmount,
@@ -82,9 +109,25 @@ export default async (
       const setQ = []
 
       for (const node of r.nodes) {
-        // if false remove all mutations
+        if (gets[type].setOp) {
+          setQ.push(
+            client.set(
+              {
+                $id: node.id,
+                ...gets[type].setOp,
+                $db: db,
+              },
+              oldSchema
+            )
+          )
+        }
+
         setQ.push(
-          client.set({ $id: node.id, ...handleMutations(node), $db: db })
+          client.set({
+            $id: node.id,
+            ...handleMutations(node),
+            $db: db,
+          })
         )
       }
       await Promise.all(setQ)
