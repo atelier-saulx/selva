@@ -10,6 +10,7 @@ function sha1hex(str: string): string {
   return hash.digest('hex')
 }
 
+// remove these
 export async function deleteType(
   client: SelvaClient,
   name: string,
