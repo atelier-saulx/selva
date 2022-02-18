@@ -1078,6 +1078,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
     }
 
+    if (created) {
+        SelvaSubscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_CREATED);
+    }
     if (updated && !created) {
         /*
          * If nodeId wasn't created by this command call but it was updated
