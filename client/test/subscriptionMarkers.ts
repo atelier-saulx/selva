@@ -1779,6 +1779,17 @@ test.serial('Trigger: created filter', async (t) => {
     title: { en: 'not-yolo' },
   })
 
+  // This doesn't work because the outer modify will create maTest0003 implicitly
+  //await client.set({
+  //  type: 'match',
+  //  children: [
+  //    {
+  //      $id: 'maTest0003',
+  //      title: { en: 'yolo' },
+  //    }
+  //  ]
+  //})
+
   await wait(500)
   t.deepEqual(msgCount, 1)
 })
