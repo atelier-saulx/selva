@@ -581,7 +581,7 @@ test.serial('more complex hierarchies', async (t) => {
       'ancestors',
       team
     ),
-    ['root', season, league, club]
+    ['root', season, league, club, weirdCommercial]
   )
   t.deepEqualIgnoreOrder(
     await client.redis.selva_hierarchy_find(
@@ -591,28 +591,6 @@ test.serial('more complex hierarchies', async (t) => {
       team2
     ),
     ['root']
-  )
-
-  // match
-  t.deepEqualIgnoreOrder(
-    await client.redis.selva_hierarchy_find(
-      '',
-      '___selva_hierarchy',
-      'ancestors',
-      match
-    ),
-    [
-      'root',
-      club,
-      team,
-      player,
-      player1,
-      player2,
-      family1,
-      family2,
-      player3,
-      weirdCommercial,
-    ]
   )
 
   // cleanup
