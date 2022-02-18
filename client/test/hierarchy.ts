@@ -661,24 +661,49 @@ test.serial(
 
     // check ancestors
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(league + '.ancestors', 0, -1),
+      await client.redis.selva_hierarchy_find(
+        '',
+        '___selva_hierarchy',
+        'ancestors',
+        league
+      ),
       ['root']
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(season + '.ancestors', 0, -1),
+      await client.redis.selva_hierarchy_find(
+        '',
+        '___selva_hierarchy',
+        'ancestors',
+        season
+      ),
       ['root', league]
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(club + '.ancestors', 0, -1),
+      await client.redis.selva_hierarchy_find(
+        '',
+        '___selva_hierarchy',
+        'ancestors',
+        club
+      ),
       ['root']
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(team + '.ancestors', 0, -1),
+      await client.redis.selva_hierarchy_find(
+        '',
+        '___selva_hierarchy',
+        'ancestors',
+        team
+      ),
       ['root', club, season, league]
     )
     t.deepEqualIgnoreOrder(
-      await client.redis.zrange(match + '.ancestors', 0, -1),
-      [team, club, 'root']
+      await client.redis.selva_hierarchy_find(
+        '',
+        '___selva_hierarchy',
+        'ancestors',
+        club
+      ),
+      ['root']
     )
 
     // cleanup
