@@ -1764,7 +1764,7 @@ test.serial('Trigger: created filter', async (t) => {
   const subChannel = `___selva_subscription_trigger:${subId1}`
   rclient.on('message', (channel, message) => {
     t.deepEqual(channel, subChannel)
-    t.deepEqual(message, 'maTest0001')
+    t.deepEqual(message, msgCount === 0 ? 'maTest0001' : 'maTest0003')
     msgCount++
   })
   rclient.subscribe(subChannel)
@@ -1779,19 +1779,18 @@ test.serial('Trigger: created filter', async (t) => {
     title: { en: 'not-yolo' },
   })
 
-  // This doesn't work because the outer modify will create maTest0003 implicitly
-  //await client.set({
-  //  type: 'match',
-  //  children: [
-  //    {
-  //      $id: 'maTest0003',
-  //      title: { en: 'yolo' },
-  //    }
-  //  ]
-  //})
+  await client.set({
+    type: 'match',
+    children: [
+      {
+        $id: 'maTest0003',
+        title: { en: 'yolo' },
+      }
+    ]
+  })
 
   await wait(500)
-  t.deepEqual(msgCount, 1)
+  t.deepEqual(msgCount, 2)
 })
 
 test.serial('Trigger: updated', async (t) => {
