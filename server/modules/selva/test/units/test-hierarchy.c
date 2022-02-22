@@ -96,7 +96,7 @@ ssize_t SelvaModify_FindDescendants(SelvaHierarchy *hierarchy, const Selva_NodeI
 static char * test_insert_one(void)
 {
     const Selva_NodeId id = "abc1";
-    const int res = SelvaModify_SetHierarchy(NULL, hierarchy, id, 0, NULL, 0, NULL);
+    const int res = SelvaModify_SetHierarchy(NULL, hierarchy, id, 0, NULL, 0, NULL, NULL);
 
     pu_assert_equal("a node was inserted", res, 1);
 
@@ -108,7 +108,7 @@ static char * test_insert_many(void)
     const Selva_NodeId ids[] = { "a", "b", "c", "d", "e", "f" };
 
     for (size_t i = 0; i < num_elem(ids); i++) {
-        const int res = SelvaModify_SetHierarchy(NULL, hierarchy, ids[i], 0, NULL, 0, NULL);
+        const int res = SelvaModify_SetHierarchy(NULL, hierarchy, ids[i], 0, NULL, 0, NULL, NULL);
         pu_assert_equal("a node was inserted", res, 1);
     }
 
@@ -120,10 +120,10 @@ static char * test_set_nonexisting_parent(void)
     int err;
     const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
 
-    err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL);
+    err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL, NULL);
     pu_assert_equal("a node was inserted", err, 1);
 
-    err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[2], 1, &ids[1], 0, NULL);
+    err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[2], 1, &ids[1], 0, NULL, NULL);
     pu_assert_equal("a node was inserted", err, 2);
 
     return NULL;
@@ -134,10 +134,10 @@ static char * test_set_nonexisting_child(void)
     int err;
     const Selva_NodeId ids[] = { "grphnode_a", "grphnode_b", "grphnode_c" };
 
-    err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL);
+    err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL, NULL);
     pu_assert_equal("a node was inserted", err, 1);
 
-    err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[1], 0, NULL, 1, &ids[2]);
+    err = SelvaModify_SetHierarchy(NULL, hierarchy, ids[1], 0, NULL, 1, &ids[2], NULL);
     pu_assert_equal("a node was inserted", err, 2);
 
     return NULL;
@@ -230,13 +230,13 @@ static char * test_alter_relationship_set(void)
     int nr_descendants;
 
     /* Create */
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
 
     /* Modify */
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 2, ((Selva_NodeId []){ "grphnode_c", "grphnode_d" }));
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 2, ((Selva_NodeId []){ "grphnode_c", "grphnode_d" }), NULL);
 
     /* ancestors of c */
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
@@ -293,10 +293,10 @@ static char * test_alter_relationship_add(void)
     int nr_descendants;
 
     /* Create */
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
 
     /* Modify */
     SelvaModify_AddHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_c" }));
@@ -352,11 +352,11 @@ static char * test_get_heads(void)
 
     int n;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }), NULL);
 
     /* FIXME */
 #if 0
@@ -389,12 +389,12 @@ static char * test_get_heads_alter_set(void)
 
     int n;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_e" }), 2, ((Selva_NodeId []){ "grphnode_c", "grphnode_d" }));
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }), NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_e" }), 2, ((Selva_NodeId []){ "grphnode_c", "grphnode_d" }), NULL);
 
     /* FIXME */
 #if 0
@@ -426,11 +426,11 @@ static char * test_get_heads_alter_add(void)
 
     int n;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }), NULL);
     SelvaModify_AddHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_e" }), 0, NULL);
 
     /* FIXME */
@@ -451,12 +451,12 @@ static char * test_insert_chain_find_ancestors(void)
 {
     const Selva_NodeId ids[] = { "a", "b", "c", "d", "e", "f" };
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, ids[0], 0, NULL, 0, NULL, NULL);
     for (size_t i = 1; i < num_elem(ids); i++) {
         Selva_NodeId parents[1];
 
         memcpy(parents[0], ids[i - 1], sizeof(Selva_NodeId));
-        SelvaModify_SetHierarchy(NULL, hierarchy, ids[i], num_elem(parents), parents, 0, NULL);
+        SelvaModify_SetHierarchy(NULL, hierarchy, ids[i], num_elem(parents), parents, 0, NULL, NULL);
     }
 
     const int nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "d" }), &findRes);
@@ -478,9 +478,9 @@ static char * test_insert_acyclic_find_ancestors_1(void)
      *   \-->--/
      */
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL, NULL);
 
     const int nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
 
@@ -503,11 +503,11 @@ static char * test_insert_acyclic_find_ancestors_2(void)
 
     int nr_ancestors;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 2,((Selva_NodeId []){ "grphnode_b", "grphnode_c" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 1, ((Selva_NodeId []){ "grphnode_d" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 2,((Selva_NodeId []){ "grphnode_b", "grphnode_c" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 1, ((Selva_NodeId []){ "grphnode_d" }), 0, NULL, NULL);
 
     /* ancestors of c */
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
@@ -542,11 +542,11 @@ static char * test_insert_acyclic_find_ancestors_3(void)
 
     int nr_ancestors;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }), NULL);
 
     /* ancestors of d */
     nr_ancestors = SelvaModify_FindAncestors(hierarchy, ((Selva_NodeId){ "grphnode_d" }), &findRes);
@@ -589,9 +589,9 @@ static char * test_insert_acyclic_find_descendants_1(void)
      *   \-->--/
      */
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_b", "grphnode_a" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_b", "grphnode_a" }), 0, NULL, NULL);
 
     const int nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_a" }), &findRes);
     pu_assert_equal("returned the right number of descendants", nr_descendants, 2);
@@ -623,11 +623,11 @@ static char * test_insert_acyclic_find_descendants_2(void)
 
     int nr_descendants;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 2,((Selva_NodeId []){ "grphnode_b", "grphnode_c" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 1, ((Selva_NodeId []){ "grphnode_d" }), 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 1, ((Selva_NodeId []){ "grphnode_a" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 2,((Selva_NodeId []){ "grphnode_b", "grphnode_c" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 1, ((Selva_NodeId []){ "grphnode_d" }), 0, NULL, NULL);
 
     /* descendants of c */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_c" }), &findRes);
@@ -684,11 +684,11 @@ static char * test_insert_acyclic_find_descendants_3(void)
 
     int nr_descendants;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }), NULL);
 
     /* descendants of e */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_e" }), &findRes);
@@ -736,12 +736,12 @@ static char * test_insert_acyclic_modify(void)
     int nr_descendants;
     int n;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }), NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 0, NULL, 0, NULL, NULL);
 
     /* descendants of e */
     nr_descendants = SelvaModify_FindDescendants(hierarchy, ((Selva_NodeId){ "grphnode_e" }), &findRes);
@@ -824,11 +824,11 @@ static char * test_del_1(void)
     int nr_ancestors;
     int nr_descendants;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }), NULL);
 
 #if HIERARCHY_SORT_BY_DEPTH
     /*
@@ -887,11 +887,11 @@ static char * test_del_2(void)
 
     int nr_ancestors;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }), NULL);
     SelvaModify_AddHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_e" }), 0, NULL);
 
 #if HIERARCHY_SORT_BY_DEPTH
@@ -948,11 +948,11 @@ static char * test_del_node(void)
     int nr_ancestors;
     int nr_descendants;
 
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }));
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 2, ((Selva_NodeId []){ "grphnode_a", "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 1, ((Selva_NodeId []){ "grphnode_b" }), 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_e", 0, NULL, 1, ((Selva_NodeId []){ "grphnode_a" }), NULL);
     SelvaModify_AddHierarchy(NULL, hierarchy, "grphnode_b", 1, ((Selva_NodeId []){ "grphnode_e" }), 0, NULL);
 
 #if HIERARCHY_SORT_BY_DEPTH

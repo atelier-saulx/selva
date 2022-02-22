@@ -187,7 +187,7 @@ SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
         goto fail;
     }
 
-    if (unlikely(SelvaModify_SetHierarchy(isRdbLoading(ctx) ? NULL : ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL) < 0)) {
+    if (unlikely(SelvaModify_SetHierarchy(isRdbLoading(ctx) ? NULL : ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL, NULL) < 0)) {
         SelvaModify_DestroyHierarchy(hierarchy);
         hierarchy = NULL;
         goto fail;
@@ -729,7 +729,8 @@ static int cross_insert_children(
 
             err = SelvaModify_SetHierarchy(ctx, hierarchy, nodes[i],
                     0, NULL,
-                    0, NULL);
+                    0, NULL,
+                    &child);
             if (err < 0) {
                 fprintf(stderr, "%s:%d: Failed to create a child \"%.*s\" for \"%.*s\": %s\n",
                         __FILE__, __LINE__,
@@ -737,14 +738,6 @@ static int cross_insert_children(
                         (int)SELVA_NODE_ID_SIZE, node->id,
                         selvaStrError[-err]);
                 continue;
-            }
-
-            child = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
-            if (!child) {
-                fprintf(stderr, "%s:%d: Node state error, node: \"%.*s\"\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, nodes[i]);
-                return SELVA_HIERARCHY_EGENERAL;
             }
         }
 
@@ -841,7 +834,8 @@ static int cross_insert_parents(
             /* RFE no_root is not propagated */
             err = SelvaModify_SetHierarchy(ctx, hierarchy, nodes[i],
                     1, ((Selva_NodeId []){ ROOT_NODE_ID }),
-                    0, NULL);
+                    0, NULL,
+                    &parent);
             if (err < 0) {
                 fprintf(stderr, "%s:%d: Failed to create a parent \"%.*s\" for \"%.*s\": %s\n",
                         __FILE__, __LINE__,
@@ -849,14 +843,6 @@ static int cross_insert_parents(
                         (int)SELVA_NODE_ID_SIZE, node->id,
                         selvaStrError[-err]);
                 continue;
-            }
-
-            parent = SelvaHierarchy_FindNode(hierarchy, nodes[i]);
-            if (!parent) {
-                fprintf(stderr, "%s:%d: Node state error, node: \"%.*s\"\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, nodes[i]);
-                return SELVA_HIERARCHY_EGENERAL;
             }
         }
 
@@ -1127,7 +1113,8 @@ int SelvaModify_SetHierarchy(
         size_t nr_parents,
         const Selva_NodeId *parents,
         size_t nr_children,
-        const Selva_NodeId *children) {
+        const Selva_NodeId *children,
+        struct SelvaHierarchyNode **node_out) {
     SelvaHierarchyNode *node;
     int isNewNode = 0;
     int err, res = 0;
@@ -1187,6 +1174,10 @@ int SelvaModify_SetHierarchy(
         return err;
     }
     res += err;
+
+    if (node_out) {
+        *node_out = node;
+    }
 
     return res;
 }

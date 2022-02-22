@@ -881,14 +881,9 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
         const size_t nr_parents = FISSET_NO_ROOT(flags) ? 0 : 1;
 
-        err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL);
+        err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL, &node);
         if (err < 0) {
             return replyWithSelvaErrorf(ctx, err, "ERR Failed to initialize the node hierarchy for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
-        }
-
-        node = SelvaHierarchy_FindNode(hierarchy, nodeId);
-        if (unlikely(!node)) {
-            return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "A node that was just created was lost immediately");
         }
         created = true;
     } else if (FISSET_CREATE(flags)) {

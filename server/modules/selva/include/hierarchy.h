@@ -293,7 +293,8 @@ int SelvaModify_SetHierarchy(
         size_t nr_parents,
         const Selva_NodeId *parents,
         size_t nr_children,
-        const Selva_NodeId *children);
+        const Selva_NodeId *children,
+        struct SelvaHierarchyNode **node_out);
 
 /**
  * Set parents of an existing node.
