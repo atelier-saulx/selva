@@ -23,10 +23,10 @@
 #include "selva_trace.h"
 #include "subscriptions.h"
 
-#define FLAG_NO_ROOT    0x01
-#define FLAG_NO_MERGE   0x02
-#define FLAG_CREATE     0x03
-#define FLAG_UPDATE     0x04
+#define FLAG_NO_ROOT    0x01 /*!< Don't set root as a parent. */
+#define FLAG_NO_MERGE   0x02 /*!< Clear any existing fields. */
+#define FLAG_CREATE     0x04 /*!< Only create a new node or fail. */
+#define FLAG_UPDATE     0x08 /*!< Only update an existing node. */
 
 #define FISSET_NO_ROOT(m) (((m) & FLAG_NO_ROOT) == FLAG_NO_ROOT)
 #define FISSET_NO_MERGE(m) (((m) & FLAG_NO_MERGE) == FLAG_NO_MERGE)
