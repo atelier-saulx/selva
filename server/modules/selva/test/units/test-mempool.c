@@ -1,4 +1,5 @@
 #include <punit.h>
+#include <stdalign.h>
 #include <stdint.h>
 #include "mempool.h"
 
@@ -16,7 +17,7 @@ static char * test_simple_allocs(void)
     const size_t obj_size = 256;
     struct mempool pool;
 
-    mempool_init(&pool, slab_size, obj_size);
+    mempool_init(&pool, slab_size, obj_size, alignof(size_t));
 
     char *p1 = mempool_get(&pool);
     snprintf(p1, obj_size, "Hello world\n");
@@ -41,7 +42,7 @@ static char * test_object_reuse(void)
     const size_t obj_size = 256;
     struct mempool pool;
 
-    mempool_init(&pool, slab_size, obj_size);
+    mempool_init(&pool, slab_size, obj_size, alignof(size_t));
 
     char *p1 = mempool_get(&pool);
     (void)mempool_get(&pool);
@@ -63,14 +64,14 @@ static char * test_gc(void)
     const size_t obj_size = 256;
     struct mempool pool;
 
-    mempool_init(&pool, slab_size, obj_size);
+    mempool_init(&pool, slab_size, obj_size, alignof(size_t));
 
     char *p1 = mempool_get(&pool);
     mempool_return(&pool, p1);
     mempool_gc(&pool);
 
     struct mempool pool2;
-    mempool_init(&pool2, slab_size, obj_size);
+    mempool_init(&pool2, slab_size, obj_size, alignof(size_t));
     pu_assert("The second pool works", mempool_get(&pool2));
 
     char *p2 = mempool_get(&pool);
@@ -85,12 +86,12 @@ static char * test_gc(void)
 
 static char * test_allocs(void)
 {
-    const size_t slab_size = 512;
+    const size_t slab_size = 1024;
     const size_t obj_size = 100;
     struct mempool pool;
     char *p;
 
-    mempool_init(&pool, slab_size, obj_size);
+    mempool_init(&pool, slab_size, obj_size, 1);
 
     p = mempool_get(&pool);
     pu_assert("got obj", p);

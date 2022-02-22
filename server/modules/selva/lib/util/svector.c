@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
+#include <stdalign.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,7 +63,7 @@ SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void
         } else {
             vec->vec_mode = SVECTOR_MODE_RBTREE;
             RB_INIT(&vec->vec_rbhead);
-            mempool_init(&vec->vec_rbmempool, SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode));
+            mempool_init(&vec->vec_rbmempool, SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode), alignof(struct SVector_rbnode));
         }
     }
 
@@ -128,7 +129,7 @@ static void migrate_arr_to_rbtree(SVector *vec) {
     void **vec_arr = vec->vec_arr;
 
     RB_INIT(&vec->vec_rbhead);
-    mempool_init(&vec->vec_rbmempool, SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode));
+    mempool_init(&vec->vec_rbmempool, SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode), alignof(struct SVector_rbnode));
 
     void **pp;
     for (typeof(pp) pp_end = (typeof(pp))vec_arr + vec_last, pp = (typeof(pp))vec_arr;

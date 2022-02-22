@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -33,7 +33,8 @@ struct mempool_slab {
  * A structure describing a memory pool.
  */
 struct mempool {
-    uint32_t slab_size;
+    uint16_t slab_size_kb;
+    uint16_t obj_align;
     uint32_t obj_size;
     SLIST_HEAD(mempool_slab_list, mempool_slab) slabs;
     LIST_HEAD(mempool_free_object_list, mempool_object) free_objects;
@@ -41,8 +42,10 @@ struct mempool {
 
 /**
  * Initialize a new mempool slab allocator.
+ * @param slab_size is the size of a single slab.
+ * @param obj_size is the size of a single object stored in a slab.
  */
-void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size);
+void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size, size_t obj_align);
 
 /**
  * Destroy a mempool and free all memory.

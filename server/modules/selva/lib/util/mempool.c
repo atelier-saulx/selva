@@ -1,13 +1,18 @@
 /*
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
+#include <stdalign.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/mman.h>
 #include "mempool.h"
+
+#define MOD_AL(x, y) ((x) & ((y) - 1)) /* x % bytes */
+#define PAD(size, al) MOD_AL(((al) - MOD_AL((size), (al))), (al))
+#define ALIGNED_SIZE(size, al) ((size) + PAD((size), (al)))
 
 /**
  * Slab descriptor for a mempool.
@@ -21,28 +26,43 @@ struct slab_info {
     size_t nr_objects;
 };
 
+static char *get_first_chunk(struct mempool_slab * restrict slab, const struct slab_info * restrict info) {
+    return ((char *)slab) + sizeof(struct mempool_slab) + info->chunk_size - info->obj_size;
+}
+
 /**
  * Calculate slab_info for mempool.
  */
 static struct slab_info slab_info(const struct mempool * restrict mempool) {
-    const size_t chunk_size = sizeof(struct mempool_object) + mempool->obj_size;
-    const size_t nr_total = (mempool->slab_size - sizeof(struct mempool_slab)) / chunk_size;
+    const size_t slab_size = mempool->slab_size_kb * 1024;
+    const size_t chunk_size = ALIGNED_SIZE(
+            sizeof(struct mempool_object) +
+            PAD(sizeof(struct mempool_object), mempool->obj_align) +
+            mempool->obj_size,
+            alignof(struct mempool_object));
+    const size_t nr_total = (slab_size - sizeof(struct mempool_slab)) / chunk_size;
+
+    assert(nr_total > 0);
 
     return (struct slab_info){
-        .total_bytes = mempool->slab_size,
+        .total_bytes = slab_size,
         .chunk_size = chunk_size,
         .obj_size = mempool->obj_size,
         .nr_objects = nr_total,
     };
 }
 
-void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size) {
-    /* mempool is 32bit internally. */
-    assert(slab_size < UINT32_MAX);
-    assert(obj_size < UINT32_MAX);
+void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size, size_t obj_align) {
+    assert(slab_size - sizeof(struct mempool_slab) > obj_size &&
+           slab_size / 1024 > 0 &&
+           slab_size / 1024 < UINT16_MAX &&
+           ALIGNED_SIZE(slab_size, 512) == slab_size);
+    assert(obj_size < UINT16_MAX);
+    assert(obj_align < UINT16_MAX);
 
-    mempool->slab_size = slab_size;
+    mempool->slab_size_kb = slab_size / 1024;
     mempool->obj_size = obj_size;
+    mempool->obj_align = obj_align;
     SLIST_INIT(&mempool->slabs);
     LIST_INIT(&mempool->free_objects);
 }
@@ -51,7 +71,7 @@ void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size) {
  * Free slab that was allocated in mempool
  */
 static void mempool_free_slab(const struct mempool *mempool, struct mempool_slab *slab) {
-    (void)munmap(slab, mempool->slab_size);
+    (void)munmap(slab, mempool->slab_size_kb * 1024);
 }
 
 void mempool_destroy(struct mempool *mempool) {
@@ -88,14 +108,14 @@ void mempool_gc(struct mempool *mempool) {
             /*
              * Remove all the objects of this slab from the free list.
              */
-            char * chunk = ((char *)slab) + sizeof(struct mempool_slab);
+            char * chunk = get_first_chunk(slab, &info);
 
             for (size_t i = 0; i < info.nr_objects; i++) {
                 struct mempool_object *o;
 
                 o = (struct mempool_object *)chunk;
                 LIST_REMOVE(o, next_free);
-                chunk += sizeof(struct mempool_object) + info.obj_size;
+                chunk += info.chunk_size;
             }
 
             mempool_free_slab(mempool, slab);
@@ -109,7 +129,7 @@ void mempool_gc(struct mempool *mempool) {
 static int mempool_new_slab(struct mempool *mempool) {
     struct mempool_slab *slab;
 
-    slab = mmap(0, mempool->slab_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    slab = mmap(0, mempool->slab_size_kb * 1024, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (slab == MAP_FAILED) {
         return 1;
     }
@@ -121,14 +141,14 @@ static int mempool_new_slab(struct mempool *mempool) {
     /*
      * Add all new objects to the list of free objects in the pool.
      */
-    char * chunk = ((char *)slab) + sizeof(struct mempool_slab);
+    char * chunk = get_first_chunk(slab, &info);
     for (size_t i = 0; i < info.nr_objects; i++) {
         struct mempool_object *o = (struct mempool_object *)chunk;
 
         o->slab = slab;
         LIST_INSERT_HEAD(&mempool->free_objects, o, next_free);
 
-        chunk += sizeof(struct mempool_object) + info.obj_size;
+        chunk += info.chunk_size;
     }
 
     SLIST_INSERT_HEAD(&mempool->slabs, slab, next_slab);
