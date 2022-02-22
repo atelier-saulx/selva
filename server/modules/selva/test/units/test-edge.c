@@ -30,10 +30,10 @@ static char * test_alter_edge_relationship(void)
      */
 
     /* Create nodes. */
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_d", 0, NULL, 0, NULL, NULL);
 
     /* Add edges. */
     pu_assert("Add edge", !Edge_Add(NULL, hierarchy, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), SelvaHierarchy_FindNode(hierarchy, "grphnode_c")));
@@ -55,9 +55,9 @@ static char * test_alter_edge_relationship(void)
 static char * test_delete_edge(void)
 {
     /* Create nodes. */
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL);
-    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 0, NULL, 0, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_a", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_b", 0, NULL, 0, NULL, NULL);
+    SelvaModify_SetHierarchy(NULL, hierarchy, "grphnode_c", 0, NULL, 0, NULL, NULL);
 
     /* Add edges. */
     pu_assert("Add edge", !Edge_Add(NULL, hierarchy, 0, "a", 1, SelvaHierarchy_FindNode(hierarchy, "grphnode_a"), SelvaHierarchy_FindNode(hierarchy, "grphnode_b")));
