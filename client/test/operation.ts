@@ -59,8 +59,14 @@ test.serial('insert works only if object is not defined', async (t) => {
     await client.get({
       $id: thing,
       rando: true,
+      parents: true,
+      children: true,
     }),
-    { rando: 'rando!' }
+    {
+      rando: 'rando!',
+      parents: [ 'root' ],
+      children: [],
+    }
   )
 
   const retVal = await client.set({
@@ -75,8 +81,14 @@ test.serial('insert works only if object is not defined', async (t) => {
     await client.get({
       $id: thing,
       rando: true,
+      parents: true,
+      children: true,
     }),
-    { rando: 'rando!' }
+    {
+      rando: 'rando!',
+      parents: [ 'root' ],
+      children: [],
+    }
   )
 
   await client.delete('root')
