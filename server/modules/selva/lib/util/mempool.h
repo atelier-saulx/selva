@@ -10,24 +10,24 @@
 #include "queue.h"
 
 /**
- * A structure describing the object allocation unit.
- */
-struct mempool_object {
-    struct mempool_slab *slab; /*!< A pointer back the slab. */
-    /**
-     * A list entry pointing to the next free object if this object is in the
-     * free list.
-     */
-    LIST_ENTRY(mempool_object) next_free;
-} __attribute__((aligned(sizeof(size_t))));
-
-/**
  * A structure describing a slab in the pool allocator.
  */
 struct mempool_slab {
     size_t nr_free;
     SLIST_ENTRY(mempool_slab) next_slab;
-} __attribute__((aligned((sizeof(size_t)))));
+} __attribute__((aligned((16)))); /* max_align_t would be better. */
+
+/**
+ * A structure describing a chunk allocation.
+ */
+struct mempool_chunk {
+    struct mempool_slab *slab; /*!< A pointer back the slab. */
+    /**
+     * A list entry pointing to the next free chunk if this object is in the
+     * free list.
+     */
+    LIST_ENTRY(mempool_chunk) next_free;
+} __attribute__((aligned(sizeof(size_t))));
 
 /**
  * A structure describing a memory pool.
@@ -37,7 +37,7 @@ struct mempool {
     uint16_t obj_align;
     uint32_t obj_size;
     SLIST_HEAD(mempool_slab_list, mempool_slab) slabs;
-    LIST_HEAD(mempool_free_object_list, mempool_object) free_objects;
+    LIST_HEAD(mempool_free_chunk_list, mempool_chunk) free_chunks;
 };
 
 /**
