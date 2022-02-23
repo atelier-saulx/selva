@@ -60,9 +60,9 @@ void mempool_init(struct mempool *mempool, size_t slab_size, size_t obj_size, si
     assert(obj_size < UINT16_MAX);
     assert(obj_align < UINT16_MAX);
 
-    mempool->slab_size_kb = slab_size / 1024;
-    mempool->obj_size = obj_size;
-    mempool->obj_align = obj_align;
+    mempool->slab_size_kb = (typeof(mempool->slab_size_kb))(slab_size / 1024);
+    mempool->obj_size = (typeof(mempool->obj_size))(obj_size);
+    mempool->obj_align = (typeof(mempool->obj_align))(obj_align);
     SLIST_INIT(&mempool->slabs);
     LIST_INIT(&mempool->free_objects);
 }
