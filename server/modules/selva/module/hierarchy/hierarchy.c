@@ -1464,6 +1464,12 @@ int SelvaModify_DelHierarchy(
     return err1 ? err1 : err2;
 }
 
+/**
+ * Copy nodeIds from vec to dst array.
+ * The dst array must be large enough.
+ * @param dst is an array of Selva_NodeIds
+ * @param vec is an SVector pointing to SelvaNodes.
+ */
 static void copy_nodeIds(Selva_NodeId *dst, const struct SVector *vec) {
     struct SVectorIterator it;
     const SelvaHierarchyNode *node;
@@ -1474,6 +1480,11 @@ static void copy_nodeIds(Selva_NodeId *dst, const struct SVector *vec) {
     }
 }
 
+/**
+ * Delete a node and its children.
+ * @param flags controlling how the deletion is executed.
+ * @param opt_arg is a pointer to optional arguments, depending on flags.
+ */
 static int SelvaModify_DelHierarchyNodeP(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
