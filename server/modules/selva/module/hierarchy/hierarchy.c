@@ -426,7 +426,6 @@ static void new_detached_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, co
                 getSelvaErrorStr(err));
         abort();
     }
-    fprintf(stderr, "comp node %.*s %d\n", (int)SELVA_NODE_ID_SIZE, node_id, node->flags);
 }
 
 /**
@@ -2546,7 +2545,7 @@ static int verifyDetachableSubtree(SelvaHierarchy *hierarchy, struct SelvaHierar
  * Compress a subtree using DFS starting from node.
  * @returns The compressed tree is returned as a compressed_rms structure.
  */
-static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
+static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, double *cratio) {
     RedisModuleString *raw;
     struct compressed_rms *compressed;
     int err;
@@ -2581,13 +2580,14 @@ static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarc
         return NULL;
     }
 
-    err = rms_compress(compressed, raw);
+    err = rms_compress(compressed, raw, cratio);
     RedisModule_FreeString(ctx, raw);
     if (err) {
         rms_free_compressed(compressed);
-        fprintf(stderr, "%s:%d: Failed to compress the subtree of %.*s\n",
+        fprintf(stderr, "%s:%d: Failed to compress the subtree of %.*s: %s\n",
                 __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node->id);
+                (int)SELVA_NODE_ID_SIZE, node->id,
+                getSelvaErrorStr(err));
 
         return NULL;
     }
@@ -2600,6 +2600,7 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
     struct compressed_rms *compressed;
     Selva_NodeId *parents = NULL;
     const size_t nr_parents = SVector_Size(&node->parents);
+    double compression_ratio;
     int err;
 
     if (node->flags & SELVA_NODE_FLAGS_DETACHED) {
@@ -2621,7 +2622,7 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
         copy_nodeIds(parents, &node->parents);
     }
 
-    compressed = compress_subtree(ctx, hierarchy, node);
+    compressed = compress_subtree(ctx, hierarchy, node, &compression_ratio);
     if (!compressed) {
         /* TODO Maybe it would be nice to get the error codes passed here. */
         return SELVA_HIERARCHY_EGENERAL;
@@ -2638,13 +2639,16 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
 
     /*
      * Create a new dummy node with the detached flag set.
+     * TODO Handle error?
      */
     new_detached_node(ctx, hierarchy, node_id, parents, nr_parents);
 
-    fprintf(stderr, "%s:%d: Compressed and detached the subtree of %.*s: %s\n",
-            __FILE__, __LINE__,
-            (int)SELVA_NODE_ID_SIZE, node_id,
-            getSelvaErrorStr(err));
+    if (!err) {
+        fprintf(stderr, "%s:%d: Compressed and detached the subtree of %.*s (cratio: %.2f:1)\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, node_id,
+                compression_ratio);
+    }
 
     return err;
 }
@@ -2825,7 +2829,7 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
         err = load_detached(io, hierarchy, node_id);
     } else {
         /*
-         * The node metadata comes right after the node_id.
+         * The node metadata comes right after the node_id and flags.
          */
         err = load_metadata(io, encver, hierarchy, node);
         if (err) {
@@ -2851,7 +2855,8 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
 
                 err = load_node_id(io, child_id);
                 if (err) {
-                    RedisModule_LogIOError(io, "warning", "Invalid child node_id");
+                    RedisModule_LogIOError(io, "warning", "Invalid child node_id: %s",
+                                           getSelvaErrorStr(err));
                     return err;
                 }
 
