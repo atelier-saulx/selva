@@ -86,7 +86,7 @@ enum SelvaHierarchyNode_Relationship {
  * Structure for traversal cb of verifyDetachableSubtree().
  */
 struct verifyDetachableSubtree {
-    int err; /*!< Set to a Selva error if the subtree doesn't verify. */
+    const char *err; /*!< Set to a reason string if subtree doesn't verify. */
     struct trx trx_cur; /*!< This is used to check if the children of node form a true subtree. */
     SelvaHierarchyNode *head;
 };
@@ -2451,7 +2451,7 @@ static int verifyDetachableSubtreeNodeCb(SelvaHierarchyNode *node, void *arg) {
      * 2) any node in the subtree using edge fields.
      */
     if (Edge_Usage(node) != 0) {
-        data->err = SELVA_HIERARCHY_ENOTSUP;
+        data->err = "edges";
         return 1;
     }
 
@@ -2460,25 +2460,28 @@ static int verifyDetachableSubtreeNodeCb(SelvaHierarchyNode *node, void *arg) {
      * Subs starting from root can be ignored.
      */
     if (SelvaSubscriptions_hasActiveMarkers(&node->metadata)) {
-        data->err = SELVA_HIERARCHY_ENOTSUP;
+        data->err = "markers";
         return 1;
     }
 
-    /*
-     * Check that the parents of this node have been already traversed.
-     * If this is not true then the we are not traversed a true subtree because
-     * when doing a BFS the parents of every node (but the first node) should
-     * have been visited before the node is visited.
-     */
     struct SVectorIterator it;
-    const SelvaHierarchyNode *parent;
+    SelvaHierarchyNode *parent;
+
+    /*
+     * A subtree is allowed be a acyclic but `node` must be its true parent,
+     * i.e. the whole subtree has only a single root node that is `node`.
+     */
     SVector_ForeachBegin(&it, &node->parents);
-    while ((parent = SVector_Foreach(&it))) {
-        if (!(parent == data->head || Trx_HasVisited(&data->trx_cur, &parent->trx_label))) {
-            data->err = SELVA_HIERARCHY_ENOTSUP;
-            return 1; /* not a true subtree. */
+    if (node != data->head) {
+        while ((parent = SVector_Foreach(&it))) {
+            if (!Trx_HasVisited(&data->trx_cur, &parent->trx_label)) {
+                data->err = "not_tree";
+                return 1; /* not a proper subtree. */
+            }
         }
     }
+
+    Trx_Visit(&data->trx_cur, &node->trx_label);
 
     return 0;
 }
@@ -2486,12 +2489,10 @@ static int verifyDetachableSubtreeNodeCb(SelvaHierarchyNode *node, void *arg) {
 /**
  * Verify that the children of node can be safely detached.
  * Detachable subtree is subnetwork that the descendants of node can be safely
- * removed from the hierarchy, serialized and freed from memory. The subtree is
- * allowed be a acyclic network but `node` must be its true parent, i.e. the whole
- * subtree has only a single parent node that is `node`.
- * This function checks that the children of node form a true subtree that
- * doesn't cycle back to `node` and there are no active subscription markers or
- * other live dependencies on any of the nodes.
+ * removed from the hierarchy, serialized and freed from memory.
+ * This function checks that the children of node form a proper subtree that
+ * and there are no active subscription markers or other live dependencies on
+ * any of the nodes.
  * TODO Currently edge fields are not supported and thus if there are any edge
  * fields the check will return an error. Techincally a valid subtree could have
  * edge fields that only points to other nodes of the same subtree.
@@ -2500,7 +2501,7 @@ static int verifyDetachableSubtreeNodeCb(SelvaHierarchyNode *node, void *arg) {
  */
 static int verifyDetachableSubtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
     struct verifyDetachableSubtree data = {
-        .err = 0,
+        .err = NULL,
         .head = node,
     };
     const struct SelvaHierarchyCallback cb = {
@@ -2517,24 +2518,16 @@ static int verifyDetachableSubtree(SelvaHierarchy *hierarchy, struct SelvaHierar
         return SELVA_HIERARCHY_ETRMAX;
     }
 
-    struct SVectorIterator it;
-    SelvaHierarchyNode *child;
-    SVector_ForeachBegin(&it, &node->children);
-    while ((child = SVector_Foreach(&it))) {
-        err = bfs(hierarchy, child, RELATIONSHIP_CHILD, &cb);
-        if (err) {
-            break;
-        } else if (data.err) {
-            err = data.err;
-            break;
-        } else if (Trx_HasVisited(&data.trx_cur, &node->trx_label)) {
-            /*
-             * The traversal should not cycle back to the node if `node` is
-             * really the head of this subtree.
-             */
-            err = SELVA_HIERARCHY_ENOTSUP;
-            break;
-        }
+    err = bfs(hierarchy, node, RELATIONSHIP_CHILD, &cb);
+    if (err) {
+        /* NOP */
+    } else if (data.err) {
+        fprintf(stderr, "%s:%d: Failed to verify a subtree of %.*s: %s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, node->id,
+                data.err);
+
+        err = SELVA_HIERARCHY_ENOTSUP;
     }
     Trx_End(&hierarchy->trx_state, &data.trx_cur);
 
