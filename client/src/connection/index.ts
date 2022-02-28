@@ -287,15 +287,14 @@ class Connection {
           delete listeners[event][id]
           if (isEmptyObject(listeners[event])) {
             delete listeners[event]
+            this.subscriber.removeListener(event, listeners[event].callback)
           }
         }
       } else {
-        listeners[event][id].forEach((cb) => {
-          this.subscriber.removeListener(event, cb)
-        })
         delete listeners[event][id]
         if (isEmptyObject(listeners[event])) {
           delete listeners[event]
+          this.subscriber.removeListener(event, listeners[event].callback)
         }
       }
     }
@@ -374,12 +373,25 @@ class Connection {
     }
     if (!listeners[event]) {
       listeners[event] = {}
+      // add a global listener that execs the sets
+      // @ts-ignore
+      listeners[event].callback = (...args: (string | number)[]) => {
+        if (listeners[event]) {
+          for (const id in listeners[event]) {
+            if (id !== 'callback') {
+              listeners[event][id].forEach((fn) => {
+                fn(...args)
+              })
+            }
+          }
+        }
+      }
+      this.subscriber.on(event, listeners[event].callback)
     }
     if (!listeners[event][id]) {
       listeners[event][id] = new Set()
     }
     listeners[event][id].add(cb)
-    this.subscriber.on(event, cb)
   }
 
   public applyConnectionState(state: ConnectionState) {
@@ -641,6 +653,7 @@ class Connection {
 
     // remove all listeners -- pretty dangerous
     this.removeAllListeners()
+    delete this.listeners
   }
 
   constructor(serverDescriptor: ServerDescriptor) {
