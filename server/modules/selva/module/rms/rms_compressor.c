@@ -90,3 +90,13 @@ int rms_decompress(RedisModuleString **out, struct compressed_rms *in) {
     *out = raw;
     return 0;
 }
+
+void rms_RDBSaveCompressed(RedisModuleIO *io, struct compressed_rms *compressed) {
+    RedisModule_SaveSigned(io, compressed->uncompressed_size);
+    RedisModule_SaveString(io, compressed->rms);
+}
+
+void rms_RDBLoadCompressed(RedisModuleIO *io, struct compressed_rms *compressed) {
+    compressed->uncompressed_size = RedisModule_LoadSigned(io);
+    compressed->rms = RedisModule_LoadString(io);
+}

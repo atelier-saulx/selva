@@ -2,6 +2,7 @@
 #ifndef _SELVA_RMS_H_
 #define _SELVA_RMS_H_
 
+struct RedisModuleIO;
 struct RedisModuleString;
 
 /**
@@ -74,6 +75,16 @@ int rms_compress(struct compressed_rms *out, RedisModuleString *in);
  * @returns a Selva error code is returned.
  */
 int rms_decompress(struct RedisModuleString **out, struct compressed_rms *in);
+
+/**
+ * RDB save a compressed string.
+ */
+void rms_RDBSaveCompressed(struct RedisModuleIO *io, struct compressed_rms *compressed);
+
+/**
+ * RDB load a compressed string.
+ */
+void rms_RDBLoadCompressed(struct RedisModuleIO *io, struct compressed_rms *compressed);
 
 /**
  * @}

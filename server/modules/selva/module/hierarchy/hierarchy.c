@@ -41,19 +41,24 @@ struct SelvaDbVersionInfo {
 } selva_db_version_info;
 
 /**
+ * Node flags changing the node behavior.
+ */
+enum SelvaNodeFlags {
+    /**
+     * Detached node.
+     * When set this is the head of a compressed subtree stored in
+     * hierarchy_detached. Some information has been removed from the node
+     * and the subtree must be restored to make this node usable.
+     */
+    SELVA_NODE_FLAGS_DETACHED = 0x01,
+};
+
+/**
  * The core type of Selva hierarchy.
  */
 typedef struct SelvaHierarchyNode {
     Selva_NodeId id; /* Must be first. */
-    struct {
-        /**
-         * Detached node.
-         * When set this is the head of a compressed subtree stored in
-         * hierarchy_detached. Some information has been removed from the node
-         * and the subtree must be restored to make this node usable.
-         */
-        uint8_t detached : 1;
-    } flags;
+    enum SelvaNodeFlags flags;
     struct trx trx_label;
 #if HIERARCHY_SORT_BY_DEPTH
     ssize_t depth;
@@ -392,7 +397,10 @@ static void SelvaModify_DestroyNode(RedisModuleCtx *ctx, SelvaHierarchy *hierarc
     RedisModule_Free(node);
 }
 
-static void new_detached_head(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, const Selva_NodeId node_id, Selva_NodeId *parents, size_t nr_parents) {
+/**
+ * Create a new detached node with given parents.
+ */
+static void new_detached_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, const Selva_NodeId node_id, Selva_NodeId *parents, size_t nr_parents) {
     const int prevIsDecompressingSubtree = isDecompressingSubtree;
     struct SelvaHierarchyNode *node;
     int err;
@@ -404,15 +412,21 @@ static void new_detached_head(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, co
     err = SelvaHierarchy_UpsertNode(ctx, hierarchy, node_id, &node);
     isDecompressingSubtree = prevIsDecompressingSubtree;
 
-    /* TODO what to do if there was an error? */
     if (!err) {
-        /* TODO catch error */
-        (void)SelvaModify_AddHierarchyP(ctx, hierarchy, node, nr_parents, parents, 0, NULL);
-
-        node->flags.detached = 1;
+        err = SelvaModify_AddHierarchyP(ctx, hierarchy, node, nr_parents, parents, 0, NULL);
+        node->flags |= SELVA_NODE_FLAGS_DETACHED;
         SelvaObject_Destroy(node->obj);
         node->obj = NULL;
     }
+
+    if (unlikely(err < 0)) {
+        fprintf(stderr, "%s:%d: Fatal error while creating a detached node %.*s: %s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, node_id,
+                getSelvaErrorStr(err));
+        abort();
+    }
+    fprintf(stderr, "comp node %.*s %d\n", (int)SELVA_NODE_ID_SIZE, node_id, node->flags);
 }
 
 /**
@@ -431,7 +445,7 @@ static int repopulate_detached_head(SelvaHierarchyNode *node) {
         return err;
     }
 
-    node->flags.detached = 0;
+    node->flags &= ~SELVA_NODE_FLAGS_DETACHED;
 
     return 0;
 }
@@ -447,7 +461,7 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
     node = RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaHierarchyNode *)(&filter));
     SELVA_TRACE_END(find_inmem);
     if (node) {
-        if (!node->flags.detached) {
+        if (!(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
             return node;
         } else if (isDecompressingSubtree) {
             err = repopulate_detached_head(node);
@@ -717,6 +731,13 @@ static int cross_insert_children(
 
     if (n == 0) {
         return 0; /* No changes. */
+    }
+
+    if (unlikely(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
+        /* The subtree must be restored before adding nodes here. */
+        fprintf(stderr, "%s:%d: FATAL Cannot add children to a detached node\n",
+                __FILE__, __LINE__);
+        return SELVA_HIERARCHY_ENOTSUP;
     }
 
     for (size_t i = 0; i < n; i++) {
@@ -1673,7 +1694,7 @@ static int dfs(
 
             SVector_ForeachBegin(&it, vec);
             while ((adj = SVector_Foreach(&it))) {
-                if (adj->flags.detached) {
+                if (adj->flags & SELVA_NODE_FLAGS_DETACHED) {
                     err = restore_subtree(hierarchy, adj->id);
                     if (err) {
                         /*
@@ -1705,6 +1726,7 @@ static int full_dfs(SelvaHierarchy *hierarchy, const struct SelvaHierarchyCallba
     SelvaHierarchyHeadCallback head_cb = cb->head_cb ? cb->head_cb : &SelvaHierarchyHeadCallback_Dummy;
     SelvaHierarchyNodeCallback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
     SelvaHierarchyChildCallback child_cb = cb->child_cb ? cb->child_cb : &SelvaHierarchyChildCallback_Dummy;
+    int enable_restore = !(cb->flags & SELVA_HIERARCHY_CALLBACK_FLAGS_INHIBIT_RESTORE);
     SelvaHierarchyNode *head;
     SVECTOR_AUTOFREE(stack);
 
@@ -1728,7 +1750,7 @@ static int full_dfs(SelvaHierarchy *hierarchy, const struct SelvaHierarchyCallba
     while ((head = SVector_Foreach(&it))) {
         SVector_Insert(&stack, head);
 
-        if (head->flags.detached) {
+        if ((head->flags & SELVA_NODE_FLAGS_DETACHED) && enable_restore) {
             err = restore_subtree(hierarchy, head->id);
             if (err) {
                 /*
@@ -1752,13 +1774,21 @@ static int full_dfs(SelvaHierarchy *hierarchy, const struct SelvaHierarchyCallba
                     err = 0;
                     goto out;
                 }
+                if (node->flags & SELVA_NODE_FLAGS_DETACHED) {
+                    /*
+                     * Can't traverse detached node any further.
+                     * This flag can be set only if we inhibit restoring
+                     * subtrees with SELVA_HIERARCHY_CALLBACK_FLAGS_INHIBIT_RESTORE.
+                     */
+                    continue;
+                }
 
                 struct SVectorIterator it2;
                 SelvaHierarchyNode *adj;
 
                 SVector_ForeachBegin(&it2, &node->children);
                 while ((adj = SVector_Foreach(&it2))) {
-                    if (adj->flags.detached) {
+                    if ((adj->flags & SELVA_NODE_FLAGS_DETACHED) && enable_restore) {
                         err = restore_subtree(hierarchy, adj->id);
                         if (err) {
                             goto out;
@@ -1809,7 +1839,7 @@ out:
 
 #define BFS_VISIT_ADJACENT(_origin_field_str, _origin_field_len, adj_node) do { \
         if (Trx_Visit(&trx_cur, &(adj_node)->trx_label)) { \
-            if ((adj_node)->flags.detached) { \
+            if ((adj_node)->flags & SELVA_NODE_FLAGS_DETACHED) { \
                 int subtree_err = restore_subtree(hierarchy, (adj_node)->id); \
                 if (subtree_err) { \
                     Trx_End(&(hierarchy)->trx_state, &trx_cur); \
@@ -2410,309 +2440,6 @@ int SelvaHierarchy_IsNonEmptyField(const struct SelvaHierarchyNode *node, const 
 #undef IS_FIELD
 }
 
-int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
-    int err;
-
-    if (unlikely(!node)) {
-        return SELVA_EINVAL;
-    }
-
-    /*
-     * Note that the metadata must be loaded and saved in predefined order.
-     */
-
-    err = Edge_RdbLoad(io, encver, hierarchy, node);
-    if (err) {
-        return err;
-    }
-
-    /*
-     * node->obj is currently NULL because it's not created when
-     * isRdbLoading() is true.
-     */
-    node->obj = SelvaObjectTypeRDBLoad(io, encver, NULL);
-    if (!node->obj) {
-        return SELVA_ENOENT;
-    }
-
-    return 0;
-}
-
-static int load_tree(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy) {
-    while (1) {
-        int err;
-        size_t len = 0;
-        char *node_id __auto_free = NULL;
-
-        node_id = RedisModule_LoadStringBuffer(io, &len);
-        if (!node_id || len != SELVA_NODE_ID_SIZE) {
-            RedisModule_LogIOError(io, "warning", "Failed to load the next nodeId");
-            return SELVA_HIERARCHY_EINVAL;
-        }
-
-        /*
-         * If it's EOF there are no more nodes for this hierarchy.
-         */
-        if (!memcmp(node_id, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE)) {
-            break;
-        }
-
-        if (isDecompressingSubtree) {
-            SelvaHierarchyDetached_RemoveNode(hierarchy, node_id);
-        }
-
-        /*
-         * Upsert the node.
-         */
-        SelvaHierarchyNode *node;
-        err = SelvaHierarchy_UpsertNode(RedisModule_GetContextFromIO(io), hierarchy, node_id, &node);
-        if (err && err != SELVA_HIERARCHY_EEXIST) {
-            RedisModule_LogIOError(io, "warning", "Failed to upsert %.*s: %s",
-                                   (int)SELVA_NODE_ID_SIZE, node_id,
-                                   getSelvaErrorStr(err));
-            return err;
-        }
-
-        /*
-         * The node metadata comes right after the node_id.
-         */
-        err = load_metadata(io, encver, hierarchy, node);
-        if (err) {
-            RedisModule_LogIOError(io, "warning", "Failed to load hierarchy metadata");
-            return err;
-        }
-
-        /*
-         * Load the ids of child nodes.
-         */
-        uint64_t nr_children = RedisModule_LoadUnsigned(io);
-        Selva_NodeId *children __auto_free = NULL;
-
-        if (nr_children > 0) {
-            children = RedisModule_Alloc(nr_children * SELVA_NODE_ID_SIZE);
-            if (!children) {
-                return SELVA_HIERARCHY_ENOMEM;
-            }
-
-            /* Create/Update children */
-            for (uint64_t i = 0; i < nr_children; i++) {
-                char *child_id __auto_free = NULL;
-
-                child_id = RedisModule_LoadStringBuffer(io, &len);
-                if (len != SELVA_NODE_ID_SIZE) {
-                    return SELVA_HIERARCHY_EINVAL;
-                }
-
-                if (isDecompressingSubtree) {
-                    SelvaHierarchyDetached_RemoveNode(hierarchy, child_id);
-                }
-
-                err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
-                if (err < 0) {
-                    RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
-                                           getSelvaErrorStr(err));
-                    return err;
-                }
-
-                memcpy(children + i, child_id, SELVA_NODE_ID_SIZE);
-            }
-        }
-
-        /*
-         * Insert children of the node.
-         */
-        err = SelvaModify_AddHierarchyP(NULL, hierarchy, node, 0, NULL, nr_children, children);
-        if (err < 0) {
-            RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
-                                   getSelvaErrorStr(err));
-            return err;
-        }
-    }
-
-#if HIERARCHY_SORT_BY_DEPTH
-    /*
-     * Update depths on a single pass to save time.
-     */
-    struct SVectorIterator it;
-    SelvaHierarchyNode *head;
-
-    SVector_ForeachBegin(&it, &hierarchy->heads);
-    while ((head = SVector_Foreach(&it))) {
-        updateDepth(hierarchy, head);
-    }
-#endif
-
-    return 0;
-}
-
-static void *Hierarchy_RDBLoad(RedisModuleIO *io, int encver) {
-    SelvaHierarchy *hierarchy;
-    int err;
-
-    if (encver != HIERARCHY_ENCODING_VERSION) {
-        RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
-        return NULL;
-    }
-
-    hierarchy = SelvaModify_NewHierarchy(RedisModule_GetContextFromIO(io));
-    if (!hierarchy) {
-        RedisModule_LogIOError(io, "warning", "Failed to create a new hierarchy");
-        return NULL;
-    }
-
-    err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
-    if (err) {
-        RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints: %s", getSelvaErrorStr(err));
-        goto error;
-    }
-
-    err = load_tree(io, encver, hierarchy);
-    if (err) {
-        goto error;
-    }
-
-    return hierarchy;
-error:
-    SelvaModify_DestroyHierarchy(hierarchy);
-
-    return NULL;
-}
-
-static void save_metadata(RedisModuleIO *io, SelvaHierarchyNode *node) {
-    /*
-     * Note that the metadata must be loaded and saved in predefined order.
-     */
-
-    Edge_RdbSave(io, node);
-    SelvaObjectTypeRDBSave(io, node->obj, NULL);
-}
-
-static int HierarchyRDBSaveNode(SelvaHierarchyNode *node, void *arg) {
-    RedisModuleIO *io = (RedisModuleIO *)arg;
-
-    RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
-    save_metadata(io, node);
-    RedisModule_SaveUnsigned(io, SVector_Size(&node->children));
-
-    return 0;
-}
-
-static void HierarchyRDBSaveChild(const struct SelvaHierarchyTraversalMetadata *metadata, SelvaHierarchyNode *child, void *arg) {
-    REDISMODULE_NOT_USED(metadata);
-    RedisModuleIO *io = (RedisModuleIO *)arg;
-
-    RedisModule_SaveStringBuffer(io, child->id, SELVA_NODE_ID_SIZE);
-}
-
-static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
-    SelvaHierarchy *hierarchy = (SelvaHierarchy *)value;
-    const struct SelvaHierarchyCallback cb = {
-        .head_cb = NULL,
-        .head_arg = NULL,
-        .node_cb = HierarchyRDBSaveNode,
-        .node_arg = io,
-        .child_cb = HierarchyRDBSaveChild,
-        .child_arg = io,
-    };
-
-    /*
-     * Serialization format:
-     * EDGE_CONSTRAINTS
-     * NODE_ID1 | METADATA | NR_CHILDREN | CHILD_ID_0,..
-     * NODE_ID2 | METADATA | NR_CHILDREN | ...
-     * HIERARCHY_RDB_EOF
-     */
-    EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
-    (void)full_dfs(hierarchy, &cb);
-    RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
-}
-
-int load_nodeId(RedisModuleIO *io, Selva_NodeId nodeId) {
-    const char *buf __auto_free;
-    size_t len;
-
-    buf = RedisModule_LoadStringBuffer(io, &len);
-    if (!buf || len != SELVA_NODE_ID_SIZE) {
-        return SELVA_HIERARCHY_EINVAL;
-    }
-
-    memcpy(nodeId, buf, SELVA_NODE_ID_SIZE);
-    return 0;
-}
-
-/**
- * DO NOT CALL.
- * Load a subtree from the RDB serialization format back into the hierarchy.
- * This function should never be called directly.
- */
-static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
-    SelvaHierarchy *hierarchy = subtree_hierarchy;
-    int err;
-
-    /*
-     * TODO Currently Redis passes the encver always as 0. We might want to
-     * patch a support for some sort of enc version passing, either just as a
-     * long long inside the RDB string or some other way.
-     */
-#if 0
-    if (encver != HIERARCHY_ENCODING_VERSION) {
-        RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
-        return NULL;
-    }
-#endif
-
-    /*
-     * 1. Read nodeId
-     * 3. Load the children normally
-     */
-
-    Selva_NodeId nodeId;
-
-    /*
-     * Read nodeId.
-     */
-    if (load_nodeId(io, nodeId)) {
-        return NULL;
-    }
-
-    SelvaHierarchyDetached_RemoveNode(hierarchy, nodeId);
-
-    err = load_tree(io, encver, hierarchy);
-    if (err) {
-        return NULL;
-    }
-
-    return (void *)1;
-}
-
-/**
- * DO NOT CALL.
- * Serialize a subtree of a hierarchy.
- * This function should never be called directly.
- */
-static void Hierarchy_SubtreeRDBSave(RedisModuleIO *io, void *value) {
-    struct SelvaHierarchySubtree *subtree = (struct SelvaHierarchySubtree *)value;
-    SelvaHierarchy *hierarchy = subtree->hierarchy;
-    struct SelvaHierarchyNode *node = subtree->node;
-    const struct SelvaHierarchyCallback cb = {
-        .head_cb = NULL,
-        .head_arg = NULL,
-        .node_cb = HierarchyRDBSaveNode,
-        .node_arg = io,
-        .child_cb = HierarchyRDBSaveChild,
-        .child_arg = io,
-    };
-
-    /* Save nodeId. */
-    RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
-
-    /*
-     * Save the children.
-     */
-    (void)dfs(hierarchy, node, RELATIONSHIP_CHILD, &cb);
-    RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
-}
-
 /**
  * DO NOT CALL DIRECTLY. USE verifyDetachableSubtree().
  */
@@ -2875,7 +2602,7 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
     const size_t nr_parents = SVector_Size(&node->parents);
     int err;
 
-    if (node->flags.detached) {
+    if (node->flags & SELVA_NODE_FLAGS_DETACHED) {
         fprintf(stderr, "%s:%d: Node already detached: %.*s\n",
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE, node->id);
@@ -2912,7 +2639,7 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
     /*
      * Create a new dummy node with the detached flag set.
      */
-    new_detached_head(ctx, hierarchy, node_id, parents, nr_parents);
+    new_detached_node(ctx, hierarchy, node_id, parents, nr_parents);
 
     fprintf(stderr, "%s:%d: Compressed and detached the subtree of %.*s: %s\n",
             __FILE__, __LINE__,
@@ -2922,23 +2649,10 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
     return err;
 }
 
-/**
- * Restore a compressed subtree back to hierarchy from the detached hierarchy subtree storage.
- * @param id can be the id of any node within a compressed subtree.
- * @returns SELVA_ENOENT if id is not a member of any detached subtree.
- */
-static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
-    struct compressed_rms *compressed;
+static int restore_compressed_subtree(SelvaHierarchy *hierarchy, struct compressed_rms *compressed) {
     RedisModuleString *uncompressed;
     const void *load_res;
     int err;
-
-    SELVA_TRACE_BEGIN(restore_subtree);
-
-    err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed);
-    if (err) {
-        return err;
-    }
 
     err = rms_decompress(&uncompressed, compressed);
     if (err) {
@@ -2951,9 +2665,31 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     isDecompressingSubtree = 0;
     rms_free_compressed(compressed); /* All occurrences of the pointer should have been cleaned by now. */
     RedisModule_FreeString(NULL, uncompressed);
+
     if (!load_res) {
         return SELVA_HIERARCHY_EINVAL;
     }
+
+    return 0;
+}
+
+/**
+ * Restore a compressed subtree back to hierarchy from the detached hierarchy subtree storage.
+ * @param id can be the id of any node within a compressed subtree.
+ * @returns SELVA_ENOENT if id is not a member of any detached subtree.
+ */
+static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
+    struct compressed_rms *compressed;
+    int err;
+
+    SELVA_TRACE_BEGIN(restore_subtree);
+
+    err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed);
+    if (err) {
+        return err;
+    }
+
+    restore_compressed_subtree(hierarchy, compressed);
 
     SELVA_TRACE_END(restore_subtree);
 
@@ -2962,6 +2698,471 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
             (int)SELVA_NODE_ID_SIZE, id);
 
     return 0;
+}
+
+int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
+    int err;
+
+    if (unlikely(!node)) {
+        return SELVA_EINVAL;
+    }
+
+    /*
+     * Note that the metadata must be loaded and saved in predefined order.
+     */
+
+    err = Edge_RdbLoad(io, encver, hierarchy, node);
+    if (err) {
+        return err;
+    }
+
+    /*
+     * node->obj is currently NULL because it's not created when
+     * isRdbLoading() is true.
+     */
+    node->obj = SelvaObjectTypeRDBLoad(io, encver, NULL);
+    if (!node->obj) {
+        return SELVA_ENOENT;
+    }
+
+    return 0;
+}
+
+/**
+ * RDB load a node_id.
+ * Should be only called by load_node().
+ */
+static int load_node_id(RedisModuleIO *io, Selva_NodeId node_id_out) {
+    char *node_id __auto_free = NULL;
+    size_t len = 0;
+
+    node_id = RedisModule_LoadStringBuffer(io, &len);
+    if (!node_id || len != SELVA_NODE_ID_SIZE) {
+        return SELVA_HIERARCHY_EINVAL;
+    }
+
+    memcpy(node_id_out, node_id, SELVA_NODE_ID_SIZE);
+    return 0;
+}
+
+static int load_detached(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
+    struct compressed_rms *compressed;
+    SelvaHierarchyNode *node;
+    int err;
+
+    compressed = rms_alloc_compressed();
+    if (!compressed) {
+        fprintf(stderr, "%s:%d: Failed to allocate memory for a compressed subtree of %.*s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, node_id);
+        return SELVA_HIERARCHY_ENOMEM;
+    }
+
+    rms_RDBLoadCompressed(io, compressed);
+
+    /*
+     * It would be cleaner and faster to just attach this node as detached and
+     * compressed directly but we don't know the nodeIds inside this compressed
+     * subtree and thus can't add them to the detached hierarchy structure. We
+     * could save that information separately but at the moment we don't, and
+     * therefore it's easier, albeit time and memory intensive, to restore the
+     * subtree first and detach it again.
+     */
+
+    err = restore_compressed_subtree(hierarchy, compressed);
+    if (err) {
+        goto out;
+    }
+
+    node = SelvaHierarchy_FindNode(hierarchy, node_id);
+    if (!node) {
+        err = SELVA_HIERARCHY_ENOENT;
+        goto out;
+    }
+
+    err = detach_subtree(RedisModule_GetContextFromIO(io), hierarchy, node);
+
+out:
+    rms_free_compressed(compressed);
+    return err;
+}
+
+/**
+ * RDB load a node and its children.
+ * Should be only called by load_tree().
+ */
+static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
+    int err;
+
+    if (isDecompressingSubtree) {
+        SelvaHierarchyDetached_RemoveNode(hierarchy, node_id);
+    }
+
+    /*
+     * Upsert the node.
+     */
+    SelvaHierarchyNode *node;
+    err = SelvaHierarchy_UpsertNode(RedisModule_GetContextFromIO(io), hierarchy, node_id, &node);
+    if (err && err != SELVA_HIERARCHY_EEXIST) {
+        RedisModule_LogIOError(io, "warning", "Failed to upsert %.*s: %s",
+                               (int)SELVA_NODE_ID_SIZE, node_id,
+                               getSelvaErrorStr(err));
+        return err;
+    }
+
+    if (encver > 3) {
+        node->flags = RedisModule_LoadUnsigned(io);
+    }
+
+    if (node->flags & SELVA_NODE_FLAGS_DETACHED && !isDecompressingSubtree) {
+        /*
+         * This node and its subtree was compressed.
+         * In this case we are supposed to load the subtree as detached and
+         * keep it compressed.
+         * SELVA_NODE_FLAGS_DETACHED should never be set if
+         * isDecompressingSubtree is set but the code looks cleaner this way.
+         */
+        err = load_detached(io, hierarchy, node_id);
+    } else {
+        /*
+         * The node metadata comes right after the node_id.
+         */
+        err = load_metadata(io, encver, hierarchy, node);
+        if (err) {
+            RedisModule_LogIOError(io, "warning", "Failed to load hierarchy metadata");
+            return err;
+        }
+
+        /*
+         * Load the ids of child nodes.
+         */
+        uint64_t nr_children = RedisModule_LoadUnsigned(io);
+        Selva_NodeId *children __auto_free = NULL;
+
+        if (nr_children > 0) {
+            children = RedisModule_Alloc(nr_children * SELVA_NODE_ID_SIZE);
+            if (!children) {
+                return SELVA_HIERARCHY_ENOMEM;
+            }
+
+            /* Create/Update children */
+            for (uint64_t i = 0; i < nr_children; i++) {
+                Selva_NodeId child_id;
+
+                err = load_node_id(io, child_id);
+                if (err) {
+                    RedisModule_LogIOError(io, "warning", "Invalid child node_id");
+                    return err;
+                }
+
+                if (isDecompressingSubtree) {
+                    SelvaHierarchyDetached_RemoveNode(hierarchy, child_id);
+                }
+
+                err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
+                if (err < 0) {
+                    RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
+                                           getSelvaErrorStr(err));
+                    return err;
+                }
+
+                memcpy(children + i, child_id, SELVA_NODE_ID_SIZE);
+            }
+        }
+
+        /*
+         * Insert children of the node.
+         */
+        err = SelvaModify_AddHierarchyP(NULL, hierarchy, node, 0, NULL, nr_children, children);
+        if (err < 0) {
+            RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
+                                   getSelvaErrorStr(err));
+            return err;
+        }
+    }
+
+    return 0;
+}
+
+static int load_tree(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy) {
+    while (1) {
+        Selva_NodeId node_id;
+        int err;
+
+        err = load_node_id(io, node_id);
+        if (err) {
+            RedisModule_LogIOError(io, "warning", "Failed to load the next nodeId: %s",
+                                   getSelvaErrorStr(err));
+            return SELVA_HIERARCHY_EINVAL;
+        }
+
+        /*
+         * If it's EOF there are no more nodes for this hierarchy.
+         */
+        if (!memcmp(node_id, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE)) {
+            break;
+        }
+
+        err = load_node(io, encver, hierarchy, node_id);
+        if (err) {
+            return err;
+        }
+    }
+
+#if HIERARCHY_SORT_BY_DEPTH
+    /*
+     * Update depths on a single pass to save time.
+     */
+    struct SVectorIterator it;
+    SelvaHierarchyNode *head;
+
+    SVector_ForeachBegin(&it, &hierarchy->heads);
+    while ((head = SVector_Foreach(&it))) {
+        updateDepth(hierarchy, head);
+    }
+#endif
+
+    return 0;
+}
+
+static void *Hierarchy_RDBLoad(RedisModuleIO *io, int encver) {
+    SelvaHierarchy *hierarchy;
+    int err;
+
+    if (encver > HIERARCHY_ENCODING_VERSION) {
+        RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
+        return NULL;
+    }
+
+    hierarchy = SelvaModify_NewHierarchy(RedisModule_GetContextFromIO(io));
+    if (!hierarchy) {
+        RedisModule_LogIOError(io, "warning", "Failed to create a new hierarchy");
+        return NULL;
+    }
+
+    err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
+    if (err) {
+        RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints: %s", getSelvaErrorStr(err));
+        goto error;
+    }
+
+    err = load_tree(io, encver, hierarchy);
+    if (err) {
+        goto error;
+    }
+
+    return hierarchy;
+error:
+    SelvaModify_DestroyHierarchy(hierarchy);
+
+    return NULL;
+}
+
+static void save_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selva_NodeId id) {
+    struct compressed_rms *compressed;
+    int err;
+
+    /*
+     * Techincally we point to the same compressed subtree multiple times in the
+     * detached hierarchy. However, we should only point to it once in the
+     * actual hierarchy as these are proper subtrees. This means that we'll only
+     * store the compressed subtree once. The down side is that the only way to
+     * rebuild the SelvaHierarchyDetached structure is by decompressing the
+     * subtrees temporarily.
+     */
+
+    err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed);
+    if (err) {
+        RedisModule_LogIOError(io, "warning", "Failed to save a compressed subtree: %s", getSelvaErrorStr(err));
+        return;
+    }
+
+    rms_RDBSaveCompressed(io, compressed);
+}
+
+static void save_metadata(RedisModuleIO *io, SelvaHierarchyNode *node) {
+    /*
+     * Note that the metadata must be loaded and saved in a predefined order.
+     */
+
+    Edge_RdbSave(io, node);
+    SelvaObjectTypeRDBSave(io, node->obj, NULL);
+}
+
+struct HierarchyRDBSaveNode {
+    RedisModuleIO *io;
+    SelvaHierarchy *hierarchy;
+};
+
+/**
+ * Save a node.
+ * Used by Hierarchy_RDBSave() when doing an rdb dump.
+ */
+static int HierarchyRDBSaveNode(SelvaHierarchyNode *node, void *arg) {
+    struct HierarchyRDBSaveNode *args = (struct HierarchyRDBSaveNode *)arg;
+    RedisModuleIO *io = args->io;
+    SelvaHierarchy *hierarchy = args->hierarchy;
+
+    RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, node->flags);
+
+    if (node->flags & SELVA_NODE_FLAGS_DETACHED) {
+        save_detached_node(io, hierarchy, node->id);
+    } else {
+        save_metadata(io, node);
+        RedisModule_SaveUnsigned(io, SVector_Size(&node->children));
+    }
+
+    return 0;
+}
+
+/**
+ * Save a node from a subtree.
+ * Used by Hierarchy_SubtreeRDBSave() when saving a subtree into a string.
+ * This function should match with HierarchyRDBSaveNode() but we don't want
+ * to do save_detached() here.
+ */
+static int HierarchyRDBSaveSubtreeNode(SelvaHierarchyNode *node, void *arg) {
+    RedisModuleIO *io = (RedisModuleIO *)arg;
+
+    RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
+    RedisModule_SaveUnsigned(io, node->flags & ~SELVA_NODE_FLAGS_DETACHED);
+    save_metadata(io, node);
+    RedisModule_SaveUnsigned(io, SVector_Size(&node->children));
+
+    return 0;
+}
+
+static void HierarchyRDBSaveChild(const struct SelvaHierarchyTraversalMetadata *metadata, SelvaHierarchyNode *child, void *arg) {
+    REDISMODULE_NOT_USED(metadata);
+    RedisModuleIO *io = (RedisModuleIO *)arg;
+
+    /*
+     * We don't need to care here whether the node is detached because the
+     * node callback is the only callback touching the node data. Here we
+     * are only interested in saving the child ids.
+     */
+
+    RedisModule_SaveStringBuffer(io, child->id, SELVA_NODE_ID_SIZE);
+}
+
+static void save_hierarchy(RedisModuleIO *io, SelvaHierarchy *hierarchy) {
+    struct HierarchyRDBSaveNode args = {
+        .io = io,
+        .hierarchy = hierarchy,
+    };
+    const struct SelvaHierarchyCallback cb = {
+        .head_cb = NULL,
+        .head_arg = NULL,
+        .node_cb = HierarchyRDBSaveNode,
+        .node_arg = &args,
+        .child_cb = HierarchyRDBSaveChild,
+        .child_arg = io,
+        .flags = SELVA_HIERARCHY_CALLBACK_FLAGS_INHIBIT_RESTORE,
+    };
+
+    (void)full_dfs(hierarchy, &cb);
+    RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
+}
+
+static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
+    SelvaHierarchy *hierarchy = (SelvaHierarchy *)value;
+
+    /*
+     * Serialization format:
+     * EDGE_CONSTRAINTS
+     * NODE_ID1 | METADATA | NR_CHILDREN | CHILD_ID_0,..
+     * NODE_ID2 | METADATA | NR_CHILDREN | ...
+     * HIERARCHY_RDB_EOF
+     */
+    EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
+    save_hierarchy(io, hierarchy);
+}
+
+int load_nodeId(RedisModuleIO *io, Selva_NodeId nodeId) {
+    const char *buf __auto_free;
+    size_t len;
+
+    buf = RedisModule_LoadStringBuffer(io, &len);
+    if (!buf || len != SELVA_NODE_ID_SIZE) {
+        return SELVA_HIERARCHY_EINVAL;
+    }
+
+    memcpy(nodeId, buf, SELVA_NODE_ID_SIZE);
+    return 0;
+}
+
+/**
+ * DO NOT CALL.
+ * Load a subtree from the RDB serialization format back into the hierarchy.
+ * This function should never be called directly.
+ */
+static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
+    SelvaHierarchy *hierarchy = subtree_hierarchy;
+    int err;
+
+    /*
+     * TODO Currently Redis passes the encver always as 0. We might want to
+     * patch a support for some sort of enc version passing, either just as a
+     * long long inside the RDB string or some other way.
+     */
+#if 0
+    if (encver != HIERARCHY_ENCODING_VERSION) {
+        RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
+        return NULL;
+    }
+#endif
+
+    /*
+     * 1. Read nodeId
+     * 3. Load the children normally
+     */
+
+    Selva_NodeId nodeId;
+
+    /*
+     * Read nodeId.
+     */
+    if (load_nodeId(io, nodeId)) {
+        return NULL;
+    }
+
+    SelvaHierarchyDetached_RemoveNode(hierarchy, nodeId);
+
+    err = load_tree(io, encver, hierarchy);
+    if (err) {
+        return NULL;
+    }
+
+    return (void *)1;
+}
+
+/**
+ * DO NOT CALL.
+ * Serialize a subtree of a hierarchy.
+ * This function should never be called directly.
+ */
+static void Hierarchy_SubtreeRDBSave(RedisModuleIO *io, void *value) {
+    struct SelvaHierarchySubtree *subtree = (struct SelvaHierarchySubtree *)value;
+    SelvaHierarchy *hierarchy = subtree->hierarchy;
+    struct SelvaHierarchyNode *node = subtree->node;
+    const struct SelvaHierarchyCallback cb = {
+        .head_cb = NULL,
+        .head_arg = NULL,
+        .node_cb = HierarchyRDBSaveSubtreeNode,
+        .node_arg = io,
+        .child_cb = HierarchyRDBSaveChild,
+        .child_arg = io,
+    };
+
+    /* Save nodeId. */
+    RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
+
+    /*
+     * Save the children.
+     */
+    (void)dfs(hierarchy, node, RELATIONSHIP_CHILD, &cb);
+    RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
 
 void HierarchyTypeFree(void *value) {
