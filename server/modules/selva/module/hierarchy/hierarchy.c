@@ -3111,8 +3111,9 @@ static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
      * patch a support for some sort of enc version passing, either just as a
      * long long inside the RDB string or some other way.
      */
+    encver = HIERARCHY_ENCODING_VERSION;
 #if 0
-    if (encver != HIERARCHY_ENCODING_VERSION) {
+    if (encver > HIERARCHY_ENCODING_VERSION) {
         RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
         return NULL;
     }
