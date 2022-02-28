@@ -15,6 +15,8 @@ const CLIENT_HEARTBEAT_TIMER = 1e3
 const connections: Map<string, Connection> = new Map()
 // this connections object can also have a pql instance (which is a different type of connection)
 
+const EVENT_CALLBACK = Symbol('EVENT_CALLBACK')
+
 type ConnectionState = {
   id?: string
   isEmpty?: boolean
@@ -286,15 +288,22 @@ class Connection {
           this.subscriber.removeListener(event, cb)
           delete listeners[event][id]
           if (isEmptyObject(listeners[event])) {
+            this.subscriber.removeListener(
+              event,
+              // @ts-ignore
+              listeners[event][EVENT_CALLBACK]
+            )
             delete listeners[event]
           }
         }
       } else {
-        listeners[event][id].forEach((cb) => {
-          this.subscriber.removeListener(event, cb)
-        })
         delete listeners[event][id]
         if (isEmptyObject(listeners[event])) {
+          this.subscriber.removeListener(
+            event,
+            // @ts-ignore
+            listeners[event][EVENT_CALLBACK]
+          )
           delete listeners[event]
         }
       }
@@ -374,12 +383,24 @@ class Connection {
     }
     if (!listeners[event]) {
       listeners[event] = {}
+      // add a global listener that execs the sets
+      // @ts-ignore
+      listeners[event][EVENT_CALLBACK] = (...args: (string | number)[]) => {
+        if (listeners[event]) {
+          for (const id in listeners[event]) {
+            listeners[event][id].forEach((fn) => {
+              fn(...args)
+            })
+          }
+        }
+      }
+      // @ts-ignore
+      this.subscriber.on(event, listeners[event][EVENT_CALLBACK])
     }
     if (!listeners[event][id]) {
       listeners[event][id] = new Set()
     }
     listeners[event][id].add(cb)
-    this.subscriber.on(event, cb)
   }
 
   public applyConnectionState(state: ConnectionState) {
@@ -641,6 +662,7 @@ class Connection {
 
     // remove all listeners -- pretty dangerous
     this.removeAllListeners()
+    // delete this.listeners
   }
 
   constructor(serverDescriptor: ServerDescriptor) {
