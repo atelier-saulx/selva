@@ -12,7 +12,7 @@
 #include "subscriptions.h"
 #include "poptop.h"
 
-#define HIERARCHY_ENCODING_VERSION  3
+#define HIERARCHY_ENCODING_VERSION  4
 
 struct RedisModuleCtx;
 struct RedisModuleString;
@@ -140,9 +140,10 @@ struct SelvaHierarchy {
      */
     struct SelvaHierarchyDetached {
         /**
-         * The object maps each nodeId to a pointer that describes where the detached
-         * subtree containing the nodeId is located. E.g. it can be a tagged pointer
-         * to a RedisModuleString that contains a compressed subtree string.
+         * The object maps each detached nodeId to a pointer that describes where
+         * the detached subtree containing the nodeId is located. E.g. it can be
+         * a tagged pointer to a RedisModuleString that contains a compressed
+         * subtree string.
          */
         struct SelvaObject *obj;
     } index_detached;
@@ -198,6 +199,10 @@ struct SelvaHierarchyCallback {
      */
     SelvaHierarchyChildCallback child_cb;
     void * child_arg;
+
+    enum SelvaHierarchyCallbackFlags {
+        SELVA_HIERARCHY_CALLBACK_FLAGS_INHIBIT_RESTORE = 0x01,
+    } flags;
 };
 
 typedef int (*SelvaModify_ArrayObjectCallback)(struct SelvaObject *obj, void *arg);

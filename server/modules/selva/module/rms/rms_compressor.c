@@ -6,7 +6,7 @@
 #include "errors.h"
 #include "rms.h"
 
-int rms_compress(struct compressed_rms *out, RedisModuleString *in) {
+int rms_compress(struct compressed_rms *out, RedisModuleString *in, double *cratio) {
     struct libdeflate_compressor *compressor;
     char *compressed_str __auto_free = NULL;
     size_t compressed_size = 0;
@@ -43,10 +43,9 @@ int rms_compress(struct compressed_rms *out, RedisModuleString *in) {
         out->rms = RedisModule_CreateString(NULL, compressed_str, compressed_size);
     }
 
-    /* TODO Return via an argument. */
-    fprintf(stderr, "%s:%d: Compression ratio: %.2f:1\n",
-            __FILE__, __LINE__,
-            (double)in_len / (double)compressed_size);
+    if (cratio) {
+        *cratio = (double)in_len / (double)compressed_size;
+    }
 
     return 0;
 }
@@ -89,4 +88,14 @@ int rms_decompress(RedisModuleString **out, struct compressed_rms *in) {
 
     *out = raw;
     return 0;
+}
+
+void rms_RDBSaveCompressed(RedisModuleIO *io, struct compressed_rms *compressed) {
+    RedisModule_SaveSigned(io, compressed->uncompressed_size);
+    RedisModule_SaveString(io, compressed->rms);
+}
+
+void rms_RDBLoadCompressed(RedisModuleIO *io, struct compressed_rms *compressed) {
+    compressed->uncompressed_size = RedisModule_LoadSigned(io);
+    compressed->rms = RedisModule_LoadString(io);
 }
