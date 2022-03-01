@@ -2243,7 +2243,7 @@ int SelvaObject_ReplyWithWildcardStr(
         long *resp_count,
         int resp_path_start_idx,
         unsigned int flags) {
-    const size_t idx = strnstrn(okey_str, okey_len, ".*.", 3) - okey_str + 1; /* .*. => *. */
+    const int idx = (int)(strnstrn(okey_str, okey_len, ".*.", 3) - okey_str + 1); /* .*. => *. */
 
     if (idx > SELVA_OBJECT_KEY_MAX) {
         /*
