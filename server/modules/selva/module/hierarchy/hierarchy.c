@@ -2465,7 +2465,7 @@ static int verifyDetachableSubtreeNodeCb(SelvaHierarchyNode *node, void *arg) {
     }
 
     struct SVectorIterator it;
-    SelvaHierarchyNode *parent;
+    const SelvaHierarchyNode *parent;
 
     /*
      * A subtree is allowed be a acyclic but `node` must be its true parent,
