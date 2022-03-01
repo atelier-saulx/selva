@@ -1500,6 +1500,30 @@ static void copy_nodeIds(Selva_NodeId *dst, const struct SVector *vec) {
     }
 }
 
+static int subr_del_adj_relationship(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node, Selva_NodeId adj_node_id, enum SelvaHierarchyNode_Relationship dir, SelvaHierarchyNode **adj_node_out) {
+    SelvaHierarchyNode *adj_node;
+    Selva_NodeId arr[1];
+
+    /*
+     * Find the node.
+     */
+    adj_node = SelvaHierarchy_FindNode(hierarchy, adj_node_id);
+    *adj_node_out = adj_node;
+    if (!adj_node) {
+        /* Node not found;
+         * This is probably fine, as there might have been a circular link.
+         */
+        return SELVA_HIERARCHY_ENOENT;
+    }
+
+    /*
+     * Note that we store a pointer in a Selva_NodeId array to save in
+     * pointless RB_FIND() lookups.
+     */
+    memcpy(arr, &adj_node, sizeof(SelvaHierarchyNode *));
+    return crossRemove(ctx, hierarchy, node, dir, 1, arr, 1);
+}
+
 /**
  * Delete a node and its children.
  * @param flags controlling how the deletion is executed.
@@ -1530,6 +1554,39 @@ static int SelvaModify_DelHierarchyNodeP(
 
     SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, node);
 
+    /*
+     * Delete links to parents.
+     * This might seem like unnecessary as the parent links will be deleted
+     * when then node is deleted. However, if there is a cycle back to this
+     * node from its descendants then we'd loop back here and eventually
+     * causing invalid/NULL pointers to appear.
+     */
+    nr_ids = SVector_Size(&node->parents);
+    if (nr_ids > 0) {
+        Selva_NodeId *ids;
+
+        ids = RedisModule_PoolAlloc(ctx, nr_ids * SELVA_NODE_ID_SIZE);
+        if (!ids) {
+            return SELVA_HIERARCHY_ENOMEM;
+        }
+
+        copy_nodeIds(ids, &node->parents);
+        for (size_t i = 0; i < nr_ids; i++) {
+            SelvaHierarchyNode *parent;
+            int err;
+
+            err = subr_del_adj_relationship(ctx, hierarchy, node, ids[i], RELATIONSHIP_CHILD, &parent);
+            if (err == SELVA_HIERARCHY_ENOENT) {
+                continue;
+            } else if (err) {
+                return err;
+            }
+        }
+    }
+
+    /*
+     * Delete orphan children recursively.
+     */
     nr_ids = SVector_Size(&node->children);
     if (nr_ids > 0) {
         Selva_NodeId *ids;
@@ -1540,35 +1597,14 @@ static int SelvaModify_DelHierarchyNodeP(
         }
 
         copy_nodeIds(ids, &node->children);
-
-        /*
-         * Delete orphan children recursively.
-         */
         for (size_t i = 0; i < nr_ids; i++) {
-            Selva_NodeId nodeId;
+            SelvaHierarchyNode *child;
             int err;
 
-            memcpy(nodeId, ids + i, SELVA_NODE_ID_SIZE);
-
-            /*
-             * Find the node.
-             */
-            SelvaHierarchyNode *child = SelvaHierarchy_FindNode(hierarchy, nodeId);
-            if (!child) {
-                /* Node not found;
-                 * This is probably fine, as there might have been a circular link.
-                 */
+            err = subr_del_adj_relationship(ctx, hierarchy, node, ids[i], RELATIONSHIP_PARENT, &child);
+            if (err == SELVA_HIERARCHY_ENOENT) {
                 continue;
-            }
-
-            /*
-             * Note that we store a pointer in a Selva_NodeId array to save in
-             * pointless RB_FIND() lookups.
-             */
-            Selva_NodeId arr[1];
-            memcpy(arr, &child, sizeof(SelvaHierarchyNode *));
-            err = crossRemove(ctx, hierarchy, node, RELATIONSHIP_PARENT, 1, arr, 1);
-            if (err) {
+            } else if (err) {
                 return err;
             }
 

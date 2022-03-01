@@ -273,7 +273,7 @@ test.serial('find - traversing root will restore compressed subtree', async (t) 
   t.deepEqual(await client.redis.selva_hierarchy_listcompressed('___selva_hierarchy'), [])
 })
 
-test.serial.skip('loop in a subtree', async (t) => {
+test.serial('loop in a subtree', async (t) => {
   const client = connect({ port })
 
   await client.set({
@@ -301,7 +301,7 @@ test.serial.skip('loop in a subtree', async (t) => {
     children: [ 'ma1' ]
   })
 
-  await t.throwsAsync(() => client.redis.selva_hierarchy_compress('___selva_hierarchy', 'ma1'))
+  t.deepEqual(await client.redis.selva_hierarchy_compress('___selva_hierarchy', 'ma1'), 1)
 })
 
 test.serial('not a proper subtree', async (t) => {
