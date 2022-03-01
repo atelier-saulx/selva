@@ -2820,6 +2820,9 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
          * isDecompressingSubtree is set but the code looks cleaner this way.
          */
         err = load_detached(io, hierarchy, node_id);
+        if (err) {
+            return err;
+        }
     } else {
         /*
          * The node metadata comes right after the node_id and flags.
