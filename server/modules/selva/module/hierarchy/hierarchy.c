@@ -1500,7 +1500,12 @@ static void copy_nodeIds(Selva_NodeId *dst, const struct SVector *vec) {
     }
 }
 
-static int subr_del_adj_relationship(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node, Selva_NodeId adj_node_id, enum SelvaHierarchyNode_Relationship dir, SelvaHierarchyNode **adj_node_out) {
+static int subr_del_adj_relationship(
+        RedisModuleCtx *ctx, SelvaHierarchy *hierarchy,
+        SelvaHierarchyNode *node,
+        const Selva_NodeId adj_node_id,
+        enum SelvaHierarchyNode_Relationship dir,
+        SelvaHierarchyNode **adj_node_out) {
     SelvaHierarchyNode *adj_node;
     Selva_NodeId arr[1];
 
