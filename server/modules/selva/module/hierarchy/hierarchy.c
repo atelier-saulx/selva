@@ -2959,7 +2959,7 @@ error:
     return NULL;
 }
 
-static void save_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selva_NodeId id) {
+static void save_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     struct compressed_rms *compressed;
     int err;
 
