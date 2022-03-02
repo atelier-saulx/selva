@@ -51,7 +51,7 @@ enum SelvaNodeFlags {
      * and the subtree must be restored to make this node usable.
      */
     SELVA_NODE_FLAGS_DETACHED = 0x01,
-};
+} __packed;
 
 /**
  * The core type of Selva hierarchy.
@@ -71,12 +71,17 @@ typedef struct SelvaHierarchyNode {
 } SelvaHierarchyNode;
 
 /**
- * Filter struct used for RB searches.
+ * Filter struct used for RB searches from hierarchy_index_tree.
+ * This should somewhat match to SelvaHierarchyNode to the level necessary for
+ * comparing nodes.
  */
-typedef struct SelvaHierarchySearchFilter {
+struct SelvaHierarchySearchFilter {
     Selva_NodeId id;
-} SelvaHierarchySearchFilter;
+};
 
+/**
+ * Hierarchy ancestral relationship types.
+ */
 enum SelvaHierarchyNode_Relationship {
     RELATIONSHIP_PARENT,
     RELATIONSHIP_CHILD,
@@ -97,6 +102,14 @@ struct verifyDetachableSubtree {
 struct SelvaHierarchySubtree {
     SelvaHierarchy *hierarchy;
     struct SelvaHierarchyNode *node;
+};
+
+/**
+ * HierarchyRDBSaveNode() args struct.
+ */
+struct HierarchyRDBSaveNode {
+    RedisModuleIO *io;
+    SelvaHierarchy *hierarchy;
 };
 
 static void SelvaModify_DestroyNode(
@@ -450,7 +463,7 @@ static int repopulate_detached_head(SelvaHierarchyNode *node) {
 }
 
 SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
-    SelvaHierarchySearchFilter filter;
+    struct SelvaHierarchySearchFilter filter;
     SelvaHierarchyNode *node;
     int err;
 
@@ -3031,11 +3044,6 @@ static void save_metadata(RedisModuleIO *io, SelvaHierarchyNode *node) {
     SelvaObjectTypeRDBSave(io, node->obj, NULL);
 }
 
-struct HierarchyRDBSaveNode {
-    RedisModuleIO *io;
-    SelvaHierarchy *hierarchy;
-};
-
 /**
  * Save a node.
  * Used by Hierarchy_RDBSave() when doing an rdb dump.
@@ -3121,7 +3129,7 @@ static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
     save_hierarchy(io, hierarchy);
 }
 
-int load_nodeId(RedisModuleIO *io, Selva_NodeId nodeId) {
+static int load_nodeId(RedisModuleIO *io, Selva_NodeId nodeId) {
     const char *buf __auto_free;
     size_t len;
 
