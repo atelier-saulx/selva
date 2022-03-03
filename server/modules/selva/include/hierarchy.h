@@ -14,16 +14,16 @@
 
 #define HIERARCHY_ENCODING_VERSION  4
 
+/* Forward declarations */
 struct RedisModuleCtx;
 struct RedisModuleString;
 struct SelvaHierarchy;
-typedef struct SelvaHierarchy SelvaHierarchy;
 struct SelvaHierarchyNode;
+struct Selva_Subscription;
 struct ida;
+/* End of forward declarations */
 
-/* Forward declarations for metadata */
-/* ... */
-/* End of forward declarations for metadata */
+typedef struct SelvaHierarchy SelvaHierarchy;
 
 /**
  * Hierarchy node metadata.
@@ -47,13 +47,21 @@ typedef void SelvaHierarchyMetadataDestructorHook(
         struct SelvaHierarchyNode *node,
         struct SelvaHierarchyMetadata *metadata);
 
+/**
+ * Hierarchy node metadata constructor.
+ * Declare a hook function that should be called when a new node is being
+ * created. The function signature is SelvaHierarchyMetadataConstructorHook.
+ */
 #define SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(fun) \
     DATA_SET(selva_HMCtor, fun)
 
+/**
+ * Hierarchy node metadata destructor.
+ * Declare a hook function that should be called when a node is being
+ * destroyed. The function signature is SelvaHierarchyMetadataDestructorHook.
+ */
 #define SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(fun) \
     DATA_SET(selva_HMDtor, fun)
-
-struct Selva_Subscription;
 
 RB_HEAD(hierarchy_index_tree, SelvaHierarchyNode);
 RB_HEAD(hierarchy_subscriptions_tree, Selva_Subscription);
@@ -179,8 +187,14 @@ struct SelvaHierarchyTraversalMetadata {
  * @param node a pointer to the node.
  * @param arg a pointer to child_arg give in SelvaHierarchyCallback structure.
  */
-typedef void (*SelvaHierarchyChildCallback)(const struct SelvaHierarchyTraversalMetadata *metadata, struct SelvaHierarchyNode *child, void *arg);
+typedef void (*SelvaHierarchyChildCallback)(
+        const struct SelvaHierarchyTraversalMetadata *metadata,
+        struct SelvaHierarchyNode *child,
+        void *arg);
 
+/**
+ * Callback descriptor used for traversals.
+ */
 struct SelvaHierarchyCallback {
     /**
      * Called for each orphan head in the hierarchy.
@@ -207,6 +221,9 @@ struct SelvaHierarchyCallback {
 
 typedef int (*SelvaModify_ArrayObjectCallback)(struct SelvaObject *obj, void *arg);
 
+/**
+ * Callback descriptor for array traversals.
+ */
 struct SelvaModify_ArrayObjectCallback {
     SelvaModify_ArrayObjectCallback node_cb;
     void * node_arg;
@@ -238,6 +255,9 @@ SelvaHierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct Red
 
 /**
  * Copy nodeId to a buffer.
+ * @param[out] id is a pointer to a Selva_NodeId.
+ * @param node is a pointer to a hierarchy node.
+ * @returns id.
  */
 static inline char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct SelvaHierarchyNode *node) {
     const char *buf = (const char *)node;
@@ -248,6 +268,12 @@ static inline char *SelvaHierarchy_GetNodeId(Selva_NodeId id, const struct Selva
     return id;
 }
 
+/**
+ * Get the type of a node.
+ * @param[out] type is a pointer to char array that can hold a node type.
+ * @param node is a pointer to a hierarchy node.
+ * @returns type.
+ */
 static inline char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], const struct SelvaHierarchyNode *node) {
     const char *buf = (const char *)node;
 
@@ -256,15 +282,25 @@ static inline char *SelvaHierarchy_GetNodeType(char type[SELVA_NODE_TYPE_SIZE], 
     return type;
 }
 
+/**
+ * Get the SelvaObject of a hierarchy node.
+ * @returns a pointer to the SelvaObject of node.
+ */
 struct SelvaObject *SelvaHierarchy_GetNodeObject(const struct SelvaHierarchyNode *node);
 
 const struct SelvaHierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByConstPtr(const struct SelvaHierarchyNode *node);
 struct SelvaHierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByPtr(struct SelvaHierarchyNode *node);
+/**
+ * Get node metadata by a pointer to the node.
+ */
 #define SelvaHierarchy_GetNodeMetadataByPtr(node) _Generic((node), \
         const struct SelvaHierarchyNode *: _SelvaHierarchy_GetNodeMetadataByConstPtr, \
         struct SelvaHierarchyNode *: _SelvaHierarchy_GetNodeMetadataByPtr \
         )(node)
 
+/**
+ * Get node metadata by nodeId.
+ */
 struct SelvaHierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id);
@@ -273,12 +309,21 @@ struct SelvaHierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
 ssize_t SelvaModify_GetHierarchyDepth(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 #endif
 
+/**
+ * Clear all user fields of a node SelvaObject.
+ */
 int SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj);
 
+/**
+ * Delete all child edges of a node.
+ */
 void SelvaHierarchy_DelChildren(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node);
+/**
+ * Delete all parent edges of a node.
+ */
 void SelvaHierarchy_DelParents(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
