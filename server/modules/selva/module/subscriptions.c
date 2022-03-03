@@ -248,7 +248,7 @@ Selva_SubscriptionMarkerId Selva_GenSubscriptionMarkerId(Selva_SubscriptionMarke
  */
 __attribute__((nonnull (1))) static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
 #if 0
-    fprintf(stderr, "%s:%d: Destroying marker %p %d %.*s\n",
+    fprintf(stderr, "%s:%d: Destroying marker %p %ld %.*s\n",
             __FILE__, __LINE__,
             marker, marker->marker_id,
             (int)SELVA_NODE_ID_SIZE, marker->node_id);
@@ -566,7 +566,7 @@ static int set_node_marker_cb(struct SelvaHierarchyNode *node, void *arg) {
     Selva_NodeId node_id;
 
     SelvaHierarchy_GetNodeId(node_id, node);
-    fprintf(stderr, "%s:%d: Set sub marker %s:%d to %.*s\n",
+    fprintf(stderr, "%s:%d: Set sub marker %s:%ld to %.*s\n",
             __FILE__, __LINE__,
             Selva_SubscriptionId2str(str, marker->sub->sub_id),
             marker->marker_id,
@@ -593,7 +593,7 @@ static int clear_node_marker_cb(struct SelvaHierarchyNode *node, void *arg) {
     Selva_NodeId id;
 
     SelvaHierarchy_GetNodeId(id, node);
-    fprintf(stderr, "%s:%d: Clear sub marker %s:%d (%p start_node_id: %.*s) from node %.*s (nr_subs: %zd)\n",
+    fprintf(stderr, "%s:%d: Clear sub marker %s:%ld (%p start_node_id: %.*s) from node %.*s (nr_subs: %zd)\n",
             __FILE__, __LINE__,
             Selva_SubscriptionId2str(str, marker->sub->sub_id),
             marker->marker_id,
@@ -993,7 +993,7 @@ static int SelvaSubscriptions_TraverseMarker(
 #if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-        fprintf(stderr, "%s:%d: Could not fully apply a subscription marker: %s:%d err: %s\n",
+        fprintf(stderr, "%s:%d: Could not fully apply a subscription marker: %s:%ld err: %s\n",
                 __FILE__, __LINE__,
                 Selva_SubscriptionId2str(str, marker->sub->sub_id), marker->marker_id,
                 getSelvaErrorStr(err));
@@ -1126,7 +1126,7 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy
 #if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-        fprintf(stderr, "%s:%d: Clear sub marker %s:%d from node %.*s\n",
+        fprintf(stderr, "%s:%d: Clear sub marker %s:%ld from node %.*s\n",
                 __FILE__, __LINE__,
                 Selva_SubscriptionId2str(str, marker->sub->sub_id),
                 marker->marker_id,
@@ -1148,7 +1148,7 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy
         if (err && err != SELVA_HIERARCHY_ENOENT) {
             char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-            fprintf(stderr, "%s:%d: Failed to clear a subscription %s:%d: %s\n",
+            fprintf(stderr, "%s:%d: Failed to clear a subscription %s:%ld: %s\n",
                     __FILE__, __LINE__,
                     Selva_SubscriptionId2str(str, marker->sub->sub_id),
                     marker->marker_id,
@@ -2658,7 +2658,7 @@ int SelvaSubscriptions_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **arg
 
         RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
         RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "sub_id: %s", Selva_SubscriptionId2str(sub_buf, marker->sub->sub_id)));
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "marker_id: %d", (int)marker->marker_id));
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "marker_id: %ld", marker->marker_id));
         RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "flags: 0x%04x", marker->marker_flags));
         if (is_trigger) {
             RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "event_type: %s", trigger_event_types[marker->event_type].name));
