@@ -2906,6 +2906,7 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
  * Should be only called by load_tree().
  */
 static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
+    SelvaHierarchyNode *node;
     int err;
 
     if (isDecompressingSubtree) {
@@ -2915,7 +2916,6 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
     /*
      * Upsert the node.
      */
-    SelvaHierarchyNode *node;
     err = SelvaHierarchy_UpsertNode(RedisModule_GetContextFromIO(io), hierarchy, node_id, &node);
     if (err && err != SELVA_HIERARCHY_EEXIST) {
         RedisModule_LogIOError(io, "warning", "Failed to upsert %.*s: %s",
