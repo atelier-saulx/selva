@@ -72,9 +72,10 @@ typedef char Selva_NodeType[SELVA_NODE_TYPE_SIZE];
  */
 typedef unsigned char Selva_SubscriptionId[SELVA_SUBSCRIPTION_ID_SIZE];
 
-typedef int32_t Selva_SubscriptionMarkerId;
-
-#define SELVA_SUBSCRIPTION_MARKER_ID_MIN INT32_MIN
+/**
+ * Type for Selva subscription marker id.
+ */
+typedef int64_t Selva_SubscriptionMarkerId;
 
 /**
  * Selva version.
