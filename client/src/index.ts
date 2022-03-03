@@ -231,7 +231,7 @@ export class SelvaClient extends EventEmitter {
     allowMutations: boolean = false,
     handleMutations?: (old: { [field: string]: any }) => {
       [field: string]: any
-    }
+    } | null
   ): Promise<SchemaMutations> {
     await this.initializeSchema({ $db: name }, false)
 

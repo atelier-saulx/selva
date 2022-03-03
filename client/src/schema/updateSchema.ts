@@ -326,7 +326,7 @@ export async function updateSchema(
   allowMutations: boolean = false,
   handleMutations?: (old: { [field: string]: any }) => {
     [field: string]: any
-  },
+  } | null,
   retry?: number
 ): Promise<SchemaMutations> {
   retry = retry || 0

@@ -2,6 +2,8 @@ import { Types, TypeSchema, FieldSchema, InputTypes } from './types'
 
 export * from './types'
 
+export type SchemaMutationType = 'delete_type' | 'change_field' | 'remove_field'
+
 export type SchemaMutations = (
   | {
       mutation: 'delete_type'

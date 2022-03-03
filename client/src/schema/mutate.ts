@@ -10,32 +10,36 @@ export default async (
   db: string,
   client: SelvaClient,
   mutations: SchemaMutations,
-  handleMutations: (old: { [field: string]: any }) => {
+  handleMutations: (old: { [field: string]: any }) => null | {
     [field: string]: any
   },
   oldSchema?: Schema
 ): Promise<void> => {
-  const gets = {}
+  const parsedFieldMutations: {
+    [type: string]: { query: any; setOp: any; nullSetOp: any }
+  } = {}
 
   for (const f of mutations) {
     if (f.mutation === 'change_field' || f.mutation === 'remove_field') {
-      if (!gets[f.type]) {
-        gets[f.type] = {
+      if (!parsedFieldMutations[f.type]) {
+        parsedFieldMutations[f.type] = {
           query: {
             id: true,
           },
           setOp: null,
+          nullSetOp: {
+            id: true,
+          },
         }
       }
 
       if (f.mutation === 'remove_field') {
-        if (!gets[f.type].setOp) {
-          gets[f.type].setOp = {}
+        if (!parsedFieldMutations[f.type].setOp) {
+          parsedFieldMutations[f.type].setOp = {}
         }
-
-        let x = gets[f.type].query
-        let y = gets[f.type].setOp
-
+        let x = parsedFieldMutations[f.type].query
+        let y = parsedFieldMutations[f.type].setOp
+        let z = parsedFieldMutations[f.type].nullSetOp
         for (let i = 0; i < f.path.length - 1; i++) {
           const p = f.path[i]
           if (!x[p]) {
@@ -44,26 +48,37 @@ export default async (
           if (!y[p]) {
             y[p] = {}
           }
+          if (!z[p]) {
+            z[p] = {}
+          }
           y = y[p]
           x = x[p]
+          z = z[p]
         }
         y[f.path[f.path.length - 1]] = { $delete: true }
+        z[z.path[z.path.length - 1]] = { $delete: true }
         x[f.path[f.path.length - 1]] = true
-      } else {
-        let x = gets[f.type].query
+      } else if (f.mutation === 'change_field') {
+        let x = parsedFieldMutations[f.type].query
+        let z = parsedFieldMutations[f.type].nullSetOp
         for (let i = 0; i < f.path.length - 1; i++) {
           const p = f.path[i]
           if (!x[p]) {
             x[p] = {}
           }
+          if (!z[p]) {
+            z[p] = {}
+          }
           x = x[p]
+          z = z[p]
         }
         x[f.path[f.path.length - 1]] = true
+        z[z.path[z.path.length - 1]] = { $delete: true }
       }
     }
   }
 
-  for (const type in gets) {
+  for (const type in parsedFieldMutations) {
     // delete if its a different field name...
     let page = 0
 
@@ -73,7 +88,7 @@ export default async (
       const op = createGetOperations(
         client,
         {
-          ...gets[type].query,
+          ...parsedFieldMutations[type].query,
           $list: {
             $offset: page * pageAmount,
             $limit: pageAmount,
@@ -109,12 +124,12 @@ export default async (
       const setQ = []
 
       for (const node of r.nodes) {
-        if (gets[type].setOp) {
+        if (parsedFieldMutations[type].setOp) {
           setQ.push(
             client.set(
               {
                 $id: node.id,
-                ...gets[type].setOp,
+                ...parsedFieldMutations[type].setOp,
                 $db: db,
               },
               oldSchema
@@ -122,13 +137,16 @@ export default async (
           )
         }
 
-        // check for result of handle mutation
-        // if null DELETE
-        // if type !== node.type delete old type
-
         const result = handleMutations(node)
 
         if (!result) {
+          setQ.push(
+            client.set({
+              $id: node.id,
+              ...parsedFieldMutations[type].nullSetOp,
+              $db: db,
+            })
+          )
         } else {
           setQ.push(
             client.set({
