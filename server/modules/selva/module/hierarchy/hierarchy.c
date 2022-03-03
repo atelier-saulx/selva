@@ -2796,7 +2796,7 @@ static int load_node_id(RedisModuleIO *io, Selva_NodeId node_id_out) {
     return 0;
 }
 
-static int load_detached(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
+static int load_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
     struct compressed_rms *compressed;
     SelvaHierarchyNode *node;
     int err;
@@ -2838,6 +2838,69 @@ out:
     return err;
 }
 
+static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
+    int err;
+
+    /*
+     * The node metadata comes right after the node_id and flags.
+     */
+    err = load_metadata(io, encver, hierarchy, node);
+    if (err) {
+        RedisModule_LogIOError(io, "warning", "Failed to load hierarchy metadata");
+        return err;
+    }
+
+    /*
+     * Load the ids of child nodes.
+     */
+    uint64_t nr_children = RedisModule_LoadUnsigned(io);
+    Selva_NodeId *children __auto_free = NULL;
+
+    if (nr_children > 0) {
+        children = RedisModule_Alloc(nr_children * SELVA_NODE_ID_SIZE);
+        if (!children) {
+            return SELVA_HIERARCHY_ENOMEM;
+        }
+
+        /* Create/Update children */
+        for (uint64_t i = 0; i < nr_children; i++) {
+            Selva_NodeId child_id;
+
+            err = load_node_id(io, child_id);
+            if (err) {
+                RedisModule_LogIOError(io, "warning", "Invalid child node_id: %s",
+                                       getSelvaErrorStr(err));
+                return err;
+            }
+
+            if (isDecompressingSubtree) {
+                SelvaHierarchyDetached_RemoveNode(hierarchy, child_id);
+            }
+
+            err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
+            if (err < 0) {
+                RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
+                                       getSelvaErrorStr(err));
+                return err;
+            }
+
+            memcpy(children + i, child_id, SELVA_NODE_ID_SIZE);
+        }
+    }
+
+    /*
+     * Insert children of the node.
+     */
+    err = SelvaModify_AddHierarchyP(NULL, hierarchy, node, 0, NULL, nr_children, children);
+    if (err < 0) {
+        RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
+                               getSelvaErrorStr(err));
+        return err;
+    }
+
+    return 0;
+}
+
 /**
  * RDB load a node and its children.
  * Should be only called by load_tree().
@@ -2873,70 +2936,12 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
          * SELVA_NODE_FLAGS_DETACHED should never be set if
          * isDecompressingSubtree is set but the code looks cleaner this way.
          */
-        err = load_detached(io, hierarchy, node_id);
-        if (err) {
-            return err;
-        }
+        err = load_detached_node(io, hierarchy, node_id);
     } else {
-        /*
-         * The node metadata comes right after the node_id and flags.
-         */
-        err = load_metadata(io, encver, hierarchy, node);
-        if (err) {
-            RedisModule_LogIOError(io, "warning", "Failed to load hierarchy metadata");
-            return err;
-        }
-
-        /*
-         * Load the ids of child nodes.
-         */
-        uint64_t nr_children = RedisModule_LoadUnsigned(io);
-        Selva_NodeId *children __auto_free = NULL;
-
-        if (nr_children > 0) {
-            children = RedisModule_Alloc(nr_children * SELVA_NODE_ID_SIZE);
-            if (!children) {
-                return SELVA_HIERARCHY_ENOMEM;
-            }
-
-            /* Create/Update children */
-            for (uint64_t i = 0; i < nr_children; i++) {
-                Selva_NodeId child_id;
-
-                err = load_node_id(io, child_id);
-                if (err) {
-                    RedisModule_LogIOError(io, "warning", "Invalid child node_id: %s",
-                                           getSelvaErrorStr(err));
-                    return err;
-                }
-
-                if (isDecompressingSubtree) {
-                    SelvaHierarchyDetached_RemoveNode(hierarchy, child_id);
-                }
-
-                err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
-                if (err < 0) {
-                    RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
-                                           getSelvaErrorStr(err));
-                    return err;
-                }
-
-                memcpy(children + i, child_id, SELVA_NODE_ID_SIZE);
-            }
-        }
-
-        /*
-         * Insert children of the node.
-         */
-        err = SelvaModify_AddHierarchyP(NULL, hierarchy, node, 0, NULL, nr_children, children);
-        if (err < 0) {
-            RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
-                                   getSelvaErrorStr(err));
-            return err;
-        }
+        err = load_hierarchy_node(io, encver, hierarchy, node);
     }
 
-    return 0;
+    return err;
 }
 
 /**
