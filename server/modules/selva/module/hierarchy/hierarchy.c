@@ -2939,6 +2939,12 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
     return 0;
 }
 
+/**
+ * Load a node hierarchy from io.
+ * NODE_ID1 | FLAGS | METADATA | NR_CHILDREN | CHILD_ID_0,..
+ * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
+ * HIERARCHY_RDB_EOF
+ */
 static int load_tree(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy) {
     while (1) {
         Selva_NodeId node_id;
@@ -3121,8 +3127,8 @@ static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
     /*
      * Serialization format:
      * EDGE_CONSTRAINTS
-     * NODE_ID1 | METADATA | NR_CHILDREN | CHILD_ID_0,..
-     * NODE_ID2 | METADATA | NR_CHILDREN | ...
+     * NODE_ID1 | FLAGS | METADATA | NR_CHILDREN | CHILD_ID_0,..
+     * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
      * HIERARCHY_RDB_EOF
      */
     EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
