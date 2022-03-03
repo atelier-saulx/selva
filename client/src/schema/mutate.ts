@@ -122,17 +122,27 @@ export default async (
           )
         }
 
-        setQ.push(
-          client.set({
-            $id: node.id,
-            ...handleMutations(node),
-            $db: db,
-          })
-        )
+        // check for result of handle mutation
+        // if null DELETE
+        // if type !== node.type delete old type
+
+        const result = handleMutations(node)
+
+        if (!result) {
+        } else {
+          setQ.push(
+            client.set({
+              $id: node.id,
+              ...result,
+              $db: db,
+            })
+          )
+        }
       }
+
       await Promise.all(setQ)
 
-      // progress listener maybe?
+      // progress listener maybe? and remove this log
       console.info(`Set mutation batch #${page} ${page * pageAmount}`)
 
       if (r.nodes.length === pageAmount) {
