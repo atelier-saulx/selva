@@ -233,14 +233,16 @@ int SelvaSubscriptions_hasActiveMarkers(const struct SelvaHierarchyMetadata *nod
 }
 
 Selva_SubscriptionMarkerId Selva_GenSubscriptionMarkerId(Selva_SubscriptionMarkerId prev, const char *s) {
-    /* fnv32 */
-    uint32_t hash = prev > 0 ? (uint32_t)(prev & 0x7FFFFFFF) : 2166136261u;
+    const Selva_SubscriptionMarkerId auto_flag = (Selva_SubscriptionMarkerId)1 << ((sizeof(Selva_SubscriptionMarkerId) * 8) - 1);
+    uint32_t hash;
 
+    /* fnv32 */
+    hash = prev > 0 ? (uint32_t)(prev & 0x7FFFFFFF) : 2166136261u;
     for (; *s; s++) {
         hash = (hash ^ *s) * 0x01000193;
     }
 
-    return (Selva_SubscriptionMarkerId)(0x80000000 | hash);
+    return (Selva_SubscriptionMarkerId)(auto_flag | hash);
 }
 
 /*
