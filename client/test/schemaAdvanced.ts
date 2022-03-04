@@ -490,168 +490,383 @@ test.serial(
   }
 )
 
-test.serial(
-  'schemas - return null from mut handler OR set to another type / id',
-  async (t) => {
-    const port = await getPort()
-    const server = await start({
-      port,
-    })
-    const client = connect({ port })
-    try {
-      await client.updateSchema({
-        languages: ['en'],
-        types: {
-          thing: {
-            prefix: 'th',
-            fields: {
-              flap: {
-                type: 'number',
-              },
-              image: {
-                type: 'string',
-              },
+test.serial('schemas - return null from mut handler', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+  try {
+    await client.updateSchema({
+      languages: ['en'],
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            flap: {
+              type: 'number',
             },
-          },
-        },
-      })
-    } catch (err) {
-      console.info('--', err)
-    }
-
-    await wait(1000)
-
-    let other = 0
-
-    for (let i = 0; i < 2; i++) {
-      const q = []
-      for (let i = 0; i < 10; i++) {
-        if (i % 2) {
-          other++
-        }
-
-        q.push(
-          client.set(
-            i % 2
-              ? {
-                  type: 'thing',
-                  image: i + '-img',
-                }
-              : { type: 'thing', flap: i }
-          )
-        )
-      }
-      await Promise.all(q)
-    }
-
-    await wait(1000)
-
-    await client.updateSchema(
-      {
-        types: {
-          thing: {
-            prefix: 'th',
-            fields: {
-              flap: {
-                type: 'string',
-              },
-              image: {
-                $delete: true,
-              },
+            image: {
+              type: 'string',
             },
           },
         },
       },
-      'default',
-      true,
-      (node) => {
-        if (node.image) {
-          return {
-            flap: '10000',
-          }
-        }
-      }
-    )
-
-    let results = await client.get({
-      nodes: {
-        $all: true,
-        $list: {
-          $offset: 0,
-          $limit: 100,
-          $find: {
-            $traverse: 'descendants',
-            $filter: { $operator: '=', $field: 'type', $value: 'thing' },
-          },
-        },
-      },
     })
-
-    let amount10k = 0
-    for (const n of results.nodes) {
-      t.false('image' in n)
-      if (n.flap === '10000') {
-        amount10k++
-      }
-    }
-
-    t.is(amount10k, other)
-
-    await client.updateSchema(
-      {
-        types: {
-          thing: {
-            prefix: 'th',
-            fields: {
-              flap: {
-                type: 'number',
-              },
-            },
-          },
-        },
-      },
-      'default',
-      true,
-      (node) => {
-        if (node.flap === '10000') {
-          return {
-            flap: 10000,
-          }
-        }
-      }
-    )
-
-    results = await client.get({
-      nodes: {
-        $all: true,
-        image: true,
-        $list: {
-          $offset: 0,
-          $limit: 100,
-          $find: {
-            $traverse: 'descendants',
-            $filter: { $operator: '=', $field: 'type', $value: 'thing' },
-          },
-        },
-      },
-    })
-
-    amount10k = 0
-
-    for (const n of results.nodes) {
-      if (n.flap === 10000) {
-        amount10k++
-      } else {
-        t.false('flap' in n)
-      }
-    }
-
-    t.is(amount10k, other)
-
-    await client.destroy()
-    await server.destroy()
-    await t.connectionsAreEmpty()
-
-    t.pass()
+  } catch (err) {
+    console.info('--', err)
   }
-)
+
+  await wait(1000)
+
+  let other = 0
+
+  for (let i = 0; i < 2; i++) {
+    const q = []
+    for (let i = 0; i < 10; i++) {
+      if (i % 2) {
+        other++
+      }
+
+      q.push(
+        client.set(
+          i % 2
+            ? {
+                type: 'thing',
+                image: i + '-img',
+              }
+            : { type: 'thing', flap: i }
+        )
+      )
+    }
+    await Promise.all(q)
+  }
+
+  await wait(1000)
+
+  await client.updateSchema(
+    {
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            flap: {
+              type: 'string',
+            },
+            image: {
+              $delete: true,
+            },
+          },
+        },
+      },
+    },
+    'default',
+    true,
+    (node) => {
+      if (node.image) {
+        return {
+          flap: '10000',
+        }
+      }
+    }
+  )
+
+  let results = await client.get({
+    nodes: {
+      $all: true,
+      $list: {
+        $offset: 0,
+        $limit: 100,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+        },
+      },
+    },
+  })
+
+  let amount10k = 0
+  for (const n of results.nodes) {
+    t.false('image' in n)
+    if (n.flap === '10000') {
+      amount10k++
+    }
+  }
+
+  t.is(amount10k, other)
+
+  await client.updateSchema(
+    {
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            flap: {
+              type: 'number',
+            },
+          },
+        },
+      },
+    },
+    'default',
+    true,
+    (node) => {
+      if (node.flap === '10000') {
+        return {
+          flap: 10000,
+        }
+      }
+    }
+  )
+
+  results = await client.get({
+    nodes: {
+      $all: true,
+      image: true,
+      $list: {
+        $offset: 0,
+        $limit: 100,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+        },
+      },
+    },
+  })
+
+  amount10k = 0
+
+  for (const n of results.nodes) {
+    if (n.flap === 10000) {
+      amount10k++
+    } else {
+      t.false('flap' in n)
+    }
+  }
+
+  t.is(amount10k, other)
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})
+
+test.only('schemas - return to other id or type', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+
+  await client.updateSchema({
+    languages: ['en'],
+    types: {
+      thing: {
+        prefix: 'th',
+        fields: {
+          image: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  })
+
+  await wait(1000)
+
+  const q = []
+  for (let i = 0; i < 10; i++) {
+    q.push(
+      client.set({
+        type: 'thing',
+        image: i + '-img',
+      })
+    )
+  }
+
+  await Promise.all(q)
+
+  await wait(1000)
+
+  await client.updateSchema(
+    {
+      types: {
+        flap: {
+          fields: {
+            image: {
+              type: 'string',
+            },
+          },
+        },
+        thing: {
+          prefix: 'th',
+          fields: {
+            image: {
+              $delete: true,
+            },
+          },
+        },
+      },
+    },
+    'default',
+    true,
+    (node) => {
+      return {
+        type: 'flap',
+        image: node.image,
+      }
+    }
+  )
+
+  const results = await client.get({
+    nodes: {
+      $all: true,
+      $list: {
+        $offset: 0,
+        $limit: 100,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+        },
+      },
+    },
+  })
+
+  for (const n of results.nodes) {
+    t.false('image' in n)
+  }
+
+  const results2 = await client.get({
+    nodes: {
+      $all: true,
+      $list: {
+        $offset: 0,
+        $limit: 100,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'flap' },
+        },
+      },
+    },
+  })
+
+  for (const n of results2.nodes) {
+    t.true('image' in n)
+  }
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})
+
+test.only('schemas - migrate type', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+
+  await client.updateSchema({
+    languages: ['en'],
+    types: {
+      thing: {
+        prefix: 'th',
+        fields: {
+          image: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  })
+
+  await wait(1000)
+
+  const q = []
+  for (let i = 0; i < 10; i++) {
+    q.push(
+      client.set({
+        type: 'thing',
+        image: i + '-img',
+      })
+    )
+  }
+
+  await Promise.all(q)
+
+  await wait(1000)
+
+  await client.updateSchema(
+    {
+      types: {
+        flap: {
+          fields: {
+            image: {
+              type: 'string',
+            },
+          },
+        },
+        thing: {
+          $delete: true,
+        },
+      },
+    },
+    'default',
+    true,
+    (node) => {
+      // needs to get ALL fields including refs
+      return {
+        parents: node.parents,
+        type: 'flap',
+        image: node.image,
+      }
+    }
+  )
+
+  try {
+    await client.get({
+      nodes: {
+        $all: true,
+        $list: {
+          $offset: 0,
+          $limit: 100,
+          $find: {
+            $traverse: 'descendants',
+            $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+          },
+        },
+      },
+    })
+  } catch (err) {
+    // has to crash and say no
+    console.info(err)
+  }
+
+  const results2 = await client.get({
+    nodes: {
+      $all: true,
+      $list: {
+        $offset: 0,
+        $limit: 100,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'flap' },
+        },
+      },
+    },
+  })
+
+  for (const n of results2.nodes) {
+    t.true('image' in n)
+  }
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})

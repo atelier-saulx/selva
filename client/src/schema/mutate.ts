@@ -136,8 +136,6 @@ export default async (
 
         const result = handleMutations ? handleMutations(node) : null
 
-        // console.info('------------->', node, result)
-
         if (!result) {
           if (parsedFieldMutations[type].nullSetOp) {
             setQRemovals.push(
@@ -151,6 +149,25 @@ export default async (
               )
             )
           }
+        } else if (result.type || (result.$id && result.$id !== node.id)) {
+          if (parsedFieldMutations[type].nullSetOp) {
+            setQRemovals.push(
+              client.set(
+                {
+                  $id: node.id,
+                  ...parsedFieldMutations[type].nullSetOp,
+                  $db: db,
+                },
+                oldSchema
+              )
+            )
+          }
+          setQ.push(
+            client.set({
+              ...result,
+              $db: db,
+            })
+          )
         } else {
           setQ.push(
             client.set({
