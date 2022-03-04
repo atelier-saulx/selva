@@ -318,7 +318,6 @@ test.serial('schemas - remove fields', async (t) => {
               type: 'string',
             },
             image: {
-              // special
               $delete: true,
             },
           },
@@ -354,6 +353,106 @@ test.serial('schemas - remove fields', async (t) => {
   for (const n of results.nodes) {
     t.false('image' in n)
     t.is(typeof n.flap, 'string')
+  }
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})
+
+test.only('schemas - remove fields (no mutation handler)', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+  try {
+    await client.updateSchema({
+      languages: ['en'],
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            image: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    })
+  } catch (err) {
+    console.info('--', err)
+  }
+
+  await wait(1000)
+
+  for (let i = 0; i < 10; i++) {
+    const q = []
+    for (let i = 0; i < 10; i++) {
+      q.push(
+        client.set(
+          i % 2
+            ? {
+                type: 'thing',
+                image: 'flap ' + i,
+              }
+            : { type: 'thing' }
+        )
+      )
+    }
+    await Promise.all(q)
+    try {
+      if (global.gc) {
+        global.gc()
+      }
+    } catch (err) {
+      console.error(`Cannot manualy gc`, err)
+    }
+  }
+
+  await wait(1000)
+
+  const mut = await client.updateSchema(
+    {
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            flap: {
+              type: 'string',
+            },
+            image: {
+              $delete: true,
+            },
+          },
+        },
+      },
+    },
+    'default',
+    true
+  )
+
+  console.info(mut)
+
+  const results = await client.get({
+    nodes: {
+      $all: true,
+      image: true,
+      $list: {
+        $offset: 0,
+        $limit: 10,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+        },
+      },
+    },
+  })
+
+  for (const n of results.nodes) {
+    t.false('image' in n)
   }
 
   await client.destroy()
