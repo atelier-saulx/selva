@@ -10,7 +10,7 @@ export default async (
   db: string,
   client: SelvaClient,
   mutations: SchemaMutations,
-  handleMutations: (old: { [field: string]: any }) => null | {
+  handleMutations?: (old: { [field: string]: any }) => null | {
     [field: string]: any
   },
   oldSchema?: Schema
@@ -27,52 +27,47 @@ export default async (
             id: true,
           },
           setOp: null,
-          nullSetOp: {
-            id: true,
-          },
+          nullSetOp: null,
         }
+      }
+
+      if (handleMutations) {
+        let x = parsedFieldMutations[f.type].query
+        for (let i = 0; i < f.path.length - 1; i++) {
+          const p = f.path[i]
+          if (!x[p]) {
+            x[p] = {}
+          }
+          x = x[p]
+        }
+        x[f.path[f.path.length - 1]] = true
       }
 
       if (f.mutation === 'remove_field') {
         if (!parsedFieldMutations[f.type].setOp) {
           parsedFieldMutations[f.type].setOp = {}
         }
-        let x = parsedFieldMutations[f.type].query
         let y = parsedFieldMutations[f.type].setOp
-        let z = parsedFieldMutations[f.type].nullSetOp
         for (let i = 0; i < f.path.length - 1; i++) {
           const p = f.path[i]
-          if (!x[p]) {
-            x[p] = {}
-          }
           if (!y[p]) {
             y[p] = {}
           }
-          if (!z[p]) {
-            z[p] = {}
-          }
           y = y[p]
-          x = x[p]
-          z = z[p]
         }
         y[f.path[f.path.length - 1]] = { $delete: true }
-        z[z.path[z.path.length - 1]] = { $delete: true }
-        x[f.path[f.path.length - 1]] = true
       } else if (f.mutation === 'change_field') {
-        let x = parsedFieldMutations[f.type].query
+        if (!parsedFieldMutations[f.type].nullSetOp) {
+          parsedFieldMutations[f.type].nullSetOp = {}
+        }
         let z = parsedFieldMutations[f.type].nullSetOp
         for (let i = 0; i < f.path.length - 1; i++) {
           const p = f.path[i]
-          if (!x[p]) {
-            x[p] = {}
-          }
           if (!z[p]) {
             z[p] = {}
           }
-          x = x[p]
           z = z[p]
         }
-        x[f.path[f.path.length - 1]] = true
         z[z.path[z.path.length - 1]] = { $delete: true }
       }
     }
@@ -137,16 +132,21 @@ export default async (
           )
         }
 
-        const result = handleMutations(node)
+        const result = handleMutations ? handleMutations(node) : null
 
         if (!result) {
-          setQ.push(
-            client.set({
-              $id: node.id,
-              ...parsedFieldMutations[type].nullSetOp,
-              $db: db,
-            })
-          )
+          if (parsedFieldMutations[type].nullSetOp) {
+            setQ.push(
+              client.set(
+                {
+                  $id: node.id,
+                  ...parsedFieldMutations[type].nullSetOp,
+                  $db: db,
+                },
+                oldSchema
+              )
+            )
+          }
         } else {
           setQ.push(
             client.set({

@@ -409,7 +409,7 @@ export async function updateSchema(
     }
   }
 
-  if (allowMutations && handleMutations && mutations.length) {
+  if (allowMutations && mutations.length) {
     await mutate(selector.name, client, mutations, handleMutations, oldSchema)
   }
 

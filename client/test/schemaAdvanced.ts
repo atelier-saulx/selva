@@ -318,6 +318,7 @@ test.serial('schemas - remove fields', async (t) => {
               type: 'string',
             },
             image: {
+              // special
               $delete: true,
             },
           },
