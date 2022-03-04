@@ -99,24 +99,49 @@ export type FieldSchemaArrayLike = {
   timeseries?: boolean
 }
 
-// maybe makes this different...
-// export type FieldSchemaDelete = {
-//   $delete: true // maybe add some options later....
-// }
-
 export type FieldSchema =
   | FieldSchemaObject
   | FieldSchemaRecord
-  | FieldSchemaJson
   | FieldSchemaArrayLike
+  | FieldSchemaJson
   | FieldSchemaReferences
   | FieldSchemaOther
+
+export type FieldInputSchemaArrayLike = {
+  type: 'set' | 'array'
+  items: FieldInputSchema
+  meta?: any
+  timeseries?: boolean
+}
+
+export type FieldInputSchemaRecord = {
+  type: 'record'
+  values: FieldInputSchema
+  meta?: any
+  timeseries?: boolean
+}
+
+export type FieldInputSchemaObject = {
+  type: 'object'
+  properties: {
+    [key: string]: FieldInputSchema
+  }
+  meta?: any
+  timeseries?: boolean
+}
+
+export type FieldInputSchema =
+  | FieldSchema
+  | FieldInputSchemaArrayLike
+  | FieldInputSchemaRecord
+  | FieldInputSchemaObject
+  | DeleteField
 
 // maybe null?
 
 export type DeleteField = { $delete: true }
 
-export type InputFields = Record<string, FieldSchema | DeleteField>
+export type InputFields = Record<string, FieldInputSchema>
 
 export type InputTypeSchema = {
   prefix?: string
@@ -137,7 +162,7 @@ export type InputSchema = Schema & {
 }
 
 export const isDeleteField = (
-  fieldSchema: FieldSchema | DeleteField
+  fieldSchema: FieldInputSchema
 ): fieldSchema is DeleteField => {
   return !!(<DeleteField>fieldSchema).$delete
 }

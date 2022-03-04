@@ -763,7 +763,7 @@ test.serial('schemas - return to other id or type', async (t) => {
   t.pass()
 })
 
-test.only('schemas - migrate type', async (t) => {
+test.serial('schemas - migrate type', async (t) => {
   const port = await getPort()
   const server = await start({
     port,
@@ -800,7 +800,6 @@ test.only('schemas - migrate type', async (t) => {
 
   await wait(1000)
 
-  console.info('----------------------------------------')
   await client.updateSchema(
     {
       types: {
@@ -864,6 +863,133 @@ test.only('schemas - migrate type', async (t) => {
   for (const n of results2.nodes) {
     t.true('image' in n)
   }
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})
+
+test.only('schemas - migrate object', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+
+  await client.updateSchema({
+    languages: ['en'],
+    types: {
+      thing: {
+        prefix: 'th',
+        fields: {
+          x: {
+            type: 'object',
+            properties: {
+              y: {
+                type: 'object',
+                properties: {
+                  z: {
+                    type: 'object',
+                    properties: {
+                      image: {
+                        type: 'string',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  await wait(1000)
+
+  const q = []
+  for (let i = 0; i < 10; i++) {
+    q.push(
+      client.set({
+        type: 'thing',
+        x:
+          i % 2
+            ? {
+                y: {
+                  z: { image: i + '-img' },
+                },
+              }
+            : {},
+      })
+    )
+  }
+
+  await Promise.all(q)
+
+  await wait(1000)
+
+  await client.updateSchema(
+    {
+      types: {
+        thing: {
+          fields: {
+            x: {
+              type: 'object',
+              properties: {
+                y: {
+                  type: 'object',
+                  properties: {
+                    z: {
+                      type: 'object',
+                      properties: {
+                        image: {
+                          $delete: true,
+                        },
+                        flap: {
+                          type: 'string',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    'default',
+    true,
+    (node) => {
+      if (node.x?.y?.z?.image) {
+        return {
+          x: { y: { z: { flap: node.x.y.z.image } } },
+        }
+      }
+    }
+  )
+
+  const results = await client.get({
+    nodes: {
+      $all: true,
+      $list: {
+        $offset: 0,
+        $limit: 100,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+        },
+      },
+    },
+  })
+
+  console.info(JSON.stringify(results, null, 2))
+
+  // for (const n of results.nodes) {
+  //   t.true('image' in n)
+  // }
 
   await client.destroy()
   await server.destroy()

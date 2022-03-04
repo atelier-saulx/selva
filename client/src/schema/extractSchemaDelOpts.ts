@@ -1,10 +1,15 @@
-import { DeleteField, FieldSchema, InputTypeSchema, isDeleteField } from '.'
+import {
+  DeleteField,
+  FieldInputSchema,
+  InputTypeSchema,
+  isDeleteField,
+} from '.'
 
 export default (t: InputTypeSchema): string[][] => {
   const fields = []
   if (t.fields) {
     const walkFields = (
-      x: FieldSchema | DeleteField,
+      x: FieldInputSchema | DeleteField,
       prev: any,
       arr: string[]
     ) => {
