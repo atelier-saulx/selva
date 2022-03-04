@@ -623,9 +623,9 @@ static int send_merge_text(
         struct SelvaObject *obj,
         RedisModuleString *obj_path,
         size_t *nr_fields_out) {
-    int err;
-
     if (SelvaObject_GetType(fields, obj_path) != SELVA_OBJECT_LONGLONG) {
+        int err;
+
         ++*nr_fields_out;
 
         /*
