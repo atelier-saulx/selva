@@ -308,7 +308,7 @@ test.serial('schemas - remove fields', async (t) => {
 
   await wait(1000)
 
-  const mut = await client.updateSchema(
+  await client.updateSchema(
     {
       types: {
         thing: {
@@ -332,8 +332,6 @@ test.serial('schemas - remove fields', async (t) => {
       }
     }
   )
-
-  console.info(mut)
 
   const results = await client.get({
     nodes: {
@@ -492,166 +490,168 @@ test.serial(
   }
 )
 
-test.only('schemas - return null from mut handler OR set to another type / id', async (t) => {
-  const port = await getPort()
-  const server = await start({
-    port,
-  })
-  const client = connect({ port })
-  try {
-    await client.updateSchema({
-      languages: ['en'],
-      types: {
-        thing: {
-          prefix: 'th',
-          fields: {
-            flap: {
-              type: 'number',
+test.serial(
+  'schemas - return null from mut handler OR set to another type / id',
+  async (t) => {
+    const port = await getPort()
+    const server = await start({
+      port,
+    })
+    const client = connect({ port })
+    try {
+      await client.updateSchema({
+        languages: ['en'],
+        types: {
+          thing: {
+            prefix: 'th',
+            fields: {
+              flap: {
+                type: 'number',
+              },
+              image: {
+                type: 'string',
+              },
             },
-            image: {
-              type: 'string',
+          },
+        },
+      })
+    } catch (err) {
+      console.info('--', err)
+    }
+
+    await wait(1000)
+
+    let other = 0
+
+    for (let i = 0; i < 2; i++) {
+      const q = []
+      for (let i = 0; i < 10; i++) {
+        if (i % 2) {
+          other++
+        }
+
+        q.push(
+          client.set(
+            i % 2
+              ? {
+                  type: 'thing',
+                  image: i + '-img',
+                }
+              : { type: 'thing', flap: i }
+          )
+        )
+      }
+      await Promise.all(q)
+    }
+
+    await wait(1000)
+
+    await client.updateSchema(
+      {
+        types: {
+          thing: {
+            prefix: 'th',
+            fields: {
+              flap: {
+                type: 'string',
+              },
+              image: {
+                $delete: true,
+              },
             },
+          },
+        },
+      },
+      'default',
+      true,
+      (node) => {
+        if (node.image) {
+          return {
+            flap: '10000',
+          }
+        }
+      }
+    )
+
+    let results = await client.get({
+      nodes: {
+        $all: true,
+        $list: {
+          $offset: 0,
+          $limit: 100,
+          $find: {
+            $traverse: 'descendants',
+            $filter: { $operator: '=', $field: 'type', $value: 'thing' },
           },
         },
       },
     })
-  } catch (err) {
-    console.info('--', err)
-  }
 
-  await wait(1000)
-
-  let other = 0
-
-  for (let i = 0; i < 2; i++) {
-    const q = []
-    for (let i = 0; i < 10; i++) {
-      if (i % 2) {
-        other++
+    let amount10k = 0
+    for (const n of results.nodes) {
+      t.false('image' in n)
+      if (n.flap === '10000') {
+        amount10k++
       }
-
-      q.push(
-        client.set(
-          i % 2
-            ? {
-                type: 'thing',
-                image: i + '-img',
-              }
-            : { type: 'thing', flap: i }
-        )
-      )
     }
-    await Promise.all(q)
-  }
 
-  await wait(1000)
+    t.is(amount10k, other)
 
-  await client.updateSchema(
-    {
-      types: {
-        thing: {
-          prefix: 'th',
-          fields: {
-            flap: {
-              type: 'string',
-            },
-            image: {
-              $delete: true,
+    await client.updateSchema(
+      {
+        types: {
+          thing: {
+            prefix: 'th',
+            fields: {
+              flap: {
+                type: 'number',
+              },
             },
           },
         },
       },
-    },
-    'default',
-    true,
-    (node) => {
-      if (node.image) {
-        console.info(node)
-        return {
-          flap: '10000',
+      'default',
+      true,
+      (node) => {
+        if (node.flap === '10000') {
+          return {
+            flap: 10000,
+          }
         }
       }
-    }
-  )
+    )
 
-  let results = await client.get({
-    nodes: {
-      $all: true,
-      $list: {
-        $offset: 0,
-        $limit: 100,
-        $find: {
-          $traverse: 'descendants',
-          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
-        },
-      },
-    },
-  })
-
-  let amount10k = 0
-  for (const n of results.nodes) {
-    t.false('image' in n)
-    if (n.flap === '10000') {
-      amount10k++
-    }
-  }
-
-  t.is(amount10k, other)
-
-  await client.updateSchema(
-    {
-      types: {
-        thing: {
-          prefix: 'th',
-          fields: {
-            flap: {
-              type: 'number',
-            },
+    results = await client.get({
+      nodes: {
+        $all: true,
+        image: true,
+        $list: {
+          $offset: 0,
+          $limit: 100,
+          $find: {
+            $traverse: 'descendants',
+            $filter: { $operator: '=', $field: 'type', $value: 'thing' },
           },
         },
       },
-    },
-    'default',
-    true,
-    (node) => {
-      if (node.flap === '10000') {
-        return {
-          flap: 10000,
-        }
+    })
+
+    amount10k = 0
+
+    for (const n of results.nodes) {
+      if (n.flap === 10000) {
+        amount10k++
+      } else {
+        t.false('flap' in n)
       }
     }
-  )
 
-  results = await client.get({
-    nodes: {
-      $all: true,
-      image: true,
-      $list: {
-        $offset: 0,
-        $limit: 100,
-        $find: {
-          $traverse: 'descendants',
-          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
-        },
-      },
-    },
-  })
+    t.is(amount10k, other)
 
-  amount10k = 0
+    await client.destroy()
+    await server.destroy()
+    await t.connectionsAreEmpty()
 
-  for (const n of results.nodes) {
-    if (n.flap === 10000) {
-      amount10k++
-    } else {
-      t.false('flap' in n)
-    }
+    t.pass()
   }
-
-  t.is(amount10k, other)
-
-  await client.destroy()
-  await server.destroy()
-  await t.connectionsAreEmpty()
-
-  t.pass()
-})
+)
