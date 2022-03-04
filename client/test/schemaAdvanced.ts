@@ -653,7 +653,7 @@ test.serial('schemas - return null from mut handler', async (t) => {
   t.pass()
 })
 
-test.only('schemas - return to other id or type', async (t) => {
+test.serial('schemas - return to other id or type', async (t) => {
   const port = await getPort()
   const server = await start({
     port,
@@ -800,6 +800,7 @@ test.only('schemas - migrate type', async (t) => {
 
   await wait(1000)
 
+  console.info('----------------------------------------')
   await client.updateSchema(
     {
       types: {

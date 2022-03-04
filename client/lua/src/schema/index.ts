@@ -201,7 +201,6 @@ function checkNestedChanges(
       }
       return `Can not reset fields to empty for type ${type}`
     }
-
     if (!newType.fields[field]) {
       if (allowMutations) {
         return null
@@ -216,7 +215,6 @@ function checkNestedChanges(
         newType.fields[field],
         allowMutations
       )
-
       if (err) {
         return err
       }
@@ -251,18 +249,20 @@ function verifyTypes(
       return `New schema definition missing existing type ${type}`
     }
 
-    // make sure that we're not changing type schemas that already exist
-    // Note: prefix equality is verified in ensurePrefixes()
-    const err = checkNestedChanges(
-      type,
-      oldSchema.types[type],
-      newSchema.types[type],
-      timeseries,
-      allowMutations
-    )
+    if (newSchema.types[type]) {
+      // make sure that we're not changing type schemas that already exist
+      // Note: prefix equality is verified in ensurePrefixes()
+      const err = checkNestedChanges(
+        type,
+        oldSchema.types[type],
+        newSchema.types[type],
+        timeseries,
+        allowMutations
+      )
 
-    if (err) {
-      return err
+      if (err) {
+        return err
+      }
     }
     // Note: hierarchies need not be the same, they can be overwritten
   }

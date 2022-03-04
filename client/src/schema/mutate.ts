@@ -20,7 +20,88 @@ export default async (
   } = {}
 
   for (const f of mutations) {
-    if (f.mutation === 'change_field' || f.mutation === 'remove_field') {
+    if (f.mutation === 'delete_type') {
+      let page = 0
+      let finished = false
+      while (!finished) {
+        const fields = {}
+
+        for (const field in oldSchema.types[f.type].fields) {
+          fields[field] = true
+        }
+
+        const op = createGetOperations(
+          client,
+          {
+            ...fields,
+            $list: {
+              $offset: page * pageAmount,
+              $limit: pageAmount,
+              $find: {
+                $traverse: 'descendants',
+                $filter: {
+                  $operator: '=',
+                  $field: 'type',
+                  $value: f.type,
+                },
+              },
+            },
+          },
+          'root',
+          '.nodes',
+          db,
+          undefined,
+          oldSchema
+        )
+        const r = await executeGetOperations(
+          client,
+          undefined,
+          {
+            db,
+            meta: {},
+            originDescriptors: {},
+          },
+          op,
+          false,
+          oldSchema
+        )
+
+        const setQ = []
+        const setQRemovals = []
+
+        for (const node of r.nodes) {
+          setQRemovals.push(client.delete({ $id: node.id }))
+          const result = handleMutations ? handleMutations(node) : null
+          if (result) {
+            setQ.push(client.set(result))
+          }
+        }
+
+        await Promise.all(setQRemovals)
+        await Promise.all(setQ)
+
+        // progress listener maybe? and remove this log
+        console.info(
+          `Set type delete mutation batch #${page} ${page * pageAmount}`
+        )
+
+        if (r.nodes.length === pageAmount) {
+          try {
+            if (global.gc) {
+              global.gc()
+            }
+          } catch (err) {
+            console.error(`Cannot manualy gc`, err)
+          }
+          page++
+        } else {
+          finished = true
+          break
+        }
+      }
+
+      // await
+    } else if (f.mutation === 'change_field' || f.mutation === 'remove_field') {
       if (!parsedFieldMutations[f.type]) {
         parsedFieldMutations[f.type] = {
           query: {
@@ -72,13 +153,9 @@ export default async (
       }
     }
   }
-
   for (const type in parsedFieldMutations) {
-    // delete if its a different field name...
     let page = 0
-
     let finished = false
-
     while (!finished) {
       const op = createGetOperations(
         client,
@@ -103,7 +180,6 @@ export default async (
         undefined,
         oldSchema
       )
-
       const r = await executeGetOperations(
         client,
         undefined,
@@ -116,10 +192,8 @@ export default async (
         false,
         oldSchema
       )
-
       const setQ = []
       const setQRemovals = []
-
       for (const node of r.nodes) {
         if (parsedFieldMutations[type].setOp) {
           setQRemovals.push(
@@ -133,9 +207,7 @@ export default async (
             )
           )
         }
-
         const result = handleMutations ? handleMutations(node) : null
-
         if (!result) {
           if (parsedFieldMutations[type].nullSetOp) {
             setQRemovals.push(

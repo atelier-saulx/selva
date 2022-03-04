@@ -243,10 +243,13 @@ export class SelvaClient extends EventEmitter {
     try {
       if (opts.types) {
         for (const t in opts.types) {
-          // if opts.type === $delete
-          const f = extractSchemaDelOpts(opts.types[t])
-          if (f.length) {
-            delOpts.fields[t] = f
+          if (opts.types[t].$delete === true) {
+            delOpts.types.push(t)
+          } else {
+            const f = extractSchemaDelOpts(opts.types[t])
+            if (f.length) {
+              delOpts.fields[t] = f
+            }
           }
         }
       }
