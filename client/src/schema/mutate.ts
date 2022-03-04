@@ -68,7 +68,7 @@ export default async (
           }
           z = z[p]
         }
-        z[z.path[z.path.length - 1]] = { $delete: true }
+        z[f.path[f.path.length - 1]] = { $delete: true }
       }
     }
   }

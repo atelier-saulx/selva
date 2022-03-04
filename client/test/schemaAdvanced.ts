@@ -362,7 +362,7 @@ test.serial('schemas - remove fields', async (t) => {
   t.pass()
 })
 
-test.only('schemas - remove fields (no mutation handler)', async (t) => {
+test.only('schemas - remove/change fields (no mutation handler)', async (t) => {
   const port = await getPort()
   const server = await start({
     port,
@@ -453,6 +453,29 @@ test.only('schemas - remove fields (no mutation handler)', async (t) => {
 
   for (const n of results.nodes) {
     t.false('image' in n)
+  }
+
+  const mut2 = await client.updateSchema(
+    {
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            flap: {
+              type: 'number',
+            },
+          },
+        },
+      },
+    },
+    'default',
+    true
+  )
+
+  console.info(mut2)
+
+  for (const n of results.nodes) {
+    t.false('flap' in n)
   }
 
   await client.destroy()
