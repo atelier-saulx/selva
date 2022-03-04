@@ -103,6 +103,7 @@ export default async (
         undefined,
         oldSchema
       )
+
       const r = await executeGetOperations(
         client,
         undefined,
@@ -117,10 +118,11 @@ export default async (
       )
 
       const setQ = []
+      const setQRemovals = []
 
       for (const node of r.nodes) {
         if (parsedFieldMutations[type].setOp) {
-          setQ.push(
+          setQRemovals.push(
             client.set(
               {
                 $id: node.id,
@@ -134,9 +136,11 @@ export default async (
 
         const result = handleMutations ? handleMutations(node) : null
 
+        // console.info('------------->', node, result)
+
         if (!result) {
           if (parsedFieldMutations[type].nullSetOp) {
-            setQ.push(
+            setQRemovals.push(
               client.set(
                 {
                   $id: node.id,
@@ -158,6 +162,8 @@ export default async (
         }
       }
 
+      await Promise.all(setQRemovals)
+      // maybe first
       await Promise.all(setQ)
 
       // progress listener maybe? and remove this log

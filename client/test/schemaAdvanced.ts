@@ -362,7 +362,137 @@ test.serial('schemas - remove fields', async (t) => {
   t.pass()
 })
 
-test.only('schemas - remove/change fields (no mutation handler)', async (t) => {
+test.serial(
+  'schemas - remove/change fields (no mutation handler)',
+  async (t) => {
+    const port = await getPort()
+    const server = await start({
+      port,
+    })
+    const client = connect({ port })
+    try {
+      await client.updateSchema({
+        languages: ['en'],
+        types: {
+          thing: {
+            prefix: 'th',
+            fields: {
+              image: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      })
+    } catch (err) {
+      console.info('--', err)
+    }
+
+    await wait(1000)
+
+    for (let i = 0; i < 10; i++) {
+      const q = []
+      for (let i = 0; i < 10; i++) {
+        q.push(
+          client.set(
+            i % 2
+              ? {
+                  type: 'thing',
+                  image: 'flap ' + i,
+                }
+              : { type: 'thing' }
+          )
+        )
+      }
+      await Promise.all(q)
+    }
+
+    await wait(1000)
+
+    await client.updateSchema(
+      {
+        types: {
+          thing: {
+            prefix: 'th',
+            fields: {
+              flap: {
+                type: 'string',
+              },
+              image: {
+                $delete: true,
+              },
+            },
+          },
+        },
+      },
+      'default',
+      true
+    )
+
+    let results = await client.get({
+      nodes: {
+        $all: true,
+        image: true,
+        $list: {
+          $offset: 0,
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+          },
+        },
+      },
+    })
+
+    for (const n of results.nodes) {
+      t.false('image' in n)
+    }
+
+    await client.updateSchema(
+      {
+        types: {
+          thing: {
+            prefix: 'th',
+            fields: {
+              flap: {
+                type: 'number',
+              },
+            },
+          },
+        },
+      },
+      'default',
+      true
+    )
+
+    results = await client.get({
+      nodes: {
+        $all: true,
+        image: true,
+        $list: {
+          $offset: 0,
+          $limit: 10,
+          $find: {
+            $traverse: 'descendants',
+            $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+          },
+        },
+      },
+    })
+
+    for (const n of results.nodes) {
+      t.false('flap' in n)
+    }
+
+    await client.destroy()
+    await server.destroy()
+    await t.connectionsAreEmpty()
+
+    t.pass()
+  }
+)
+
+test.only('schemas - return null from mut handler OR set to another type / id', async (t) => {
   const port = await getPort()
   const server = await start({
     port,
@@ -375,6 +505,9 @@ test.only('schemas - remove/change fields (no mutation handler)', async (t) => {
         thing: {
           prefix: 'th',
           fields: {
+            flap: {
+              type: 'number',
+            },
             image: {
               type: 'string',
             },
@@ -388,33 +521,32 @@ test.only('schemas - remove/change fields (no mutation handler)', async (t) => {
 
   await wait(1000)
 
-  for (let i = 0; i < 10; i++) {
+  let other = 0
+
+  for (let i = 0; i < 2; i++) {
     const q = []
     for (let i = 0; i < 10; i++) {
+      if (i % 2) {
+        other++
+      }
+
       q.push(
         client.set(
           i % 2
             ? {
                 type: 'thing',
-                image: 'flap ' + i,
+                image: i + '-img',
               }
-            : { type: 'thing' }
+            : { type: 'thing', flap: i }
         )
       )
     }
     await Promise.all(q)
-    try {
-      if (global.gc) {
-        global.gc()
-      }
-    } catch (err) {
-      console.error(`Cannot manualy gc`, err)
-    }
   }
 
   await wait(1000)
 
-  const mut = await client.updateSchema(
+  await client.updateSchema(
     {
       types: {
         thing: {
@@ -431,18 +563,23 @@ test.only('schemas - remove/change fields (no mutation handler)', async (t) => {
       },
     },
     'default',
-    true
+    true,
+    (node) => {
+      if (node.image) {
+        console.info(node)
+        return {
+          flap: '10000',
+        }
+      }
+    }
   )
 
-  console.info(mut)
-
-  const results = await client.get({
+  let results = await client.get({
     nodes: {
       $all: true,
-      image: true,
       $list: {
         $offset: 0,
-        $limit: 10,
+        $limit: 100,
         $find: {
           $traverse: 'descendants',
           $filter: { $operator: '=', $field: 'type', $value: 'thing' },
@@ -451,11 +588,17 @@ test.only('schemas - remove/change fields (no mutation handler)', async (t) => {
     },
   })
 
+  let amount10k = 0
   for (const n of results.nodes) {
     t.false('image' in n)
+    if (n.flap === '10000') {
+      amount10k++
+    }
   }
 
-  const mut2 = await client.updateSchema(
+  t.is(amount10k, other)
+
+  await client.updateSchema(
     {
       types: {
         thing: {
@@ -469,14 +612,42 @@ test.only('schemas - remove/change fields (no mutation handler)', async (t) => {
       },
     },
     'default',
-    true
+    true,
+    (node) => {
+      if (node.flap === '10000') {
+        return {
+          flap: 10000,
+        }
+      }
+    }
   )
 
-  console.info(mut2)
+  results = await client.get({
+    nodes: {
+      $all: true,
+      image: true,
+      $list: {
+        $offset: 0,
+        $limit: 100,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+        },
+      },
+    },
+  })
+
+  amount10k = 0
 
   for (const n of results.nodes) {
-    t.false('flap' in n)
+    if (n.flap === 10000) {
+      amount10k++
+    } else {
+      t.false('flap' in n)
+    }
   }
+
+  t.is(amount10k, other)
 
   await client.destroy()
   await server.destroy()
