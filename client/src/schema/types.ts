@@ -118,11 +118,13 @@ export type DeleteField = { $delete: true }
 
 export type InputFields = Record<string, FieldSchema | DeleteField>
 
-export type InputTypeSchema = {
-  prefix?: string
-  hierarchy?: HierarchySchema
-  fields?: InputFields
-}
+export type InputTypeSchema =
+  | {
+      prefix?: string
+      hierarchy?: HierarchySchema
+      fields?: InputFields
+    }
+  | { $delete: true }
 
 export type SchemaDelOpts = {
   fields: Record<string, string[][]>
