@@ -893,6 +893,9 @@ test.only('schemas - migrate object', async (t) => {
                   z: {
                     type: 'object',
                     properties: {
+                      rank: {
+                        type: 'number',
+                      },
                       image: {
                         type: 'string',
                       },
@@ -918,10 +921,10 @@ test.only('schemas - migrate object', async (t) => {
           i % 2
             ? {
                 y: {
-                  z: { image: i + '-img' },
+                  z: { image: i + '-img', rank: i * 10 },
                 },
               }
-            : {},
+            : { y: { z: { rank: i } } },
       })
     )
   }
@@ -947,6 +950,9 @@ test.only('schemas - migrate object', async (t) => {
                         image: {
                           $delete: true,
                         },
+                        rank: {
+                          type: 'string',
+                        },
                         flap: {
                           type: 'string',
                         },
@@ -965,7 +971,7 @@ test.only('schemas - migrate object', async (t) => {
     (node) => {
       if (node.x?.y?.z?.image) {
         return {
-          x: { y: { z: { flap: node.x.y.z.image } } },
+          x: { y: { z: { flap: node.x.y.z.image, rank: 'THE BEST' } } },
         }
       }
     }
@@ -985,11 +991,22 @@ test.only('schemas - migrate object', async (t) => {
     },
   })
 
-  console.info(JSON.stringify(results, null, 2))
+  let imgCounter = 0
+  let rankCounter = 0
 
-  // for (const n of results.nodes) {
-  //   t.true('image' in n)
-  // }
+  for (const n of results.nodes) {
+    if (n.x?.y?.z) {
+      if (n.x?.y?.z.flap) {
+        imgCounter++
+      }
+      if (n.x?.y?.z.rank) {
+        rankCounter++
+      }
+    }
+  }
+
+  t.is(rankCounter, 5)
+  t.is(imgCounter, 5)
 
   await client.destroy()
   await server.destroy()
