@@ -2,6 +2,7 @@
 #ifndef _SELVA_
 #define _SELVA_
 
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -76,6 +77,8 @@ typedef unsigned char Selva_SubscriptionId[SELVA_SUBSCRIPTION_ID_SIZE];
  * Type for Selva subscription marker id.
  */
 typedef int64_t Selva_SubscriptionMarkerId;
+
+#define PRImrkId PRId64
 
 /**
  * Selva version.
