@@ -153,12 +153,34 @@ export function newSchemaDefinition(
       if (p.length === 1) {
         delete schema.types[t].fields[p[0]]
       } else {
-        // TODO: remove this
-        // walk
-        // const f = schema.types[t].fields[p[0]]
-        console.info('fix object delete!')
-        // if (f.type === 'object')
-        // now we have to find it...
+        let s = schema.types[t].fields[p[0]]
+        for (let i = 1; i < p.length - 1; i++) {
+          if (i === p.length - 1) {
+            // @ts-ignore
+            if (s.properties) {
+              // @ts-ignore
+              delete s.properties[p[i]]
+              // @ts-ignore
+            } else if (s.values) {
+              // @ts-ignore
+              delete s.values[p[i]]
+            } else {
+              break
+            }
+          } else {
+            // @ts-ignore
+            if (s.properties) {
+              // @ts-ignore
+              s = s.properties[p[i]]
+              // @ts-ignore
+            } else if (s.values) {
+              // @ts-ignore
+              s = s.values[p[i]]
+            } else {
+              break
+            }
+          }
+        }
       }
     }
   }
@@ -349,8 +371,6 @@ export async function updateSchema(
     delOpts
   )
 
-  console.info(mutations)
-
   if (!allowMutations && mutations.length) {
     let str = ''
     for (const mutation of mutations) {
@@ -374,11 +394,6 @@ export async function updateSchema(
   }
 
   try {
-    // only place wherw we call update-schema
-
-    // mutations
-    console.info(JSON.stringify(newSchema, null, 2))
-
     const updated = await client.redis.evalsha(
       selector,
       `${SCRIPT}:update-schema`, // TODO: or should we just evaluate the sha here. maybe not if it's not connected yet? ... we can also just re-queue it
