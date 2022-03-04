@@ -17,7 +17,6 @@ import {
   SchemaMutations,
   Schema,
   SchemaOpts,
-  FieldSchema,
 } from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
@@ -30,7 +29,6 @@ import { SetOptions, set, setWithMeta } from './set'
 import { IdOptions } from 'lua/src/id'
 import id from './id'
 import { DeleteOptions, deleteItem } from './delete'
-import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
 import { waitUntilEvent } from './util'
 import hardDisconnect from './hardDisconnect'
@@ -134,32 +132,6 @@ export class SelvaClient extends EventEmitter {
 
   public async hardDisconnect(connection: Connection) {
     return hardDisconnect(this, connection)
-  }
-
-  public admin: {
-    deleteType(name: string, dbName?: string): Promise<void>
-    deleteField(type: string, name: string, dbName?: string): Promise<void>
-    castField(
-      type: string,
-      name: string,
-      newType: FieldSchema,
-      dbName?: string
-    ): Promise<void>
-  } = {
-    deleteType: (name: string, dbName: string = 'default') => {
-      return deleteType(this, name, { name: dbName })
-    },
-    deleteField: (type: string, name: string, dbName: string = 'default') => {
-      return deleteField(this, type, name, { name: dbName })
-    },
-    castField: (
-      type: string,
-      name: string,
-      newType: FieldSchema,
-      dbName: string = 'default'
-    ) => {
-      return castField(this, type, name, newType, { name: dbName })
-    },
   }
 
   constructor(opts: ConnectOptions) {
