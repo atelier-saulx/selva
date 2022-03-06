@@ -2,14 +2,13 @@ import test from 'ava'
 import fetch from 'node-fetch'
 import { connect } from '../src/index'
 import { start, startTextServer } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
 let txtSrv
 let port
-let txtPort = 33333
+const txtPort = 33333
 test.before(async (t) => {
   port = await getPort()
   // txtPort = await getPort()
@@ -28,15 +27,15 @@ test.before(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          title: { type: 'text' },
+          value: { type: 'number' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          title: { type: 'text' },
+          value: { type: 'number' },
         },
       },
     },

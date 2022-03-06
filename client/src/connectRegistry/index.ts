@@ -80,7 +80,6 @@ const connectRegistry = (
       }
       const registryConnection = createConnection(descriptor)
 
-      // maybe for registry we want to handle it a bit different....
       registryConnection.attachClient(selvaClient)
 
       selvaClient.registryConnection = registryConnection

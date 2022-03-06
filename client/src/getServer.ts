@@ -9,6 +9,10 @@ const getServer = (
   selector: ServerSelector,
   selectionOptions?: ServerSelectOptions // channel for subscriptions
 ): void => {
+  if (selvaClient.isDestroyed) {
+    return
+  }
+
   if (selector.host && selector.port) {
     // eslint-disable-next-line
     cb({ ...selector, host: selector.host, port: selector.port })

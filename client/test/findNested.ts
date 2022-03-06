@@ -23,14 +23,14 @@ test.before(async (t) => {
       team: {
         prefix: 'te',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          value: { type: 'number' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          value: { type: 'number' },
+          status: { type: 'number' },
         },
       },
     },
@@ -242,7 +242,6 @@ test.serial('get nested results with $all', async (t) => {
   })
 
   t.is(result.items.length, 10, 'items length')
-  console.log('RESULT', result)
   t.assert(
     (<any[]>result.items).every((r) => {
       return typeof r.status === 'undefined'
@@ -313,8 +312,6 @@ test.serial.skip('get nested results as ids', async (t) => {
       },
     },
   })
-
-  console.log('RESULT', result)
 
   t.is(result.items.length, 10, 'items length')
   t.is(result.items[0].parents.length, 2, 'has teams')

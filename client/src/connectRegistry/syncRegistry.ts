@@ -22,6 +22,8 @@ export const startSync = async (client: SelvaClient) => {
 }
 
 export const stopSync = async (client: SelvaClient) => {
-  clearTimeout(client.registrySync.timer)
-  delete client.registrySync
+  if (client.registrySync) {
+    clearTimeout(client.registrySync.timer)
+    delete client.registrySync
+  }
 }

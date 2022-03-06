@@ -5,15 +5,18 @@ import {
   ServerType,
   ServerSelector,
   ServerSelectOptions,
+  Validator,
 } from './types'
 import digest from './digest'
 import Redis from './redis'
 import {
   GetSchemaResult,
+  SchemaDelOpts,
   SchemaOptions,
   Id,
+  SchemaMutations,
   Schema,
-  FieldSchema,
+  SchemaOpts,
 } from './schema'
 import { FieldSchemaObject } from './schema/types'
 import { updateSchema } from './schema/updateSchema'
@@ -26,26 +29,18 @@ import { SetOptions, set, setWithMeta } from './set'
 import { IdOptions } from 'lua/src/id'
 import id from './id'
 import { DeleteOptions, deleteItem } from './delete'
-import { deleteType, deleteField, castField } from './adminOperations'
 import { RedisCommand } from './redis/types'
-
 import { waitUntilEvent } from './util'
-
 import hardDisconnect from './hardDisconnect'
-
 import { connections, Connection, createConnection } from './connection'
-
 import { Observable, createObservable } from './observable'
-
 import connectRegistry from './connectRegistry'
-
 import destroy from './destroy'
-
 import { v4 as uuidv4 } from 'uuid'
-
 import getServer from './getServer'
 import { ObservableOptions, ObsSettings } from './observable/types'
 import { SetMetaResponse } from './set/types'
+import extractSchemaDelOpts from './schema/extractSchemaDelOpts'
 
 export * as constants from './constants'
 
@@ -63,6 +58,38 @@ export class SelvaClient extends EventEmitter {
     lastSync?: number
     timer?: NodeJS.Timeout
     isSyncing: boolean
+  }
+
+  public validator: Validator
+
+  public setCustomValidator(validator: Validator) {
+    this.validator = (
+      schema: Schema,
+      type: string,
+      path: string[],
+      value: any,
+      language: string
+    ) => {
+      let pCopied = false
+      for (let i = 0; i < path.length; i++) {
+        if (
+          typeof path[i] === 'string' &&
+          path[i].includes('[') &&
+          /\[[\d]+\]/.test(path[i])
+        ) {
+          if (!pCopied) {
+            path = [...path]
+            pCopied = true
+          }
+          const x = path[i].split('[')
+          path[i] = x[0]
+          // @ts-ignore
+          path.splice(i + 1, 0, Number(x[1].slice(0, -1)))
+          i++
+        }
+      }
+      return validator(schema, type, path, value, language)
+    }
   }
 
   public observables: Map<string, Observable>
@@ -107,32 +134,6 @@ export class SelvaClient extends EventEmitter {
     return hardDisconnect(this, connection)
   }
 
-  public admin: {
-    deleteType(name: string, dbName?: string): Promise<void>
-    deleteField(type: string, name: string, dbName?: string): Promise<void>
-    castField(
-      type: string,
-      name: string,
-      newType: FieldSchema,
-      dbName?: string
-    ): Promise<void>
-  } = {
-    deleteType: (name: string, dbName: string = 'default') => {
-      return deleteType(this, name, { name: dbName })
-    },
-    deleteField: (type: string, name: string, dbName: string = 'default') => {
-      return deleteField(this, type, name, { name: dbName })
-    },
-    castField: (
-      type: string,
-      name: string,
-      newType: FieldSchema,
-      dbName: string = 'default'
-    ) => {
-      return castField(this, type, name, newType, { name: dbName })
-    },
-  }
-
   constructor(opts: ConnectOptions) {
     super()
     this.setMaxListeners(1e5)
@@ -173,9 +174,9 @@ export class SelvaClient extends EventEmitter {
     return get(this, getOpts)
   }
 
-  async set(setOpts: SetOptions): Promise<Id | undefined> {
+  async set(setOpts: SetOptions, schema?: Schema): Promise<Id | undefined> {
     await this.initializeSchema(setOpts)
-    return set(this, setOpts)
+    return set(this, setOpts, schema)
   }
 
   async setWithMeta(setOpts: SetOptions): Promise<SetMetaResponse | undefined> {
@@ -197,26 +198,50 @@ export class SelvaClient extends EventEmitter {
   }
 
   async updateSchema(
-    opts: SchemaOptions,
-    name: string = 'default'
-  ): Promise<void> {
+    opts: SchemaOpts,
+    name: string = 'default',
+    allowMutations: boolean = false,
+    handleMutations?: (old: { [field: string]: any }) => {
+      [field: string]: any
+    } | null
+  ): Promise<SchemaMutations> {
     await this.initializeSchema({ $db: name }, false)
-    return updateSchema(this, opts, { name, type: 'origin' })
+
+    const delOpts: SchemaDelOpts = {
+      fields: {},
+      types: [],
+    }
+
+    try {
+      if (opts.types) {
+        for (const t in opts.types) {
+          if (opts.types[t].$delete === true) {
+            delOpts.types.push(t)
+          } else {
+            const f = extractSchemaDelOpts(opts.types[t])
+            if (f.length) {
+              delOpts.fields[t] = f
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error in extract del opts', err)
+    }
+
+    return updateSchema(
+      this,
+      <SchemaOptions>opts,
+      { name, type: 'origin' },
+      delOpts,
+      allowMutations,
+      handleMutations
+    )
   }
 
   async waitUntilEvent(event: string): Promise<void> {
     return waitUntilEvent(this, event)
   }
-
-  // subscribeSchema(name: string = 'default'): Observable<Schema> {
-  //   //  call this observeSchema....
-  //   console.warn('subscribeSchema changed to observeSchema will be removed in future versions')
-  //   return observeSchema(this, name)
-  // }
-
-  // observeSchema(name: string = 'default'): Observable<Schema> {
-  //   return observeSchema(this, name)
-  // }
 
   public subscribeSchema(name: string = 'default'): Observable {
     const props: ObservableOptions = {
@@ -335,5 +360,6 @@ export {
   RedisCommand,
   Connection,
   Observable,
+  Validator,
   moduleId,
 }

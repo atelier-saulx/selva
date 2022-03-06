@@ -2,8 +2,10 @@ import { ServerDescriptor } from './types'
 
 import { SelvaClient } from '.'
 
-export const wait = (t: number = 0): Promise<void> =>
-  new Promise((r) => setTimeout(r, t))
+export const wait = (t: number = 0): Promise<void> => {
+  // eslint-disable-next-line
+  return new Promise((r) => setTimeout(r, t))
+}
 
 export const waitUntilEvent = (
   selvaClient: SelvaClient,
@@ -17,6 +19,7 @@ export const waitUntilEvent = (
 }
 
 export const isEmptyObject = (obj: { [key: string]: any }): boolean => {
+  // eslint-disable-next-line
   for (const _k in obj) {
     return false
   }

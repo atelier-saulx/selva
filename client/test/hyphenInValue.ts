@@ -1,7 +1,7 @@
 import test from 'ava'
 import { connect } from '@saulx/selva'
 import { start } from '@saulx/selva-server'
-import './assertions'
+import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -12,9 +12,7 @@ test.before(async (t) => {
   srv = await start({
     port,
   })
-  await new Promise((resolve, _reject) => {
-    setTimeout(resolve, 100)
-  })
+  await wait(100)
 
   const client = connect({ port }, { loglevel: 'info' })
   await client.updateSchema({
@@ -23,7 +21,7 @@ test.before(async (t) => {
       actor: {
         prefix: 'ac',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
           born: { type: 'int' },
           died: { type: 'int' },
         },

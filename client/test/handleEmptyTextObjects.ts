@@ -2,7 +2,6 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
-import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -20,7 +19,6 @@ test.before(async (t) => {
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] },
           },
         },
       },

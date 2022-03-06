@@ -20,9 +20,7 @@ test.before(async (t) => {
   srv = await start({
     port,
   })
-  await new Promise((resolve, _reject) => {
-    setTimeout(resolve, 100)
-  })
+  await wait(100)
 })
 test.beforeEach(async (t) => {
   const client = connect(
@@ -100,7 +98,7 @@ test.beforeEach(async (t) => {
   })
 
   // A small delay is needed after setting the schema
-  await new Promise((r) => setTimeout(r, 100))
+  await wait(100)
 
   await client.destroy()
 })
@@ -131,14 +129,22 @@ test.serial('can delete root', async (t) => {
   })
 
   t.deepEqual(root, 'root')
-  t.deepEqual(readDouble(await client.redis.selva_object_get('', 'root', 'value')), 9001)
+  t.deepEqual(
+    readDouble(await client.redis.selva_object_get('', 'root', 'value')),
+    9001
+  )
   t.deepEqual(
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, 'root'),
     [match]
   )
 
   await client.delete('root')
-  t.deepEqual(await client.redis.selva_object_get('', 'root'), ['id', 'root', 'type', 'root'])
+  t.deepEqual(await client.redis.selva_object_get('', 'root'), [
+    'id',
+    'root',
+    'type',
+    'root',
+  ])
 
   await client.destroy()
 })
@@ -151,7 +157,7 @@ test.serial('can delete a set', async (t) => {
     { loglevel: 'info' }
   )
 
-  const vi = await client.set({
+  await client.set({
     type: 'someTestThing',
     title: {
       en: 'yes text',
@@ -183,17 +189,17 @@ test.serial('tree delete', async (t) => {
       {
         type: 'match',
         children: [
-          { type: 'person', parents: [ { $id: thing } ] },
-          { type: 'person', parents: [ { $id: thing } ] },
-          { type: 'person', parents: [ { $id: thing } ] },
-          { type: 'person', parents: [ { $id: thing } ] },
-          { type: 'person', parents: [ { $id: thing } ] },
-          { type: 'person', parents: [ { $id: thing } ] },
-          { type: 'person', parents: [ { $id: thing } ] },
-          { type: 'person', parents: [ { $id: thing } ] },
-          { type: 'person', parents: [ { $id: thing } ] },
-          { type: 'person', parents: [ { $id: thing } ] },
-          { type: 'person', parents: [ { $id: thing } ] }
+          { type: 'person', parents: [{ $id: thing }] },
+          { type: 'person', parents: [{ $id: thing }] },
+          { type: 'person', parents: [{ $id: thing }] },
+          { type: 'person', parents: [{ $id: thing }] },
+          { type: 'person', parents: [{ $id: thing }] },
+          { type: 'person', parents: [{ $id: thing }] },
+          { type: 'person', parents: [{ $id: thing }] },
+          { type: 'person', parents: [{ $id: thing }] },
+          { type: 'person', parents: [{ $id: thing }] },
+          { type: 'person', parents: [{ $id: thing }] },
+          { type: 'person', parents: [{ $id: thing }] },
         ],
       },
       {
@@ -209,10 +215,10 @@ test.serial('tree delete', async (t) => {
           { type: 'person' },
           { type: 'person' },
           { type: 'person' },
-          { type: 'person' }
+          { type: 'person' },
         ],
       },
-    ]
+    ],
   })
 
   const res1 = await client.get({
@@ -224,7 +230,7 @@ test.serial('tree delete', async (t) => {
           $traverse: 'descendants',
         },
       },
-    }
+    },
   })
   t.deepEqual(res1.things.length, 26, 'found all children')
 
@@ -239,9 +245,13 @@ test.serial('tree delete', async (t) => {
           $traverse: 'descendants',
         },
       },
-    }
+    },
   })
-  t.deepEqual(res2.things.length, 12, 'children that have other parents were preserved')
+  t.deepEqual(
+    res2.things.length,
+    12,
+    'children that have other parents were preserved'
+  )
 })
 
 test.serial('recursive delete', async (t) => {
@@ -260,12 +270,12 @@ test.serial('recursive delete', async (t) => {
     type: 'someTestThing',
     title: { en: 'b' },
   })
-  const x = await client.set({
+  await client.set({
     type: 'someTestThing',
     title: { en: 'x' },
-    parents: [ a ],
+    parents: [a],
   })
-  const y = await client.set({
+  await client.set({
     type: 'someTestThing',
     title: { en: 'y' },
     parents: [a, b],
@@ -286,7 +296,7 @@ test.serial('recursive delete', async (t) => {
           $traverse: 'descendants',
         },
       },
-    }
+    },
   })
-  t.deepEqualIgnoreOrder(res2, { things: [ { title: 'b' } ] })
+  t.deepEqualIgnoreOrder(res2, { things: [{ title: 'b' }] })
 })

@@ -1,7 +1,5 @@
 import { SetOptions, SetMetaResponse } from './types'
-import { SelvaClient } from '..'
-import { v4 as uuid } from 'uuid'
-import { SCRIPT } from '../constants'
+import { Schema, SelvaClient } from '..'
 import parseSetObject from './validate'
 
 export async function _set(
@@ -93,8 +91,14 @@ export async function _set(
 // value ? strip it out
 //
 
-async function set(client: SelvaClient, payload: SetOptions): Promise<string> {
-  const schema = client.schemas[payload.$db || 'default']
+async function set(
+  client: SelvaClient,
+  payload: SetOptions,
+  schema?: Schema
+): Promise<string> {
+  if (!schema) {
+    schema = client.schemas[payload.$db || 'default']
+  }
 
   // need to add queue and process.next here to merge modify
   if (!payload.type && !payload.$id && payload.$alias) {

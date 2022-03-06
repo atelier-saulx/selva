@@ -1,11 +1,42 @@
-import { Types, TypeSchema, FieldSchema } from './types'
+import { Types, TypeSchema, FieldSchema, InputTypes } from './types'
 
 export * from './types'
+
+export type SchemaMutationType = 'delete_type' | 'change_field' | 'remove_field'
+
+export type SchemaMutations = (
+  | {
+      mutation: 'delete_type'
+      type: string
+    }
+  | {
+      mutation: 'change_field'
+      type: string
+      path: string[]
+      old: FieldSchema
+      new: FieldSchema
+    }
+  | {
+      mutation: 'remove_field'
+      type: string
+      path: string[]
+      old: FieldSchema
+    }
+)[]
 
 export type SchemaOptions = {
   sha?: string
   languages?: string[]
   types?: Types
+  rootType?: Pick<TypeSchema, 'fields'>
+  idSeedCounter?: number
+  prefixToTypeMapping?: Record<string, string>
+}
+
+export type SchemaOpts = {
+  sha?: string
+  languages?: string[]
+  types?: InputTypes
   rootType?: Pick<TypeSchema, 'fields'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>
@@ -17,11 +48,9 @@ export const defaultFields: Record<string, FieldSchema> = {
     // never indexes these - uses in keys
   },
   type: {
-    search: { index: 'default', type: ['TAG'] },
     type: 'type',
   },
   name: {
-    search: { index: 'default', type: ['TAG'] },
     type: 'string',
   },
   children: {
@@ -32,7 +61,6 @@ export const defaultFields: Record<string, FieldSchema> = {
   },
   ancestors: {
     type: 'references',
-    search: { index: 'default', type: ['TAG'] },
   },
   descendants: {
     type: 'references',

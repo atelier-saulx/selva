@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start, startOrigin } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -32,13 +31,13 @@ test.before(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       team: {
         prefix: 'te',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
     },
@@ -54,16 +53,14 @@ test.before(async (t) => {
         match: {
           prefix: 'ma',
           fields: {
-            name: { type: 'string', search: { type: ['TAG'] } },
+            name: { type: 'string' },
             value: {
               type: 'number',
-              search: { type: ['NUMERIC', 'SORTABLE'] },
             },
             status: {
               type: 'number',
-              search: { type: ['NUMERIC', 'SORTABLE'] },
             },
-            date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+            date: { type: 'number' },
           },
         },
       },
@@ -200,7 +197,6 @@ test.serial('subscription find multi-db', async (t) => {
 
   let cnt = 0
   const sub = obs.subscribe((d) => {
-    console.log('wuut', JSON.stringify(d, null, 2))
     cnt++
   })
 

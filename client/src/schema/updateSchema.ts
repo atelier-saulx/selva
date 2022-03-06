@@ -4,16 +4,23 @@ import {
   Schema,
   TypeSchema,
   FieldSchema,
-  rootDefaultFields,
   SchemaOptions,
   FIELD_TYPES,
+  SchemaDelOpts,
+  SchemaMutations,
+  isDeleteField,
 } from '.'
 import { ServerSelector } from '../types'
 import { wait, validateFieldName } from '../util'
+import mutate from './mutate'
 
 const MAX_SCHEMA_UPDATE_RETRIES = 100
 
+// just return whats different
+
 function validateNewFields(obj: TypeSchema | FieldSchema, path: string) {
+  // validate array?
+
   if ((<any>obj).type) {
     const field = <FieldSchema>obj
     if (
@@ -21,6 +28,7 @@ function validateNewFields(obj: TypeSchema | FieldSchema, path: string) {
       (field.type === 'json' && field.properties)
     ) {
       for (const propName in field.properties) {
+        // this is fine to throw
         validateFieldName(path, propName)
         validateNewFields(field.properties[propName], `${path}.${propName}`)
       }
@@ -46,10 +54,19 @@ function validateNewFields(obj: TypeSchema | FieldSchema, path: string) {
   }
 }
 
+// here we have to do that it just collects the data of what changed (instead of the error)
+// then you get the option to say return whats changed and then you can decide to force it
+
+// think about mutate in between? before updating the schema :/
+// lock db while migrating :/
+
 export function newSchemaDefinition(
   oldSchema: Schema,
-  newSchema: Schema
-): Schema {
+  newSchema: Schema,
+  delOpts: SchemaDelOpts
+): { schema: Schema; mutations: SchemaMutations } {
+  const mutations: SchemaMutations = []
+
   const schema: Schema = {
     sha: oldSchema.sha,
     rootType: oldSchema.rootType,
@@ -65,7 +82,8 @@ export function newSchemaDefinition(
       schema.types[typeName] = newTypeDefinition(
         typeName,
         oldSchema.types[typeName],
-        newSchema.types[typeName]
+        newSchema.types[typeName],
+        mutations
       )
     } else {
       schema.types[typeName] = oldSchema.types[typeName]
@@ -101,7 +119,9 @@ export function newSchemaDefinition(
         typeDef.fields[fieldName] = newFieldDefinition(
           `root.${fieldName}`,
           oldSchema.rootType.fields[fieldName],
-          newSchema.rootType.fields[fieldName]
+          newSchema.rootType.fields[fieldName],
+          'root',
+          mutations
         )
       } else {
         typeDef.fields[fieldName] = oldSchema.rootType.fields[fieldName]
@@ -119,7 +139,61 @@ export function newSchemaDefinition(
     schema.rootType = oldSchema.rootType
   }
 
-  return schema
+  // also do types
+
+  for (const t in delOpts.fields) {
+    for (const p of delOpts.fields[t]) {
+      mutations.push({
+        mutation: 'remove_field',
+        type: t,
+        old: oldSchema.types[t].fields[p[0]],
+        path: p,
+      })
+
+      if (p.length === 1) {
+        delete schema.types[t].fields[p[0]]
+      } else {
+        let s = schema.types[t].fields[p[0]]
+        for (let i = 1; i < p.length - 1; i++) {
+          if (i === p.length - 1) {
+            // @ts-ignore
+            if (s.properties) {
+              // @ts-ignore
+              delete s.properties[p[i]]
+              // @ts-ignore
+            } else if (s.values) {
+              // @ts-ignore
+              delete s.values[p[i]]
+            } else {
+              break
+            }
+          } else {
+            // @ts-ignore
+            if (s.properties) {
+              // @ts-ignore
+              s = s.properties[p[i]]
+              // @ts-ignore
+            } else if (s.values) {
+              // @ts-ignore
+              s = s.values[p[i]]
+            } else {
+              break
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (const type of delOpts.types) {
+    mutations.push({
+      mutation: 'delete_type',
+      type: type,
+    })
+    delete schema.types[type]
+  }
+
+  return { schema, mutations }
 }
 
 function newLanguages(oldLangs: string[], newLangs: string[]): string[] {
@@ -142,7 +216,8 @@ function newLanguages(oldLangs: string[], newLangs: string[]): string[] {
 function newTypeDefinition(
   typeName: string,
   oldType: TypeSchema,
-  newType: TypeSchema
+  newType: TypeSchema,
+  mutations: SchemaMutations
 ): TypeSchema {
   const typeDef: TypeSchema = {
     fields: {},
@@ -168,7 +243,9 @@ function newTypeDefinition(
       typeDef.fields[fieldName] = newFieldDefinition(
         `${fieldName}`,
         oldType.fields[fieldName],
-        newType.fields[fieldName]
+        newType.fields[fieldName],
+        typeName,
+        mutations
       )
     } else {
       typeDef.fields[fieldName] = oldType.fields[fieldName]
@@ -189,12 +266,23 @@ function newTypeDefinition(
 function newFieldDefinition(
   fieldPath: string,
   oldField: FieldSchema,
-  newField: FieldSchema
+  newField: FieldSchema,
+  typeName: string,
+  mutations: SchemaMutations
 ): FieldSchema {
+  // herew we want to return
+  if (isDeleteField(newField)) {
+    return
+  }
+
   if (oldField.type !== newField.type) {
-    throw new Error(
-      `Path ${fieldPath} has mismatching types, trying to change ${oldField.type} to ${newField.type}`
-    )
+    mutations.push({
+      mutation: 'change_field',
+      type: typeName, // add type
+      path: fieldPath.split('.'),
+      old: oldField,
+      new: newField,
+    })
   }
 
   if (
@@ -207,7 +295,9 @@ function newFieldDefinition(
         props[fieldName] = newFieldDefinition(
           `${fieldPath}.${fieldName}`,
           oldField.properties[fieldName],
-          (<any>newField).properties[fieldName]
+          (<any>newField).properties[fieldName],
+          typeName,
+          mutations
         )
       } else {
         props[fieldName] = oldField.properties[fieldName]
@@ -238,17 +328,15 @@ function newFieldDefinition(
     (oldField.type === 'set' || oldField.type === 'array') &&
     oldField.items.type !== (<any>newField).items.type
   ) {
-    throw new Error(
-      `Path ${fieldPath} has mismatching types, trying to change collection with type ${
-        oldField.items.type
-      } to type ${(<any>newField).items.type}`
-    )
-  }
+    // add mutation
 
-  if (!(<any>newField).search) {
-    if (oldField.search) {
-      ;(<any>newField).search = oldField.search
-    }
+    mutations.push({
+      mutation: 'change_field',
+      path: fieldPath.split('.'),
+      type: typeName,
+      old: oldField,
+      new: newField,
+    })
   }
 
   if (!newField.meta && oldField.meta) {
@@ -262,17 +350,48 @@ export async function updateSchema(
   client: SelvaClient,
   props: SchemaOptions,
   selector: ServerSelector,
+  delOpts: SchemaDelOpts,
+  allowMutations: boolean = false,
+  handleMutations?: (old: { [field: string]: any }) => {
+    [field: string]: any
+  } | null,
   retry?: number
-) {
+): Promise<SchemaMutations> {
   retry = retry || 0
+
   if (!props.types) {
     props.types = {}
   }
 
-  const newSchema = newSchemaDefinition(
-    (await client.getSchema(selector.name)).schema,
-    <Schema>props
+  const oldSchema = (await client.getSchema(selector.name)).schema
+
+  const { schema: newSchema, mutations } = newSchemaDefinition(
+    oldSchema,
+    <Schema>props,
+    delOpts
   )
+
+  if (!allowMutations && mutations.length) {
+    let str = ''
+    for (const mutation of mutations) {
+      if (mutation.mutation === 'remove_field') {
+        str += `\n    Remove "${mutation.type}", field "${mutation.path.join(
+          '.'
+        )}" from ${mutation.old.type}`
+      } else if (mutation.mutation === 'delete_type') {
+        str += `\n    Delete type "${mutation.type}`
+      } else {
+        str += `\n    Change "${mutation.type}", field "${mutation.path.join(
+          '.'
+        )}" from ${mutation.old.type} to ${mutation.new.type}`
+      }
+    }
+    throw new Error(
+      `Update schema got ${mutations.length} changed field${
+        mutations.length > 1 ? 's' : ''
+      }${str}`
+    )
+  }
 
   try {
     const updated = await client.redis.evalsha(
@@ -280,7 +399,8 @@ export async function updateSchema(
       `${SCRIPT}:update-schema`, // TODO: or should we just evaluate the sha here. maybe not if it's not connected yet? ... we can also just re-queue it
       0,
       `${client.loglevel}:${client.uuid}`,
-      JSON.stringify(newSchema)
+      // array where you have an option to NOT fail
+      JSON.stringify({ schema: newSchema, allowMutations })
     )
 
     if (updated) {
@@ -297,9 +417,16 @@ export async function updateSchema(
           `Unable to update schema after ${MAX_SCHEMA_UPDATE_RETRIES} attempts`
         )
       }
-      // await this.getSchema()
       await wait(retry * 200)
-      await updateSchema(client, props, selector, retry + 1)
+      await updateSchema(
+        client,
+        props,
+        selector,
+        delOpts,
+        allowMutations,
+        handleMutations,
+        retry + 1
+      )
     } else {
       if (e.code === 'NR_CLOSED') {
         // canhappen with load and eval script
@@ -308,4 +435,10 @@ export async function updateSchema(
       }
     }
   }
+
+  if (allowMutations && mutations.length) {
+    await mutate(selector.name, client, mutations, handleMutations, oldSchema)
+  }
+
+  return mutations
 }

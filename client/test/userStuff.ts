@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start, startOrigin } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -20,7 +19,7 @@ test.before(async (t) => {
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE'] } },
+          title: { type: 'text' },
         },
       },
       club: {

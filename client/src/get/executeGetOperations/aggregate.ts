@@ -1,10 +1,5 @@
-import { SelvaClient } from '../../'
-import {
-  GetOperationAggregate,
-  GetResult,
-  GetOptions,
-  GetOperationFind,
-} from '../types'
+import { Schema, SelvaClient } from '../../'
+import { GetOperationAggregate, GetOperationFind } from '../types'
 import { findIds } from './find'
 import {
   ast2rpn,
@@ -14,15 +9,13 @@ import {
   convertNow,
 } from '@saulx/selva-query-ast-parser'
 import {
-  typeCast,
   executeNestedGetOperations,
   ExecContext,
   sourceFieldToDir,
   sourceFieldToFindArgs,
   addMarker,
 } from './'
-import { padId, joinIds } from '../utils'
-import { getNestedSchema, setNestedResult } from '../utils'
+import { padId, joinIds, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 import { deepCopy } from '@saulx/utils'
 
@@ -215,7 +208,8 @@ const executeAggregateOperation = async (
   client: SelvaClient,
   op: GetOperationAggregate,
   lang: string,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedSchema?: Schema
 ): Promise<number> => {
   if (op.nested) {
     const findProps: any = deepCopy(op.props)
@@ -235,9 +229,8 @@ const executeAggregateOperation = async (
       options: op.options,
     }
 
-    let ids = await findIds(client, findOp, lang, ctx)
+    let ids = await findIds(client, findOp, lang, ctx, passedSchema)
     let nestedOperation = op.nested
-    let prevIds = ids
     while (nestedOperation) {
       ids = await findIds(
         client,
@@ -246,9 +239,9 @@ const executeAggregateOperation = async (
           id: joinIds(ids),
         }),
         lang,
-        ctx
+        ctx,
+        passedSchema
       )
-      prevIds = ids
 
       nestedOperation = nestedOperation.nested
     }

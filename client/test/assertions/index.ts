@@ -32,6 +32,7 @@ const deepSort = (a: any, b: any): void => {
               return 0
             }
           }
+          // eslint-disable-next-line
           for (let k in a) {
             if (b[k] < a[k]) {
               return -1

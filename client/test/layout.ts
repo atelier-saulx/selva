@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -18,37 +17,37 @@ test.before(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
-          title: { type: 'text', search: true },
-          description: { type: 'text', search: true },
+          name: { type: 'string' },
+          title: { type: 'text' },
+          description: { type: 'text' },
         },
       },
       sport: {
         prefix: 'sp',
         fields: {
-          title: { type: 'text', search: true },
-          name: { type: 'string', search: { type: ['TAG'] } },
+          title: { type: 'text' },
+          name: { type: 'string' },
         },
       },
       club: {
         prefix: 'cl',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       team: {
         prefix: 'te',
         fields: {
-          title: { type: 'text', search: true },
-          name: { type: 'string', search: { type: ['TAG'] } },
+          title: { type: 'text' },
+          name: { type: 'string' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text', search: true },
-          end: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          start: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          title: { type: 'text' },
+          end: { type: 'number' },
+          start: { type: 'number' },
         },
       },
     },

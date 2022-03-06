@@ -2,7 +2,6 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
-import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -19,9 +18,6 @@ test.before(async (t) => {
         fields: {
           roles: {
             type: 'set',
-            search: {
-              type: ['TAG'],
-            },
             items: {
               type: 'string',
             },
@@ -66,7 +62,7 @@ test.serial('search user roles', async (t) => {
     roles: ['club', 'club:id1'],
   })
 
-  const id = await client.set({
+  await client.set({
     type: 'user',
     roles: ['club', 'club:id2'],
   })
@@ -157,7 +153,7 @@ test.serial('search user roles', async (t) => {
 test.serial('search user numbers', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
-  const id = await client.set({
+  await client.set({
     type: 'user',
     numbers: [1, 2.4, 3, 4],
     sinks: [1, 7.0, 4.5, 8.25],

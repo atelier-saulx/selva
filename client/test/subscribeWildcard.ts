@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -27,18 +26,17 @@ test.beforeEach(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
-          thing: { type: 'string', search: { type: ['EXISTS'] } },
+          name: { type: 'string' },
+          thing: { type: 'string' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
           description: { type: 'text' },
           value: {
             type: 'number',
-            search: { type: ['NUMERIC', 'SORTABLE', 'EXISTS'] },
           },
           record: {
             type: 'record',
@@ -68,14 +66,15 @@ test.beforeEach(async (t) => {
               },
             },
           },
-          status: { type: 'number', search: { type: ['NUMERIC'] } },
+          status: { type: 'number' },
         },
       },
     },
   })
 
   // A small delay is needed after setting the schema
-  await new Promise((r) => setTimeout(r, 100))
+
+  await wait(100)
 
   await client.destroy()
 })
@@ -164,7 +163,7 @@ test.serial('sub find - list with wildcard', async (t) => {
   })
 
   let cnt = 0
-  const sub = obs.subscribe((v) => {
+  obs.subscribe((v) => {
     if (cnt === 0) {
       t.deepEqualIgnoreOrder(v, {
         id: 'root',
@@ -216,7 +215,7 @@ test.serial('sub find - list with wildcard', async (t) => {
   const [sid] = await client.redis.selva_subscriptions_list(
     '___selva_hierarchy'
   )
-  console.log(
+  console.info(
     'SUB',
     await client.redis.selva_subscriptions_debug('___selva_hierarchy', sid)
   )
@@ -277,8 +276,7 @@ test.serial('sub find - single with wildcard', async (t) => {
   })
 
   let cnt = 0
-  const sub = obs.subscribe((v) => {
-    console.log('VVV', JSON.stringify(v, null, 2))
+  obs.subscribe((v) => {
     if (cnt === 0) {
       t.deepEqualIgnoreOrder(v, {
         id: 'ma1',

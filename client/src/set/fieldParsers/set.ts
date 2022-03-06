@@ -31,7 +31,8 @@ export default async (
   payload: SetOptions,
   result: (string | Buffer)[],
   fields: FieldSchemaArrayLike,
-  type: string
+  type: string,
+  lang: string
 ): Promise<number> => {
   const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
   if (!typeSchema) {
@@ -60,8 +61,8 @@ export default async (
         // type
         OPT_SET_TYPE.double,
         // verify
-        // eslint-disable-next-line no-sequences
         async (v: SetOptions) => (
+          // eslint-disable-next-line no-sequences
           await parser(client, schema, 'value', v, [], fields, type), v
         ),
         // toCArr
@@ -75,8 +76,8 @@ export default async (
         // type
         OPT_SET_TYPE.long_long,
         // verify
-        // eslint-disable-next-line no-sequences
         async (v: SetOptions) => (
+          // eslint-disable-next-line no-sequences
           await parser(client, schema, 'value', v, [], fields, type), v
         ),
         // toCArr
@@ -107,6 +108,14 @@ export default async (
           // TODO: do these modify commands recursively and then populate the ids here
           // r.$add = [await parseSetObject(client, payload[k], schema)]
         } else {
+          if (
+            client.validator &&
+            !client.validator(schema, type, field.split('.'), r.$add, lang)
+          ) {
+            throw new Error(
+              'Wrong payload for "set.$add" from custom validator'
+            )
+          }
           r.$add = await verifySimple(payload[k], verify)
         }
       } else if (k === '$delete') {
@@ -133,6 +142,12 @@ export default async (
       })
     )
   } else {
+    if (
+      client.validator &&
+      !client.validator(schema, type, field.split('.'), payload, lang)
+    ) {
+      throw new Error('Wrong payload for "set" from custom validator')
+    }
     const value = await verifySimple(payload, verify)
     result.push(
       '5',
