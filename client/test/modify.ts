@@ -169,6 +169,23 @@ test.before(async (t) => {
                     },
                   },
                 },
+                nestedObjArray: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      hello: { type: 'string' },
+                      value: { type: 'int' },
+                      location: {
+                        type: 'object',
+                        properties: {
+                          lat: { type: 'number' },
+                          lon: { type: 'number' },
+                        },
+                      },
+                    },
+                  },
+                },
                 hello: {
                   type: 'string',
                 },
@@ -1882,6 +1899,32 @@ test.serial('set - push into array', async (t) => {
             value: 3,
           },
         ],
+        nestedObjArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+            location: {
+              lat: 1,
+              lon: 1,
+            },
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+            location: {
+              lat: 2,
+              lon: 2,
+            },
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+            location: {
+              lat: 3,
+              lon: 3,
+            },
+          },
+        ],
       },
     },
   })
@@ -1933,6 +1976,16 @@ test.serial('set - push into array', async (t) => {
             value: 7,
           },
         },
+        nestedObjArray: {
+          $push: {
+            hello: 'yes 7',
+            value: 7,
+            location: {
+              lat: 7,
+              lon: 7,
+            },
+          },
+        },
       },
     },
   })
@@ -1975,6 +2028,40 @@ test.serial('set - push into array', async (t) => {
             {
               hello: 'yes 7',
               value: 7,
+            },
+          ],
+          nestedObjArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+              location: {
+                lat: 1,
+                lon: 1,
+              },
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+              location: {
+                lat: 2,
+                lon: 2,
+              },
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+              location: {
+                lat: 3,
+                lon: 3,
+              },
+            },
+            {
+              hello: 'yes 7',
+              value: 7,
+              location: {
+                lat: 7,
+                lon: 7,
+              },
             },
           ],
         },
