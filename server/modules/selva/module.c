@@ -1165,8 +1165,7 @@ SELVA_EXPORT int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **arg
         return REDISMODULE_ERR;
     }
 
-    /* TODO Fix the command creation modes */
-    if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+    if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
