@@ -248,7 +248,6 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaHierarchyN
      */
     dst_node_metadata = SelvaHierarchy_GetNodeMetadataByPtr(dst_node);
 
-    /* TODO can we avoid crashing in the following error cases? */
     if (!dst_node_metadata->edge_fields.origins) {
         /* The edge origin refs struct is initialized lazily. */
         dst_node_metadata->edge_fields.origins = SelvaObject_New();
@@ -258,6 +257,7 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaHierarchyN
             abort();
         }
     }
+
     err = SelvaObject_AddArrayStr(dst_node_metadata->edge_fields.origins,
                                   src_edge_field->src_node_id, SELVA_NODE_ID_SIZE,
                                   SELVA_OBJECT_POINTER, src_edge_field);
@@ -578,10 +578,7 @@ static void remove_related_edge_markers(
                   SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) &&
                 src_marker->sub == dst_marker->sub &&
                 !memcmp(src_marker->node_id, src_node_id, SELVA_NODE_ID_SIZE)) {
-                /* RFE Is it a bit ugly to do this here? */
-                /* TODO Should it be dst_node or src_node here? */
                 dst_marker->marker_action(ctx, hierarchy, dst_marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY, dst_node);
-
                 (void)SelvaSubscriptions_DeleteMarkerByPtr(ctx, hierarchy, dst_marker);
             }
         }
@@ -611,8 +608,6 @@ int Edge_Delete(
      */
     if (ctx) {
         remove_related_edge_markers(ctx, hierarchy, src_node, dst_node);
-        /* TODO We should probably clear from the dst? */
-        /* TODO We don't probably need to clear all markers, just those that are using the same traversal. */
         SelvaSubscriptions_ClearAllMarkers(ctx, hierarchy, src_node);
     }
 
@@ -895,7 +890,6 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
     }
 
     if (!constraint) {
-        /* TODO Better error message */
         RedisModule_LogIOError(io, "warning", "Constraint not found");
         return NULL;
     }
