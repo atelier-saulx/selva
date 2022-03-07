@@ -657,22 +657,10 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
  * Calculate new score for a given ICB to be used with the top_indices poptop.
  */
 static float calc_icb_score(const struct SelvaFindIndexControlBlock *icb) {
-    float pop_count = icb->pop_count.ave;
-    float res_set_size;
-    float tot_max;
+    const float pop_count = icb->pop_count.ave;
+    const float take = (icb->flags.valid) ? icb->find_acc.ind_take_max_ave : icb->find_acc.take_max_ave;
 
-    if (icb->flags.valid) {
-        res_set_size = icb->find_acc.ind_take_max_ave;
-        tot_max = max(icb->find_acc.tot_max_ave, (float)SelvaSet_Size(&icb->res));
-    } else {
-        res_set_size = icb->find_acc.take_max_ave;
-        tot_max = icb->find_acc.tot_max_ave;
-    }
-
-#if 0
-    return pow(1.0f - res_set_size / tot_max, 1.0f / 3.0f) * pop_count;
-#endif
-    return (1.0f - res_set_size / tot_max) * pop_count;
+    return pop_count * take;
 }
 
 /**
