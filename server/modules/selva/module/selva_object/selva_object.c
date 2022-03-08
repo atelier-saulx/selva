@@ -1581,7 +1581,7 @@ size_t SelvaObject_GetArrayLenStr(struct SelvaObject *obj, const char *key_name_
         return 0;
     }
 
-    return vec->vec_last;
+    return SVector_Size(vec);
 }
 
 size_t SelvaObject_GetArrayLen(struct SelvaObject *obj, const RedisModuleString *key_name) {
