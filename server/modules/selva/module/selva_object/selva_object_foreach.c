@@ -26,7 +26,7 @@ int SelvaObject_ArrayForeach(
 
         SVector_ForeachBegin(&it, vec);
         do {
-            void *p;
+            const void *p;
             union SelvaObjectArrayForeachValue v;
 
             p = SVector_Foreach(&it);
@@ -42,7 +42,7 @@ int SelvaObject_ArrayForeach(
 
         SVector_ForeachBegin(&it, vec);
         do {
-            void *p;
+            const void *p;
             union SelvaObjectArrayForeachValue v;
 
             p = SVector_Foreach(&it);
