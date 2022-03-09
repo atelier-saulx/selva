@@ -9,8 +9,10 @@
 #include "tree.h"
 #include "trx.h"
 #include "edge.h"
-#include "subscriptions.h"
 #include "poptop.h"
+#include "selva_object.h"
+#include "selva_set.h"
+#include "subscriptions.h"
 
 #define HIERARCHY_ENCODING_VERSION  4
 
@@ -217,16 +219,6 @@ struct SelvaHierarchyCallback {
     enum SelvaHierarchyCallbackFlags {
         SELVA_HIERARCHY_CALLBACK_FLAGS_INHIBIT_RESTORE = 0x01,
     } flags;
-};
-
-typedef int (*SelvaModify_ArrayObjectCallback)(struct SelvaObject *obj, void *arg);
-
-/**
- * Callback descriptor for array traversals.
- */
-struct SelvaModify_ArrayObjectCallback {
-    SelvaModify_ArrayObjectCallback node_cb;
-    void * node_arg;
 };
 
 /**
@@ -490,12 +482,25 @@ int SelvaHierarchy_TraverseExpressionBfs(
         struct rpn_ctx *edge_filter_ctx,
         const struct rpn_expression *edge_filter,
         const struct SelvaHierarchyCallback *cb);
-int SelvaModify_TraverseArray(
+/**
+ * Foreach value in an array field.
+ */
+int SelvaHierarchy_TraverseArray(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
-        const char *ref_field_str,
-        size_t ref_field_len,
-        const struct SelvaModify_ArrayObjectCallback *cb);
+        const char *field_str,
+        size_t field_len,
+        const struct SelvaObjectArrayForeachCallback *cb);
+/**
+ * Foreach value in a set field.
+ */
+int SelvaHierarchy_TraverseSet(
+        SelvaHierarchy *hierarchy,
+        const Selva_NodeId id,
+        const char *field_str,
+        size_t field_len,
+        const struct SelvaObjectSetForeachCallback *cb);
+
 int SelvaHierarchy_IsNonEmptyField(const struct SelvaHierarchyNode *node, const char *field_str, size_t field_len);
 
 /*

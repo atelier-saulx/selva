@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include "selva_set.h"
 
 /*
  * Object key types.
@@ -293,6 +294,52 @@ void *SelvaObject_ForeachValueType(
         void **iterator,
         const char **name_out,
         enum SelvaObjectType *type_out);
+
+union SelvaObjectArrayForeachValue {
+    double d;
+    long long ll;
+    struct RedisModuleString *rms;
+    struct SelvaObject *obj;
+};
+
+typedef int (*SelvaObjectArrayForeachCallback)(union SelvaObjectArrayForeachValue value, enum SelvaObjectType subtype, void *arg);
+
+struct SelvaObjectArrayForeachCallback {
+    SelvaObjectArrayForeachCallback cb;
+    void * cb_arg;
+};
+
+/**
+ * Foreach value in an array field of an object.
+ */
+int SelvaObject_ArrayForeach(
+        struct SelvaObject *obj,
+        const char *field_str,
+        size_t field_len,
+        const struct SelvaObjectArrayForeachCallback *cb);
+
+union SelvaObjectSetForeachValue {
+    struct RedisModuleString *rms;
+    double d;
+    long long ll;
+    Selva_NodeId node_id;
+};
+
+typedef int (*SelvaObjectSetForeachCallback)(union SelvaObjectSetForeachValue value, enum SelvaSetType type, void *arg);
+
+struct SelvaObjectSetForeachCallback {
+    SelvaObjectSetForeachCallback cb;
+    void *cb_arg;
+};
+
+/**
+ * Foereach value in a set field of an object.
+ */
+int SelvaObject_SetForeach(
+        struct SelvaObject *obj,
+        const char *field_str,
+        size_t field_len,
+        const struct SelvaObjectSetForeachCallback *cb);
 
 /**
  * Get a string name of a SelvaObjectType.
