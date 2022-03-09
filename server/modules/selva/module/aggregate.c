@@ -274,10 +274,18 @@ static int AggregateCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
     return 0;
 }
 
-static int AggregateCommand_ArrayNodeCb(struct SelvaObject *obj, void *arg) {
+static int AggregateCommand_ArrayObjectCb(union SelvaObjectArrayForeachValue value, enum SelvaObjectType subtype, void *arg) {
+    struct SelvaObject *obj = value.obj;
     struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->find_args.rpn_ctx;
     int take = (args->find_args.offset > 0) ? !args->find_args.offset-- : 1;
+
+    if (subtype != SELVA_OBJECT_OBJECT) {
+        fprintf(stderr, "%s:%d: Array subtype not supported: %s\n",
+                __FILE__, __LINE__,
+                SelvaObject_Type2String(subtype, NULL));
+        return 1;
+    }
 
     if (take && rpn_ctx) {
         int err;
@@ -744,13 +752,13 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         }
 
         if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
-            const struct SelvaModify_ArrayObjectCallback ary_cb = {
-                .node_cb = AggregateCommand_ArrayNodeCb,
-                .node_arg = &args,
+            const struct SelvaObjectArrayForeachCallback ary_cb = {
+                .cb = AggregateCommand_ArrayObjectCb,
+                .cb_arg = &args,
             };
             TO_STR(ref_field);
 
-            err = SelvaModify_TraverseArray(hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
+            err = SelvaHierarchy_TraverseArray(hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
         } else if (ref_field &&
                    (dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
                            SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |

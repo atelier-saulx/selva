@@ -33,6 +33,7 @@ OBJS := \
 	module/selva_lang.o \
 	module/selva_object/selva_object.o \
 	module/selva_object/selva_object_commands.o \
+	module/selva_object/selva_object_foreach.o \
 	module/selva_set.o \
 	module/selva_trace.o \
 	module/selva_type.o \

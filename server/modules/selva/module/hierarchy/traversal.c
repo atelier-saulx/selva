@@ -38,6 +38,8 @@ int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const RedisModuleString *
         *dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
     } else if (!strcmp("array", arg_str)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_ARRAY;
+    } else if (!strcmp("set", arg_str)) {
+        *dir = SELVA_HIERARCHY_TRAVERSAL_SET;
     } else if (!strcmp("children", arg_str)) {
         *dir = SELVA_HIERARCHY_TRAVERSAL_CHILDREN;
     } else if (!strcmp("parents", arg_str)) {
@@ -433,6 +435,8 @@ const char *SelvaTraversal_Dir2str(enum SelvaTraversal dir) {
         return (const char *)"node";
     case SELVA_HIERARCHY_TRAVERSAL_ARRAY:
         return (const char *)"array";
+    case SELVA_HIERARCHY_TRAVERSAL_SET:
+        return (const char *)"set";
     case SELVA_HIERARCHY_TRAVERSAL_CHILDREN:
         return (const char *)"children";
     case SELVA_HIERARCHY_TRAVERSAL_PARENTS:
