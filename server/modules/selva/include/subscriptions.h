@@ -345,7 +345,11 @@ void SelvaSubscriptions_ClearAllMarkers(
  * @param node is a pointer to the node the filter should be executed against.
  * @param marker is a pointer to the subscription marker.
  */
-int Selva_SubscriptionFilterMatch(struct RedisModuleCtx *ctx, const struct SelvaHierarchyNode *node, struct Selva_SubscriptionMarker *marker);
+int Selva_SubscriptionFilterMatch(
+        struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        const struct SelvaHierarchyNode *node,
+        struct Selva_SubscriptionMarker *marker);
 
 /**
  * Destroy all deferred events.

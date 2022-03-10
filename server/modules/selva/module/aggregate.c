@@ -213,7 +213,7 @@ static int AggregateCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
 
         /* Set node_id to the register */
         rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
-        rpn_set_hierarchy_node(rpn_ctx, node);
+        rpn_set_hierarchy_node(rpn_ctx, args->find_args.hierarchy, node);
         rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
 
         /*
@@ -702,7 +702,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         .aggregation_result_int = 0,
         .aggregation_result_double = initial_double_val,
         .item_count = 0,
-        /* .find_args = find_args */
+        /* .hierarchyfind_args = find_args */
     };
 
     ssize_t nr_nodes = 0;
@@ -789,7 +789,8 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             .find_args = {
                 /* we always need context. */
                 .ctx = ctx,
-                .send_param.fields = fields
+                .hierarchy = hierarchy,
+                .send_param.fields = fields,
             }
         };
 
@@ -1048,6 +1049,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .find_args = {
                 /* we always need context */
                 .ctx = ctx,
+                .hierarchy = hierarchy,
                 .send_param.fields = fields,
                 .send_param.excluded_fields = NULL,
             }
