@@ -124,7 +124,7 @@ typedef void Selva_SubscriptionMarkerAction(
         struct SelvaHierarchy *hierarchy,
         struct Selva_SubscriptionMarker *marker,
         unsigned short event_flags,
-        const struct SelvaHierarchyNode *node);
+        struct SelvaHierarchyNode *node);
 
 /**
  * Subscription marker.
@@ -348,7 +348,7 @@ void SelvaSubscriptions_ClearAllMarkers(
 int Selva_SubscriptionFilterMatch(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node,
+        struct SelvaHierarchyNode *node,
         struct Selva_SubscriptionMarker *marker);
 
 /**
@@ -399,19 +399,19 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaHierarchy *hierar
 void SelvaSubscriptions_DeferHierarchyEvents(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node);
+        struct SelvaHierarchyNode *node);
 void SelvaSubscriptions_DeferHierarchyDeletionEvents(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node);
+        struct SelvaHierarchyNode *node);
 void SelvaSubscriptions_FieldChangePrecheck(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node);
+        struct SelvaHierarchyNode *node);
 void SelvaSubscriptions_DeferFieldChangeEvents(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node,
+        struct SelvaHierarchyNode *node,
         const char *field_str,
         size_t field_len);
 void SelvaSubscriptions_DeferAliasChangeEvents(
@@ -421,7 +421,7 @@ void SelvaSubscriptions_DeferAliasChangeEvents(
 void SelvaSubscriptions_DeferTriggerEvents(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node,
+        struct SelvaHierarchyNode *node,
         enum Selva_SubscriptionTriggerType event_type);
 void SelvaSubscriptions_SendDeferredEvents(struct SelvaHierarchy *hierarchy);
 

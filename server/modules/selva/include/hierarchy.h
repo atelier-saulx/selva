@@ -452,6 +452,10 @@ static inline int SelvaHierarchy_NodeExists(SelvaHierarchy *hierarchy, const Sel
  */
 ssize_t SelvaModify_GetHierarchyHeads(SelvaHierarchy *hierarchy, Selva_NodeId **res);
 
+void SelvaHierarchy_TraverseChildren(struct SelvaHierarchyNode *node, const struct SelvaHierarchyCallback *cb);
+void SelvaHierarchy_TraverseParents(struct SelvaHierarchyNode *node, const struct SelvaHierarchyCallback *cb);
+int SelvaHierarchy_TraverseBFSAncestors(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, const struct SelvaHierarchyCallback *cb);
+int SelvaHierarchy_TraverseBFSDescendants(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, const struct SelvaHierarchyCallback *cb);
 int SelvaHierarchy_Traverse(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
@@ -497,6 +501,23 @@ int SelvaHierarchy_TraverseArray(
 int SelvaHierarchy_TraverseSet(
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
+        const char *field_str,
+        size_t field_len,
+        const struct SelvaObjectSetForeachCallback *cb);
+/**
+ * Foreach value in a set-like field.
+ * Traverse each value (foreach) in a field.
+ * Supported fields:
+ * - parents
+ * - children
+ * - ancestors
+ * - descendants
+ * - string and numeric array fields
+ * - string and numeric set fields
+ */
+int SelvaHierarchy_ForeachInField(
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
         const char *field_str,
         size_t field_len,
         const struct SelvaObjectSetForeachCallback *cb);
