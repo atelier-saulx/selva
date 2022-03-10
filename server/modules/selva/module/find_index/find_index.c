@@ -239,7 +239,7 @@ static void update_index(
         struct SelvaHierarchy *hierarchy __unused,
         struct Selva_SubscriptionMarker *marker,
         unsigned short event_flags,
-        const struct SelvaHierarchyNode *node) {
+        struct SelvaHierarchyNode *node) {
     struct SelvaFindIndexControlBlock *icb;
 
     /*

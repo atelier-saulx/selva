@@ -911,6 +911,90 @@ static enum rpn_error rpn_op_range(struct RedisModuleCtx *redis_ctx __unused, st
     return push_int_result(ctx, a->d <= b->d && b->d <= c->d);
 }
 
+struct set_has_cb {
+    enum SelvaSetType type;
+    union {
+        struct {
+            const char *buf;
+            size_t len;
+        } str;
+        long long ll;
+        double d;
+    };
+    int found;
+};
+
+static int rpn_op2set_has_cb(struct set_has_cb *cb, const struct rpn_operand *o) {
+    if (OPERAND_GET_SET(o) || OPERAND_GET_OBJ(o)) {
+        return RPN_ERR_TYPE;
+    } else if (isnan(o->d) || o->s_size > 0) { /* Assume string */
+        cb->type = SELVA_SET_TYPE_RMSTRING;
+        cb->str.buf = OPERAND_GET_S(o);
+        cb->str.len = OPERAND_GET_S_LEN(o);
+    } else { /* Assume number */
+        cb->type = SELVA_SET_TYPE_DOUBLE;
+        cb->d = o->d;
+    }
+
+    return 0;
+}
+
+static int set_has_cb(union SelvaObjectSetForeachValue value, enum SelvaSetType type, void *arg) {
+    struct set_has_cb *data = (struct set_has_cb *)arg;
+
+    if (type == SELVA_SET_TYPE_RMSTRING) {
+        size_t len;
+        const char *str = RedisModule_StringPtrLen(value.rms, &len);
+
+        if (data->type != SELVA_SET_TYPE_RMSTRING && data->type != SELVA_SET_TYPE_NODEID) {
+            return 1; /* Type mismatch. */
+        }
+
+        if (data->str.len == len && !memcmp(data->str.buf, str, len)) {
+            return (data->found = 1);
+        }
+    } else if (type == SELVA_SET_TYPE_DOUBLE) {
+        if (data->type == SELVA_SET_TYPE_DOUBLE) {
+            if (data->d == value.d) {
+                return (data->found = 1);
+            }
+        } else if (data->type == SELVA_SET_TYPE_LONGLONG) {
+            if ((double)data->ll == value.d) {
+                return (data->found = 1);
+            }
+        } else {
+            return 1; /* Type mismatch. */
+        }
+    } else if (type == SELVA_SET_TYPE_LONGLONG) {
+        if (data->type == SELVA_SET_TYPE_DOUBLE) {
+            if (data->d == (double)value.ll) {
+                return (data->found = 1);
+            }
+        } else if (data->type == SELVA_SET_TYPE_LONGLONG) {
+            if (data->ll == value.ll) {
+                return (data->found = 1);
+            }
+        } else {
+            return 1; /* Type mismatch. */
+        }
+    } else if (type == SELVA_SET_TYPE_NODEID) {
+        Selva_NodeId node_id;
+
+        if ((data->type != SELVA_SET_TYPE_RMSTRING && data->type != SELVA_SET_TYPE_NODEID)) {
+            return 1; /* Type mismatch. */
+        }
+
+        memset(node_id, '\0', SELVA_NODE_ID_SIZE);
+        memcpy(node_id, data->str.buf, data->str.len);
+
+        if (!memcmp(node_id, value.node_id, SELVA_NODE_ID_SIZE)) {
+            return (data->found = 1);
+        }
+    }
+
+    return 0;
+}
+
 static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     struct SelvaSet *set;
     OPERAND(ctx, s); /* set */
@@ -919,34 +1003,67 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx __unused, stru
     set = OPERAND_GET_SET(s); /* The operand `s` is a set if this gets set. */
     if (!set) {
         /* The operand `s` is a field_name string. */
+        const char *field_name_str = OPERAND_GET_S(s);
+        const size_t field_name_len = OPERAND_GET_S_LEN(s);
+
         if (!ctx->obj) {
             return RPN_ERR_NPE;
         }
 
-        const char *field_name_str = OPERAND_GET_S(s);
-        const size_t field_name_len = OPERAND_GET_S_LEN(s);
+        /*
+         * First check if it's a data field because we can optimize this a bit by
+         * using SelvaSet_Has().
+         */
         set = SelvaObject_GetSetStr(ctx->obj, field_name_str, field_name_len);
-        if (!set) {
-            return push_int_result(ctx, 0);
-        }
     }
 
-    if (set->type == SELVA_SET_TYPE_RMSTRING) {
+    if (set) {
+        if (set->type == SELVA_SET_TYPE_RMSTRING) {
+            /*
+             * We use rms_field here because we don't need it for the field_name in this
+             * function.
+             */
+            if(rpn_operand2rms(&ctx->rms_field, v)) {
+                return RPN_ERR_ENOMEM;
+            }
+
+            return push_int_result(ctx, SelvaSet_Has(set, ctx->rms_field));
+        } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
+            return push_int_result(ctx, SelvaSet_Has(set, v->d));
+        } else if (set->type == SELVA_SET_TYPE_LONGLONG) {
+            return push_int_result(ctx, SelvaSet_Has(set, (long long)v->d));
+        } else {
+            return push_int_result(ctx, 0);
+        }
+    } else {
         /*
-         * We use rms_field here because we don't need it for the field_name in this
-         * function.
+         * Perhaps it's a set-like field.
          */
-        if(rpn_operand2rms(&ctx->rms_field, v)) {
-            return RPN_ERR_ENOMEM;
+        struct set_has_cb data = {
+            .found = 0,
+        };
+        struct SelvaObjectSetForeachCallback cb = {
+            .cb = set_has_cb,
+            .cb_arg = &data,
+        };
+        /* The operand `s` is a field_name string. */
+        const char *field_name_str = OPERAND_GET_S(s);
+        const size_t field_name_len = OPERAND_GET_S_LEN(s);
+        int err;
+
+        /* The operand `s` is a field_name string. */
+        if (!ctx->node) {
+            return RPN_ERR_NPE;
         }
 
-        return push_int_result(ctx, SelvaSet_Has(set, ctx->rms_field));
-    } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
-        return push_int_result(ctx, SelvaSet_Has(set, v->d));
-    } else if (set->type == SELVA_SET_TYPE_LONGLONG) {
-        return push_int_result(ctx, SelvaSet_Has(set, (long long)v->d));
-    } else {
-        return push_int_result(ctx, 0);
+        if (rpn_op2set_has_cb(&data, v)) {
+            return push_int_result(ctx, 0);
+        }
+
+        err = SelvaHierarchy_ForeachInField(ctx->hierarchy, ctx->node, field_name_str, field_name_len, &cb);
+
+        /* TODO Handle some errors? */
+        return push_int_result(ctx, err ? 0 : data.found);
     }
 }
 

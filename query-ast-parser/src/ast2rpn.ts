@@ -140,7 +140,9 @@ export default function ast2rpn(
         out += ` ${valueId} $${fieldId} g ${op}`
       } else if (vType === 'number') {
         out += ` @${valueId} $${fieldId} g ${op}`
-      } else {
+      } else if (vType == 'string' && f.$operator == 'has') {
+        out += ` $${valueId} $${fieldId} ${op}`
+      } else { // Assume we can read the field as a string.
         out += ` $${valueId} $${fieldId} f ${op}`
       }
     } else if (vType == 'boolean') {

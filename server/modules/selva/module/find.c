@@ -935,7 +935,7 @@ static int send_node_object_merge(
 static int exec_fields_expression(
         struct RedisModuleCtx *redis_ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node,
+        struct SelvaHierarchyNode *node,
         struct rpn_ctx *rpn_ctx,
         const struct rpn_expression *expr,
         struct SelvaObject *fields) {
