@@ -206,7 +206,11 @@ static int Selva_SubscriptionFieldMatch(const struct Selva_SubscriptionMarker *m
     return match;
 }
 
-int Selva_SubscriptionFilterMatch(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, struct Selva_SubscriptionMarker *marker) {
+int Selva_SubscriptionFilterMatch(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        struct Selva_SubscriptionMarker *marker) {
     struct rpn_ctx *filter_ctx = marker->filter_ctx;
     int res = 1; /* When no filter is set the result should be true. */
 
