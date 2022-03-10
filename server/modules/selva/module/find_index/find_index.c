@@ -280,7 +280,7 @@ static void update_index(
             SelvaSet_Init(&icb->res, SELVA_SET_TYPE_NODEID);
         }
 
-        if (Selva_SubscriptionFilterMatch(ctx, node, marker)) {
+        if (Selva_SubscriptionFilterMatch(ctx, hierarchy, node, marker)) {
             Selva_NodeId node_id;
 
             SelvaHierarchy_GetNodeId(node_id, node);
@@ -299,7 +299,7 @@ static void update_index(
          * deleting and adding a node. However, we know that currently deleting
          * a node will cause also a SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY event.
          */
-        if (icb->flags.valid && Selva_SubscriptionFilterMatch(ctx, node, marker)) {
+        if (icb->flags.valid && Selva_SubscriptionFilterMatch(ctx, hierarchy, node, marker)) {
             Selva_NodeId node_id;
 
             SelvaHierarchy_GetNodeId(node_id, node);

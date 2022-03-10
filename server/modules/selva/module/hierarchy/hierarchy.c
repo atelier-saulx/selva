@@ -1965,6 +1965,7 @@ static SVector *get_adj_vec(SelvaHierarchyNode *node, const char *field_str, siz
  */
 static int exec_edge_filter(
         struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
         struct rpn_ctx *edge_filter_ctx,
         const struct rpn_expression *edge_filter,
         const SVector *adj_vec,
@@ -1988,7 +1989,7 @@ static int exec_edge_filter(
         int res;
 
         rpn_set_reg(edge_filter_ctx, 0, node->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
-        rpn_set_hierarchy_node(edge_filter_ctx, node);
+        rpn_set_hierarchy_node(edge_filter_ctx, hierarchy, node);
         rpn_set_obj(edge_filter_ctx, edge_metadata);
 
         rpn_err = rpn_bool(ctx, edge_filter_ctx, edge_filter, &res); /* TODO Handle RPN errors. */
@@ -2082,7 +2083,7 @@ static int bfs_expression(
         SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
 
         rpn_set_reg(rpn_ctx, 0, node->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
-        rpn_set_hierarchy_node(rpn_ctx, node);
+        rpn_set_hierarchy_node(rpn_ctx, hierarchy, node);
         rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
         rpn_err = rpn_selvaset(redis_ctx, rpn_ctx, rpn_expr, &fields);
         if (rpn_err) {
@@ -2118,7 +2119,7 @@ static int bfs_expression(
                  */
                 if (field_type == SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD && edge_filter &&
                     !Trx_HasVisited(&trx_cur, &adj->trx_label) && /* skip if already visited. */
-                    !exec_edge_filter(redis_ctx, edge_filter_ctx, edge_filter, adj_vec, adj)) {
+                    !exec_edge_filter(redis_ctx, hierarchy, edge_filter_ctx, edge_filter, adj_vec, adj)) {
                     continue;
                 }
 
@@ -2349,7 +2350,7 @@ int SelvaHierarchy_TraverseExpression(
     SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
 
     rpn_set_reg(rpn_ctx, 0, head->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
-    rpn_set_hierarchy_node(rpn_ctx, head);
+    rpn_set_hierarchy_node(rpn_ctx, hierarchy, head);
     rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(head));
     rpn_err = rpn_selvaset(ctx, rpn_ctx, rpn_expr, &fields);
     if (rpn_err) {
@@ -2384,7 +2385,7 @@ int SelvaHierarchy_TraverseExpression(
              */
             if (field_type == SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD && edge_filter &&
                 !Trx_HasVisited(&trx_cur, &adj->trx_label) && /* skip if already visited. */
-                !exec_edge_filter(ctx, edge_filter_ctx, edge_filter, adj_vec, adj)) {
+                !exec_edge_filter(ctx, hierarchy, edge_filter_ctx, edge_filter, adj_vec, adj)) {
                 continue;
             }
 

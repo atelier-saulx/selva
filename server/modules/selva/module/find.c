@@ -934,6 +934,7 @@ static int send_node_object_merge(
 
 static int exec_fields_expression(
         struct RedisModuleCtx *redis_ctx,
+        struct SelvaHierarchy *hierarchy,
         const struct SelvaHierarchyNode *node,
         struct rpn_ctx *rpn_ctx,
         const struct rpn_expression *expr,
@@ -946,7 +947,7 @@ static int exec_fields_expression(
 
     SelvaHierarchy_GetNodeId(nodeId, node);
     rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
-    rpn_set_hierarchy_node(rpn_ctx, node);
+    rpn_set_hierarchy_node(rpn_ctx, hierarchy, node);
     rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
 
     SelvaSet_Init(&set, SELVA_SET_TYPE_RMSTRING);
@@ -993,7 +994,7 @@ static int print_node(
         if (!fields) {
             err = SELVA_ENOMEM;
         } else {
-            err = exec_fields_expression(ctx, node, args->fields_rpn_ctx, args->fields_expression, fields);
+            err = exec_fields_expression(ctx, hierarchy, node, args->fields_rpn_ctx, args->fields_expression, fields);
             if (!err) {
                 err = send_node_fields(ctx, lang, hierarchy, node, fields, args->excluded_fields);
             }
@@ -1023,7 +1024,7 @@ static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) 
 
         /* Set node_id to the register */
         rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
-        rpn_set_hierarchy_node(rpn_ctx, node);
+        rpn_set_hierarchy_node(rpn_ctx, args->hierarchy, node);
         rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
 
         /*
