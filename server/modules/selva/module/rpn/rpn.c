@@ -918,7 +918,6 @@ struct set_has_cb {
             const char *buf;
             size_t len;
         } str;
-        long long ll;
         double d;
     };
     int found;
@@ -954,28 +953,20 @@ static int set_has_cb(union SelvaObjectSetForeachValue value, enum SelvaSetType 
             return (data->found = 1);
         }
     } else if (type == SELVA_SET_TYPE_DOUBLE) {
-        if (data->type == SELVA_SET_TYPE_DOUBLE) {
-            if (data->d == value.d) {
-                return (data->found = 1);
-            }
-        } else if (data->type == SELVA_SET_TYPE_LONGLONG) {
-            if ((double)data->ll == value.d) {
-                return (data->found = 1);
-            }
-        } else {
+        if (data->type != SELVA_SET_TYPE_DOUBLE) {
             return 1; /* Type mismatch. */
         }
+
+        if (data->d == value.d) {
+            return (data->found = 1);
+        }
     } else if (type == SELVA_SET_TYPE_LONGLONG) {
-        if (data->type == SELVA_SET_TYPE_DOUBLE) {
-            if (data->d == (double)value.ll) {
-                return (data->found = 1);
-            }
-        } else if (data->type == SELVA_SET_TYPE_LONGLONG) {
-            if (data->ll == value.ll) {
-                return (data->found = 1);
-            }
-        } else {
+        if (data->type != SELVA_SET_TYPE_DOUBLE) {
             return 1; /* Type mismatch. */
+        }
+
+        if (data->d == (double)value.ll) {
+            return (data->found = 1);
         }
     } else if (type == SELVA_SET_TYPE_NODEID) {
         Selva_NodeId node_id;
