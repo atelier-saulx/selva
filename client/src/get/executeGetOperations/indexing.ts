@@ -38,9 +38,11 @@ function ast2inlineRpn(schema: Schema, f: FilterAST | null): string | null {
     case 'has':
       if (typeof f.$value === 'string') {
         return `"${f.$value}" "${f.$field}" a`
-      } else {
-        // numeric
+      } else if (typeof f.$value === 'number') {
         return `#${f.$value} "${f.$field}" a`
+      } else if (Array.isArray(f.$value)) {
+        // TODO
+        return null
       }
     case 'exists':
       return `"${f.$field}" h`
