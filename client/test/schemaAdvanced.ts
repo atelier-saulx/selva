@@ -1045,6 +1045,50 @@ test.only('schemas - validate array', async (t) => {
     })
   )
 
+  t.throwsAsync(
+    client.updateSchema({
+      languages: ['en'],
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            list: {
+              // @ts-ignore
+              type: 'array',
+              values: {
+                type: 'object',
+                properties: {
+                  flap: { type: 'number' },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+  )
+
+  // correct!
+  client.updateSchema({
+    languages: ['en'],
+    types: {
+      thing: {
+        prefix: 'th',
+        fields: {
+          list: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                flap: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
   console.info('hello')
 
   await wait(1000)

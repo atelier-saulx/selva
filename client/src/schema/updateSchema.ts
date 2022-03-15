@@ -23,7 +23,18 @@ function validateNewFields(obj: TypeSchema | FieldSchema, path: string) {
 
   if ((<any>obj).type) {
     const field = <FieldSchema>obj
-    if (
+
+    if (field.type === 'array') {
+      const keys = Object.keys(field)
+      for (const k of keys) {
+        if (!(k === 'meta' || k === 'type' || k === 'items')) {
+          throw new Error(`Wrong field passed for type array on schema (${k}))`)
+        }
+      }
+      if (field.items) {
+        validateNewFields(field.items, `${path}.*`)
+      }
+    } else if (
       field.type === 'object' ||
       (field.type === 'json' && field.properties)
     ) {
@@ -285,6 +296,15 @@ function newFieldDefinition(
     })
   }
 
+  if (newField && newField.type === 'array') {
+    const keys = Object.keys(newField)
+    for (const k of keys) {
+      if (!(k === 'meta' || k === 'type' || k === 'items')) {
+        throw new Error(`Wrong field passed for type array on schema (${k}))`)
+      }
+    }
+  }
+
   if (
     oldField.type === 'object' ||
     (oldField.type === 'json' && oldField.properties)
@@ -326,6 +346,7 @@ function newFieldDefinition(
     return result
   } else if (
     (oldField.type === 'set' || oldField.type === 'array') &&
+    oldField.items &&
     oldField.items.type !== (<any>newField).items.type
   ) {
     // add mutation
