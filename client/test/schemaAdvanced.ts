@@ -1015,7 +1015,7 @@ test.serial('schemas - migrate object', async (t) => {
   t.pass()
 })
 
-test.only('schemas - validate array', async (t) => {
+test.serial('schemas - validate array', async (t) => {
   const port = await getPort()
   const server = await start({
     port,
