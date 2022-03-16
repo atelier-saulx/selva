@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -20,7 +20,6 @@ typedef uint64_t trxid_t;
 struct trx_state {
     trxid_t id; /*!< Id of the transaction. */
     trxid_t cl; /*!< Colors used in the transaction. */
-    trxid_t ex; /*!< Traversals that have finished. */
 };
 
 /**
@@ -31,7 +30,7 @@ struct trx_state {
  */
 struct trx {
     trxid_t id; /*!< Id of the currently executing transaction. */
-    trxid_t cl; /*!< Color of the currently executing traversal. */
+    trxid_t cl; /*!< Color of the currently executing traversal. A single bit. */
 };
 
 /**
