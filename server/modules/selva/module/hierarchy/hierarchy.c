@@ -1880,13 +1880,13 @@ out:
     \
     Trx_Visit(&trx_cur, &(head)->trx_label); \
     SVector_Insert(&_bfs_q, (head)); \
-    if (head_cb((head), (cb)->head_arg)) { Trx_End(&hierarchy->trx_state, &trx_cur); return 0; } \
+    if (head_cb((head), (cb)->head_arg)) { Trx_End(&(hierarchy)->trx_state, &trx_cur); return 0; } \
     while (SVector_Size(&_bfs_q) > 0) { \
         SelvaHierarchyNode *node = SVector_Shift(&_bfs_q);
 
 #define BFS_VISIT_NODE() \
         if (node_cb(node, cb->node_arg)) { \
-            Trx_End(&hierarchy->trx_state, &trx_cur); \
+            Trx_End(&(hierarchy)->trx_state, &trx_cur); \
             return 0; \
         }
 
@@ -2369,6 +2369,7 @@ int SelvaHierarchy_TraverseExpression(
     rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(head));
     rpn_err = rpn_selvaset(ctx, rpn_ctx, rpn_expr, &fields);
     if (rpn_err) {
+        Trx_End(&hierarchy->trx_state, &trx_cur);
         fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE, head->id,
