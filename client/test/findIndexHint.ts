@@ -90,7 +90,7 @@ test.serial('create and destroy an index', async (t) => {
 
   t.deepEqual(
     (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
-    [ 'root.I.InZhbHVlIiBnICMyMCBJ', '20' ]
+    [ 'root.J.InZhbHVlIiBnICMyMCBJ', '20' ]
   )
 
   await client.redis.selva_index_del('___selva_hierarchy', 'root.I.InZhbHVlIiBnICMyMCBJ')
@@ -238,6 +238,6 @@ test.serial('traversal expression with index', async (t) => {
 
   t.deepEqual(
     (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
-    [ `${id}.N.eyJwYXJlbnRzIiwiY2hpbGRyZW4ifQ==.IzQgInZhbHVlIiBnIEU=`, '674' ]
+    [ `${id}.O.eyJwYXJlbnRzIiwiY2hpbGRyZW4ifQ==.IzQgInZhbHVlIiBnIEU=`, '674' ]
   )
 })
