@@ -249,6 +249,12 @@ function newTypeDefinition(
     )
   }
 
+  if (newType.meta) {
+    typeDef.meta = newType.meta
+  } else if (oldType.meta) {
+    typeDef.meta = oldType.meta
+  }
+
   for (const fieldName in oldType.fields) {
     if (newType.fields && newType.fields[fieldName]) {
       typeDef.fields[fieldName] = newFieldDefinition(

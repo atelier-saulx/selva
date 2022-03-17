@@ -148,6 +148,7 @@ export type InputTypeSchema = {
   hierarchy?: HierarchySchema
   fields?: InputFields
   $delete?: true
+  meta?: any
 }
 
 export type SchemaDelOpts = {
@@ -182,6 +183,7 @@ export type TypeSchema = {
   prefix?: string
   hierarchy?: HierarchySchema
   fields?: Fields
+  meta?: any
 }
 
 export type Types = { [key: string]: TypeSchema }
