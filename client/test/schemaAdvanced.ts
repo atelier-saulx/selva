@@ -1014,3 +1014,88 @@ test.serial('schemas - migrate object', async (t) => {
 
   t.pass()
 })
+
+test.serial('schemas - validate array', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+
+  t.throwsAsync(
+    client.updateSchema({
+      languages: ['en'],
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            list: {
+              // @ts-ignore
+              type: 'array',
+              fields: {
+                type: 'object',
+                properties: {
+                  flap: { type: 'number' },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+  )
+
+  t.throwsAsync(
+    client.updateSchema({
+      languages: ['en'],
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            list: {
+              // @ts-ignore
+              type: 'array',
+              values: {
+                type: 'object',
+                properties: {
+                  flap: { type: 'number' },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+  )
+
+  // correct!
+  client.updateSchema({
+    languages: ['en'],
+    types: {
+      thing: {
+        prefix: 'th',
+        fields: {
+          list: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                flap: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  console.info('hello')
+
+  await wait(1000)
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})
