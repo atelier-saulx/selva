@@ -298,11 +298,13 @@ test.serial('createdAt+updatedAt are set', async (t) => {
   })
 
   const before = Date.now()
+  await wait(10)
   const person = await client.set({
     $language: 'en',
     type: 'person',
     title: 'yesh',
   })
+  await wait(10)
   const after = Date.now()
 
   const result = await client.get({
