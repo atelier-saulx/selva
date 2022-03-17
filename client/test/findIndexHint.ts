@@ -93,7 +93,7 @@ test.serial('create and destroy an index', async (t) => {
     [ 'root.J.InZhbHVlIiBnICMyMCBJ', '20' ]
   )
 
-  await client.redis.selva_index_del('___selva_hierarchy', 'root.I.InZhbHVlIiBnICMyMCBJ')
+  await client.redis.selva_index_del('___selva_hierarchy', 'root.J.InZhbHVlIiBnICMyMCBJ')
   t.deepEqual(
     (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
     []
@@ -111,13 +111,13 @@ test.serial('create and destroy an index', async (t) => {
 
   t.deepEqual(
     (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
-    [ 'root.I.InZhbHVlIiBnICMyMCBJ', '20' ]
+    [ 'root.J.InZhbHVlIiBnICMyMCBJ', '20' ]
   )
 
-  await client.redis.selva_index_del('___selva_hierarchy', 'root.I.InZhbHVlIiBnICMyMCBJ', 1)
+  await client.redis.selva_index_del('___selva_hierarchy', 'root.J.InZhbHVlIiBnICMyMCBJ', 1)
   t.deepEqual(
     (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
-    [ 'root.I.InZhbHVlIiBnICMyMCBJ', 'not_active' ]
+    [ 'root.J.InZhbHVlIiBnICMyMCBJ', 'not_active' ]
   )
 })
 
