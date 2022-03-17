@@ -41,7 +41,18 @@ function ast2inlineRpn(schema: Schema, f: FilterAST | null): string | null {
       } else if (typeof f.$value === 'number') {
         return `#${f.$value} "${f.$field}" a`
       } else if (Array.isArray(f.$value)) {
-        // TODO
+        if (typeof f.$value[0] === 'string') {
+          if (f.$value.some((v: string) => v.includes('"'))) {
+            // We can't inline quotes at the moment
+            return null
+          }
+
+          const a = `{${f.$value.map((v) => `"${v}"`).join(',')}}`
+          return `"${f.$field}" ${a} l`
+        } else if (typeof f.$value[0] === 'number') {
+          const a = `{${f.$value.map((v) => `#${v}`).join(',')}}`
+          return `"${f.$field}" ${a} l`
+        }
         return null
       }
     case 'exists':
