@@ -13,6 +13,7 @@
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"
+#include "selva_set_ops.h"
 #include "timestamp.h"
 #include "rpn.h"
 
@@ -911,81 +912,6 @@ static enum rpn_error rpn_op_range(struct RedisModuleCtx *redis_ctx __unused, st
     return push_int_result(ctx, a->d <= b->d && b->d <= c->d);
 }
 
-struct set_has_cb {
-    enum SelvaSetType type;
-    union {
-        struct {
-            const char *buf;
-            size_t len;
-        } str;
-        double d;
-    };
-    int found;
-};
-
-static int rpn_op2set_has_cb(struct set_has_cb *cb, const struct rpn_operand *o) {
-    if (OPERAND_GET_SET(o) || OPERAND_GET_OBJ(o)) {
-        return RPN_ERR_TYPE;
-    } else if (isnan(o->d) || o->s_size > 0) { /* Assume string */
-        cb->type = SELVA_SET_TYPE_RMSTRING;
-        cb->str.buf = OPERAND_GET_S(o);
-        cb->str.len = OPERAND_GET_S_LEN(o);
-    } else { /* Assume number */
-        cb->type = SELVA_SET_TYPE_DOUBLE;
-        cb->d = o->d;
-    }
-
-    return 0;
-}
-
-static int set_has_cb(union SelvaObjectSetForeachValue value, enum SelvaSetType type, void *arg) {
-    struct set_has_cb *data = (struct set_has_cb *)arg;
-
-    if (type == SELVA_SET_TYPE_RMSTRING) {
-        size_t len;
-        const char *str = RedisModule_StringPtrLen(value.rms, &len);
-
-        if (data->type != SELVA_SET_TYPE_RMSTRING && data->type != SELVA_SET_TYPE_NODEID) {
-            return 1; /* Type mismatch. */
-        }
-
-        if (data->str.len == len && !memcmp(data->str.buf, str, len)) {
-            return (data->found = 1);
-        }
-    } else if (type == SELVA_SET_TYPE_DOUBLE) {
-        if (data->type != SELVA_SET_TYPE_DOUBLE) {
-            return 1; /* Type mismatch. */
-        }
-
-        if (data->d == value.d) {
-            return (data->found = 1);
-        }
-    } else if (type == SELVA_SET_TYPE_LONGLONG) {
-        if (data->type != SELVA_SET_TYPE_DOUBLE) {
-            return 1; /* Type mismatch. */
-        }
-
-        if (data->d == (double)value.ll) {
-            return (data->found = 1);
-        }
-    } else if (type == SELVA_SET_TYPE_NODEID) {
-        Selva_NodeId node_id;
-
-        if (data->type != SELVA_SET_TYPE_RMSTRING && data->type != SELVA_SET_TYPE_NODEID) {
-            return 1; /* Type mismatch. */
-        }
-
-        memset(node_id, '\0', SELVA_NODE_ID_SIZE);
-        memcpy(node_id, data->str.buf, data->str.len);
-
-        if (!memcmp(node_id, value.node_id, SELVA_NODE_ID_SIZE)) {
-            return (data->found = 1);
-        }
-    }
-
-    return 0;
-}
-
 static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     struct SelvaSet *set;
     OPERAND(ctx, s); /* set */
@@ -1030,31 +956,22 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx __unused, stru
         /*
          * Perhaps it's a set-like field.
          */
-        struct set_has_cb data = {
-            .found = 0,
-        };
-        struct SelvaObjectSetForeachCallback cb = {
-            .cb = set_has_cb,
-            .cb_arg = &data,
-        };
-        /* The operand `s` is a field_name string. */
         const char *field_name_str = OPERAND_GET_S(s);
         const size_t field_name_len = OPERAND_GET_S_LEN(s);
-        int err;
+        int res;
 
-        /* The operand `s` is a field_name string. */
-        if (!ctx->node) {
-            return RPN_ERR_NPE;
+        if (OPERAND_GET_SET(v) || OPERAND_GET_OBJ(v)) {
+            return RPN_ERR_TYPE;
+        } else if (isnan(v->d) || v->s_size > 0) { /* Assume string */
+            const char *value_str = OPERAND_GET_S(v);
+            const size_t value_len = OPERAND_GET_S_LEN(v);
+
+            res = SelvaSet_field_has_string(ctx->hierarchy, ctx->node, field_name_str, field_name_len, value_str, value_len);
+        } else { /* Assume number */
+            res = SelvaSet_field_has_double(ctx->hierarchy, ctx->node, field_name_str, field_name_len, v->d);
         }
 
-        if (rpn_op2set_has_cb(&data, v)) {
-            return push_int_result(ctx, 0);
-        }
-
-        err = SelvaHierarchy_ForeachInField(ctx->hierarchy, ctx->node, field_name_str, field_name_len, &cb);
-
-        /* TODO Handle some errors? */
-        return push_int_result(ctx, err ? 0 : data.found);
+        return push_int_result(ctx, !!res);
     }
 }
 
@@ -1255,6 +1172,40 @@ static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, stru
     return RPN_ERR_OK;
 }
 
+static enum rpn_error rpn_op_in(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+    struct SelvaSet *set_a;
+    struct SelvaSet *set_b;
+    OPERAND(ctx, a); /* set A */
+    OPERAND(ctx, b); /* set B */
+    int res = 0;
+
+    set_a = OPERAND_GET_SET(a);
+    set_b = OPERAND_GET_SET(b);
+
+    if (set_a && set_b) {
+        res = SelvaSet_seta_in_setb(set_a, set_b);
+    } else if (set_a && !set_b) {
+        const char *field_str = OPERAND_GET_S(b);
+        const size_t field_len = OPERAND_GET_S_LEN(b);
+
+        res = SelvaSet_seta_in_fieldb(set_a, ctx->hierarchy, ctx->node, field_str, field_len);
+    } else if (!set_a && set_b) {
+        const char *field_str = OPERAND_GET_S(a);
+        const size_t field_len = OPERAND_GET_S_LEN(a);
+
+        res = SelvaSet_fielda_in_setb(ctx->hierarchy, ctx->node, field_str, field_len, set_b);
+    } else if (!set_a && !set_b) {
+        const char *field_a_str = OPERAND_GET_S(a);
+        const size_t field_a_len = OPERAND_GET_S_LEN(a);
+        const char *field_b_str = OPERAND_GET_S(b);
+        const size_t field_b_len = OPERAND_GET_S_LEN(b);
+
+        res = SelvaSet_fielda_in_fieldb(ctx->hierarchy, ctx->node, field_a_str, field_a_len, field_b_str, field_b_len);
+    }
+
+    return push_int_result(ctx, res);
+}
+
 static enum rpn_error rpn_op_get_clock_realtime(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     return push_int_result(ctx, ts_now());
 }
@@ -1336,7 +1287,7 @@ static rpn_fp funcs[] = {
     rpn_op_range,   /* i */
     rpn_op_ffirst,  /* j */
     rpn_op_aon,     /* k */
-    rpn_op_abo,     /* l spare */
+    rpn_op_in,      /* l */
     rpn_op_abo,     /* m spare */
     rpn_op_get_clock_realtime, /* n */
     rpn_op_abo,     /* o spare */
