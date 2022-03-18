@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 SAULX
+ * Copyright (c) 2020-2021 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stdint.h>
@@ -42,9 +42,11 @@ int Trx_HasVisited(const struct trx * restrict cur_trx, const struct trx * restr
 }
 
 void Trx_End(struct trx_state * restrict state, struct trx * restrict cur) {
-    state->cl &= ~cur->cl;
+    state->ex |= cur->cl;
 
-    if (!state->cl) {
+    if (state->ex == state->cl) {
         state->id++; /* Increment id for the next traversal. */
+        state->cl = 0;
+        state->ex = 0;
     }
 }
