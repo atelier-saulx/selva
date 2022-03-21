@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include "selva.h"
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"
@@ -19,7 +20,22 @@ static int sosfv_in_set(union SelvaObjectSetForeachValue value, enum SelvaSetTyp
      */
     switch (type) {
     case SELVA_SET_TYPE_RMSTRING:
-        data->found += SelvaSet_Has(data->set, value.rms);
+        if (data->set->type == SELVA_SET_TYPE_RMSTRING) {
+            data->found += SelvaSet_Has(data->set, value.rms);
+        } else if (data->set->type == SELVA_SET_TYPE_NODEID) {
+            struct SelvaSetElement *el;
+
+            SELVA_SET_NODEID_FOREACH(el, data->set) {
+                Selva_NodeId node_id;
+                int err;
+
+                err = Selva_RMString2NodeId(node_id, value.rms);
+                if (!err && !memcmp(node_id, el->value_nodeId, SELVA_NODE_ID_SIZE)) {
+                    data->found++;
+                    break;
+                }
+            }
+        }
         break;
     case SELVA_SET_TYPE_DOUBLE:
         data->found += SelvaSet_Has(data->set, value.d);
@@ -28,7 +44,22 @@ static int sosfv_in_set(union SelvaObjectSetForeachValue value, enum SelvaSetTyp
         data->found += SelvaSet_Has(data->set, value.ll);
         break;
     case SELVA_SET_TYPE_NODEID:
-        data->found += SelvaSet_Has(data->set, value.node_id);
+        if (data->set->type == SELVA_SET_TYPE_NODEID) {
+            data->found += SelvaSet_Has(data->set, value.node_id);
+        } else if (data->set->type == SELVA_SET_TYPE_RMSTRING) {
+            struct SelvaSetElement *el;
+
+            SELVA_SET_RMS_FOREACH(el, data->set) {
+                Selva_NodeId node_id;
+                int err;
+
+                err = Selva_RMString2NodeId(node_id, el->value_rms);
+                if (!err && !memcmp(node_id, value.node_id, SELVA_NODE_ID_SIZE)) {
+                    data->found++;
+                    break;
+                }
+            }
+        }
         break;
     case SELVA_SET_NR_TYPES:
         /* Invalid type? */
