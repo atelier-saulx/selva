@@ -1178,7 +1178,7 @@ test.serial('automatic child creation', async (t) => {
     children: {
       $add: [
         {
-          $id: 'maTestWithId',
+          $id: 'maTestId',
           title: {
             nl: 'yes with id',
           },

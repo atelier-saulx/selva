@@ -837,7 +837,11 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_CFIELDS, str, &tmp_id, NULL)) {
                     Selva_NodeId nodeId;
 
-                    Selva_RMString2NodeId(nodeId, tmp_id);
+                    err = Selva_RMString2NodeId(nodeId, tmp_id);
+                    if (err) {
+                        /* TODO Should it fail? */
+                        continue;
+                    }
 
                     if (SelvaHierarchy_NodeExists(hierarchy, nodeId)) {
                         id = tmp_id;
@@ -869,7 +873,10 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     struct SelvaHierarchyNode *node;
     const unsigned flags = parse_flags(argv[2]);
 
-    Selva_RMString2NodeId(nodeId, id);
+    err = Selva_RMString2NodeId(nodeId, id);
+    if (err) {
+        return replyWithSelvaErrorf(ctx, err, "Invalid nodeId");
+    }
 
     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
