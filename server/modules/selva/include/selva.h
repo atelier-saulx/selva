@@ -104,7 +104,10 @@ static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {
 #endif
 }
 
-void Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *rms);
+/**
+ * Copy RedisModuleString into a nodeId buffer.
+ */
+int Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *rms);
 
 
 /**

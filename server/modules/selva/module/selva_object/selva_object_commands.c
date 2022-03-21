@@ -15,6 +15,7 @@ static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleStri
     struct SelvaHierarchy *hierarchy;
     Selva_NodeId nodeId;
     const struct SelvaHierarchyNode *node;
+    int err;
 
     /*
      * Open the Redis key.
@@ -29,7 +30,12 @@ static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleStri
         return NULL;
     }
 
-    Selva_RMString2NodeId(nodeId, key_name);
+    err = Selva_RMString2NodeId(nodeId, key_name);
+    if (err) {
+        replyWithSelvaError(ctx, err);
+        return NULL;
+    }
+
     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         replyWithSelvaError(ctx, SELVA_HIERARCHY_ENOENT);

@@ -20,8 +20,16 @@ size_t Selva_NodeIdLen(const Selva_NodeId nodeId) {
     return len;
 }
 
-void Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *rms) {
-    Selva_NodeIdCpy(nodeId, RedisModule_StringPtrLen(rms, NULL));
+int Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *rms) {
+    TO_STR(rms);
+
+    if (rms_len > SELVA_NODE_ID_SIZE) {
+        return SELVA_EINVAL;
+    }
+
+    Selva_NodeIdCpy(nodeId, rms_str);
+
+    return 0;
 }
 
 /*
