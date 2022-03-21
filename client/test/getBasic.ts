@@ -1093,7 +1093,7 @@ test.serial('get - $inherit', async (t) => {
       children: ['cuD'],
     }),
     client.set({
-      $id: 'cuMrsnurfels',
+      $id: 'cuMrsnur',
       name: 'MrSnurfels',
       image: {
         thumb: 'snurfels.jpg',
