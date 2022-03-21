@@ -1968,7 +1968,10 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
      * Get the nodeId.
      */
     Selva_NodeId node_id;
-    SelvaArgParser_NodeId(node_id, argv[ARGV_NODE_ID]);
+    err = Selva_RMString2NodeId(node_id, argv[ARGV_NODE_ID]);
+    if (err) {
+        return replyWithSelvaErrorf(ctx, err, "node_id");
+    }
 
     /*
      * Get field names for change events.

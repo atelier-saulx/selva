@@ -334,6 +334,8 @@ size_t inheritHierarchyFields(
  */
 int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    SelvaHierarchy *hierarchy;
+    Selva_NodeId node_id;
     int err;
 
     const int ARGV_LANG          = 1;
@@ -351,7 +353,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     /*
      * Open the Redis key.
      */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
+    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!hierarchy) {
         return REDISMODULE_OK;
     }
@@ -359,8 +361,10 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     /*
      * Get the node_id.
      */
-    Selva_NodeId node_id;
-    SelvaArgParser_NodeId(node_id, argv[ARGV_NODE_ID]);
+    err = Selva_RMString2NodeId(node_id, argv[ARGV_NODE_ID]);
+    if (err) {
+        return replyWithSelvaErrorf(ctx, err, "node_id");
+    }
 
     /*
      * Get types.

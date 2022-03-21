@@ -1073,7 +1073,6 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     SelvaHierarchy *hierarchy;
     enum SelvaTraversal dir;
     RedisModuleString *dir_expression;
-    const RedisModuleString *rms_node_id;
     Selva_NodeId node_id;
     RedisModuleString *filter;
     struct SelvaFindIndexControlBlock *icb = NULL;
@@ -1114,12 +1113,10 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         dir_expression = NULL;
     }
 
-    rms_node_id = argv[ARGV_NODE_ID];
-    TO_STR(rms_node_id);
-    if (rms_node_id_len <= SELVA_NODE_TYPE_SIZE || rms_node_id_len > SELVA_NODE_ID_SIZE) {
-        return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "node_id");
+    err = Selva_RMString2NodeId(node_id, argv[ARGV_NODE_ID]);
+    if (err) {
+        return replyWithSelvaErrorf(ctx, err, "node_id");
     }
-    Selva_NodeIdCpy(node_id, rms_node_id_str);
 
     /* TODO Validate */
     filter = argv[ARGV_FILTER];

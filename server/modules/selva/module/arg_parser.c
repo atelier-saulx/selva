@@ -269,22 +269,6 @@ int SelvaArgParser_Enum(
     return SELVA_ENOENT;
 }
 
-int SelvaArgParser_NodeId(Selva_NodeId node_id, const RedisModuleString *arg) {
-    size_t len;
-    const char *str;
-
-    str = RedisModule_StringPtrLen(arg, &len);
-
-    if (len < SELVA_NODE_TYPE_SIZE + 1) {
-        return SELVA_EINVAL;
-    }
-
-    memset(node_id, 0, SELVA_NODE_ID_SIZE);
-    memcpy(node_id, str, min(SELVA_NODE_ID_SIZE, len));
-
-    return 0;
-}
-
 int SelvaArgParser_NodeType(Selva_NodeType node_type, const RedisModuleString *arg) {
     size_t len;
     const char *str;
