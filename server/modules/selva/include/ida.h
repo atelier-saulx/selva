@@ -7,6 +7,7 @@
 #define _IDA_H_
 
 struct ida;
+typedef int ida_t;
 
 /**
  * Create a new Id Allocator.
@@ -22,11 +23,11 @@ void ida_destroy(struct ida *ida);
 /**
  * Allocate an unique id.
  */
-int ida_alloc(struct ida *ida) __attribute__ ((warn_unused_result));
+ida_t ida_alloc(struct ida *ida) __attribute__ ((warn_unused_result));
 
 /**
  * Free a previously allocated unique id.
  */
-void ida_free(struct ida *ida, int id) __attribute__((nonnull (1)));
+void ida_free(struct ida *ida, ida_t id) __attribute__((nonnull (1)));
 
 #endif /* _IDA_H_ */

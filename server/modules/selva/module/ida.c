@@ -11,7 +11,7 @@ struct ida {
     struct bitmap id_map;
 };
 
-struct ida *ida_init(int max) {
+struct ida *ida_init(ida_t max) {
     struct ida *ida;
 
     ida = RedisModule_Alloc(sizeof(struct ida) - sizeof_field(struct ida, id_map) + BITMAP_ALLOC_SIZE(max));
@@ -32,8 +32,8 @@ void ida_destroy(struct ida *ida) {
     RedisModule_Free(ida);
 }
 
-int ida_alloc(struct ida *ida) {
-    int next = bitmap_ffs(&ida->id_map);
+ida_t ida_alloc(struct ida *ida) {
+    ida_t next = bitmap_ffs(&ida->id_map);
 
     if (next < 0) {
         return SELVA_ENOBUFS;
@@ -44,6 +44,6 @@ int ida_alloc(struct ida *ida) {
     return next;
 }
 
-void ida_free(struct ida *ida, int id) {
+void ida_free(struct ida *ida, ida_t id) {
     bitmap_set(&ida->id_map, id);
 }

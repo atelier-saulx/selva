@@ -469,7 +469,7 @@ __attribute__((nonnull (2, 3))) static int destroy_icb(
     }
 
     if (icb->flags.valid_marked_id) {
-        ida_free(hierarchy->dyn_index.ida, icb->marker_id);
+        ida_free(hierarchy->dyn_index.ida, (ida_t)icb->marker_id);
     }
 
     /*
