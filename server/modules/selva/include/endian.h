@@ -45,7 +45,7 @@ static inline void htoledouble(char buf[8], double x) {
 #endif
 }
 
-#elif #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 
 #define htobe16(x) (x)
 #define htole16(x) __builtin_bswap16(x)
