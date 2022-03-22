@@ -458,7 +458,7 @@ export const findIds = async (
         while (op.id[i + endLen - 1] === '\0') {
           endLen--
         }
-        const id = op.id.slice(i, endLen)
+        const id = op.id.substr(i, endLen)
         const schema = client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
         const r = await addMarker(client, ctx, {
@@ -484,22 +484,29 @@ export const findIds = async (
       }
     } else {
       const schema = client.schemas[ctx.db]
-      const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
-      const added = await addMarker(client, ctx, {
-        ...sourceFieldToDir(
-          schema,
-          sourceFieldSchema,
-          sourceField,
-          op.recursive,
-          op.byType
-        ),
-        id: op.id.slice(0, Math.min(10, op.id.length)), // FIXME We should probably have only one ID at this point
-        fields: op.props.$all === true ? [] : Object.keys(realOpts),
-        rpn: args,
-      })
+      for (let i = 0; i < op.id.length; i += 10) {
+        let endLen = 10
+        while (op.id[i + endLen - 1] === '\0') {
+          endLen--
+        }
+        const id = op.id.substr(i, endLen)
+        const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
+        const added = await addMarker(client, ctx, {
+          ...sourceFieldToDir(
+            schema,
+            sourceFieldSchema,
+            sourceField,
+            op.recursive,
+            op.byType
+          ),
+          id,
+          fields: op.props.$all === true ? [] : Object.keys(realOpts),
+          rpn: args,
+        })
 
-      if (added) {
-        ctx.hasFindMarkers = true
+        if (added) {
+          ctx.hasFindMarkers = true
+        }
       }
     }
 
@@ -642,7 +649,7 @@ const findFields = async (
         while (op.id[i + endLen - 1] === '\0') {
           endLen--
         }
-        const id = op.id.slice(i, endLen)
+        const id = op.id.substr(i, endLen)
         const schema = client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
 
