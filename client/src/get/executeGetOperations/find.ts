@@ -493,7 +493,7 @@ export const findIds = async (
           op.recursive,
           op.byType
         ),
-        id: op.id,
+        id: op.id.slice(0, Math.min(10, op.id.length)), // FIXME We should probably have only one ID at this point
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
       })
