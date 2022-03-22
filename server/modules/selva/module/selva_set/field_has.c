@@ -52,7 +52,8 @@ int set_has_cb(union SelvaObjectSetForeachValue value, enum SelvaSetType type, v
     } else if (type == SELVA_SET_TYPE_NODEID) {
         Selva_NodeId node_id;
 
-        if (data->type != SELVA_SET_TYPE_RMSTRING && data->type != SELVA_SET_TYPE_NODEID) {
+        if ((data->type != SELVA_SET_TYPE_RMSTRING && data->type != SELVA_SET_TYPE_NODEID) ||
+            data->str.len > SELVA_NODE_ID_SIZE) {
             return 1; /* Type mismatch. */
         }
 
