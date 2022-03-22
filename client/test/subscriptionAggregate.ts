@@ -531,6 +531,10 @@ test.serial('simple nested find avg aggregate sub', async (t) => {
   })
 
   await wait(1e3)
+  //const subs = await client.redis.selva_subscriptions_list('___selva_hierarchy')
+  //for (const sub of subs) {
+  //  console.log(await client.redis.selva_subscriptions_debug('___selva_hierarchy', sub))
+  //}
 
   await client.set({
     $id: 'ma10',

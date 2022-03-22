@@ -23,7 +23,7 @@ size_t Selva_NodeIdLen(const Selva_NodeId nodeId) {
 int Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *rms) {
     TO_STR(rms);
 
-    if (rms_len > SELVA_NODE_ID_SIZE) {
+    if (rms_len < SELVA_NODE_TYPE_SIZE + 1 || rms_len > SELVA_NODE_ID_SIZE) {
         return SELVA_EINVAL;
     }
 

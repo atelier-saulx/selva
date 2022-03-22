@@ -347,7 +347,7 @@ const executeAggregateOperation = async (
         while (op.id[i + endLen - 1] === '\0') {
           endLen--
         }
-        const id = op.id.slice(i, endLen)
+        const id = op.id.substr(i, endLen)
         const schema = client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
         const r = await addMarker(client, ctx, {
