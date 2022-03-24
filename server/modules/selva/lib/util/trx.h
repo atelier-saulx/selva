@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -36,8 +36,18 @@ struct trx {
 
 /**
  * Start a new traversal.
+ * This function will either start a new transaction or select a new color
+ * for an open transaction.
  */
 int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx);
+
+/**
+ * Sync the transaction id to the label.
+ * This function is only useful if you want to update the latest transaction
+ * id to the label but you don't need to know later on if the transaction
+ * (traversal) actually visited the node.
+ */
+void Trx_Sync(const struct trx_state * restrict state, struct trx * restrict label);
 
 /**
  * Visit a node.
@@ -55,5 +65,14 @@ int Trx_HasVisited(const struct trx * restrict cur_trx, const struct trx * restr
  * End traversal.
  */
 void Trx_End(struct trx_state * restrict state, struct trx * restrict cur);
+
+/**
+ * Calculate the age of the given label.
+ * The label age is practically a distance or a difference between the current
+ * id and when the label was stamped with an id the last time.
+ */
+static inline long long Trx_LabelAge(const struct trx_state * restrict state, const struct trx * restrict label) {
+    return (long long)(state->id - label->id);
+}
 
 #endif /* _UTIL_TRX_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stdint.h>
@@ -18,6 +18,13 @@ int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx) {
     trx->cl = cl;
 
     return 0;
+}
+
+void Trx_Sync(const struct trx_state * restrict state, struct trx * restrict label) {
+    if (label->id != state->id) {
+        label->id = state->id;
+        label->cl = 0; /* Not visited yet. */
+    }
 }
 
 int Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label) {
