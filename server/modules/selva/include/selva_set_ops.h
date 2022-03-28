@@ -7,6 +7,7 @@
  * data structures and Selva node fields.
  */
 
+struct RedisModuleCtx;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct SelvaSet;
@@ -21,6 +22,7 @@ struct SelvaSet;
  * Test if a set-like field has a string value.
  */
 int SelvaSet_field_has_string(
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -32,6 +34,7 @@ int SelvaSet_field_has_string(
  * Test if a set-like field has a double value.
  */
 int SelvaSet_field_has_double(
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -42,6 +45,7 @@ int SelvaSet_field_has_double(
  * Test if a set-like field has a long long value.
  */
 int SelvaSet_field_has_longlong(
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -67,6 +71,7 @@ int SelvaSet_seta_in_setb(struct SelvaSet *a, struct SelvaSet *b);
  * Test if the set a is a subset of the set-like field b.
  */
 int SelvaSet_seta_in_fieldb(
+        struct RedisModuleCtx *ctx,
         struct SelvaSet *a,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
@@ -77,6 +82,7 @@ int SelvaSet_seta_in_fieldb(
  * Test if the set-like field a is a subset of set b.
  */
 int SelvaSet_fielda_in_setb(
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_a_str,
@@ -87,6 +93,7 @@ int SelvaSet_fielda_in_setb(
  * Test if the set-like field a is a subset of the set-like field b.
  */
 int SelvaSet_fielda_in_fieldb(
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_a_str,

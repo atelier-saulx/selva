@@ -29,6 +29,11 @@
 
 #define WILDCARD_CHAR '*'
 
+struct FindCommand_ArrayObjectCb {
+    RedisModuleCtx *ctx;
+    struct FindCommand_Args *find_args;
+};
+
 /*
  * Trace handles.
  */
@@ -1010,7 +1015,11 @@ static int print_node(
     return err;
 }
 
-static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
+static __hot int FindCommand_NodeCb(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        void *arg) {
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
     int take = (args->offset > 0) ? !args->offset-- : 1;
@@ -1024,13 +1033,13 @@ static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) 
 
         /* Set node_id to the register */
         rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
-        rpn_set_hierarchy_node(rpn_ctx, args->hierarchy, node);
+        rpn_set_hierarchy_node(rpn_ctx, hierarchy, node);
         rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
 
         /*
          * Resolve the expression and get the result.
          */
-        err = rpn_bool(args->ctx, rpn_ctx, args->filter, &take);
+        err = rpn_bool(ctx, rpn_ctx, args->filter, &take);
         if (err) {
             fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
                     __FILE__, __LINE__,
@@ -1050,11 +1059,11 @@ static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) 
             ssize_t * restrict limit = args->limit;
             int err;
 
-            err = print_node(args->ctx, args->lang, args->hierarchy, node, &args->send_param, args->merge_nr_fields);
+            err = print_node(ctx, args->lang, hierarchy, node, &args->send_param, args->merge_nr_fields);
             if (err) {
                 Selva_NodeId nodeId;
 
-                RedisModule_ReplyWithNull(args->ctx);
+                RedisModule_ReplyWithNull(ctx);
 
                 SelvaHierarchy_GetNodeId(nodeId, node);
                 fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
@@ -1072,7 +1081,7 @@ static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) 
         } else {
             struct TraversalOrderedItem *item;
 
-            item = SelvaTraversal_CreateOrderItem(args->ctx, args->lang, node, args->order_field);
+            item = SelvaTraversal_CreateOrderItem(ctx, args->lang, node, args->order_field);
             if (item) {
                 SVector_InsertFast(args->order_result, item);
             } else {
@@ -1095,11 +1104,15 @@ static __hot int FindCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) 
     return 0;
 }
 
-static int FindCommand_ArrayObjectCb(union SelvaObjectArrayForeachValue value, enum SelvaObjectType subtype, void *arg) {
+static int FindCommand_ArrayObjectCb(
+        union SelvaObjectArrayForeachValue value,
+        enum SelvaObjectType subtype,
+        void *arg) {
     struct SelvaObject *obj = value.obj;
-    struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
-    struct rpn_ctx *rpn_ctx = args->rpn_ctx;
-    int take = (args->offset > 0) ? !args->offset-- : 1;
+    struct FindCommand_ArrayObjectCb *args = (struct FindCommand_ArrayObjectCb *)arg;
+    struct FindCommand_Args *find_args = args->find_args;
+    struct rpn_ctx *rpn_ctx = find_args->rpn_ctx;
+    int take = (find_args->offset > 0) ? !find_args->offset-- : 1;
 
     if (subtype != SELVA_OBJECT_OBJECT) {
         fprintf(stderr, "%s:%d: Array subtype not supported: %s\n",
@@ -1124,7 +1137,7 @@ static int FindCommand_ArrayObjectCb(union SelvaObjectArrayForeachValue value, e
         /*
          * Resolve the expression and get the result.
          */
-        err = rpn_bool(args->ctx, rpn_ctx, args->filter, &take);
+        err = rpn_bool(args->ctx, rpn_ctx, find_args->filter, &take);
         if (err) {
             fprintf(stderr, "%s:%d: Expression failed: \"%s\"\n",
                     __FILE__, __LINE__,
@@ -1134,15 +1147,15 @@ static int FindCommand_ArrayObjectCb(union SelvaObjectArrayForeachValue value, e
     }
 
     if (take) {
-        const int sort = !!args->order_field;
+        const int sort = !!find_args->order_field;
 
         if (!sort) {
-            ssize_t *nr_nodes = args->nr_nodes;
-            ssize_t * restrict limit = args->limit;
+            ssize_t *nr_nodes = find_args->nr_nodes;
+            ssize_t * restrict limit = find_args->limit;
             int err;
 
-            if (args->send_param.fields) {
-                err = send_array_object_fields(args->ctx, args->lang, obj, args->send_param.fields);
+            if (find_args->send_param.fields) {
+                err = send_array_object_fields(args->ctx, find_args->lang, obj, find_args->send_param.fields);
             } else {
                 RedisModule_ReplyWithStringBuffer(args->ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
                 err = 0;
@@ -1162,9 +1175,9 @@ static int FindCommand_ArrayObjectCb(union SelvaObjectArrayForeachValue value, e
             }
         } else {
             struct TraversalOrderedItem *item;
-            item = SelvaTraversal_CreateObjectBasedOrderItem(args->ctx, args->lang, obj, args->order_field);
+            item = SelvaTraversal_CreateObjectBasedOrderItem(args->ctx, find_args->lang, obj, find_args->order_field);
             if (item) {
-                SVector_InsertFast(args->order_result, item);
+                SVector_InsertFast(find_args->order_result, item);
             } else {
                 /*
                  * It's not so easy to make the response fail at this point.
@@ -1700,9 +1713,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         ssize_t tmp_limit = -1;
         const size_t skip = ind_select >= 0 ? 0 : SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
         struct FindCommand_Args args = {
-            .ctx = ctx,
             .lang = lang,
-            .hierarchy = hierarchy,
             .nr_nodes = &nr_nodes,
             .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + skip : skip,
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
@@ -1750,20 +1761,24 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                      * The reason is that we can't guarantee that the returned nodes
                      * would be the exactly same with and without indexing.
                      */
-                    (void)FindCommand_NodeCb(node, &args);
+                    (void)FindCommand_NodeCb(ctx, hierarchy, node, &args);
                 }
             }
             err = 0;
             SELVA_TRACE_END(cmd_find_index);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
+            struct FindCommand_ArrayObjectCb array_args = {
+                .ctx = ctx,
+                .find_args = &args,
+            };
             const struct SelvaObjectArrayForeachCallback ary_cb = {
                 .cb = FindCommand_ArrayObjectCb,
-                .cb_arg = &args,
+                .cb_arg = &array_args,
             };
             TO_STR(ref_field);
 
             SELVA_TRACE_BEGIN(cmd_find_array);
-            err = SelvaHierarchy_TraverseArray(hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
+            err = SelvaHierarchy_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
             SELVA_TRACE_END(cmd_find_array);
         } else if ((dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
                     SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
@@ -1776,7 +1791,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             TO_STR(ref_field);
 
             SELVA_TRACE_BEGIN(cmd_find_refs);
-            err = SelvaHierarchy_TraverseField(hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
+            err = SelvaHierarchy_TraverseField(ctx, hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
             SELVA_TRACE_END(cmd_find_refs);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
             const struct SelvaHierarchyCallback cb = {
@@ -1803,7 +1818,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             };
 
             SELVA_TRACE_BEGIN(cmd_find_rest);
-            err = SelvaHierarchy_Traverse(hierarchy, nodeId, dir, &cb);
+            err = SelvaHierarchy_Traverse(ctx, hierarchy, nodeId, dir, &cb);
             SELVA_TRACE_END(cmd_find_rest);
         }
         if (err != 0) {
@@ -2022,9 +2037,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         struct SelvaHierarchyNode *node;
         ssize_t tmp_limit = -1;
         struct FindCommand_Args args = {
-            .ctx = ctx,
             .lang = lang,
-            .hierarchy = hierarchy,
             .nr_nodes = &array_len,
             .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset : 0,
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
@@ -2043,7 +2056,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
         node = SelvaHierarchy_FindNode(hierarchy, ids_str + i);
         if (node) {
-            (void)FindCommand_NodeCb(node, &args);
+            (void)FindCommand_NodeCb(ctx, hierarchy, node, &args);
         }
     }
 

@@ -32,7 +32,11 @@ static int is_unsupported_field(const char *field_str, size_t field_len) {
     return 0;
 }
 
-static int hierarchy_foreach_cb(struct SelvaHierarchyNode *node, void *arg) {
+static int hierarchy_foreach_cb(
+        RedisModuleCtx *ctx __unused,
+        struct SelvaHierarchy *hierarchy __unused,
+        struct SelvaHierarchyNode *node,
+        void *arg) {
     const struct SelvaObjectSetForeachCallback *cb = (struct SelvaObjectSetForeachCallback *)arg;
     union SelvaObjectSetForeachValue svalue;
 
@@ -85,6 +89,7 @@ static int array_foreach(
 }
 
 int SelvaHierarchy_ForeachInField(
+        RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -99,7 +104,7 @@ int SelvaHierarchy_ForeachInField(
             .node_arg = (void *)cb,
         };
 
-        SelvaHierarchy_TraverseParents(node, &hcb);
+        SelvaHierarchy_TraverseParents(ctx, hierarchy, node, &hcb);
         return 0;
 
     } else if (IS_FIELD(SELVA_CHILDREN_FIELD)) {
@@ -108,7 +113,7 @@ int SelvaHierarchy_ForeachInField(
             .node_arg = (void *)cb,
         };
 
-        SelvaHierarchy_TraverseChildren(node, &hcb);
+        SelvaHierarchy_TraverseChildren(ctx, hierarchy, node, &hcb);
         return 0;
     } else if (IS_FIELD(SELVA_ANCESTORS_FIELD)) {
         const struct SelvaHierarchyCallback hcb = {
@@ -116,14 +121,14 @@ int SelvaHierarchy_ForeachInField(
             .node_arg = (void *)cb,
         };
 
-        return SelvaHierarchy_TraverseBFSAncestors(hierarchy, node, &hcb);
+        return SelvaHierarchy_TraverseBFSAncestors(ctx, hierarchy, node, &hcb);
     } else if (IS_FIELD(SELVA_DESCENDANTS_FIELD)) {
         const struct SelvaHierarchyCallback hcb = {
             .node_cb = hierarchy_foreach_cb,
             .node_arg = (void *)cb,
         };
 
-        return SelvaHierarchy_TraverseBFSDescendants(hierarchy, node, &hcb);
+        return SelvaHierarchy_TraverseBFSDescendants(ctx, hierarchy, node, &hcb);
     } else if (is_unsupported_field(field_str, field_len)) {
         /* NOP */
         /* TODO Edge */

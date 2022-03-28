@@ -14,7 +14,11 @@ struct send_hierarchy_field_data {
 /*
  * Used for ancestors, children, descendants, parents
  */
-static int send_hierarchy_field_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
+static int send_hierarchy_field_NodeCb(
+        RedisModuleCtx *ctx __unused,
+        struct SelvaHierarchy *hierarchy __unused,
+        struct SelvaHierarchyNode *node,
+        void *arg) {
     Selva_NodeId nodeId;
     struct send_hierarchy_field_data *args = (struct send_hierarchy_field_data *)arg;
     int match = 0;
@@ -71,7 +75,7 @@ int HierarchyReply_WithTraversal(
      * [nodeId1, nodeId2,.. nodeIdn]
      */
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-    err = SelvaHierarchy_Traverse(hierarchy, nodeId, dir, &cb);
+    err = SelvaHierarchy_Traverse(ctx, hierarchy, nodeId, dir, &cb);
     RedisModule_ReplySetArrayLength(ctx, args.len);
 
     return err;

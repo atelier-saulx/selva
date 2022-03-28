@@ -115,9 +115,7 @@ struct SelvaNodeSendParam {
 };
 
 struct FindCommand_Args {
-    struct RedisModuleCtx *ctx;
     struct RedisModuleString *lang;
-    struct SelvaHierarchy *hierarchy;
 
     ssize_t *nr_nodes; /*!< Number of nodes in the result. */
     ssize_t offset; /*!< Start from nth node. */

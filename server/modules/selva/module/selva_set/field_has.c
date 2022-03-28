@@ -69,6 +69,7 @@ int set_has_cb(union SelvaObjectSetForeachValue value, enum SelvaSetType type, v
 }
 
 int SelvaSet_field_has_string(
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -87,13 +88,14 @@ int SelvaSet_field_has_string(
     };
     int err;
 
-    err = SelvaHierarchy_ForeachInField(hierarchy, node, field_str, field_len, &cb);
+    err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_str, field_len, &cb);
 
     /* TODO Errors? */
     return err ? 0 : !!data.found;
 }
 
 int SelvaSet_field_has_double(
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -110,13 +112,14 @@ int SelvaSet_field_has_double(
     };
     int err;
 
-    err = SelvaHierarchy_ForeachInField(hierarchy, node, field_str, field_len, &cb);
+    err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_str, field_len, &cb);
 
     /* TODO Errors? */
     return err ? 0 : !!data.found;
 }
 
 int SelvaSet_field_has_longlong(
+        RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -133,7 +136,7 @@ int SelvaSet_field_has_longlong(
     };
     int err;
 
-    err = SelvaHierarchy_ForeachInField(hierarchy, node, field_str, field_len, &cb);
+    err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_str, field_len, &cb);
 
     /* TODO Errors? */
     return err ? 0 : !!data.found;

@@ -192,7 +192,11 @@ static int send_field_value(
     return send_object_field_value(ctx, lang, node, obj, full_field, field_str, field_len);
 }
 
-static int InheritCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
+static int InheritCommand_NodeCb(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        void *arg) {
     struct InheritCommand_Args *restrict args = (struct InheritCommand_Args *)arg;
     struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
     int err;
@@ -234,7 +238,7 @@ static int InheritCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
          * but we don't send the header yet.
          */
         TO_STR(field_name);
-        err = send_field_value(args->ctx, args->hierarchy, args->lang,
+        err = send_field_value(ctx, hierarchy, args->lang,
                                node, obj,
                                field_name, /* Initially full_field is the same as field_name. */
                                field_name_str, field_name_len);
@@ -396,8 +400,6 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * Execute a traversal to inherit the requested field values.
      */
     struct InheritCommand_Args args = {
-        .ctx = ctx,
-        .hierarchy = hierarchy,
         .lang = lang,
         .first_node = 1,
         .nr_types = nr_types,
@@ -411,7 +413,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         .node_arg = &args,
     };
 
-    err = SelvaHierarchy_Traverse(hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
+    err = SelvaHierarchy_Traverse(ctx, hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
     RedisModule_ReplySetArrayLength(ctx, args.nr_results);
 
     if (err) {
