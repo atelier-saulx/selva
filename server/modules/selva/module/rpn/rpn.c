@@ -912,7 +912,7 @@ static enum rpn_error rpn_op_range(struct RedisModuleCtx *redis_ctx __unused, st
     return push_int_result(ctx, a->d <= b->d && b->d <= c->d);
 }
 
-static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
     struct SelvaSet *set;
     OPERAND(ctx, s); /* set */
     OPERAND(ctx, v); /* value */
@@ -966,9 +966,9 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx __unused, stru
             const char *value_str = OPERAND_GET_S(v);
             const size_t value_len = OPERAND_GET_S_LEN(v);
 
-            res = SelvaSet_field_has_string(ctx->hierarchy, ctx->node, field_name_str, field_name_len, value_str, value_len);
+            res = SelvaSet_field_has_string(redis_ctx,ctx->hierarchy, ctx->node, field_name_str, field_name_len, value_str, value_len);
         } else { /* Assume number */
-            res = SelvaSet_field_has_double(ctx->hierarchy, ctx->node, field_name_str, field_name_len, v->d);
+            res = SelvaSet_field_has_double(redis_ctx, ctx->hierarchy, ctx->node, field_name_str, field_name_len, v->d);
         }
 
         return push_int_result(ctx, !!res);
@@ -1172,7 +1172,7 @@ static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, stru
     return RPN_ERR_OK;
 }
 
-static enum rpn_error rpn_op_in(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_in(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
     struct SelvaSet *set_a;
     struct SelvaSet *set_b;
     OPERAND(ctx, a); /* set A */
@@ -1188,19 +1188,19 @@ static enum rpn_error rpn_op_in(struct RedisModuleCtx *redis_ctx __unused, struc
         const char *field_str = OPERAND_GET_S(b);
         const size_t field_len = OPERAND_GET_S_LEN(b);
 
-        res = SelvaSet_seta_in_fieldb(set_a, ctx->hierarchy, ctx->node, field_str, field_len);
+        res = SelvaSet_seta_in_fieldb(redis_ctx, set_a, ctx->hierarchy, ctx->node, field_str, field_len);
     } else if (!set_a && set_b) {
         const char *field_str = OPERAND_GET_S(a);
         const size_t field_len = OPERAND_GET_S_LEN(a);
 
-        res = SelvaSet_fielda_in_setb(ctx->hierarchy, ctx->node, field_str, field_len, set_b);
+        res = SelvaSet_fielda_in_setb(redis_ctx, ctx->hierarchy, ctx->node, field_str, field_len, set_b);
     } else if (!set_a && !set_b) {
         const char *field_a_str = OPERAND_GET_S(a);
         const size_t field_a_len = OPERAND_GET_S_LEN(a);
         const char *field_b_str = OPERAND_GET_S(b);
         const size_t field_b_len = OPERAND_GET_S_LEN(b);
 
-        res = SelvaSet_fielda_in_fieldb(ctx->hierarchy, ctx->node, field_a_str, field_a_len, field_b_str, field_b_len);
+        res = SelvaSet_fielda_in_fieldb(redis_ctx, ctx->hierarchy, ctx->node, field_a_str, field_a_len, field_b_str, field_b_len);
     }
 
     return push_int_result(ctx, res);

@@ -70,6 +70,7 @@ static int sosfv_in_set(union SelvaObjectSetForeachValue value, enum SelvaSetTyp
 }
 
 int SelvaSet_seta_in_fieldb(
+        RedisModuleCtx *ctx,
         struct SelvaSet *a,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
@@ -85,7 +86,7 @@ int SelvaSet_seta_in_fieldb(
     };
     int err;
 
-    err = SelvaHierarchy_ForeachInField(hierarchy, node, field_b_str, field_b_len, &cb);
+    err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_b_str, field_b_len, &cb);
     /* TODO Handle errors? */
 
     return err ? 0 : data.found == SelvaSet_Size(a);

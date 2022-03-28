@@ -31,6 +31,7 @@ enum SelvaHierarchy_AggregateType {
 };
 
 struct AggregateCommand_Args {
+    struct RedisModuleCtx *ctx;
     struct FindCommand_Args find_args;
 
     /*
@@ -200,7 +201,11 @@ static inline int apply_agg_fn(struct SelvaHierarchyNode *node, struct Aggregate
     return apply_agg_fn_obj(SelvaHierarchy_GetNodeObject(node), args);
 }
 
-static int AggregateCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
+static int AggregateCommand_NodeCb(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        void *arg) {
     Selva_NodeId nodeId;
     struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->find_args.rpn_ctx;
@@ -213,13 +218,13 @@ static int AggregateCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
 
         /* Set node_id to the register */
         rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
-        rpn_set_hierarchy_node(rpn_ctx, args->find_args.hierarchy, node);
+        rpn_set_hierarchy_node(rpn_ctx, hierarchy, node);
         rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
 
         /*
          * Resolve the expression and get the result.
          */
-        err = rpn_bool(args->find_args.ctx, rpn_ctx, args->find_args.filter, &take);
+        err = rpn_bool(ctx, rpn_ctx, args->find_args.filter, &take);
         if (err) {
             fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
                     __FILE__, __LINE__,
@@ -255,7 +260,7 @@ static int AggregateCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
         } else {
             struct TraversalOrderedItem *item;
 
-            item = SelvaTraversal_CreateOrderItem(args->find_args.ctx, args->find_args.lang, node, args->find_args.order_field);
+            item = SelvaTraversal_CreateOrderItem(ctx, args->find_args.lang, node, args->find_args.order_field);
             if (item) {
                 SVector_InsertFast(args->find_args.order_result, item);
             } else {
@@ -274,7 +279,10 @@ static int AggregateCommand_NodeCb(struct SelvaHierarchyNode *node, void *arg) {
     return 0;
 }
 
-static int AggregateCommand_ArrayObjectCb(union SelvaObjectArrayForeachValue value, enum SelvaObjectType subtype, void *arg) {
+static int AggregateCommand_ArrayObjectCb(
+        union SelvaObjectArrayForeachValue value,
+        enum SelvaObjectType subtype,
+        void *arg) {
     struct SelvaObject *obj = value.obj;
     struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->find_args.rpn_ctx;
@@ -303,7 +311,7 @@ static int AggregateCommand_ArrayObjectCb(union SelvaObjectArrayForeachValue val
         /*
          * Resolve the expression and get the result.
          */
-        err = rpn_bool(args->find_args.ctx, rpn_ctx, args->find_args.filter, &take);
+        err = rpn_bool(args->ctx, rpn_ctx, args->find_args.filter, &take);
         if (err) {
             fprintf(stderr, "%s:%d: Expression failed: \"%s\"\n",
                     __FILE__, __LINE__,
@@ -329,7 +337,7 @@ static int AggregateCommand_ArrayObjectCb(union SelvaObjectArrayForeachValue val
             }
         } else {
             struct TraversalOrderedItem *item;
-            item = SelvaTraversal_CreateObjectBasedOrderItem(args->find_args.ctx, args->find_args.lang, obj, args->find_args.order_field);
+            item = SelvaTraversal_CreateObjectBasedOrderItem(args->ctx, args->find_args.lang, obj, args->find_args.order_field);
             if (item) {
                 SVector_InsertFast(args->find_args.order_result, item);
             } else {
@@ -706,6 +714,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * Run for each NODE_ID.
      */
     struct AggregateCommand_Args args = {
+        .ctx = ctx,
         .aggregate_type = agg_fn_val,
         .aggregation_result_int = 0,
         .aggregation_result_double = initial_double_val,
@@ -726,9 +735,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         ssize_t tmp_limit = -1;
         const size_t skip = SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
         struct FindCommand_Args find_args = {
-            .ctx = ctx,
             .lang = lang,
-            .hierarchy = hierarchy,
             .nr_nodes = &nr_nodes,
             .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + skip : skip,
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
@@ -758,20 +765,20 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             };
             TO_STR(ref_field);
 
-            err = SelvaHierarchy_TraverseArray(hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
+            err = SelvaHierarchy_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
         } else if (ref_field &&
                    (dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
                            SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                            SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))) {
             TO_STR(ref_field);
 
-            err = SelvaHierarchy_TraverseField(hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
+            err = SelvaHierarchy_TraverseField(ctx, hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
             err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, NULL, NULL, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) {
             err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, NULL, NULL, &cb);
         } else {
-            err = SelvaHierarchy_Traverse(hierarchy, nodeId, dir, &cb);
+            err = SelvaHierarchy_Traverse(ctx, hierarchy, nodeId, dir, &cb);
         }
         if (err != 0) {
             /*
@@ -790,14 +797,12 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
         struct AggregateCommand_Args ord_args = {
+            .ctx = ctx,
             .aggregate_type = agg_fn_val,
             .aggregation_result_int = 0,
             .aggregation_result_double = initial_double_val,
             .item_count = 0,
             .find_args = {
-                /* we always need context. */
-                .ctx = ctx,
-                .hierarchy = hierarchy,
                 .send_param.fields = fields,
             }
         };
@@ -1009,6 +1014,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
      */
 
     struct AggregateCommand_Args args = {
+        .ctx = ctx,
         .aggregate_type = agg_fn_val,
         .aggregation_result_int = 0,
         .aggregation_result_double = initial_double_val,
@@ -1019,9 +1025,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         struct SelvaHierarchyNode *node;
         ssize_t tmp_limit = -1;
         struct FindCommand_Args find_args = {
-            .ctx = ctx,
             .lang = lang,
-            .hierarchy = hierarchy,
             .nr_nodes = &array_len,
             .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset : 0,
             .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
@@ -1040,7 +1044,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
         node = SelvaHierarchy_FindNode(hierarchy, ids_str + i);
         if (node) {
-            (void)AggregateCommand_NodeCb(node, &args);
+            (void)AggregateCommand_NodeCb(ctx, hierarchy, node, &args);
         }
     }
 
@@ -1050,14 +1054,13 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
      */
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
         struct AggregateCommand_Args ord_args = {
+            .ctx = ctx,
             .aggregate_type = agg_fn_val,
             .aggregation_result_int = 0,
             .aggregation_result_double = initial_double_val,
             .item_count = 0,
             .find_args = {
                 /* we always need context */
-                .ctx = ctx,
-                .hierarchy = hierarchy,
                 .send_param.fields = fields,
                 .send_param.excluded_fields = NULL,
             }

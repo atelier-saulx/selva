@@ -30,8 +30,6 @@ struct Selva_Subscription {
 };
 
 struct set_node_marker_data {
-    RedisModuleCtx *ctx;
-    SelvaHierarchy *hierarchy;
     struct Selva_SubscriptionMarker *marker;
 };
 
@@ -550,10 +548,12 @@ static void clear_marker(struct Selva_SubscriptionMarkers *sub_markers, struct S
 /*
  * Set a marker to a node metadata.
  */
-static int set_node_marker_cb(struct SelvaHierarchyNode *node, void *arg) {
+static int set_node_marker_cb(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        void *arg) {
     struct set_node_marker_data *data = (struct set_node_marker_data *)arg;
-    RedisModuleCtx *ctx = data->ctx;
-    SelvaHierarchy *hierarchy = data->hierarchy;
     struct Selva_SubscriptionMarker *marker = data->marker;
     struct SelvaHierarchyMetadata *metadata;
 
@@ -592,7 +592,11 @@ static int set_node_marker_cb(struct SelvaHierarchyNode *node, void *arg) {
     return 0;
 }
 
-static int clear_node_marker_cb(struct SelvaHierarchyNode *node, void *arg) {
+static int clear_node_marker_cb(
+        RedisModuleCtx *ctx __unused,
+        struct SelvaHierarchy *hierarchy __unused,
+        struct SelvaHierarchyNode *node,
+        void *arg) {
     struct SelvaHierarchyMetadata *metadata;
     struct Selva_SubscriptionMarker *marker = (struct Selva_SubscriptionMarker*)arg;
 
@@ -972,7 +976,7 @@ static int SelvaSubscriptions_TraverseMarker(
                 (SELVA_HIERARCHY_TRAVERSAL_REF |
                  SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                  SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))) {
-        err = SelvaHierarchy_TraverseField(hierarchy, marker->node_id, dir, marker->ref_field, strlen(marker->ref_field), &cb);
+        err = SelvaHierarchy_TraverseField(ctx, hierarchy, marker->node_id, dir, marker->ref_field, strlen(marker->ref_field), &cb);
     } else if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION | SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) &&
                marker->traversal_expression) {
         struct rpn_ctx *rpn_ctx;
@@ -996,7 +1000,7 @@ static int SelvaSubscriptions_TraverseMarker(
          * some other condition was false, or when dir is invalid. All possible
          * invalid cases will be handled propely by the following function.
          */
-        err = SelvaHierarchy_Traverse(hierarchy, marker->node_id, dir, &cb);
+        err = SelvaHierarchy_Traverse(ctx, hierarchy, marker->node_id, dir, &cb);
     }
     if (err) {
 #if 0
@@ -1035,8 +1039,6 @@ static int refresh_marker(
         return 0;
     } else {
         struct set_node_marker_data cb_data = {
-            .ctx = ctx,
-            .hierarchy = hierarchy,
             .marker = marker,
         };
 
@@ -1126,7 +1128,7 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy
         const char *ref_field_str = marker->ref_field;
         size_t ref_field_len = strlen(ref_field_str);
 
-        (void)SelvaHierarchy_TraverseField(hierarchy, node_id, dir, ref_field_str, ref_field_len, &cb);
+        (void)SelvaHierarchy_TraverseField(ctx, hierarchy, node_id, dir, ref_field_str, ref_field_len, &cb);
     } else if (dir &
                (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
                 SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
@@ -1171,7 +1173,7 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy
             dir = SELVA_HIERARCHY_TRAVERSAL_NODE;
         }
 
-        (void)SelvaHierarchy_Traverse(hierarchy, node_id, dir, &cb);
+        (void)SelvaHierarchy_Traverse(ctx, hierarchy, node_id, dir, &cb);
     }
 }
 
