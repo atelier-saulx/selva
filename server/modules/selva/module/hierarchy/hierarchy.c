@@ -1892,6 +1892,7 @@ out:
         SelvaHierarchyNode *node = SVector_Shift(&_bfs_q);
 
 #define BFS_VISIT_NODE(ctx, hierarchy) \
+        /* Note that Trx_Visit() has been already called for this node. */ \
         if (node_cb((ctx), (hierarchy), node, cb->node_arg)) { \
             Trx_End(&(hierarchy)->trx_state, &trx_cur); \
             return 0; \
@@ -2154,6 +2155,8 @@ static void traverse_adjacents(
 
         SVector_ForeachBegin(&it, adj_vec);
         while ((node = SVector_Foreach(&it))) {
+            Trx_Sync(&hierarchy->trx_state, &node->trx_label);
+
             /* RFE Should we also call child_cb? */
             if (cb->node_cb(ctx, hierarchy, node, cb->node_arg)) {
                 break;
@@ -2297,6 +2300,8 @@ int SelvaHierarchy_Traverse(
         if (!head) {
             return SELVA_HIERARCHY_ENOENT;
         }
+
+        Trx_Sync(&hierarchy->trx_state, &head->trx_label);
     }
 
     switch (dir) {
@@ -2349,6 +2354,8 @@ int SelvaHierarchy_TraverseField(
     if (!head) {
         return SELVA_HIERARCHY_ENOENT;
     }
+
+    Trx_Sync(&hierarchy->trx_state, &head->trx_label);
 
     switch (dir) {
     case SELVA_HIERARCHY_TRAVERSAL_REF:
@@ -2473,12 +2480,14 @@ int SelvaHierarchy_TraverseArray(
         const char *field_str,
         size_t field_len,
         const struct SelvaObjectArrayForeachCallback *cb) {
-    const struct SelvaHierarchyNode *head;
+    struct SelvaHierarchyNode *head;
 
     head = SelvaHierarchy_FindNode(hierarchy, id);
     if (!head) {
         return SELVA_HIERARCHY_ENOENT;
     }
+
+    Trx_Sync(&hierarchy->trx_state, &head->trx_label);
 
     return SelvaObject_ArrayForeach(head->obj, field_str, field_len, cb);
 }
@@ -2490,12 +2499,14 @@ int SelvaHierarchy_TraverseSet(
         const char *field_str,
         size_t field_len,
         const struct SelvaObjectSetForeachCallback *cb) {
-    const struct SelvaHierarchyNode *head;
+    struct SelvaHierarchyNode *head;
 
     head = SelvaHierarchy_FindNode(hierarchy, id);
     if (!head) {
         return SELVA_HIERARCHY_ENOENT;
     }
+
+    Trx_Sync(&hierarchy->trx_state, &head->trx_label);
 
     return SelvaObject_SetForeach(head->obj, field_str, field_len, cb);
 }
