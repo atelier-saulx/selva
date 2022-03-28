@@ -12,7 +12,7 @@ struct compressed_rms;
  * @returns truthy if index exists; Otherwise zero.
  */
 static inline int SelvaHierarchyDetached_IndexExists(const struct SelvaHierarchy *hierarchy) {
-    return !!hierarchy->index_detached.obj;
+    return !!hierarchy->detached.obj;
 }
 
 int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct compressed_rms **compressed);

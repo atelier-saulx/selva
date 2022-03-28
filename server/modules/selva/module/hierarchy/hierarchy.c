@@ -29,6 +29,7 @@
 #include "traversal.h"
 #include "hierarchy.h"
 #include "hierarchy_detached.h"
+#include "hierarchy_inactive.h"
 
 /**
  * Selva module version tracking.
@@ -123,6 +124,7 @@ static void removeRelationships(
 RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaHierarchyNode, _index_entry, SelvaHierarchyNode_Compare)
 static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node);
 static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id);
+static void auto_compress_proc(RedisModuleCtx *ctx, void *data);
 
 /* Node metadata constructors. */
 SET_DECLARE(selva_HMCtor, SelvaHierarchyMetadataConstructorHook);
@@ -136,6 +138,7 @@ static RedisModuleType *HierarchySubtreeType;
 SELVA_TRACE_HANDLE(find_inmem);
 SELVA_TRACE_HANDLE(find_detached);
 SELVA_TRACE_HANDLE(restore_subtree);
+SELVA_TRACE_HANDLE(auto_compress_proc);
 
 /**
  * A pointer to the hierarchy subtree being loaded.
@@ -145,8 +148,30 @@ SELVA_TRACE_HANDLE(restore_subtree);
 static SelvaHierarchy *subtree_hierarchy;
 static int isDecompressingSubtree;
 
+/**
+ * Are we executing an RDB save.
+ * TODO This should be technically per hierarchy structure.
+ */
+static int isRdbSaving;
+
 static int isRdbLoading(RedisModuleCtx *ctx) {
      return !!(REDISMODULE_CTX_FLAGS_LOADING & RedisModule_GetContextFlags(ctx) || isDecompressingSubtree);
+}
+
+/**
+ * Returns 1 on both the RDB process and the parent if we are currently
+ * executing an RDB save.
+ */
+static int isRdbChildRunning(RedisModuleCtx *ctx) {
+    const int ctx_flags = RedisModule_GetContextFlags(ctx);
+
+    /*
+     * We also want to know if there is an ongoing save. Redis doesn't provide such
+     * information but we can try to guess by checking if we have a child process,
+     * as typically a child process should be the RDB process.
+     */
+    return (ctx_flags & (REDISMODULE_CTX_FLAGS_RDB)) &&
+           (ctx_flags & (REDISMODULE_CTX_FLAGS_ACTIVE_CHILD | REDISMODULE_CTX_FLAGS_IS_CHILD));
 }
 
 static int SVector_HierarchyNode_id_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
@@ -181,12 +206,12 @@ SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     SelvaHierarchy *hierarchy;
 
     hierarchy = RedisModule_Calloc(1, sizeof(*hierarchy));
-    if (unlikely(!hierarchy)) {
+    if (!hierarchy) {
         goto fail;
     }
 
     RB_INIT(&hierarchy->index_head);
-    if (unlikely(!SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare))) {
+    if (!SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare)) {
 #if MEM_DEBUG
         memset(hierarchy, 0, sizeof(*hierarchy));
 #endif
@@ -204,10 +229,21 @@ SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
         goto fail;
     }
 
-    if (unlikely(SelvaModify_SetHierarchy(isRdbLoading(ctx) ? NULL : ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL, NULL) < 0)) {
+    if (SelvaModify_SetHierarchy(isRdbLoading(ctx) ? NULL : ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL, NULL) < 0) {
         SelvaModify_DestroyHierarchy(hierarchy);
         hierarchy = NULL;
         goto fail;
+    }
+
+    /* TODO Configurable inact nodes size */
+    if (selva_glob_config.hierarchy_auto_compress_period_ms > 0) {
+        if (SelvaHierarchy_InitInactiveNodes(hierarchy, 4096 / SELVA_NODE_ID_SIZE)) {
+            SelvaModify_DestroyHierarchy(hierarchy);
+            hierarchy = NULL;
+            goto fail;
+        }
+
+        hierarchy->inactive.auto_compress_timer = RedisModule_CreateTimer(ctx, selva_glob_config.hierarchy_auto_compress_period_ms, auto_compress_proc, hierarchy);
     }
 
 fail:
@@ -240,6 +276,12 @@ void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy) {
     Edge_DeinitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
 
     SVector_Destroy(&hierarchy->heads);
+
+    if (hierarchy->inactive.nr_nodes) {
+        (void)RedisModule_StopTimerUnsafe(hierarchy->inactive.auto_compress_timer, NULL);
+    }
+    SelvaHierarchy_DeinitInactiveNodes(hierarchy);
+
 #if MEM_DEBUG
     memset(hierarchy, 0, sizeof(*hierarchy));
 #endif
@@ -459,6 +501,19 @@ static int repopulate_detached_head(SelvaHierarchyNode *node) {
     node->flags &= ~SELVA_NODE_FLAGS_DETACHED;
 
     return 0;
+}
+
+/**
+ * Search from the normal node index.
+ * This function doesn't decompress anything no checks if the node exists in the
+ * detached node index.
+ */
+static SelvaHierarchyNode *find_node_simple(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
+    struct SelvaHierarchySearchFilter filter;
+
+    memcpy(&filter.id, id, SELVA_NODE_ID_SIZE);
+
+    return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaHierarchyNode *)(&filter));
 }
 
 SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
@@ -1786,7 +1841,7 @@ static int full_dfs(
     SelvaHierarchyHeadCallback head_cb = cb->head_cb ? cb->head_cb : &SelvaHierarchyHeadCallback_Dummy;
     SelvaHierarchyNodeCallback node_cb = cb->node_cb ? cb->node_cb : &HierarchyNode_Callback_Dummy;
     SelvaHierarchyChildCallback child_cb = cb->child_cb ? cb->child_cb : &SelvaHierarchyChildCallback_Dummy;
-    int enable_restore = !(cb->flags & SELVA_HIERARCHY_CALLBACK_FLAGS_INHIBIT_RESTORE);
+    const int enable_restore = !(cb->flags & SELVA_HIERARCHY_CALLBACK_FLAGS_INHIBIT_RESTORE);
     SelvaHierarchyNode *head;
     SVECTOR_AUTOFREE(stack);
 
@@ -1805,6 +1860,12 @@ static int full_dfs(
         .origin_field_str = (const char *)"children",
         .origin_field_len = 8,
     };
+
+    /**
+     * Set if we should track inactive nodes for auto compression.
+     */
+    const int enAutoCompression = selva_glob_config.hierarchy_auto_compress_period_ms > 0 && isRdbSaving;
+    const long long old_age_threshold = selva_glob_config.hierarchy_auto_compress_old_age_lim;
 
     SVector_ForeachBegin(&it, &hierarchy->heads);
     while ((head = SVector_Foreach(&it))) {
@@ -1826,25 +1887,61 @@ static int full_dfs(
             goto out;
         }
 
+        /**
+         * This variable tracks a contiguous (DFS) path that hasn't been
+         * traversed for some time. It starts tracking when the first old node
+         * is found and keeps its value unless a subsequent node has been
+         * touched recently.
+         * The candidate is saved and the variable is reset to NULL once a leaf
+         * is reached, and the tracking can start again from the top.
+         */
+        struct SelvaHierarchyNode *compressionCandidate = NULL;
+
         while (SVector_Size(&stack) > 0) {
             SelvaHierarchyNode *node = SVector_Pop(&stack);
 
+            /*
+             * Note that the RDB save child process won't touch the trxids in
+             * the parent process (separate address space), therefore old nodes
+             * will generally stay old if they are otherwise untouched.
+             */
+            if (enAutoCompression && !compressionCandidate &&
+                memcmp(node->id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
+                if (Trx_LabelAge(&hierarchy->trx_state, &node->trx_label) >= old_age_threshold &&
+                    !(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
+                    compressionCandidate = node;
+                }
+            }
+            if (compressionCandidate && Trx_LabelAge(&hierarchy->trx_state, &node->trx_label) < old_age_threshold) {
+                compressionCandidate = NULL;
+            }
+
             if (Trx_Visit(&trx_cur, &node->trx_label)) {
+                struct SVectorIterator it2;
+                SelvaHierarchyNode *adj;
+
                 if (node_cb(ctx, hierarchy, node, cb->node_arg)) {
                     err = 0;
                     goto out;
                 }
                 if (node->flags & SELVA_NODE_FLAGS_DETACHED) {
                     /*
-                     * Can't traverse detached node any further.
+                     * Can't traverse a detached node any further.
                      * This flag can be set only if we inhibit restoring
                      * subtrees with SELVA_HIERARCHY_CALLBACK_FLAGS_INHIBIT_RESTORE.
                      */
                     continue;
                 }
 
-                struct SVectorIterator it2;
-                SelvaHierarchyNode *adj;
+                /*
+                 * Reset the compressionCandidate tracking and save the current candidate.
+                 * No need to test enAutoCompression as compressionCandidate
+                 * would be NULL on false case.
+                 */
+                if (compressionCandidate && SVector_Size(&node->children) == 0) {
+                    SelvaHierarchy_AddInactiveNodeId(hierarchy, compressionCandidate->id);
+                    compressionCandidate = NULL;
+                }
 
                 SVector_ForeachBegin(&it2, &node->children);
                 while ((adj = SVector_Foreach(&it2))) {
@@ -2801,7 +2898,55 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     return 0;
 }
 
-int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
+static void auto_compress_proc(RedisModuleCtx *ctx, void *data) {
+    SELVA_TRACE_BEGIN_AUTO(auto_compress_proc);
+    SelvaHierarchy *hierarchy = (struct SelvaHierarchy *)data;
+    mstime_t timer_period = selva_glob_config.hierarchy_auto_compress_period_ms;
+
+    if (!isRdbChildRunning(ctx)) {
+        const size_t n = hierarchy->inactive.nr_nodes;
+
+        for (size_t i = 0; i < n; i++) {
+            const char *node_id = hierarchy->inactive.nodes[i];
+            struct SelvaHierarchyNode *node;
+            int err;
+
+            if (node_id[0] == '\0') {
+                break;
+            }
+
+            node = find_node_simple(hierarchy, node_id);
+            if (!node || node->flags & SELVA_NODE_FLAGS_DETACHED) {
+                /* This should be unlikely to occur at this point. */
+#if 0
+                fprintf(stderr, "%s:%d Ignoring (%p) %.*s\n",
+                        __FILE__, __LINE__,
+                        node, (int)SELVA_NODE_ID_SIZE, node_id);
+#endif
+                continue;
+            }
+
+            err = detach_subtree(ctx, hierarchy, node);
+            if (!err) {
+                fprintf(stderr, "%s:%d: Auto-compressed %.*s\n",
+                        __FILE__, __LINE__,
+                        (int)SELVA_NODE_ID_SIZE, node_id);
+            }
+        }
+
+        SelvaHierarchy_ClearInactiveNodeIds(hierarchy);
+    } else {
+        /*
+         * Add a small offset in a hope to break the accidental synchronization
+         * with the RDB save process.
+         */
+        timer_period += 300; /* TODO offset should be random. */
+    }
+
+    hierarchy->inactive.auto_compress_timer = RedisModule_CreateTimer(ctx, timer_period, auto_compress_proc, hierarchy);
+}
+
+static int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     int err;
 
     if (unlikely(!node)) {
@@ -3198,8 +3343,10 @@ static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
      * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
      * HIERARCHY_RDB_EOF
      */
+    isRdbSaving = 1;
     EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
     save_hierarchy(io, hierarchy);
+    isRdbSaving = 0;
 }
 
 static int load_nodeId(RedisModuleIO *io, Selva_NodeId nodeId) {
@@ -3701,13 +3848,13 @@ int SelvaHierarchy_ListCompressedCommand(RedisModuleCtx *ctx, RedisModuleString 
         return REDISMODULE_OK;
     }
 
-    if (!hierarchy->index_detached.obj) {
+    if (!hierarchy->detached.obj) {
         return RedisModule_ReplyWithNull(ctx);
     }
 
-    RedisModule_ReplyWithArray(ctx, SelvaObject_Len(hierarchy->index_detached.obj, NULL));
-    it = SelvaObject_ForeachBegin(hierarchy->index_detached.obj);
-    while ((id = SelvaObject_ForeachKey(hierarchy->index_detached.obj, &it))) {
+    RedisModule_ReplyWithArray(ctx, SelvaObject_Len(hierarchy->detached.obj, NULL));
+    it = SelvaObject_ForeachBegin(hierarchy->detached.obj);
+    while ((id = SelvaObject_ForeachKey(hierarchy->detached.obj, &it))) {
         RedisModule_ReplyWithSimpleString(ctx, id);
     }
 

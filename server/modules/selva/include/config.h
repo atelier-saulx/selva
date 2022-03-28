@@ -11,6 +11,8 @@ struct RedisModuleString;
 struct selva_glob_config {
     size_t hierarchy_initial_vector_len;
     size_t hierarchy_expected_resp_len;
+    int hierarchy_auto_compress_period_ms;
+    int hierarchy_auto_compress_old_age_lim;
     int find_indices_max;
     int find_indexing_threshold;
     int find_indexing_icb_update_interval;

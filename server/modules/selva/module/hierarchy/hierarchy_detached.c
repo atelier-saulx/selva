@@ -26,7 +26,7 @@ enum SELVA_HIERARCHY_DETACHED_TYPE {
 };
 
 int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct compressed_rms **compressed) {
-    struct SelvaObject *index = hierarchy->index_detached.obj;
+    struct SelvaObject *index = hierarchy->detached.obj;
     void *p;
     int err;
 
@@ -66,7 +66,7 @@ int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_Nod
  * done by the caller.
  */
 void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id) {
-    struct SelvaObject *index = hierarchy->index_detached.obj;
+    struct SelvaObject *index = hierarchy->detached.obj;
 
     if (!index) {
         return;
@@ -82,7 +82,7 @@ void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_No
  * process.
  */
 int SelvaHierarchyDetached_AddNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct compressed_rms *compressed) {
-    struct SelvaObject *index = hierarchy->index_detached.obj;
+    struct SelvaObject *index = hierarchy->detached.obj;
 
     if (!index) {
         index = SelvaObject_New();
@@ -90,7 +90,7 @@ int SelvaHierarchyDetached_AddNode(SelvaHierarchy *hierarchy, const Selva_NodeId
             return SELVA_ENOMEM;
         }
 
-        hierarchy->index_detached.obj = index;
+        hierarchy->detached.obj = index;
     }
 
     return SelvaObject_SetPointerStr(index, node_id, SELVA_NODE_ID_SIZE, PTAG(compressed, SELVA_HIERARCHY_DETACHED_COMPRESSED), NULL);
