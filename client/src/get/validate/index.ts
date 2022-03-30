@@ -108,7 +108,9 @@ async function validateNested(
   path: string
 ): Promise<void> {
   if (fieldName && fieldName !== '*') {
-    validateFieldPath(fieldName)
+    if (typeof props === 'boolean' || !props.$field) {
+      validateFieldPath(fieldName)
+    }
   }
 
   if (props === true) {
