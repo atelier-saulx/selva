@@ -180,15 +180,10 @@ const worker = (
   })
 
 const removeDump = (dir: string) => {
-  return async () => {
+  return () => {
     if (fs.existsSync(dir)) {
-      rimraf(dir, (err) => {
-        if (err) {
-          console.log('cannot remove dump')
-        }
-      })
+      rimraf.sync(dir)
     }
-    await wait(1e3)
   }
 }
 

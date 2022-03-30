@@ -16,7 +16,6 @@ async function restartServer() {
     srv.destroy()
     await wait(5000)
   }
-  removeDump(dir)
 
   port = await getPort()
   srv = await start({
@@ -25,14 +24,13 @@ async function restartServer() {
   })
 }
 
+test.before(removeDump(dir))
 test.after(removeDump(dir))
 
 test.beforeEach(async (t) => {
   await restartServer()
 
-  await new Promise((resolve, _reject) => {
-    setTimeout(resolve, 100)
-  })
+  await wait(100)
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en', 'de', 'nl'],
@@ -131,7 +129,7 @@ test.beforeEach(async (t) => {
   })
 
   // A small delay is needed after setting the schema
-  await new Promise((r) => setTimeout(r, 100))
+  await wait(100)
 
   await client.destroy()
 })
@@ -142,7 +140,7 @@ test.after(async (t) => {
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
-  removeDump(dir)
+  removeDump(dir)()
 })
 
 test.serial('can reload from RDB', async (t) => {
