@@ -1,5 +1,5 @@
 import test from 'ava'
-const { compile, createRecord } = require('data-record')
+import { compile, createRecord } from 'data-record'
 import { connect } from '../src/index'
 import { setRecordDefCstring, edgeMetaDef } from '../src/set/modifyDataRecords'
 import { start } from '@saulx/selva-server'
