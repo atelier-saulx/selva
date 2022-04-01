@@ -53,6 +53,17 @@
  */
 #define HIERARCHY_SORT_BY_DEPTH         0
 
+/**
+ * Attempt to compress inactive nodes in-memory.
+ * 0 Disables automatic compression.
+ */
+#define HIERARCHY_AUTO_COMPRESS_PERIOD_MS 0
+
+/**
+ * Hierarchy auto compression transaction age limit.
+ */
+#define HIERARCHY_AUTO_COMPRESS_OLD_AGE_LIM 100
+
 /*
  * RPN Tunables.
  */

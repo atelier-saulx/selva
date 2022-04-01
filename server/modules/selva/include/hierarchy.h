@@ -144,11 +144,34 @@ struct SelvaHierarchy {
     } dyn_index;
 
     /**
+     * State for inactive nodes tracking.
+     * These are nodes potentially moving to the detached hierarchy.
+     */
+    struct {
+        /**
+         * Inactive nodeIds.
+         * Inactive node ids are listed here on RDB save for further
+         * processing. This is a pointer to a memory region shared with the
+         * RDB child process.
+         * NodeIds listed here have been inactive for a long time and are
+         * potential candidates for compression.
+         */
+        Selva_NodeId *nodes;
+        size_t nr_nodes;
+        size_t next; /*!< Next empty slot in inactive_nodes. */
+
+        /**
+         * A timer used by auto compression.
+         */
+        RedisModuleTimerID auto_compress_timer;
+    } inactive;
+
+    /**
      * Storage descriptor for detached nodes.
      * It's possible to determine if a node exists in a detached subtree and restore
      * the node and its subtree using this structure.
      */
-    struct SelvaHierarchyDetached {
+    struct {
         /**
          * The object maps each detached nodeId to a pointer that describes where
          * the detached subtree containing the nodeId is located. E.g. it can be
@@ -156,7 +179,7 @@ struct SelvaHierarchy {
          * subtree string.
          */
         struct SelvaObject *obj;
-    } index_detached;
+    } detached;
 };
 
 /**
