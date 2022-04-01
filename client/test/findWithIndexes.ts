@@ -115,16 +115,16 @@ test.serial('find index', async (t) => {
   }
 
   t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
-    'root.I.ImxlIiBl',
+    'root.J.ImxlIiBl',
     'not_active',
-    'root.I.InRoaW5nIiBo',
+    'root.J.InRoaW5nIiBo',
     'not_active',
   ])
   await wait(1e3)
   t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
-    'root.I.ImxlIiBl',
+    'root.J.ImxlIiBl',
     'not_active',
-    'root.I.InRoaW5nIiBo',
+    'root.J.InRoaW5nIiBo',
     'not_active',
   ])
 
@@ -151,12 +151,12 @@ test.serial('find index', async (t) => {
   }
 
   const ilist = await client.redis.selva_index_list('___selva_hierarchy')
-  t.deepEqual(ilist[0], 'root.I.ImxlIiBl')
+  t.deepEqual(ilist[0], 'root.J.ImxlIiBl')
   t.truthy(ilist[1][0] > 140, `${ilist[1][0]}`)
   t.truthy(ilist[1][1] > 700, `${ilist[1][1]}`)
   t.truthy(ilist[1][2] < 1, `${ilist[1][2]}`)
   t.truthy(ilist[1][3] === '3002', `${ilist[1][2]}`)
-  t.deepEqual(ilist[2], 'root.I.InRoaW5nIiBo')
+  t.deepEqual(ilist[2], 'root.J.InRoaW5nIiBo')
   t.truthy(ilist[3][0] > 200, `${ilist[1][0]}`)
   t.truthy(ilist[3][1] > 700, `${ilist[1][1]}`)
   t.truthy(ilist[3][2] > 700, `${ilist[1][2]}`)
@@ -211,7 +211,7 @@ test.serial('find index strings', async (t) => {
   }
 
   const ilist = await client.redis.selva_index_list('___selva_hierarchy')
-  t.deepEqual(ilist[0], 'root.I.Im5hbWUiIGYgImxlYWd1ZSAwIiBj')
+  t.deepEqual(ilist[0], 'root.J.Im5hbWUiIGYgImxlYWd1ZSAwIiBj')
   t.truthy(ilist[1][0] > 80, `${ilist[1][0]}`)
   t.truthy(ilist[1][1] > 80, `${ilist[1][1]}`)
   t.truthy(ilist[1][2] > 1300, `${ilist[1][2]}`)
@@ -283,12 +283,12 @@ test.serial('find index string sets', async (t) => {
   await wait(1e3)
 
   const ilist = await client.redis.selva_index_list('___selva_hierarchy')
-  t.deepEqual(ilist[0], 'root.I.ImciICJ0aGluZ3MiIGE=')
+  t.deepEqual(ilist[0], 'root.J.ImciICJ0aGluZ3MiIGE=')
   t.truthy(ilist[1][0] > 90, `${ilist[1][0]}`)
   t.truthy(ilist[1][1] > 90, `${ilist[1][1]}`)
   t.truthy(ilist[1][2] > 5, `${ilist[1][2]}`)
   t.truthy(ilist[1][3] > 5, `${ilist[1][2]}`)
-  t.deepEqual(ilist[2], 'root.I.InRoaW5nIiBmICJhYmMiIGM=')
+  t.deepEqual(ilist[2], 'root.J.InRoaW5nIiBmICJhYmMiIGM=')
   t.truthy(ilist[3][0] > 90, `${ilist[1][0]}`)
   t.truthy(ilist[3][1] > 90, `${ilist[1][1]}`)
   t.truthy(ilist[3][2] > 5, `${ilist[1][2]}`)
@@ -338,7 +338,7 @@ test.serial('find index integers', async (t) => {
   }
 
   const ilist = await client.redis.selva_index_list('___selva_hierarchy')
-  t.deepEqual(ilist[0], 'root.I.ImNhdCIgZyAjMyBG')
+  t.deepEqual(ilist[0], 'root.J.ImNhdCIgZyAjMyBG')
   t.truthy(ilist[1][0] > 10, `${ilist[1][0]}`)
   t.truthy(ilist[1][1] > 100, `${ilist[1][1]}`)
   t.truthy(ilist[1][2] > 10, `${ilist[1][2]}`)
@@ -418,12 +418,12 @@ test.serial('find index exists', async (t) => {
   await wait(1e3)
 
   const ilist = await client.redis.selva_index_list('___selva_hierarchy')
-  t.deepEqual(ilist[0], 'root.I.InRoaW5nIiBo')
+  t.deepEqual(ilist[0], 'root.J.InRoaW5nIiBo')
   t.truthy(ilist[1][0] > 50, `${ilist[1][0]}`)
   t.truthy(ilist[1][1] > 100, `${ilist[1][1]}`)
   t.truthy(ilist[1][2] > 100, `${ilist[1][2]}`)
   t.truthy(ilist[1][3] > 490, `${ilist[1][2]}`)
-  t.deepEqual(ilist[2], 'root.I.InRoaW5ncyIgaCBM', `${ilist[2]}`)
+  t.deepEqual(ilist[2], 'root.J.InRoaW5ncyIgaCBM', `${ilist[2]}`)
   t.truthy(ilist[3][0] > 70, `${ilist[3][0]}`)
   t.truthy(ilist[3][1] > 200, `${ilist[3][1]}`)
   t.truthy(ilist[3][2] > 150, `${ilist[3][2]}`)
