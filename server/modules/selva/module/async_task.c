@@ -56,12 +56,10 @@ struct SelvaModify_AsyncTask {
         /* SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE */
         struct {
             Selva_SubscriptionId sub_id;
-            Selva_SubscriptionMarkerId marker_id;
         } sub_update;
         /* SELVA_MODIFY_ASYNC_TASK_SUB_TRIGGER */
         struct {
             Selva_SubscriptionId sub_id;
-            Selva_SubscriptionMarkerId marker_id;
             Selva_NodeId node_id;
         } sub_trigger;
     };
