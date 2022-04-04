@@ -145,7 +145,7 @@ int SelvaTraversal_ParseOrder(
         const struct RedisModuleString *fld,
         const struct RedisModuleString *ord);
 int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct RedisModuleString *arg);
-orderFunc SelvaTraversal_GetOrderFunc(enum SelvaResultOrder order);
+int SelvaTraversal_InitOrderResult(SVector *order_result, enum SelvaResultOrder order, ssize_t limit);
 struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,

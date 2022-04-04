@@ -702,10 +702,9 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     TO_STR(ids);
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        const size_t resp_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
-
-        if (!SVector_Init(&order_result, resp_len, SelvaTraversal_GetOrderFunc(order))) {
-            replyWithSelvaError(ctx, SELVA_ENOMEM);
+        err = SelvaTraversal_InitOrderResult(&order_result, order, limit);
+        if (err) {
+            replyWithSelvaError(ctx, err);
             goto out;
         }
     }
@@ -1001,10 +1000,9 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     TO_STR(ids);
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        const size_t resp_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
-
-        if (!SVector_Init(&order_result, resp_len, SelvaTraversal_GetOrderFunc(order))) {
-            replyWithSelvaError(ctx, SELVA_ENOMEM);
+        err = SelvaTraversal_InitOrderResult(&order_result, order, limit);
+        if (err) {
+            replyWithSelvaError(ctx, err);
             goto out;
         }
     }

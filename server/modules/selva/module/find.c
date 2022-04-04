@@ -1625,8 +1625,9 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     TO_STR(ids);
 
     if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        if (!SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, SelvaTraversal_GetOrderFunc(order))) {
-            return replyWithSelvaError(ctx, SELVA_ENOMEM);
+        err = SelvaTraversal_InitOrderResult(&order_result, order, limit);
+        if (err) {
+            return replyWithSelvaError(ctx, err);
         }
     }
 
@@ -2021,10 +2022,12 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     }
 
     SVECTOR_AUTOFREE(order_result); /*!< for ordered result. */
-    if (order != HIERARCHY_RESULT_ORDER_NONE &&
-        !SVector_Init(&order_result, (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN, SelvaTraversal_GetOrderFunc(order))) {
-        replyWithSelvaError(ctx, SELVA_ENOMEM);
-        goto out;
+    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+        err = SelvaTraversal_InitOrderResult(&order_result, order, limit);
+        if (err) {
+            replyWithSelvaError(ctx, err);
+            goto out;
+        }
     }
 
     ssize_t array_len = 0;
