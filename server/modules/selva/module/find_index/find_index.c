@@ -53,12 +53,17 @@ struct SelvaFindIndexControlBlock {
          */
         unsigned active : 1;
         /**
-         * `res` set is considered valid.
-         * This can go 0 even when we are indexing if the `res` SelvaSet needs
-         * to be refreshed after a `SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY` event
-         * was received.
+         * The indexing result `res` is considered valid.
+         * This can go 0 even when we are indexing if the `res.set` SelvaSet
+         * needs to be refreshed after a `SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY`
+         * event was received.
          */
         unsigned valid : 1;
+        /**
+         * The index is ordered.
+         * Use `res.ord` instead of `res.set`.
+         */
+        unsigned ordered: 1;
     } flags;
 
     /**
@@ -130,7 +135,16 @@ struct SelvaFindIndexControlBlock {
      * Only valid if `flags.valid` is set.
      * The elements in this set are Selva_NodeIds.
      */
-    struct SelvaSet res;
+    union {
+        /**
+         * Unordered indexing result.
+         */
+        struct SelvaSet set;
+        /**
+         * Ordered indexing result.
+         */
+        struct SVector ord;
+    } res;
 
     /**
      * Length of name_str.
@@ -250,7 +264,11 @@ static void update_index(
     icb = (struct SelvaFindIndexControlBlock *)marker->marker_action_owner_ctx;
 
     if (event_flags & SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY) {
-        /* Delete the res to trigger a refresh. */
+        /*
+         * A node within the index was deleted.
+         *
+         * Delete the res to trigger a full refresh.
+         */
         if (icb->flags.valid) {
 #if 0
             Selva_NodeId node_id;
@@ -261,24 +279,34 @@ static void update_index(
                     (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
 
-            SelvaSet_Destroy(&icb->res);
+            SelvaSet_Destroy(&icb->res.set);
             icb->flags.valid = 0;
 
-            /* Clear the accounting. */
+            /*
+             * Clear the accounting.
+             * TODO Maybe we shouldn't clear all of this?
+             */
             memset(&icb->find_acc, 0, sizeof(icb->find_acc));
         }
     } else if (event_flags & SELVA_SUBSCRIPTION_FLAG_REFRESH) {
         /*
-         * Presumably there is no way another command would be handled before
-         * we have received an event for every node in the traversal, therefore
-         * there is no risk setting this valid before all the ids have been
-         * actually added.
+         * Rebuild the index.
+         *
+         * The subscription for this index is refreshing and we'll be getting
+         * called with SELVA_SUBSCRIPTION_FLAG_REFRESH once for each node in the
+         * traversal.
          */
         if (!icb->flags.valid) {
+            /*
+             * Presumably there is no way another command would be handled before
+             * we have received an event for every node in the traversal,
+             * therefore there is no risk setting this result valid before all
+             * the ids have been actually added.
+             */
             icb->flags.valid = 1;
 
             /* Initialize the res set before indexing. */
-            SelvaSet_Init(&icb->res, SELVA_SET_TYPE_NODEID);
+            SelvaSet_Init(&icb->res.set, SELVA_SET_TYPE_NODEID);
         }
 
         if (Selva_SubscriptionFilterMatch(ctx, hierarchy, node, marker)) {
@@ -291,11 +319,13 @@ static void update_index(
                         __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
-                SelvaSet_Add(&icb->res, node_id);
+                SelvaSet_Add(&icb->res.set, node_id);
             }
         }
     } else if (event_flags & (SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY | SELVA_SUBSCRIPTION_FLAG_CH_FIELD)) {
         /*
+         * An additive change in the hierarchy.
+         *
          * Note that SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY applies to both
          * deleting and adding a node. However, we know that currently deleting
          * a node will cause also a SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY event.
@@ -305,7 +335,7 @@ static void update_index(
 
             SelvaHierarchy_GetNodeId(node_id, node);
             if (!skip_node(icb, node_id)) {
-                SelvaSet_Add(&icb->res, node_id);
+                SelvaSet_Add(&icb->res.set, node_id);
 #if 0
                 fprintf(stderr, "%s:%d: Adding node %.*s to the index\n",
                         __FILE__, __LINE__,
@@ -425,7 +455,7 @@ static int discard_index(
     if (icb->flags.valid) {
         /* Destroy the index but not the control block. */
         icb->flags.valid = 0;
-        SelvaSet_Destroy(&icb->res);
+        SelvaSet_Destroy(&icb->res.set);
     }
 
     /* Clear accouting. */
@@ -973,7 +1003,7 @@ int SelvaFind_AutoIndex(
         return SELVA_ENOENT;
     }
 
-    *out = &icb->res;
+    *out = &icb->res.set;
     return 0;
 }
 
@@ -1029,7 +1059,7 @@ static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
             } else if (!icb->flags.valid) {
                 RedisModule_ReplyWithSimpleString(ctx, "not_valid");
             } else {
-                RedisModule_ReplyWithDouble(ctx, (double)SelvaSet_Size(&icb->res));
+                RedisModule_ReplyWithDouble(ctx, (double)SelvaSet_Size(&icb->res.set));
             }
         } else if (type == SELVA_OBJECT_OBJECT) {
             n += list_index(ctx, (struct SelvaObject *)p);
