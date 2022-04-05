@@ -284,7 +284,7 @@ static int icb_res_add(struct SelvaFindIndexControlBlock *icb, Selva_NodeId node
     return 0;
 }
 
-static size_t icb_res_card(const struct SelvaFindIndexControlBlock *icb) {
+size_t SelvaFind_IcbCard(const struct SelvaFindIndexControlBlock *icb) {
     if (icb->flags.ordered) {
         return SVector_Size(&icb->res.ord);
     } else {
@@ -1016,8 +1016,7 @@ int SelvaFind_AutoIndex(
         enum SelvaTraversal dir, RedisModuleString *dir_expression,
         const Selva_NodeId node_id,
         RedisModuleString *filter,
-        struct SelvaFindIndexControlBlock **icb_out,
-        struct SelvaSet **out) {
+        struct SelvaFindIndexControlBlock **icb_out) {
     SELVA_TRACE_BEGIN_AUTO(FindIndex_AutoIndex);
     struct SelvaFindIndexControlBlock *icb;
     TO_STR(filter);
@@ -1045,11 +1044,37 @@ int SelvaFind_AutoIndex(
         return SELVA_ENOENT;
     }
 
+    return 0;
+}
+
+int SelvaFind_TraverseIndex(
+        struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaFindIndexControlBlock *icb,
+        SelvaHierarchyNodeCallback node_cb, /* TODO Move these types to traversal.h */
+        void * node_arg) {
     if (icb->flags.ordered) {
         /* TODO */
     } else {
-        *out = &icb->res.set;
+        struct SelvaSetElement *el;
+
+        SELVA_SET_NODEID_FOREACH(el, &icb->res.set) {
+            struct SelvaHierarchyNode *node;
+
+            node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
+            if (node) {
+                /*
+                 * Note that we don't break here on limit because limit and
+                 * indexing are incompatible, unless limit is used together
+                 * with order.
+                 * The reason is that we can't guarantee that the returned nodes
+                 * would be the exactly same with and without indexing.
+                 */
+                (void)node_cb(ctx, hierarchy, node, node_arg);
+            }
+        }
     }
+
     return 0;
 }
 
@@ -1105,7 +1130,7 @@ static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
             } else if (!icb->flags.valid) {
                 RedisModule_ReplyWithSimpleString(ctx, "not_valid");
             } else {
-                RedisModule_ReplyWithDouble(ctx, (double)icb_res_card(icb));
+                RedisModule_ReplyWithDouble(ctx, (double)SelvaFind_IcbCard(icb));
             }
         } else if (type == SELVA_OBJECT_OBJECT) {
             n += list_index(ctx, (struct SelvaObject *)p);
@@ -1153,7 +1178,6 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     Selva_NodeId node_id;
     RedisModuleString *filter;
     struct SelvaFindIndexControlBlock *icb = NULL;
-    struct SelvaSet *set;
     int err;
 
     if (argc != 6) {
@@ -1198,7 +1222,7 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     /* TODO Validate */
     filter = argv[ARGV_FILTER];
 
-    err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expression, node_id, filter, &icb, &set);
+    err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expression, node_id, filter, &icb);
     if ((err && err != SELVA_ENOENT) || !icb) {
         return replyWithSelvaErrorf(ctx, err, "Failed to create an index");
     }

@@ -1664,11 +1664,9 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
          * FIND_INDICES_MAX_HINTS_FIND
          */
         struct SelvaFindIndexControlBlock *ind_icb[max(nr_index_hints, 1)];
-        struct SelvaSet *ind_out[max(nr_index_hints, 1)];
         int ind_select = -1; /* Selected index. The smallest of all found. */
 
         memset(ind_icb, 0, nr_index_hints * sizeof(struct SelvaFindIndexControlBlock *));
-        memset(ind_out, 0, nr_index_hints * sizeof(struct SelvaSet *));
 
         /* find_indices_max == 0 => indexing disabled */
         if (nr_index_hints > 0 && selva_glob_config.find_indices_max > 0) {
@@ -1690,15 +1688,12 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
              */
             for (int j = 0; j < nr_index_hints; j++) {
                 struct SelvaFindIndexControlBlock *icb = NULL;
-                struct SelvaSet *set = NULL;
                 int ind_err;
 
-                ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hints[j], &icb, &set);
+                ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hints[j], &icb);
                 ind_icb[j] = icb;
                 if (!ind_err) {
-                    ind_out[j] = set;
-
-                    if (ind_select < 0 || SelvaSet_Size(set) < SelvaSet_Size(ind_out[ind_select])) {
+                    if (ind_select < 0 || SelvaFind_IcbCard(icb) < SelvaFind_IcbCard(ind_icb[ind_select])) {
                         ind_select = j; /* Select the smallest index res set for fastest lookup. */
                     }
                 } else if (ind_err != SELVA_ENOENT) {
@@ -1739,8 +1734,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         }
 
         if (ind_select >= 0) {
-            struct SelvaSetElement *el;
-
             /*
              * There is no need to run the filter again if the indexing was
              * executing the same filter already.
@@ -1751,22 +1744,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             }
 
             SELVA_TRACE_BEGIN(cmd_find_index);
-            SELVA_SET_NODEID_FOREACH(el, ind_out[ind_select]) {
-                struct SelvaHierarchyNode *node;
-
-                node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
-                if (node) {
-                    /*
-                     * Note that we don't break here on limit because limit and
-                     * indexing are incompatible, unless limit is used together
-                     * with order.
-                     * The reason is that we can't guarantee that the returned nodes
-                     * would be the exactly same with and without indexing.
-                     */
-                    (void)FindCommand_NodeCb(ctx, hierarchy, node, &args);
-                }
-            }
-            err = 0;
+            err = SelvaFind_TraverseIndex(ctx, hierarchy, ind_icb[ind_select], FindCommand_NodeCb, &args);
             SELVA_TRACE_END(cmd_find_index);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             struct FindCommand_ArrayObjectCb array_args = {
