@@ -246,6 +246,52 @@ static int skip_node(const struct SelvaFindIndexControlBlock *icb, const Selva_N
     return SelvaTraversal_GetSkip(icb->traversal.dir) && !memcmp(node_id, icb->traversal.node_id, SELVA_NODE_ID_SIZE);
 }
 
+static int icb_res_init(struct SelvaFindIndexControlBlock *icb) {
+    if (icb->flags.ordered) {
+        /* TODO */
+        return 0;
+    } else {
+        SelvaSet_Init(&icb->res.set, SELVA_SET_TYPE_NODEID);
+        return 0;
+    }
+}
+
+static void icb_res_destroy(struct SelvaFindIndexControlBlock *icb) {
+    if (icb->flags.valid) {
+        icb->flags.valid = 0;
+
+        if (icb->flags.ordered) {
+            SVector_Destroy(&icb->res.ord);
+        } else {
+            SelvaSet_Destroy(&icb->res.set);
+        }
+    }
+}
+
+static int icb_res_add(struct SelvaFindIndexControlBlock *icb, Selva_NodeId node_id) {
+    if (icb->flags.ordered) {
+        /* TODO */
+        //SVector_InsertFast(&icb->res.ord, );
+    } else {
+        int err;
+
+        err = SelvaSet_Add(&icb->res.set, node_id);
+        if (err && err != SELVA_EEXIST) {
+            return err;
+        }
+    }
+
+    return 0;
+}
+
+static size_t icb_res_card(const struct SelvaFindIndexControlBlock *icb) {
+    if (icb->flags.ordered) {
+        return SVector_Size(&icb->res.ord);
+    } else {
+        return SelvaSet_Size(&icb->res.set);
+    }
+}
+
 /**
  * A callback function to update the index on hierarchy changes.
  */
@@ -279,8 +325,7 @@ static void update_index(
                     (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
 
-            SelvaSet_Destroy(&icb->res.set);
-            icb->flags.valid = 0;
+            icb_res_destroy(icb);
 
             /*
              * Clear the accounting.
@@ -305,8 +350,8 @@ static void update_index(
              */
             icb->flags.valid = 1;
 
-            /* Initialize the res set before indexing. */
-            SelvaSet_Init(&icb->res.set, SELVA_SET_TYPE_NODEID);
+            /* Initialize `res` before indexing. */
+            icb_res_init(icb);
         }
 
         if (Selva_SubscriptionFilterMatch(ctx, hierarchy, node, marker)) {
@@ -319,7 +364,7 @@ static void update_index(
                         __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
-                SelvaSet_Add(&icb->res.set, node_id);
+                icb_res_add(icb, node_id);
             }
         }
     } else if (event_flags & (SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY | SELVA_SUBSCRIPTION_FLAG_CH_FIELD)) {
@@ -335,7 +380,7 @@ static void update_index(
 
             SelvaHierarchy_GetNodeId(node_id, node);
             if (!skip_node(icb, node_id)) {
-                SelvaSet_Add(&icb->res.set, node_id);
+                icb_res_add(icb, node_id);
 #if 0
                 fprintf(stderr, "%s:%d: Adding node %.*s to the index\n",
                         __FILE__, __LINE__,
@@ -452,11 +497,8 @@ static int discard_index(
         }
     }
 
-    if (icb->flags.valid) {
-        /* Destroy the index but not the control block. */
-        icb->flags.valid = 0;
-        SelvaSet_Destroy(&icb->res.set);
-    }
+    /* Destroy the index but not the control block. */
+    icb_res_destroy(icb);
 
     /* Clear accouting. */
     memset(&icb->find_acc, 0, sizeof(icb->find_acc));
@@ -1003,7 +1045,11 @@ int SelvaFind_AutoIndex(
         return SELVA_ENOENT;
     }
 
-    *out = &icb->res.set;
+    if (icb->flags.ordered) {
+        /* TODO */
+    } else {
+        *out = &icb->res.set;
+    }
     return 0;
 }
 
@@ -1059,7 +1105,7 @@ static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
             } else if (!icb->flags.valid) {
                 RedisModule_ReplyWithSimpleString(ctx, "not_valid");
             } else {
-                RedisModule_ReplyWithDouble(ctx, (double)SelvaSet_Size(&icb->res.set));
+                RedisModule_ReplyWithDouble(ctx, (double)icb_res_card(icb));
             }
         } else if (type == SELVA_OBJECT_OBJECT) {
             n += list_index(ctx, (struct SelvaObject *)p);
