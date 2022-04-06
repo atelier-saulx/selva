@@ -7,6 +7,7 @@
 #define _FIND_INDEX_H_
 
 #include "traversal.h"
+#include "traversal_order.h"
 
 struct RedisModuleCtx;
 struct RedisModuleString;
@@ -29,6 +30,8 @@ size_t SelvaFind_IcbCard(const struct SelvaFindIndexControlBlock *icb);
 
 /**
  * Check if an index exists for this query, update it, and get the indexing result set.
+ * @param order Set to other than SELVA_RESULT_ORDER_NONE if the index should be sorted.
+ * @param order_field Should be non-NULL only if the index should be sorted.
  * @param out is a SelvaSet of node_ids indexed for given clause.
  */
 int SelvaFind_AutoIndex(
@@ -36,8 +39,19 @@ int SelvaFind_AutoIndex(
         struct SelvaHierarchy *hierarchy,
         enum SelvaTraversal dir, struct RedisModuleString *dir_expression_str,
         const Selva_NodeId node_id,
+        enum SelvaResultOrder order,
+        struct RedisModuleString *order_field,
         struct RedisModuleString *filter,
         struct SelvaFindIndexControlBlock **icb_out);
+
+/**
+ * Check whether an ICB is created as an ordered.
+ * This function doesn't check whether the index is actually valid.
+ */
+int SelvaFind_IsOrderedIndex(
+        struct SelvaFindIndexControlBlock *icb,
+        enum SelvaResultOrder order,
+        struct RedisModuleString *order_field);
 
 int SelvaFind_TraverseIndex(
         struct RedisModuleCtx *ctx,

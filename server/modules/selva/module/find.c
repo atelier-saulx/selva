@@ -1464,7 +1464,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * Parse the order arg.
      */
     enum SelvaResultOrder order = SELVA_RESULT_ORDER_NONE;
-    const RedisModuleString *order_by_field = NULL;
+    RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
         err = SelvaTraversal_ParseOrder(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
@@ -1690,7 +1690,11 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 struct SelvaFindIndexControlBlock *icb = NULL;
                 int ind_err;
 
-                ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, index_hints[j], &icb);
+                /*
+                 * Hint: It's possible to disable ordered indices completely
+                 * by changing order here to SELVA_RESULT_ORDER_NONE.
+                 */
+                ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, order, order_by_field, index_hints[j], &icb);
                 ind_icb[j] = icb;
                 if (!ind_err) {
                     if (ind_select < 0 || SelvaFind_IcbCard(icb) < SelvaFind_IcbCard(ind_icb[ind_select])) {
@@ -1702,6 +1706,19 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                             getSelvaErrorStr(ind_err));
                 }
             }
+        }
+
+        /*
+         * If the index is already ordered then we don't need to sort the
+         * response. This won't work if we have multiple nodeIds because
+         * obviously the order might differ and we may not have an ordered
+         * index for each id.
+         */
+        if (ind_select >= 0 &&
+            ids_len == SELVA_NODE_ID_SIZE &&
+            SelvaFind_IsOrderedIndex(ind_icb[ind_select], order, order_by_field)) {
+            order = SELVA_RESULT_ORDER_NONE;
+            order_by_field = NULL; /* This controls sorting in the callback. */
         }
 
         /*
@@ -1916,7 +1933,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
      * Parse the order arg.
      */
     enum SelvaResultOrder order = SELVA_RESULT_ORDER_NONE;
-    const RedisModuleString *order_by_field = NULL;
+    RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
         err = SelvaTraversal_ParseOrder(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],

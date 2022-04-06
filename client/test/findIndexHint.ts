@@ -238,6 +238,6 @@ test.serial('traversal expression with index', async (t) => {
 
   t.deepEqual(
     (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]),
-    [ `${id}.O.eyJwYXJlbnRzIiwiY2hpbGRyZW4ifQ==.IzQgInZhbHVlIiBnIEU=`, '674' ]
+    [ `${id}.O.eyJwYXJlbnRzIiwiY2hpbGRyZW4ifQ==.B.dmFsdWU=.IzQgInZhbHVlIiBnIEU=`, '674' ]
   )
 })
