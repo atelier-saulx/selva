@@ -43,8 +43,8 @@ int SelvaFind_TraverseIndex(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaFindIndexControlBlock *icb,
-        SelvaHierarchyNodeCallback node_cb, /* TODO Move these types to traversal.h */
-        void * node_arg);
+        SelvaHierarchyNodeCallback node_cb,
+        void *node_arg);
 
 /**
  * Update indexing accounting.
