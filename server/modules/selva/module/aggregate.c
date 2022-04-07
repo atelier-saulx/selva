@@ -20,6 +20,7 @@
 #include "subscriptions.h"
 #include "svector.h"
 #include "traversal.h"
+#include "traversal_order.h"
 
 enum SelvaHierarchy_AggregateType {
     SELVA_AGGREGATE_TYPE_COUNT_NODE = '0',
@@ -258,9 +259,9 @@ static int AggregateCommand_NodeCb(
                 return 1;
             }
         } else {
-            struct TraversalOrderedItem *item;
+            struct TraversalOrderItem *item;
 
-            item = SelvaTraversal_CreateOrderItem(ctx, args->find_args.lang, node, args->find_args.order_field);
+            item = SelvaTraversalOrder_CreateOrderItem(ctx, args->find_args.lang, node, args->find_args.order_field);
             if (item) {
                 SVector_InsertFast(args->find_args.order_result, item);
             } else {
@@ -270,7 +271,7 @@ static int AggregateCommand_NodeCb(
                  * life, it's fairly ok to just log the error and return what
                  * we can.
                  */
-                fprintf(stderr, "%s:%d: Out of memory while creating an ordered result item\n",
+                fprintf(stderr, "%s:%d: Out of memory while creating an order result item\n",
                         __FILE__, __LINE__);
             }
         }
@@ -336,8 +337,8 @@ static int AggregateCommand_ArrayObjectCb(
                 return 1;
             }
         } else {
-            struct TraversalOrderedItem *item;
-            item = SelvaTraversal_CreateObjectBasedOrderItem(args->ctx, args->find_args.lang, obj, args->find_args.order_field);
+            struct TraversalOrderItem *item;
+            item = SelvaTraversalOrder_CreateObjectBasedOrderItem(args->ctx, args->find_args.lang, obj, args->find_args.order_field);
             if (item) {
                 SVector_InsertFast(args->find_args.order_result, item);
             } else {
@@ -347,7 +348,7 @@ static int AggregateCommand_ArrayObjectCb(
                  * life, it's fairly ok to just log the error and return what
                  * we can.
                  */
-                fprintf(stderr, "%s:%d: Out of memory while creating an ordered result item\n",
+                fprintf(stderr, "%s:%d: Out of memory while creating an order result item\n",
                         __FILE__, __LINE__);
             }
         }
@@ -356,7 +357,7 @@ static int AggregateCommand_ArrayObjectCb(
     return 0;
 }
 
-static size_t AggregateCommand_AggregateOrderedResult(
+static size_t AggregateCommand_AggregateOrderResult(
         RedisModuleCtx *ctx __unused,
         RedisModuleString *lang __unused,
         void *arg,
@@ -364,7 +365,7 @@ static size_t AggregateCommand_AggregateOrderedResult(
         ssize_t limit,
         struct SelvaObject *fields __unused,
         SVector *order_result) {
-    struct TraversalOrderedItem *item;
+    struct TraversalOrderItem *item;
     struct SVectorIterator it;
     size_t len = 0;
 
@@ -409,7 +410,7 @@ static size_t AggregateCommand_AggregateOrderedResult(
     return len;
 }
 
-static size_t AggregateCommand_AggregateOrderedArrayResult(
+static size_t AggregateCommand_AggregateOrderArrayResult(
         RedisModuleCtx *ctx,
         RedisModuleString *lang __unused,
         void *arg __unused,
@@ -418,7 +419,7 @@ static size_t AggregateCommand_AggregateOrderedArrayResult(
         ssize_t limit,
         struct SelvaObject *fields __unused,
         SVector *order_result) {
-    struct TraversalOrderedItem *item;
+    struct TraversalOrderItem *item;
     struct SVectorIterator it;
     size_t len = 0;
 
@@ -519,7 +520,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     }
 
     RedisModuleString *lang = argv[ARGV_LANG];
-    SVECTOR_AUTOFREE(order_result); /*!< for ordered result. */
+    SVECTOR_AUTOFREE(order_result); /*!< for order result. */
     selvaobject_autofree struct SelvaObject *fields = NULL;
     struct rpn_ctx *traversal_rpn_ctx = NULL;
     struct rpn_expression *traversal_expression = NULL;
@@ -592,7 +593,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     /*
      * Parse the order arg.
      */
-    enum SelvaResultOrder order = HIERARCHY_RESULT_ORDER_NONE;
+    enum SelvaResultOrder order = SELVA_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
         err = SelvaTraversal_ParseOrder(&order_by_field, &order,
@@ -701,11 +702,10 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     const RedisModuleString *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
-    if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        const size_t resp_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
-
-        if (!SVector_Init(&order_result, resp_len, SelvaTraversal_GetOrderFunc(order))) {
-            replyWithSelvaError(ctx, SELVA_ENOMEM);
+    if (order != SELVA_RESULT_ORDER_NONE) {
+        err = SelvaTraversalOrder_InitOrderResult(&order_result, order, limit);
+        if (err) {
+            replyWithSelvaError(ctx, err);
             goto out;
         }
     }
@@ -737,8 +737,8 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         struct FindCommand_Args find_args = {
             .lang = lang,
             .nr_nodes = &nr_nodes,
-            .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset + skip : skip,
-            .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
+            .offset = (order == SELVA_RESULT_ORDER_NONE) ? offset + skip : skip,
+            .limit = (order == SELVA_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
             .send_param.fields = fields,
@@ -792,10 +792,10 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     }
 
     /*
-     * If an ordered request was requested then nothing was send to the client yet
+     * If an order request was requested then nothing was send to the client yet
      * and we need to do it now.
      */
-    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+    if (order != SELVA_RESULT_ORDER_NONE) {
         struct AggregateCommand_Args ord_args = {
             .ctx = ctx,
             .aggregate_type = agg_fn_val,
@@ -808,8 +808,8 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         };
 
         nr_nodes = (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY)
-            ? AggregateCommand_AggregateOrderedArrayResult(ctx, lang, &ord_args, hierarchy, offset, limit, fields, &order_result)
-            : AggregateCommand_AggregateOrderedResult(ctx, lang, &ord_args, offset, limit, fields, &order_result);
+            ? AggregateCommand_AggregateOrderArrayResult(ctx, lang, &ord_args, hierarchy, offset, limit, fields, &order_result)
+            : AggregateCommand_AggregateOrderResult(ctx, lang, &ord_args, offset, limit, fields, &order_result);
 
         AggregateCommand_PrintAggregateResult(ctx, &ord_args);
     } else {
@@ -892,7 +892,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     /*
      * Parse the order arg.
      */
-    enum SelvaResultOrder order = HIERARCHY_RESULT_ORDER_NONE;
+    enum SelvaResultOrder order = SELVA_RESULT_ORDER_NONE;
     const RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
         err = SelvaTraversal_ParseOrder(&order_by_field, &order,
@@ -1000,11 +1000,10 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     const RedisModuleString *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
-    if (order != HIERARCHY_RESULT_ORDER_NONE) {
-        const size_t resp_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
-
-        if (!SVector_Init(&order_result, resp_len, SelvaTraversal_GetOrderFunc(order))) {
-            replyWithSelvaError(ctx, SELVA_ENOMEM);
+    if (order != SELVA_RESULT_ORDER_NONE) {
+        err = SelvaTraversalOrder_InitOrderResult(&order_result, order, limit);
+        if (err) {
+            replyWithSelvaError(ctx, err);
             goto out;
         }
     }
@@ -1027,8 +1026,8 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         struct FindCommand_Args find_args = {
             .lang = lang,
             .nr_nodes = &array_len,
-            .offset = (order == HIERARCHY_RESULT_ORDER_NONE) ? offset : 0,
-            .limit = (order == HIERARCHY_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
+            .offset = (order == SELVA_RESULT_ORDER_NONE) ? offset : 0,
+            .limit = (order == SELVA_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
             .send_param.merge_strategy = MERGE_STRATEGY_NONE,
@@ -1052,7 +1051,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
      * If an ordered request was requested then nothing was sent to the client yet
      * and we need to do it now.
      */
-    if (order != HIERARCHY_RESULT_ORDER_NONE) {
+    if (order != SELVA_RESULT_ORDER_NONE) {
         struct AggregateCommand_Args ord_args = {
             .ctx = ctx,
             .aggregate_type = agg_fn_val,
@@ -1066,7 +1065,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             }
         };
 
-        AggregateCommand_AggregateOrderedResult(ctx, lang, &ord_args, offset, limit, fields, &order_result);
+        AggregateCommand_AggregateOrderResult(ctx, lang, &ord_args, offset, limit, fields, &order_result);
         AggregateCommand_PrintAggregateResult(ctx, &ord_args);
     } else {
         AggregateCommand_PrintAggregateResult(ctx, &args);

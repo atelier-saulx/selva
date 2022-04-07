@@ -235,19 +235,19 @@ struct SelvaHierarchyCallback {
      * Called for each orphan head in the hierarchy.
      */
     SelvaHierarchyHeadCallback head_cb;
-    void * head_arg;
+    void *head_arg;
 
     /**
      * Called for each node in the hierarchy.
      */
     SelvaHierarchyNodeCallback node_cb;
-    void * node_arg;
+    void *node_arg;
 
     /**
      * Called for each child of current node.
      */
     SelvaHierarchyChildCallback child_cb;
-    void * child_arg;
+    void *child_arg;
 
     enum SelvaHierarchyCallbackFlags {
         SELVA_HIERARCHY_CALLBACK_FLAGS_INHIBIT_RESTORE = 0x01,

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef SELVA_TRAVERSAL
-#define SELVA_TRAVERSAL
+#ifndef SELVA_TRAVERSAL_H
+#define SELVA_TRAVERSAL_H
 
 #include "svector.h"
 #include "arg_parser.h"
@@ -39,30 +39,6 @@ enum SelvaMergeStrategy {
     MERGE_STRATEGY_NAMED,
     MERGE_STRATEGY_DEEP,
 };
-
-enum TraversalOrderedItemType {
-    ORDERED_ITEM_TYPE_EMPTY,
-    ORDERED_ITEM_TYPE_TEXT,
-    ORDERED_ITEM_TYPE_DOUBLE,
-};
-
-struct TraversalOrderedItem {
-    enum TraversalOrderedItemType type;
-    Selva_NodeId node_id;
-    struct SelvaHierarchyNode *node;
-    struct SelvaObject *data_obj;
-    double d;
-    size_t data_len;
-    char data[];
-};
-
-enum SelvaResultOrder {
-    HIERARCHY_RESULT_ORDER_NONE,
-    HIERARCHY_RESULT_ORDER_ASC,
-    HIERARCHY_RESULT_ORDER_DESC,
-};
-
-typedef int (*orderFunc)(const void ** restrict a_raw, const void ** restrict b_raw);
 
 extern const struct SelvaArgParser_EnumType merge_types[3];
 
@@ -128,7 +104,7 @@ struct FindCommand_Args {
     size_t *merge_nr_fields;
 
     const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
-    SVector *order_result; /*!< Results of the find wrapped in TraversalOrderedItem structs.
+    SVector *order_result; /*!< Results of the find wrapped in TraversalOrderItem structs.
                             *   Only used if sorting is requested. */
 
     struct Selva_SubscriptionMarker *marker; /*!< Used by FindInSub. */
@@ -138,26 +114,9 @@ struct FindCommand_Args {
     size_t acc_tot; /*!< Total number of nodes visited during the traversal. */
 };
 
-int SelvaTraversal_ParseOrder(
-        const struct RedisModuleString **order_by_field,
-        enum SelvaResultOrder *order,
-        const struct RedisModuleString *txt,
-        const struct RedisModuleString *fld,
-        const struct RedisModuleString *ord);
 int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct RedisModuleString *arg);
-orderFunc SelvaTraversal_GetOrderFunc(enum SelvaResultOrder order);
-struct TraversalOrderedItem *SelvaTraversal_CreateOrderItem(
-        struct RedisModuleCtx *ctx,
-        struct RedisModuleString *lang,
-        struct SelvaHierarchyNode *node,
-        const struct RedisModuleString *order_field);
-struct TraversalOrderedItem *SelvaTraversal_CreateObjectBasedOrderItem(
-        struct RedisModuleCtx *ctx,
-        struct RedisModuleString *lang,
-        struct SelvaObject *obj,
-        const struct RedisModuleString *order_field);
 int SelvaTraversal_FieldsContains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len);
 int SelvaTraversal_GetSkip(enum SelvaTraversal dir);
 const char *SelvaTraversal_Dir2str(enum SelvaTraversal dir);
 
-#endif /* SELVA_TRAVERSAL */
+#endif /* SELVA_TRAVERSAL_H */

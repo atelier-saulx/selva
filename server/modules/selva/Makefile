@@ -23,6 +23,7 @@ OBJS := \
 	module/hierarchy/hierarchy_inactive.o \
 	module/hierarchy/hierarchy_reply.o \
 	module/hierarchy/traversal.o \
+	module/hierarchy/traversal_order.o \
 	module/ida.o \
 	module/inherit.o \
 	module/modify.o \
