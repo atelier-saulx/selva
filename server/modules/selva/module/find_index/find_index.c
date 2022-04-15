@@ -194,7 +194,7 @@ static void create_indexing_timer(RedisModuleCtx *ctx, struct SelvaHierarchy *hi
 /**
  * Calculate the length of an index name.
  */
-static size_t calc_name_len(const Selva_NodeId node_id, struct upsert_icb *desc) {
+static size_t calc_name_len(const Selva_NodeId node_id, const struct upsert_icb *desc) {
     size_t filter_len;
     size_t n;
 
@@ -230,7 +230,7 @@ static size_t calc_name_len(const Selva_NodeId node_id, struct upsert_icb *desc)
  * node_id.<direction>[.<dir expression>][.<sort order>.<order field>].H(<indexing clause>)
  * @param buf is a buffer that has at least the length given by calc_name_len().
  */
-static void build_name(char *buf, const Selva_NodeId node_id, struct upsert_icb *desc) {
+static void build_name(char *buf, const Selva_NodeId node_id, const struct upsert_icb *desc) {
     size_t filter_len;
     const char *filter_str = RedisModule_StringPtrLen(desc->filter, &filter_len);
     char *s = buf;
@@ -269,6 +269,9 @@ static void build_name(char *buf, const Selva_NodeId node_id, struct upsert_icb 
     s += base64_encode_s(s, filter_str, filter_len, 0);
 }
 
+/**
+ * Get an ICB from the index map.
+ */
 static int get_icb(struct SelvaHierarchy *hierarchy, const char *name_str, size_t name_len, struct SelvaFindIndexControlBlock **icb) {
     struct SelvaObject *dyn_index = hierarchy->dyn_index.index_map;
     void *p;
@@ -280,13 +283,19 @@ static int get_icb(struct SelvaHierarchy *hierarchy, const char *name_str, size_
     return err;
 }
 
+/**
+ * Add an ICB to the index map.
+ */
 static int set_icb(struct SelvaHierarchy *hierarchy, const char *name_str, size_t name_len, struct SelvaFindIndexControlBlock *icb) {
     struct SelvaObject *dyn_index = hierarchy->dyn_index.index_map;
 
     return SelvaObject_SetPointerStr(dyn_index, name_str, name_len, icb, NULL);
 }
 
-static int del_icb(struct SelvaHierarchy *hierarchy, struct SelvaFindIndexControlBlock *icb) {
+/**
+ * Remove an ICB from the index map.
+ */
+static int del_icb(struct SelvaHierarchy *hierarchy, const struct SelvaFindIndexControlBlock *icb) {
     return SelvaObject_DelKeyStr(hierarchy->dyn_index.index_map, icb->name_str, icb->name_len);
 }
 
@@ -1196,7 +1205,7 @@ int SelvaFind_TraverseIndex(
         void * node_arg) {
     if (icb->flags.ordered) {
         struct SVectorIterator it;
-        struct TraversalOrderItem *item;
+        const struct TraversalOrderItem *item;
 
         SVector_ForeachBegin(&it, &icb->res.ord);
         while ((item = SVector_Foreach(&it))) {
