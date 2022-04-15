@@ -1637,11 +1637,10 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     /*
      * An index result set together with limit may yield different order than
      * the node order in the hierarchy, so we skip the indexing when a limit
-     * is given. However, if an order is given together with the limit, then
-     * we can use indexing because the final result is sorted and limited after
-     * the node filtering.
+     * is given.
+     * TODO Support $limit with ordered indices.
      */
-    if (nr_index_hints > 0 && limit != -1 && order == SELVA_RESULT_ORDER_NONE) {
+    if (nr_index_hints > 0 && limit != -1) {
         nr_index_hints = 0;
     }
 
