@@ -114,6 +114,51 @@ struct FindCommand_Args {
     size_t acc_tot; /*!< Total number of nodes visited during the traversal. */
 };
 
+/**
+ * Called for the first node in the traversal.
+ * This is typically the node that was given as an argument to a traversal function.
+ * @param node a pointer to the node.
+ * @param arg a pointer to head_arg give in SelvaHierarchyCallback structure.
+ */
+typedef int (*SelvaHierarchyHeadCallback)(
+        struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        void *arg);
+
+/**
+ * Called for each node found during a traversal.
+ * @param node a pointer to the node.
+ * @param arg a pointer to node_arg give in SelvaHierarchyCallback structure.
+ * @returns 0 to continue the traversal; 1 to interrupt the traversal.
+ */
+typedef int (*SelvaHierarchyNodeCallback)(
+        struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        void *arg);
+
+/**
+ * Traversal metadata for child/adjacent nodes.
+ */
+struct SelvaHierarchyTraversalMetadata {
+    const char *origin_field_str;
+    size_t origin_field_len;
+    struct SelvaHierarchyNode *origin_node;
+};
+
+/**
+ * Called for each adjacent node during a traversal.
+ * @param node a pointer to the node.
+ * @param arg a pointer to child_arg give in SelvaHierarchyCallback structure.
+ */
+typedef void (*SelvaHierarchyChildCallback)(
+        struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        const struct SelvaHierarchyTraversalMetadata *metadata,
+        struct SelvaHierarchyNode *child,
+        void *arg);
+
 int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct RedisModuleString *arg);
 int SelvaTraversal_FieldsContains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len);
 int SelvaTraversal_GetSkip(enum SelvaTraversal dir);

@@ -22,11 +22,11 @@ struct order_data {
 typedef int (*orderFunc)(const void ** restrict a_raw, const void ** restrict b_raw);
 
 int SelvaTraversal_ParseOrder(
-        const RedisModuleString **order_by_field,
+        RedisModuleString **order_by_field,
         enum SelvaResultOrder *order,
         const RedisModuleString *txt,
-        const RedisModuleString *fld,
-        const RedisModuleString *ord) {
+        RedisModuleString *fld,
+        RedisModuleString *ord) {
     TO_STR(txt, fld, ord);
     enum SelvaResultOrder tmpOrder;
 
@@ -107,6 +107,19 @@ int SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResultO
     const size_t initial_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
 
     return SVector_Init(order_result, initial_len, SelvaTraversal_GetOrderFunc(order)) ? 0 : SELVA_ENOMEM;
+}
+
+void SelvaTraversalOrder_DestroyOrderResult(RedisModuleCtx *ctx, SVector *order_result) {
+    struct SVectorIterator it;
+    struct TraversalOrderItem *item;
+
+    SVector_ForeachBegin(&it, order_result);
+    while ((item = SVector_Foreach(&it))) {
+        SelvaTraversalOrder_DestroyOrderItem(ctx, item);
+    }
+
+
+    SVector_Destroy(order_result);
 }
 
 /**
@@ -254,6 +267,12 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateOrderItem(
     item->d = tmp.d;
 
     return item;
+}
+
+void SelvaTraversalOrder_DestroyOrderItem(RedisModuleCtx *ctx, struct TraversalOrderItem *item) {
+    if (!ctx) {
+        RedisModule_Free(item);
+    }
 }
 
 struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectBasedOrderItem(

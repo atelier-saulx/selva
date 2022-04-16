@@ -30,13 +30,21 @@ enum SelvaResultOrder {
 };
 
 int SelvaTraversal_ParseOrder(
-        const struct RedisModuleString **order_by_field,
+        struct RedisModuleString **order_by_field,
         enum SelvaResultOrder *order,
         const struct RedisModuleString *txt,
-        const struct RedisModuleString *fld,
-        const struct RedisModuleString *ord);
+        struct RedisModuleString *fld,
+        struct RedisModuleString *ord);
 
 int SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResultOrder order, ssize_t limit);
+
+/**
+ * Destroy an order_result SVector and free its items properly.
+ * If SelvaTraversalOrder_CreateOrderItem() was called with a ctx then ctx this
+ * function should be called with a ctx too. Alternatively the order_result
+ * SVector can be declared with SVECTOR_AUTOFREE().
+ */
+void SelvaTraversalOrder_DestroyOrderResult(RedisModuleCtx *ctx, SVector *order_result);
 
 /**
  * Create a new TraversalOrderItem that can be sorted.
@@ -47,6 +55,7 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateOrderItem(
         struct RedisModuleString *lang,
         struct SelvaHierarchyNode *node,
         const struct RedisModuleString *order_field);
+void SelvaTraversalOrder_DestroyOrderItem(RedisModuleCtx *ctx, struct TraversalOrderItem *item);
 struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectBasedOrderItem(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
