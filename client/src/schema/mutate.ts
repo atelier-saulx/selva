@@ -24,10 +24,16 @@ export default async (
       let page = 0
       let finished = false
       while (!finished) {
-        const fields = {}
+        const fields: any = {}
 
-        for (const field in oldSchema.types[f.type].fields) {
-          fields[field] = true
+        if (!handleMutations) {
+          fields.id = true
+        } else {
+          for (const field in oldSchema.types[f.type].fields) {
+            if (field !== 'ancestors' && field !== 'descendants') {
+              fields[field] = true
+            }
+          }
         }
 
         const op = createGetOperations(

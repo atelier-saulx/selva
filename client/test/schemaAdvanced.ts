@@ -763,6 +763,106 @@ test.serial('schemas - return to other id or type', async (t) => {
   t.pass()
 })
 
+test.only('schemas - remove type', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+
+  await client.updateSchema({
+    languages: ['en'],
+    types: {
+      thing: {
+        prefix: 'th',
+        fields: {
+          image: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  })
+
+  await wait(1000)
+
+  const q = []
+  for (let i = 0; i < 1000; i++) {
+    q.push(
+      client.set({
+        type: 'thing',
+        image: i + '-img',
+      })
+    )
+  }
+
+  await Promise.all(q)
+
+  await wait(1000)
+
+  await client.updateSchema(
+    {
+      types: {
+        flap: {
+          fields: {
+            image: {
+              type: 'string',
+            },
+          },
+        },
+        thing: {
+          $delete: true,
+        },
+      },
+    },
+    'default',
+    true
+  )
+
+  try {
+    await client.get({
+      nodes: {
+        $all: true,
+        $list: {
+          $offset: 0,
+          $limit: 100,
+          $find: {
+            $traverse: 'descendants',
+            $filter: { $operator: '=', $field: 'type', $value: 'thing' },
+          },
+        },
+      },
+    })
+  } catch (err) {
+    // has to crash and say no
+    console.info(err)
+  }
+
+  const results2 = await client.get({
+    nodes: {
+      $all: true,
+      $list: {
+        $offset: 0,
+        $limit: 100,
+        $find: {
+          $traverse: 'descendants',
+          $filter: { $operator: '=', $field: 'type', $value: 'flap' },
+        },
+      },
+    },
+  })
+
+  for (const n of results2.nodes) {
+    t.true('image' in n)
+  }
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})
+
 test.serial('schemas - migrate type', async (t) => {
   const port = await getPort()
   const server = await start({
@@ -787,7 +887,7 @@ test.serial('schemas - migrate type', async (t) => {
   await wait(1000)
 
   const q = []
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 1000; i++) {
     q.push(
       client.set({
         type: 'thing',
