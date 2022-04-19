@@ -1203,11 +1203,6 @@ int SelvaFind_TraverseIndex(
         struct SelvaFindIndexControlBlock *icb,
         SelvaHierarchyNodeCallback node_cb,
         void * node_arg) {
-    /*
-     * Note that we don't break here on limit because limit and indexing are
-     * incompatible. The reason is that we can't guarantee that the returned
-     * nodes would be the exactly same with and without indexing.
-     */
     if (icb->flags.ordered) {
         struct SVectorIterator it;
         const struct TraversalOrderItem *item;
@@ -1218,7 +1213,15 @@ int SelvaFind_TraverseIndex(
 
             node = SelvaHierarchy_FindNode(hierarchy, item->node_id);
             if (node) {
-                (void)node_cb(ctx, hierarchy, node, node_arg);
+                /*
+                 * We should be breaking here if requested. This should only
+                 * happen in case the index order is the same as requested
+                 * order. Otherwise find shouldn't return 1 but use OrderItem
+                 * subr.
+                 */
+                if (node_cb(ctx, hierarchy, node, node_arg)) {
+                    break;
+                }
             }
         }
     } else {
@@ -1229,6 +1232,13 @@ int SelvaFind_TraverseIndex(
 
             node = SelvaHierarchy_FindNode(hierarchy, el->value_nodeId);
             if (node) {
+                /*
+                 * Note that we don't break here on limit because limit and
+                 * unordered indexing are incompatible. The reason is that we
+                 * can't guarantee that the returned nodes would be the exactly
+                 * same with and without indexing. However, find might still
+                 * sort this response using the OrderItem subrs.
+                 */
                 (void)node_cb(ctx, hierarchy, node, node_arg);
             }
         }
