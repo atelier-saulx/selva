@@ -141,10 +141,7 @@ struct SelvaFindIndexControlBlock {
     struct {
         Selva_NodeId node_id; /*!< Starting node_id. */
         enum SelvaTraversal dir; /*!< Traversal direction for the index. */
-        union {
-            RedisModuleString *dir_field; /*!< Traversal field. */
-            RedisModuleString *dir_expression; /*!< Traversal direction rpn expression. */
-        };
+        RedisModuleString *dir_expression; /*!< Traversal direction rpn expression. */
         RedisModuleString *filter; /*!< Indexing rpn filter. */
     } traversal;
 
@@ -518,8 +515,6 @@ static int start_index(
 
     if (icb->traversal.dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
         dir_expression = RedisModule_StringPtrLen(icb->traversal.dir_expression, NULL);
-    } else if (icb->traversal.dir_field) {
-        dir_field = RedisModule_StringPtrLen(icb->traversal.dir_field, NULL);
     }
 
     err = SelvaSubscriptions_AddCallbackMarker(
@@ -653,11 +648,8 @@ __attribute__((nonnull (2, 3))) static int destroy_icb(
      * created with one but that doesn't seem to be exactly true. Therefore we allow
      * ctx to be NULL.
      */
-    if (icb->traversal.dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION && icb->traversal.dir_expression) {
+    if (icb->traversal.dir_expression) {
         RedisModule_FreeString(ctx, icb->traversal.dir_expression);
-    } else if (icb->traversal.dir_field) {
-        /* Practically not used at the moment. */
-        RedisModule_FreeString(ctx, icb->traversal.dir_field);
     }
 
     if (icb->traversal.filter) {
@@ -982,7 +974,7 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
         memcpy(icb->traversal.node_id, node_id, SELVA_NODE_ID_SIZE);
         icb->traversal.dir = desc->dir;
 
-        /* TODO Can it ever be dir_field, currently no... */
+        /* Note that dir_field is not supported. */
         if (desc->dir_expression) {
             RedisModule_RetainString(ctx, desc->dir_expression);
         }
