@@ -64,16 +64,14 @@ function ast2inlineRpn(schema: Schema, f: FilterAST | null): string | null {
   return null
 }
 
-export function mkIndex(schema: Schema, op: GetOperationFind): string[] {
-  if (op.id && op.id !== 'root') {
-    return []
-  }
+const nonIndexedFields = new Set(['node', 'ancestors'])
 
+export function mkIndex(schema: Schema, op: GetOperationFind): string[] {
   if (!op.filter || !op.filter.$and) {
     return []
   }
 
-  if (op.sourceField !== 'descendants') {
+  if (typeof op.sourceField !== 'string' || nonIndexedFields.has(op.sourceField)) {
     return []
   }
 
