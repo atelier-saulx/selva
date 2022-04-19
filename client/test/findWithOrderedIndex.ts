@@ -70,8 +70,7 @@ test.after(async (t) => {
 
 const chars = '123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-test.serial('find index', async (t) => {
-  // simple nested - single query
+test.serial('find with sort', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   await client.set({
@@ -117,6 +116,68 @@ test.serial('find index', async (t) => {
       {
         id: 'root',
         items: Array(chars.length).fill(null).map((_, i) => ({ name: `league ${i + 1}` }))
+      }
+    )
+    await wait(1)
+  }
+
+  t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
+    'root.J.B.dGhpbmc=.ImxlIiBl',
+    '36',
+    'root.J.B.dGhpbmc=.InRoaW5nIiBo',
+    '35',
+  ])
+
+  await client.destroy()
+})
+
+test.serial('find with sort and limit', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  await client.set({
+    type: 'league',
+    name: 'league 0',
+  })
+  for (let i = 0; i < chars.length; i++) {
+    await client.set({
+      type: 'league',
+      name: `league ${i + 1}`,
+      thing: `${chars.charAt(i)}`,
+    })
+  }
+
+  const q = {
+    $id: 'root',
+    id: true,
+    items: {
+      name: true,
+      $list: {
+        $sort: { $field: 'thing', $order: 'asc' },
+        $limit: 5,
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league',
+            },
+            {
+              $field: 'thing',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    },
+  }
+
+  for (let i = 0; i < 300; i++) {
+    t.deepEqual(
+      await client.get(q),
+      {
+        id: 'root',
+        items: Array(5).fill(null).map((_, i) => ({ name: `league ${i + 1}` }))
       }
     )
     await wait(1)
