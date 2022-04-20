@@ -42,11 +42,7 @@ test.serial('subscribe and delete', async (t) => {
     )
   }
 
-  console.log('1???????????????????')
-
   const ids = await Promise.all(q)
-
-  console.log(ids)
 
   let cnt = 0
   const observable = client.observe({
@@ -67,8 +63,6 @@ test.serial('subscribe and delete', async (t) => {
     },
   })
 
-  console.log('?????????????????')
-
   const s = observable.subscribe((d) => {
     cnt++
     console.info(d)
@@ -78,13 +72,9 @@ test.serial('subscribe and delete', async (t) => {
 
   await client.set({ type: 'thing', yesh: 2 })
 
-  console.log('hello')
-
   await wait(1000)
 
   await client.delete({ $id: ids[0] })
-
-  console.log('bye')
 
   await wait(1000)
 
