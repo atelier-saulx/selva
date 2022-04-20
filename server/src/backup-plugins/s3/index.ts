@@ -1,8 +1,7 @@
 import { promises as fs } from 'fs'
 import { BackupFns } from '../../backups'
-import { createApi, S3Api } from './s3Api'
-
-export { S3Api } from './s3Api'
+import { createApi, S3Api } from './s3apimodule'
+export { S3Api } from './s3apimodule'
 
 type S3Opts = {
   config: {
@@ -31,6 +30,7 @@ async function cleanUpOldBackups(
     oldBackups.map((object) => {
       // console.log(`Deleting object ${object.Key}`)
       // return s3.deleteObject(bucketName, object.Key)
+      return undefined
     })
   )
 }
@@ -49,7 +49,7 @@ export default async function mkBackupFn(opts: S3Opts): Promise<BackupFns> {
     async loadBackup(rdbFilePath: string, rdbLastModified: Date) {
       const objects = await s3.listObjects(bucketName)
       if (!objects.length) {
-        console.log(`Bucket ${bucketName} is empty, skipping backup loading`)
+        console.info(`Bucket ${bucketName} is empty, skipping backup loading`)
         return
       }
 
