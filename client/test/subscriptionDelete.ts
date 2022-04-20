@@ -26,6 +26,8 @@ test.beforeEach(async (t) => {
         prefix: 'th',
         fields: {
           yesh: { type: 'number' },
+          next: { type: 'reference' },
+          things: { type: 'references' },
         },
       },
     },
@@ -76,7 +78,6 @@ test.serial('subscribe and delete', async (t) => {
 
   const s = observable.subscribe((d) => {
     cnt++
-    console.info(d)
   })
 
   await wait(1000)
@@ -100,10 +101,9 @@ test.serial('subscribe and delete', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('subscribe and delete descendant', async (t) => {
+test.serial('subscribe and delete a descendant', async (t) => {
   const client = connect({ port })
 
-  console.log('HELLo')
   const id = await client.set({
     type: 'thing',
     yesh: 1,
@@ -116,45 +116,173 @@ test.serial.only('subscribe and delete descendant', async (t) => {
     ],
   })
 
-  console.log('sub to id:', id)
   const observable = client.observe({
     $id: id,
       $language: "en",
       items: {
-        //parents: true,
-          id: true,
-          $list: {
-            $limit: 1000,
-              $offset: 0,
-              $sort: {
-                $field: "createdAt",
-                  $order: "desc",
-              },
-              $find: {
-                $traverse: "descendants",
-                  $filter: [
-                    {
-                      $field: "type",
-                      $operator: "=",
-                      $value: 'thing',
-                    },
-                  ],
-              },
+        id: true,
+        $list: {
+          $limit: 1000,
+          $offset: 0,
+          $sort: {
+            $field: "createdAt",
+            $order: "desc",
           },
+          $find: {
+            $traverse: "descendants",
+            $filter: [
+              {
+                $field: "type",
+                $operator: "=",
+                $value: 'thing',
+              },
+            ],
+          },
+        },
       },
   })
 
+  t.plan(2)
+  let i = 0
   observable.subscribe((v) => {
-    console.log('sub got:', v)
+    switch (i++) {
+      case 0:
+        t.deepEqual(v, { items: [ { id: 'th2' } ] })
+        break
+      case 1:
+        t.deepEqual(v, { items: [] })
+        break
+    }
   })
 
   await wait(100)
   await client.delete('th2')
   await wait(100)
-  console.log('Deleted')
 
-  console.log(await client.get({ $id: 'root', descendants: true }))
+  await client.destroy()
+})
 
-  await wait(2e3)
+test.serial('subscribe and delete over a reference field', async (t) => {
+  const client = connect({ port })
+
+  const id = await client.set({
+    type: 'thing',
+    yesh: 1,
+    next: {
+      type: 'thing',
+      $id: 'th2',
+      yesh: 2,
+    },
+  })
+
+  const observable = client.observe({
+    $id: id,
+    $language: "en",
+    items: {
+      id: true,
+      $list: {
+        $limit: 1000,
+        $offset: 0,
+        $sort: {
+          $field: "createdAt",
+            $order: "desc",
+        },
+        $find: {
+          $traverse: "next",
+          $filter: [
+            {
+              $field: "type",
+              $operator: "=",
+              $value: 'thing',
+            },
+          ],
+        },
+      },
+    },
+  })
+
+  t.plan(2)
+  let i = 0
+  observable.subscribe((v) => {
+    switch (i++) {
+      case 0:
+        t.deepEqual(v, { items: [ { id: 'th2' } ] })
+        break
+      case 1:
+        t.deepEqual(v, { items: [] })
+        break
+    }
+  })
+
+  await wait(100)
+  await client.delete('th2')
+  await wait(100)
+
+  await client.destroy()
+})
+
+test.serial('subscribe and delete over references field', async (t) => {
+  const client = connect({ port })
+
+  const id = await client.set({
+    type: 'thing',
+    yesh: 1,
+    things: [
+      {
+        type: 'thing',
+        $id: 'th2',
+        yesh: 2,
+      },
+      {
+        type: 'thing',
+        $id: 'th3',
+        yesh: 3,
+      },
+    ],
+  })
+
+  const observable = client.observe({
+    $id: id,
+    $language: "en",
+    items: {
+      id: true,
+      $list: {
+        $limit: 1000,
+        $offset: 0,
+        $sort: {
+          $field: "createdAt",
+            $order: "desc",
+        },
+        $find: {
+          $traverse: "things",
+          $filter: [
+            {
+              $field: "type",
+              $operator: "=",
+              $value: 'thing',
+            },
+          ],
+        },
+      },
+    },
+  })
+
+  t.plan(2)
+  let i = 0
+  observable.subscribe((v) => {
+    switch (i++) {
+      case 0:
+        t.deepEqualIgnoreOrder(v, { items: [ { id: 'th2' }, { id: 'th3' } ] })
+        break
+      case 1:
+        t.deepEqual(v, { items: [ { id: 'th3' } ] })
+        break
+    }
+  })
+
+  await wait(100)
+  await client.delete('th2')
+  await wait(100)
+
   await client.destroy()
 })
