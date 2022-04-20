@@ -82,7 +82,7 @@ test.serial('basic id based subscriptions', async (t) => {
       // gets delete event
       t.true(d.$isNull)
     } else {
-      t.fail
+      t.fail()
     }
     o2counter++
   })
@@ -162,7 +162,7 @@ test.serial('basic id based nested query subscriptions', async (t) => {
       // gets delete event
       t.deepEqualIgnoreOrder(d, {})
     } else {
-      t.fail
+      t.fail()
     }
     o2counter++
   })
