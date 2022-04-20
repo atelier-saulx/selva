@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -20,10 +19,10 @@ test.before(async (t) => {
         prefix: 'ma',
         fields: {
           title: { type: 'text' },
-          name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          name: { type: 'string' },
+          value: { type: 'number' },
+          status: { type: 'number' },
+          date: { type: 'number' },
         },
       },
       thing: {
@@ -36,18 +35,15 @@ test.before(async (t) => {
               type: 'object',
               properties: {
                 title: { type: 'text' },
-                name: { type: 'string', search: { type: ['TAG'] } },
+                name: { type: 'string' },
                 value: {
                   type: 'number',
-                  search: { type: ['NUMERIC', 'SORTABLE'] },
                 },
                 status: {
                   type: 'number',
-                  search: { type: ['NUMERIC', 'SORTABLE'] },
                 },
                 date: {
                   type: 'number',
-                  search: { type: ['NUMERIC', 'SORTABLE'] },
                 },
                 intAry: {
                   type: 'array',
@@ -103,7 +99,7 @@ test.serial('subscription array', async (t) => {
   await Promise.all(matches.map((v) => client.set(v)))
 
   await wait(500)
-  console.log(
+  console.info(
     await client.get({
       $id: thing,
       ary: {
@@ -119,7 +115,6 @@ test.serial('subscription array', async (t) => {
   })
   let cnt = 0
   const sub = obs.subscribe((d) => {
-    console.log('sub 1', d)
     cnt++
   })
 
@@ -155,7 +150,6 @@ test.serial('subscription array', async (t) => {
 
   let cnt2 = 0
   const sub2 = obs2.subscribe((d) => {
-    console.log('sub 2', d)
     cnt2++
   })
 
@@ -208,8 +202,7 @@ test.serial('subscription num array', async (t) => {
     intAry: true,
   })
   let cnt = 0
-  const sub = obs.subscribe((d) => {
-    console.log('sub 1', d)
+  obs.subscribe((d) => {
     cnt++
   })
 
@@ -265,8 +258,7 @@ test.serial('subscription array in object array', async (t) => {
     ary: true,
   })
   let cnt = 0
-  const sub = obs.subscribe((d) => {
-    console.log('sub 1', JSON.stringify(d, null, 2))
+  obs.subscribe((d) => {
     cnt++
   })
 

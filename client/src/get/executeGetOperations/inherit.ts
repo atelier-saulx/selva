@@ -32,7 +32,7 @@ function makeRealKeys(
 
   const p = field + '.'
 
-  let realKeys: Record<string, true | string> = {}
+  const realKeys: Record<string, true | string> = {}
 
   for (const prop in props) {
     if (!prop.startsWith('$')) {
@@ -55,7 +55,8 @@ async function mergeObj(
   op: GetOperationInherit,
   _schema: Schema,
   lang: string,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedOnSchema?: Schema
 ): Promise<GetResult> {
   const remapped: Record<string, string> = {}
   const [props, defaults] = makeRealKeys(op.props, op.field, true)
@@ -101,7 +102,7 @@ async function mergeObj(
     })
   }
 
-  const rpn = ast2rpn(client.schemas[ctx.db].types, fork)
+  const rpn = ast2rpn((passedOnSchema || client.schemas[ctx.db]).types, fork)
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
@@ -124,7 +125,7 @@ async function mergeObj(
 
   const res = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
-    makeLangArg(client.schemas[ctx.db].languages, lang),
+    makeLangArg((passedOnSchema || client.schemas[ctx.db]).languages, lang),
     '___selva_hierarchy',
     'ancestors',
     'offset',
@@ -142,7 +143,8 @@ async function mergeObj(
     field,
     res,
     defaults,
-    lang
+    lang,
+    passedOnSchema
   )
 
   return o
@@ -153,7 +155,8 @@ async function deepMergeObj(
   op: GetOperationInherit,
   _schema: Schema,
   lang: string,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedOnSchema?: Schema
 ): Promise<GetResult> {
   const remapped: Record<string, string> = {}
   const [props, defaults] = makeRealKeys(op.props, op.field, true)
@@ -203,12 +206,17 @@ async function deepMergeObj(
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
-    const added = await addMarker(client, ctx, {
-      type: 'ancestors',
-      id: op.id,
-      fields,
-      rpn,
-    })
+    const added = await addMarker(
+      client,
+      ctx,
+      {
+        type: 'ancestors',
+        id: op.id,
+        fields,
+        rpn,
+      },
+      passedOnSchema
+    )
 
     if (added) {
       client.redis.selva_subscriptions_refresh(
@@ -239,7 +247,9 @@ async function deepMergeObj(
     remapped,
     field,
     res,
-    defaults
+    defaults,
+    undefined,
+    passedOnSchema
   )
   return o
 }
@@ -248,11 +258,12 @@ async function inheritItem(
   client: SelvaClient,
   op: GetOperationInherit,
   lang: string,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedOnSchema?: Schema
 ): Promise<GetResult> {
   const schema = client.schemas[ctx.db]
 
-  const [props, defaults] = makeRealKeys(op.props, op.field)
+  const [props] = makeRealKeys(op.props, op.field)
   const remapped: Record<string, string> = {}
   const fields = Object.keys(props).map((f) => {
     f = f.slice(op.field.length + 1)
@@ -293,16 +304,21 @@ async function inheritItem(
     }
   }
 
-  const rpn = ast2rpn(client.schemas[ctx.db].types, fork)
+  const rpn = ast2rpn((passedOnSchema || client.schemas[ctx.db]).types, fork)
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
-    const added = await addMarker(client, ctx, {
-      type: 'ancestors',
-      id: op.id,
-      fields,
-      rpn,
-    })
+    const added = await addMarker(
+      client,
+      ctx,
+      {
+        type: 'ancestors',
+        id: op.id,
+        fields,
+        rpn,
+      },
+      passedOnSchema
+    )
 
     if (added) {
       client.redis.selva_subscriptions_refresh(
@@ -316,7 +332,7 @@ async function inheritItem(
 
   const [results] = await client.redis.selva_hierarchy_find(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
-    makeLangArg(client.schemas[ctx.db].languages, lang),
+    makeLangArg((passedOnSchema || client.schemas[ctx.db]).languages, lang),
     '___selva_hierarchy',
     'ancestors',
     'limit',
@@ -358,7 +374,8 @@ export default async function inherit(
   client: SelvaClient,
   op: GetOperationInherit,
   lang: string,
-  ctx: ExecContext
+  ctx: ExecContext,
+  passedOnSchema?: Schema
 ): Promise<GetResult> {
   if (Array.isArray(op.sourceField)) {
     for (const sf of op.sourceField) {
@@ -378,7 +395,7 @@ export default async function inherit(
   }
 
   const { db } = ctx
-  const schema = client.schemas[db]
+  const schema = passedOnSchema || client.schemas[db]
   if (op.item) {
     return inheritItem(client, op, lang, ctx)
   }
@@ -388,7 +405,7 @@ export default async function inherit(
       return acc + 'ro'
     }
 
-    const p = client.schemas[db].types[t].prefix
+    const p = (passedOnSchema || client.schemas[db]).types[t].prefix
     if (p) {
       acc += p
     }
@@ -409,34 +426,39 @@ export default async function inherit(
   if (fs && fs.type === 'reference') {
     if (ctx.subId) {
       bufferNodeMarker(ctx, op.id, op.sourceField)
-      const added = await addMarker(client, ctx, {
-        type: 'ancestors',
-        id: op.id,
-        fields: [op.sourceField],
-        rpn: ast2rpn(
-          client.schemas[ctx.db].types,
-          {
-            isFork: true,
-            $and: [
-              {
-                $operator: 'exists',
-                $field: op.sourceField,
-              },
-              {
-                isFork: true,
-                $or: op.types.map((t) => {
-                  return {
-                    $operator: '=',
-                    $field: 'type',
-                    $value: t,
-                  }
-                }),
-              },
-            ],
-          },
-          lang
-        ),
-      })
+      const added = await addMarker(
+        client,
+        ctx,
+        {
+          type: 'ancestors',
+          id: op.id,
+          fields: [op.sourceField],
+          rpn: ast2rpn(
+            (passedOnSchema || client.schemas[ctx.db]).types,
+            {
+              isFork: true,
+              $and: [
+                {
+                  $operator: 'exists',
+                  $field: op.sourceField,
+                },
+                {
+                  isFork: true,
+                  $or: op.types.map((t) => {
+                    return {
+                      $operator: '=',
+                      $field: 'type',
+                      $value: t,
+                    }
+                  }),
+                },
+              ],
+            },
+            lang
+          ),
+        },
+        passedOnSchema
+      )
 
       if (added) {
         client.redis.selva_subscriptions_refresh(
@@ -450,13 +472,14 @@ export default async function inherit(
 
     const res = await client.redis.selva_inherit(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
-      makeLangArg(client.schemas[ctx.db].languages, lang),
+      makeLangArg((passedOnSchema || client.schemas[ctx.db]).languages, lang),
       '___selva_hierarchy',
       op.id,
       prefixes,
       <string>op.sourceField // TODO?
     )
-    let v = res.length ? res[0][2] : null
+
+    const v = res.length ? res[0][2] : null
 
     if (!v) {
       return null
@@ -466,52 +489,64 @@ export default async function inherit(
     delete p.$inherit
     delete p.$field
 
-    return executeNestedGetOperations(client, p, lang, ctx)
+    return executeNestedGetOperations(
+      client,
+      p,
+      lang,
+      ctx,
+      false,
+      passedOnSchema
+    )
   } else if (op.single) {
     if (
       op.merge === true &&
       (!fs || fs.type === 'object' || fs.type === 'record')
     ) {
-      return mergeObj(client, op, schema, lang, ctx)
+      return mergeObj(client, op, schema, lang, ctx, passedOnSchema)
     }
 
     if (
       op.deepMerge === true &&
       (!fs || fs.type === 'object' || fs.type === 'record')
     ) {
-      return deepMergeObj(client, op, schema, lang, ctx)
+      return deepMergeObj(client, op, schema, lang, ctx, passedOnSchema)
     }
 
     if (ctx.subId) {
       bufferNodeMarker(ctx, op.id, op.sourceField)
-      const added = await addMarker(client, ctx, {
-        type: 'ancestors',
-        id: op.id,
-        fields: [op.sourceField],
-        rpn: ast2rpn(
-          client.schemas[ctx.db].types,
-          {
-            isFork: true,
-            $and: [
-              {
-                $operator: 'exists',
-                $field: op.sourceField,
-              },
-              {
-                isFork: true,
-                $or: op.types.map((t) => {
-                  return {
-                    $operator: '=',
-                    $field: 'type',
-                    $value: t,
-                  }
-                }),
-              },
-            ],
-          },
-          lang
-        ),
-      })
+      const added = await addMarker(
+        client,
+        ctx,
+        {
+          type: 'ancestors',
+          id: op.id,
+          fields: [op.sourceField],
+          rpn: ast2rpn(
+            (passedOnSchema || client.schemas[ctx.db]).types,
+            {
+              isFork: true,
+              $and: [
+                {
+                  $operator: 'exists',
+                  $field: op.sourceField,
+                },
+                {
+                  isFork: true,
+                  $or: op.types.map((t) => {
+                    return {
+                      $operator: '=',
+                      $field: 'type',
+                      $value: t,
+                    }
+                  }),
+                },
+              ],
+            },
+            lang
+          ),
+        },
+        passedOnSchema
+      )
 
       if (added) {
         client.redis.selva_subscriptions_refresh(
@@ -525,13 +560,14 @@ export default async function inherit(
 
     const res = await client.redis.selva_inherit(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
-      makeLangArg(client.schemas[ctx.db].languages, lang),
+      makeLangArg((passedOnSchema || client.schemas[ctx.db]).languages, lang),
       '___selva_hierarchy',
       op.id,
       prefixes,
       <string>op.sourceField // TODO?
     )
-    let v = res.length ? res[0][2] : null
+
+    const v = res.length ? res[0][2] : null
 
     if (v === null) {
       return null
@@ -539,7 +575,13 @@ export default async function inherit(
 
     if (TYPE_CASTS[fs.type]) {
       const field = res[0][1]
-      return TYPE_CASTS[fs.type](v, op.id, field, client.schemas[ctx.db], lang)
+      return TYPE_CASTS[fs.type](
+        v,
+        op.id,
+        field,
+        passedOnSchema || client.schemas[ctx.db],
+        lang
+      )
     }
 
     return v
@@ -552,7 +594,6 @@ export default async function inherit(
       remapped[<string>realKeys[f]] = f
       return <string>realKeys[f]
     }
-
     return f
   })
 
@@ -570,75 +611,87 @@ export default async function inherit(
     let added: boolean
     if (sourceFieldSchema && sourceFieldSchema.type === 'reference') {
       bufferNodeMarker(ctx, op.id, op.sourceField)
-      added = await addMarker(client, ctx, {
-        type: 'bfs_expression',
-        id: op.id,
-        traversal: `{"parents","${op.sourceField}"}`,
-        fields: fields.map((f: string) => f.substring(op.sourceField.length + 1)),
-        rpn: ast2rpn(
-          client.schemas[ctx.db].types,
-          {
-            isFork: true,
-            $and: [
-              {
-                isFork: true,
-                $or: fields.map((f) => {
-                  return {
-                    $operator: 'exists',
-                    $field: f.substring(op.sourceField.length + 1),
-                  }
-                }),
-              },
-              {
-                isFork: true,
-                $or: op.types.map((t) => {
-                  return {
-                    $operator: '=',
-                    $field: 'type',
-                    $value: t,
-                  }
-                }),
-              },
-            ],
-          },
-          lang
-        ),
-      })
+      added = await addMarker(
+        client,
+        ctx,
+        {
+          type: 'bfs_expression',
+          id: op.id,
+          traversal: `{"parents","${op.sourceField}"}`,
+          fields: fields.map((f: string) =>
+            f.substring(op.sourceField.length + 1)
+          ),
+          rpn: ast2rpn(
+            client.schemas[ctx.db].types,
+            {
+              isFork: true,
+              $and: [
+                {
+                  isFork: true,
+                  $or: fields.map((f) => {
+                    return {
+                      $operator: 'exists',
+                      $field: f.substring(op.sourceField.length + 1),
+                    }
+                  }),
+                },
+                {
+                  isFork: true,
+                  $or: op.types.map((t) => {
+                    return {
+                      $operator: '=',
+                      $field: 'type',
+                      $value: t,
+                    }
+                  }),
+                },
+              ],
+            },
+            lang
+          ),
+        },
+        passedOnSchema
+      )
     } else {
       bufferNodeMarker(ctx, op.id, ...fields)
-      added = await addMarker(client, ctx, {
-        type: 'ancestors',
-        id: op.id,
-        fields,
-        rpn: ast2rpn(
-          client.schemas[ctx.db].types,
-          {
-            isFork: true,
-            $and: [
-              {
-                isFork: true,
-                $or: fields.map((f) => {
-                  return {
-                    $operator: 'exists',
-                    $field: f,
-                  }
-                }),
-              },
-              {
-                isFork: true,
-                $or: op.types.map((t) => {
-                  return {
-                    $operator: '=',
-                    $field: 'type',
-                    $value: t,
-                  }
-                }),
-              },
-            ],
-          },
-          lang
-        ),
-      })
+      added = await addMarker(
+        client,
+        ctx,
+        {
+          type: 'ancestors',
+          id: op.id,
+          fields,
+          rpn: ast2rpn(
+            client.schemas[ctx.db].types,
+            {
+              isFork: true,
+              $and: [
+                {
+                  isFork: true,
+                  $or: fields.map((f) => {
+                    return {
+                      $operator: 'exists',
+                      $field: f,
+                    }
+                  }),
+                },
+                {
+                  isFork: true,
+                  $or: op.types.map((t) => {
+                    return {
+                      $operator: '=',
+                      $field: 'type',
+                      $value: t,
+                    }
+                  }),
+                },
+              ],
+            },
+            lang
+          ),
+        },
+        passedOnSchema
+      )
     }
 
     if (added) {
@@ -651,7 +704,7 @@ export default async function inherit(
     }
   }
 
-  let res = await client.redis.selva_inherit(
+  const res = await client.redis.selva_inherit(
     ctx.originDescriptors[ctx.db] || { name: ctx.db },
     makeLangArg(client.schemas[ctx.db].languages, lang),
     '___selva_hierarchy',
@@ -664,16 +717,16 @@ export default async function inherit(
   if (res.length === 0) {
     return null
   } else if (propsLen === 1 || (propsLen === 2 && op.props.$field)) {
-    let [idx, f, v] = res[0]
+    const [idx, f, v] = res[0]
     const fs = getNestedSchema(schema, idx, f)
     const typeCast = TYPE_CASTS[fs.type]
     return typeCast ? typeCast(v, idx, f, client.schemas.default, lang) : v
   } else if (op.props.$all) {
-    let [idx, f, v] = res[0]
+    const [idx, f, v] = res[0]
     const fs = getNestedSchema(schema, op.id, f)
 
     if (fs && ['reference', 'references'].includes(fs.type)) {
-      let obj = {}
+      const obj = {}
       for (let i = 0; i < v.length; i += 2) {
         const f1 = v[i]
         const v1 = v[i + 1]

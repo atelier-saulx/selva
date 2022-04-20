@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -20,21 +19,20 @@ test.before(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
-          thing: { type: 'string', search: { type: ['EXISTS'] } },
+          name: { type: 'string' },
+          thing: { type: 'string' },
           matches: { type: 'references' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
           description: { type: 'text' },
           value: {
             type: 'number',
-            search: { type: ['NUMERIC', 'SORTABLE', 'EXISTS'] },
           },
-          status: { type: 'number', search: { type: ['NUMERIC'] } },
+          status: { type: 'number' },
         },
       },
     },
@@ -122,7 +120,6 @@ test.serial('subscription find by type', async (t) => {
       },
     })
     .subscribe((v) => {
-      console.log('v1', v)
       if (cnt1 === 0) {
         t.deepEqual(v, {
           id: 'root',
@@ -169,7 +166,6 @@ test.serial('subscription find by type', async (t) => {
       },
     })
     .subscribe((v) => {
-      console.log('v2', v)
       if (cnt2 === 0) {
         t.deepEqual(v, {
           id: 'root',

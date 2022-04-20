@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -12,7 +11,16 @@ test.before(async (t) => {
   port = await getPort()
   srv = await start({
     port,
-    selvaOptions: ['FIND_INDICES_MAX', '100', 'FIND_INDEXING_INTERVAL', '1000', 'FIND_INDEXING_ICB_UPDATE_INTERVAL', '500', 'FIND_INDEXING_POPULARITY_AVE_PERIOD', '3'],
+    selvaOptions: [
+      'FIND_INDICES_MAX',
+      '100',
+      'FIND_INDEXING_INTERVAL',
+      '1000',
+      'FIND_INDEXING_ICB_UPDATE_INTERVAL',
+      '500',
+      'FIND_INDEXING_POPULARITY_AVE_PERIOD',
+      '3',
+    ],
   })
 
   await wait(500)
@@ -28,8 +36,8 @@ test.beforeEach(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
-          thing: { type: 'string', search: { type: ['EXISTS'] } },
+          name: { type: 'string' },
+          thing: { type: 'string' },
           things: { type: 'set', items: { type: 'string' } },
           cat: { type: 'int' },
         },
@@ -37,27 +45,25 @@ test.beforeEach(async (t) => {
       match: {
         prefix: 'ma',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
           description: { type: 'text' },
           value: {
             type: 'number',
-            search: { type: ['NUMERIC', 'SORTABLE', 'EXISTS'] },
           },
-          status: { type: 'number', search: { type: ['NUMERIC'] } },
+          status: { type: 'number' },
         },
       },
     },
   })
 
-  // A small delay is needed after setting the schema
-  await new Promise((r) => setTimeout(r, 100))
+  await wait(100)
 
   await client.destroy()
 })
 
 test.afterEach(async (t) => {
   const client = connect({ port: port })
-  await new Promise((r) => setTimeout(r, 100))
+  await wait(100)
   await client.delete('root')
   await client.destroy()
 })
@@ -108,25 +114,25 @@ test.serial('find index', async (t) => {
   }
 
   for (let i = 0; i < 500; i++) {
-    t.deepEqualIgnoreOrder(
-      await client.get(q),
-      { id: 'root', items: [{ name: 'league 2' }] }
-    )
+    t.deepEqualIgnoreOrder(await client.get(q), {
+      id: 'root',
+      items: [{ name: 'league 2' }],
+    })
   }
 
-  t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
-    'root.J.ImxlIiBl',
-    'not_active',
-    'root.J.InRoaW5nIiBo',
-    'not_active',
-  ])
+  t.deepEqual(
+    (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) =>
+      i % 2 === 0 ? v : v[3]
+    ),
+    ['root.I.ImxlIiBl', 'not_active', 'root.I.InRoaW5nIiBo', 'not_active']
+  )
   await wait(1e3)
-  t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
-    'root.J.ImxlIiBl',
-    'not_active',
-    'root.J.InRoaW5nIiBo',
-    'not_active',
-  ])
+  t.deepEqual(
+    (await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) =>
+      i % 2 === 0 ? v : v[3]
+    ),
+    ['root.I.ImxlIiBl', 'not_active', 'root.I.InRoaW5nIiBo', 'not_active']
+  )
 
   for (let i = 0; i < 1000; i++) {
     await client.set({
@@ -145,7 +151,7 @@ test.serial('find index', async (t) => {
   for (let i = 0; i < 500; i++) {
     await client.get(q)
   }
-  await wait(1e3);
+  await wait(1e3)
   for (let i = 0; i < 500; i++) {
     await client.get(q)
   }
@@ -175,17 +181,23 @@ test.serial('find index strings', async (t) => {
       thing: 'yeeeesssshhh',
     }
 
-    if (i % 2 == 0) {
+    if (i % 2 === 0) {
       delete le.thing
     }
 
     await client.set(le)
   }
 
-  await client.redis.selva_index_new('___selva_hierarchy', 'descendants', '', 'root', '"name" f "league 0" c')
+  await client.redis.selva_index_new(
+    '___selva_hierarchy',
+    'descendants',
+    '',
+    'root',
+    '"name" f "league 0" c'
+  )
   await wait(2e3)
   for (let i = 0; i < 500; i++) {
-    const r = await client.get({
+    await client.get({
       $id: 'root',
       id: true,
       items: {
@@ -228,12 +240,60 @@ test.serial('find index string sets', async (t) => {
       type: 'league',
       name: `League ${i}`,
       thing: 'abc',
-      things: i % 100 != 0 ? ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'] : ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'],
+      things:
+        i % 100 !== 0
+          ? [
+              'a',
+              'b',
+              'c',
+              'd',
+              'e',
+              'f',
+              'h',
+              'i',
+              'j',
+              'k',
+              'l',
+              'm',
+              'n',
+              'o',
+              'p',
+            ]
+          : [
+              'a',
+              'b',
+              'c',
+              'd',
+              'e',
+              'f',
+              'g',
+              'h',
+              'i',
+              'j',
+              'k',
+              'l',
+              'm',
+              'n',
+              'o',
+              'p',
+            ],
     })
   }
 
-  await client.redis.selva_index_new('___selva_hierarchy', 'descendants', '', 'root', '"g" "things" a')
-  await client.redis.selva_index_new('___selva_hierarchy', 'descendants', '', 'root', '"thing" f "abc" c')
+  await client.redis.selva_index_new(
+    '___selva_hierarchy',
+    'descendants',
+    '',
+    'root',
+    '"g" "things" a'
+  )
+  await client.redis.selva_index_new(
+    '___selva_hierarchy',
+    'descendants',
+    '',
+    'root',
+    '"thing" f "abc" c'
+  )
   await wait(1e3)
   for (let i = 0; i < 500; i++) {
     await client.get({
@@ -308,26 +368,27 @@ test.serial('find index integers', async (t) => {
     })
   }
 
-  const q = async () => await client.get({
-    $id: 'root',
-    id: true,
-    items: {
-      name: true,
-      cat: true,
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: [
-            {
-              $field: 'cat',
-              $operator: '=',
-              $value: 3,
-            },
-          ],
+  const q = async () =>
+    await client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        cat: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'cat',
+                $operator: '=',
+                $value: 3,
+              },
+            ],
+          },
         },
       },
-    },
-  })
+    })
 
   for (let i = 0; i < 500; i++) {
     await q()
@@ -355,7 +416,7 @@ test.serial('find index exists', async (t) => {
       type: 'league',
       name: `League ${i}`,
       thing: 'abc',
-      things: ['a', 'b']
+      things: ['a', 'b'],
     }
     if (i % 2) {
       delete o.thing
@@ -365,42 +426,44 @@ test.serial('find index exists', async (t) => {
     await client.set(o)
   }
 
-  const q1 = async () => client.get({
-    $id: 'root',
-    id: true,
-    items: {
-      name: true,
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: [
-            {
-              $field: 'thing',
-              $operator: 'exists',
-            },
-          ],
+  const q1 = async () =>
+    client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'thing',
+                $operator: 'exists',
+              },
+            ],
+          },
         },
       },
-    },
-  })
-  const q2 = async () => client.get({
-    $id: 'root',
-    id: true,
-    items: {
-      name: true,
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: [
-            {
-              $field: 'things',
-              $operator: 'notExists',
-            },
-          ],
+    })
+  const q2 = async () =>
+    client.get({
+      $id: 'root',
+      id: true,
+      items: {
+        name: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $field: 'things',
+                $operator: 'notExists',
+              },
+            ],
+          },
         },
       },
-    },
-  })
+    })
 
   for (let i = 0; i < 500; i++) {
     await q1()

@@ -2,7 +2,6 @@ import test from 'ava'
 import { performance } from 'perf_hooks'
 import { connect } from '../../src/index'
 import { start } from '@saulx/selva-server'
-import '../assertions'
 import { wait } from '../assertions'
 import getPort from 'get-port'
 
@@ -28,19 +27,19 @@ test.beforeEach(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       club: {
         prefix: 'cl',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       team: {
         prefix: 'te',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       match: {
@@ -130,7 +129,7 @@ test.beforeEach(async (t) => {
       children: genMatches(amount),
     }),
   ])
-  console.log(
+  console.info(
     `Set ${Math.floor((amount * 2 + vids) / 100) / 10}k nested`,
     Date.now() - d,
     'ms'
@@ -161,36 +160,40 @@ test.serial.failing('perf: find compression perf - descendants', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await wait(2e3)
 
-  const leagues = (await client.get({
-    n: {
-      id: true,
-      $list: {
-        $find: {
-          $traverse: 'descendants',
-          $filter: {
-            $field: 'type',
-            $operator: '=',
-            $value: 'league',
-          }
-        }
-      }
-    }
-  })).n.map(({ id }) => id)
+  const leagues = (
+    await client.get({
+      n: {
+        id: true,
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+            $filter: {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league',
+            },
+          },
+        },
+      },
+    })
+  ).n.map(({ id }) => id)
 
   const start = performance.now()
   for (let i = 0; i < 1000; i++) {
     // Compress all leagues
-    //const startCompress = performance.now()
-    await Promise.all(leagues.map(async (id) => {
-      try {
-        // TODO Sometimes we create leagues that cannot be compresed!
-        await client.redis.selva_hierarchy_compress('___selva_hierarchy', id)
-      } catch (e) { }
-    }))
-    //const endCompress = performance.now()
-    //console.log('Compressing leagues took:', endCompress - startCompress);
+    // const startCompress = performance.now()
+    await Promise.all(
+      leagues.map(async (id) => {
+        try {
+          // TODO Sometimes we create leagues that cannot be compresed!
+          await client.redis.selva_hierarchy_compress('___selva_hierarchy', id)
+        } catch (e) {}
+      })
+    )
+    // const endCompress = performance.now()
+    // console.log('Compressing leagues took:', endCompress - startCompress);
 
-    const { items: results } = await client.get({
+    await client.get({
       items: {
         name: true,
         value: true,
@@ -252,5 +255,5 @@ test.serial.failing('perf: find compression perf - descendants', async (t) => {
   }
 
   const time = performance.now() - start
-  console.log(time, 'ms')
+  console.info(time, 'ms')
 })

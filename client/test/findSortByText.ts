@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -22,7 +21,7 @@ test.before(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          value: { type: 'number' },
         },
       },
       match: {
@@ -30,9 +29,9 @@ test.before(async (t) => {
         fields: {
           title: { type: 'text' },
           fun: { type: 'set', items: { type: 'string' } },
-          related: { type: 'references', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } },
+          related: { type: 'references' },
+          value: { type: 'number' },
+          status: { type: 'number' },
         },
       },
     },
@@ -101,8 +100,6 @@ test.serial('find - sort by text', async (t) => {
     },
   })
 
-  console.log(result)
-
   for (let i = 0; i < result.children.length; i++) {
     const idx = Math.floor(i / 10)
     t.deepEqualIgnoreOrder(result.children[i].title, `match${idx}`)
@@ -130,8 +127,6 @@ test.serial('find - sort by text', async (t) => {
       },
     },
   })
-
-  console.log(result2)
 
   for (let i = 0; i < result2.children.length; i++) {
     const idx = Math.floor(i / 10)

@@ -1,4 +1,4 @@
-import { SelvaClient } from '../../'
+import { Schema, SelvaClient } from '../../'
 import { GetOptions } from '..'
 import { GetOperation } from '../types'
 import { getTypeFromId, getNestedSchema, setNestedResult } from '../utils'
@@ -10,9 +10,10 @@ export function makeAll(
   field: string,
   $field: string | undefined,
   db: string,
-  props: GetOptions
+  props: GetOptions,
+  passedOnSchema?: Schema
 ): GetOptions {
-  const schema = client.schemas[db]
+  const schema = passedOnSchema || client.schemas[db]
 
   const fieldSchema = getNestedSchema(schema, id, $field || field)
   if (!fieldSchema) {
@@ -51,9 +52,10 @@ const all = (
   id: string,
   field: string,
   db: string,
-  ops: GetOperation[] = []
+  ops: GetOperation[] = [],
+  passedOnSchema?: Schema
 ): void => {
-  const schema = client.schemas[db]
+  const schema = passedOnSchema || client.schemas[db]
   if (field === '') {
     const type = getTypeFromId(schema, id)
     const typeSchema = type === 'root' ? schema.rootType : schema.types[type]
@@ -84,13 +86,29 @@ const all = (
       } else if (props[key] === false) {
         // do nothing
       } else {
-        createGetOperations(client, props[key], id, field + '.' + key, db, ops)
+        createGetOperations(
+          client,
+          props[key],
+          id,
+          field + '.' + key,
+          db,
+          ops,
+          passedOnSchema
+        )
       }
     }
 
     for (const key in props) {
       if (!typeSchema.fields[key]) {
-        createGetOperations(client, props[key], id, field + '.' + key, db, ops)
+        createGetOperations(
+          client,
+          props[key],
+          id,
+          field + '.' + key,
+          db,
+          ops,
+          passedOnSchema
+        )
       }
     }
   } else {
@@ -106,7 +124,6 @@ const all = (
           if (['reference', 'references'].includes(keySchema.type)) {
             return
           }
-
           ops.push({
             type: 'db',
             id,
@@ -122,7 +139,8 @@ const all = (
             id,
             field + '.' + key,
             db,
-            ops
+            ops,
+            passedOnSchema
           )
         }
       }

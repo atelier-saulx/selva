@@ -1,6 +1,4 @@
 import globals from './globals'
-import { SearchRaw } from '../../src/schema/index'
-import * as logger from './logger'
 
 const SPECIAL_CHARS = {
   165: 'a', // å
@@ -283,34 +281,6 @@ export function indexOf(a: any[], b: any): number {
 export function now(): number {
   const [sec, micro] = redis.call('time')
   return Math.floor(tonumber(sec) * 1000 + tonumber(micro) / 1000)
-}
-
-export function hasExistsIndex(search?: SearchRaw | string[]): boolean {
-  if (!search) {
-    return false
-  }
-
-  function isSearch(x: any): x is SearchRaw {
-    return !!x && x.type
-  }
-
-  if (isSearch(search)) {
-    for (let i = search.type.length - 1; i >= 0; i--) {
-      if (search.type[i] === 'EXISTS') {
-        return true
-      }
-    }
-
-    return false
-  }
-
-  for (let i = search.length - 1; i >= 0; i--) {
-    if (search[i] === 'EXISTS') {
-      return true
-    }
-  }
-
-  return false
 }
 
 export function isTextIndex(x: string[]) {

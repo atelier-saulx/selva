@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -22,22 +21,22 @@ test.before(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       team: {
         prefix: 'te',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          date: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          name: { type: 'string' },
+          value: { type: 'number' },
+          status: { type: 'number' },
+          date: { type: 'number' },
         },
       },
     },
@@ -85,7 +84,7 @@ test.serial('subscription find', async (t) => {
 
   await Promise.all(teams.map((t) => client.set(t)))
 
-  const league = await client.set({
+  await client.set({
     type: 'league',
     name: 'league 1',
     children: matches,

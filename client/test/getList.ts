@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -30,7 +29,7 @@ test.serial('get - simple $list', async (t) => {
       custom: {
         prefix: 'cu',
         fields: {
-          value: { type: 'number', search: true },
+          value: { type: 'number' },
           age: { type: 'number' },
           auth: {
             type: 'json',
@@ -142,7 +141,7 @@ test.serial('get - simple $list with $field of one field', async (t) => {
         prefix: 'cu',
         fields: {
           name: { type: 'string' },
-          value: { type: 'number', search: true },
+          value: { type: 'number' },
           age: { type: 'number' },
           auth: {
             type: 'json',
@@ -229,7 +228,7 @@ test.serial(
           prefix: 'cu',
           fields: {
             name: { type: 'string' },
-            value: { type: 'number', search: true },
+            value: { type: 'number' },
             age: { type: 'number' },
             auth: {
               type: 'json',
@@ -317,7 +316,7 @@ test.serial.skip(
           prefix: 'cu',
           fields: {
             name: { type: 'string' },
-            value: { type: 'number', search: true },
+            value: { type: 'number' },
             age: { type: 'number' },
             auth: {
               type: 'json',
@@ -414,7 +413,7 @@ test.serial('get - simple $list nested query structure', async (t) => {
       custom: {
         prefix: 'cu',
         fields: {
-          value: { type: 'number', search: true },
+          value: { type: 'number' },
           age: { type: 'number' },
           auth: {
             type: 'json',
@@ -575,7 +574,7 @@ test.serial('get - default sorting in $list with references', async (t) => {
       custom: {
         prefix: 'cu',
         fields: {
-          value: { type: 'number', search: true },
+          value: { type: 'number' },
           age: { type: 'number' },
           auth: {
             type: 'json',
@@ -706,7 +705,7 @@ test.serial('get - default sorting in $list with references', async (t) => {
 //       custom: {
 //         prefix: 'cu',
 //         fields: {
-//           value: { type: 'number', search: true },
+//           value: { type: 'number' },
 //           age: { type: 'number' },
 //           auth: {
 //             type: 'json',
@@ -800,7 +799,7 @@ test.serial('get - simple $list with $field option', async (t) => {
       custom: {
         prefix: 'cu',
         fields: {
-          value: { type: 'number', search: true },
+          value: { type: 'number' },
           age: { type: 'number' },
           auth: {
             type: 'json',

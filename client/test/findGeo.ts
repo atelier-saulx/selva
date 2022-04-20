@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 
 let srv
@@ -19,19 +18,19 @@ test.before(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          name: { type: 'string', search: { type: ['TAG'] } },
+          value: { type: 'number' },
+          name: { type: 'string' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
           fun: { type: 'set', items: { type: 'string' } },
-          location: { type: 'geo', search: true },
-          related: { type: 'references', search: { type: ['TAG'] } },
-          name: { type: 'string', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } },
+          location: { type: 'geo' },
+          related: { type: 'references' },
+          name: { type: 'string' },
+          value: { type: 'number' },
+          status: { type: 'number' },
         },
       },
     },

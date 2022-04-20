@@ -2,7 +2,7 @@ import { SetOptions } from './types'
 import { Schema, TypeSchema } from '../schema'
 import { SelvaClient } from '..'
 import fieldParsers from './fieldParsers'
-import { verifiers } from './fieldParsers/simple'
+import * as verifiers from '@saulx/validators'
 
 const ALLOWED_OPTIONS_DOCS = `
 Record identification (if neither $id or $alias is provided, 'root' id is assumed)
@@ -20,16 +20,13 @@ function allowedFieldsDoc(schemas: Schema, type?: string): string {
   if (type) {
     typeSchema = schemas.types[type]
   }
-
   if (typeSchema) {
     let str = ''
     for (const key in typeSchema.fields) {
       str += `        - ${key}: ${typeSchema.fields[key].type} \n`
     }
-
     return str
   }
-
   return ''
 }
 
@@ -87,9 +84,20 @@ export default async function parseSetObject(
     )
   }
 
-  let fields = schema.fields
+  const fields = schema.fields
 
+<<<<<<< HEAD
   for (let key in payload) {
+=======
+  if (!payload.updatedAt && fields.updatedAt?.type === 'timestamp') {
+    result[0] += 'u'
+  }
+  if (!payload.createdAt && fields.createdAt?.type === 'timestamp') {
+    result[0] += 'c'
+  }
+
+  for (const key in payload) {
+>>>>>>> release-10
     if (key[0] === '$') {
       if (key === '$merge') {
         if (!(payload[key] === true || payload[key] === false)) {
@@ -169,6 +177,8 @@ export default async function parseSetObject(
           ${ALLOWED_OPTIONS_DOCS}`)
       }
     } else if (!fields[key]) {
+      // make this a bit nicer
+
       throw new Error(`
         Cannot find field ${key} in ${type}. Did you mean one of the following properties?
 ${allowedFieldsDoc(schemas, type)}

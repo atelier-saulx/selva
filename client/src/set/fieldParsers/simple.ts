@@ -1,7 +1,7 @@
 import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
-import { TypeSchema, Schema, FieldSchemaOther } from '../../schema'
+import { Schema, FieldSchemaOther } from '../../schema'
 import digest from '../../digest'
 import {
   incrementDef,
@@ -9,71 +9,8 @@ import {
   longLongDef,
   doubleDef,
 } from '../modifyDataRecords'
+import * as verifiers from '@saulx/validators'
 
-const isUrlRe =
-  /^((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)$/i
-
-const validURL = (str: string): boolean => {
-  return isUrlRe.test(str)
-}
-
-/*
- | 'id'
-  | 'digest'
-  | 'timestamp'
-  | 'url'
-  | 'email'
-  | 'phone'
-  | 'geo' - still missing
-  | 'type'
-*/
-
-export const verifiers = {
-  digest: (payload: string) => {
-    return typeof payload === 'string'
-  },
-  string: (payload: string) => {
-    return typeof payload === 'string'
-  },
-  phone: (payload: string) => {
-    // phone is wrong
-    return typeof payload === 'string' && payload.length < 30
-  },
-  timestamp: (payload: 'now' | number) => {
-    return (
-      payload === 'now' ||
-      (typeof payload === 'number' && Number.isInteger(payload))
-    )
-  },
-  url: (payload: string) => {
-    return typeof payload === 'string' && validURL(payload)
-  },
-  email: (payload: string) => {
-    const re =
-      /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-    return re.test(payload.toLowerCase())
-  },
-  number: (payload: number) => {
-    return typeof payload === 'number' && !isNaN(payload)
-  },
-  boolean: (payload: boolean) => {
-    return typeof payload === 'boolean'
-  },
-  float: (payload: number) => {
-    return typeof payload === 'number' && !isNaN(payload)
-  },
-  int: (payload: number) => {
-    return typeof payload === 'number'
-  },
-  type: (payload: string) => {
-    return typeof payload === 'string'
-  },
-  id: (payload: string) => {
-    return typeof payload === 'string' && payload.length < 20
-  },
-}
-
-// also need to make this accessable
 const converters = {
   digest,
   timestamp: (payload: 'now' | number): Buffer =>
@@ -97,6 +34,7 @@ const parsers = {}
 
 for (const key in verifiers) {
   const verify = verifiers[key]
+
   const valueType: string = ['boolean', 'int', 'timestamp'].includes(key)
     ? '3'
     : ['float', 'number'].includes(key)
@@ -107,20 +45,21 @@ for (const key in verifiers) {
   const converter = converters[key]
 
   parsers[key] = (
-    _client: SelvaClient,
-    _schemas: Schema,
+    client: SelvaClient,
+    schema: Schema,
     field: string,
     payload: SetOptions,
     result: (string | Buffer)[],
     _fields: FieldSchemaOther,
-    _type: string
+    type: string,
+    lang: string
   ) => {
-    let keyname: string = field
+    const keyname: string = field
     let value: string | null = null
 
     if (!noOptions && typeof payload === 'object') {
       let hasKeys = false
-      for (let k in payload) {
+      for (const k in payload) {
         value = payload[k]
         hasKeys = true
         if (isNumber && k === '$increment') {
@@ -131,7 +70,17 @@ for (const key in verifiers) {
 
             value = `___selva_$ref:${payload[k].$ref}`
           } else {
-            if (!verify(payload[k])) {
+            if (
+              client.validator
+                ? client.validator(
+                    schema,
+                    type,
+                    field.split('.'),
+                    payload[k].$increment,
+                    lang
+                  ) && verify(payload[k].$increment)
+                : verify(payload[k].$increment)
+            ) {
               throw new Error(`Incorrect payload for ${key}.${k} ${payload}`)
             } else if (
               converter &&
@@ -140,8 +89,7 @@ for (const key in verifiers) {
               value = converter(payload[k])
             }
 
-            //console.log(payload)
-            if (key == 'int') {
+            if (key === 'int') {
               result.push(
                 '4',
                 field,
@@ -184,7 +132,17 @@ for (const key in verifiers) {
       }
 
       if (payload.$default) {
-        if (verify(payload.$default)) {
+        if (
+          client.validator
+            ? client.validator(
+                schema,
+                type,
+                field.split('.'),
+                payload.$default,
+                lang
+              ) && verify(payload.$default)
+            : verify(payload.$default)
+        ) {
           if (converter) {
             value = converter(payload.$default)
           } else {
@@ -209,7 +167,12 @@ for (const key in verifiers) {
       if (!hasKeys) {
         throw new Error(`Incorrect payload empty object for field ${field}`)
       }
-    } else if (verify(payload)) {
+    } else if (
+      client.validator
+        ? client.validator(schema, type, field.split('.'), payload, lang) &&
+          verify(payload)
+        : verify(payload)
+    ) {
       if (converter) {
         value = converter(payload)
       } else {

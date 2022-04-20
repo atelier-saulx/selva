@@ -1,11 +1,9 @@
 import { createRecord } from 'data-record'
 import { SelvaClient } from '../..'
-import { _set } from '../index'
 import { SetOptions } from '../types'
 import { getNestedSchema } from '../../get/utils'
 import { Schema, FieldSchemaReferences } from '../../schema'
-import parseSetObject from '../validate'
-import { verifiers } from './simple'
+import * as verifiers from '@saulx/validators'
 import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
 
 const id = verifiers.id
@@ -154,6 +152,8 @@ const toCArr = async (
   }
 
   if (fields.bidirectional) {
+    // ADD VERIFY
+
     const fromField = fields.bidirectional.fromField
 
     for (const id of ids) {
@@ -186,7 +186,7 @@ export default async (
   payload: SetOptions,
   result: (string | Buffer)[],
   fields: FieldSchemaReferences,
-  _type: string,
+  type: string,
   $lang?: string
 ): Promise<number> => {
   let noRoot = false
@@ -200,7 +200,7 @@ export default async (
   ) {
     let hasKeys = false
     result[field] = {}
-    for (let k in payload) {
+    for (const k in payload) {
       if (k === '$add') {
         if (typeof payload[k] === 'object' && !Array.isArray(payload[k])) {
           r.$add = [payload[k]]
@@ -208,6 +208,15 @@ export default async (
         } else {
           r.$add = payload[k]
           hasKeys = true
+        }
+
+        if (
+          client.validator &&
+          !client.validator(schema, type, field.split('.'), r.$add, $lang)
+        ) {
+          throw new Error(
+            'Incorrect payload for "references.$add" from custom validator'
+          )
         }
       } else if (k === '$delete') {
         if (payload.$delete === true) {
@@ -225,17 +234,28 @@ export default async (
           r.$value = payload[k]
           hasKeys = true
         }
+
+        if (
+          client.validator &&
+          !client.validator(schema, type, field.split('.'), r.$value, $lang)
+        ) {
+          throw new Error(
+            'Incorrect payload for "references.$value" from custom validator'
+          )
+        }
       } else if (k === '$hierarchy') {
         if (payload[k] !== false && payload[k] !== true) {
           throw new Error(
-            `Wrong payload for references ${JSON.stringify(payload)}`
+            `Incorrect payload for references ${JSON.stringify(payload)}`
           )
         }
         r.$hierarchy = payload[k]
         hasKeys = true
       } else if (k === '$noRoot') {
         if (typeof payload[k] !== 'boolean') {
-          throw new Error(`Wrong payload type for $noRoot in references ${k}`)
+          throw new Error(
+            `Incorrect payload type for $noRoot in references ${k}`
+          )
         }
 
         r.$noRoot = payload[k]
@@ -246,7 +266,7 @@ export default async (
       } else if (k === '$_itemCount') {
         // ignore this internal field if setting with a split payload
       } else {
-        throw new Error(`Wrong key for references ${k}`)
+        throw new Error(`Incorrect key for references ${k}`)
       }
     }
 
@@ -299,6 +319,14 @@ export default async (
     } else {
       r = payload
     }
+
+    if (
+      client.validator &&
+      !client.validator(schema, type, field.split('.'), payload, $lang)
+    ) {
+      throw new Error('Invalid field "references" from custom validator')
+    }
+
     const $value = await toCArr(
       client,
       field,

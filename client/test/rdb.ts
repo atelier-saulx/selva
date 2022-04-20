@@ -2,7 +2,6 @@ import test from 'ava'
 import { join } from 'path'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { removeDump } from './assertions'
 import getPort from 'get-port'
 import { wait } from '../src/util'
@@ -51,10 +50,10 @@ test.beforeEach(async (t) => {
         fields: {
           title: { type: 'text' },
           lekkerLink: {
-              type: 'reference',
-              bidirectional: {
-                  fromField: 'lekkerLink',
-              },
+            type: 'reference',
+            bidirectional: {
+              fromField: 'lekkerLink',
+            },
           },
           fren: {
             type: 'reference',
@@ -177,12 +176,12 @@ test.serial('can reload from RDB', async (t) => {
     title: { en: 'hi' },
     lekkerLink: {
       $id: 'viLink2',
-      title: { en: 'yo' }
+      title: { en: 'yo' },
     },
     fren: {
       $id: 'viLink3',
       title: { en: 'sup' },
-    }
+    },
   })
   await client.set({
     $id: 'viLink4',
@@ -191,7 +190,7 @@ test.serial('can reload from RDB', async (t) => {
     children: [],
     lekkerLink: {
       $id: 'viLink5',
-      title: { en: 'yo' }
+      title: { en: 'yo' },
     },
   })
 
@@ -211,14 +210,14 @@ test.serial('can reload from RDB', async (t) => {
           {
             $id: 'viComp5',
             title: { en: 'hello' },
-          }
-        ]
+          },
+        ],
       },
       {
         $id: 'viComp3',
         title: { en: 'hello' },
-      }
-    ]
+      },
+    ],
   })
   await client.redis.selva_hierarchy_compress('___selva_hierarchy', 'viComp1')
 
@@ -257,35 +256,70 @@ test.serial('can reload from RDB', async (t) => {
     ],
   })
 
-  t.deepEqual(await client.get({ $id: 'viLink1', $all: true, lekkerLink: true, fren: true }), {
-    id: 'viLink1',
-    type: 'lekkerType',
-    title: { en: 'hi' },
-    lekkerLink: 'viLink2',
-    fren: 'viLink3',
-  })
-  t.deepEqual(await client.get({ $id: 'viLink2', $all: true, lekkerLink: true, fren: true }), {
-    id: 'viLink2',
-    type: 'lekkerType',
-    title: { en: 'yo' },
-    lekkerLink: 'viLink1',
-  })
-  t.deepEqual(await client.get({ $id: 'viLink3', $all: true, lekkerLink: true, fren: true }), {
-    id: 'viLink3',
-    type: 'lekkerType',
-    title: { en: 'sup' },
-  })
-  t.deepEqual(await client.get({ $id: 'viLink4', $all: true, lekkerLink: true }), {
-    id: 'viLink4',
-    type: 'lekkerType',
-    title: { en: 'hi' },
-    lekkerLink: 'viLink5',
-  })
-  t.deepEqualIgnoreOrder(await client.get({ $id: 'viComp1', id: true, title: true, descendants: true }), {
-    id: 'viComp1',
-    title: { en: 'hello' },
-    descendants: [ 'viComp2', 'viComp3', 'viComp4', 'viComp5' ]
-  })
+  t.deepEqual(
+    await client.get({
+      $id: 'viLink1',
+      $all: true,
+      lekkerLink: true,
+      fren: true,
+    }),
+    {
+      id: 'viLink1',
+      type: 'lekkerType',
+      title: { en: 'hi' },
+      lekkerLink: 'viLink2',
+      fren: 'viLink3',
+    }
+  )
+  t.deepEqual(
+    await client.get({
+      $id: 'viLink2',
+      $all: true,
+      lekkerLink: true,
+      fren: true,
+    }),
+    {
+      id: 'viLink2',
+      type: 'lekkerType',
+      title: { en: 'yo' },
+      lekkerLink: 'viLink1',
+    }
+  )
+  t.deepEqual(
+    await client.get({
+      $id: 'viLink3',
+      $all: true,
+      lekkerLink: true,
+      fren: true,
+    }),
+    {
+      id: 'viLink3',
+      type: 'lekkerType',
+      title: { en: 'sup' },
+    }
+  )
+  t.deepEqual(
+    await client.get({ $id: 'viLink4', $all: true, lekkerLink: true }),
+    {
+      id: 'viLink4',
+      type: 'lekkerType',
+      title: { en: 'hi' },
+      lekkerLink: 'viLink5',
+    }
+  )
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'viComp1',
+      id: true,
+      title: true,
+      descendants: true,
+    }),
+    {
+      id: 'viComp1',
+      title: { en: 'hello' },
+      descendants: ['viComp2', 'viComp3', 'viComp4', 'viComp5'],
+    }
+  )
 
   // Do it again
   await client.redis.save()
@@ -323,27 +357,59 @@ test.serial('can reload from RDB', async (t) => {
     ],
   })
 
-  t.deepEqual(await client.get({ $id: 'viLink1', $all: true, lekkerLink: true, fren: true }), {
-    id: 'viLink1',
-    type: 'lekkerType',
-    title: { en: 'hi' },
-    lekkerLink: 'viLink2',
-    fren: 'viLink3',
-  })
-  t.deepEqual(await client.get({ $id: 'viLink2', $all: true, lekkerLink: true, fren: true }), {
-    id: 'viLink2',
-    type: 'lekkerType',
-    title: { en: 'yo' },
-    lekkerLink: 'viLink1',
-  })
-  t.deepEqual(await client.get({ $id: 'viLink3', $all: true, lekkerLink: true, fren: true }), {
-    id: 'viLink3',
-    type: 'lekkerType',
-    title: { en: 'sup' },
-  })
-  t.deepEqualIgnoreOrder(await client.get({ $id: 'viComp1', id: true, title: true, descendants: true }), {
-    id: 'viComp1',
-    title: { en: 'hello' },
-    descendants: [ 'viComp2', 'viComp3', 'viComp4', 'viComp5' ]
-  })
+  t.deepEqual(
+    await client.get({
+      $id: 'viLink1',
+      $all: true,
+      lekkerLink: true,
+      fren: true,
+    }),
+    {
+      id: 'viLink1',
+      type: 'lekkerType',
+      title: { en: 'hi' },
+      lekkerLink: 'viLink2',
+      fren: 'viLink3',
+    }
+  )
+  t.deepEqual(
+    await client.get({
+      $id: 'viLink2',
+      $all: true,
+      lekkerLink: true,
+      fren: true,
+    }),
+    {
+      id: 'viLink2',
+      type: 'lekkerType',
+      title: { en: 'yo' },
+      lekkerLink: 'viLink1',
+    }
+  )
+  t.deepEqual(
+    await client.get({
+      $id: 'viLink3',
+      $all: true,
+      lekkerLink: true,
+      fren: true,
+    }),
+    {
+      id: 'viLink3',
+      type: 'lekkerType',
+      title: { en: 'sup' },
+    }
+  )
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'viComp1',
+      id: true,
+      title: true,
+      descendants: true,
+    }),
+    {
+      id: 'viComp1',
+      title: { en: 'hello' },
+      descendants: ['viComp2', 'viComp3', 'viComp4', 'viComp5'],
+    }
+  )
 })

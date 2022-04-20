@@ -12,7 +12,7 @@ export const schema: any = {
       prefix: 'mo',
       fields: {
         title: { type: 'text' },
-        year: { type: 'int', search: true },
+        year: { type: 'int' },
         director: { type: 'string' },
         icon: { type: 'string' },
         technicalData: {

@@ -1,4 +1,4 @@
-import { SelvaClient } from '../../'
+import { Schema, SelvaClient } from '../../'
 import { GetResult } from '../types'
 import { setNestedResult } from '../utils'
 import { ExecContext, typeCast } from './'
@@ -10,14 +10,15 @@ export function buildResultFromIdFieldAndValue(
   field: string,
   res: string[],
   defaults: Record<string, any> = {},
-  lang?: string
+  lang?: string,
+  schema?: Schema
 ): GetResult {
   const o: GetResult = {}
   const used = new Set()
   for (let i = 0; i < res.length; i++) {
     let [idx, f, v] = res[i]
 
-    const newV = typeCast(v, idx, f, client.schemas[ctx.db], lang)
+    const newV = typeCast(v, idx, f, schema || client.schemas[ctx.db], lang)
 
     if (remapped[f]) {
       f = remapped[f]

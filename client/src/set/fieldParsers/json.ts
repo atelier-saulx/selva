@@ -1,7 +1,6 @@
 import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
 import { Schema, FieldSchemaJson } from '../../schema'
-import fieldParsers from '.'
 
 export default async (
   client: SelvaClient,
@@ -13,6 +12,13 @@ export default async (
   type: string,
   $lang?: string
 ): Promise<number> => {
+  if (
+    client.validator &&
+    !client.validator(schema, type, field.split('.'), payload, $lang)
+  ) {
+    throw new Error('Incorrect payload for "json" from custom validator')
+  }
+
   if (payload.$delete) {
     result.push('7', field, '')
     return 0

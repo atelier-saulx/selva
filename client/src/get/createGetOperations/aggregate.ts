@@ -1,9 +1,8 @@
 import { Aggregate, GetOperationAggregate, GetOptions, Sort } from '../types'
 import { createAst, optimizeTypeFilters } from '@saulx/selva-query-ast-parser'
 import createFindOperation from './find'
-import { SelvaClient } from '../..'
-import { getNestedSchema } from '../utils'
-import { isTraverseByType } from '../utils'
+import { Schema, SelvaClient } from '../..'
+import { getNestedSchema, isTraverseByType } from '../utils'
 
 const createAggregateOperation = (
   client: SelvaClient,
@@ -14,14 +13,15 @@ const createAggregateOperation = (
   field: string,
   limit?: number,
   offset?: number,
-  sort?: Sort | Sort[]
+  sort?: Sort | Sort[],
+  passedOnSchema?: Schema
 ): GetOperationAggregate => {
   sort = sort || aggregate.$sort
 
   const fieldSchema = getNestedSchema(
-    client.schemas[db],
+    passedOnSchema || client.schemas[db],
     id,
-    <string>props.$field || field.substr(1)
+    <string>props.$field || field.slice(1)
   )
 
   const isTimeseries = fieldSchema && fieldSchema.timeseries
@@ -29,8 +29,8 @@ const createAggregateOperation = (
     type: 'aggregate',
     id,
     props,
-    field: field.substr(1),
-    sourceField: field.substr(1),
+    field: field.slice(1),
+    sourceField: field.slice(1),
     recursive: !!aggregate.$recursive,
     options: {
       limit: limit || aggregate.$limit || -1,
@@ -75,7 +75,8 @@ const createAggregateOperation = (
       limit,
       offset,
       aggregate.$find.$find ? undefined : sort,
-      true
+      true,
+      passedOnSchema
     )
   }
 

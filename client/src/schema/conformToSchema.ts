@@ -6,8 +6,7 @@ function getTypeFromId(schema: Schema, id: string): string | undefined {
   if (id === 'root') {
     return 'root'
   }
-
-  return schema.prefixToTypeMapping[id.substr(0, 2)]
+  return schema.prefixToTypeMapping[id.substring(0, 2)]
 }
 
 export default async function conformToSchema(
@@ -60,44 +59,42 @@ export default async function conformToSchema(
     newProps.$alias = props.$alias
   }
 
-  const mergeObject: (
-    x: SetOptions,
-    schema: FieldSchemaObject
-  ) => SetOptions = (oldObj: SetOptions, schema: FieldSchemaObject) => {
-    const newObj: SetOptions = {}
-    for (const key in oldObj) {
-      if (schema.properties[key]) {
-        if (schema.properties[key].type === 'object') {
-          newObj[key] = mergeObject(
-            oldObj[key],
-            <FieldSchemaObject>schema.properties[key]
-          )
-        } else if (
-          schema.properties[key].type === 'array' &&
-          // @ts-ignore
-          schema.properties[key].items.type === 'object'
-        ) {
-          newObj[key] = oldObj[key].map((x) => {
+  const mergeObject: (x: SetOptions, schema: FieldSchemaObject) => SetOptions =
+    (oldObj: SetOptions, schema: FieldSchemaObject) => {
+      const newObj: SetOptions = {}
+      for (const key in oldObj) {
+        if (schema.properties[key]) {
+          if (schema.properties[key].type === 'object') {
+            newObj[key] = mergeObject(
+              oldObj[key],
+              <FieldSchemaObject>schema.properties[key]
+            )
+          } else if (
+            schema.properties[key].type === 'array' &&
             // @ts-ignore
-            return mergeObject(x, schema.properties[key].items)
-          })
-        } else if (
-          schema.properties[key].type === 'set' &&
-          // @ts-ignore
-          schema.properties[key].items.type === 'object'
-        ) {
-          newObj[key] = oldObj[key].map((x) => {
+            schema.properties[key].items.type === 'object'
+          ) {
+            newObj[key] = oldObj[key].map((x) => {
+              // @ts-ignore
+              return mergeObject(x, schema.properties[key].items)
+            })
+          } else if (
+            schema.properties[key].type === 'set' &&
             // @ts-ignore
-            return mergeObject(x, schema.properties[key].items)
-          })
-        } else {
-          newObj[key] = oldObj[key]
+            schema.properties[key].items.type === 'object'
+          ) {
+            newObj[key] = oldObj[key].map((x) => {
+              // @ts-ignore
+              return mergeObject(x, schema.properties[key].items)
+            })
+          } else {
+            newObj[key] = oldObj[key]
+          }
         }
       }
-    }
 
-    return newObj
-  }
+      return newObj
+    }
 
   for (const key in props) {
     if (typeSchema.fields[key]) {

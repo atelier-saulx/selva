@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -94,53 +93,50 @@ test.before(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          value: { type: 'number' },
         },
       },
       team: {
         prefix: 'te',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } },
+          title: { type: 'text' },
+          published: { type: 'boolean' },
         },
       },
       video: {
         prefix: 'vi',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } },
+          title: { type: 'text' },
+          published: { type: 'boolean' },
         },
       },
       sport: {
         prefix: 'sp',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } },
+          title: { type: 'text' },
+          published: { type: 'boolean' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } },
+          title: { type: 'text' },
+          published: { type: 'boolean' },
           homeTeam: { type: 'reference' },
           awayTeam: { type: 'reference' },
           startTime: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           endTime: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           date: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           fun: { type: 'set', items: { type: 'string' } },
-          related: { type: 'references', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } },
+          related: { type: 'references' },
+          value: { type: 'number' },
+          status: { type: 'number' },
         },
       },
     },

@@ -2,7 +2,6 @@ import test from 'ava'
 import { performance } from 'perf_hooks'
 import { connect } from '../../src/index'
 import { start } from '@saulx/selva-server'
-import '../assertions'
 import { wait } from '../assertions'
 import getPort from 'get-port'
 
@@ -28,19 +27,19 @@ test.beforeEach(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       club: {
         prefix: 'cl',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       team: {
         prefix: 'te',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
         },
       },
       match: {
@@ -130,7 +129,7 @@ test.beforeEach(async (t) => {
       children: genMatches(amount),
     }),
   ])
-  console.log(
+  console.info(
     `Set ${Math.floor((amount * 2 + vids) / 100) / 10}k nested`,
     Date.now() - d,
     'ms'
@@ -163,7 +162,7 @@ test.serial.failing('perf: find descendants', async (t) => {
 
   const start = performance.now()
   for (let i = 0; i < 1000; i++) {
-    const { items: results } = await client.get({
+    await client.get({
       items: {
         name: true,
         value: true,
@@ -225,5 +224,5 @@ test.serial.failing('perf: find descendants', async (t) => {
   }
 
   const time = performance.now() - start
-  console.log(time, 'ms')
+  console.info(time, 'ms')
 })

@@ -1,6 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
-import { Schema, SchemaOptions, Fields, FieldSchema } from '../src/schema'
+import { SchemaOptions, Fields, FieldSchema } from '../src/schema'
 import { start } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
@@ -12,7 +12,7 @@ test.serial('schemas - sport', async (t) => {
   })
   const client = connect({ port })
 
-  await new Promise((resolve, _reject) => {
+  await new Promise((resolve) => {
     setTimeout(resolve, 100)
   })
 
@@ -40,15 +40,12 @@ test.serial('schemas - sport', async (t) => {
   const defaultFields: Fields = {
     createdAt: {
       type: 'timestamp',
-      // search: { type: ['NUMERIC', 'SORTABLE'] } // do or not?
     },
     updatedAt: {
       type: 'timestamp',
-      // search: { type: ['NUMERIC', 'SORTABLE'] } // do or not?
     },
     title: {
       type: 'text',
-      search: { type: ['TEXT'] },
     },
   }
 
@@ -68,11 +65,9 @@ test.serial('schemas - sport', async (t) => {
     },
     published: {
       type: 'boolean',
-      search: { type: ['TAG'] },
     },
     rating: {
       type: 'int',
-      search: { type: ['NUMERIC', 'SORTABLE'] },
     },
     overlay: {
       type: 'string',
@@ -80,27 +75,6 @@ test.serial('schemas - sport', async (t) => {
     article: {
       type: 'string',
     },
-    // uuid: {
-    //   type: 'object',
-    //   properties: {
-    //     sas: {
-    //       type: 'string',
-    //       search: { type: ['TAG'] }
-    //     },
-    //     dfb: {
-    //       type: 'string',
-    //       search: { type: ['TAG'] }
-    //     },
-    //     sams: {
-    //       type: 'string',
-    //       search: { type: ['TAG'] }
-    //     },
-    //     stripe: {
-    //       type: 'string',
-    //       search: { type: ['TAG'] }
-    //     }
-    //   }
-    // },
     image: {
       type: 'object',
       properties: {
@@ -125,12 +99,10 @@ test.serial('schemas - sport', async (t) => {
 
   const startTime: FieldSchema = {
     type: 'timestamp',
-    search: { type: ['NUMERIC'] },
   }
 
   const endTime: FieldSchema = {
     type: 'timestamp',
-    search: { type: ['NUMERIC'] },
   }
 
   const gender: FieldSchema = {
@@ -139,7 +111,6 @@ test.serial('schemas - sport', async (t) => {
 
   const status: FieldSchema = {
     type: 'string',
-    search: { type: ['TAG'] },
   }
 
   const contact: FieldSchema = {
@@ -151,7 +122,6 @@ test.serial('schemas - sport', async (t) => {
     ...contentFields,
     date: {
       type: 'timestamp',
-      search: { type: ['NUMERIC', 'SORTABLE'] },
     },
     startTime,
     endTime,
@@ -369,11 +339,8 @@ test.serial('schemas - sport', async (t) => {
   }
 
   await client.updateSchema(schema)
-
-  const { schema: schemaResult, searchIndexes } = await client.getSchema()
+  await client.getSchema()
   await client.destroy()
-
   await server.destroy()
-
   await t.connectionsAreEmpty()
 })

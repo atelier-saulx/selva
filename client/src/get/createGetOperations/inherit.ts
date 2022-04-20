@@ -2,19 +2,18 @@ import { GetOptions, Inherit, GetOperation } from '../types'
 import { SelvaClient } from '../..'
 import { Schema, FieldSchema } from '../../schema'
 import { makeAll } from './all'
-import { getNestedSchema, setNestedResult } from '../utils'
 
 function validateTypes(schema: Schema, field: string, types: string[]): void {
   let fst: FieldSchema
   let i = 0
 
+  // eslint-disable-next-line
   for (; i < types.length; i++) {
     const f = (types[i] === 'root' ? schema.rootType : schema.types[types[i]])
       .fields[field]
     if (f) {
       fst = f
     }
-
     break
   }
 
@@ -44,11 +43,11 @@ export default function createInheritOperation(
   id: string,
   field: string,
   db: string,
-  ops: GetOperation[]
+  ops: GetOperation[],
+  passedOnSchema?: Schema
 ): void {
   if (typeof inherit === 'object' && inherit.$item) {
     let p: GetOptions = props
-
     if (props.$all) {
       const newKeys = makeAll(
         client,
@@ -56,11 +55,11 @@ export default function createInheritOperation(
         field,
         <string>props.$field,
         db,
-        props
+        props,
+        passedOnSchema
       )
       p = newKeys || props
     }
-
     ops.push({
       type: 'inherit',
       id,
@@ -73,7 +72,6 @@ export default function createInheritOperation(
         : (inherit.$required && [inherit.$required]) || undefined,
       types: Array.isArray(inherit.$item) ? inherit.$item : [inherit.$item],
     })
-
     return
   }
 
@@ -86,7 +84,7 @@ export default function createInheritOperation(
       ? []
       : [inherit.$type]
 
-  const schema = client.schemas[db]
+  const schema = passedOnSchema || client.schemas[db]
 
   if (types && types.length) {
     validateTypes(schema, field, types)
@@ -95,7 +93,15 @@ export default function createInheritOperation(
   let hasKeys = false
   let p = props
   if (types.length && props.$all) {
-    const newKeys = makeAll(client, id, field, <string>props.$field, db, props)
+    const newKeys = makeAll(
+      client,
+      id,
+      field,
+      <string>props.$field,
+      db,
+      props,
+      passedOnSchema
+    )
     if (newKeys) {
       hasKeys = true
     }
@@ -149,6 +155,4 @@ export default function createInheritOperation(
     merge: inherit.$merge,
     deepMerge: inherit.$deepMerge,
   })
-
-  return
 }

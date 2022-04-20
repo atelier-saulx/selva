@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -11,16 +10,6 @@ test.before(async (t) => {
   port = await getPort()
   srv = await start({
     port,
-    //     selvaOptions: [
-    //       'FIND_INDICES_MAX',
-    //       '100',
-    //       'FIND_INDEXING_INTERVAL',
-    //       '1000',
-    //       'FIND_INDEXING_ICB_UPDATE_INTERVAL',
-    //       '500',
-    //       'FIND_INDEXING_POPULARITY_AVE_PERIOD',
-    //       '3',
-    //     ],
   })
 
   await wait(500)
@@ -30,7 +19,7 @@ test.before(async (t) => {
     languages: ['en', 'de', 'fr', 'it', 'nl'],
     rootType: {
       fields: {
-        title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+        title: { type: 'text' },
       },
     },
     types: {
@@ -38,59 +27,56 @@ test.before(async (t) => {
         prefix: 'fo',
         fields: {
           name: { type: 'string' },
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
+          title: { type: 'text' },
         },
       },
       league: {
         prefix: 'le',
         fields: {
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
+          value: { type: 'number' },
         },
       },
       team: {
         prefix: 'te',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } },
+          title: { type: 'text' },
+          published: { type: 'boolean' },
         },
       },
       video: {
         prefix: 'vi',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } },
+          title: { type: 'text' },
+          published: { type: 'boolean' },
         },
       },
       sport: {
         prefix: 'sp',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } },
+          title: { type: 'text' },
+          published: { type: 'boolean' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          title: { type: 'text', search: { type: ['TEXT-LANGUAGE-SUG'] } },
-          published: { type: 'boolean', search: { type: ['TAG'] } },
+          title: { type: 'text' },
+          published: { type: 'boolean' },
           homeTeam: { type: 'reference' },
           awayTeam: { type: 'reference' },
           startTime: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           endTime: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           date: {
             type: 'timestamp',
-            search: { type: ['NUMERIC', 'SORTABLE'] },
           },
           fun: { type: 'set', items: { type: 'string' } },
-          related: { type: 'references', search: { type: ['TAG'] } },
-          value: { type: 'number', search: { type: ['NUMERIC', 'SORTABLE'] } },
-          status: { type: 'number', search: { type: ['NUMERIC'] } },
+          related: { type: 'references' },
+          value: { type: 'number' },
+          status: { type: 'number' },
         },
       },
     },
@@ -102,7 +88,6 @@ test.before(async (t) => {
 
 test.after(async (t) => {
   const client = connect({ port })
-  const d = Date.now()
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
@@ -183,7 +168,7 @@ test.serial('subs layout', async (t) => {
       },
       { immutable: true }
     )
-    .subscribe((r) => console.log(r))
+    .subscribe((r) => console.info(r))
   client
     .observe(
       {
@@ -212,14 +197,14 @@ test.serial('subs layout', async (t) => {
       },
       { immutable: true }
     )
-    .subscribe((r) => console.log(r))
+    .subscribe((r) => console.info(r))
 
   const past = []
-  let pastPublishedIds = []
+  const pastPublishedIds = []
   for (let i = 0; i < 1000; i++) {
     const team = i % 2 === 0 ? 'te2' : 'te1'
     let published = true
-    if (i % 3 == 0) {
+    if (i % 3 === 0) {
       published = false
     }
 
@@ -256,7 +241,7 @@ test.serial('subs layout', async (t) => {
   for (let i = 0; i < 1000; i++) {
     const team = i % 2 === 0 ? 'te2' : 'te1'
     let published = true
-    if (i % 3 == 0) {
+    if (i % 3 === 0) {
       published = false
     }
 
@@ -440,7 +425,7 @@ test.serial('subs layout', async (t) => {
     )
     .subscribe((r) => {
       result = r
-      console.log('-->', result)
+      console.info('-->', result)
     })
 
   let otherResult1
@@ -590,7 +575,7 @@ test.serial('subs layout', async (t) => {
     )
     .subscribe((r) => {
       otherResult1 = r
-      console.log('match layout 1', r)
+      console.warn('match layout 1', r)
     })
 
   let otherResult2
@@ -740,7 +725,7 @@ test.serial('subs layout', async (t) => {
     )
     .subscribe((r) => {
       otherResult2 = r
-      console.log('match layout 2', r)
+      console.warn('match layout 2', r)
     })
 
   let otherResult3
@@ -911,11 +896,11 @@ test.serial('subs layout', async (t) => {
     )
     .subscribe((r) => {
       otherResult3 = r
-      console.log('sport layout', r)
+      console.warn('sport layout', r)
     })
 
   await wait(1000)
-  console.log('should be upcoming')
+  console.warn('should be upcoming')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'mau1' }, { id: 'mau2' }].concat(
       upcomingPublishedIds.slice(0, 8)
@@ -950,7 +935,7 @@ test.serial('subs layout', async (t) => {
 
   await wait(3000)
 
-  console.log('should be live')
+  console.warn('should be live')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'mau2' }].concat(upcomingPublishedIds.slice(0, 9)),
     past: pastPublishedIds.slice(0, 10),
@@ -1001,7 +986,7 @@ test.serial('subs layout', async (t) => {
 
   await wait(3000)
 
-  console.log('should be past')
+  console.warn('should be past')
   t.deepEqualIgnoreOrder(result, {
     upcoming: upcomingPublishedIds.slice(0, 10),
     past: [{ id: 'mau1' }].concat(pastPublishedIds.slice(0, 9)),
@@ -1076,7 +1061,6 @@ test.serial('subs layout', async (t) => {
   t.deepEqualIgnoreOrder(otherResult3.components[1].children.length, 0)
 
   await client.delete('root')
-  console.log('END')
   await client.destroy()
 })
 
@@ -1169,25 +1153,22 @@ test.serial('subs upcoming, live and past', async (t) => {
     )
     .subscribe((r) => {
       result = r
-      console.log('-->', result)
+      console.warn('-->', result)
     })
 
   await wait(500)
-  console.log('should be upcoming')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [{ id: 'ma1' }],
     past: [],
     live: [],
   })
   await wait(3000)
-  console.log('should be live')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [],
     live: [{ id: 'ma1' }],
   })
   await wait(3000)
-  console.log('should be past')
   t.deepEqualIgnoreOrder(result, {
     upcoming: [],
     past: [{ id: 'ma1' }],
@@ -1200,7 +1181,7 @@ test.serial('subs upcoming, live and past', async (t) => {
 test.serial('find - already started', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
-  const match1 = await client.set({
+  await client.set({
     type: 'match',
     name: 'started 5m ago',
     startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
@@ -1320,7 +1301,7 @@ test.serial('find - already started subscription', async (t) => {
       { immutable: true }
     )
     .subscribe(() => {
-      console.log('do nothing')
+      console.warn('do nothing')
     })
   // =======================
 
@@ -1369,7 +1350,6 @@ test.serial('find - already started subscription', async (t) => {
 
   let o1counter = 0
   const sub = observable.subscribe((d) => {
-    console.log('odata', d)
     if (o1counter === 0) {
       // gets start event
       t.true(d.items.length === 3)
@@ -1396,7 +1376,7 @@ test.serial('find - already started subscription', async (t) => {
 test.serial('find - starting soon', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
-  const match1 = await client.set({
+  await client.set({
     type: 'match',
     name: 'started 5m ago',
     startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
@@ -1536,7 +1516,7 @@ test.serial(
   async (t) => {
     const client = connect({ port }, { loglevel: 'info' })
 
-    const match1 = await client.set({
+    await client.set({
       type: 'match',
       name: 'started 5m ago',
       // startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
@@ -1574,11 +1554,6 @@ test.serial(
       endTime: Date.now() + 3 * 60 * 60 * 1000, // ends in 2 hours
     })
 
-    let sub = ''
-    for (let i = 0; i < 64; i++) {
-      sub += 'x'
-    }
-
     t.deepEqual(
       (
         await client.get({
@@ -1610,7 +1585,7 @@ test.serial(
     )
 
     t.plan(2)
-    const observable = client
+    client
       .observe(
         {
           $includeMeta: true,
@@ -1641,7 +1616,6 @@ test.serial(
         { immutable: true }
       )
       .subscribe((d) => {
-        console.log('d', d)
         t.deepEqualIgnoreOrder(
           d.items.map((i) => i.name),
           ['started 2h ago', 'started 2m ago']
@@ -1660,7 +1634,7 @@ test.serial(
   async (t) => {
     const client = connect({ port }, { loglevel: 'info' })
 
-    const match1 = await client.set({
+    await client.set({
       type: 'match',
       name: 'started 5m ago',
       // startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
@@ -1698,11 +1672,6 @@ test.serial(
       endTime: Date.now() + 3 * 60 * 60 * 1000, // ends in 2 hours
     })
 
-    let sub = ''
-    for (let i = 0; i < 64; i++) {
-      sub += 'x'
-    }
-
     t.deepEqual(
       (
         await client.get({
@@ -1730,7 +1699,7 @@ test.serial(
     )
 
     t.plan(2)
-    const observable = client
+    client
       .observe(
         {
           $includeMeta: true,
@@ -1756,7 +1725,6 @@ test.serial(
         { immutable: true }
       )
       .subscribe((d) => {
-        console.log('d', d)
         t.deepEqualIgnoreOrder(
           d.items.map((i) => i.name),
           ['started 2h ago', 'started 2m ago']
@@ -1877,7 +1845,7 @@ test.serial(
 test.serial.skip('find - now- subscription', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
-  const match1 = await client.set({
+  await client.set({
     type: 'match',
     name: 'started 5m ago',
     // startTime: Date.now() - 5 * 60 * 1000, // 5 minutes ago
@@ -1915,14 +1883,8 @@ test.serial.skip('find - now- subscription', async (t) => {
     endTime: Date.now() + 3 * 60 * 60 * 1000, // ends in 2 hours
   })
 
-  let sub = ''
-  for (let i = 0; i < 64; i++) {
-    sub += 'x'
-  }
-
   t.plan(3)
-  let cnt = 0
-  const observable = client
+  client
     .observe(
       {
         $id: 'root',
@@ -1946,9 +1908,7 @@ test.serial.skip('find - now- subscription', async (t) => {
       },
       { immutable: true }
     )
-    .subscribe((d) => {
-      console.log('d', d)
-    })
+    .subscribe((d) => {})
 
   await wait(10e3)
 

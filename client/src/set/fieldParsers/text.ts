@@ -1,33 +1,33 @@
 import { SelvaClient } from '../..'
 import { SetOptions } from '../types'
-import { Schema, TypeSchema, FieldSchemaOther } from '../../schema'
+import { Schema, FieldSchemaOther } from '../../schema'
 
-function refs(field: string, payload: SetOptions, langs?: string[]): void {
-  if (payload.$ref && Object.keys(payload).length !== 1) {
-    throw new Error(`$ref only allow without other fields ${field} ${payload}`)
-  }
+// function refs(field: string, payload: SetOptions, langs?: string[]): void {
+//   if (payload.$ref && Object.keys(payload).length !== 1) {
+//     throw new Error(`$ref only allow without other fields ${field} ${payload}`)
+//   }
 
-  if (!langs) {
-    return
-  }
+//   if (!langs) {
+//     return
+//   }
 
-  for (const lang of langs) {
-    if (payload[lang]) {
-      if (payload[lang].$ref) {
-        payload[lang] = `___selva_$ref:${payload[lang].$ref}`
-      } else if (payload[lang].$default && payload[lang].$default.$ref) {
-        payload[lang].$default = `___selva_$ref:${payload[lang].$default.$ref}`
-      }
-    }
-  }
-}
+//   for (const lang of langs) {
+//     if (payload[lang]) {
+//       if (payload[lang].$ref) {
+//         payload[lang] = `___selva_$ref:${payload[lang].$ref}`
+//       } else if (payload[lang].$default && payload[lang].$default.$ref) {
+//         payload[lang].$default = `___selva_$ref:${payload[lang].$default.$ref}`
+//       }
+//     }
+//   }
+// }
 
 const verify = (
   payload: SetOptions,
   nested?: boolean,
   lang?: string[]
 ): void => {
-  for (let key in payload) {
+  for (const key in payload) {
     if (key === '$merge') {
       if (nested) {
         throw new Error(`$merge cannot be used on language fields`)
@@ -60,13 +60,13 @@ const verify = (
 }
 
 export default async (
-  _client: SelvaClient,
+  client: SelvaClient,
   schema: Schema,
   field: string,
   payload: SetOptions,
   result: SetOptions,
   _fields: FieldSchemaOther,
-  _type: string,
+  type: string,
   $lang?: string
 ): Promise<number> => {
   const lang: string[] = schema.languages
@@ -75,7 +75,13 @@ export default async (
     payload = { [$lang]: payload }
   }
 
-  // refs(field, payload, lang)
+  if (
+    client.validator &&
+    !client.validator(schema, type, field.split('.'), payload, $lang)
+  ) {
+    throw new Error('Incorrect payload for "text" from custom validator')
+  }
+
   verify(payload, false, lang)
 
   let added = 0
@@ -84,7 +90,7 @@ export default async (
       result.push('7', hname, '')
       return 0
     }
-    if (o.$merge == false) {
+    if (o.$merge === false) {
       result.push('7', hname, '')
     }
     for (const k in o) {

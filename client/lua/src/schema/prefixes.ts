@@ -1,6 +1,5 @@
 import { Schema, Types } from '~selva/schema/index'
 import { testString } from '../util'
-import * as logger from '../logger'
 
 const validate = (id: string): boolean => {
   return testString(id, '[%a%d][%a%d]')
@@ -8,7 +7,7 @@ const validate = (id: string): boolean => {
 
 // - means id seperator
 const findKey = (obj: Types, value: any): false | string => {
-  for (let k in obj) {
+  for (const k in obj) {
     if (obj[k].prefix === value) {
       return k
     }
@@ -18,8 +17,8 @@ const findKey = (obj: Types, value: any): false | string => {
 
 const hasDuplicates = (obj: Types, value: string): false | [string, string] => {
   let found = false
-  let result: [string, string] = <[string, string]>(<unknown>[]) // force tuple typecheck for nicer code to build result value
-  for (let k in obj) {
+  const result: [string, string] = <[string, string]>(<unknown>[]) // force tuple typecheck for nicer code to build result value
+  for (const k in obj) {
     if (obj[k].prefix === value) {
       if (found) {
         result[1] = k
@@ -73,7 +72,7 @@ export default function ensurePrefixes(
   oldSchema: Schema,
   newSchema: Schema
 ): string | null {
-  for (let type in newSchema.types) {
+  for (const type in newSchema.types) {
     const definition = newSchema.types[type]
 
     if (oldSchema.types[type]) {

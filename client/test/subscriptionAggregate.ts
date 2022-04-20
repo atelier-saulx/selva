@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -27,27 +26,26 @@ test.beforeEach(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
-          thing: { type: 'string', search: { type: ['EXISTS'] } },
+          name: { type: 'string' },
+          thing: { type: 'string' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
           description: { type: 'text' },
           value: {
             type: 'number',
-            search: { type: ['NUMERIC', 'SORTABLE', 'EXISTS'] },
           },
-          status: { type: 'number', search: { type: ['NUMERIC'] } },
+          status: { type: 'number' },
         },
       },
     },
   })
 
   // A small delay is needed after setting the schema
-  await new Promise((r) => setTimeout(r, 100))
+  await wait(100)
 
   await client.destroy()
 })
@@ -65,8 +63,6 @@ test.serial('simple count aggregate sub', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   t.plan(3)
-
-  let sum = 0
 
   await Promise.all([
     await client.set({
@@ -87,8 +83,6 @@ test.serial('simple count aggregate sub', async (t) => {
       name: `match ${i}`,
       value: i + 10,
     })
-
-    sum += i + 10
   }
 
   await client.set({
@@ -119,7 +113,7 @@ test.serial('simple count aggregate sub', async (t) => {
   })
 
   let i = 0
-  const countSub = countObs.subscribe((x) => {
+  countObs.subscribe((x) => {
     if (i === 0) {
       t.deepEqualIgnoreOrder(x, { id: 'root', matchCount: 4 })
     } else if (i === 1) {
@@ -233,7 +227,7 @@ test.serial('simple sum aggregate sub', async (t) => {
   })
 
   let i = 0
-  const countSub = countObs.subscribe((x) => {
+  countObs.subscribe((x) => {
     if (i === 0) {
       t.deepEqualIgnoreOrder(x, { id: 'root', thing: sum })
     } else if (i === 1) {
@@ -358,7 +352,7 @@ test.serial('list avg aggregate sub', async (t) => {
   })
 
   let i = 0
-  const countSub = countObs.subscribe((x) => {
+  countObs.subscribe((x) => {
     if (i === 0) {
       t.deepEqual(x, {
         id: 'root',
@@ -514,7 +508,7 @@ test.serial('simple nested find avg aggregate sub', async (t) => {
   })
 
   let i = 0
-  const countSub = countObs.subscribe((x) => {
+  countObs.subscribe((x) => {
     if (i === 0) {
       t.deepEqualIgnoreOrder(x, { id: 'root', thing: sum / 4 })
     } else if (i === 1) {
@@ -582,8 +576,6 @@ test.serial('simple max aggregate sub', async (t) => {
 
   t.plan(3)
 
-  let sum = 0
-
   await Promise.all([
     await client.set({
       $id: 'le0',
@@ -603,8 +595,6 @@ test.serial('simple max aggregate sub', async (t) => {
       name: `match ${i}`,
       value: i + 10,
     })
-
-    sum += i + 10
   }
 
   await client.set({
@@ -635,7 +625,7 @@ test.serial('simple max aggregate sub', async (t) => {
   })
 
   let i = 0
-  const countSub = countObs.subscribe((x) => {
+  countObs.subscribe((x) => {
     if (i === 0) {
       t.deepEqualIgnoreOrder(x, { id: 'root', val: 13 })
     } else if (i === 1) {

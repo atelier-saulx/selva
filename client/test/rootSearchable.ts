@@ -2,7 +2,6 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
-import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -31,7 +30,6 @@ test.serial('root is searchable', async (t) => {
       fields: {
         title: {
           type: 'text',
-          search: { type: ['TEXT-LANGUAGE-SUG'] },
         },
       },
     },
@@ -41,7 +39,6 @@ test.serial('root is searchable', async (t) => {
         fields: {
           title: {
             type: 'text',
-            search: { type: ['TEXT-LANGUAGE-SUG'] },
           },
         },
       },

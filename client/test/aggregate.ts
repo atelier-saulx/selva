@@ -1,7 +1,6 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
 
@@ -27,27 +26,25 @@ test.beforeEach(async (t) => {
       league: {
         prefix: 'le',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
-          thing: { type: 'string', search: { type: ['EXISTS'] } },
+          name: { type: 'string' },
+          thing: { type: 'string' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
-          name: { type: 'string', search: { type: ['TAG'] } },
+          name: { type: 'string' },
           description: { type: 'text' },
           value: {
             type: 'number',
-            search: { type: ['NUMERIC', 'SORTABLE', 'EXISTS'] },
           },
-          status: { type: 'number', search: { type: ['NUMERIC'] } },
+          status: { type: 'number' },
         },
       },
     },
   })
 
-  // A small delay is needed after setting the schema
-  await new Promise((r) => setTimeout(r, 100))
+  await wait(100)
 
   await client.destroy()
 })
@@ -398,7 +395,6 @@ test.serial('simple aggregate', async (t) => {
 test.serial('sorted aggregate', async (t) => {
   // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
-  let sum = 0
 
   await Promise.all([
     await client.set({
@@ -419,8 +415,6 @@ test.serial('sorted aggregate', async (t) => {
       name: `match ${i}`,
       value: i + 10,
     })
-
-    sum += i + 10
   }
 
   await client.set({

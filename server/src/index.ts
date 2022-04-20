@@ -389,7 +389,6 @@ export async function start(opts: Options) {
 
   registry.on('close', async () => {
     // TODO: Remove comment
-    // console.log('Close all servers does it work ?')
     await origin.destroy()
     await subs.destroy()
     await subsRegistry.destroy()
