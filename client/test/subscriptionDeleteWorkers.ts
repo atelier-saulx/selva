@@ -47,7 +47,7 @@ test.serial('subscribe and delete workerized', async (t) => {
     },
   })
 
-  const amount = 1e3
+  const amount = 1e4
 
   const q = []
   for (let i = 0; i < amount; i++) {
@@ -108,7 +108,7 @@ test.serial('subscribe and delete workerized', async (t) => {
   for (let i = 1; i < deleteCount; i++) {
     await client.delete({ $id: ids[i] })
     expectedResult.push(amount - (i + 1))
-    await wait(100)
+    await wait(200)
   }
 
   t.is(cnt, 2 + (deleteCount - 1))
