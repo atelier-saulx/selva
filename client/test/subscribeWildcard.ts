@@ -5,7 +5,7 @@ import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
-let port
+let port: number
 
 test.before(async (t) => {
   port = await getPort()
