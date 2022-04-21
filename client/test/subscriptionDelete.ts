@@ -3,7 +3,6 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
-
 let srv
 let port: number
 test.before(async () => {
@@ -112,34 +111,34 @@ test.serial('subscribe and delete a descendant', async (t) => {
         type: 'thing',
         $id: 'th2',
         yesh: 2,
-      }
+      },
     ],
   })
 
   const observable = client.observe({
     $id: id,
-      $language: "en",
-      items: {
-        id: true,
-        $list: {
-          $limit: 1000,
-          $offset: 0,
-          $sort: {
-            $field: "createdAt",
-            $order: "desc",
-          },
-          $find: {
-            $traverse: "descendants",
-            $filter: [
-              {
-                $field: "type",
-                $operator: "=",
-                $value: 'thing',
-              },
-            ],
-          },
+    $language: 'en',
+    items: {
+      id: true,
+      $list: {
+        $limit: 1000,
+        $offset: 0,
+        $sort: {
+          $field: 'createdAt',
+          $order: 'desc',
+        },
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'thing',
+            },
+          ],
         },
       },
+    },
   })
 
   t.plan(2)
@@ -147,7 +146,7 @@ test.serial('subscribe and delete a descendant', async (t) => {
   observable.subscribe((v) => {
     switch (i++) {
       case 0:
-        t.deepEqual(v, { items: [ { id: 'th2' } ] })
+        t.deepEqual(v, { items: [{ id: 'th2' }] })
         break
       case 1:
         t.deepEqual(v, { items: [] })
@@ -177,22 +176,22 @@ test.serial('subscribe and delete over a reference field', async (t) => {
 
   const observable = client.observe({
     $id: id,
-    $language: "en",
+    $language: 'en',
     items: {
       id: true,
       $list: {
         $limit: 1000,
         $offset: 0,
         $sort: {
-          $field: "createdAt",
-            $order: "desc",
+          $field: 'createdAt',
+          $order: 'desc',
         },
         $find: {
-          $traverse: "next",
+          $traverse: 'next',
           $filter: [
             {
-              $field: "type",
-              $operator: "=",
+              $field: 'type',
+              $operator: '=',
               $value: 'thing',
             },
           ],
@@ -206,7 +205,7 @@ test.serial('subscribe and delete over a reference field', async (t) => {
   observable.subscribe((v) => {
     switch (i++) {
       case 0:
-        t.deepEqual(v, { items: [ { id: 'th2' } ] })
+        t.deepEqual(v, { items: [{ id: 'th2' }] })
         break
       case 1:
         t.deepEqual(v, { items: [] })
@@ -243,22 +242,22 @@ test.serial('subscribe and delete over references field', async (t) => {
 
   const observable = client.observe({
     $id: id,
-    $language: "en",
+    $language: 'en',
     items: {
       id: true,
       $list: {
         $limit: 1000,
         $offset: 0,
         $sort: {
-          $field: "createdAt",
-            $order: "desc",
+          $field: 'createdAt',
+          $order: 'desc',
         },
         $find: {
-          $traverse: "things",
+          $traverse: 'things',
           $filter: [
             {
-              $field: "type",
-              $operator: "=",
+              $field: 'type',
+              $operator: '=',
               $value: 'thing',
             },
           ],
@@ -272,10 +271,10 @@ test.serial('subscribe and delete over references field', async (t) => {
   observable.subscribe((v) => {
     switch (i++) {
       case 0:
-        t.deepEqualIgnoreOrder(v, { items: [ { id: 'th2' }, { id: 'th3' } ] })
+        t.deepEqualIgnoreOrder(v, { items: [{ id: 'th2' }, { id: 'th3' }] })
         break
       case 1:
-        t.deepEqual(v, { items: [ { id: 'th3' } ] })
+        t.deepEqual(v, { items: [{ id: 'th3' }] })
         break
     }
   })
