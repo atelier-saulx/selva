@@ -47,8 +47,10 @@ test.serial('subscribe and delete workerized', async (t) => {
     },
   })
 
+  const amount = 1e3
+
   const q = []
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < amount; i++) {
     q.push(
       client.set({
         type: 'thing',
@@ -66,7 +68,7 @@ test.serial('subscribe and delete workerized', async (t) => {
       yesh: true,
       $list: {
         $find: {
-          $traverse: 'children', // also desc
+          $traverse: 'descendants', // also desc
           $filter: {
             $operator: '=',
             $value: 'thing',
@@ -79,7 +81,13 @@ test.serial('subscribe and delete workerized', async (t) => {
 
   let cnt = 0
 
+  const r = []
+
   const s = observable.subscribe((d) => {
+    // console.info('------------------->', d)
+
+    r.push(d.things.length)
+
     cnt++
   })
 
@@ -90,6 +98,22 @@ test.serial('subscribe and delete workerized', async (t) => {
   await wait(1000)
 
   t.is(cnt, 2)
+
+  const expectedResult = [amount, amount - 1]
+
+  t.deepEqual(r, expectedResult)
+
+  const deleteCount = 20
+
+  for (let i = 1; i < deleteCount; i++) {
+    await client.delete({ $id: ids[i] })
+    expectedResult.push(amount - (i + 1))
+    await wait(300)
+  }
+
+  t.is(cnt, 2 + (deleteCount - 1))
+
+  t.deepEqual(r, expectedResult)
 
   s.unsubscribe()
   registryWorker.terminate()
