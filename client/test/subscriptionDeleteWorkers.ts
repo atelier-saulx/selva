@@ -103,12 +103,12 @@ test.serial('subscribe and delete workerized', async (t) => {
 
   t.deepEqual(r, expectedResult)
 
-  const deleteCount = 20
+  const deleteCount = 100
 
   for (let i = 1; i < deleteCount; i++) {
     await client.delete({ $id: ids[i] })
     expectedResult.push(amount - (i + 1))
-    await wait(300)
+    await wait(100)
   }
 
   t.is(cnt, 2 + (deleteCount - 1))
