@@ -199,6 +199,14 @@ int Edge_HasNodeId(const struct EdgeField *edge_field, const Selva_NodeId dst_no
  */
 int Edge_DerefSingleRef(const struct EdgeField *edge_field, struct SelvaHierarchyNode **node_out);
 
+static inline void Edge_ForeachBegin(struct SVectorIterator *it, const struct EdgeField *edge_field) {
+    SVector_ForeachBegin(it, &edge_field->arcs);
+}
+
+static inline struct SelvaHierarchyNode *Edge_Foreach(struct SVectorIterator *it) {
+    return SVector_Foreach(it);
+}
+
 /**
  * Add a new edge.
  * If the field doesn't exist it will be created using the given constraint_id.

@@ -33,6 +33,25 @@ test.before(async (t) => {
           status: { type: 'number' },
         },
       },
+      thing: {
+        prefix: 'th',
+        fields: {
+          docs: { type: 'references' },
+        },
+      },
+      file: {
+        prefix: 'tx',
+        fields: {
+          name: { type: 'string' },
+          mirrors: { type: 'references' },
+        },
+      },
+      mirror: {
+        prefix: 'sp',
+        fields: {
+          url: { type: 'string' },
+        },
+      },
     },
   })
 
@@ -40,15 +59,11 @@ test.before(async (t) => {
 })
 
 test.after(async (t) => {
-  console.info('CLOSING')
-
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
-
-  console.info('CLOSED')
 })
 
 test.serial('get nested results', async (t) => {
@@ -133,15 +148,8 @@ test.serial('get nested results', async (t) => {
   t.is(result.items.length, 10, 'items length')
   t.is(result.items[0].teams.length, 2, 'has teams')
 
-  await wait(1e3)
-
   await client.delete('root')
-
-  await wait(1e3)
-
   await client.destroy()
-
-  t.true(true)
 })
 
 test.serial('get nested results with $all', async (t) => {
@@ -248,13 +256,8 @@ test.serial('get nested results with $all', async (t) => {
     })
   )
 
-  await wait(1e3)
   await client.delete('root')
-  await wait(1e3)
-
   await client.destroy()
-
-  t.true(true)
 })
 
 test.serial.skip('get nested results as ids', async (t) => {
@@ -316,13 +319,8 @@ test.serial.skip('get nested results as ids', async (t) => {
   t.is(result.items.length, 10, 'items length')
   t.is(result.items[0].parents.length, 2, 'has teams')
 
-  await wait(1e3)
   await client.delete('root')
-  await wait(1e3)
-
   await client.destroy()
-
-  t.true(true)
 })
 
 test.serial('get nested results without find', async (t) => {
@@ -382,13 +380,60 @@ test.serial('get nested results without find', async (t) => {
 
   t.is(child.children.length, 10, 'has teams')
 
-  await wait(1e3)
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial.only('nested refs', async (t) => {
+  const client = connect({ port })
+
+  for (let i = 0; i < 3; i++) {
+    await client.set({
+      type: 'thing',
+      docs: [...Array(2)].map((_, i) => ({
+        type: 'file',
+        name: `file${i}.txt`,
+        mirrors: [
+          {
+            type: 'mirror',
+            url: `http://localhost:3000/file${i}.txt`,
+          },
+          {
+            type: 'mirror',
+            url: `http://localhost:3001/file${i}.txt`,
+          },
+        ]
+      }))
+    })
+  }
+
+  const q = {
+    thingies: {
+      $id: 'root',
+      id: true,
+      name: true,
+      docs: {
+        $list: true,
+        name: true,
+        mirrors: {
+          $list: true,
+          url: true,
+        },
+      },
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'thing',
+          },
+        },
+      },
+    },
+  }
+  console.log(JSON.stringify(await client.get(q), null, 2))
 
   await client.delete('root')
-
-  await wait(1e3)
-
   await client.destroy()
-
-  t.true(true)
 })

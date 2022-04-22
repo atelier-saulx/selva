@@ -18,9 +18,6 @@ test.before(async (t) => {
   srv = await start({
     port,
   })
-  await new Promise((resolve, _reject) => {
-    setTimeout(resolve, 100)
-  })
 })
 
 test.beforeEach(async (t) => {
@@ -1130,7 +1127,27 @@ test.serial('wildcard find with edge fields', async (t) => {
   // Can't do this with multi-ref
   t.deepEqual(
     await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'things.*', 'root'),
-    [[ 'root', [ ]]]
+    [[ 'root', [
+      'things',
+      [
+        [
+          'ding',
+          'dong',
+          'dong',
+          'ding',
+          'id',
+          'ma1',
+        ],
+        [
+          'ding',
+          'dong',
+          'dong',
+          'ding',
+          'id',
+          'ma2',
+        ],
+      ],
+    ]]]
   )
 })
 
@@ -1190,6 +1207,66 @@ test.serial('wildcard find with edge fields and data fields', async (t) => {
             "da3",
             "name",
             "dong"
+          ]
+        ]
+      ]
+    ]
+  )
+})
+
+test.serial('wildcard find with exclusions', async (t) => {
+  const client = connect({ port })
+
+  // Create nodes
+  t.deepEqual(
+    await client.redis.selva_modify('root', '', '0', 'name', 'hello'),
+    ['root', 'UPDATED']
+  )
+  t.deepEqual(
+    await client.redis.selva_modify('ma1', '', '0', 'thing.ding', 'dong'),
+    ['ma1', 'UPDATED']
+  )
+  t.deepEqual(
+    await client.redis.selva_modify('da3', '', '0', 'name', 'dong'),
+    ['da3', 'UPDATED']
+  )
+
+  const rec1 = createRecord(setRecordDefCstring, {
+    op_set_type: 1,
+    delete_all: 0,
+    constraint_id: 1,
+    $add: toCArr(['da3']),
+    $delete: null,
+    $value: null,
+  })
+
+  t.deepEqual(
+    await client.redis.selva_modify('ma2', '', '5', 'thing', rec1, '0', 'ding', 'dong'),
+    ['ma2', 'UPDATED', 'UPDATED']
+  )
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'fields', 'thing.*\n!id', 'root', '"ma" e'),
+    [
+      [
+        'ma1',
+        [
+          'thing',
+          [
+            'ding',
+            'dong',
+          ]
+        ]
+      ],
+      [
+        'ma2',
+        [
+          'thing',
+          [
+            'id',
+            'da3',
+            'name',
+            'dong',
           ]
         ]
       ]
