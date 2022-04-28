@@ -147,8 +147,6 @@ static int send_edge_field(
      * TODO Not very nice to access arcs directly.
      */
     const size_t nr_arcs = SVector_Size(&edge_field->arcs);
-    struct SVectorIterator it;
-    struct SelvaHierarchyNode *dst_node;
 
     /*
      * RFE Historically we have been sending ENOENT but is that a good practice?
@@ -166,35 +164,38 @@ static int send_edge_field(
         RedisModule_ReplyWithArray(ctx, nr_arcs);
     }
 
+    const char *next_field_str = field_str + off;
+    const size_t next_field_len = field_len - off;
+    const int is_wildcard = next_field_len == 1 && next_field_str[0] == WILDCARD_CHAR;
+
+    const char *next_prefix_str;
+    size_t next_prefix_len;
+
+    if (field_prefix_str) {
+        const char *s = strnstrn(field_str, field_len, ".", 1);
+        const int n = s ? (int)(s - field_str) + 1 : (int)field_len;
+        const RedisModuleString *next_prefix;
+
+        /* RFE Handle error? */
+        next_prefix = RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, n, field_str);
+        next_prefix_str = RedisModule_StringPtrLen(next_prefix, &next_prefix_len);
+    } else if (!single_ref) {
+        /*
+         * Don't add prefix because we are sending multiple nested objects
+         * in an array.
+         */
+        next_prefix_str = NULL;
+        next_prefix_len = 0;
+    } else {
+        next_prefix_str = field_str;
+        next_prefix_len = off;
+    }
+
+    struct SVectorIterator it;
+    struct SelvaHierarchyNode *dst_node;
+
     Edge_ForeachBegin(&it, edge_field);
     while ((dst_node = Edge_Foreach(&it))) {
-        const char *next_field_str = field_str + off;
-        size_t next_field_len = field_len - off;
-        const int is_wildcard = next_field_len == 1 && next_field_str[0] == WILDCARD_CHAR;
-
-        const char *next_prefix_str;
-        size_t next_prefix_len;
-
-        if (field_prefix_str) {
-            const char *s = strnstrn(field_str, field_len, ".", 1);
-            const int n = s ? (int)(s - field_str) + 1 : (int)field_len;
-            const RedisModuleString *next_prefix;
-
-            /* RFE Handle error? */
-            next_prefix = RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, n, field_str);
-            next_prefix_str = RedisModule_StringPtrLen(next_prefix, &next_prefix_len);
-        } else if (!single_ref) {
-            /*
-             * Don't add prefix because we are sending multiple nested objects
-             * in an array.
-             */
-            next_prefix_str = NULL;
-            next_prefix_len = 0;
-        } else {
-            next_prefix_str = field_str;
-            next_prefix_len = off;
-        }
-
         if (is_wildcard) {
             int res;
 
