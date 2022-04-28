@@ -116,7 +116,7 @@ static int send_edge_field(
     struct EdgeField *edge_field;
     void *p;
 
-    int off = SelvaObject_GetPointerPartialMatchStr(edges, field_str, field_len, &p);
+    const int off = SelvaObject_GetPointerPartialMatchStr(edges, field_str, field_len, &p);
     edge_field = p;
     if (off < 0) {
         return off;
