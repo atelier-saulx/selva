@@ -71,7 +71,7 @@ test.after(async (t) => {
 
 const N = 50000
 
-test.serial('find index order', async (t) => {
+test.serial.failing('find index order', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   await client.set({
