@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 include common.mk
 
 SELVA_VERSION := $(shell sh -c 'git rev-parse --verify HEAD')
