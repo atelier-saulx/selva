@@ -55,3 +55,5 @@ $(LOCALE_RES):
 
 clean:
 	$(RM) -r cache
+
+#.PHONY: $(LOCALE_RES)
