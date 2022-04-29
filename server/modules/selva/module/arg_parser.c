@@ -190,12 +190,17 @@ int SelvaArgsParser_StringSetList(
                     if (excl && cur_el[0] == excl_prefix) {
                         if (el_len > 1) {
                             const char sep[] = { set_separator };
+                            const char *name_str = cur_el + 1;
+                            const size_t name_len = el_len - 1;
 
-                            if (RedisModule_StringAppendBuffer(ctx, excl, cur_el + 1, el_len - 1) ||
-                                RedisModule_StringAppendBuffer(ctx, excl, sep, 1)) {
-                                goto fail;
+                            /* Ignore id field silently. */
+                            if (!(name_len == (sizeof(SELVA_ID_FIELD) - 1) && !memcmp(SELVA_ID_FIELD, name_str, name_len))) {
+                                if (RedisModule_StringAppendBuffer(ctx, excl, name_str, name_len) ||
+                                    RedisModule_StringAppendBuffer(ctx, excl, sep, 1)) {
+                                    goto fail;
+                                }
+                                nr_excl++;
                             }
-                            nr_excl++;
                         }
                         /* Otherwise we ignore the empty element. */
                     } else {

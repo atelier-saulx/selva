@@ -116,7 +116,7 @@ static int send_edge_field(
     struct EdgeField *edge_field;
     void *p;
 
-    int off = SelvaObject_GetPointerPartialMatchStr(edges, field_str, field_len, &p);
+    const int off = SelvaObject_GetPointerPartialMatchStr(edges, field_str, field_len, &p);
     edge_field = p;
     if (off < 0) {
         return off;
@@ -144,15 +144,29 @@ static int send_edge_field(
      * Note: The dst_node might be the same as node but this shouldn't case
      * an infinite loop or any other issues as we'll be always cutting the
      * field name shorter and thus the recursion should eventually stop.
+     * TODO Not very nice to access arcs directly.
      */
-    struct SelvaHierarchyNode *dst_node;
-    int err = Edge_DerefSingleRef(edge_field, &dst_node);
-    if (err) {
-        return err;
+    const size_t nr_arcs = SVector_Size(&edge_field->arcs);
+
+    /*
+     * RFE Historically we have been sending ENOENT but is that a good practice?
+     */
+    if (nr_arcs == 0) {
+        return SELVA_ENOENT;
+    }
+
+    /* TODO Not very nice to dig into the edge internals here. */
+    const int single_ref = edge_field->constraint && edge_field->constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF;
+
+    if (!single_ref) {
+        /* We need to send results in an array if it's a references field. */
+        RedisModule_ReplyWithStringBuffer(ctx, field_str, off - 1);
+        RedisModule_ReplyWithArray(ctx, nr_arcs);
     }
 
     const char *next_field_str = field_str + off;
-    size_t next_field_len = field_len - off;
+    const size_t next_field_len = field_len - off;
+    const int is_wildcard = next_field_len == 1 && next_field_str[0] == WILDCARD_CHAR;
 
     const char *next_prefix_str;
     size_t next_prefix_len;
@@ -162,36 +176,74 @@ static int send_edge_field(
         const int n = s ? (int)(s - field_str) + 1 : (int)field_len;
         const RedisModuleString *next_prefix;
 
+        /* RFE Handle error? */
         next_prefix = RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, n, field_str);
         next_prefix_str = RedisModule_StringPtrLen(next_prefix, &next_prefix_len);
+    } else if (!single_ref) {
+        /*
+         * Don't add prefix because we are sending multiple nested objects
+         * in an array.
+         */
+        next_prefix_str = NULL;
+        next_prefix_len = 0;
     } else {
         next_prefix_str = field_str;
         next_prefix_len = off;
     }
 
-    if (next_field_len == 1 && next_field_str[0] == '*') {
-        int res;
+    struct SVectorIterator it;
+    struct SelvaHierarchyNode *dst_node;
 
-        RedisModule_ReplyWithStringBuffer(ctx, next_prefix_str, next_prefix_len - 1);
-        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    Edge_ForeachBegin(&it, edge_field);
+    while ((dst_node = Edge_Foreach(&it))) {
+        if (is_wildcard) {
+            int res;
 
-        res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, NULL, 0, excluded_fields);
-        if (res < 0) {
-            res = 0;
+            if (next_prefix_str) {
+                if (!single_ref) {
+                    /* See comment below. */
+                    RedisModule_ReplyWithArray(ctx, 2);
+                }
+                RedisModule_ReplyWithStringBuffer(ctx, next_prefix_str, next_prefix_len - 1);
+            }
+
+            RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+            /*
+             * RFE Excluding fields doesn't currently work with wildcard.
+             */
+            res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node,
+                    is_wildcard ? NULL : next_prefix_str, is_wildcard ? 0 : next_prefix_len,
+                    NULL);
+            if (res < 0) {
+                res = 0;
+            }
+
+            RedisModule_ReplySetArrayLength(ctx, 2 * res);
+        } else {
+            struct SelvaObject *dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
+            int res;
+
+            if (!single_ref) {
+                /*
+                 * Sending an array of objects as this is a references field,
+                 * so we need a new array here.
+                 */
+                RedisModule_ReplyWithArray(ctx, 2);
+            }
+
+            res = send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field_str, next_field_len, excluded_fields);
+            if (res == 0 && single_ref) {
+                return SELVA_ENOENT;
+            }
         }
-
-        RedisModule_ReplySetArrayLength(ctx, 2 * res);
-        return 0;
-    } else {
-        struct SelvaObject *dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
-        int res;
-
-        res = send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field_str, next_field_len, excluded_fields);
-
-        return res == 0 ? SELVA_ENOENT : 0;
     }
+
+    return 0;
 }
 
+/**
+ * @param excluded_fields can be set if certain field names should be excluded from the response; Otherwise NULL.
+ */
 static int send_node_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
@@ -225,6 +277,10 @@ static int send_node_field(
     }
 
     if (excluded_fields) {
+        /* Excluding node_id is not allowed but we can drop it from the list in the arg_parser. */
+#if 0
+        && !(full_field_name_len == (sizeof(SELVA_ID_FIELD) - 1) && !memcmp(SELVA_ID_FIELD, full_field_name_str, full_field_name_len))
+#endif
         TO_STR(excluded_fields);
 
         if (stringlist_searchn(excluded_fields_str, full_field_name_str, full_field_name_len)) {
@@ -312,6 +368,9 @@ static int send_node_field(
     return 1;
 }
 
+/**
+ * @param excluded_fields can be set if certain field names should be excluded from the response; Otherwise NULL.
+ */
 static int send_all_node_data_fields(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
