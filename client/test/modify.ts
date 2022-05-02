@@ -1304,6 +1304,13 @@ test.serial('simple $noRoot', async (t) => {
       parents: [ 'ma1' ],
     }
   )
+  t.deepEqual(
+    await client.get({ $id: 'ma1', id: true, parents: true }),
+    {
+      id: 'ma1',
+      parents: [ 'root' ],
+    }
+  )
 
   const id4 = await client.set({
     type: 'match',
