@@ -26,10 +26,10 @@ test.before(async (t) => {
   srv = await start({
     port,
   })
-  await new Promise((resolve, _reject) => {
-    setTimeout(resolve, 100)
-  })
+  await wait(500)
+})
 
+test.beforeEach(async (t) => {
   const client = connect(
     {
       port,
@@ -37,7 +37,7 @@ test.before(async (t) => {
     { loglevel: 'info' }
   )
 
-  // await client.redis.flushall()
+  await client.redis.flushall()
   await client.updateSchema({
     languages: ['en', 'nl', 'de'],
     rootType: {
@@ -1251,6 +1251,75 @@ test.serial('Set empty object', async (t) => {
   } catch (e) {
     t.fail()
   }
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('simple $noRoot', async (t) => {
+  const client = connect(
+    {
+      port,
+    },
+    { loglevel: 'info' }
+  )
+
+  //const id1 = await client.set({
+  //  type: 'match',
+  //  $noRoot: true,
+  //})
+  //t.deepEqual(
+  //  await client.get({ $id: id1, id: true, parents: true }),
+  //  {
+  //    id: id1,
+  //    parents: [],
+  //  }
+  //)
+
+  const id2 = await client.set({
+    type: 'match',
+    parents: {
+      $noRoot: true,
+    }
+  })
+  t.deepEqual(
+    await client.get({ $id: id2, id: true, parents: true }),
+    {
+      id: id2,
+      parents: [],
+    }
+  )
+
+  const id3 = await client.set({
+    type: 'match',
+    parents: {
+      $value: 'ma1',
+      $noRoot: true,
+    }
+  })
+  t.deepEqual(
+    await client.get({ $id: id3, id: true, parents: true }),
+    {
+      id: id3,
+      parents: [ 'ma1' ],
+    }
+  )
+
+  const id4 = await client.set({
+    type: 'match',
+    parents: {
+      $value: [ 'ma1', 'ma2' ],
+      $noRoot: true,
+    }
+  })
+  t.deepEqual(
+    await client.get({ $id: id4, id: true, parents: true }),
+    {
+      id: id4,
+      parents: [ 'ma1', 'ma2' ],
+    }
+  )
+
 
   await client.delete('root')
   await client.destroy()
