@@ -9,6 +9,7 @@
 #include "cdefs.h"
 #include "../rmutil/sds.h"
 #include "redismodule.h"
+#include "cstrings.h"
 #include "errors.h"
 #include "hierarchy.h"
 #include "selva_object.h"
@@ -1206,6 +1207,17 @@ static enum rpn_error rpn_op_in(struct RedisModuleCtx *redis_ctx, struct rpn_ctx
     return push_int_result(ctx, res);
 }
 
+static enum rpn_error rpn_op_str_includes(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+    OPERAND(ctx, b);
+    const char *s1 = OPERAND_GET_S(a);
+    const char *s2 = OPERAND_GET_S(b);
+    const size_t s1_size = a->s_size;
+    const size_t s2_size = b->s_size;
+
+    return push_int_result(ctx, !!strnstrn(s1, s1_size, s2, s2_size));
+}
+
 static enum rpn_error rpn_op_get_clock_realtime(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     return push_int_result(ctx, ts_now());
 }
@@ -1288,7 +1300,7 @@ static rpn_fp funcs[] = {
     rpn_op_ffirst,  /* j */
     rpn_op_aon,     /* k */
     rpn_op_in,      /* l */
-    rpn_op_abo,     /* m spare */
+    rpn_op_str_includes, /* m */
     rpn_op_get_clock_realtime, /* n */
     rpn_op_abo,     /* o spare */
     rpn_op_abo,     /* p spare */

@@ -18,6 +18,7 @@ const opMapString = {
   exists: 'h',
   notExists: 'h',
   has: 'a',
+  includes: 'm',
 }
 
 const opMapNumber = {

@@ -24,10 +24,10 @@ export default function validateFilter(
           $and: Filter (chain more filters with and clause) (optional)
           $or: Filter (chain more filters with or clause) (optional)
         }
-        
+
         or for geo filters
 
-        {      
+        {
           $operator: 'distance'
           $field: string
           $value: {
@@ -61,18 +61,20 @@ export default function validateFilter(
 
   validateFieldPath(filter.$field)
 
-  if (
-    filter.$operator !== '=' &&
-    filter.$operator !== '!=' &&
-    filter.$operator !== '>' &&
-    filter.$operator !== '<' &&
-    filter.$operator !== '..' &&
-    filter.$operator !== 'has' &&
-    filter.$operator !== 'distance' &&
-    filter.$operator !== 'exists' &&
-    filter.$operator !== 'notExists' &&
-    filter.$operator !== 'textSearch'
-  ) {
+  const ops = new Set([
+    '=',
+    '!=',
+    '>',
+    '<',
+    '..',
+    'has',
+    'includes',
+    'distance',
+    'exists',
+    'notExists',
+    'textSearch',
+  ])
+  if (!ops.has(filter.$operator)) {
     err(
       `Unsupported $operator ${filter.$operator}, has to be one of =, !=, >, <, .., distance, exists, notExists`
     )
