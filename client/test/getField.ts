@@ -669,7 +669,7 @@ test.serial.skip('get - nested query with $field in $id', async (t) => {
   await client.destroy()
 })
 
-test.serial('get - nested $find query with object structure', async (t) => {
+test.serial.failing('get - nested $find query with object structure', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   await client.set({
