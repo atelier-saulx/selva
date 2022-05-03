@@ -184,6 +184,7 @@ Therefore, neither of these yields the expected result.
 | `j`      | `(S) => S`        | Find first; take the name of the first non-empty field into a new set. (value is set or set is non-empty) | `{"nonfield","field"} j => {"field"}` |
 | `k`      | `(Z) => S`        | Take all or none (AON), pass the set or result an empty set. | `{"field1","field2"} k => {"field1","field2"}` |
 | `l`      | `(z, z) => n`     | Test if A is a subset of B. A and B are set-like. | `"field" {"a","b"} l => 1` |
+| `m`      | `(s, s) => n`     | Substring includes test.              | `"cd" "abcde" m`         |
 | `n`      | `() => n`         | Get the current value of `CLOCK_REALTIME` in ms. | `l => 1623253120970` |
 
 `j` and `k` are only available if `rpn_set_hierarchy_node()` is called before

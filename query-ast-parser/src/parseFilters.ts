@@ -29,21 +29,21 @@ function convertGeoFilterValue(geoFilter: GeoFilter): (string | number)[] {
 const convertFilter = (filterOpt: Filter): [Fork, string | null] => {
   //   const [search, err] = addSearch(filterOpt)
 
+  const ops = new Set([
+    '=',
+    '>',
+    '<',
+    '..',
+    '!=',
+    'has',
+    'includes',
+    'distance',
+    'exists',
+    'notExists',
+    'textSearch'
+  ])
   const o = filterOpt.$operator
-  if (
-    !(
-      o === '=' ||
-      o === '>' ||
-      o === '<' ||
-      o === '..' ||
-      o === '!=' ||
-      o === 'has' ||
-      o === 'distance' ||
-      o === 'exists' ||
-      o === 'notExists' ||
-      o === 'textSearch'
-    )
-  ) {
+  if (!ops.has(o)) {
     return [{ isFork: true }, `Invalid filter operator ${o}`]
   }
 
