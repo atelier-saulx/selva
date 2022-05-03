@@ -1753,7 +1753,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 ind_err = SelvaFind_AutoIndex(ctx, hierarchy, dir, dir_expr, nodeId, order, order_by_field, index_hints[j], &icb);
                 ind_icb[j] = icb;
                 if (!ind_err) {
-                    if (ind_select < 0 || SelvaFind_IcbCard(icb) < SelvaFind_IcbCard(ind_icb[ind_select])) {
+                    if (icb && (ind_select < 0 || SelvaFind_IcbCard(icb) < SelvaFind_IcbCard(ind_icb[ind_select]))) {
                         ind_select = j; /* Select the smallest index res set for fastest lookup. */
                     }
                 } else if (ind_err != SELVA_ENOENT) {
