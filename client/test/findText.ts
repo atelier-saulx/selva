@@ -53,7 +53,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.only('hhnn', async (t) => {
+test.serial.only.skip('hhnn', async (t) => {
   let resp = await fetch(`http://localhost:${txtPort}/set`, {
     method: 'POST',
     headers: {

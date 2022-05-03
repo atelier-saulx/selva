@@ -81,7 +81,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('find - ancestors', async (t) => {
+test.serial.skip('find - ancestors', async (t) => {
   // simple nested - single query
   const client = connect({ port }, { loglevel: 'info' })
 

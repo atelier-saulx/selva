@@ -47,7 +47,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('find - geo', async (t) => {
+test.serial.skip('find - geo', async (t) => {
   // simple nested - single query
   const client = connect({ port: 6099 }, { loglevel: 'info' })
   await client.set({
