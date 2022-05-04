@@ -2,9 +2,9 @@ import test from 'ava'
 import { join } from 'path'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import { removeDump } from './assertions'
+import './assertions'
+import { wait, removeDump } from './assertions'
 import getPort from 'get-port'
-import { wait } from '../src/util'
 
 const dir = join(process.cwd(), 'tmp', 'rdb-test')
 let srv
@@ -24,7 +24,10 @@ async function restartServer() {
 }
 
 test.before(removeDump(dir))
-test.after(removeDump(dir))
+test.after(async (t) => {
+    await t.connectionsAreEmpty()
+    removeDump(dir)()
+})
 
 test.beforeEach(async (t) => {
   await restartServer()

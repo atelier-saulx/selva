@@ -6,6 +6,7 @@ import {
   startSubscriptionManager,
   startSubscriptionRegistry,
 } from '../../server/dist'
+import './assertions'
 import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
 import getPort from 'get-port'
@@ -14,7 +15,10 @@ import { ServerSelector } from '../dist/src/types'
 const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 
 test.before(removeDump(dir))
-test.after(removeDump(dir))
+test.after(async (t) => {
+    await t.connectionsAreEmpty()
+    removeDump(dir)()
+})
 
 test.serial.failing('Make some observables and many subs managers', async (t) => {
   // maybe run all the servers in workers

@@ -8,12 +8,16 @@ import {
   startRegistry,
 } from '@saulx/selva-server'
 import getPort from 'get-port'
+import './assertions'
 import { wait, removeDump } from './assertions'
 import { join } from 'path'
 const dir = join(process.cwd(), 'tmp', 'subscribe-nested-find-test')
 
 test.before(removeDump(dir))
-test.after(removeDump(dir))
+test.after(async (t) => {
+    await t.connectionsAreEmpty()
+    removeDump(dir)()
+})
 
 test.serial('get - correct order', async (t) => {
   const port = await getPort()

@@ -6,6 +6,7 @@ import {
   startReplica,
   SelvaServer,
 } from '../../server'
+import './assertions'
 import { wait, worker, removeDump } from './assertions'
 import { join } from 'path'
 import fs from 'fs'
@@ -15,7 +16,10 @@ import getPort from 'get-port'
 const dir = join(process.cwd(), 'tmp', 'connection-raw-test')
 
 test.before(removeDump(dir))
-test.after(removeDump(dir))
+test.after(async (t) => {
+    await t.connectionsAreEmpty()
+    removeDump(dir)()
+})
 
 test.serial('connection / server orchestration', async (t) => {
   await wait(2e3)

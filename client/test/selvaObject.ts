@@ -14,9 +14,7 @@ test.before(async (t) => {
   srv = await start({
     port,
   })
-  await new Promise((resolve, _reject) => {
-    setTimeout(resolve, 100)
-  })
+  await wait(100)
 })
 
 test.beforeEach(async (t) => {
@@ -65,11 +63,12 @@ test.beforeEach(async (t) => {
   await client.destroy()
 })
 
-test.after(async (_t) => {
+test.after(async (t) => {
   const client = connect({ port })
   await client.delete('root')
   await client.destroy()
   await srv.destroy()
+  await t.connectionsAreEmpty()
 })
 
 test.serial('get a single keyval', async (t) => {

@@ -2,6 +2,7 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
+import { wait } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -12,9 +13,7 @@ test.before(async (t) => {
   srv = await start({
     port,
   })
-  await new Promise((resolve, _reject) => {
-    setTimeout(resolve, 100)
-  })
+  await wait(100)
 
   const client = connect({ port }, { loglevel: 'info' })
   await client.updateSchema({
