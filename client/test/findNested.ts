@@ -385,7 +385,7 @@ test.serial('get nested results without find', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('nested refs', async (t) => {
+test.serial('nested refs', async (t) => {
   const client = connect({ port })
 
   for (let i = 0; i < 3; i++) {
@@ -433,7 +433,8 @@ test.serial.only('nested refs', async (t) => {
       },
     },
   }
-  console.log(JSON.stringify(await client.get(q), null, 2))
+  const res = await client.get(q)
+  t.truthy(res.thingies['0'].docs[0].mirrors)
 
   await client.delete('root')
   await client.destroy()
