@@ -165,6 +165,15 @@ int Edge_Usage(const struct SelvaHierarchyNode *node);
  */
 struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *node, const char *field_name_str, size_t field_name_len);
 
+static inline size_t Edge_GetFieldLength(const struct EdgeField *edge_field) {
+    return SVector_Size(&edge_field->arcs);
+}
+
+static inline enum EdgeFieldConstraintFlag Edge_GetFieldConstraintFlags(const struct EdgeField *edge_field) {
+    /* RFE constraint should always exist, right? */
+    return edge_field->constraint ? edge_field->constraint->flags : 0;
+}
+
 /**
  * Get a pointer to the metadata object of an EdgeField.
  * @param edge_field is a pointer to the EdgeField.

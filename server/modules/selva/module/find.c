@@ -144,9 +144,8 @@ static int send_edge_field(
      * Note: The dst_node might be the same as node but this shouldn't case
      * an infinite loop or any other issues as we'll be always cutting the
      * field name shorter and thus the recursion should eventually stop.
-     * TODO Not very nice to access arcs directly.
      */
-    const size_t nr_arcs = SVector_Size(&edge_field->arcs);
+    const size_t nr_arcs = Edge_GetFieldLength(edge_field);
 
     /*
      * RFE Historically we have been sending ENOENT but is that a good practice?
@@ -155,9 +154,7 @@ static int send_edge_field(
         return SELVA_ENOENT;
     }
 
-    /* TODO Not very nice to dig into the edge internals here. */
-    const int single_ref = edge_field->constraint && edge_field->constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF;
-
+    const int single_ref = !!(Edge_GetFieldConstraintFlags(edge_field) & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF);
     if (!single_ref) {
         /* We need to send results in an array if it's a references field. */
         RedisModule_ReplyWithStringBuffer(ctx, field_str, off - 1);
