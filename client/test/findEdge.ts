@@ -1,4 +1,3 @@
-
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'

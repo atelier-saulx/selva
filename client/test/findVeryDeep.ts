@@ -233,6 +233,5 @@ test.serial.failing('get very deep results', async (t) => {
   t.true(justOne.levelCnt !== undefined, 'find single nested')
 
   await wait(1e3)
-
   await client.destroy()
 })
