@@ -1,3 +1,4 @@
+import fs from 'fs'
 import test from 'ava'
 import { connect } from '../src/index'
 import { startWithTimeseries } from '@saulx/selva-server'
@@ -231,7 +232,7 @@ test.after(async (t) => {
 // TODO: in filters
 //jsonb_extract_path_text(from_json jsonb, VARIADIC path_elems text[])
 
-test.serial('get - basic value types timeseries', async (t) => {
+test[!fs.existsSync('/usr/lib/postgresql/12/bin/postgres') ? 'skip' : 'serial']('get - basic value types timeseries', async (t) => {
   const client = connect({ port })
 
   // TODO: removet his manual step
