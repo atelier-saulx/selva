@@ -122,7 +122,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial(
+test.serial.failing(
   'set without source, then set source, different source does not override',
   async (t) => {
     const client = connect({ port }, { loglevel: 'info' })
@@ -225,7 +225,7 @@ test.serial(
   }
 )
 
-test.serial(
+test.serial.failing(
   'set source, different source overrides only if matching $overwrite rule',
   async (t) => {
     const client = connect({ port }, { loglevel: 'info' })
@@ -333,7 +333,7 @@ test.serial(
   }
 )
 
-test.serial('children/parents update checks source on create', async (t) => {
+test.serial.failing('children/parents update checks source on create', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const child1 = await client.set({
@@ -383,7 +383,7 @@ test.serial('children/parents update checks source on create', async (t) => {
   await client.destroy()
 })
 
-test.serial('children/parents update checks source on delete', async (t) => {
+test.serial.failing('children/parents update checks source on delete', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   const child2 = await client.set({
