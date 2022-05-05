@@ -1280,53 +1280,40 @@ test.serial('simple $noRoot', async (t) => {
     type: 'match',
     parents: {
       $noRoot: true,
-    }
+    },
   })
-  t.deepEqual(
-    await client.get({ $id: id2, id: true, parents: true }),
-    {
-      id: id2,
-      parents: [],
-    }
-  )
+  t.deepEqual(await client.get({ $id: id2, id: true, parents: true }), {
+    id: id2,
+    parents: [],
+  })
 
   const id3 = await client.set({
     type: 'match',
     parents: {
       $value: 'ma1',
       $noRoot: true,
-    }
+    },
   })
-  t.deepEqual(
-    await client.get({ $id: id3, id: true, parents: true }),
-    {
-      id: id3,
-      parents: [ 'ma1' ],
-    }
-  )
-  t.deepEqual(
-    await client.get({ $id: 'ma1', id: true, parents: true }),
-    {
-      id: 'ma1',
-      parents: [ 'root' ],
-    }
-  )
+  t.deepEqual(await client.get({ $id: id3, id: true, parents: true }), {
+    id: id3,
+    parents: ['ma1'],
+  })
+  t.deepEqual(await client.get({ $id: 'ma1', id: true, parents: true }), {
+    id: 'ma1',
+    parents: ['root'],
+  })
 
   const id4 = await client.set({
     type: 'match',
     parents: {
-      $value: [ 'ma1', 'ma2' ],
+      $value: ['ma1', 'ma2'],
       $noRoot: true,
-    }
+    },
   })
-  t.deepEqual(
-    await client.get({ $id: id4, id: true, parents: true }),
-    {
-      id: id4,
-      parents: [ 'ma1', 'ma2' ],
-    }
-  )
-
+  t.deepEqual(await client.get({ $id: id4, id: true, parents: true }), {
+    id: id4,
+    parents: ['ma1', 'ma2'],
+  })
 
   await client.delete('root')
   await client.destroy()
@@ -2610,6 +2597,59 @@ test.serial('set - insert and set further into array', async (t) => {
       },
     }
   )
+
+  client.destroy()
+})
+
+test.serial.failing('set with $noRoot', async (t) => {
+  const client = connect({ port })
+
+  /*
+        someTestThing: {
+        prefix: 'vi',
+        fields: {
+          title: {
+            type: 'text',
+          },
+          value: {
+            type: 'number',
+          },
+        },
+      },
+  */
+
+  const id = 'vi44545'
+
+  await client.set({
+    type: 'someTestThing',
+    $id: id,
+    parents: { $noRoot: true },
+  })
+  const res1 = await client.set({
+    type: 'someTestThing',
+    parents: { $noRoot: true },
+  })
+
+  await client.set({
+    $id: id,
+    parents: ['root', res1],
+  })
+
+  const data = await client.get({
+    id: true,
+    $find: {
+      $traverse: 'children',
+      $filter: {
+        $operator: '=',
+        $field: 'type',
+        $value: 'someTestThing',
+      },
+    },
+  })
+
+  t.deepEqual(data, {
+    id,
+  })
 
   client.destroy()
 })
