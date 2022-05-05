@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <assert.h>
 #include <ctype.h>
 #include <math.h>
@@ -1210,12 +1211,8 @@ static enum rpn_error rpn_op_in(struct RedisModuleCtx *redis_ctx, struct rpn_ctx
 static enum rpn_error rpn_op_str_includes(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
-    const char *s1 = OPERAND_GET_S(a);
-    const char *s2 = OPERAND_GET_S(b);
-    const size_t s1_size = a->s_size;
-    const size_t s2_size = b->s_size;
 
-    return push_int_result(ctx, !!strnstrn(s1, s1_size, s2, s2_size));
+    return push_int_result(ctx, !!memmem(OPERAND_GET_S(a), OPERAND_GET_S_LEN(a), OPERAND_GET_S(b), OPERAND_GET_S_LEN(b)));
 }
 
 static enum rpn_error rpn_op_get_clock_realtime(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {

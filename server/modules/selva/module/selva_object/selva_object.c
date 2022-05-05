@@ -1,5 +1,4 @@
 #define _GNU_SOURCE
-
 #include <assert.h>
 #include <limits.h>
 #include <stdalign.h>
@@ -679,7 +678,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         return SELVA_ENAMETOOLONG;
     }
 
-    if (strnstrn(key_name_str, key_name_len, ".", 1)) {
+    if (memmem(key_name_str, key_name_len, ".", 1)) {
         return get_key_obj(obj, key_name_str, key_name_len, flags, out);
     }
 
@@ -2243,11 +2242,11 @@ int SelvaObject_ReplyWithWildcardStr(
         long *resp_count,
         int resp_path_start_idx,
         unsigned int flags) {
-    const int idx = (int)(strnstrn(okey_str, okey_len, ".*.", 3) - okey_str + 1); /* .*. => *. */
+    const int idx = (int)((const char *)memmem(okey_str, okey_len, ".*.", 3) - okey_str + 1); /* .*. => *. */
 
     if (idx > SELVA_OBJECT_KEY_MAX) {
         /*
-         * Assume strnstrn() returned the NULL pointer.
+         * Assume memmem() returned the NULL pointer.
          * The error here matches what get_key() would send,
          * thus not introducing a new error code.
          */
@@ -2288,7 +2287,7 @@ int SelvaObject_ReplyWithWildcardStr(
                     (int)obj_key_len, obj_key_name_str,
                     (int)after_len, after);
 
-            if (strnstrn(new_field, new_field_len, ".*.", 3)) {
+            if (memmem(new_field, new_field_len, ".*.", 3)) {
                 /* Recurse for nested wildcards while keeping the resolved path. */
                 SelvaObject_ReplyWithWildcardStr(ctx, lang, obj, new_field, new_field_len,
                                                  resp_count,

@@ -5,7 +5,6 @@ SRC-hierarchy += ../../lib/util/auto_free.c
 SRC-hierarchy += ../../lib/util/cstrings.c
 SRC-hierarchy += ../../lib/util/mempool.c
 SRC-hierarchy += ../../lib/util/memrchr.c
-SRC-hierarchy += ../../lib/util/strnstrn.c
 SRC-hierarchy += ../../lib/util/svector.c
 SRC-hierarchy += ../../lib/util/trx.c
 SRC-hierarchy += ../../module/alias.c

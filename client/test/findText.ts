@@ -79,12 +79,12 @@ test.serial('find fields with a substring match', async (t) => {
       {
         type: 'ticket',
         title: { en: 'Game One' },
-        name: 'Ozan Weston'
+        name: 'Ozan Weston',
       },
       {
         type: 'ticket',
         title: { en: 'Game One' },
-        name: 'Alejandro Hackett'
+        name: 'Alejandro Hackett',
       },
       {
         type: 'ticket',
@@ -119,101 +119,159 @@ test.serial('find fields with a substring match', async (t) => {
       {
         type: 'ticket',
         title: { en: 'Game One' },
-        name: 'Rikesh Frey'
-      }
-    ]
-  })
-
-  t.deepEqual(await client.get({
-    descendants: {
-      title: true,
-      name: true,
-      $list: {
-        $sort: { $field: 'name', $order: 'asc' },
-        $find: {
-          $filter: [
-            {
-              $operator: 'includes',
-              $field: 'name',
-              $value: 'Hackett',
-            },
-          ],
-        },
-      },
-    },
-  }),
-  {
-    descendants: [
-      {
-        title: { "en": "Game One" },
-        name: "Alejandro Hackett"
-      },
-      {
-        title: { "en": "Game One" },
-        name: "Chandler Hackett"
-      },
-      {
-        title: { "en": "Game One" },
-        name: "Lyndsey Hackett"
-      },
-      {
-        title: { "en": "Game Two" },
-        name: "Norman Hackett"
-      },
-    ]
-  })
-
-  t.deepEqual(await client.get({
-    $language: 'en',
-    descendants: {
-      title: true,
-      name: true,
-      $list: {
-        $sort: { $field: 'name', $order: 'asc' },
-        $find: {
-          $filter: [
-            {
-              $operator: 'includes',
-              $field: 'title',
-              $value: 'One',
-            },
-          ],
-        },
-      },
-    },
-  }),
-  {
-    descendants: [
-      {
-        name: 'Alejandro Hackett',
-        title: 'Game One',
-      },
-      {
-        name: 'Amanpreet Bennett',
-        title: 'Game One',
-      },
-      {
-        name: 'Chandler Hackett',
-        title: 'Game One',
-      },
-      {
-        name: 'Lyndsey Hackett',
-        title: 'Game One',
-      },
-      {
-        name: 'Ozan Weston',
-        title: 'Game One',
-      },
-      {
         name: 'Rikesh Frey',
-        title: 'Game One',
       },
-      {
-        name: 'Stella Cisneros',
-        title: 'Game One',
-      },
-    ]
+    ],
   })
+
+  t.deepEqual(
+    await client.get({
+      descendants: {
+        title: true,
+        name: true,
+        $list: {
+          $sort: { $field: 'name', $order: 'asc' },
+          $find: {
+            $filter: [
+              {
+                $operator: 'includes',
+                $field: 'name',
+                $value: 'Hackett',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      descendants: [
+        {
+          title: { en: 'Game One' },
+          name: 'Alejandro Hackett',
+        },
+        {
+          title: { en: 'Game One' },
+          name: 'Chandler Hackett',
+        },
+        {
+          title: { en: 'Game One' },
+          name: 'Lyndsey Hackett',
+        },
+        {
+          title: { en: 'Game Two' },
+          name: 'Norman Hackett',
+        },
+      ],
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $language: 'en',
+      descendants: {
+        title: true,
+        name: true,
+        $list: {
+          $sort: { $field: 'name', $order: 'asc' },
+          $find: {
+            $filter: [
+              {
+                $operator: 'includes',
+                $field: 'title',
+                $value: 'One',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      descendants: [
+        {
+          name: 'Alejandro Hackett',
+          title: 'Game One',
+        },
+        {
+          name: 'Amanpreet Bennett',
+          title: 'Game One',
+        },
+        {
+          name: 'Chandler Hackett',
+          title: 'Game One',
+        },
+        {
+          name: 'Lyndsey Hackett',
+          title: 'Game One',
+        },
+        {
+          name: 'Ozan Weston',
+          title: 'Game One',
+        },
+        {
+          name: 'Rikesh Frey',
+          title: 'Game One',
+        },
+        {
+          name: 'Stella Cisneros',
+          title: 'Game One',
+        },
+      ],
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $language: 'en',
+      descendants: {
+        title: true,
+        name: true,
+        $list: {
+          $sort: { $field: 'name', $order: 'asc' },
+          $find: {
+            $filter: [
+              {
+                $operator: 'includes',
+                $field: 'title',
+                $value: 'On',
+              },
+            ],
+          },
+        },
+      },
+    }),
+    {
+      descendants: [
+        {
+          name: 'Alejandro Hackett',
+          title: 'Game One',
+        },
+        {
+          name: 'Amanpreet Bennett',
+          title: 'Game One',
+        },
+        {
+          name: 'Chandler Hackett',
+          title: 'Game One',
+        },
+        {
+          name: 'Lyndsey Hackett',
+          title: 'Game One',
+        },
+        {
+          name: 'Ozan Weston',
+          title: 'Game One',
+        },
+        {
+          name: 'Rikesh Frey',
+          title: 'Game One',
+        },
+        {
+          name: 'Stella Cisneros',
+          title: 'Game One',
+        },
+      ],
+    }
+  )
 
   await client.destroy()
 })
