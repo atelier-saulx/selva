@@ -169,7 +169,7 @@ static int send_edge_field(
     size_t next_prefix_len;
 
     if (field_prefix_str) {
-        const char *s = strnstrn(field_str, field_len, ".", 1);
+        const char *s = memmem(field_str, field_len, ".", 1);
         const int n = s ? (int)(s - field_str) + 1 : (int)field_len;
         const RedisModuleString *next_prefix;
 
