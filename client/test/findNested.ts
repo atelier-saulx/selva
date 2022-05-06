@@ -153,6 +153,78 @@ test.serial('get nested results', async (t) => {
   await client.destroy()
 })
 
+test.serial('get descendants of each child', async (t) => {
+  const client = connect({ port })
+
+  const teams = []
+
+  for (let i = 0; i < 3; i++) {
+    teams.push(await client.set({
+      $id: await client.id({ type: 'team' }),
+      name: 'team ' + i,
+      type: 'team',
+      children: [
+        {
+          type: 'thing'
+        },
+      ]
+    }))
+  }
+
+  for (let i = 0; i < 5; i++) {
+    await client.set({
+      name: 'match ' + i,
+      type: 'match',
+      value: i,
+      parents: [
+        teams[i % teams.length],
+        teams[(i + 1) % teams.length],
+      ],
+    })
+  }
+
+  const res = await client.get({
+    matches: {
+      name: true,
+      $list: {
+        $find: {
+          $traverse: 'children',
+          $filter: {
+            $operator: '=',
+            $field: 'id',
+            $value: teams.map((id) => id),
+          },
+          $find: {
+            $traverse: 'descendants',
+            $filter: [
+              {
+                $operator: '=',
+                $field: 'type',
+                $value: 'match',
+              },
+            ],
+          },
+        },
+      },
+    },
+  })
+  t.deepEqualIgnoreOrder(res?.matches, [
+    { name: 'match 0' },
+    { name: 'match 2' },
+    { name: 'match 3' },
+    { name: 'match 4' },
+    { name: 'match 1' },
+    { name: 'match 0' },
+    { name: 'match 3' },
+    { name: 'match 4' },
+    { name: 'match 1' },
+    { name: 'match 2' }
+  ])
+
+  await client.delete('root')
+  await client.destroy()
+})
+
 test.serial('get nested results with $all', async (t) => {
   const client = connect({ port })
 
