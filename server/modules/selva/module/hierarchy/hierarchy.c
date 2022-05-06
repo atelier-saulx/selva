@@ -2837,12 +2837,14 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
      */
     new_detached_node(ctx, hierarchy, node_id, parents, nr_parents);
 
+#if 0
     if (!err) {
         fprintf(stderr, "%s:%d: Compressed and detached the subtree of %.*s (cratio: %.2f:1)\n",
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE, node_id,
                 compression_ratio);
     }
+#endif
 
     return err;
 }
@@ -2891,9 +2893,11 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
 
     SELVA_TRACE_END(restore_subtree);
 
+#if 0
     fprintf(stderr, "%s:%d: Restored the subtree of %.*s\n",
             __FILE__, __LINE__,
             (int)SELVA_NODE_ID_SIZE, id);
+#endif
 
     return 0;
 }
@@ -2909,7 +2913,6 @@ static void auto_compress_proc(RedisModuleCtx *ctx, void *data) {
         for (size_t i = 0; i < n; i++) {
             const char *node_id = hierarchy->inactive.nodes[i];
             struct SelvaHierarchyNode *node;
-            int err;
 
             if (node_id[0] == '\0') {
                 break;
@@ -2926,7 +2929,13 @@ static void auto_compress_proc(RedisModuleCtx *ctx, void *data) {
                 continue;
             }
 
-            err = detach_subtree(ctx, hierarchy, node);
+            /*
+             * Note that calling detach_subtree() should also update the trx
+             * struct, meaning that in case detaching the node fails, we
+             * still won't see it here again any time soon.
+             */
+            (void)detach_subtree(ctx, hierarchy, node);
+#if 0
             if (!err) {
                 fprintf(stderr, "%s:%d: Auto-compressed %.*s\n",
                         __FILE__, __LINE__,
