@@ -11,7 +11,7 @@ import getPort from 'get-port'
 import './assertions'
 import { wait, removeDump } from './assertions'
 import { join } from 'path'
-const dir = join(process.cwd(), 'tmp', 'subscribe-nested-find-test')
+const dir = join(process.cwd(), 'tmp', 'subscribe-with-multiple-replicas-test')
 
 test.before(removeDump(dir))
 test.after(async (t) => {
