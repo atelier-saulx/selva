@@ -42,6 +42,7 @@ export default (server: SelvaServer, opts: ServerOptions) => {
           )
     if (fs.existsSync(p)) {
       args.push('--loadmodule', p)
+      console.log(opts)
       if (m === 'selva' && opts.selvaOptions) {
           args.push(...opts.selvaOptions)
       }

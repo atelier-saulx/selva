@@ -76,7 +76,6 @@ test.after(async (t) => {
 })
 
 test.serial('find index', async (t) => {
-  // simple nested - single query
   const client = connect({ port: port }, { loglevel: 'info' })
 
   await client.set({

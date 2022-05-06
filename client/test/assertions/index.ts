@@ -1,6 +1,6 @@
 import t from 'ava'
 import { Assertions } from 'ava/lib/assert.js'
-import { idExists, wait } from './util'
+import { idExists, getIndexingState, wait } from './util'
 import hash from '@sindresorhus/fnv1a'
 import { join } from 'path'
 import fs from 'fs'
@@ -188,4 +188,4 @@ const removeDump = (dir: string) => {
   }
 }
 
-export { idExists, wait, worker, removeDump }
+export { idExists, getIndexingState, wait, worker, removeDump }

@@ -2,7 +2,7 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
-import { wait } from './assertions'
+import { wait, getIndexingState } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -221,31 +221,16 @@ test.serial('index stability', async (t) => {
     }
 
     if (i % 60 == 0) {
-      const l = await client.redis.selva_index_list('___selva_hierarchy')
-      const stateMap = {}
+      const stateMap = await getIndexingState(client)
 
-      for (let i = 0; i < l.length; i += 2) {
-        const key = l[i].split('.');
-        const expression = Buffer.from(key[key.length - 1], 'base64').toString()
-        const state = {
-          expression: expression,
-          take_max_ave: l[i + 1][0],
-          tot_max_ave: l[i + 1][1],
-          ind_take_max_ave: l[i + 1][2],
-          card: l[i + 1][3],
-        }
-
-        stateMap[l[i]] = state;
+      if (i >= 120) {
+          t.deepEqual(stateMap['root.J.InRlIiBl']?.card, '51') // q1, q3
+          t.deepEqual(stateMap['root.J.InZhbHVlIiBnICMyIEY=']?.card, '6') // q1
+          t.deepEqual(stateMap['root.J.B.dmFsdWU=.Im1hIiBl']?.card, 'not_active') // q2
+          t.deepEqual(stateMap['root.J.B.dmFsdWU=.InZhbHVlIiBnICMxIEY=']?.card, 'not_active') // q3
+          t.deepEqual(stateMap['root.J.ImxlIiBl']?.card, 'not_active') // q4, q5
+          t.deepEqual(stateMap['root.J.ImNoaWxkcmVuIiB7Im1hMSJ9IGw=']?.card, 'not_active') // q5
       }
-
-        if (i >= 120) {
-            t.deepEqual(stateMap['root.J.InRlIiBl']?.card, '51') // q1, q3
-            t.deepEqual(stateMap['root.J.InZhbHVlIiBnICMyIEY=']?.card, '6') // q1
-            t.deepEqual(stateMap['root.J.B.dmFsdWU=.Im1hIiBl']?.card, 'not_active') // q2
-            t.deepEqual(stateMap['root.J.B.dmFsdWU=.InZhbHVlIiBnICMxIEY=']?.card, 'not_active') // q3
-            t.deepEqual(stateMap['root.J.ImxlIiBl']?.card, 'not_active') // q4, q5
-            t.deepEqual(stateMap['root.J.ImNoaWxkcmVuIiB7Im1hMSJ9IGw=']?.card, 'not_active') // q5
-        }
     }
   })
 
