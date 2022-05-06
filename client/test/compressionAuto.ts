@@ -125,7 +125,7 @@ test.serial('simple auto compress', async (t) => {
   client.destroy()
 })
 
-test.serial.only('a lot of nodes for to be compressed', async (t) => {
+test.serial.only('a lot of nodes to be compressed', async (t) => {
   const NR_HEADS = 410
   const client = connect({ port })
 
@@ -192,9 +192,9 @@ test.serial.only('a lot of nodes for to be compressed', async (t) => {
   compressedList.sort()
   t.falsy(compressedList.includes('ma1'))
   t.deepEqual(compressedList, expected)
-  console.log('exp', expected)
-  console.log('act', compressedList)
-  console.log(compressedList.length)
+  //console.log('exp', expected)
+  //console.log('act', compressedList)
+  //console.log(compressedList.length)
 
   client.destroy()
 })
