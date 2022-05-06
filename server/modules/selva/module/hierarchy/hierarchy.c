@@ -2903,13 +2903,13 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
 }
 
 static int _auto_compress_proc_rnd(void) {
-    static int v = 300;
-    static int u = 400;
+    static unsigned int v = 300;
+    static unsigned int u = 400;
 
     v = 36969 * (v & 65535) + (v >> 16);
     u = 18000 * (u & 65535) + (u >> 16);
 
-    return ((v << 16) + (u & 65535)) & 0x7f;
+    return (int)(((v << 16) + (u & 65535)) & 0x7f);
 }
 
 static void auto_compress_proc(RedisModuleCtx *ctx, void *data) {
