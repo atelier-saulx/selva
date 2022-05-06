@@ -2902,6 +2902,16 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     return 0;
 }
 
+static int _auto_compress_proc_rnd(void) {
+    static int v = 300;
+    static int u = 400;
+
+    v = 36969 * (v & 65535) + (v >> 16);
+    u = 18000 * (u & 65535) + (u >> 16);
+
+    return ((v << 16) + (u & 65535)) & 0x7f;
+}
+
 static void auto_compress_proc(RedisModuleCtx *ctx, void *data) {
     SELVA_TRACE_BEGIN_AUTO(auto_compress_proc);
     SelvaHierarchy *hierarchy = (struct SelvaHierarchy *)data;
@@ -2941,15 +2951,18 @@ static void auto_compress_proc(RedisModuleCtx *ctx, void *data) {
                         __FILE__, __LINE__,
                         (int)SELVA_NODE_ID_SIZE, node_id);
             }
+#endif
         }
 
         SelvaHierarchy_ClearInactiveNodeIds(hierarchy);
     } else {
         /*
+         * We can't run this if a backup is still running because we share the
+         * inactive nodes data structure with the backup process.
          * Add a small offset in a hope to break the accidental synchronization
          * with the RDB save process.
          */
-        timer_period += 300; /* TODO offset should be random. */
+        timer_period += 300 + _auto_compress_proc_rnd();
     }
 
     hierarchy->inactive.auto_compress_timer = RedisModule_CreateTimer(ctx, timer_period, auto_compress_proc, hierarchy);
