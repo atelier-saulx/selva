@@ -138,104 +138,103 @@ static int send_edge_field(
 
         replyWithEdgeField(ctx, edge_field);
         return 0;
-    }
+    } else {
+        /*
+         * Note: The dst_node might be the same as node but this shouldn't case
+         * an infinite loop or any other issues as we'll be always cutting the
+         * field name shorter and thus the recursion should eventually stop.
+         */
+        const size_t nr_arcs = Edge_GetFieldLength(edge_field);
 
-    /*
-     * Note: The dst_node might be the same as node but this shouldn't case
-     * an infinite loop or any other issues as we'll be always cutting the
-     * field name shorter and thus the recursion should eventually stop.
-     */
-    const size_t nr_arcs = Edge_GetFieldLength(edge_field);
+        /*
+         * RFE Historically we have been sending ENOENT but is that a good practice?
+         */
+        if (nr_arcs == 0) {
+            return SELVA_ENOENT;
+        }
 
-    /*
-     * RFE Historically we have been sending ENOENT but is that a good practice?
-     */
-    if (nr_arcs == 0) {
-        return SELVA_ENOENT;
-    }
-
-    const int single_ref = !!(Edge_GetFieldConstraintFlags(edge_field) & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF);
-    if (!single_ref) {
-        /* We need to send results in an array if it's a references field. */
         RedisModule_ReplyWithStringBuffer(ctx, field_str, off - 1);
         RedisModule_ReplyWithArray(ctx, nr_arcs);
-    }
 
-    const char *next_field_str = field_str + off;
-    const size_t next_field_len = field_len - off;
-    const int is_wildcard = next_field_len == 1 && next_field_str[0] == WILDCARD_CHAR;
+        const char *next_field_str = field_str + off;
+        const size_t next_field_len = field_len - off;
+        const int is_wildcard = next_field_len == 1 && next_field_str[0] == WILDCARD_CHAR;
 
-    const char *next_prefix_str;
-    size_t next_prefix_len;
+        const char *next_prefix_str;
+        size_t next_prefix_len;
 
-    if (field_prefix_str) {
-        const char *s = memmem(field_str, field_len, ".", 1);
-        const int n = s ? (int)(s - field_str) + 1 : (int)field_len;
-        const RedisModuleString *next_prefix;
+        if (field_prefix_str) {
+            const char *s = memmem(field_str, field_len, ".", 1);
+            const int n = s ? (int)(s - field_str) + 1 : (int)field_len;
+            const RedisModuleString *next_prefix;
 
-        /* RFE Handle error? */
-        next_prefix = RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, n, field_str);
-        next_prefix_str = RedisModule_StringPtrLen(next_prefix, &next_prefix_len);
-    } else if (!single_ref) {
-        /*
-         * Don't add prefix because we are sending multiple nested objects
-         * in an array.
-         */
-        next_prefix_str = NULL;
-        next_prefix_len = 0;
-    } else {
-        next_prefix_str = field_str;
-        next_prefix_len = off;
-    }
+            /* RFE Handle error? */
+            next_prefix = RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, n, field_str);
+            next_prefix_str = RedisModule_StringPtrLen(next_prefix, &next_prefix_len);
+        } else {
+            /*
+             * Don't add prefix because we are sending multiple nested objects
+             * in an array.
+             */
+            next_prefix_str = NULL;
+            next_prefix_len = 0;
+        }
 
-    struct SVectorIterator it;
-    struct SelvaHierarchyNode *dst_node;
+        RedisModuleString *exclude_id = RedisModule_CreateStringPrintf(ctx, "id");
 
-    Edge_ForeachBegin(&it, edge_field);
-    while ((dst_node = Edge_Foreach(&it))) {
-        if (is_wildcard) {
-            int res;
+        struct SVectorIterator it;
+        struct SelvaHierarchyNode *dst_node;
 
-            if (next_prefix_str) {
-                if (!single_ref) {
-                    /* See comment below. */
-                    RedisModule_ReplyWithArray(ctx, 2);
-                }
-                RedisModule_ReplyWithStringBuffer(ctx, next_prefix_str, next_prefix_len - 1);
-            }
+        Edge_ForeachBegin(&it, edge_field);
+        while ((dst_node = Edge_Foreach(&it))) {
+            int nr_fields = 1;
+            Selva_NodeId dst_node_id;
+
+            SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
 
             RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+
             /*
-             * RFE Excluding fields doesn't currently work with wildcard.
+             * Id field is always sent to provide a context for typeCast.
              */
-            res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node,
-                    is_wildcard ? NULL : next_prefix_str, is_wildcard ? 0 : next_prefix_len,
-                    NULL);
-            if (res < 0) {
-                res = 0;
-            }
+            RedisModule_ReplyWithStringBuffer(ctx, SELVA_ID_FIELD, sizeof(SELVA_ID_FIELD) - 1);
+            RedisModule_ReplyWithStringBuffer(ctx, dst_node_id, Selva_NodeIdLen(dst_node_id));
 
-            RedisModule_ReplySetArrayLength(ctx, 2 * res);
-        } else {
-            struct SelvaObject *dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
-            int res;
+            if (is_wildcard) {
+                int res;
 
-            if (!single_ref) {
+                if (next_prefix_str) {
+                    RedisModule_ReplyWithArray(ctx, 2);
+                    RedisModule_ReplyWithStringBuffer(ctx, next_prefix_str, next_prefix_len - 1);
+                    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+                    nr_fields++;
+                }
+
                 /*
-                 * Sending an array of objects as this is a references field,
-                 * so we need a new array here.
+                 * RFE Excluding fields doesn't currently work with wildcard.
                  */
-                RedisModule_ReplyWithArray(ctx, 2);
+                res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, NULL, 0, exclude_id);
+                if (next_prefix_str) {
+                    RedisModule_ReplySetArrayLength(ctx, res > 0 ? res : 0);
+                } else if (res >= 0) {
+                    nr_fields += res;
+                }
+            } else {
+                struct SelvaObject *dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
+                int res;
+
+                res = send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field_str, next_field_len, excluded_fields);
+                if (res > 0) {
+                    nr_fields += res;
+                }
             }
 
-            res = send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field_str, next_field_len, excluded_fields);
-            if (res == 0 && single_ref) {
-                return SELVA_ENOENT;
-            }
+            RedisModule_ReplySetArrayLength(ctx, 2 * nr_fields);
         }
-    }
 
-    return 0;
+        return 0;
+    }
+    /* NOT REACHED */
 }
 
 /**
@@ -262,7 +261,7 @@ static int send_node_field(
     if (field_prefix_str) {
         RedisModuleString *full_field_name;
 
-        full_field_name = RedisModule_CreateStringPrintf(ctx, "%.*s%s", (int)field_prefix_len, field_prefix_str, field_str);
+        full_field_name = RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str);
         if (!full_field_name) {
             return SELVA_ENOMEM;
         }

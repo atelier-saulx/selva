@@ -148,7 +148,14 @@ export const setNestedResult = (
     for (let i = 0; i < len - 1; i++) {
       segment = segment[fields[i]] || (segment[fields[i]] = {})
     }
-    segment[fields[len - 1]] = value
+    if (Array.isArray(value)) {
+      if (!Array.isArray(segment[fields[len - 1]])) {
+        segment[fields[len - 1]] = [];
+      }
+      segment[fields[len - 1]].push(...value)
+    } else {
+      segment[fields[len - 1]] = value
+    }
   } else {
     result[field] = value
   }
