@@ -38,7 +38,7 @@
 
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
-#define SELVA_OBJECT_GETKEY_PARTIAL     0x4 /*!< Return a partial result, the last key found and the offset in the key_name_str. */
+#define SELVA_OBJECT_GETKEY_PARTIAL     0x4 /*!< Return a partial result, the last key found, and the length of the match in key_name_str. */
 
 RB_HEAD(SelvaObjectKeys, SelvaObjectKey);
 
@@ -599,7 +599,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         key &&
         flags & SELVA_OBJECT_GETKEY_PARTIAL &&
         s) {
-        size_t off = (size_t)(buf - s + 1) + strlen(s);
+        const size_t off = (size_t)(s - buf + 1) + strlen(s);
 
         *out = key;
         return off;
