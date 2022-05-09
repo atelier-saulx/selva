@@ -19,6 +19,8 @@ OBJS := \
 	module/errors.o \
 	module/find.o \
 	module/find_index/find_index.o \
+	module/find_index/icb.o \
+	module/find_index/pick_icb.o \
 	module/hierarchy/field_set.o \
 	module/hierarchy/hierarchy.o \
 	module/hierarchy/hierarchy_detached.o \

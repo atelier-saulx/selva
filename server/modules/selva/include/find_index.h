@@ -26,7 +26,7 @@ int SelvaFindIndex_Init(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hiera
  */
 void SelvaFindIndex_Deinit(struct SelvaHierarchy *hierarchy);
 
-size_t SelvaFind_IcbCard(const struct SelvaFindIndexControlBlock *icb);
+size_t SelvaFindIndex_IcbCard(const struct SelvaFindIndexControlBlock *icb);
 
 /**
  * Check if an index exists for this query, update it, and get the indexing result set.
@@ -34,7 +34,7 @@ size_t SelvaFind_IcbCard(const struct SelvaFindIndexControlBlock *icb);
  * @param order_field Should be non-NULL only if the index should be sorted.
  * @param out is a SelvaSet of node_ids indexed for given clause.
  */
-int SelvaFind_AutoIndex(
+int SelvaFindIndex_Auto(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         enum SelvaTraversal dir, struct RedisModuleString *dir_expression_str,
@@ -48,12 +48,12 @@ int SelvaFind_AutoIndex(
  * Check whether an ICB is created as an ordered.
  * This function doesn't check whether the index is actually valid.
  */
-int SelvaFind_IsOrderedIndex(
+int SelvaFindIndex_IsOrdered(
         struct SelvaFindIndexControlBlock *icb,
         enum SelvaResultOrder order,
         struct RedisModuleString *order_field);
 
-int SelvaFind_TraverseIndex(
+int SelvaFindIndex_Traverse(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaFindIndexControlBlock *icb,
@@ -65,7 +65,7 @@ int SelvaFind_TraverseIndex(
  * @param acc_take is the number of nodes taken from the original set.
  * @param acc_tot is the total number of nodes in the original set.
  */
-void SelvaFind_Acc(
+void SelvaFindIndex_Acc(
         struct SelvaFindIndexControlBlock * restrict icb,
         size_t acc_take,
         size_t acc_tot);
