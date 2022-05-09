@@ -229,6 +229,11 @@ int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str,
 int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p, const struct SelvaObjectPointerOpts *opts);
 int SelvaObject_GetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
 int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p);
+/**
+ * Get partial match from key_name_str.
+ * The length of the matching part is returned.
+ * @returns Length of the matching key_name; Otherwise an error code is returned.
+ */
 int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
 
 int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res);

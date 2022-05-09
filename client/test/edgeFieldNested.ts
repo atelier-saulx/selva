@@ -54,6 +54,18 @@ test.before(async (t) => {
           url: { type: 'string' },
         },
       },
+      super: {
+        prefix: 'su',
+        fields: {
+          nested: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              ref: { type: 'reference' },
+            },
+          },
+        },
+      },
     },
   })
 
@@ -68,7 +80,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.only('retrieving nested refs with fields arg', async (t) => {
+test.serial('retrieving nested refs with fields arg', async (t) => {
   const client = connect({ port })
 
   for (let i = 0; i < 2; i++) {
@@ -152,7 +164,7 @@ test.serial.only('retrieving nested refs with fields arg', async (t) => {
   t.deepEqual(res4[0][1][0], 'id', 'id not excluded')
 
   // Excluding fields over a multi-edge field doesn't currently work
-  const res5= await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'fields', 'docs.id\ndocs.name\ndocs.mirrors.*\n!docs.mirrors.id', 'root', '"th" e')
+  const res5 = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'fields', 'docs.id\ndocs.name\ndocs.mirrors.*\n!docs.mirrors.id', 'root', '"th" e')
   t.deepEqual(res5[0][1][0], 'docs')
   t.deepEqual(res5[0][1][1][0][0], 'id') // hence we have id here anyway
   t.deepEqual(res5[0][1][1][1][0], 'id')
@@ -179,6 +191,70 @@ test.serial.only('retrieving nested refs with fields arg', async (t) => {
   t.truthy(res5[1][1][5][0][1].length === 2)
   t.truthy(res5[1][1][5][0][1][0].length === 6)
   t.truthy(res5[1][1][5][0][1][1].length === 6)
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial('retrieving nested ref from an object', async (t) => {
+  const client = connect({ port })
+
+  const match = await client.set({
+    type: 'match',
+    value: 10.0,
+  })
+  const sup = await client.set({
+    type: 'super',
+    nested: {
+      name: 'ref',
+      ref: match,
+    }
+  })
+
+  const res1 = await client.get({
+    $id: sup,
+    nested: { $all: true, ref: { value: true } },
+  })
+  t.deepEqual(
+    res1,
+    {
+      nested: { name: 'ref', ref: { value: 10 } }
+    }
+  )
+
+  //const res2 = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'fields', 'nested.ref.value', 'root', '"su" e')
+  //console.log(res2)
+
+  const res3 = await client.get({
+    sups: {
+      nested: { ref: { value: true } },
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'super',
+          },
+        },
+      },
+    },
+  })
+  t.deepEqual(
+    res3,
+    {
+      sups: [
+        {
+          nested: {
+            ref: {
+              value: 10.0
+            }
+          }
+        }
+      ]
+    }
+  )
+
 
   await client.delete('root')
   await client.destroy()
