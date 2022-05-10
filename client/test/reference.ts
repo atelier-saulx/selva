@@ -542,6 +542,7 @@ test.serial('list of simple singular reference', async (t) => {
     },
   })
 
+  console.log(JSON.stringify(result, null, 2))
   t.deepEqual(result, {
     children: [
       {

@@ -793,7 +793,32 @@ test.serial('deref node references on find', async(t) => {
 
   t.deepEqual(
     await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'title\nhomeTeam.name\nhomeTeam.club.name\nhomeTeam.club.manager.name', 'match1'),
-    [[ 'match1', [ 'title', 'Best Game', 'homeTeam.name', 'Funny Team', 'homeTeam.club.name', 'Funny Club', 'homeTeam.club.manager.name', 'dung' ]]]
+    [[
+      'match1', [
+        'title', 'Best Game',
+        'homeTeam', [[
+          'id', 'team1',
+          'name', 'Funny Team',
+        ]],
+        'homeTeam', [[
+          'id', 'team1',
+          'club', [[
+            'id', 'club1',
+            'name', 'Funny Club',
+          ]],
+        ]],
+        'homeTeam', [[
+          'id', 'team1',
+          'club', [[
+            'id', 'club1',
+            'manager', [[
+             'id', 'manager1',
+             'name', 'dung'
+            ]],
+          ]],
+        ]],
+      ],
+    ]]
   )
 })
 
@@ -1103,7 +1128,7 @@ test.serial('wildcard find with edge fields', async (t) => {
 
   t.deepEqual(
     await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'thing.ding', 'root'),
-    [[ 'root', [ 'thing.ding', 'dong' ]]]
+    [[ 'root', [ 'thing', [[ 'id', 'ma1', 'ding', 'dong' ]]]]]
   )
   t.deepEqual(
     await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'thing.*', 'root'),
@@ -1112,14 +1137,16 @@ test.serial('wildcard find with edge fields', async (t) => {
         "root",
         [
           "thing",
-          [
+          [[
+            "id",
+            "ma1",
             "ding",
             "dong",
             "dong",
             "ding",
             "id",
-            "ma1"
-          ]
+            "ma1",
+          ]]
         ]
       ]
     ]
@@ -1131,14 +1158,18 @@ test.serial('wildcard find with edge fields', async (t) => {
       'things',
       [
         [
-          'ding',
-          'dong',
-          'dong',
-          'ding',
           'id',
           'ma1',
+          'ding',
+          'dong',
+          'dong',
+          'ding',
+          "id",
+          "ma1",
         ],
         [
+          'id',
+          'ma2',
           'ding',
           'dong',
           'dong',
@@ -1203,10 +1234,14 @@ test.serial('wildcard find with edge fields and data fields', async (t) => {
         [
           "thing",
           [
-            "id",
-            "da3",
-            "name",
-            "dong"
+            [
+              "id",
+              "da3",
+              "id",
+              "da3",
+              "name",
+              "dong"
+            ]
           ]
         ]
       ]
@@ -1263,10 +1298,14 @@ test.serial('wildcard find with exclusions', async (t) => {
         [
           'thing',
           [
-            'id',
-            'da3',
-            'name',
-            'dong',
+            [
+              'id',
+              'da3',
+              'id',
+              'da3',
+              'name',
+              'dong',
+            ]
           ]
         ]
       ]

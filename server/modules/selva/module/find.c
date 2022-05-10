@@ -180,8 +180,6 @@ static int send_edge_field(
             next_prefix_len = 0;
         }
 
-        RedisModuleString *exclude_id = RedisModule_CreateStringPrintf(ctx, "id");
-
         struct SVectorIterator it;
         struct SelvaHierarchyNode *dst_node;
 
@@ -213,7 +211,7 @@ static int send_edge_field(
                 /*
                  * RFE Excluding fields doesn't currently work with wildcard.
                  */
-                res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, NULL, 0, exclude_id);
+                res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, NULL, 0, NULL);
                 if (next_prefix_str) {
                     RedisModule_ReplySetArrayLength(ctx, res > 0 ? res : 0);
                 } else if (res >= 0) {

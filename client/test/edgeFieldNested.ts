@@ -112,12 +112,16 @@ test.serial('retrieving nested refs with fields arg', async (t) => {
       [
         "id",
         "tx0",
+        "id",
+        "tx0",
         "name",
         "file0.txt",
         "type",
         "file"
       ],
       [
+        "id",
+        "tx1",
         "id",
         "tx1",
         "name",
@@ -185,8 +189,8 @@ test.serial('retrieving nested refs with fields arg', async (t) => {
   t.deepEqual(res5[0][1][4], 'docs')
   t.deepEqual(res5[0][1][5][0][2], 'mirrors')
   t.deepEqual(res5[0][1][5][0][3].length, 2)
-  t.deepEqual(res5[0][1][5][0][3][0].length, 6)
-  t.deepEqual(res5[0][1][5][0][3][1].length, 6)
+  t.deepEqual(res5[0][1][5][0][3][0].length, 8)
+  t.deepEqual(res5[0][1][5][0][3][1].length, 8)
   t.deepEqual(res5[1][1][0], 'docs')
   t.deepEqual(res5[1][1][1][0][0], 'id')
   t.deepEqual(res5[1][1][1][1][0], 'id')
@@ -198,8 +202,8 @@ test.serial('retrieving nested refs with fields arg', async (t) => {
   t.deepEqual(res5[1][1][4], 'docs')
   t.deepEqual(res5[1][1][5][0][2], 'mirrors')
   t.deepEqual(res5[1][1][5][0][3].length, 2)
-  t.deepEqual(res5[1][1][5][0][3][0].length, 6)
-  t.deepEqual(res5[1][1][5][0][3][1].length, 6)
+  t.deepEqual(res5[1][1][5][0][3][0].length, 8)
+  t.deepEqual(res5[1][1][5][0][3][1].length, 8)
 
   const res6 = await client.get({
     files: {
