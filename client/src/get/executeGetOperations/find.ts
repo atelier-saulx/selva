@@ -860,22 +860,68 @@ const executeFindOperation = async (
         continue
       }
 
-      const mapping = fieldMapping[field]
-      const targetField = mapping?.targetField
-      const casted =
-        id === EMPTY_ID
-          ? typeCast(value, op.id, `${op.field}[0].${field}`, schema, lang)
-          : typeCast(value, id, field, schema, lang)
+      const isNestedObject = (v: any) => Array.isArray(v[0])
+      const parseNestedFieldReference = (path: string, v: any[]) => {
+        const nestedId = v[1]
+        for (let i = 2; i < v.length; i += 2) {
+          const nestedField = v[i]
+          const nestedValue = v[i + 1]
+          const isReferences = path.endsWith('[]')
+          const fullPath = `${isReferences ? path.slice(0, -2) : path}.${nestedField}`
 
-      if (targetField) {
-        for (const f of targetField) {
-          setNestedResult(entryRes, f, casted)
+          const nestedFieldSchema = getNestedSchema(schema, nestedId, nestedField)
+          if (nestedFieldSchema?.type === 'reference' && isNestedObject(nestedValue)) {
+            parseNestedFieldReference(fullPath, nestedValue[0])
+          } else if (nestedFieldSchema?.type === 'references' && isNestedObject(nestedValue)) {
+              for (let i = 0; i < value.length; i++) {
+                parseNestedFieldReference(`${fullPath}[]`, nestedValue[i])
+              }
+          } else {
+            const mapping = fieldMapping[`${path}.${nestedField}`]
+            const targetField = mapping?.targetField
+            const casted = typeCast(nestedValue, nestedId, nestedField, schema, lang)
+
+            if (targetField) {
+              // TODO This won't work?
+              //for (const f of targetField) {
+              //  setNestedResult(entryRes, f, casted)
+              //}
+            } else {
+              if (isReferences) {
+                setNestedResult(entryRes, path.slice(0, -2), [{ [nestedField]: casted }])
+              } else {
+                setNestedResult(entryRes, fullPath, casted)
+              }
+            }
+          }
         }
-      } else {
-        setNestedResult(entryRes, field, casted)
       }
 
-      usedMappings.add(field)
+      const sourceFieldSchema = getNestedSchema(schema, id, field)
+      if (sourceFieldSchema?.type === 'reference' && isNestedObject(value)) {
+        parseNestedFieldReference(field, value[0])
+      } else if (sourceFieldSchema?.type === 'references' && isNestedObject(value)) {
+        for (let i = 0; i < value.length; i++) {
+          parseNestedFieldReference(`${field}[]`, value[i])
+        }
+      } else {
+        const mapping = fieldMapping[field]
+        const targetField = mapping?.targetField
+        const casted =
+          id === EMPTY_ID
+            ? typeCast(value, op.id, `${op.field}[0].${field}`, schema, lang)
+            : typeCast(value, id, field, schema, lang)
+
+        if (targetField) {
+          for (const f of targetField) {
+            setNestedResult(entryRes, f, casted)
+          }
+        } else {
+          setNestedResult(entryRes, field, casted)
+        }
+
+        usedMappings.add(field)
+      }
     }
 
     const unusedMappings = new Set(
