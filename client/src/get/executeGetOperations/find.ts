@@ -860,6 +860,7 @@ const executeFindOperation = async (
         continue
       }
 
+      const isNestedObject = (v: any) => Array.isArray(v[0])
       const parseNestedFieldReference = (path: string, v: any[]) => {
         const nestedId = v[1]
         for (let i = 2; i < v.length; i += 2) {
@@ -869,9 +870,9 @@ const executeFindOperation = async (
           const fullPath = `${isReferences ? path.slice(0, -2) : path}.${nestedField}`
 
           const nestedFieldSchema = getNestedSchema(schema, nestedId, nestedField)
-          if (nestedFieldSchema.type === 'reference') {
+          if (nestedFieldSchema?.type === 'reference' && isNestedObject(nestedValue)) {
             parseNestedFieldReference(fullPath, nestedValue[0])
-          } else if (nestedFieldSchema.type === 'references') {
+          } else if (nestedFieldSchema?.type === 'references' && isNestedObject(nestedValue)) {
               for (let i = 0; i < value.length; i++) {
                 parseNestedFieldReference(`${fullPath}[]`, nestedValue[i])
               }
@@ -897,9 +898,9 @@ const executeFindOperation = async (
       }
 
       const sourceFieldSchema = getNestedSchema(schema, id, field)
-      if (sourceFieldSchema.type === 'reference') {
+      if (sourceFieldSchema?.type === 'reference' && isNestedObject(value)) {
         parseNestedFieldReference(field, value[0])
-      } else if (sourceFieldSchema.type === 'references') {
+      } else if (sourceFieldSchema?.type === 'references' && isNestedObject(value)) {
         for (let i = 0; i < value.length; i++) {
           parseNestedFieldReference(`${field}[]`, value[i])
         }
