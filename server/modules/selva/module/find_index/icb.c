@@ -17,7 +17,11 @@ size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct ic
     size_t filter_len;
     size_t n;
 
-    (void)RedisModule_StringPtrLen(desc->filter, &filter_len);
+    if (desc->filter) {
+        (void)RedisModule_StringPtrLen(desc->filter, &filter_len);
+    } else {
+        filter_len = 0;
+    }
 
     n = Selva_NodeIdLen(node_id) + base64_out_len(filter_len, 0) + 3;
 
@@ -45,8 +49,8 @@ size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct ic
 }
 
 void SelvaFindIndexICB_BuildName(char *buf, const Selva_NodeId node_id, const struct icb_descriptor *desc) {
-    size_t filter_len;
-    const char *filter_str = RedisModule_StringPtrLen(desc->filter, &filter_len);
+    size_t filter_len = 0;
+    const char *filter_str = desc->filter ? RedisModule_StringPtrLen(desc->filter, &filter_len) : NULL;
     char *s = buf;
 
     /* node_id */
@@ -56,15 +60,14 @@ void SelvaFindIndexICB_BuildName(char *buf, const Selva_NodeId node_id, const st
     /* direction */
     *s++ = '.';
     *s++ = 'A' + (char)__builtin_ffs(desc->dir);
-    *s++ = '.';
 
     if (desc->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
         size_t dir_expression_len;
         const char *dir_expression_str = RedisModule_StringPtrLen(desc->dir_expression, &dir_expression_len);
 
         if (dir_expression_len > 0) {
-            s += base64_encode_s(s, dir_expression_str, dir_expression_len, 0);
             *s++ = '.';
+            s += base64_encode_s(s, dir_expression_str, dir_expression_len, 0);
         }
     }
 
@@ -73,14 +76,20 @@ void SelvaFindIndexICB_BuildName(char *buf, const Selva_NodeId node_id, const st
         size_t order_field_len;
         const char *order_field_str = RedisModule_StringPtrLen(desc->sort.order_field, &order_field_len);
 
+        *s++ = '.';
         *s++ = 'A' + (char)desc->sort.order;
         *s++ = '.';
         s += base64_encode_s(s, order_field_str, order_field_len, 0); /* This must be always longer than 0 */
-        *s++ = '.';
     }
 
-    /* indexing clause filter */
-    s += base64_encode_s(s, filter_str, filter_len, 0);
+    /*
+     * indexing clause filter
+     * Normally this is always set unless we want to specifically build a string without it.
+     */
+    if (filter_len > 0) {
+        *s++ = '.';
+        s += base64_encode_s(s, filter_str, filter_len, 0);
+    }
 }
 
 int SelvaFindIndexICB_Get(struct SelvaHierarchy *hierarchy, const char *name_str, size_t name_len, struct SelvaFindIndexControlBlock **icb) {
