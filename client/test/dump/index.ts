@@ -1,18 +1,16 @@
+import { join as pathJoin } from 'path'
 import test from 'ava'
 import { connect } from '../../src/index'
 import { start, startOrigin } from '@saulx/selva-server'
-import { wait } from '../assertions'
+import { removeDump, wait } from '../assertions'
 import getPort from 'get-port'
-import fs from 'fs'
 import { join } from 'path'
 
 const dbName = 'testit'
-const clean = async () => {
-  await fs.promises.unlink(join(__dirname, 'dump.rdb')).catch((e) => {})
-}
+const dir = pathJoin(process.cwd(), 'tmp', 'dump-test')
 
-test.before(clean)
-test.afterEach.always(clean)
+test.before(removeDump(dir))
+test.afterEach.always(removeDump(dir))
 
 const testDataType = async (t, schema, payload) => {
   let n = 2
@@ -27,7 +25,7 @@ const testDataType = async (t, schema, payload) => {
     const server = await startOrigin({
       name: dbName,
       save: true,
-      dir: __dirname,
+      dir,
       registry: { port },
     })
     const client = connect({ port }, { loglevel: 'info' })

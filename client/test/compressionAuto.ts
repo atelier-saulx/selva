@@ -8,7 +8,7 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-const dir = pathJoin(process.cwd(), 'tmp', 'compression-test')
+const dir = pathJoin(process.cwd(), 'tmp', 'compression-auto-test')
 
 async function restartServer() {
   if (srv) {

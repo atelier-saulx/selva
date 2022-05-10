@@ -1,16 +1,21 @@
+import { join as pathJoin } from 'path'
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import { wait } from './assertions'
+import { wait, removeDump } from './assertions'
 import getPort from 'get-port'
 
 let srv
 let port: number
+const dir = pathJoin(process.cwd(), 'tmp', 'z19-youri-ref-test')
+
 test.before(async (t) => {
+  removeDump(dir)()
   port = await getPort()
   srv = await start({
     port,
     save: true,
+    dir,
   })
   const client = connect({ port })
 
@@ -34,6 +39,7 @@ test.after(async (t) => {
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
+  removeDump(dir)()
 })
 
 test.serial('do things with refs', async (t) => {
