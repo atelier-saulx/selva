@@ -144,13 +144,6 @@ struct SelvaFindIndexControlBlock *SelvaFindIndexICB_Pick(
         if (alt_icb && alt_icb->flags.valid) {
             icb = alt_icb;
         }
-    } else if (order == SELVA_RESULT_ORDER_NONE) {
-        /*
-         * TODO
-         * Unordered find query (doesn't support $limit with indexing) can
-         * accept any order. Try to find any valid index with the right dir and
-         * clause.
-         */
     }
 
     return icb;
