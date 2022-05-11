@@ -146,11 +146,16 @@ struct SelvaFindIndexControlBlock *SelvaFindIndexICB_Pick(
         }
     } else if (order == SELVA_RESULT_ORDER_NONE) {
         /*
-         * TODO
-         * Unordered find query (doesn't support $limit with indexing) can
+         * Unordered find query (doesn't support $limit with indexing and) can
          * accept any order. Try to find any valid index with the right dir and
          * clause.
          */
+        struct SelvaFindIndexControlBlock *alt_icb;
+
+        alt_icb = pick_any_order(hierarchy, node_id, desc);
+        if (alt_icb && alt_icb->flags.valid) {
+            icb = alt_icb;
+        }
     }
 
     return icb;
