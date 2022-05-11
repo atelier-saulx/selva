@@ -33,6 +33,9 @@ static struct SelvaFindIndexControlBlock *pick_unordered(struct SelvaHierarchy *
     return err ? NULL : icb_unord;
 }
 
+/**
+ * Recurse into the `<node_id>.<dir>[.<dir_expr>]` object until we find something.
+ */
 void pick_any_order_recursive(
         struct SelvaObject *obj,
         const char *base64_filter_str,

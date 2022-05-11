@@ -2,11 +2,12 @@ import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
-import { wait } from './assertions'
+import { wait, getIndexingState } from './assertions'
 import getPort from 'get-port'
 
 let srv
 let port
+const chars = '123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 test.before(async (t) => {
   port = await getPort()
@@ -67,8 +68,6 @@ test.after(async (t) => {
   await srv.destroy()
   await t.connectionsAreEmpty()
 })
-
-const chars = '123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 test.serial('find with sort', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
@@ -189,6 +188,149 @@ test.serial('find with sort and limit', async (t) => {
     'root.J.B.dGhpbmc=.InRoaW5nIiBo',
     '35',
   ])
+
+  await client.destroy()
+})
+
+test.serial('pick unordered index for sorted result', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  for (let i = 0; i < chars.length; i++) {
+    await client.set({
+      type: 'league',
+      name: `league ${i + 1}`,
+      thing: `${chars.charAt(i)}`,
+    })
+  }
+
+  const q1 = {
+    items: {
+      name: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league',
+            },
+          ],
+        },
+      },
+    },
+  }
+  const q2 = {
+    items: {
+      name: true,
+      $list: {
+        $sort: { $field: 'thing', $order: 'asc' },
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league',
+            },
+          ],
+        },
+      },
+    },
+  }
+
+  for (let i = 0; i < 300; i++) {
+    const res = await client.get(q1)
+    t.deepEqual(res?.items.length, chars.length)
+    await wait(1)
+  }
+  for (let i = 0; i < 300; i++) {
+    t.deepEqual(
+      await client.get(q2),
+      {
+        items: Array(chars.length).fill(null).map((_, i) => ({ name: `league ${i + 1}` }))
+      }
+    )
+    await wait(1)
+  }
+
+  const stateMap = await getIndexingState(client)
+  t.deepEqual(stateMap['root.J.ImxlIiBl'].card, '35')
+  t.deepEqual(stateMap['root.J.B.dGhpbmc=.ImxlIiBl'].card, 'not_active')
+
+  await client.destroy()
+})
+
+test.serial('pick index with wrong order for sorted result', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  for (let i = 0; i < chars.length; i++) {
+    await client.set({
+      type: 'league',
+      name: `league ${i + 1}`,
+      thing: `${chars.charAt(i)}`,
+    })
+  }
+
+  const q1 = {
+    items: {
+      name: true,
+      $list: {
+        $sort: { $field: 'thing', $order: 'asc' },
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league',
+            },
+          ],
+        },
+      },
+    },
+  }
+  const q2 = {
+    items: {
+      name: true,
+      $list: {
+        $sort: { $field: 'thing', $order: 'desc' },
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league',
+            },
+          ],
+        },
+      },
+    },
+  }
+
+  for (let i = 0; i < 300; i++) {
+    t.deepEqual(
+      await client.get(q1),
+      {
+        items: Array(chars.length).fill(null).map((_, i) => ({ name: `league ${i + 1}` }))
+      }
+    )
+    await wait(1)
+  }
+  for (let i = 0; i < 300; i++) {
+    t.deepEqual(
+      await client.get(q2),
+      {
+        items: Array(chars.length).fill(null).map((_, i) => ({ name: `league ${chars.length - i}` }))
+      }
+    )
+    await wait(1)
+  }
+
+  const stateMap = await getIndexingState(client)
+  t.deepEqual(stateMap['root.J.B.dGhpbmc=.ImxlIiBl'].card, '35')
+  t.deepEqual(stateMap['root.J.C.dGhpbmc=.ImxlIiBl'].card, 'not_active')
 
   await client.destroy()
 })
