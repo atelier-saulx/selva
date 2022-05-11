@@ -55,7 +55,7 @@ void pick_any_order_recursive(
             if (base64_filter_len == name_len &&
                 icb->flags.valid &&
                 !memcmp(base64_filter_str, name_str, name_len)) {
-                *out = p;
+                *out = icb;
                 break;
             }
         } else if (type == SELVA_OBJECT_OBJECT) {
