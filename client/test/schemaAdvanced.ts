@@ -763,7 +763,7 @@ test.serial('schemas - return to other id or type', async (t) => {
   t.pass()
 })
 
-test.only('schemas - remove type', async (t) => {
+test.serial('schemas - remove type', async (t) => {
   const port = await getPort()
   const server = await start({
     port,
