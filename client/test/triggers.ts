@@ -147,80 +147,85 @@ test.serial('basic trigger created subscriptions', async (t) => {
   await client.destroy()
 })
 
-test.serial('nested implicitly created nodes and created trigger', async (t) => {
-  const client = connect({ port })
+test.serial(
+  'nested implicitly created nodes and created trigger',
+  async (t) => {
+    const client = connect({ port })
 
-  await client.updateSchema({
-    languages: ['en', 'de', 'nl'],
-    rootType: {
-    },
-    types: {
-      yeshType: {
-        prefix: 'ye',
-        fields: {
-          yesh: { type: 'string' },
+    await client.updateSchema({
+      languages: ['en', 'de', 'nl'],
+      rootType: {},
+      types: {
+        yeshType: {
+          prefix: 'ye',
+          fields: {
+            yesh: { type: 'string' },
+          },
+        },
+        noType: {
+          prefix: 'no',
+          fields: {
+            no: { type: 'string' },
+          },
         },
       },
-      noType: {
-        prefix: 'no',
-        fields: {
-          no: { type: 'string' },
-        },
-      },
-    },
-  })
-
-  await client.set({ $id: 'root' })
-
-  t.plan(2)
-
-  const obs = client.observeEvent('created', {
-    $filter: {
-      $operator: '=',
-      $field: 'type',
-      $value: 'yeshType',
-    },
-    $all: true,
-    aliases: false,
-  })
-
-  const sub2 = obs.subscribe((d) => {
-    // gets start event
-    t.deepEqualIgnoreOrder(d, {
-      id: d.id,
-      type: 'yeshType',
-      yesh: 'extra nice',
     })
-  })
 
-  await wait(500)
+    await client.set({ $id: 'root' })
 
-  const thing = await client.set({
-    type: 'noType',
-    no: 'nice',
-    children: [
-      {
+    t.plan(2)
+
+    const obs = client.observeEvent('created', {
+      $filter: {
+        $operator: '=',
+        $field: 'type',
+        $value: 'yeshType',
+      },
+      $all: true,
+      aliases: false,
+    })
+
+    const sub2 = obs.subscribe((d) => {
+      // gets start event
+      t.deepEqualIgnoreOrder(d, {
+        id: d.id,
         type: 'yeshType',
         yesh: 'extra nice',
-      }
-    ]
-  })
-  await client.set({
-    $id: thing,
-    children: {
-      $add: [ 'ye001' ]
-    }
-  })
-  await client.set({
-    $id: 'ye001',
-    yesh: 'extra nice'
-  })
+      })
+    })
 
-  await wait(50)
-  sub2.unsubscribe()
-  await client.delete('root')
-  await client.destroy()
-})
+    await wait(300)
+
+    const thing = await client.set({
+      type: 'noType',
+      no: 'nice',
+      children: [
+        {
+          type: 'yeshType',
+          yesh: 'extra nice',
+        },
+      ],
+    })
+
+    await wait(100)
+
+    await client.set({
+      $id: thing,
+      children: {
+        $add: ['ye001'],
+      },
+    })
+    await client.set({
+      $id: 'ye001',
+      yesh: 'extra nice',
+    })
+
+    await wait(300)
+    sub2.unsubscribe()
+    await client.delete('root')
+    await client.destroy()
+  }
+)
 
 test.serial('basic trigger updated subscriptions', async (t) => {
   const client = connect({ port })
