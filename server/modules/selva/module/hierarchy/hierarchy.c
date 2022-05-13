@@ -3059,6 +3059,7 @@ static int load_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selv
         goto out;
     }
 
+    /* TODO what if it was originall SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK? */
     err = detach_subtree(RedisModule_GetContextFromIO(io), hierarchy, node, SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM);
 
 out:

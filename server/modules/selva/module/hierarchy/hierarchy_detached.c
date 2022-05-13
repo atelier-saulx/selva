@@ -80,12 +80,6 @@ static int fread_compressed_subtree(RedisModuleString *zpath, struct compressed_
         compressed = NULL;
     }
 
-    /* RFE Do we confuse people by deleting it here? */
-    if (remove(zpath_str)) {
-        fprintf(stderr, "%s:%d: Failed to remove a compressed subtree file. We ignore it now, but it might cause a crash later on.\n",
-                __FILE__, __LINE__);
-    }
-
     *compressed_out = compressed;
     return err;
 }
@@ -143,7 +137,7 @@ int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_Nod
 
     assert(p);
 
-    int tag = PTAG_GETTAG(p);
+    const int tag = PTAG_GETTAG(p);
     if (tag == SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM) {
         *compressed = PTAG_GETP(p);
         assert(*compressed);
@@ -164,9 +158,26 @@ int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_Nod
 
 void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id) {
     struct SelvaObject *index = hierarchy->detached.obj;
+    void *p;
 
     if (!index) {
         return;
+    }
+
+    if (SelvaObject_GetPointerStr(index, node_id, SELVA_NODE_ID_SIZE, &p)) {
+        /* Not found. */
+        return;
+    }
+
+    const int tag = PTAG_GETTAG(p);
+    if (tag == SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK) {
+        RedisModuleString *zpath = PTAG_GETP(p);
+        TO_STR(zpath);
+
+        if (remove(zpath_str)) {
+            fprintf(stderr, "%s:%d: Failed to remove a compressed subtree file. We ignore it now, but it might cause a crash later on.\n",
+                    __FILE__, __LINE__);
+        }
     }
 
     (void)SelvaObject_DelKeyStr(index, node_id, SELVA_NODE_ID_SIZE);
