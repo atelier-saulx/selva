@@ -40,9 +40,18 @@ static inline int SelvaHierarchyDetached_IndexExists(const struct SelvaHierarchy
  * SELVA_HIERARCHY_DETACHED_COMPRESSED as a fallback.
  * @returns A tagged pointer to the compressed subtree.
  */
-void *SelvaHierarchyDetached_Store(const Selva_NodeId node_id, struct compressed_rms *compressed, enum SelvaHierarchyDetachedType);
+void *SelvaHierarchyDetached_Store(
+        const Selva_NodeId node_id,
+        struct compressed_rms *compressed,
+        enum SelvaHierarchyDetachedType type);
 
-int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct compressed_rms **compressed);
+/**
+ * Get the compressed subtree string of node_id.
+ */
+int SelvaHierarchyDetached_Get(
+        struct SelvaHierarchy *hierarchy,
+        const Selva_NodeId node_id,
+        struct compressed_rms **compressed);
 
 /**
  * Remove a node_id from the detached nodes map.
