@@ -38,7 +38,7 @@ static RedisModuleString *get_zpath(const Selva_NodeId node_id) {
  * @param zpath is a pointer to the destination path.
  * @param compressed is a pointer to the compressed subtree.
  */
-static int fwrite_compressed_subtree(RedisModuleString *zpath, struct compressed_rms *compressed) {
+static int fwrite_compressed_subtree(RedisModuleString *zpath, const struct compressed_rms *compressed) {
     const char *zpath_str = RedisModule_StringPtrLen(zpath, NULL);
     FILE *fp;
     int err;
