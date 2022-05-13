@@ -49,7 +49,7 @@ const addOriginListeners = async (
           const nodeId = message
 
           // TODO: maybe do some staging for updates stuff if nodeId is also the same?
-          sendUpdate(subsManager, subscription, nodeId)
+          sendUpdate(subsManager, subscription, nodeId, true)
         }
       }
 
