@@ -1,6 +1,8 @@
+#include <errno.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include "redismodule.h"
 #include "cdefs.h"
 #include "errors.h"
@@ -22,6 +24,7 @@ static RedisModuleString *get_zpath(const Selva_NodeId node_id) {
 
     if (disk_subtree_prefix[0] == '\0') {
         RedisModule_GetRandomHexChars(disk_subtree_prefix, sizeof(disk_subtree_prefix));
+        fprintf(stderr, "Get new name: %.*s\n", 5, disk_subtree_prefix);
     }
 
     /*
@@ -68,6 +71,10 @@ static int fread_compressed_subtree(RedisModuleString *zpath, struct compressed_
 
     fp = fopen(zpath_str, "rb");
     if (!fp) {
+        fprintf(stderr, "%s:%d: Failed to open compressed subtree \"%s\": %s\n",
+                __FILE__, __LINE__,
+                zpath_str,
+                strerror(errno));
         return SELVA_EINVAL;
     }
 
@@ -121,7 +128,7 @@ void *SelvaHierarchyDetached_Store(const Selva_NodeId node_id, struct compressed
     return p;
 }
 
-int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct compressed_rms **compressed) {
+int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct compressed_rms **compressed, enum SelvaHierarchyDetachedType *type) {
     struct SelvaObject *index = hierarchy->detached.obj;
     void *p;
     int err;
@@ -134,10 +141,14 @@ int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_Nod
     if (err) {
         return err;
     }
-
     assert(p);
 
-    const int tag = PTAG_GETTAG(p);
+    const enum SelvaHierarchyDetachedType tag = PTAG_GETTAG(p);
+
+    if (type) {
+        *type = tag;
+    }
+
     if (tag == SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM) {
         *compressed = PTAG_GETP(p);
         assert(*compressed);
@@ -146,8 +157,7 @@ int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_Nod
     } else if (tag == SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK) {
         RedisModuleString *zpath = PTAG_GETP(p);
 
-        err = fread_compressed_subtree(zpath, compressed);
-        return err;
+        return fread_compressed_subtree(zpath, compressed);
     } else {
         fprintf(stderr, "%s:%d: Invalid tag on detached node_id: %.*s\n",
                 __FILE__, __LINE__,
@@ -156,7 +166,7 @@ int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_Nod
     }
 }
 
-void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id) {
+void SelvaHierarchyDetached_RemoveNode(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, const Selva_NodeId node_id) {
     struct SelvaObject *index = hierarchy->detached.obj;
     void *p;
 
@@ -174,10 +184,15 @@ void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_No
         RedisModuleString *zpath = PTAG_GETP(p);
         TO_STR(zpath);
 
-        if (remove(zpath_str)) {
-            fprintf(stderr, "%s:%d: Failed to remove a compressed subtree file. We ignore it now, but it might cause a crash later on.\n",
-                    __FILE__, __LINE__);
-        }
+        (void)remove(zpath_str);
+
+        /*
+         * Trick Redis into using lazy free for zpath.
+         * We know that we probably have multiple references to zpath, but we
+         * also know that they'll be all cleaned up during this ctx.
+         */
+        RedisModule_HoldString(ctx, zpath);
+        RedisModule_FreeString(NULL, zpath);
     }
 
     (void)SelvaObject_DelKeyStr(index, node_id, SELVA_NODE_ID_SIZE);

@@ -18,6 +18,7 @@ enum SelvaHierarchyDetachedType {
     SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK = 2,
 };
 
+struct RedisModuleCtx;
 struct SelvaHierarchy;
 struct compressed_rms;
 
@@ -47,11 +48,13 @@ void *SelvaHierarchyDetached_Store(
 
 /**
  * Get the compressed subtree string of node_id.
+ * @param[out] type Returns the storage type. Can be NULL.
  */
 int SelvaHierarchyDetached_Get(
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId node_id,
-        struct compressed_rms **compressed);
+        struct compressed_rms **compressed,
+        enum SelvaHierarchyDetachedType *type);
 
 /**
  * Remove a node_id from the detached nodes map.
@@ -62,7 +65,7 @@ int SelvaHierarchyDetached_Get(
  * Note that this function doesn't free the compressed_rms, that should be
  * done by the caller.
  */
-void SelvaHierarchyDetached_RemoveNode(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id);
+void SelvaHierarchyDetached_RemoveNode(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id);
 
 /**
  * Add a node_id to subtree mapping to the detached nodes map.

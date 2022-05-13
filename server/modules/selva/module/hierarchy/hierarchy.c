@@ -2876,7 +2876,6 @@ static int restore_compressed_subtree(SelvaHierarchy *hierarchy, struct compress
     subtree_hierarchy = hierarchy;
     load_res = RedisModule_LoadDataTypeFromString(uncompressed, HierarchySubtreeType);
     isDecompressingSubtree = 0;
-    rms_free_compressed(compressed); /* All occurrences of the pointer should have been cleaned by now. */
     RedisModule_FreeString(NULL, uncompressed);
 
     if (!load_res) {
@@ -2897,9 +2896,12 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
 
     SELVA_TRACE_BEGIN(restore_subtree);
 
-    err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed);
+    err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed, NULL);
     if (!err) {
         err = restore_compressed_subtree(hierarchy, compressed);
+        if (!err) {
+            rms_free_compressed(compressed);
+        }
     }
 
     SELVA_TRACE_END(restore_subtree);
@@ -3025,6 +3027,7 @@ static int load_node_id(RedisModuleIO *io, Selva_NodeId node_id_out) {
 }
 
 static int load_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
+    enum SelvaHierarchyDetachedType type;
     struct compressed_rms *compressed;
     SelvaHierarchyNode *node;
     int err;
@@ -3037,6 +3040,7 @@ static int load_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selv
         return SELVA_HIERARCHY_ENOMEM;
     }
 
+    type = RedisModule_LoadSigned(io);
     rms_RDBLoadCompressed(io, compressed);
 
     /*
@@ -3059,8 +3063,7 @@ static int load_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selv
         goto out;
     }
 
-    /* TODO what if it was originall SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK? */
-    err = detach_subtree(RedisModule_GetContextFromIO(io), hierarchy, node, SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM);
+    err = detach_subtree(RedisModule_GetContextFromIO(io), hierarchy, node, type);
 
 out:
     rms_free_compressed(compressed);
@@ -3103,7 +3106,7 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
             }
 
             if (isDecompressingSubtree) {
-                SelvaHierarchyDetached_RemoveNode(hierarchy, child_id);
+                SelvaHierarchyDetached_RemoveNode(RedisModule_GetContextFromIO(io), hierarchy, child_id);
             }
 
             err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
@@ -3139,7 +3142,7 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
     int err;
 
     if (isDecompressingSubtree) {
-        SelvaHierarchyDetached_RemoveNode(hierarchy, node_id);
+        SelvaHierarchyDetached_RemoveNode(RedisModule_GetContextFromIO(io), hierarchy, node_id);
     }
 
     /*
@@ -3255,10 +3258,11 @@ error:
 
 static void save_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     struct compressed_rms *compressed;
+    enum SelvaHierarchyDetachedType type;
     int err;
 
     /*
-     * Techincally we point to the same compressed subtree multiple times in the
+     * Technically we point to the same compressed subtree multiple times in the
      * detached hierarchy. However, we should only point to it once in the
      * actual hierarchy as these are proper subtrees. This means that we'll only
      * store the compressed subtree once. The down side is that the only way to
@@ -3266,12 +3270,13 @@ static void save_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, con
      * subtrees temporarily.
      */
 
-    err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed);
+    err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed, &type);
     if (err) {
         RedisModule_LogIOError(io, "warning", "Failed to save a compressed subtree: %s", getSelvaErrorStr(err));
         return;
     }
 
+    RedisModule_SaveSigned(io, type);
     rms_RDBSaveCompressed(io, compressed);
 }
 
@@ -3432,7 +3437,7 @@ static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
         return NULL;
     }
 
-    SelvaHierarchyDetached_RemoveNode(hierarchy, nodeId);
+    SelvaHierarchyDetached_RemoveNode(RedisModule_GetContextFromIO(io), hierarchy, nodeId);
 
     err = load_tree(io, encver, hierarchy);
     if (err) {
