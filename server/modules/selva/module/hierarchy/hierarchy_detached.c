@@ -24,7 +24,6 @@ static RedisModuleString *get_zpath(const Selva_NodeId node_id) {
 
     if (disk_subtree_prefix[0] == '\0') {
         RedisModule_GetRandomHexChars(disk_subtree_prefix, sizeof(disk_subtree_prefix));
-        fprintf(stderr, "Get new name: %.*s\n", 5, disk_subtree_prefix);
     }
 
     /*
