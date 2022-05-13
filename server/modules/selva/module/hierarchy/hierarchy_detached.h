@@ -11,7 +11,7 @@ enum SelvaHierarchyDetachedType {
     /**
      * The node and its subtree is compressed and stored in memory.
      */
-    SELVA_HIERARCHY_DETACHED_COMPRESSED = 1,
+    SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM = 1,
     /**
      * The node and its subtree is compressed and stored on disk.
      */
@@ -31,13 +31,13 @@ static inline int SelvaHierarchyDetached_IndexExists(const struct SelvaHierarchy
 
 /**
  * Prepare compressed subtree to be stored in the detached hierarchy.
- * If the type is SELVA_HIERARCHY_DETACHED_COMPRESSED this function will only
+ * If the type is SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM this function will only
  * make a tagged pointer from the original pointer;
  * If the type is SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK then the compressed
  * subtree is written to the disk, a properly prepared tagged pointer is
  * returned, and the original compressed data is freed.
  * If writing to the disk fails the function will use
- * SELVA_HIERARCHY_DETACHED_COMPRESSED as a fallback.
+ * SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM as a fallback.
  * @returns A tagged pointer to the compressed subtree.
  */
 void *SelvaHierarchyDetached_Store(

@@ -2955,7 +2955,7 @@ static void auto_compress_proc(RedisModuleCtx *ctx, void *data) {
              * struct, meaning that in case detaching the node fails, we
              * still won't see it here again any time soon.
              */
-            (void)detach_subtree(ctx, hierarchy, node, SELVA_HIERARCHY_DETACHED_COMPRESSED);
+            (void)detach_subtree(ctx, hierarchy, node, SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM);
 #if 0
             if (!err) {
                 fprintf(stderr, "%s:%d: Auto-compressed %.*s\n",
@@ -3059,7 +3059,7 @@ static int load_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selv
         goto out;
     }
 
-    err = detach_subtree(RedisModule_GetContextFromIO(io), hierarchy, node, SELVA_HIERARCHY_DETACHED_COMPRESSED);
+    err = detach_subtree(RedisModule_GetContextFromIO(io), hierarchy, node, SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM);
 
 out:
     rms_free_compressed(compressed);
@@ -3828,7 +3828,7 @@ int SelvaHierarchy_EdgeGetMetadataCommand(RedisModuleCtx *ctx, RedisModuleString
 
 int SelvaHierarchy_CompressCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    enum SelvaHierarchyDetachedType type = SELVA_HIERARCHY_DETACHED_COMPRESSED;
+    enum SelvaHierarchyDetachedType type = SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM;
     int err;
 
     if (argc != 3 && argc != 4) {
@@ -3839,7 +3839,7 @@ int SelvaHierarchy_CompressCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         static const struct SelvaArgParser_EnumType types[] = {
             {
                 .name = "mem",
-                .id = SELVA_HIERARCHY_DETACHED_COMPRESSED,
+                .id = SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM,
             },
             {
                 .name = "disk",

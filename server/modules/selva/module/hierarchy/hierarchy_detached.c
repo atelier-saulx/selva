@@ -119,9 +119,9 @@ void *SelvaHierarchyDetached_Store(const Selva_NodeId node_id, struct compressed
         }
         fprintf(stderr, "%s:%d: Fallback to inmem compression\n", __FILE__, __LINE__);
         __attribute__((fallthrough));
-    case SELVA_HIERARCHY_DETACHED_COMPRESSED:
+    case SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM:
     default:
-        p = PTAG(compressed, SELVA_HIERARCHY_DETACHED_COMPRESSED);
+        p = PTAG(compressed, SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM);
     }
 
     return p;
@@ -144,7 +144,7 @@ int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_Nod
     assert(p);
 
     int tag = PTAG_GETTAG(p);
-    if (tag == SELVA_HIERARCHY_DETACHED_COMPRESSED) {
+    if (tag == SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM) {
         *compressed = PTAG_GETP(p);
         assert(*compressed);
 
