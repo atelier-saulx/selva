@@ -536,7 +536,7 @@ export class Observable {
         // msg is checksum
         // will also add diff maybe? or store the last diff?
         const versions = JSON.parse(msg)
-        if (versions && versions[0] === this.version) {
+        if (versions && versions[0] === this.version && !getOptions.$trigger) {
           // is the same ignore
         } else {
           this.getValue(versions)

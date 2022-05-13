@@ -3,6 +3,7 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import { wait } from './assertions'
 import getPort from 'get-port'
+import { deepCopy } from '@saulx/utils'
 
 let srv
 let port: number
@@ -109,12 +110,15 @@ test.serial('subscription array', async (t) => {
     })
   )
 
+  let lastResult
+
   const obs = client.observe({
     $id: thing,
     ary: true,
   })
   let cnt = 0
   const sub = obs.subscribe((d) => {
+    lastResult = deepCopy(d)
     cnt++
   })
 
@@ -135,6 +139,24 @@ test.serial('subscription array', async (t) => {
 
   await wait(1000)
   t.is(cnt, 2)
+
+  await client.set({
+    $id: thing,
+    ary: {
+      $push: {
+        name: 'match hello now',
+      },
+    },
+  })
+
+  await wait(1000)
+
+  t.is(cnt, 3)
+
+  t.deepEqual(lastResult.ary[lastResult.ary.length - 1], {
+    name: 'match hello now',
+  })
+
   sub.unsubscribe()
 
   const obs2 = client.observe({

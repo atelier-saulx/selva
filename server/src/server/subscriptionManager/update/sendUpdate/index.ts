@@ -16,7 +16,8 @@ const inProgressTriggers = new Set()
 const sendUpdate = async (
   subscriptionManager: SubscriptionManager,
   subscription: Subscription,
-  nodeId?: string
+  nodeId?: string,
+  isTrigger: boolean = false
 ) => {
   // if (!subscription) {
   //   return
@@ -150,7 +151,7 @@ const sendUpdate = async (
     }
   }
 
-  if (currentVersion === newVersion) {
+  if (currentVersion === newVersion && !isTrigger) {
     clearTimeout(time)
     subscriptionManager.inProgressCount--
     inProgressTriggers.delete(subscription.channel + ':' + nodeId)
