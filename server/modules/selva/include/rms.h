@@ -81,7 +81,7 @@ int rms_decompress(struct RedisModuleString **out, struct compressed_rms *in);
  * Note that the binary format is not portable and it's only assumed to be read
  * by the same process (on the same machine) that wrote it.
  */
-int rms_fwrite_compressed(struct compressed_rms *compressed, FILE *fp);
+int rms_fwrite_compressed(const struct compressed_rms *compressed, FILE *fp);
 
 /**
  * Read a compressed_rms from fp.

@@ -94,7 +94,7 @@ int rms_decompress(RedisModuleString **out, struct compressed_rms *in) {
     return 0;
 }
 
-int rms_fwrite_compressed(struct compressed_rms *compressed, FILE *fp) {
+int rms_fwrite_compressed(const struct compressed_rms *compressed, FILE *fp) {
     size_t buf_size;
     const char *buf = RedisModule_StringPtrLen(compressed->rms, &buf_size);
     size_t res;
