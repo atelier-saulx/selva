@@ -1,4 +1,8 @@
+#include <errno.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include "libdeflate.h"
 #include "redismodule.h"
 #include "cdefs.h"
@@ -88,6 +92,99 @@ int rms_decompress(RedisModuleString **out, struct compressed_rms *in) {
 
     *out = raw;
     return 0;
+}
+
+int rms_fwrite_compressed(struct compressed_rms *compressed, FILE *fp) {
+    size_t buf_size;
+    const char *buf = RedisModule_StringPtrLen(compressed->rms, &buf_size);
+    size_t res;
+
+    res = fwrite(&compressed->uncompressed_size, sizeof(compressed->uncompressed_size), 1, fp);
+    if (res != 1 && ferror(fp)) {
+        return SELVA_EGENERAL;
+    }
+
+    res = fwrite(buf, sizeof(char), buf_size, fp);
+    if (res != buf_size && ferror(fp)) {
+        return SELVA_EGENERAL; /* TODO Better error code? */
+    }
+
+    return 0;
+}
+
+static ssize_t get_file_size(FILE *fp) {
+    long int size;
+
+    fseek(fp, 0L, SEEK_END);
+    size = ftell(fp);
+    rewind(fp);
+
+    return size == -1L ? SELVA_EGENERAL : (ssize_t)size;
+}
+
+const char *get_filename(char filename[255], FILE *fp) {
+    static const char unknown_filename[] = "<unknown file>";
+#if __linux__
+    int fd;
+    char fd_path[255];
+    ssize_t n;
+
+    fd = fileno(fp);
+    if (fd == -1) {
+        return unknown_filename;
+    }
+
+    sprintf(fd_path, "/proc/self/fd/%d", fd);
+    n = readlink(fd_path, filename, 255);
+    if (n < 0) {
+        return unknown_filename;
+    }
+
+    filename[n] = '\0';
+    return filename;
+#else
+    return unknown_filename;
+#endif
+}
+
+static void print_read_error(FILE *fp) {
+    char filename[255];
+    const int ferr = ferror(fp);
+    const char *str_err = ferr ? strerror(errno) : "No error";
+    const int eof = feof(fp);
+
+    fprintf(stderr, "%s:%d: Failed to read a compressed subtree file. path: \"%s\": err: \"%s\" eof: %d\n",
+            __FILE__, __LINE__,
+            get_filename(filename, fp),
+            str_err,
+            eof);
+}
+
+int rms_fread_compressed(struct compressed_rms *compressed, FILE *fp) {
+    const ssize_t file_size = get_file_size(fp);
+    char *buf;
+    size_t read_bytes;
+    int err = 0;
+
+    if (file_size < 0) {
+        return (int)file_size;
+    }
+
+    buf = RedisModule_Alloc(file_size);
+
+    read_bytes = fread(buf, sizeof(char), file_size, fp);
+    if (read_bytes != (size_t)file_size) {
+        print_read_error(fp);
+        err = SELVA_EINVAL; /* TODO another error code? */
+        goto fail;
+    }
+
+    memcpy(&compressed->uncompressed_size, buf, sizeof(compressed->uncompressed_size));
+    compressed->rms = RedisModule_CreateString(NULL, buf + sizeof(compressed->uncompressed_size), file_size - sizeof(compressed->uncompressed_size));
+
+fail:
+    RedisModule_Free(buf);
+    return err;
 }
 
 void rms_RDBSaveCompressed(RedisModuleIO *io, struct compressed_rms *compressed) {

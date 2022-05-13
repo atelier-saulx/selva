@@ -5,6 +5,7 @@
 #include "cdefs.h"
 #include "errors.h"
 #include "ptag.h"
+#include "rms.h"
 #include "selva_object.h"
 #include "hierarchy.h"
 #include "hierarchy_detached.h"
@@ -14,16 +15,117 @@
  */
 
 /**
- * Storage backend type of the detached subtree node.
- * While there is currently only one type it's future proofing the system for
- * storing subtrees on disk.
+ * Get path for a compressed subtree of node_id.
  */
-enum SELVA_HIERARCHY_DETACHED_TYPE {
-    /**
-     * The node and its subtree is compressed and stored in memory.
+static RedisModuleString *get_zpath(const Selva_NodeId node_id) {
+    static char disk_subtree_prefix[5];
+
+    if (disk_subtree_prefix[0] == '\0') {
+        RedisModule_GetRandomHexChars(disk_subtree_prefix, sizeof(disk_subtree_prefix));
+    }
+
+    /*
+     * Presumably the CWD is where the current Redis dump goes, we assume that's
+     * where these compressed subtrees should go too.
      */
-    SELVA_HIERARCHY_DETACHED_COMPRESSED = 1,
-};
+    return RedisModule_CreateStringPrintf(NULL, "selva_%.*s_%.*s.z",
+            (int)(sizeof(disk_subtree_prefix)), disk_subtree_prefix,
+            (int)SELVA_NODE_ID_SIZE, node_id);
+}
+
+/**
+ * Write a compressed subtree to the disk.
+ * @param zpath is a pointer to the destination path.
+ * @param compressed is a pointer to the compressed subtree.
+ */
+static int fwrite_compressed_subtree(RedisModuleString *zpath, struct compressed_rms *compressed) {
+    const char *zpath_str = RedisModule_StringPtrLen(zpath, NULL);
+    FILE *fp;
+    int err;
+
+    fp = fopen(zpath_str, "wbx");
+    if (!fp) {
+        return SELVA_EINVAL;
+    }
+
+    err = rms_fwrite_compressed(compressed, fp);
+
+    fclose(fp);
+    return err;
+}
+
+/**
+ * Read a compressed subtree from the disk.
+ * This function also deletes the file.
+ * @param zpath is a pointer to the source path of the subtree.
+ * @param[out] compressed_out is the output.
+ */
+static int fread_compressed_subtree(RedisModuleString *zpath, struct compressed_rms **compressed_out) {
+    const char *zpath_str = RedisModule_StringPtrLen(zpath, NULL);
+    FILE *fp;
+    struct compressed_rms *compressed;
+    int err;
+
+    fp = fopen(zpath_str, "rb");
+    if (!fp) {
+        return SELVA_EINVAL;
+    }
+
+    compressed = rms_alloc_compressed();
+    err = rms_fread_compressed(compressed, fp);
+    fclose(fp);
+
+    if (err) {
+        rms_free_compressed(compressed);
+        compressed = NULL;
+    }
+
+    /* RFE Do we confuse people by deleting it here? */
+    if (remove(zpath_str)) {
+        fprintf(stderr, "%s:%d: Failed to remove a compressed subtree file. We ignore it now, but it might cause a crash later on.\n",
+                __FILE__, __LINE__);
+    }
+
+    *compressed_out = compressed;
+    return err;
+}
+
+static RedisModuleString *store_compressed(const Selva_NodeId node_id, struct compressed_rms *compressed) {
+    RedisModuleString *zpath = get_zpath(node_id);
+    int err;
+
+    err = fwrite_compressed_subtree(zpath, compressed);
+    if (err) {
+        RedisModule_FreeString(NULL, zpath);
+        return NULL;
+    }
+
+    rms_free_compressed(compressed);
+
+    return PTAG(zpath, SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK);
+}
+
+void *SelvaHierarchyDetached_Store(const Selva_NodeId node_id, struct compressed_rms *compressed, enum SelvaHierarchyDetachedType type) {
+    void *p;
+
+    if (!compressed) {
+        return NULL;
+    }
+
+    switch (type) {
+    case SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK:
+        if ((p = store_compressed(node_id, compressed))) {
+            break;
+        }
+        fprintf(stderr, "%s:%d: Fallback to inmem compression\n", __FILE__, __LINE__);
+        __attribute__((fallthrough));
+    case SELVA_HIERARCHY_DETACHED_COMPRESSED:
+    default:
+        p = PTAG(compressed, SELVA_HIERARCHY_DETACHED_COMPRESSED);
+    }
+
+    return p;
+}
 
 int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct compressed_rms **compressed) {
     struct SelvaObject *index = hierarchy->detached.obj;
@@ -44,27 +146,22 @@ int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_Nod
     int tag = PTAG_GETTAG(p);
     if (tag == SELVA_HIERARCHY_DETACHED_COMPRESSED) {
         *compressed = PTAG_GETP(p);
-
         assert(*compressed);
+
+        return 0;
+    } else if (tag == SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK) {
+        RedisModuleString *zpath = PTAG_GETP(p);
+
+        err = fread_compressed_subtree(zpath, compressed);
+        return err;
     } else {
         fprintf(stderr, "%s:%d: Invalid tag on detached node_id: %.*s\n",
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE, node_id);
         return SELVA_EINTYPE;
     }
-
-    return 0;
 }
 
-/**
- * Remove a node_id from the detached nodes map.
- * This should be called when the node is actually added back to the hierarchy.
- * Ideally all the pointers to the `compressed` string returned by
- * SelvaHierarchyDetached_Get() should be deleted once the subtree restore is
- * complete.
- * Note that this function doesn't free the RedisModuleString, that should be
- * done by the caller.
- */
 void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id) {
     struct SelvaObject *index = hierarchy->detached.obj;
 
@@ -75,13 +172,7 @@ void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_No
     (void)SelvaObject_DelKeyStr(index, node_id, SELVA_NODE_ID_SIZE);
 }
 
-/**
- * Add a node_id to subtree mapping to the detached nodes map.
- * Obviously the serialized subtree cannot be ready yet when this function is
- * called, therefore the string must be appended at the end of the serialization
- * process.
- */
-int SelvaHierarchyDetached_AddNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct compressed_rms *compressed) {
+int SelvaHierarchyDetached_AddNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id, void *tag_compressed) {
     struct SelvaObject *index = hierarchy->detached.obj;
 
     if (!index) {
@@ -93,5 +184,5 @@ int SelvaHierarchyDetached_AddNode(SelvaHierarchy *hierarchy, const Selva_NodeId
         hierarchy->detached.obj = index;
     }
 
-    return SelvaObject_SetPointerStr(index, node_id, SELVA_NODE_ID_SIZE, PTAG(compressed, SELVA_HIERARCHY_DETACHED_COMPRESSED), NULL);
+    return SelvaObject_SetPointerStr(index, node_id, SELVA_NODE_ID_SIZE, tag_compressed, NULL);
 }
