@@ -171,9 +171,9 @@ test.serial('subscription array', async (t) => {
   })
 
   let cnt2 = 0
-  let lastResult
+  let lastResult2
   const sub2 = obs2.subscribe((d) => {
-    lastResult = d
+    lastResult2 = deepCopy(d)
     cnt2++
   })
 
@@ -207,7 +207,9 @@ test.serial('subscription array', async (t) => {
   await wait(2000)
 
   t.is(cnt2, 3)
-  console.log('LAST RESULT', lastResult)
+  t.deepEqual(lastResult2.ary[lastResult2.ary.length - 1], {
+    title: 'Flapdrollll',
+  })
 
   sub2.unsubscribe()
   await client.destroy()
