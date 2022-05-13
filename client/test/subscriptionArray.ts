@@ -149,7 +149,9 @@ test.serial('subscription array', async (t) => {
   })
 
   let cnt2 = 0
+  let lastResult
   const sub2 = obs2.subscribe((d) => {
+    lastResult = d
     cnt2++
   })
 
@@ -168,8 +170,24 @@ test.serial('subscription array', async (t) => {
   })
 
   await wait(2000)
-  sub2.unsubscribe()
+
   t.is(cnt2, 2)
+
+  await client.set({
+    $id: thing,
+    ary: {
+      $push: {
+        title: { en: 'Flapdrollll' },
+      },
+    },
+  })
+
+  await wait(2000)
+
+  t.is(cnt2, 3)
+  console.log('LAST RESULT', lastResult)
+
+  sub2.unsubscribe()
   await client.destroy()
 })
 
