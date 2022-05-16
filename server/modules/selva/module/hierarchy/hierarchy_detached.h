@@ -65,7 +65,10 @@ int SelvaHierarchyDetached_Get(
  * Note that this function doesn't free the compressed_rms, that should be
  * done by the caller.
  */
-void SelvaHierarchyDetached_RemoveNode(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id);
+void SelvaHierarchyDetached_RemoveNode(
+        struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        const Selva_NodeId node_id);
 
 /**
  * Add a node_id to subtree mapping to the detached nodes map.
@@ -74,6 +77,9 @@ void SelvaHierarchyDetached_RemoveNode(struct RedisModuleCtx *ctx, struct SelvaH
  * process.
  * @param tag_compressed is a struct compressed_rms that has been tagged with a SelvaHierarchyDetachedType.
  */
-int SelvaHierarchyDetached_AddNode(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id, void *tag_compressed);
+int SelvaHierarchyDetached_AddNode(
+        struct SelvaHierarchy *hierarchy,
+        const Selva_NodeId node_id,
+        void *tag_compressed);
 
 #endif /* _SELVA_HIERARCHY_DETACHED_H_ */

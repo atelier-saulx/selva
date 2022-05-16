@@ -108,7 +108,10 @@ static RedisModuleString *store_compressed(const Selva_NodeId node_id, struct co
     return PTAG(zpath, SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK);
 }
 
-void *SelvaHierarchyDetached_Store(const Selva_NodeId node_id, struct compressed_rms *compressed, enum SelvaHierarchyDetachedType type) {
+void *SelvaHierarchyDetached_Store(
+        const Selva_NodeId node_id,
+        struct compressed_rms *compressed,
+        enum SelvaHierarchyDetachedType type) {
     void *p;
 
     if (!compressed) {
@@ -130,7 +133,11 @@ void *SelvaHierarchyDetached_Store(const Selva_NodeId node_id, struct compressed
     return p;
 }
 
-int SelvaHierarchyDetached_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct compressed_rms **compressed, enum SelvaHierarchyDetachedType *type) {
+int SelvaHierarchyDetached_Get(
+        struct SelvaHierarchy *hierarchy,
+        const Selva_NodeId node_id,
+        struct compressed_rms **compressed,
+        enum SelvaHierarchyDetachedType *type) {
     struct SelvaObject *index = hierarchy->detached.obj;
     void *p;
     int err;
