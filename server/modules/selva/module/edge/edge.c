@@ -103,10 +103,6 @@ __attribute__((nonnull (1, 2))) static struct EdgeField *alloc_EdgeField(const S
     assert(constraint);
 
     edgeField = RedisModule_Calloc(1, sizeof(struct EdgeField));
-    if (!edgeField) {
-        return NULL;
-    }
-
     edgeField->constraint = constraint;
     memcpy(edgeField->src_node_id, src_node_id, SELVA_NODE_ID_SIZE);
     SVector_Init(&edgeField->arcs, initial_size, SelvaSVectorComparator_Node);

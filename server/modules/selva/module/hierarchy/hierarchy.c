@@ -203,12 +203,7 @@ static int SelvaHierarchyNode_Compare(const SelvaHierarchyNode *a, const SelvaHi
 RB_GENERATE_STATIC(hierarchy_index_tree, SelvaHierarchyNode, _index_entry, SelvaHierarchyNode_Compare)
 
 SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
-    SelvaHierarchy *hierarchy;
-
-    hierarchy = RedisModule_Calloc(1, sizeof(*hierarchy));
-    if (!hierarchy) {
-        goto fail;
-    }
+    SelvaHierarchy *hierarchy = RedisModule_Calloc(1, sizeof(*hierarchy));
 
     RB_INIT(&hierarchy->index_head);
     if (!SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare)) {
@@ -372,12 +367,7 @@ static int create_node_object(SelvaHierarchyNode *node) {
  * Create a new node.
  */
 static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
-    SelvaHierarchyNode *node;
-
-    node = RedisModule_Calloc(1, sizeof(SelvaHierarchyNode));
-    if (unlikely(!node)) {
-        return NULL;
-    };
+    SelvaHierarchyNode *node = RedisModule_Calloc(1, sizeof(SelvaHierarchyNode));
 
 #if 0
     fprintf(stderr, "%s:%d: Creating node %.*s\n",
@@ -3086,9 +3076,6 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
 
     if (nr_children > 0) {
         children = RedisModule_Alloc(nr_children * SELVA_NODE_ID_SIZE);
-        if (!children) {
-            return SELVA_HIERARCHY_ENOMEM;
-        }
 
         /* Create/Update children */
         for (uint64_t i = 0; i < nr_children; i++) {
