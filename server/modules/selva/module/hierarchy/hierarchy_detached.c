@@ -238,10 +238,6 @@ int SelvaHierarchyDetached_AddNode(SelvaHierarchy *hierarchy, const Selva_NodeId
 
     if (!index) {
         index = SelvaObject_New();
-        if (!index) {
-            return SELVA_ENOMEM;
-        }
-
         hierarchy->detached.obj = index;
     }
 
