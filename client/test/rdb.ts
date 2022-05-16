@@ -21,8 +21,6 @@ async function restartServer() {
   try {
     const compressedFiles = (await readdir(dir)).filter((s) => s.includes('.z'))
     await Promise.all(compressedFiles.map(async (s) => unlink(`${dir}/${s}`)))
-    // TODO REMOVE
-    console.log('LOL compressed files', (await readdir(dir)).filter((s) => s.includes('.z')))
   } catch (e) {}
 
   port = await getPort()
@@ -31,8 +29,6 @@ async function restartServer() {
     dir,
   })
   await wait(2000)
-  // TODO REMOVE
-  console.log('LAL compressed files', (await readdir(dir)).filter((s) => s.includes('.z')))
 }
 
 test.before(removeDump(dir))
@@ -270,8 +266,6 @@ test.serial('can reload from RDB', async (t) => {
 
   const compressedFilesAfter = (await readdir(dir)).filter((s) => s.includes('.z'))
   t.deepEqualIgnoreOrder(compressedFilesAfter, compressedFilesBefore, 'RDB save should not remove the subtree files')
-  // TODO REMOVE
-  console.log('compressed files', compressedFilesAfter)
 
   await restartServer()
   await client.destroy()
@@ -375,8 +369,6 @@ test.serial('can reload from RDB', async (t) => {
 
   // Check the compressed subtree on disk
   // TODO Check that the compressed subtree is actually on the disk
-  // TODO REMOVE
-  console.log('compressed files', (await readdir(dir)).filter((s) => s.includes('.z')))
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'viDisk1',
@@ -391,8 +383,6 @@ test.serial('can reload from RDB', async (t) => {
     }
   )
   t.deepEqual((await readdir(dir)).filter((s) => s.includes('.z')), [])
-  // TODO Remove
-  console.log('compressed files', (await readdir(dir)).filter((s) => s.includes('.z')))
 
   // Do it again
   await client.redis.save()

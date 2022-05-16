@@ -1,8 +1,9 @@
-#include <errno.h>
 #include <assert.h>
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
 #include "redismodule.h"
 #include "cdefs.h"
 #include "errors.h"
@@ -21,6 +22,7 @@
  */
 static RedisModuleString *get_zpath(const Selva_NodeId node_id) {
     static char disk_subtree_prefix[5];
+    pid_t pid = getpid();
 
     if (disk_subtree_prefix[0] == '\0') {
         RedisModule_GetRandomHexChars(disk_subtree_prefix, sizeof(disk_subtree_prefix));
@@ -30,7 +32,8 @@ static RedisModuleString *get_zpath(const Selva_NodeId node_id) {
      * Presumably the CWD is where the current Redis dump goes, we assume that's
      * where these compressed subtrees should go too.
      */
-    return RedisModule_CreateStringPrintf(NULL, "selva_%.*s_%.*s.z",
+    return RedisModule_CreateStringPrintf(NULL, "selva_%jd_%.*s_%.*s.z",
+            (intmax_t)pid,
             (int)(sizeof(disk_subtree_prefix)), disk_subtree_prefix,
             (int)SELVA_NODE_ID_SIZE, node_id);
 }
