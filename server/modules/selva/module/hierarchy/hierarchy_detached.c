@@ -108,6 +108,10 @@ static int fread_compressed_subtree(RedisModuleString *zpath, struct compressed_
     return err;
 }
 
+/**
+ * Store a compressed subtree on disk.
+ * @returns a pointer to the filename.
+ */
 static RedisModuleString *store_compressed(const Selva_NodeId node_id, struct compressed_rms *compressed) {
     RedisModuleString *zpath = get_zpath(node_id);
     int err;
@@ -125,7 +129,7 @@ static RedisModuleString *store_compressed(const Selva_NodeId node_id, struct co
      */
     rms_free_compressed(compressed);
 
-    return PTAG(zpath, SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK);
+    return zpath;
 }
 
 void *SelvaHierarchyDetached_Store(
@@ -141,6 +145,7 @@ void *SelvaHierarchyDetached_Store(
     switch (type) {
     case SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK:
         if ((p = store_compressed(node_id, compressed))) {
+            p = PTAG(p, SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK);
             break;
         }
         fprintf(stderr, "%s:%d: Fallback to inmem compression\n", __FILE__, __LINE__);
