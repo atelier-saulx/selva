@@ -31,6 +31,8 @@ static RedisModuleString *get_zpath(const Selva_NodeId node_id) {
     /*
      * Presumably the CWD is where the current Redis dump goes, we assume that's
      * where these compressed subtrees should go too.
+     * We attempt to create a filename pattern that can never repeat after
+     * crashes or involuntary restarts.
      */
     return RedisModule_CreateStringPrintf(NULL, "selva_%jd_%.*s_%.*s.z",
             (intmax_t)pid,
@@ -48,6 +50,9 @@ static int fwrite_compressed_subtree(RedisModuleString *zpath, const struct comp
     FILE *fp;
     int err;
 
+    /*
+     * `x` will reject the operation if the file already exists.
+     */
     fp = fopen(zpath_str, "wbx");
     if (!fp) {
         return SELVA_EINVAL;
@@ -77,6 +82,13 @@ static int fread_compressed_subtree(RedisModuleString *zpath, struct compressed_
                 __FILE__, __LINE__,
                 zpath_str,
                 strerror(errno));
+        /*
+         * It could look like ENOENT would make more sense here but that's not
+         * true because ENOENT would be interpreted as if the node was not
+         * stored in the detached hierarchy and thus wouldn't exist at all.
+         * However, this is not true, as we are this far already, we certainly
+         * know that the node should exist and something is wrong.
+         */
         return SELVA_EINVAL;
     }
 
@@ -103,6 +115,11 @@ static RedisModuleString *store_compressed(const Selva_NodeId node_id, struct co
         return NULL;
     }
 
+    /*
+     * It's slightly unorthodox to free `compressed` here and not where it was
+     * allocated but you should this it as if the caller passed the ownership of
+     * the data to us, which is what this whole thing should be all about.
+     */
     rms_free_compressed(compressed);
 
     return PTAG(zpath, SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK);
@@ -193,6 +210,7 @@ void SelvaHierarchyDetached_RemoveNode(RedisModuleCtx *ctx, SelvaHierarchy *hier
         RedisModuleString *zpath = PTAG_GETP(p);
         TO_STR(zpath);
 
+        /* Remove the file. */
         (void)remove(zpath_str);
 
         /*
