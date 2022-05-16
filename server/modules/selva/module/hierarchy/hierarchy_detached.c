@@ -55,7 +55,10 @@ static int fwrite_compressed_subtree(RedisModuleString *zpath, const struct comp
      */
     fp = fopen(zpath_str, "wbx");
     if (!fp) {
-        return SELVA_EINVAL;
+        /*
+         * This could be also SELVA_EINVAL, it's hard to say what's better.
+         */
+        return SELVA_EEXIST;
     }
 
     err = rms_fwrite_compressed(compressed, fp);
