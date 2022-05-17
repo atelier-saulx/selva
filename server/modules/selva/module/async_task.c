@@ -98,14 +98,18 @@ static int getRedisPort(void) {
     return (int)strtol(str, NULL, 10);
 }
 
-static void selva_yield(void) {
+static void async_task_nsleep(long nsec) {
     const struct timespec tim = {
         .tv_sec = 0,
-        .tv_nsec = ASYNC_TASK_PEEK_INTERVAL_NS,
+        .tv_nsec = nsec,
     };
 
-    sched_yield();
     nanosleep(&tim, NULL);
+}
+
+static void async_task_yield(void) {
+    sched_yield();
+    async_task_nsleep(ASYNC_TASK_PEEK_INTERVAL_NS);
 }
 
 #define ASYNC_TASK_LOG(fmt, ...) \
@@ -115,10 +119,9 @@ static void selva_yield(void) {
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     uint64_t thread_idx = (uint64_t)argv;
     redisContext *ctx = NULL;
+    queue_cb_t *queue = queues + thread_idx;
 
     ASYNC_TASK_LOG("Started async task worker\n");
-
-    queue_cb_t *queue = queues + thread_idx;
 
     int port = getRedisPort();
     if (!port) {
@@ -130,13 +133,8 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
     ctx = redisConnect(redis_addr, port);
     if (ctx->err) {
-        const struct timespec tim = {
-            .tv_sec = 0,
-            .tv_nsec = 100000000L,
-        };
-
         ASYNC_TASK_LOG("Error connecting to the redis instance\n");
-        nanosleep(&tim, NULL);
+        async_task_nsleep(100000000l);
         goto error;
     }
 
@@ -149,7 +147,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         char *next;
 
         if (!queue_peek(queue, (void **)&next)) {
-            selva_yield();
+            async_task_yield();
             continue;
         }
 
@@ -179,7 +177,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
             if (remaining > 0) {
                 if (!queue_peek(queue, (void **)&next)) {
-                    selva_yield();
+                    async_task_yield();
                     continue;
                 }
             }
@@ -205,13 +203,8 @@ retry:
 
             ctx = redisConnect(redis_addr, port);
             if (ctx->err) {
-                const struct timespec tim = {
-                    .tv_sec = 0,
-                    .tv_nsec = 20000000L,
-                };
-
                 ASYNC_TASK_LOG("Error connecting to the redis instance\n");
-                nanosleep(&tim, NULL);
+                async_task_nsleep(20000000l);
                 RETRY;
             }
         }
