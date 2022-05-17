@@ -1374,6 +1374,10 @@ int SelvaObject_GetArrayIndexAsDouble(struct SelvaObject *obj, const char *key_n
     return 0;
 }
 
+static inline int array_type_match(const struct SelvaObjectKey *key, enum SelvaObjectType subtype) {
+    return key->type == SELVA_OBJECT_ARRAY && key->subtype == subtype;
+}
+
 int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, void *p) {
     struct SelvaObjectKey *key;
     int err;
@@ -1385,8 +1389,7 @@ int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, s
         return err;
     }
 
-    /* TODO Should it fail if the subtype doesn't match? */
-    if (key->type != SELVA_OBJECT_ARRAY || key->subtype != subtype) {
+    if (!array_type_match(key, subtype)) {
         err = clear_key_value(key);
         if (err) {
             return err;
@@ -1420,8 +1423,7 @@ int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str
         return err;
     }
 
-    /* TODO Should it fail if the subtype doesn't match? */
-    if (key->type != SELVA_OBJECT_ARRAY || key->subtype != subtype) {
+    if (!array_type_match(key, subtype)) {
         err = clear_key_value(key);
         if (err) {
             return err;
@@ -1455,8 +1457,7 @@ int SelvaObject_AssignArrayIndexStr(struct SelvaObject *obj, const char *key_nam
         return err;
     }
 
-    /* TODO Should it fail if the subtype doesn't match? */
-    if (key->type != SELVA_OBJECT_ARRAY || key->subtype != subtype) {
+    if (!array_type_match(key, subtype)) {
         err = clear_key_value(key);
         if (err) {
             return err;
@@ -1489,8 +1490,7 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
         return err;
     }
 
-    /* TODO Should it fail if the subtype doesn't match? */
-    if (key->type != SELVA_OBJECT_ARRAY || key->subtype != subtype) {
+    if (!array_type_match(key, subtype)) {
         err = clear_key_value(key);
         if (err) {
             return err;
