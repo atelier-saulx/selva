@@ -65,7 +65,6 @@ int SelvaSet_fielda_in_fieldb(
     int err;
 
     err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_a_str, field_a_len, &cb);
-    /* TODO Handle errors? */
 
     return err ? 0 : data.valid;
 }
