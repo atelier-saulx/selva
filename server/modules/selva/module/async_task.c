@@ -253,7 +253,7 @@ retry:
     }
 
 error:
-    ASYNC_TASK_LOG("Thread restarting... Ran for %ld minutes", (cur_time.tv_sec - start_time.tv_sec) / 60);
+    ASYNC_TASK_LOG("Thread restarting... Ran for %ld minutes\n", (cur_time.tv_sec - start_time.tv_sec) / 60);
     thread_ids[thread_idx] = 0;
     redisFree(ctx);
 
@@ -327,10 +327,9 @@ void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {
         .type = SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE,
     };
 
-    /* TODO if payload_str was aligned properly we could locate the struct directly inside it. */
     memcpy(publish_task.sub_update.sub_id, sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
-    memcpy(ptr, &total_len, sizeof(int32_t));
-    ptr += sizeof(int32_t);
+    memcpy(ptr, &total_len, sizeof(total_len));
+    ptr += sizeof(total_len);
     memcpy(ptr, &publish_task, struct_len);
 
     SelvaModify_SendAsyncTask(payload_str, payload_len);
@@ -346,11 +345,10 @@ void SelvaModify_PublishSubscriptionTrigger(const Selva_SubscriptionId sub_id, c
         .type = SELVA_MODIFY_ASYNC_TASK_SUB_TRIGGER,
     };
 
-    /* TODO if payload_str was aligned properly we could locate the struct directly inside it. */
     memcpy(publish_task.sub_trigger.sub_id, sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
     memcpy(publish_task.sub_trigger.node_id, node_id, SELVA_NODE_ID_SIZE);
-    memcpy(ptr, &total_len, sizeof(int32_t));
-    ptr += sizeof(int32_t);
+    memcpy(ptr, &total_len, sizeof(total_len));
+    ptr += sizeof(total_len);
     memcpy(ptr, &publish_task, struct_len);
 
     SelvaModify_SendAsyncTask(payload_str, payload_len);
