@@ -134,7 +134,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     ctx = redisConnect(redis_addr, port);
     if (ctx->err) {
         ASYNC_TASK_LOG("Error connecting to the redis instance\n");
-        async_task_nsleep(100000000l);
+        async_task_nsleep(100000000L);
         goto error;
     }
 
@@ -204,7 +204,7 @@ retry:
             ctx = redisConnect(redis_addr, port);
             if (ctx->err) {
                 ASYNC_TASK_LOG("Error connecting to the redis instance\n");
-                async_task_nsleep(20000000l);
+                async_task_nsleep(20000000L);
                 RETRY;
             }
         }
