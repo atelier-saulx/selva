@@ -155,14 +155,14 @@ void queue_clear_from_pop_end(queue_cb_t * cb)
     cb->m_read = cb->m_write;
 }
 
-int queue_isempty(queue_cb_t * cb)
+int queue_isempty(const queue_cb_t * cb)
 {
-    return (int)(cb->m_write == cb->m_read);
+    return cb->m_write == cb->m_read;
 }
 
-int queue_isfull(queue_cb_t * cb)
+int queue_isfull(const queue_cb_t * cb)
 {
-    return (int)(((cb->m_write + 1) % cb->a_len) == cb->m_read);
+    return ((cb->m_write + 1) % cb->a_len) == cb->m_read;
 }
 
 int seek(queue_cb_t * cb, size_t i, void * element)
