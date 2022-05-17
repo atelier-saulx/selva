@@ -2306,7 +2306,9 @@ int SelvaObject_ReplyWithWildcardStr(
 
             if (flags & SELVA_OBJECT_REPLY_SPLICE_FLAG) {
                 /* if the path should be spliced to start from the first wildcard as expected by selva.object.get */
-                const size_t reply_path_len = resp_path_start_idx == -1 ? obj_key_len + 1 + after_len : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + after_len;
+                const size_t reply_path_len = resp_path_start_idx == -1
+                    ? obj_key_len + 1 + after_len
+                    : (before_len - resp_path_start_idx) + 1 + obj_key_len + 1 + after_len;
                 char reply_path[reply_path_len + 1];
 
                 if (resp_path_start_idx == -1) {
