@@ -20,6 +20,7 @@ struct SelvaSet;
 
 /**
  * Test if a set-like field has a string value.
+ * @returns Boolean.
  */
 int SelvaSet_field_has_string(
         struct RedisModuleCtx *ctx,
@@ -32,6 +33,7 @@ int SelvaSet_field_has_string(
 
 /**
  * Test if a set-like field has a double value.
+ * @returns Boolean.
  */
 int SelvaSet_field_has_double(
         struct RedisModuleCtx *ctx,
@@ -43,6 +45,7 @@ int SelvaSet_field_has_double(
 
 /**
  * Test if a set-like field has a long long value.
+ * @returns Boolean.
  */
 int SelvaSet_field_has_longlong(
         struct RedisModuleCtx *ctx,
