@@ -10,8 +10,6 @@ import validateFind from './find'
 import validateSort from './sort'
 import { isTraverseByType, isTraverseOptions } from '../utils'
 
-// import fetch from 'node-fetch'
-
 // TODO: more concurrency for fetching
 async function evaluateTextSearch(
   filters: Filter[],
@@ -53,23 +51,24 @@ async function evaluateTextSearch(
     const results: string[][] = await Promise.all(
       textSearches.map(async (f: Filter | string[]) => {
         // TODO: replace hard coded url and port
-        if (Array.isArray(f)) {
-        } else {
-          const resp = await fetch('http://localhost:33333/get', {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-            },
-            body: JSON.stringify({
-              $searchString: f.$value,
-              $field: f.$field,
-              $language: language, // FIXME
-            }),
-          })
+        //if (Array.isArray(f)) {
+        //} else {
+        //  const resp = await fetch('http://localhost:33333/get', {
+        //    method: 'POST',
+        //    headers: {
+        //      'content-type': 'application/json',
+        //    },
+        //    body: JSON.stringify({
+        //      $searchString: f.$value,
+        //      $field: f.$field,
+        //      $language: language, // FIXME
+        //    }),
+        //  })
 
-          const ids = await resp.json()
-          return ids
-        }
+        //  const ids = await resp.json()
+        //  return ids
+        //}
+        return []
       })
     )
 

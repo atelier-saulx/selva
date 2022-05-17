@@ -1,5 +1,4 @@
 import test from 'ava'
-import fetch from 'node-fetch'
 import { connect } from '../src/index'
 import { start, startTextServer } from '@saulx/selva-server'
 import { wait } from './assertions'
@@ -277,33 +276,33 @@ test.serial('find fields with a substring match', async (t) => {
 })
 
 test.serial.failing('hhnn', async (t) => {
-  let resp = await fetch(`http://localhost:${txtPort}/set`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      $id: 'maga',
-      $searchString: 'hello world',
-      $field: 'title',
-      $language: 'en',
-    }),
-  })
+  //let resp = await fetch(`http://localhost:${txtPort}/set`, {
+  //  method: 'POST',
+  //  headers: {
+  //    'content-type': 'application/json',
+  //  },
+  //  body: JSON.stringify({
+  //    $id: 'maga',
+  //    $searchString: 'hello world',
+  //    $field: 'title',
+  //    $language: 'en',
+  //  }),
+  //})
 
-  console.log('YES', await resp.text())
+  //console.log('YES', await resp.text())
 
-  resp = await fetch(`http://localhost:${txtPort}/set`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      $id: 'masa',
-      $searchString: 'hell song',
-      $field: 'title',
-      $language: 'en',
-    }),
-  })
+  //resp = await fetch(`http://localhost:${txtPort}/set`, {
+  //  method: 'POST',
+  //  headers: {
+  //    'content-type': 'application/json',
+  //  },
+  //  body: JSON.stringify({
+  //    $id: 'masa',
+  //    $searchString: 'hell song',
+  //    $field: 'title',
+  //    $language: 'en',
+  //  }),
+  //})
 
   console.log('YES', await resp.text())
 
