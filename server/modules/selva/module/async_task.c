@@ -65,6 +65,8 @@ struct SelvaModify_AsyncTask {
     };
 };
 
+static const char *redis_addr = "127.0.0.1";
+
 static uint64_t total_publishes;
 static uint64_t missed_publishes;
 
@@ -124,9 +126,9 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         goto error;
     }
 
-    ASYNC_TASK_LOG("Connecting to Redis master on 127.0.0.1:%d\n", port);
+    ASYNC_TASK_LOG("Connecting to Redis master on %s:%d\n", redis_addr, port);
 
-    ctx = redisConnect("127.0.0.1", port);
+    ctx = redisConnect(redis_addr, port);
     if (ctx->err) {
         const struct timespec tim = {
             .tv_sec = 0,
@@ -199,9 +201,9 @@ retry:
             goto error;
         }
         if (!ctx) {
-            ASYNC_TASK_LOG("Reconnecting to Redis master on 127.0.0.1:%d\n", port);
+            ASYNC_TASK_LOG("Reconnecting to Redis master on %s:%d\n", redis_addr, port);
 
-            ctx = redisConnect("127.0.0.1", port);
+            ctx = redisConnect(redis_addr, port);
             if (ctx->err) {
                 const struct timespec tim = {
                     .tv_sec = 0,
