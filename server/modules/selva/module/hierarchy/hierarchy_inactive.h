@@ -13,6 +13,7 @@ struct SelvaHierarchy;
  * end up here. If a node ends up not being detached then it shouldn't be tried
  * again immediately.
  * See hierarchy.h for comments on how the data is stored.
+ * @param hierarchy is a pointer to the hierarchy.
  * @param nr_nodes is the number of nodes that can be tracked at once.
  */
 int SelvaHierarchy_InitInactiveNodes(struct SelvaHierarchy *hierarchy, size_t nr_nodes);
@@ -24,11 +25,14 @@ void SelvaHierarchy_DeinitInactiveNodes(struct SelvaHierarchy *hierarchy);
 
 /**
  * Add a nodeId to the list of inactive list.
+ * @param hierarchy is a pointer to the hierarchy.
+ * @param node_id is the id of the node to be added.
  */
-void SelvaHierarchy_AddInactiveNodeId(struct SelvaHierarchy *hierarchy, Selva_NodeId node_id);
+void SelvaHierarchy_AddInactiveNodeId(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id);
 
 /**
  * Clear the list of inactive nodeIds.
+ * @param hierarchy is a pointer to the hierarchy.
  */
 void SelvaHierarchy_ClearInactiveNodeIds(struct SelvaHierarchy *hierarchy);
 

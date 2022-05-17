@@ -26,7 +26,7 @@ void SelvaHierarchy_DeinitInactiveNodes(struct SelvaHierarchy *hierarchy) {
     }
 }
 
-void SelvaHierarchy_AddInactiveNodeId(struct SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
+void SelvaHierarchy_AddInactiveNodeId(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id) {
     const size_t i = hierarchy->inactive.next;
 
     if (hierarchy->inactive.nodes && i < hierarchy->inactive.nr_nodes) {
