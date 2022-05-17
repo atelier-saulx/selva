@@ -97,7 +97,10 @@ SELVA_MODIFY_HIERARCHY_METADATA_DESTRUCTOR(deinit_node_metadata_edge);
 /**
  * Allocate a new EdgeField struct and initialize it.
  */
-__attribute__((nonnull (1, 2))) static struct EdgeField *alloc_EdgeField(const Selva_NodeId src_node_id, const struct EdgeFieldConstraint *constraint, size_t initial_size) {
+__attribute__((nonnull (1, 2))) static struct EdgeField *alloc_EdgeField(
+        const Selva_NodeId src_node_id,
+        const struct EdgeFieldConstraint *constraint,
+        size_t initial_size) {
     struct EdgeField *edgeField;
 
     assert(constraint);
@@ -692,7 +695,7 @@ static int clear_field(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, st
     }
 
     /* Return only the last error. */
-    return (err) ? err : (int)SVector_Size(&arcs);
+    return err ? err : (int)SVector_Size(&arcs);
 }
 
 static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, struct SelvaObject *obj) {
