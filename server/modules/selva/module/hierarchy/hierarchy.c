@@ -2727,11 +2727,6 @@ static int verifyDetachableSubtree(RedisModuleCtx *ctx, struct SelvaHierarchy *h
     if (err) {
         /* NOP */
     } else if (data.err) {
-        fprintf(stderr, "%s:%d: Failed to verify a subtree of %.*s: %s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node->id,
-                data.err);
-
         err = SELVA_HIERARCHY_ENOTSUP;
     }
     Trx_End(&hierarchy->trx_state, &data.trx_cur);
@@ -2751,10 +2746,12 @@ static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarc
     err =verifyDetachableSubtree(ctx, hierarchy, node);
     if (err) {
         /* Not a valid subtree. */
+#if 0
         fprintf(stderr, "%s:%d: %.*s is not a valid subtree for compression: %s\n",
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE, node->id,
                 getSelvaErrorStr(err));
+#endif
         return NULL;
     }
 
