@@ -606,7 +606,7 @@ static int send_array_object_fields(
     const ssize_t fields_len = SelvaObject_Len(fields, NULL);
     if (fields_len < 0) {
         return fields_len;
-    } else if (fields_len == 1 && /* RFE what if there are more fields but one of them is a wildcard? */
+    } else if (fields_len == 1 &&
                SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
         err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
