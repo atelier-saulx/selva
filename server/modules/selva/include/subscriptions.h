@@ -7,9 +7,16 @@
 #include "svector.h"
 #include "rpn.h"
 
-/*
- * Subscription Marker Flags
- * -------------------------
+struct RedisModuleCtx;
+struct SelvaHierarchy;
+struct SelvaHierarchyCallback;
+struct SelvaHierarchyMetadata;
+struct Selva_Subscription;
+struct Selva_SubscriptionMarker;
+struct hierarchy_subscriptions_tree;
+
+/**
+ * Subscription Marker Flags.
  *
  *  Flags from 0x0001 to 0x0080 are reserved for matcher flags that are used to
  *  check whether an event should be sent on particular kind of change in the
@@ -24,7 +31,6 @@
  *  TODO A dirty flag would be useful to tell whether a refresh is still needed and
  *  if not the refresh could be skipped when attempted.
  */
-
 enum SelvaSubscriptionsMarkerFlags {
     /**
      * Marker cleared on a hierarchy change.
@@ -83,18 +89,6 @@ enum SelvaSubscriptionsMarkerFlags {
     SELVA_SUBSCRIPTION_MATCHER_FLAGS_MASK = 0x00ff,
     SELVA_SUBSCRIPTION_MODIFIER_FLAGS = 0xff00,
 };
-
-/*
- * End of Subscription Marker Flags.
- */
-
-struct RedisModuleCtx;
-struct SelvaHierarchy;
-struct SelvaHierarchyCallback;
-struct SelvaHierarchyMetadata;
-struct Selva_Subscription;
-struct Selva_SubscriptionMarker;
-struct hierarchy_subscriptions_tree;
 
 /**
  * Trigger event types.
