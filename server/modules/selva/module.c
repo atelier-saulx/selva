@@ -1203,12 +1203,8 @@ int _Selva_OnUnload(void) {
 
     SET_FOREACH(onunload_p, selva_onunld) {
         Selva_Onunload *onunload = *onunload_p;
-        int err;
 
-        err = onunload();
-        if (err) {
-            return err;
-        }
+        onunload();
     }
 
     return REDISMODULE_OK;

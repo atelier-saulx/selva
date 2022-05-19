@@ -9,6 +9,7 @@
 struct selva_glob_config selva_glob_config = {
     .hierarchy_initial_vector_len = HIERARCHY_INITIAL_VECTOR_LEN,
     .hierarchy_expected_resp_len = HIERARCHY_EXPECTED_RESP_LEN,
+    .hierarchy_compression_level = HIERARCHY_COMPRESSION_LEVEL,
     .hierarchy_auto_compress_period_ms = HIERARCHY_AUTO_COMPRESS_PERIOD_MS,
     .hierarchy_auto_compress_old_age_lim = HIERARCHY_AUTO_COMPRESS_OLD_AGE_LIM,
     .find_indices_max = FIND_INDICES_MAX,
@@ -51,6 +52,7 @@ struct cfg {
 } const cfg_map[] = {
     { "HIERARCHY_INITIAL_VECTOR_LEN", parse_size_t, &selva_glob_config.hierarchy_initial_vector_len },
     { "HIERARCHY_EXPECTED_RESP_LEN",  parse_size_t, &selva_glob_config.hierarchy_expected_resp_len },
+    { "HIERARCHY_COMPRESSION_LEVEL", parse_int, &selva_glob_config.hierarchy_compression_level },
     { "HIERARCHY_AUTO_COMPRESS_PERIOD_MS", parse_int, &selva_glob_config.hierarchy_auto_compress_period_ms },
     { "HIERARCHY_AUTO_COMPRESS_OLD_AGE_LIM", parse_int, &selva_glob_config.hierarchy_auto_compress_old_age_lim },
     { "FIND_INDICES_MAX", parse_int, &selva_glob_config.find_indices_max },

@@ -54,6 +54,12 @@
 #define HIERARCHY_SORT_BY_DEPTH         0
 
 /**
+ * Compression level used for compressing subtrees.
+ * Range: 1 - 12
+ */
+#define HIERARCHY_COMPRESSION_LEVEL 6
+
+/**
  * Attempt to compress inactive nodes in-memory.
  * 0 Disables automatic compression.
  */

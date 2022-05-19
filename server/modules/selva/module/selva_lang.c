@@ -217,7 +217,7 @@ static int SelvaLang_OnLoad(RedisModuleCtx *ctx __unused) {
 }
 SELVA_ONLOAD(SelvaLang_OnLoad);
 
-static int SelvaLang_OnUnload(void) {
+static void SelvaLang_OnUnload(void) {
     /*
      * We could free the langs here but the glibc locale system seems to leak
      * memory anyway, so why bother. All memory will get eventually freed when
@@ -226,7 +226,5 @@ static int SelvaLang_OnUnload(void) {
 #if 0
     SelvaObject_Destroy(langs);
 #endif
-
-    return 0;
 }
 SELVA_ONUNLOAD(SelvaLang_OnUnload);

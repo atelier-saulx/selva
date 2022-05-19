@@ -7,7 +7,7 @@
 struct RedisModuleCtx;
 
 typedef int Selva_Onload(struct RedisModuleCtx *ctx); /*!< Onload function. */
-typedef int Selva_Onunload(void); /*!< Onunload function. */
+typedef void Selva_Onunload(void); /*!< Onunload function. */
 
 /**
  * Run fun when the module is loading.

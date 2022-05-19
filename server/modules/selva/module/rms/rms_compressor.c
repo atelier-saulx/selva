@@ -7,6 +7,8 @@
 #include "libdeflate.h"
 #include "redismodule.h"
 #include "cdefs.h"
+#include "config.h"
+#include "selva_onload.h"
 #include "auto_free.h"
 #include "errors.h"
 #include "rms.h"
@@ -171,22 +173,26 @@ void rms_RDBLoadCompressed(RedisModuleIO *io, struct compressed_rms *compressed)
     compressed->rms = RedisModule_LoadString(io);
 }
 
-__constructor static void init_compressor(void) {
-    compressor = libdeflate_alloc_compressor(6);
+static int init_compressor(void) {
+    compressor = libdeflate_alloc_compressor(selva_glob_config.hierarchy_compression_level);
     if (!compressor) {
-        abort();
+        return REDISMODULE_ERR;
     }
 
     decompressor = libdeflate_alloc_decompressor();
     if (!decompressor) {
-        abort();
+        return REDISMODULE_ERR;
     }
-}
 
-__destructor static void deinit_compressor(void) {
+    return 0;
+}
+SELVA_ONLOAD(init_compressor);
+
+static void deinit_compressor(void) {
     libdeflate_free_compressor(compressor);
     compressor = NULL;
 
     libdeflate_free_decompressor(decompressor);
     decompressor = NULL;
 }
+SELVA_ONUNLOAD(deinit_compressor);
