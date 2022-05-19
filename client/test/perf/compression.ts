@@ -2,12 +2,13 @@ import { join } from 'path'
 import { performance } from 'perf_hooks'
 import test from 'ava'
 import { connect } from '../../src/index'
-import { start } from '@saulx/selva-server'
+import { SelvaServer, start } from '@saulx/selva-server'
 import { wait, removeDump } from '../assertions'
 import getPort from 'get-port'
 
 const N = 100;
-let srv
+const COMP_DECIMATOR = 2
+let srv: SelvaServer
 let port: number
 const dir = join(process.cwd(), 'tmp', 'compression-perf-test')
 
@@ -100,16 +101,13 @@ test.beforeEach(async (t) => {
     return ch
   }
 
-  const d = performance.now()
-  await Promise.all([
-    client.set({
-      type: 'league',
-      name: 'league 1',
-      // @ts-ignore
-      children: genMatches(),
-    }),
-  ])
-  const tEnd = performance.now() - d
+  const tStart = performance.now()
+  await client.set({
+    type: 'league',
+    name: 'league 1',
+    children: genMatches(),
+  })
+  const tEnd = performance.now() - tStart
   const nrIds = (await client.get({ descendants: true })).descendants.length
   console.info(`Created a hierarchy with ${nrIds} nodes in ${tEnd} ms`)
 
@@ -176,12 +174,11 @@ test.serial.failing('perf: find compression perf - descendants', async (t) => {
     },
   }
 
-  const compDecimator = 2
   const compressNodes = async (ids: string[], type: string) => {
     const startCompress = performance.now()
 
     await Promise.all(
-      ids.filter((_, i: number) => i % compDecimator == 0).map(async (id: string) => {
+      ids.filter((_, i: number) => i % COMP_DECIMATOR == 0).map(async (id: string) => {
         try {
           await client.redis.selva_hierarchy_compress('___selva_hierarchy', id)
         } catch (e) { console.error(e) }
@@ -217,7 +214,7 @@ test.serial.failing('perf: find compression perf - descendants', async (t) => {
   const q3TimeTotal = performance.now() - q3Start - q3CompTimeTotal
 
   // Results
-  console.info('N', N)
+  console.info(`N = ${N}, COMP_DECIMATOR = ${COMP_DECIMATOR}`)
   console.info('normal query', q1TimeTotal, 'ms')
   console.info('compression total (mem)', q2CompTimeTotal, 'ms')
   console.info('uncompressing query (mem)', q2TimeTotal, 'ms')
