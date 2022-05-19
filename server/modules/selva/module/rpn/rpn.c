@@ -134,18 +134,12 @@ __constructor static void init_pool(void) {
 struct rpn_ctx *rpn_init(int nr_reg) {
     struct rpn_ctx * ctx;
 
-    ctx = RedisModule_Calloc(1, sizeof(struct rpn_ctx));
-    if (unlikely(!ctx)) {
+    if (nr_reg < 1) {
         return NULL;
     }
 
+    ctx = RedisModule_Calloc(1, sizeof(struct rpn_ctx) + nr_reg * sizeof(struct rpn_operand *));
     ctx->nr_reg = nr_reg;
-
-    ctx->reg = RedisModule_Calloc(nr_reg, sizeof(struct rpn_operand *));
-    if (unlikely(!ctx->reg)) {
-        RedisModule_Free(ctx);
-        return NULL;
-    }
 
     return ctx;
 }
@@ -167,7 +161,6 @@ void rpn_destroy(struct rpn_ctx *ctx) {
         }
 
         RedisModule_Free(ctx->rms_field);
-        RedisModule_Free(ctx->reg);
         RedisModule_Free(ctx);
     }
 }
@@ -1658,8 +1651,12 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                 err = get_literal(ctx, expr, s + 1);
                 break;
             default:
-                fprintf(stderr, "%s:%d: Illegal operand: \"%s\"\n",
-                        __FILE__, __LINE__, s);
+                /*
+                 * `s` might be longer than RPN_MAX_TOKEN_SIZE but it's safer
+                 * to limit what we print in this case.
+                 */
+                fprintf(stderr, "%s:%d: Illegal operand: \"%.*s\"\n",
+                        __FILE__, __LINE__, (int)RPN_MAX_TOKEN_SIZE, s);
                 err = RPN_ERR_ILLOPN;
             }
 
