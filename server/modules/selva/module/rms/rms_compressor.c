@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include "libdeflate.h"
@@ -10,26 +11,16 @@
 #include "errors.h"
 #include "rms.h"
 
+static struct libdeflate_compressor *compressor;
+static struct libdeflate_decompressor *decompressor;
+
 int rms_compress(struct compressed_rms *out, RedisModuleString *in, double *cratio) {
-    struct libdeflate_compressor *compressor;
     char *compressed_str __auto_free = NULL;
     size_t compressed_size = 0;
     TO_STR(in);
 
-    compressor = libdeflate_alloc_compressor(6);
-    if (!compressor) {
-        return SELVA_ENOMEM;
-    }
-
     compressed_str = RedisModule_Alloc(in_len);
-    if (compressed_str) {
-        /*
-         * If mem allocation should fail we can just return the string we
-         * already have and we can just skip the compression phase.
-         */
-        compressed_size = libdeflate_deflate_compress(compressor, in_str, in_len, compressed_str, in_len);
-        libdeflate_free_compressor(compressor);
-    }
+    compressed_size = libdeflate_deflate_compress(compressor, in_str, in_len, compressed_str, in_len);
 
     if (compressed_size == 0) {
         /*
@@ -58,10 +49,8 @@ int rms_decompress(RedisModuleString **out, struct compressed_rms *in) {
     size_t compressed_len;
     const char *compressed_str;
     char *uncompressed_str __auto_free = NULL;
-    struct libdeflate_decompressor *decompressor;
     size_t nbytes_out = 0;
     enum libdeflate_result res;
-    RedisModuleString *raw;
 
     if (in->uncompressed_size < 0) {
         *out = RedisModule_HoldString(NULL, in->rms);
@@ -69,28 +58,13 @@ int rms_decompress(RedisModuleString **out, struct compressed_rms *in) {
     }
 
     uncompressed_str = RedisModule_Alloc(in->uncompressed_size);
-    if (!uncompressed_str) {
-        return SELVA_ENOMEM;
-    }
-
-    decompressor = libdeflate_alloc_decompressor();
-    if (!decompressor) {
-        return SELVA_ENOMEM;
-    }
-
     compressed_str = RedisModule_StringPtrLen(in->rms, &compressed_len);
     res = libdeflate_deflate_decompress(decompressor, compressed_str, compressed_len, uncompressed_str, in->uncompressed_size, &nbytes_out);
-    libdeflate_free_decompressor(decompressor);
     if (res != 0 || nbytes_out != (size_t)in->uncompressed_size) {
         return SELVA_EINVAL;
     }
 
-    raw = RedisModule_CreateString(NULL, uncompressed_str, in->uncompressed_size);
-    if (!raw) {
-        return SELVA_ENOMEM;
-    }
-
-    *out = raw;
+    *out = RedisModule_CreateString(NULL, uncompressed_str, in->uncompressed_size);
     return 0;
 }
 
@@ -195,4 +169,24 @@ void rms_RDBSaveCompressed(RedisModuleIO *io, struct compressed_rms *compressed)
 void rms_RDBLoadCompressed(RedisModuleIO *io, struct compressed_rms *compressed) {
     compressed->uncompressed_size = RedisModule_LoadSigned(io);
     compressed->rms = RedisModule_LoadString(io);
+}
+
+__constructor static void init_compressor(void) {
+    compressor = libdeflate_alloc_compressor(6);
+    if (!compressor) {
+        abort();
+    }
+
+    decompressor = libdeflate_alloc_decompressor();
+    if (!decompressor) {
+        abort();
+    }
+}
+
+__destructor static void deinit_compressor(void) {
+    libdeflate_free_compressor(compressor);
+    compressor = NULL;
+
+    libdeflate_free_decompressor(decompressor);
+    decompressor = NULL;
 }
