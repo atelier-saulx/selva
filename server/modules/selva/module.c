@@ -682,11 +682,6 @@ static enum selva_op_repl_state modify_edge_meta_op(
         }
 
         meta_field_value = RedisModule_CreateString(NULL, op->meta_field_value_str, op->meta_field_value_len);
-        if (!meta_field_value) {
-            replyWithSelvaError(ctx, SELVA_ENOMEM);
-            return SELVA_OP_REPL_STATE_UNCHANGED;
-        }
-
         err = SelvaObject_SetStringStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, meta_field_value);
         if (err) {
             RedisModule_FreeString(NULL, meta_field_value);

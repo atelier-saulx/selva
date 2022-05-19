@@ -15,7 +15,6 @@
 
 static ssize_t string2rms(RedisModuleCtx *ctx, int8_t type, const char *s, RedisModuleString **out) {
     size_t len;
-    RedisModuleString *rms;
 
     switch (type) {
     case SELVA_MODIFY_OP_SET_TYPE_CHAR:
@@ -31,12 +30,7 @@ static ssize_t string2rms(RedisModuleCtx *ctx, int8_t type, const char *s, Redis
         return SELVA_EINTYPE;
     }
 
-    rms = RedisModule_CreateString(ctx, s, len);
-    if (!rms) {
-        return SELVA_ENOMEM;
-    }
-
-    *out = rms;
+    *out = RedisModule_CreateString(ctx, s, len);
     return len;
 }
 

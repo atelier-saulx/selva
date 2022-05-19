@@ -127,10 +127,6 @@ static int send_edge_field(
             RedisModuleString *act_field_name;
 
             act_field_name = RedisModule_CreateStringPrintf(ctx, "%.*s%s", (int)field_prefix_len, field_prefix_str, field_str);
-            if (!act_field_name) {
-                return SELVA_ENOMEM;
-            }
-
             RedisModule_ReplyWithString(ctx, act_field_name);
         } else {
             RedisModule_ReplyWithStringBuffer(ctx, field_str, field_len);
@@ -260,10 +256,6 @@ static int send_node_field(
         RedisModuleString *full_field_name;
 
         full_field_name = RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str);
-        if (!full_field_name) {
-            return SELVA_ENOMEM;
-        }
-
         full_field_name_str = RedisModule_StringPtrLen(full_field_name, &full_field_name_len);
     } else {
         full_field_name_str = field_str;
@@ -525,9 +517,6 @@ static int send_array_object_field(
     RedisModuleString *full_field_name;
     if (field_prefix_str) {
         full_field_name = RedisModule_CreateStringPrintf(ctx, "%.*s%s", (int)field_prefix_len, field_prefix_str, field_str);
-        if (!full_field_name) {
-            return SELVA_ENOMEM;
-        }
     } else {
         full_field_name = field;
     }
@@ -731,6 +720,7 @@ static int send_merge_all(
     iterator = SelvaObject_ForeachBegin(obj);
     while ((key_name_str = SelvaObject_ForeachKey(obj, &iterator))) {
         const size_t key_name_len = strlen(key_name_str);
+        RedisModuleString *full_field_path;
         int err;
 
         if (!SelvaObject_ExistsStr(fields, key_name_str, strlen(key_name_str))) {
@@ -738,14 +728,7 @@ static int send_merge_all(
         }
 
         ++*nr_fields_out;
-
-        RedisModuleString *full_field_path;
         full_field_path = format_full_field_path(ctx, obj_path_str, key_name_str);
-        if (!full_field_path) {
-            fprintf(stderr, "%s:%d: Out of memory\n", __FILE__, __LINE__);
-            replyWithSelvaError(ctx, SELVA_ENOMEM);
-            continue;
-        }
 
         /*
          * Start a new array reply:
@@ -793,6 +776,7 @@ static int send_named_merge(
 
         SVector_ForeachBegin(&it, vec);
         while ((field = SVector_Foreach(&it))) {
+            RedisModuleString *full_field_path;
             int err;
 
             if (SelvaObject_Exists(obj, field)) {
@@ -800,14 +784,7 @@ static int send_named_merge(
             }
 
             ++*nr_fields_out;
-
-            RedisModuleString *full_field_path;
             full_field_path = format_full_field_path(ctx, obj_path_str, RedisModule_StringPtrLen(field, NULL));
-            if (!full_field_path) {
-                fprintf(stderr, "%s:%d: Out of memory\n", __FILE__, __LINE__);
-                replyWithSelvaError(ctx, SELVA_ENOMEM);
-                continue;
-            }
 
             /*
              * Start a new array reply:
@@ -861,9 +838,6 @@ static int send_deep_merge(
         TO_STR(obj_path);
 
         next_path = format_full_field_path(ctx, obj_path_str, key_name_str);
-        if (!next_path) {
-            return SELVA_ENOMEM;
-        }
 
         /* Skip fields marked as sent. */
         if (SelvaObject_GetType(fields, next_path) == SELVA_OBJECT_LONGLONG) {

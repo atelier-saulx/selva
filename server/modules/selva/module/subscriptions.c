@@ -2315,11 +2315,6 @@ int SelvaSubscriptions_AddMissingCommand(RedisModuleCtx *ctx, RedisModuleString 
             ctx, "%s.%.*s",
             RedisModule_StringPtrLen(argv[i], NULL),
             (int)SELVA_SUBSCRIPTION_ID_STR_LEN, Selva_SubscriptionId2str(sub_id_str, sub_id));
-        if (!missing) {
-            err = SELVA_SUBSCRIPTIONS_ENOMEM;
-            return replyWithSelvaErrorf(ctx, err, "Creating missing markers");
-        }
-
         err = SelvaObject_SetPointer(hierarchy->subs.missing, missing, sub, NULL);
         if (err) {
             return replyWithSelvaError(ctx, err);
