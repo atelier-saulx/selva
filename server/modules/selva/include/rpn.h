@@ -40,8 +40,8 @@ struct rpn_ctx {
     struct SelvaHierarchyNode *node; /*!< A pointer to the current hierarchy node set with rpn_set_hierarchy_node(). */
     struct SelvaObject *obj; /*!< Selva object of the current node. */
     struct RedisModuleString *rms;  /*!< This is a specially crafted rms that can be modified within RPN. */
-    struct rpn_operand **reg;
-    struct rpn_operand *stack[RPN_MAX_D];
+    struct rpn_operand *stack[RPN_MAX_D]; /*!< Execution stack. */
+    struct rpn_operand *reg[0]; /*!< RPN registers. */
 };
 
 typedef char rpn_token[RPN_MAX_TOKEN_SIZE];

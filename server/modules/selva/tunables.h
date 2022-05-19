@@ -82,7 +82,7 @@
  * Small operand pool size.
  * Small operands are pooled to speed up evaluating simple expressions.
  */
-#define RPN_SMALL_OPERAND_POOL_SIZE     40
+#define RPN_SMALL_OPERAND_POOL_SIZE     70
 
 /**
  * Max RPN stack depth.
