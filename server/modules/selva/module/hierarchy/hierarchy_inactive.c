@@ -6,6 +6,7 @@
 #include "hierarchy_inactive.h"
 
 int SelvaHierarchy_InitInactiveNodes(struct SelvaHierarchy *hierarchy, size_t nr_nodes) {
+    /* See hierarchy.h for comments on how the data is stored and used. */
     hierarchy->inactive.nodes = mmap(NULL, nr_nodes * SELVA_NODE_ID_SIZE,
                                      PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS,
                                      -1, 0);
@@ -28,11 +29,7 @@ void SelvaHierarchy_DeinitInactiveNodes(struct SelvaHierarchy *hierarchy) {
 void SelvaHierarchy_AddInactiveNodeId(struct SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
     const size_t i = hierarchy->inactive.next;
 
-    if (!hierarchy->inactive.nodes) {
-        return;
-    }
-
-    if (i < hierarchy->inactive.nr_nodes) {
+    if (hierarchy->inactive.nodes && i < hierarchy->inactive.nr_nodes) {
         char *p = hierarchy->inactive.nodes[i];
 
         memcpy(p, node_id, SELVA_NODE_ID_SIZE);

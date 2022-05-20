@@ -152,7 +152,8 @@ struct SelvaHierarchy {
          * Inactive nodeIds.
          * Inactive node ids are listed here on RDB save for further
          * processing. This is a pointer to a memory region shared with the
-         * RDB child process.
+         * RDB child process. We can access it lock free because we know exactly
+         * when it's being read and thus can avoid writing it at those times.
          * NodeIds listed here have been inactive for a long time and are
          * potential candidates for compression.
          */
