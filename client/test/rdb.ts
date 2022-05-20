@@ -205,7 +205,7 @@ test.serial('can reload from RDB', async (t) => {
     },
   })
 
-  // Compressed subtree
+  // Compressed subtrees
   await client.set({
     $id: 'viComp1',
     title: { en: 'hello' },
@@ -230,7 +230,32 @@ test.serial('can reload from RDB', async (t) => {
       },
     ],
   })
+  await client.set({
+    $id: 'viComp21',
+    title: { en: 'hello' },
+    children: [
+      {
+        $id: 'viComp22',
+        title: { en: 'hello' },
+        children: [
+          {
+            $id: 'viComp24',
+            title: { en: 'hello' },
+          },
+          {
+            $id: 'viComp25',
+            title: { en: 'hello' },
+          },
+        ],
+      },
+      {
+        $id: 'viComp23',
+        title: { en: 'hello' },
+      },
+    ],
+  })
   await client.redis.selva_hierarchy_compress('___selva_hierarchy', 'viComp1')
+  await client.redis.selva_hierarchy_compress('___selva_hierarchy', 'viComp21')
 
   // Compressed subtree on disk
   await client.set({
@@ -462,6 +487,8 @@ test.serial('can reload from RDB', async (t) => {
       title: { en: 'sup' },
     }
   )
+
+  // Check the previously compressed subtree
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'viComp1',
@@ -473,6 +500,21 @@ test.serial('can reload from RDB', async (t) => {
       id: 'viComp1',
       title: { en: 'hello' },
       descendants: ['viComp2', 'viComp3', 'viComp4', 'viComp5'],
+    }
+  )
+
+  // Check the compressed subtree
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'viComp21',
+      id: true,
+      title: true,
+      descendants: true,
+    }),
+    {
+      id: 'viComp21',
+      title: { en: 'hello' },
+      descendants: ['viComp22', 'viComp23', 'viComp24', 'viComp25'],
     }
   )
 
