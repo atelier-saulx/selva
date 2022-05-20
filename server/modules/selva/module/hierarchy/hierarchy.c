@@ -504,27 +504,27 @@ static int repopulate_detached_head(SelvaHierarchyNode *node) {
 
 /**
  * Search from the normal node index.
- * This function doesn't decompress anything no checks if the node exists in the
- * detached node index.
+ * This function doesn't decompress subtrees nor checks if the node exists in
+ * the detached node index.
  */
-static SelvaHierarchyNode *find_node_simple(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
-    struct SelvaHierarchySearchFilter filter;
-
-    memcpy(&filter.id, id, SELVA_NODE_ID_SIZE);
-
-    return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaHierarchyNode *)(&filter));
-}
-
-SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
+static SelvaHierarchyNode *find_node_index(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     struct SelvaHierarchySearchFilter filter;
     SelvaHierarchyNode *node;
-    int err;
 
     memcpy(&filter.id, id, SELVA_NODE_ID_SIZE);
 
     SELVA_TRACE_BEGIN(find_inmem);
     node = RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaHierarchyNode *)(&filter));
     SELVA_TRACE_END(find_inmem);
+
+    return node;
+}
+
+SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
+    SelvaHierarchyNode *node;
+    int err;
+
+    node = find_node_index(hierarchy, id);
     if (node) {
         if (!(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
             return node;
@@ -559,7 +559,7 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
             return NULL;
         }
 
-        return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaHierarchyNode *)(&filter));
+        return find_node_index(hierarchy, id);
     }
 
     return NULL;
@@ -2927,7 +2927,7 @@ static void auto_compress_proc(RedisModuleCtx *ctx, void *data) {
                 break;
             }
 
-            node = find_node_simple(hierarchy, node_id);
+            node = find_node_index(hierarchy, node_id);
             if (!node || node->flags & SELVA_NODE_FLAGS_DETACHED) {
                 /* This should be unlikely to occur at this point. */
 #if 0
