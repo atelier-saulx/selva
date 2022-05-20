@@ -1,8 +1,8 @@
 import { join as pathJoin } from 'path'
 import test from 'ava'
-import { connect } from '../../src/index'
+import { connect } from '../src/index'
 import { start, startOrigin } from '@saulx/selva-server'
-import { removeDump, wait } from '../assertions'
+import { removeDump, wait } from './assertions'
 import getPort from 'get-port'
 import { join } from 'path'
 
