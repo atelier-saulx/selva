@@ -598,10 +598,8 @@ static const char * const excluded_fields[] = {
     NULL
 };
 
-int SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj) {
+void SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj) {
     SelvaObject_Clear(obj, excluded_fields);
-
-    return 0;
 }
 
 static inline void mkHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {

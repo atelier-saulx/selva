@@ -292,7 +292,7 @@ ssize_t SelvaModify_GetHierarchyDepth(SelvaHierarchy *hierarchy, const Selva_Nod
 /**
  * Clear all user fields of a node SelvaObject.
  */
-int SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj);
+void SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj);
 
 /**
  * Delete all child edges of a node.
