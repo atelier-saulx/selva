@@ -47,6 +47,7 @@ test.before(async (t) => {
   srv = await start({
     port,
     dir: join(dir, 'srv'),
+    selvaOptions: ['DEBUG_MODIFY_REPLICATION_DELAY_NS', '1500'],
   })
 
   replica = await startReplica({

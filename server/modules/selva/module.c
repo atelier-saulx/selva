@@ -136,9 +136,15 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
         argv[argc++] = RedisModule_CreateString(ctx, v, size);
     }
 
-#if DEBUG_MODIFY_REPLICATION_DELAY_NS > 0
-    usleep(DEBUG_MODIFY_REPLICATION_DELAY_NS);
-#endif
+    /*
+     * It's kinda not optimal needing to check this global on every replication
+     * but it helps us with testing and it's still very negligible overhead.
+     * TODO Perhaps in the future we could have a CI build flag to enable this
+     * sort of things.
+     */
+    if (selva_glob_config.debug_modify_replication_delay_ns > 0) {
+        usleep(selva_glob_config.debug_modify_replication_delay_ns);
+    }
 
     RedisModule_ReplicateVerbatimArgs(ctx, argv, argc);
 }

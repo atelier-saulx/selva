@@ -9,6 +9,7 @@ struct RedisModuleString;
  * See tunables.h for the description and default values of these parameters.
  */
 struct selva_glob_config {
+    int debug_modify_replication_delay_ns;
     size_t hierarchy_initial_vector_len;
     size_t hierarchy_expected_resp_len;
     int hierarchy_auto_compress_period_ms;
