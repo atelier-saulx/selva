@@ -607,6 +607,7 @@ static inline void mkHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
 }
 
 static inline void rmHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
+    /* Root should be never removed from heads. */
     if (memcmp(node->id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
         SVector_Remove(&hierarchy->heads, node);
     }
@@ -628,7 +629,8 @@ static void delete_node_aliases(RedisModuleCtx *ctx, struct SelvaObject *obj) {
             delete_aliases(aliases_key, node_aliases_set);
             RedisModule_CloseKey(aliases_key);
         } else {
-            fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
+            fprintf(stderr, "%s:%d: Unable to open aliases\n",
+                    __FILE__, __LINE__);
         }
     }
 }
@@ -1003,8 +1005,8 @@ static int crossRemove(
     SVECTOR_AUTOFREE(sub_markers);
 
     /*
-     * Backup the subscription markers so we can refresh them after the
-     * operation.
+     * Take a backup of the subscription markers so we can refresh them after
+     * the operation.
      */
 #ifndef PU_TEST_BUILD
     if (unlikely(!SVector_Clone(&sub_markers, &node->metadata.sub_markers.vec, NULL))) {
