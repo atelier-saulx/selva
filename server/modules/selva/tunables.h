@@ -64,6 +64,13 @@
  */
 #define HIERARCHY_AUTO_COMPRESS_OLD_AGE_LIM 100
 
+/**
+ * How many inactive nodes can be tracked simultaneously.
+ * Adjusting this shouldn't affect much unless the lest remains full all the
+ * time.
+ */
+#define HIERARCHY_AUTO_COMPRESS_INACT_NODES_LEN (4096 / SELVA_NODE_ID_SIZE)
+
 /*
  * RPN Tunables.
  */

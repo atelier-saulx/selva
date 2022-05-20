@@ -235,9 +235,8 @@ SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
         goto fail;
     }
 
-    /* TODO Configurable inact nodes size */
     if (selva_glob_config.hierarchy_auto_compress_period_ms > 0) {
-        if (SelvaHierarchy_InitInactiveNodes(hierarchy, 4096 / SELVA_NODE_ID_SIZE)) {
+        if (SelvaHierarchy_InitInactiveNodes(hierarchy, HIERARCHY_AUTO_COMPRESS_INACT_NODES_LEN)) {
             SelvaModify_DestroyHierarchy(hierarchy);
             hierarchy = NULL;
             goto fail;
