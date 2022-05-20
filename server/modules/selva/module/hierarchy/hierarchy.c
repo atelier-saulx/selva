@@ -521,23 +521,26 @@ static SelvaHierarchyNode *find_node_index(SelvaHierarchy *hierarchy, const Selv
 }
 
 SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
-    SelvaHierarchyNode *node;
     int err;
 
-    node = find_node_index(hierarchy, id);
-    if (node) {
-        if (!(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
-            return node;
-        } else if (isDecompressingSubtree) {
-            err = repopulate_detached_head(node);
-            if (err) {
-                return NULL;
-            }
+    {
+        /* We want to reduce the scope of `node` for dev safety. */
+        SelvaHierarchyNode *node;
 
-            return node;
+        node = find_node_index(hierarchy, id);
+        if (node) {
+            if (!(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
+                return node;
+            } else if (isDecompressingSubtree) {
+                err = repopulate_detached_head(node);
+                if (err) {
+                    return NULL;
+                }
+
+                return node;
+            }
         }
     }
-    node = NULL; /* Make sure we don't use this accidentally. */
 
     /*
      * We don't want upsert to be looking from detached nodes.
@@ -583,11 +586,8 @@ struct SelvaHierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
     SelvaHierarchyNode *node;
 
     node = SelvaHierarchy_FindNode(hierarchy, id);
-    if (!node) {
-        return NULL;
-    }
 
-    return &node->metadata;
+    return !node ? NULL : &node->metadata;
 }
 
 static const char * const excluded_fields[] = {
