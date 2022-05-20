@@ -65,7 +65,7 @@ static ssize_t SelvaModify_FindAncestors(SelvaHierarchy *hierarchy, const Selva_
     };
     int err;
 
-    err = SelvaHierarchy_Traverse(hierarchy, id, SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS, &cb);
+    err = SelvaHierarchy_Traverse(NULL, hierarchy, id, SELVA_HIERARCHY_TRAVERSAL_DFS_ANCESTORS, &cb);
     *ancestors = list;
     if (err) {
         return err;
@@ -84,7 +84,7 @@ ssize_t SelvaModify_FindDescendants(SelvaHierarchy *hierarchy, const Selva_NodeI
     };
     int err;
 
-    err = SelvaHierarchy_Traverse(hierarchy, id, SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS, &cb);
+    err = SelvaHierarchy_Traverse(NULL, hierarchy, id, SELVA_HIERARCHY_TRAVERSAL_DFS_DESCENDANTS, &cb);
     *descendants = list;
     if (err) {
         return err;

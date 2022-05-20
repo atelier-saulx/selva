@@ -1,5 +1,5 @@
 TEST_SRC += test-edge.c
-SRC-edge += ../redis-alloc.c ../hierarchy-utils.c ../find-index-mock.c ../redis-rdb.c ../rpn-mock.c ../subscriptions-mock.c ../errors-mock.c ../hierarchy_detached-mock.c ../rms_compressor-mock.c
+SRC-edge += ../redis-alloc.c ../redis-timer.c ../hierarchy-utils.c ../hierarchy_inactive-mock.c ../find-index-mock.c ../redis-rdb.c ../rpn-mock.c ../subscriptions-mock.c ../errors-mock.c ../hierarchy_detached-mock.c ../rms_compressor-mock.c
 SRC-edge += ../../lib/rmutil/sds.c
 SRC-edge += ../../lib/util/auto_free.c
 SRC-edge += ../../lib/util/cstrings.c
@@ -17,6 +17,7 @@ SRC-edge += ../../module/errors.c
 SRC-edge += ../../module/hierarchy/hierarchy.c
 SRC-edge += ../../module/rms/shared.c
 SRC-edge += ../../module/selva_object/selva_object.c
-SRC-edge += ../../module/selva_set.c
+SRC-edge += ../../module/selva_object/selva_object_foreach.c
+SRC-edge += ../../module/selva_set/selva_set.c
 SRC-edge += ../../module/selva_type.c
 SRC-edge += ../../module/timestamp.c

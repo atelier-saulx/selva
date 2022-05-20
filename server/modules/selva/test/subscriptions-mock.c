@@ -88,9 +88,9 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaHierarchy *hierar
 }
 
 void SelvaSubscriptions_DeferFieldChangeEvents(
-        struct RedisModuleCtx *redis_ctx,
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node,
+        struct SelvaHierarchyNode *node,
         const char *field_str,
         size_t field_len) {
     return;
@@ -99,21 +99,21 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
 void SelvaSubscriptions_DeferHierarchyEvents(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node) {
+        struct SelvaHierarchyNode *node) {
     return;
 }
 
 void SelvaSubscriptions_DeferHierarchyDeletionEvents(
-        struct RedisModuleCtx *redis_ctx,
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node) {
+        struct SelvaHierarchyNode *node) {
     return;
 }
 
 void SelvaSubscriptions_DeferTriggerEvents(
-        struct RedisModuleCtx *redis_ctx,
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        const struct SelvaHierarchyNode *node,
+        struct SelvaHierarchyNode *node,
         enum Selva_SubscriptionTriggerType event_type) {
     return;
 }
