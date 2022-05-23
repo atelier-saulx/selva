@@ -197,6 +197,8 @@ test.serial('find index strings', async (t) => {
     '___selva_hierarchy',
     'descendants',
     '',
+    'none',
+    '',
     'root',
     '"name" f "league 0" c'
   )
@@ -289,12 +291,16 @@ test.serial('find index string sets', async (t) => {
     '___selva_hierarchy',
     'descendants',
     '',
+    'none',
+    '',
     'root',
     '"g" "things" a'
   )
   await client.redis.selva_index_new(
     '___selva_hierarchy',
     'descendants',
+    '',
+    'none',
     '',
     'root',
     '"thing" f "abc" c'

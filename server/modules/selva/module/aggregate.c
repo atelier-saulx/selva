@@ -596,7 +596,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     enum SelvaResultOrder order = SELVA_RESULT_ORDER_NONE;
     RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
-        err = SelvaTraversal_ParseOrder(&order_by_field, &order,
+        err = SelvaTraversal_ParseOrderArg(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
                           argv[ARGV_ORDER_FLD],
                           argv[ARGV_ORDER_ORD]);
@@ -895,7 +895,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     enum SelvaResultOrder order = SELVA_RESULT_ORDER_NONE;
     RedisModuleString *order_by_field = NULL;
     if (argc > ARGV_ORDER_ORD) {
-        err = SelvaTraversal_ParseOrder(&order_by_field, &order,
+        err = SelvaTraversal_ParseOrderArg(&order_by_field, &order,
                           argv[ARGV_ORDER_TXT],
                           argv[ARGV_ORDER_FLD],
                           argv[ARGV_ORDER_ORD]);
