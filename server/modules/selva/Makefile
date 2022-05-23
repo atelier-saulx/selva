@@ -70,7 +70,7 @@ ifeq ($(uname_S),Darwin) # macOS
 	CFLAGS += -include include/macos_cdefs.h
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
-	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib /usr/local/Cellar/openssl@1.1/1.1.1k/lib
+	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib $(wildcard /usr/local/Cellar/openssl@1.1/1.1.1*/lib)
 endif
 ifeq ($(SELVA_TRACE),1)
 	CFLAGS += -I/opt/intel/oneapi/vtune/2021.7.1/sdk/include -DSELVA_TRACE=1
