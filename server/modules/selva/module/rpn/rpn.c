@@ -529,7 +529,7 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
     return RPN_ERR_OK;
 }
 
-enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, RedisModuleString *rms) {
+enum rpn_error rpn_set_reg_rms(struct rpn_ctx *ctx, size_t i, RedisModuleString *rms) {
     TO_STR(rms);
     const size_t size = rms_len + 1;
     char *arg;
