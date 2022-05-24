@@ -95,11 +95,14 @@ User registers start from index 1, and register number 0 is reserved for the cur
 
 Type codes used in the documentation:
 - s: string
-- n: number
+- n: number or boolean
 - z: set or set-like
 - Z: set
 - O: object
 - X: any
+- <>: nothing
+
+`=>` following by a type code shows what is pushed to the stack.
 
 **Arithmetic operators**
 
@@ -130,9 +133,19 @@ Type codes used in the documentation:
 | `M`      | `(n, n) => n`    | Logical AND operator.                   | `#1 #1 M => 1`           |
 | `N`      | `(n, n) => n`    | Logical OR operator.                    | `#0 #1 N => 1`           |
 | `O`      | `(n, n) => n`    | Logical XOR operator. `(!!a ^ !!b)`     | `#1 #1 O => 0`           |
+| `T`      | `(n, X, X) => X` | Ternary, `a ? b : c`.                   | `$3 $2 @1 T => X`        |
+
+**Control flow operators**
+
+| Operator | Operands         | Description                             | Example (expr => result) |
+| -------- | ---------------- | --------------------------------------- | ------------------------ |
+| `>`      | `(n) => <>`      | Conditional jump forward.               | `#1 >2 => <>`            |
 | `P`      | `(X) => n`       | Necessity `□a`. (It's necessary that a) | `#0 P #1 N => 0`         |
 | `Q`      | `(X) => n`       | Possibly `◇a`.                          | `#1 Q #0 M => 1`         |
-| `T`      | `(n, X, X) => X` | Ternary, `a ? b : c`.                   | `$3 $2 @1 T => X`        |
+
+The conditional jump operator `>` jumps over specified number of tokens that is
+a compile time constant. The first an only argument popped from the stack is the
+boolean condition that decides whether the operator will execute a jump.
 
 `P` and `Q` are short circuiting operators and don't represent classical modal
 logic. The `P` operator bails out immediately if the operand is not truthy and
@@ -161,11 +174,11 @@ expressions, we'll get the following result:
 
 Therefore, neither of these yields the expected result.
 
-**Set Operations**
+**Set operations**
 
-| Operator | Operands         | Description                           | Example (expr => result) |
-| -------- | ---------------- | ------------------------------------- | ------------------------ |
-| `z`      | `(Z, Z) => Z`    | Union of A and B.                     | `B A a => C`             |
+| Operator | Operands         | Description                             | Example (expr => result) |
+| -------- | ---------------- | --------------------------------------- | ------------------------ |
+| `z`      | `(Z, Z) => Z`    | Union of A and B.                       | `B A a => C`             |
 
 **Functions**
 

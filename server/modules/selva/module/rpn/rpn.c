@@ -1486,6 +1486,7 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
 
     return compile_push_literal(expr, i, v);
 }
+
 struct rpn_expression *rpn_compile(const char *input) {
     struct rpn_expression *expr;
     expr = RedisModule_Alloc(sizeof(struct rpn_expression));
@@ -1515,25 +1516,44 @@ struct rpn_expression *rpn_compile(const char *input) {
         rpn_token *new;
 
         if (tok_len == 0) {
-            fprintf(stderr, "%s:%d: Token length can't be zero\n",
-                    __FILE__, __LINE__);
+            fprintf(stderr, "%s:%d:%s: Token length can't be zero\n",
+                    __FILE__, __LINE__, __func__);
             goto fail;
         }
 
         switch (tok_str[0]) {
-        case '#':
+        case '#': /* Number literal */
             err = compile_num_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 1);
             break;
-        case '"':
+        case '"': /* String literal */
             err = compile_str_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 2);
             break;
-        case '{':
+        case '{': /* Set literal */
             err = compile_selvaset_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 2);
             break;
+        case '>': /* Conditional jump */
+            if (tok_len < 2 || tok_str[1] == '-') {
+                fprintf(stderr, "%s:%d:%s: Invalid conditional jump\n",
+                        __FILE__, __LINE__, __func__);
+                goto fail;
+            } else {
+                unsigned n = fast_atou(tok_str + 1);
+
+                if (n > 255) {
+                    fprintf(stderr, "%s:%d:%s: Conditional jump too long\n",
+                            __FILE__, __LINE__, __func__);
+                    goto fail;
+                }
+
+                e[0] = '>';
+                e[1] = (uint8_t)n;
+                e[2] = '\0';
+            }
+            goto next;
         default:
             if (tok_len > RPN_MAX_TOKEN_SIZE - 1) {
-                fprintf(stderr, "%s:%d: Invalid token length %llu\n",
-                        __FILE__, __LINE__,
+                fprintf(stderr, "%s:%d:%s: Invalid token length %llu\n",
+                        __FILE__, __LINE__, __func__,
                         (unsigned long long)tok_len);
                 goto fail;
             }
@@ -1544,8 +1564,8 @@ struct rpn_expression *rpn_compile(const char *input) {
         }
 
         if (err) {
-            fprintf(stderr, "%s:%d: RPN compilation error: %s\n",
-                    __FILE__, __LINE__,
+            fprintf(stderr, "%s:%d:%s: RPN compilation error: %s\n",
+                    __FILE__, __LINE__, __func__,
                     err >= 0 && err < num_elem(rpn_str_error) ? rpn_str_error[err] : "Unknown");
 fail:
             rpn_destroy_expression(expr);
@@ -1553,6 +1573,7 @@ fail:
         }
 
         /*
+         * Continue literal handling.
          * All literals can be marked with the same prefix from now on as
          * fetching the value will happen with the same function.
          */
@@ -1563,7 +1584,8 @@ fail:
 next:
         new = RedisModule_Realloc(expr->expression, size);
         if (!new) {
-            fprintf(stderr, "%s:%d: Realloc failed\n", __FILE__, __LINE__);
+            fprintf(stderr, "%s:%d:%s: Realloc failed\n",
+                    __FILE__, __LINE__, __func__);
             goto fail;
         }
         expr->expression = new;
@@ -1573,7 +1595,8 @@ next:
 
     /* The returned length is only ever 0 if the grouping failed. */
     if (tok_len == 0) {
-        fprintf(stderr, "%s:%d: Tokenization failed\n", __FILE__, __LINE__);
+        fprintf(stderr, "%s:%d:%s: Tokenization failed\n",
+                __FILE__, __LINE__, __func__);
         rpn_destroy_expression(expr);
         return NULL;
     }
@@ -1611,6 +1634,26 @@ static enum rpn_error get_literal(struct rpn_ctx *ctx, const struct rpn_expressi
     memcpy(&i, s, sizeof(int));
 
     return push(ctx, expr->input_literal_reg[i]);
+}
+
+static enum rpn_error cond_jump(struct rpn_ctx *ctx, const char *s, const rpn_token * restrict *it) {
+    OPERAND(ctx, cond);
+
+    if (to_bool(cond)) {
+        uint8_t n;
+
+        memcpy(&n, s, sizeof(uint8_t));
+
+        for (int i = 0; i < (int)n; i++) {
+            if (***it) {
+                (*it)++;
+            } else {
+                break;
+            }
+        }
+    }
+
+    return RPN_ERR_OK;
 }
 
 static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr) {
@@ -1656,6 +1699,9 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
                 break;
             case '#':
                 err = get_literal(ctx, expr, s + 1);
+                break;
+            case '>':
+                err = cond_jump(ctx, s + 1, &it);
                 break;
             default:
                 fprintf(stderr, "%s:%d: Illegal operand: \"%s\"\n",
