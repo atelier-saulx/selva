@@ -803,7 +803,7 @@ int Selva_AddSubscriptionAliasMarker(
      * Set RPN registers
      */
     enum rpn_error rpn_err;
-    if ((rpn_err = rpn_set_reg_rm(filter_ctx, 1, alias_name)) ||
+    if ((rpn_err = rpn_set_reg_rms(filter_ctx, 1, alias_name)) ||
         (rpn_err = rpn_set_reg(filter_ctx, 2, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD), 0))) {
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
