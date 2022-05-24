@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stddef.h>
+#include <time.h>
 #include <unistd.h>
 #include "cdefs.h"
 #include "config.h"
@@ -143,7 +144,12 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
      * sort of things.
      */
     if (selva_glob_config.debug_modify_replication_delay_ns > 0) {
-        usleep(selva_glob_config.debug_modify_replication_delay_ns);
+        const struct timespec tim = {
+            .tv_sec = 0,
+            .tv_nsec = selva_glob_config.debug_modify_replication_delay_ns,
+        };
+
+        nanosleep(&tim, NULL);
     }
 
     RedisModule_ReplicateVerbatimArgs(ctx, argv, argc);
