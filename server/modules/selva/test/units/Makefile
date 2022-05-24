@@ -15,7 +15,7 @@ PU_UU := 1
 # test case descriptions. 0 = disabled; 1 = enabled.
 PU_REPORT_ORIENTED := 1
 
-CCFLAGS := $(CFLAGS) -Wextra -Wno-unused-value -Wno-unused-parameter -g -include ../tunables.h
+CCFLAGS := $(CFLAGS) -Wextra -Wno-unused-value -Wno-unused-parameter -Wno-implicit-function-declaration -g -include ../tunables.h
 
 # Location of punit makefile
 # Do not touch
