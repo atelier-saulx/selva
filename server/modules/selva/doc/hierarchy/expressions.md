@@ -139,6 +139,8 @@ Type codes used in the documentation:
 
 | Operator | Operands         | Description                             | Example (expr => result) |
 | -------- | ---------------- | --------------------------------------- | ------------------------ |
+| `R`      | `(X) => X, X`    | Duplicate the last operand in stack.    | `#1 R => 1, 1`           |
+| `S`      | `(X, X) => X, X` | Swap the last two operands in stack.    | `#1 #2 S => #1, #2`      |
 | `>`      | `(n) => <>`      | Conditional jump forward.               | `#1 >2 => <>`            |
 | `P`      | `(X) => n`       | Necessity `□a`. (It's necessary that a) | `#0 P #1 N => 0`         |
 | `Q`      | `(X) => n`       | Possibly `◇a`.                          | `#1 Q #0 M => 1`         |

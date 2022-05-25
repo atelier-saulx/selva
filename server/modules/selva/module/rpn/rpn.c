@@ -72,7 +72,6 @@ struct redisObjectAccessor {
 
 struct rpn_operand {
     struct {
-        unsigned in_use : 1; /*!< In use/in stack, do not free. */
         unsigned pooled : 1; /*!< Pooled operand, do not free. */
         unsigned regist : 1; /*!< Register value, do not free. */
         unsigned spused : 1; /*!< The value is a string pointed by sp. */
@@ -81,6 +80,7 @@ struct rpn_operand {
         unsigned slvset : 1; /*!< Set pointer is pointing to a SelvaSet. */
         unsigned embset : 1; /*!< Embedded set is used and it must be destroyed. */
     } flags;
+    uint32_t refcount; /*!< Stack reference counter adjusted on push/pop. */
     struct rpn_operand *next_free; /* Next free in pool. */
     size_t s_size;
     double d;
@@ -91,7 +91,7 @@ struct rpn_operand {
             struct SelvaSet *set; /*! A pointer to a SelvaSet. */
             /*
              * Note that set_emb is after the pointer and it's not necessarily
-             * in the allocated memory block embset is not set.
+             * in the allocated memory block if embset is not set.
              */
             struct SelvaSet set_emb; /*!< An embedded set. */
         };
@@ -160,7 +160,7 @@ void rpn_destroy(struct rpn_ctx *ctx) {
                 continue;
             }
 
-            v->flags.in_use = 0;
+            v->refcount = 0;
             v->flags.regist = 0;
 
             free_rpn_operand(&v);
@@ -301,7 +301,7 @@ static void free_rpn_operand(void *p) {
     }
 
     v = *pp;
-    if (!v || v->flags.in_use || v->flags.regist) {
+    if (!v || v->refcount > 0 || v->flags.regist) {
         return;
     }
 
@@ -325,13 +325,29 @@ static void free_rpn_operand(void *p) {
     }
 }
 
+static struct rpn_operand *pop(struct rpn_ctx *ctx) {
+    if (!ctx->depth) {
+        return NULL;
+    }
+
+    struct rpn_operand *v = ctx->stack[--ctx->depth];
+
+#if RPN_ASSERTS
+    assert(v);
+#endif
+
+    v->refcount--;
+
+    return v;
+}
+
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
     if (unlikely(ctx->depth >= RPN_MAX_D)) {
         fprintf(stderr, "%s:%d: Stack overflow\n", __FILE__, __LINE__);
         return RPN_ERR_BADSTK;
     }
 
-    v->flags.in_use = 1;
+    v->refcount++;
     ctx->stack[ctx->depth++] = v;
 
     return RPN_ERR_OK;
@@ -425,22 +441,6 @@ static enum rpn_error push_selva_set_result(struct rpn_ctx *ctx, struct SelvaSet
     v->d = nan_undefined();
 
     return push(ctx, v);
-}
-
-static struct rpn_operand *pop(struct rpn_ctx *ctx) {
-    if (!ctx->depth) {
-        return NULL;
-    }
-
-    struct rpn_operand *v = ctx->stack[--ctx->depth];
-
-#if RPN_ASSERTS
-    assert(v);
-#endif
-
-    v->flags.in_use = 0;
-
-    return v;
 }
 
 static void clear_stack(struct rpn_ctx *ctx) {
@@ -752,9 +752,8 @@ static enum rpn_error rpn_op_sub(struct RedisModuleCtx *redis_ctx __unused, stru
 static enum rpn_error rpn_op_div(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
-    double d = b->d;
 
-    return push_double_result(ctx, a->d / d);
+    return push_double_result(ctx, a->d / b->d);
 }
 
 static enum rpn_error rpn_op_mul(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
@@ -866,6 +865,23 @@ static enum rpn_error rpn_op_possib(struct RedisModuleCtx *redis_ctx __unused, s
     } else {
         return push(ctx, a); /* Push back. */
     }
+}
+
+static enum rpn_error rpn_op_dup(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+    enum rpn_error err;
+    OPERAND(ctx, a);
+
+    err = push(ctx, a);
+    return err ? err : push(ctx, a);
+}
+
+static enum rpn_error rpn_op_swap(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+    enum rpn_error err;
+    OPERAND(ctx, a);
+    OPERAND(ctx, b);
+
+    err = push(ctx, a);
+    return err ? err : push(ctx, b);
 }
 
 static enum rpn_error rpn_op_ternary(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
@@ -1270,8 +1286,8 @@ static rpn_fp funcs[] = {
     rpn_op_xor,     /* O */
     rpn_op_necess,  /* P */
     rpn_op_possib,  /* Q */
-    rpn_op_abo,     /* R spare */
-    rpn_op_abo,     /* S spare */
+    rpn_op_dup,     /* R */
+    rpn_op_swap,    /* S */
     rpn_op_ternary, /* T spare */
     rpn_op_abo,     /* U spare */
     rpn_op_abo,     /* V spare */
@@ -1437,7 +1453,6 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
     if (type != '"' &&
         type != '}' /* empty set */
        ) {
-        fprintf(stderr, "Type: %c\n", type);
         /* Currently only string sets are supported. */
         return RPN_ERR_TYPE;
     }

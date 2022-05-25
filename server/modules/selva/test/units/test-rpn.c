@@ -140,6 +140,23 @@ static char * test_add_double(void)
     return NULL;
 }
 
+static char * test_mul(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "#2 #2 D";
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    err = rpn_integer(NULL, ctx, expr, &res);
+
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("2 * 2", res, 4);
+
+    return NULL;
+}
+
 static char * test_rem(void)
 {
     enum rpn_error err;
@@ -506,7 +523,7 @@ static char * test_selvaset_ill(void)
 
 static char * test_cond_jump(void)
 {
-    const char expr_str[][22] = {
+    static const char expr_str[][22] = {
         "#1 #1 A #1 >2 #1 A",
         "#1 #1 A #0 >2 #1 A",
         "#1 #1 A #1 >3 #1 A",
@@ -551,6 +568,40 @@ static char * test_cond_jump(void)
     return NULL;
 }
 
+static char * test_dup(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "#2 R D";
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    err = rpn_integer(NULL, ctx, expr, &res);
+
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("2 * 2", res, 4);
+
+    return NULL;
+}
+
+static char * test_swap(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "#4 #2 S C";
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    err = rpn_integer(NULL, ctx, expr, &res);
+
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("4 / 2", res, 2);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
@@ -560,6 +611,7 @@ void all_tests(void)
     pu_def_test(test_stack_overflow, PU_RUN);
     pu_def_test(test_add, PU_RUN);
     pu_def_test(test_add_double, PU_RUN);
+    pu_def_test(test_mul, PU_RUN);
     pu_def_test(test_rem, PU_RUN);
     pu_def_test(test_range, PU_RUN);
     pu_def_test(test_necessarily_or, PU_RUN);
@@ -573,4 +625,6 @@ void all_tests(void)
     pu_def_test(test_selvaset_empty_2, PU_RUN);
     pu_def_test(test_selvaset_ill, PU_RUN);
     pu_def_test(test_cond_jump, PU_RUN);
+    pu_def_test(test_dup, PU_RUN);
+    pu_def_test(test_swap, PU_RUN);
 }
