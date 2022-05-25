@@ -478,7 +478,8 @@ static enum selva_op_repl_state modify_op(
             RedisModule_ReplyWithSimpleString(ctx, "OK");
             return SELVA_OP_REPL_STATE_UNCHANGED;
         } else if (err) {
-            replyWithSelvaErrorf(ctx, err, "Failed to delete the field: \"%.*s\"", (int)field_len, field_str);
+            replyWithSelvaErrorf(ctx, err, "Failed to delete the field: \"%.*s\"",
+                    (int)field_len, field_str);
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING ||
@@ -599,8 +600,9 @@ static enum selva_op_repl_state modify_op(
 
         err = SelvaObject_RemoveArrayIndexStr(obj, field_str, field_len, v);
         if (err) {
-            replyWithSelvaErrorf(ctx, err, "Failed to remove array index (%.*s.%s)",
-                    (int)field_len, field_str);
+            replyWithSelvaErrorf(ctx, err, "Failed to remove array index: %.*s[%d]",
+                    (int)field_len, field_str,
+                    (int)v);
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else {
@@ -962,14 +964,14 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
                 new_obj = SelvaObject_New();
                 if (!new_obj) {
-                    replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to push new object to array index (%.*s.%s)",
+                    replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to push new object to array index: %.*s[]",
                             (int)field_len, field_str);
                     continue;
                 }
 
                 err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
                 if (err) {
-                    replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                    replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index: %.*s[]",
                             (int)field_len, field_str);
                     continue;
                 }
@@ -997,7 +999,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 int err;
 
                 if (!new_obj) {
-                    replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to push new object to array index (%.*s.%s)",
+                    replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to insert new object to array index: %.*s[]",
                             (int)field_len, field_str);
                     continue;
                 }
@@ -1006,7 +1008,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 if (err) {
                     SelvaObject_Destroy(new_obj);
 
-                    replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index (%.*s.%s)",
+                    replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index: %.*s",
                             (int)field_len, field_str);
                     continue;
                 }
