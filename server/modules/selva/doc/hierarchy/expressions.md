@@ -135,12 +135,18 @@ Type codes used in the documentation:
 | `O`      | `(n, n) => n`    | Logical XOR operator. `(!!a ^ !!b)`     | `#1 #1 O => 0`           |
 | `T`      | `(n, X, X) => X` | Ternary, `a ? b : c`.                   | `$3 $2 @1 T => X`        |
 
+**Stack manipulation operators**
+
+| Operator | Operands         | Description                             | Example (expr => result) |
+| -------- | ---------------- | --------------------------------------- | ------------------------ |
+| `R`      | `(X) => X, X`    | Duplicate the last values in the stack. | `#1 R => 1, 1`           |
+| `S`      | `(X, X) => X, X` | Swap the last two values in the stack.  | `#1 #2 S => #1, #2`      |
+| `U`      | `(X) => {}`      | Drop, discard the top stack value.      | `#1 #2 D => #1`          |
+
 **Control flow operators**
 
 | Operator | Operands         | Description                             | Example (expr => result) |
 | -------- | ---------------- | --------------------------------------- | ------------------------ |
-| `R`      | `(X) => X, X`    | Duplicate the last operand in stack.    | `#1 R => 1, 1`           |
-| `S`      | `(X, X) => X, X` | Swap the last two operands in stack.    | `#1 #2 S => #1, #2`      |
 | `>`      | `(n) => <>`      | Conditional jump forward.               | `#1 >2 => <>`            |
 | `P`      | `(X) => n`       | Necessity `□a`. (It's necessary that a) | `#0 P #1 N => 0`         |
 | `Q`      | `(X) => n`       | Possibly `◇a`.                          | `#1 Q #0 M => 1`         |

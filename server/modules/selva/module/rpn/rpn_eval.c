@@ -7,6 +7,8 @@
 
 enum SelvaRpnEvalType {
     EVAL_TYPE_BOOL,
+    EVAL_TYPE_DOUBLE,
+    EVAL_TYPE_STRING,
     EVAL_TYPE_SET,
 };
 
@@ -18,7 +20,7 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisM
     const int ARGV_FILTER_EXPR = 2;
     const int ARGV_FILTER_ARGS = 3;
 
-    if (argc < 4) {
+    if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -71,6 +73,24 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisM
         }
 
         RedisModule_ReplyWithLongLong(ctx, res);
+    } else if (type == EVAL_TYPE_DOUBLE) {
+        double res;
+
+        err = rpn_double(ctx, rpn_ctx, filter_expression, &res);
+        if (err) {
+            goto fail;
+        }
+
+        RedisModule_ReplyWithDouble(ctx, res);
+    } else if (type == EVAL_TYPE_STRING) {
+        RedisModuleString *res;
+
+        err = rpn_rms(ctx, rpn_ctx, filter_expression, &res);
+        if (err) {
+            goto fail;
+        }
+
+        RedisModule_ReplyWithString(ctx, res);
     } else if (type == EVAL_TYPE_SET) {
         struct SelvaSet set;
         struct SelvaSetElement *el;
@@ -106,9 +126,16 @@ fail:
     return REDISMODULE_OK;
 }
 
-
 int SelvaRpn_EvalBoolCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     return SelvaRpn_Eval(EVAL_TYPE_BOOL, ctx, argv, argc);
+}
+
+int SelvaRpn_EvalDoubleCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return SelvaRpn_Eval(EVAL_TYPE_DOUBLE, ctx, argv, argc);
+}
+
+int SelvaRpn_EvalStringCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return SelvaRpn_Eval(EVAL_TYPE_STRING, ctx, argv, argc);
 }
 
 int SelvaRpn_EvalSetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -120,6 +147,8 @@ static int RpnEval_OnLoad(RedisModuleCtx *ctx) {
      * Register commands.
      */
     if (RedisModule_CreateCommand(ctx, "selva.rpn.evalbool", SelvaRpn_EvalBoolCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.rpn.evaldouble", SelvaRpn_EvalDoubleCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.rpn.evalstring", SelvaRpn_EvalStringCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.rpn.evalset", SelvaRpn_EvalSetCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }

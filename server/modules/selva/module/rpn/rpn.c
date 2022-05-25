@@ -895,6 +895,12 @@ static enum rpn_error rpn_op_ternary(struct RedisModuleCtx *redis_ctx __unused, 
     }
 }
 
+static enum rpn_error rpn_op_drop(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+
+    return RPN_ERR_OK;
+}
+
 static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     int exists;
     OPERAND(ctx, field);
@@ -1284,7 +1290,7 @@ static rpn_fp funcs[] = {
     rpn_op_dup,     /* R */
     rpn_op_swap,    /* S */
     rpn_op_ternary, /* T spare */
-    rpn_op_abo,     /* U spare */
+    rpn_op_drop,    /* U */
     rpn_op_abo,     /* V spare */
     rpn_op_abo,     /* W spare */
     rpn_op_abo,     /* X */

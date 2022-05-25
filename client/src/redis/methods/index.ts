@@ -3982,6 +3982,51 @@ async selva_index_del(opts: any, ...args: args): Promise<any> {
   }
 }
 
+
+async selva_rpn_evalbool(opts: ServerSelector, ...args: args): Promise<any>
+async selva_rpn_evalbool(...args: args): Promise<any>
+async selva_rpn_evalbool(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_rpn_evalbool', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_rpn_evalbool', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_rpn_evaldouble(opts: ServerSelector, ...args: args): Promise<any>
+async selva_rpn_evaldouble(...args: args): Promise<any>
+async selva_rpn_evaldouble(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_rpn_evaldouble', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_rpn_evaldouble', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_rpn_evalstring(opts: ServerSelector, ...args: args): Promise<any>
+async selva_rpn_evalstring(...args: args): Promise<any>
+async selva_rpn_evalstring(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_rpn_evalstring', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_rpn_evalstring', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
 }
 
 export default RedisMethods

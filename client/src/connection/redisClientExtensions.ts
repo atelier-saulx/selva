@@ -67,6 +67,9 @@ const selva_commands = [
   'selva.index.list',
   'selva.index.new',
   'selva.index.del',
+  'selva.rpn.evalbool',
+  'selva.rpn.evaldouble',
+  'selva.rpn.evalstring',
 ]
 
 redis.RedisClient.prototype.on_info_cmd = function (err, res) {
