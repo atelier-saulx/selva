@@ -39,7 +39,7 @@ struct rpn_ctx {
     struct SelvaHierarchy *hierarchy;
     struct SelvaHierarchyNode *node; /*!< A pointer to the current hierarchy node set with rpn_set_hierarchy_node(). */
     struct SelvaObject *obj; /*!< Selva object of the current node. */
-    struct RedisModuleString *rms_field;  /*!< This holds the name of the currently accessed field. */
+    struct RedisModuleString *rms;  /*!< This is a specially crafted rms that can be modified within RPN. */
     struct rpn_operand **reg;
     struct rpn_operand *stack[RPN_MAX_D];
 };

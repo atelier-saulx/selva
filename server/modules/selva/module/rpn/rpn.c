@@ -166,7 +166,9 @@ void rpn_destroy(struct rpn_ctx *ctx) {
             free_rpn_operand(&v);
         }
 
-        RedisModule_Free(ctx->rms_field);
+        if (ctx->rms) {
+            RedisModule_FreeString(NULL, ctx->rms);
+        }
         RedisModule_Free(ctx->reg);
         RedisModule_Free(ctx);
     }
@@ -208,9 +210,6 @@ static int cpy2rm_str(RedisModuleString **rms_p, const char *str, size_t len) {
 
     if (!*rms_p) {
         *rms_p = RedisModule_CreateString(NULL, RMSTRING_TEMPLATE, sizeof(RMSTRING_TEMPLATE));
-        if (unlikely(!*rms_p)) {
-            return RPN_ERR_ENOMEM;
-        }
     }
 
     rms = *rms_p;
@@ -954,15 +953,11 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ct
 
     if (set) {
         if (set->type == SELVA_SET_TYPE_RMSTRING) {
-            /*
-             * We use rms_field here because we don't need it for the field_name in this
-             * function.
-             */
-            if(rpn_operand2rms(&ctx->rms_field, v)) {
+            if(rpn_operand2rms(&ctx->rms, v)) {
                 return RPN_ERR_ENOMEM;
             }
 
-            return push_int_result(ctx, SelvaSet_Has(set, ctx->rms_field));
+            return push_int_result(ctx, SelvaSet_Has(set, ctx->rms));
         } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
             return push_int_result(ctx, SelvaSet_Has(set, v->d));
         } else if (set->type == SELVA_SET_TYPE_LONGLONG) {

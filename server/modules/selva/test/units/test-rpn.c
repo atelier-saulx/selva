@@ -360,6 +360,7 @@ static char * test_ternary(void)
 
         TO_STR(res);
         pu_assert_str_equal("Ternary result is valid", res_str, expected);
+        RedisModule_FreeString(NULL, res);
     }
 
     return NULL;
