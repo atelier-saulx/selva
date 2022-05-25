@@ -918,6 +918,22 @@ static enum rpn_error rpn_op_rot(struct RedisModuleCtx *redis_crx __unused, stru
     return push(ctx, a);
 }
 
+static enum rpn_error rpn_op_over(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+    enum rpn_error err;
+    OPERAND(ctx, a);
+    OPERAND(ctx, b);
+
+    err = push(ctx, b);
+    if (err) {
+        return err;
+    }
+    err = push(ctx, a);
+    if (err) {
+        return err;
+    }
+    return push(ctx, b);
+}
+
 static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     int exists;
     OPERAND(ctx, field);
@@ -1308,8 +1324,8 @@ static rpn_fp funcs[] = {
     rpn_op_swap,    /* S */
     rpn_op_ternary, /* T */
     rpn_op_drop,    /* U */
-    rpn_op_rot,     /* V */
-    rpn_op_abo,     /* W spare */
+    rpn_op_over,    /* V */
+    rpn_op_rot,     /* W */
     rpn_op_abo,     /* X */
     rpn_op_abo,     /* Y */
     rpn_op_abo,     /* Z */

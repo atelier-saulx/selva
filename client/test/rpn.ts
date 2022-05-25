@@ -95,10 +95,17 @@ test.serial('eval to double', async (t) => {
     6
   )
 
+  // Over
+  // a * (a + b)
+  t.deepEqual(
+    Number(await client.redis.selva_rpn_evaldouble('node123456', '#2 #3 V A D')),
+    10
+  )
+
   // rotate
   //   ab - bc
   // = 4 * (10 - 5)
-  const expr4 = '@3 @2 @1 V B D'
+  const expr4 = '@3 @2 @1 W B D'
   t.deepEqual(
     Number(await client.redis.selva_rpn_evaldouble('node123456', expr4, '10', '4', '5')),
     4 * (10 - 5)

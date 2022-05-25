@@ -137,12 +137,13 @@ Type codes used in the documentation:
 
 **Stack manipulation operators**
 
-| Operator | Operands         | Description                             | Example (expr => result) |
-| -------- | ---------------- | --------------------------------------- | ------------------------ |
-| `R`      | `(X) => X, X`    | Duplicate the last values in the stack. | `#1 R => 1, 1`           |
-| `S`      | `(X, X) => X, X` | Swap the last two values in the stack.  | `#1 #2 S => #1, #2`      |
-| `U`      | `(X) => {}`      | Drop, discard the top stack value.      | `#1 #2 D => #1`          |
-| `V`      | `(X, X, X) => 3X | Rotate top three values in the stack.   | `#1 #2 #3 V => #2 #3 #1` |
+| Operator | Operands            | Description                                  | Example (expr => result) |
+| -------- | ------------------- | -------------------------------------------- | ------------------------ |
+| `R`      | `(X) => X, X`       | Duplicate the last values in the stack.      | `#1 R => 1, 1`           |
+| `S`      | `(X, X) => X, X`    | Swap the last two values in the stack.       | `#1 #2 S => #1, #2`      |
+| `U`      | `(X) => {}`         | Drop, discard the top stack value.           | `#1 #2 D => #1`          |
+| `V`      | `(X1, X2) => X1, X2, X1` | Copy the value under top of the stack.  | `#1 #2 V => #1 #2 #1`    |
+| `W`      | `(X1, X2, X3) => X2 X3 X1` | Rotate top three values in the stack. | `#1 #2 #3 W => #2 #3 #1` |
 
 **Control flow operators**
 
