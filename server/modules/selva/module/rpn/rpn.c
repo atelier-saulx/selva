@@ -527,10 +527,6 @@ enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, RedisModuleString *
     char *arg;
 
     arg = RedisModule_Alloc(size);
-    if (!arg) {
-        return RPN_ERR_ENOMEM;
-    }
-
     memcpy(arg, rms_str, size);
     return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_RMFREE);
 }
@@ -1155,10 +1151,6 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
              * the original string was created.
              */
             s = RedisModule_CreateString(NULL, field_str, field_len);
-            if (!s) {
-                return RPN_ERR_ENOMEM;
-            }
-
             err = SelvaSet_Add(result->set, s);
             if (err) {
                 RedisModule_FreeString(NULL, s);
@@ -1508,10 +1500,6 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
             tok_len -= 2;
 
             RedisModuleString *rms = RedisModule_CreateString(NULL, tok_str, tok_len);
-            if (!rms) {
-                return RPN_ERR_ENOMEM;
-            }
-
             err = SelvaSet_Add(v->set, rms);
             if (err) {
                 RedisModule_FreeString(NULL, rms);
@@ -1546,17 +1534,10 @@ static enum rpn_error compile_operator(char *e, char c) {
 struct rpn_expression *rpn_compile(const char *input) {
     struct rpn_expression *expr;
     expr = RedisModule_Alloc(sizeof(struct rpn_expression));
-    if (!expr) {
-        return NULL;
-    }
     memset(expr->input_literal_reg, 0, sizeof(expr->input_literal_reg));
 
     size_t size = 2 * sizeof(rpn_token);
     expr->expression = RedisModule_Alloc(size);
-    if (!expr->expression) {
-        RedisModule_Free(expr);
-        return NULL;
-    }
 
     const char *delim = " \t\n\r\f";
     const char *group = "{\"";
