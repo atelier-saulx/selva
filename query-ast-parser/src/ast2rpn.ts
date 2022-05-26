@@ -66,12 +66,7 @@ export default function ast2rpn(
       types[f.$value] &&
       types[f.$value].prefix
     ) {
-      const prefix = types[f.$value].prefix
-
-      const valueId = regIndex
-      reg[regIndex++] = prefix
-
-      out += ` $${valueId} e`
+      out += ` "${types[f.$value].prefix}" e`
       if (f.isNecessary) {
         out += ' P'
       }
@@ -157,8 +152,6 @@ export default function ast2rpn(
       }
     } else if (vType == 'boolean') {
       const fieldId = fieldNameToReg(f.$field)
-      const valueId = regIndex
-      reg[regIndex++] = f.$value ? '1' : '0'
 
       const op = opMapNumber[f.$operator]
       if (!op) {
@@ -166,7 +159,7 @@ export default function ast2rpn(
         // TODO error
       }
 
-      out += ` @${valueId} $${fieldId} g ${op}`
+      out += ` #${f.$value ? '1' : '0'} $${fieldId} g ${op}`
     } else if (f.$operator == '..') {
       const fieldId = fieldNameToReg(f.$field)
       let valueId1: string | number = regIndex
