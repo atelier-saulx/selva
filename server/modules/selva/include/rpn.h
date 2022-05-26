@@ -7,7 +7,7 @@
  * An operand in a compiled expression cannot exceed this length.
  * The size of a literal operand is not limited by this setting.
  */
-#define RPN_MAX_TOKEN_SIZE              6
+#define RPN_MAX_TOKEN_SIZE              (1 + sizeof(void *))
 
 enum rpn_error {
     RPN_ERR_OK = 0,     /*!< No error. */

@@ -630,10 +630,11 @@ static inline double js_fmod(double x, double y) {
 }
 
 static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, int type) {
-    const size_t i = fast_atou(str_index);
+    unsigned i;
 
-    if (i >= (size_t)ctx->nr_reg) {
-        fprintf(stderr, "%s:%d: Register index out of bounds: %zu\n",
+    memcpy(&i, str_index, sizeof(unsigned));
+    if (i >= (unsigned)ctx->nr_reg) {
+        fprintf(stderr, "%s:%d: Register index out of bounds: %u\n",
                 __FILE__, __LINE__, i);
         return RPN_ERR_BNDS;
     }
@@ -641,14 +642,14 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     struct rpn_operand *r = ctx->reg[i];
 
     if (!r) {
-        fprintf(stderr, "%s:%d: Register value is a NULL pointer: %zu\n",
+        fprintf(stderr, "%s:%d: Register value is a NULL pointer: %u\n",
                 __FILE__, __LINE__, i);
         return RPN_ERR_NPE;
     }
 
     if (type == RPN_LVTYPE_NUMBER) {
         if (isnan(r->d)) {
-            fprintf(stderr, "%s:%d: Register value is not a number: %zu\n",
+            fprintf(stderr, "%s:%d: Register value is not a number: %u\n",
                     __FILE__, __LINE__, i);
             return RPN_ERR_NAN;
         }
@@ -1536,6 +1537,19 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
     return compile_push_literal(expr, i, v);
 }
 
+static enum rpn_error compile_operator(char *e, char c) {
+    const size_t op = c - 'A';
+
+    if (!(op < num_elem(funcs))) {
+        return RPN_ERR_ILLOPC;
+    }
+
+    e[0] = 'f';
+    memcpy(e + 1, &funcs[op], sizeof(void *));
+
+    return RPN_ERR_OK;
+}
+
 struct rpn_expression *rpn_compile(const char *input) {
     struct rpn_expression *expr;
     expr = RedisModule_Alloc(sizeof(struct rpn_expression));
@@ -1563,6 +1577,7 @@ struct rpn_expression *rpn_compile(const char *input) {
         enum rpn_error err;
         char *e = expr->expression[i++];
         rpn_token *new;
+        unsigned tmp;
 
         if (tok_len == 0) {
             fprintf(stderr, "%s:%d:%s: Token length can't be zero\n",
@@ -1580,6 +1595,21 @@ struct rpn_expression *rpn_compile(const char *input) {
         case '{': /* Set literal */
             err = compile_selvaset_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 2);
             break;
+        case '@':
+            e[0] = '@';
+            tmp = fast_atou(tok_str + 1);
+            memcpy(e + 1, &tmp, sizeof(unsigned));
+            goto next;
+        case '$':
+            e[0] = '$';
+            tmp = fast_atou(tok_str + 1);
+            memcpy(e + 1, &tmp, sizeof(unsigned));
+            goto next;
+        case '&':
+            e[0] = '&';
+            tmp = fast_atou(tok_str + 1);
+            memcpy(e + 1, &tmp, sizeof(unsigned));
+            goto next;
         case '>': /* Conditional jump */
             if (tok_len < 2 || tok_str[1] == '-') {
                 fprintf(stderr, "%s:%d:%s: Invalid conditional jump\n",
@@ -1607,8 +1637,13 @@ struct rpn_expression *rpn_compile(const char *input) {
                 goto fail;
             }
 
-            memcpy(e, tok_str, tok_len);
-            e[tok_len] = '\0';
+            if (compile_operator(e, tok_str[0])) {
+                /* Not an operator */
+                /* TODO Not sure if this is even needed */
+                memcpy(e, tok_str, tok_len);
+                e[tok_len] = '\0';
+            }
+
             goto next;
         }
 
@@ -1710,11 +1745,12 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
     const char *s;
 
     while (*(s = *it++)) {
-        size_t op = *s - 'A';
-
-        if (op < sizeof(funcs) / sizeof(void *)) { /* Operator */
+        if (s[0] == 'f') { /* Operator */
+            rpn_fp fp;
             enum rpn_error err;
-            err = funcs[op](redis_ctx, ctx);
+
+            memcpy(&fp, s + 1, sizeof(void *));
+            err = fp(redis_ctx, ctx);
             if (err) {
                 if (err == RPN_ERR_BREAK) {
                     /*
