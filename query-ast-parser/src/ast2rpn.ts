@@ -39,7 +39,19 @@ export default function ast2rpn(
 ): Rpn {
   let out = ''
   let reg: string[] = []
+
   let regIndex = 1
+  const regMap = {}
+  const fieldNameToReg = (fieldName: string) => {
+    if (regMap[fieldName]) {
+      return regMap[fieldName]
+    } else {
+      const i = regIndex++
+      reg[i] = fieldName
+      regMap[fieldName] = i
+      return i
+    }
+  }
 
   function ast2rpnFilter(
     types: Record<string, { prefix?: string }>,
@@ -78,14 +90,12 @@ export default function ast2rpn(
     }
 
     if (f.$operator == 'exists') {
-      const fieldId = regIndex
-      reg[regIndex++] = f.$field
+      const fieldId = fieldNameToReg(f.$field)
 
       out += ` $${fieldId} h`
       return
     } else if (f.$operator == 'notExists') {
-      const fieldId = regIndex
-      reg[regIndex++] = f.$field
+      const fieldId = fieldNameToReg(f.$field)
 
       out += ` $${fieldId} h L`
       return
@@ -114,8 +124,7 @@ export default function ast2rpn(
       )
       return
     } else if (vType == 'string' || vType == 'number') {
-      const fieldId = regIndex
-      reg[regIndex++] = f.$field
+      const fieldId = fieldNameToReg(f.$field)
 
       let valueId: string | number = regIndex
       let isNowValue: boolean = false
@@ -147,8 +156,7 @@ export default function ast2rpn(
         out += ` $${valueId} $${fieldId} f ${op}`
       }
     } else if (vType == 'boolean') {
-      const fieldId = regIndex
-      reg[regIndex++] = f.$field
+      const fieldId = fieldNameToReg(f.$field)
       const valueId = regIndex
       reg[regIndex++] = f.$value ? '1' : '0'
 
@@ -160,8 +168,7 @@ export default function ast2rpn(
 
       out += ` @${valueId} $${fieldId} g ${op}`
     } else if (f.$operator == '..') {
-      const fieldId = regIndex
-      reg[regIndex++] = f.$field
+      const fieldId = fieldNameToReg(f.$field)
       let valueId1: string | number = regIndex
       let isNowValue1: boolean = false
 
