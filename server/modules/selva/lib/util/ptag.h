@@ -6,8 +6,13 @@
 #ifndef _SELVA_PTAG_H_
 #define _SELVA_PTAG_H_
 
-/*
+/**
+ * @addtogroup ptag
  * Tagged pointers.
+ * We can add tags to the lowest bits on pointers because we know that the
+ * architecture will never use those bits. The tag bits needs to be
+ * removed before using the pointer.
+ * @{
  */
 
 #define PTAG_MASK ~0x03ull
@@ -29,5 +34,9 @@
  */
 #define PTAG_GETP(ptag) \
     (void *)((uintptr_t)ptag & PTAG_MASK)
+
+/**
+ * @}
+ */
 
 #endif /* _SELVA_PTAG_H_ */

@@ -1,3 +1,4 @@
+import { readdir, unlink } from 'node:fs/promises'
 import test from 'ava'
 import { join } from 'path'
 import { connect } from '../src/index'
@@ -16,11 +17,18 @@ async function restartServer() {
     await wait(5000)
   }
 
+  // Delete old compressed files
+  try {
+    const compressedFiles = (await readdir(dir)).filter((s) => s.includes('.z'))
+    await Promise.all(compressedFiles.map(async (s) => unlink(`${dir}/${s}`)))
+  } catch (e) {}
+
   port = await getPort()
   srv = await start({
     port,
     dir,
   })
+  await wait(2000)
 }
 
 test.before(removeDump(dir))
@@ -197,7 +205,7 @@ test.serial('can reload from RDB', async (t) => {
     },
   })
 
-  // Compressed subtree
+  // Compressed subtrees
   await client.set({
     $id: 'viComp1',
     title: { en: 'hello' },
@@ -222,10 +230,68 @@ test.serial('can reload from RDB', async (t) => {
       },
     ],
   })
+  await client.set({
+    $id: 'viComp21',
+    title: { en: 'hello' },
+    children: [
+      {
+        $id: 'viComp22',
+        title: { en: 'hello' },
+        children: [
+          {
+            $id: 'viComp24',
+            title: { en: 'hello' },
+          },
+          {
+            $id: 'viComp25',
+            title: { en: 'hello' },
+          },
+        ],
+      },
+      {
+        $id: 'viComp23',
+        title: { en: 'hello' },
+      },
+    ],
+  })
   await client.redis.selva_hierarchy_compress('___selva_hierarchy', 'viComp1')
+  await client.redis.selva_hierarchy_compress('___selva_hierarchy', 'viComp21')
+
+  // Compressed subtree on disk
+  await client.set({
+    $id: 'viDisk1',
+    title: { en: 'hello' },
+    children: [
+      {
+        $id: 'viDisk2',
+        title: { en: 'hello' },
+        children: [
+          {
+            $id: 'viDisk4',
+            title: { en: 'hello' },
+          },
+          {
+            $id: 'viDisk5',
+            title: { en: 'hello' },
+          },
+        ],
+      },
+      {
+        $id: 'viDisk3',
+        title: { en: 'hello' },
+      },
+    ],
+  })
+  await client.redis.selva_hierarchy_compress('___selva_hierarchy', 'viDisk1', 'disk')
+
+  const compressedFilesBefore = (await readdir(dir)).filter((s) => s.includes('.z'))
 
   await client.redis.save()
   await wait(1000)
+
+  const compressedFilesAfter = (await readdir(dir)).filter((s) => s.includes('.z'))
+  t.deepEqualIgnoreOrder(compressedFilesAfter, compressedFilesBefore, 'RDB save should not remove the subtree files')
+
   await restartServer()
   await client.destroy()
   await wait(5000)
@@ -310,6 +376,8 @@ test.serial('can reload from RDB', async (t) => {
       lekkerLink: 'viLink5',
     }
   )
+
+  // Check the compressed subtree
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'viComp1',
@@ -323,6 +391,23 @@ test.serial('can reload from RDB', async (t) => {
       descendants: ['viComp2', 'viComp3', 'viComp4', 'viComp5'],
     }
   )
+
+  // Check the compressed subtree on disk
+  // TODO Check that the compressed subtree is actually on the disk
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'viDisk1',
+      id: true,
+      title: true,
+      descendants: true,
+    }),
+    {
+      id: 'viDisk1',
+      title: { en: 'hello' },
+      descendants: ['viDisk2', 'viDisk3', 'viDisk4', 'viDisk5'],
+    }
+  )
+  t.deepEqual((await readdir(dir)).filter((s) => s.includes('.z')), [])
 
   // Do it again
   await client.redis.save()
@@ -402,6 +487,8 @@ test.serial('can reload from RDB', async (t) => {
       title: { en: 'sup' },
     }
   )
+
+  // Check the previously compressed subtree
   t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'viComp1',
@@ -415,4 +502,21 @@ test.serial('can reload from RDB', async (t) => {
       descendants: ['viComp2', 'viComp3', 'viComp4', 'viComp5'],
     }
   )
+
+  // Check the compressed subtree
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'viComp21',
+      id: true,
+      title: true,
+      descendants: true,
+    }),
+    {
+      id: 'viComp21',
+      title: { en: 'hello' },
+      descendants: ['viComp22', 'viComp23', 'viComp24', 'viComp25'],
+    }
+  )
+
+  await client.destroy()
 })

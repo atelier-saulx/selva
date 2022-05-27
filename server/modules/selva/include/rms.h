@@ -77,6 +77,20 @@ int rms_compress(struct compressed_rms *out, RedisModuleString *in, double *crat
 int rms_decompress(struct RedisModuleString **out, struct compressed_rms *in);
 
 /**
+ * Write a compressed_rms to fp.
+ * Note that the binary format is not portable and it's only assumed to be read
+ * by the same process (on the same machine) that wrote it.
+ */
+int rms_fwrite_compressed(const struct compressed_rms *compressed, FILE *fp);
+
+/**
+ * Read a compressed_rms from fp.
+ * Note that the binary format is not portable and it's only assumed to be read
+ * by the same process (on the same machine) that wrote it.
+ */
+int rms_fread_compressed(struct compressed_rms *compressed, FILE *fp);
+
+/**
  * RDB save a compressed string.
  */
 void rms_RDBSaveCompressed(struct RedisModuleIO *io, struct compressed_rms *compressed);
