@@ -2,12 +2,14 @@
 #ifndef _RPN_H_
 #define _RPN_H_
 
+#define RPN_CODE_SIZE                   sizeof(char)
+
 /**
  * Maximum size of a single token in an RPN expression.
  * An operand in a compiled expression cannot exceed this length.
  * The size of a literal operand is not limited by this setting.
  */
-#define RPN_MAX_TOKEN_SIZE              (1 + sizeof(void *))
+#define RPN_MAX_TOKEN_SIZE              (RPN_CODE_SIZE + sizeof(void *))
 
 /**
  * RPN Errors.
@@ -60,8 +62,8 @@ typedef char rpn_token[RPN_MAX_TOKEN_SIZE];
  * A reusable compilation result of the string formatted RPN expression.
  */
 struct rpn_expression {
-    rpn_token *expression;
-    struct rpn_operand *input_literal_reg[RPN_MAX_D];
+    rpn_token *expression; /*!< An array of compiled RPN tokens. */
+    struct rpn_operand *input_literal_reg[RPN_MAX_D]; /*!< Literals used in the expression. */
 };
 
 #define RPN_SET_REG_FLAG_RMFREE 0x01 /*!< Free register values after unref. */
