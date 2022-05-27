@@ -149,14 +149,14 @@ void queue_clear_from_pop_end(queue_cb_t * cb);
  * @param cb is a pointer to the queue control block.
  * @return 0 if the queue is not empty.
  */
-int queue_isempty(queue_cb_t * cb);
+int queue_isempty(const queue_cb_t * cb);
 
 /**
  * Check if the queue is full.
  * @param cb is a pointer to the queue control block.
  * @return 0 if the queue is not full.
  */
-int queue_isfull(queue_cb_t * cb);
+int queue_isfull(const queue_cb_t * cb);
 
 /**
  * Seek queue.

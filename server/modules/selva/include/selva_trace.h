@@ -42,7 +42,8 @@ struct SelvaTrace {
  * SELVA_TRACE_END() must not be called for an automatic trace.
  */
 #define SELVA_TRACE_BEGIN_AUTO(_name) \
-    __attribute__((cleanup(SelvaTrace_AutoEnd))) const struct SelvaTrace *CONCATENATE(_autoend_selva_trace_, _name) = &CONCATENATE(selva_trace_handle_, _name); \
+    __attribute__((cleanup(SelvaTrace_AutoEnd))) const struct SelvaTrace *CONCATENATE(_autoend_selva_trace_, _name) = \
+        &CONCATENATE(selva_trace_handle_, _name); \
     __itt_task_begin(selva_trace_domain, __itt_null, __itt_null, CONCATENATE(selva_trace_handle_, _name).handle)
 
 /**

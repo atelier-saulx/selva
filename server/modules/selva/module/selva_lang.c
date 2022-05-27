@@ -71,7 +71,7 @@ static const struct SelvaObjectPointerOpts obj_opts = {
 static struct SelvaObject *langs;
 
 static void get_territory(char dst[4], const char *locale_name) {
-    char *lang;
+    const char *lang;
     const char *territory_str;
     size_t territory_len;
 
