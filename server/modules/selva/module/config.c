@@ -7,6 +7,7 @@
 #include "config.h"
 
 struct selva_glob_config selva_glob_config = {
+    .debug_modify_replication_delay_ns = DEBUG_MODIFY_REPLICATION_DELAY_NS,
     .hierarchy_initial_vector_len = HIERARCHY_INITIAL_VECTOR_LEN,
     .hierarchy_expected_resp_len = HIERARCHY_EXPECTED_RESP_LEN,
     .hierarchy_compression_level = HIERARCHY_COMPRESSION_LEVEL,
@@ -50,6 +51,7 @@ struct cfg {
     int (*const parse)(void *dst, const RedisModuleString *sp);
     void * const dp;
 } const cfg_map[] = {
+    { "DEBUG_MODIFY_REPLICATION_DELAY_NS", parse_int, &selva_glob_config.debug_modify_replication_delay_ns },
     { "HIERARCHY_INITIAL_VECTOR_LEN", parse_size_t, &selva_glob_config.hierarchy_initial_vector_len },
     { "HIERARCHY_EXPECTED_RESP_LEN",  parse_size_t, &selva_glob_config.hierarchy_expected_resp_len },
     { "HIERARCHY_COMPRESSION_LEVEL", parse_int, &selva_glob_config.hierarchy_compression_level },
