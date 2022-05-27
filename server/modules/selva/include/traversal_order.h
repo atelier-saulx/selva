@@ -90,14 +90,11 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateOrderItem(
         struct RedisModuleString *lang,
         struct SelvaHierarchyNode *node,
         const struct RedisModuleString *order_field);
-<<<<<<< HEAD
-void SelvaTraversalOrder_DestroyOrderItem(struct RedisModuleCtx *ctx, struct TraversalOrderItem *item);
-=======
 
 /**
  * Destroy TraversalOrderItem created by SelvaTraversalOrder_CreateOrderItem().
  */
-void SelvaTraversalOrder_DestroyOrderItem(RedisModuleCtx *ctx, struct TraversalOrderItem *item);
+void SelvaTraversalOrder_DestroyOrderItem(struct RedisModuleCtx *ctx, struct TraversalOrderItem *item);
 
 /**
  * Create a TraversalOrderItem that points to a SelvaObject.
@@ -106,7 +103,6 @@ void SelvaTraversalOrder_DestroyOrderItem(RedisModuleCtx *ctx, struct TraversalO
  * @param order_field is a field on obj.
  * @returns Returns a TraversalOrderItem if succeed; Otherwise a NULL pointer is returned.
  */
->>>>>>> dc36fb90 (Add more comments regarding traversal_order)
 struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectBasedOrderItem(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
