@@ -8,8 +8,6 @@ import { get } from '..'
 import { addExtraQuery, ExtraQueries } from '.'
 import { isTraverseByType, isTraverseOptions } from '../utils'
 
-// import fetch from 'node-fetch'
-
 // TODO: more concurrency for fetching
 async function evaluateTextSearch(
   filters: Filter[],
