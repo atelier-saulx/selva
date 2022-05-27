@@ -76,6 +76,9 @@ redis.add_command('selva.subscriptions.refresh')
 redis.add_command('selva.index.list')
 redis.add_command('selva.index.new')
 redis.add_command('selva.index.del')
+redis.add_command('selva.rpn.evalbool')
+redis.add_command('selva.rpn.evaldouble')
+redis.add_command('selva.rpn.evalstring')
 const proto = redis.RedisClient.prototype
 for (const key in redis.RedisClient.prototype) {
   if (/[A-Z]/.test(key[0]) && typeof proto[key] === 'function') {

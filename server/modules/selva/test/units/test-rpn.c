@@ -140,6 +140,23 @@ static char * test_add_double(void)
     return NULL;
 }
 
+static char * test_mul(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "#2 #2 D";
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    err = rpn_integer(NULL, ctx, expr, &res);
+
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("2 * 2", res, 4);
+
+    return NULL;
+}
+
 static char * test_rem(void)
 {
     enum rpn_error err;
@@ -343,6 +360,7 @@ static char * test_ternary(void)
 
         TO_STR(res);
         pu_assert_str_equal("Ternary result is valid", res_str, expected);
+        RedisModule_FreeString(NULL, res);
     }
 
     return NULL;
@@ -504,6 +522,87 @@ static char * test_selvaset_ill(void)
     return NULL;
 }
 
+static char * test_cond_jump(void)
+{
+    static const char expr_str[][22] = {
+        "#1 #1 A #1 >2 #1 A",
+        "#1 #1 A #0 >2 #1 A",
+        "#1 #1 A #1 >3 #1 A",
+        "#1 #1 A #1 >-3 #1 A",
+        "#1 #1 A #1 >30 #1 A",
+        "#1 #1 A #1 >9000 #1 A",
+    };
+    int expected[] = {
+        2,
+        3,
+        2, /* Too long jumps will just terminate early. */
+        -1, /* Negative numbers should fail to compile. */
+        2, /* Too long jumps will just terminate early. */
+        -1, /* Jumps longer than 255 are not supported. */
+    };
+
+    for (int i = 0; i < 6; i++) {
+        long long res;
+        enum rpn_error err;
+
+        printf("Testing i = %d\n", i);
+        expr = rpn_compile(expr_str[i]);
+        if (expected[i] == -1) {
+            pu_assert_null("Expected compile to fail", expr);
+            continue;
+        } else {
+            pu_assert_not_null("Expected to compile", expr);
+        }
+
+        err = rpn_integer(NULL, ctx, expr, &res);
+        rpn_destroy_expression(expr);
+        expr = NULL;
+
+        if (expected[i] == -2) {
+            pu_assert_equal("Expected execution to fail", err, RPN_ERR_ILLOPN);
+        } else {
+            pu_assert_equal("No error", err, RPN_ERR_OK);
+        }
+        pu_assert_equal(expr_str[i], res, expected[i]);
+    }
+
+    return NULL;
+}
+
+static char * test_dup(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "#2 R D";
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    err = rpn_integer(NULL, ctx, expr, &res);
+
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("2 * 2", res, 4);
+
+    return NULL;
+}
+
+static char * test_swap(void)
+{
+    enum rpn_error err;
+    long long res;
+    const char expr_str[] = "#4 #2 S C";
+
+    expr = rpn_compile(expr_str);
+    pu_assert("expr is created", expr);
+
+    err = rpn_integer(NULL, ctx, expr, &res);
+
+    pu_assert_equal("No error", err, RPN_ERR_OK);
+    pu_assert_equal("4 / 2", res, 2);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_init_works, PU_RUN);
@@ -513,6 +612,7 @@ void all_tests(void)
     pu_def_test(test_stack_overflow, PU_RUN);
     pu_def_test(test_add, PU_RUN);
     pu_def_test(test_add_double, PU_RUN);
+    pu_def_test(test_mul, PU_RUN);
     pu_def_test(test_rem, PU_RUN);
     pu_def_test(test_range, PU_RUN);
     pu_def_test(test_necessarily_or, PU_RUN);
@@ -525,4 +625,7 @@ void all_tests(void)
     pu_def_test(test_selvaset_empty, PU_RUN);
     pu_def_test(test_selvaset_empty_2, PU_RUN);
     pu_def_test(test_selvaset_ill, PU_RUN);
+    pu_def_test(test_cond_jump, PU_RUN);
+    pu_def_test(test_dup, PU_RUN);
+    pu_def_test(test_swap, PU_RUN);
 }

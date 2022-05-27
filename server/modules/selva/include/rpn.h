@@ -7,8 +7,11 @@
  * An operand in a compiled expression cannot exceed this length.
  * The size of a literal operand is not limited by this setting.
  */
-#define RPN_MAX_TOKEN_SIZE              6
+#define RPN_MAX_TOKEN_SIZE              (1 + sizeof(void *))
 
+/**
+ * RPN Errors.
+ */
 enum rpn_error {
     RPN_ERR_OK = 0,     /*!< No error. */
     RPN_ERR_ENOMEM,     /*!< Out of memory. */
@@ -33,17 +36,24 @@ struct SelvaHierarchyNode;
 struct SelvaSet;
 struct rpn_operand;
 
+/**
+ * RPN Context.
+ * The same context can be used multiple times ones created and initialized.
+ */
 struct rpn_ctx {
-    int depth;
-    int nr_reg;
-    struct SelvaHierarchy *hierarchy;
+    int depth; /*!< Stack pointer, current stack depth. */
+    int nr_reg; /*!< Number of registers allocated. */
+    struct SelvaHierarchy *hierarchy; /*!< A pointer to the associated hierarchy. */
     struct SelvaHierarchyNode *node; /*!< A pointer to the current hierarchy node set with rpn_set_hierarchy_node(). */
     struct SelvaObject *obj; /*!< Selva object of the current node. */
-    struct RedisModuleString *rms_field;  /*!< This holds the name of the currently accessed field. */
-    struct rpn_operand **reg;
-    struct rpn_operand *stack[RPN_MAX_D];
+    struct RedisModuleString *rms;  /*!< This is a specially crafted rms that can be modified within RPN. */
+    struct rpn_operand *stack[RPN_MAX_D]; /*!< Execution stack. */
+    struct rpn_operand *reg[0]; /*!< RPN registers. */
 };
 
+/**
+ * Compiled token in the expression.
+ */
 typedef char rpn_token[RPN_MAX_TOKEN_SIZE];
 
 /**
@@ -59,7 +69,15 @@ struct rpn_expression {
 
 extern const char *rpn_str_error[RPN_ERR_LAST];
 
+/**
+ * Initialize an RPN context with nr_reg registers.
+ */
 struct rpn_ctx *rpn_init(int nr_reg);
+
+/**
+ * Destroy an RPN context.
+ * @param ctx is a pointer t o an RPN context created with rpn_init().
+ */
 void rpn_destroy(struct rpn_ctx *ctx);
 
 /**
@@ -80,11 +98,36 @@ static inline void rpn_set_obj(struct rpn_ctx *ctx, struct SelvaObject *obj) {
 }
 
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t size, unsigned flags);
-enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, struct RedisModuleString *rms);
+
+/**
+ * Set a register value from a RedisModuleString.
+ * The value is copied and no pointer to rms is held.
+ */
+enum rpn_error rpn_set_reg_rms(struct rpn_ctx *ctx, size_t i, struct RedisModuleString *rms);
+
+/**
+ * Set a register value as a pointer to a SelvaObject.
+ */
 enum rpn_error rpn_set_reg_slvobj(struct rpn_ctx *ctx, size_t i, struct SelvaObject *obj, unsigned flags);
+
+/**
+ * Set a register value as a pointer to a SelvaSet.
+ */
 enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet *set, unsigned flags);
+
+/**
+ * Compile an RPN expression.
+ * @param input is pointer to a nul-terminated RPN expression.
+ * @returns A compiled expression.
+ */
 struct rpn_expression *rpn_compile(const char *input);
+
+/**
+ * Destroy a compiled RPN expression.
+ * @param expr is a pointer to an expression created with rpn_compile().
+ */
 void rpn_destroy_expression(struct rpn_expression *expr);
+
 enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, int *out);
 enum rpn_error rpn_double(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, double *out);
 enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, long long *out);

@@ -72,7 +72,6 @@ struct redisObjectAccessor {
 
 struct rpn_operand {
     struct {
-        unsigned in_use : 1; /*!< In use/in stack, do not free. */
         unsigned pooled : 1; /*!< Pooled operand, do not free. */
         unsigned regist : 1; /*!< Register value, do not free. */
         unsigned spused : 1; /*!< The value is a string pointed by sp. */
@@ -81,6 +80,7 @@ struct rpn_operand {
         unsigned slvset : 1; /*!< Set pointer is pointing to a SelvaSet. */
         unsigned embset : 1; /*!< Embedded set is used and it must be destroyed. */
     } flags;
+    uint32_t refcount; /*!< Stack reference counter adjusted on push/pop. */
     struct rpn_operand *next_free; /* Next free in pool. */
     size_t s_size;
     double d;
@@ -91,7 +91,7 @@ struct rpn_operand {
             struct SelvaSet *set; /*! A pointer to a SelvaSet. */
             /*
              * Note that set_emb is after the pointer and it's not necessarily
-             * in the allocated memory block embset is not set.
+             * in the allocated memory block if embset is not set.
              */
             struct SelvaSet set_emb; /*!< An embedded set. */
         };
@@ -134,18 +134,12 @@ __constructor static void init_pool(void) {
 struct rpn_ctx *rpn_init(int nr_reg) {
     struct rpn_ctx * ctx;
 
-    ctx = RedisModule_Calloc(1, sizeof(struct rpn_ctx));
-    if (unlikely(!ctx)) {
+    if (nr_reg < 1) {
         return NULL;
     }
 
+    ctx = RedisModule_Calloc(1, sizeof(struct rpn_ctx) + nr_reg * sizeof(struct rpn_operand *));
     ctx->nr_reg = nr_reg;
-
-    ctx->reg = RedisModule_Calloc(nr_reg, sizeof(struct rpn_operand *));
-    if (unlikely(!ctx->reg)) {
-        RedisModule_Free(ctx);
-        return NULL;
-    }
 
     return ctx;
 }
@@ -160,14 +154,15 @@ void rpn_destroy(struct rpn_ctx *ctx) {
                 continue;
             }
 
-            v->flags.in_use = 0;
+            v->refcount = 0;
             v->flags.regist = 0;
 
             free_rpn_operand(&v);
         }
 
-        RedisModule_Free(ctx->rms_field);
-        RedisModule_Free(ctx->reg);
+        if (ctx->rms) {
+            RedisModule_FreeString(NULL, ctx->rms);
+        }
         RedisModule_Free(ctx);
     }
 }
@@ -208,9 +203,6 @@ static int cpy2rm_str(RedisModuleString **rms_p, const char *str, size_t len) {
 
     if (!*rms_p) {
         *rms_p = RedisModule_CreateString(NULL, RMSTRING_TEMPLATE, sizeof(RMSTRING_TEMPLATE));
-        if (unlikely(!*rms_p)) {
-            return RPN_ERR_ENOMEM;
-        }
     }
 
     rms = *rms_p;
@@ -301,7 +293,7 @@ static void free_rpn_operand(void *p) {
     }
 
     v = *pp;
-    if (!v || v->flags.in_use || v->flags.regist) {
+    if (!v || v->refcount > 0 || v->flags.regist) {
         return;
     }
 
@@ -325,13 +317,29 @@ static void free_rpn_operand(void *p) {
     }
 }
 
+static struct rpn_operand *pop(struct rpn_ctx *ctx) {
+    if (!ctx->depth) {
+        return NULL;
+    }
+
+    struct rpn_operand *v = ctx->stack[--ctx->depth];
+
+#if RPN_ASSERTS
+    assert(v);
+#endif
+
+    v->refcount--;
+
+    return v;
+}
+
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
     if (unlikely(ctx->depth >= RPN_MAX_D)) {
         fprintf(stderr, "%s:%d: Stack overflow\n", __FILE__, __LINE__);
         return RPN_ERR_BADSTK;
     }
 
-    v->flags.in_use = 1;
+    v->refcount++;
     ctx->stack[ctx->depth++] = v;
 
     return RPN_ERR_OK;
@@ -427,22 +435,6 @@ static enum rpn_error push_selva_set_result(struct rpn_ctx *ctx, struct SelvaSet
     return push(ctx, v);
 }
 
-static struct rpn_operand *pop(struct rpn_ctx *ctx) {
-    if (!ctx->depth) {
-        return NULL;
-    }
-
-    struct rpn_operand *v = ctx->stack[--ctx->depth];
-
-#if RPN_ASSERTS
-    assert(v);
-#endif
-
-    v->flags.in_use = 0;
-
-    return v;
-}
-
 static void clear_stack(struct rpn_ctx *ctx) {
     struct rpn_operand *v;
 
@@ -529,16 +521,12 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
     return RPN_ERR_OK;
 }
 
-enum rpn_error rpn_set_reg_rm(struct rpn_ctx *ctx, size_t i, RedisModuleString *rms) {
+enum rpn_error rpn_set_reg_rms(struct rpn_ctx *ctx, size_t i, RedisModuleString *rms) {
     TO_STR(rms);
     const size_t size = rms_len + 1;
     char *arg;
 
     arg = RedisModule_Alloc(size);
-    if (!arg) {
-        return RPN_ERR_ENOMEM;
-    }
-
     memcpy(arg, rms_str, size);
     return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_RMFREE);
 }
@@ -631,10 +619,11 @@ static inline double js_fmod(double x, double y) {
 }
 
 static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, int type) {
-    const size_t i = fast_atou(str_index);
+    unsigned i;
 
-    if (i >= (size_t)ctx->nr_reg) {
-        fprintf(stderr, "%s:%d: Register index out of bounds: %zu\n",
+    memcpy(&i, str_index, sizeof(unsigned));
+    if (i >= (unsigned)ctx->nr_reg) {
+        fprintf(stderr, "%s:%d: Register index out of bounds: %u\n",
                 __FILE__, __LINE__, i);
         return RPN_ERR_BNDS;
     }
@@ -642,14 +631,14 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, in
     struct rpn_operand *r = ctx->reg[i];
 
     if (!r) {
-        fprintf(stderr, "%s:%d: Register value is a NULL pointer: %zu\n",
+        fprintf(stderr, "%s:%d: Register value is a NULL pointer: %u\n",
                 __FILE__, __LINE__, i);
         return RPN_ERR_NPE;
     }
 
     if (type == RPN_LVTYPE_NUMBER) {
         if (isnan(r->d)) {
-            fprintf(stderr, "%s:%d: Register value is not a number: %zu\n",
+            fprintf(stderr, "%s:%d: Register value is not a number: %u\n",
                     __FILE__, __LINE__, i);
             return RPN_ERR_NAN;
         }
@@ -752,9 +741,8 @@ static enum rpn_error rpn_op_sub(struct RedisModuleCtx *redis_ctx __unused, stru
 static enum rpn_error rpn_op_div(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
-    double d = b->d;
 
-    return push_double_result(ctx, a->d / d);
+    return push_double_result(ctx, a->d / b->d);
 }
 
 static enum rpn_error rpn_op_mul(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
@@ -868,6 +856,23 @@ static enum rpn_error rpn_op_possib(struct RedisModuleCtx *redis_ctx __unused, s
     }
 }
 
+static enum rpn_error rpn_op_dup(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+    enum rpn_error err;
+    OPERAND(ctx, a);
+
+    err = push(ctx, a);
+    return err ? err : push(ctx, a);
+}
+
+static enum rpn_error rpn_op_swap(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+    enum rpn_error err;
+    OPERAND(ctx, a);
+    OPERAND(ctx, b);
+
+    err = push(ctx, a);
+    return err ? err : push(ctx, b);
+}
+
 static enum rpn_error rpn_op_ternary(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -878,6 +883,45 @@ static enum rpn_error rpn_op_ternary(struct RedisModuleCtx *redis_ctx __unused, 
     } else {
         return push(ctx, c);
     }
+}
+
+static enum rpn_error rpn_op_drop(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+    OPERAND(ctx, a);
+
+    return RPN_ERR_OK;
+}
+
+static enum rpn_error rpn_op_rot(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+    enum rpn_error err;
+    OPERAND(ctx, a);
+    OPERAND(ctx, b);
+    OPERAND(ctx, c);
+
+    err = push(ctx, b);
+    if (err) {
+        return err;
+    }
+    err = push(ctx, c);
+    if (err) {
+        return err;
+    }
+    return push(ctx, a);
+}
+
+static enum rpn_error rpn_op_over(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+    enum rpn_error err;
+    OPERAND(ctx, a);
+    OPERAND(ctx, b);
+
+    err = push(ctx, b);
+    if (err) {
+        return err;
+    }
+    err = push(ctx, a);
+    if (err) {
+        return err;
+    }
+    return push(ctx, b);
 }
 
 static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
@@ -938,15 +982,11 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ct
 
     if (set) {
         if (set->type == SELVA_SET_TYPE_RMSTRING) {
-            /*
-             * We use rms_field here because we don't need it for the field_name in this
-             * function.
-             */
-            if(rpn_operand2rms(&ctx->rms_field, v)) {
+            if(rpn_operand2rms(&ctx->rms, v)) {
                 return RPN_ERR_ENOMEM;
             }
 
-            return push_int_result(ctx, SelvaSet_Has(set, ctx->rms_field));
+            return push_int_result(ctx, SelvaSet_Has(set, ctx->rms));
         } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
             return push_int_result(ctx, SelvaSet_Has(set, v->d));
         } else if (set->type == SELVA_SET_TYPE_LONGLONG) {
@@ -1111,10 +1151,6 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
              * the original string was created.
              */
             s = RedisModule_CreateString(NULL, field_str, field_len);
-            if (!s) {
-                return RPN_ERR_ENOMEM;
-            }
-
             err = SelvaSet_Add(result->set, s);
             if (err) {
                 RedisModule_FreeString(NULL, s);
@@ -1270,12 +1306,12 @@ static rpn_fp funcs[] = {
     rpn_op_xor,     /* O */
     rpn_op_necess,  /* P */
     rpn_op_possib,  /* Q */
-    rpn_op_abo,     /* R spare */
-    rpn_op_abo,     /* S spare */
-    rpn_op_ternary, /* T spare */
-    rpn_op_abo,     /* U spare */
-    rpn_op_abo,     /* V spare */
-    rpn_op_abo,     /* W spare */
+    rpn_op_dup,     /* R */
+    rpn_op_swap,    /* S */
+    rpn_op_ternary, /* T */
+    rpn_op_drop,    /* U */
+    rpn_op_over,    /* V */
+    rpn_op_rot,     /* W */
     rpn_op_abo,     /* X */
     rpn_op_abo,     /* Y */
     rpn_op_abo,     /* Z */
@@ -1437,7 +1473,6 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
     if (type != '"' &&
         type != '}' /* empty set */
        ) {
-        fprintf(stderr, "Type: %c\n", type);
         /* Currently only string sets are supported. */
         return RPN_ERR_TYPE;
     }
@@ -1465,10 +1500,6 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
             tok_len -= 2;
 
             RedisModuleString *rms = RedisModule_CreateString(NULL, tok_str, tok_len);
-            if (!rms) {
-                return RPN_ERR_ENOMEM;
-            }
-
             err = SelvaSet_Add(v->set, rms);
             if (err) {
                 RedisModule_FreeString(NULL, rms);
@@ -1486,20 +1517,27 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
 
     return compile_push_literal(expr, i, v);
 }
+
+static enum rpn_error compile_operator(char *e, char c) {
+    const size_t op = c - 'A';
+
+    if (!(op < num_elem(funcs))) {
+        return RPN_ERR_ILLOPC;
+    }
+
+    e[0] = 'f';
+    memcpy(e + 1, &funcs[op], sizeof(void *));
+
+    return RPN_ERR_OK;
+}
+
 struct rpn_expression *rpn_compile(const char *input) {
     struct rpn_expression *expr;
     expr = RedisModule_Alloc(sizeof(struct rpn_expression));
-    if (!expr) {
-        return NULL;
-    }
     memset(expr->input_literal_reg, 0, sizeof(expr->input_literal_reg));
 
     size_t size = 2 * sizeof(rpn_token);
     expr->expression = RedisModule_Alloc(size);
-    if (!expr->expression) {
-        RedisModule_Free(expr);
-        return NULL;
-    }
 
     const char *delim = " \t\n\r\f";
     const char *group = "{\"";
@@ -1513,39 +1551,79 @@ struct rpn_expression *rpn_compile(const char *input) {
         enum rpn_error err;
         char *e = expr->expression[i++];
         rpn_token *new;
+        unsigned tmp;
 
         if (tok_len == 0) {
-            fprintf(stderr, "%s:%d: Token length can't be zero\n",
-                    __FILE__, __LINE__);
+            fprintf(stderr, "%s:%d:%s: Token length can't be zero\n",
+                    __FILE__, __LINE__, __func__);
             goto fail;
         }
 
         switch (tok_str[0]) {
-        case '#':
+        case '#': /* Number literal */
             err = compile_num_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 1);
             break;
-        case '"':
+        case '"': /* String literal */
             err = compile_str_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 2);
             break;
-        case '{':
+        case '{': /* Set literal */
             err = compile_selvaset_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 2);
             break;
+        case '@':
+            e[0] = '@';
+            tmp = fast_atou(tok_str + 1);
+            memcpy(e + 1, &tmp, sizeof(unsigned));
+            goto next;
+        case '$':
+            e[0] = '$';
+            tmp = fast_atou(tok_str + 1);
+            memcpy(e + 1, &tmp, sizeof(unsigned));
+            goto next;
+        case '&':
+            e[0] = '&';
+            tmp = fast_atou(tok_str + 1);
+            memcpy(e + 1, &tmp, sizeof(unsigned));
+            goto next;
+        case '>': /* Conditional jump */
+            if (tok_len < 2 || tok_str[1] == '-') {
+                fprintf(stderr, "%s:%d:%s: Invalid conditional jump\n",
+                        __FILE__, __LINE__, __func__);
+                goto fail;
+            } else {
+                unsigned n = fast_atou(tok_str + 1);
+
+                if (n > 255) {
+                    fprintf(stderr, "%s:%d:%s: Conditional jump too long\n",
+                            __FILE__, __LINE__, __func__);
+                    goto fail;
+                }
+
+                e[0] = '>';
+                e[1] = (uint8_t)n;
+                e[2] = '\0';
+            }
+            goto next;
         default:
             if (tok_len > RPN_MAX_TOKEN_SIZE - 1) {
-                fprintf(stderr, "%s:%d: Invalid token length %llu\n",
-                        __FILE__, __LINE__,
+                fprintf(stderr, "%s:%d:%s: Invalid token length %llu\n",
+                        __FILE__, __LINE__, __func__,
                         (unsigned long long)tok_len);
                 goto fail;
             }
 
-            memcpy(e, tok_str, tok_len);
-            e[tok_len] = '\0';
+            if (compile_operator(e, tok_str[0])) {
+                /* Not an operator */
+                /* TODO Not sure if this is even needed */
+                memcpy(e, tok_str, tok_len);
+                e[tok_len] = '\0';
+            }
+
             goto next;
         }
 
         if (err) {
-            fprintf(stderr, "%s:%d: RPN compilation error: %s\n",
-                    __FILE__, __LINE__,
+            fprintf(stderr, "%s:%d:%s: RPN compilation error: %s\n",
+                    __FILE__, __LINE__, __func__,
                     err >= 0 && err < num_elem(rpn_str_error) ? rpn_str_error[err] : "Unknown");
 fail:
             rpn_destroy_expression(expr);
@@ -1553,6 +1631,7 @@ fail:
         }
 
         /*
+         * Continue literal handling.
          * All literals can be marked with the same prefix from now on as
          * fetching the value will happen with the same function.
          */
@@ -1563,7 +1642,8 @@ fail:
 next:
         new = RedisModule_Realloc(expr->expression, size);
         if (!new) {
-            fprintf(stderr, "%s:%d: Realloc failed\n", __FILE__, __LINE__);
+            fprintf(stderr, "%s:%d:%s: Realloc failed\n",
+                    __FILE__, __LINE__, __func__);
             goto fail;
         }
         expr->expression = new;
@@ -1573,7 +1653,8 @@ next:
 
     /* The returned length is only ever 0 if the grouping failed. */
     if (tok_len == 0) {
-        fprintf(stderr, "%s:%d: Tokenization failed\n", __FILE__, __LINE__);
+        fprintf(stderr, "%s:%d:%s: Tokenization failed\n",
+                __FILE__, __LINE__, __func__);
         rpn_destroy_expression(expr);
         return NULL;
     }
@@ -1613,16 +1694,37 @@ static enum rpn_error get_literal(struct rpn_ctx *ctx, const struct rpn_expressi
     return push(ctx, expr->input_literal_reg[i]);
 }
 
+static enum rpn_error cond_jump(struct rpn_ctx *ctx, const char *s, const rpn_token * restrict *it) {
+    OPERAND(ctx, cond);
+
+    if (to_bool(cond)) {
+        uint8_t n;
+
+        memcpy(&n, s, sizeof(uint8_t));
+
+        for (int i = 0; i < (int)n; i++) {
+            if (***it) {
+                (*it)++;
+            } else {
+                break;
+            }
+        }
+    }
+
+    return RPN_ERR_OK;
+}
+
 static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr) {
     const rpn_token *it = expr->expression;
     const char *s;
 
     while (*(s = *it++)) {
-        size_t op = *s - 'A';
-
-        if (op < sizeof(funcs) / sizeof(void *)) { /* Operator */
+        if (s[0] == 'f') { /* Operator */
+            rpn_fp fp;
             enum rpn_error err;
-            err = funcs[op](redis_ctx, ctx);
+
+            memcpy(&fp, s + 1, sizeof(void *));
+            err = fp(redis_ctx, ctx);
             if (err) {
                 if (err == RPN_ERR_BREAK) {
                     /*
@@ -1657,9 +1759,16 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
             case '#':
                 err = get_literal(ctx, expr, s + 1);
                 break;
+            case '>':
+                err = cond_jump(ctx, s + 1, &it);
+                break;
             default:
-                fprintf(stderr, "%s:%d: Illegal operand: \"%s\"\n",
-                        __FILE__, __LINE__, s);
+                /*
+                 * `s` might be longer than RPN_MAX_TOKEN_SIZE but it's safer
+                 * to limit what we print in this case.
+                 */
+                fprintf(stderr, "%s:%d: Illegal operand: \"%.*s\"\n",
+                        __FILE__, __LINE__, (int)RPN_MAX_TOKEN_SIZE, s);
                 err = RPN_ERR_ILLOPN;
             }
 
