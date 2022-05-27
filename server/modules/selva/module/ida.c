@@ -15,10 +15,6 @@ struct ida *ida_init(ida_t max) {
     struct ida *ida;
 
     ida = RedisModule_Alloc(sizeof(struct ida) - sizeof_field(struct ida, id_map) + BITMAP_ALLOC_SIZE(max));
-    if (!ida) {
-        return NULL;
-    }
-
     ida->id_map.nbits = max;
 
     for (int i = 0; i < max; i++) {

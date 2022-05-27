@@ -678,10 +678,6 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
          * indexing a query described by the arguments of this function.
          */
         icb = RedisModule_Calloc(1, sizeof(*icb) + name_len);
-        if (!icb) {
-            return NULL;
-        }
-
         icb->name_len = name_len;
         memcpy(icb->name_str, name_str, name_len);
 

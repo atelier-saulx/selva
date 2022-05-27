@@ -70,10 +70,6 @@ char * base64_encode(const char *str_in, size_t len, size_t *out_len)
     size_t n;
 
     out = RedisModule_Alloc(base64_out_len(len, line_max) + 1);
-    if (out == NULL) {
-        return NULL;
-    }
-
     n = base64_encode_s(out, str_in, len, line_max);
     if (out_len) {
         *out_len = n;
@@ -107,9 +103,6 @@ char * base64_decode(const char *str_in, size_t len, size_t *out_len)
 
     olen = count / 4 * 3;
     pos = out = RedisModule_Alloc(olen);
-    if (out == NULL) {
-        return NULL;
-    }
 
     count = 0;
     for (i = 0; i < len; i++) {

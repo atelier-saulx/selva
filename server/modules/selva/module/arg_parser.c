@@ -80,13 +80,6 @@ int SelvaArgsParser_StringList(
              * Create a string.
              */
             el = RedisModule_CreateString(ctx, cur, len);
-            if (!el) {
-#if MEM_DEBUG
-                memset(list, 0, list_size);
-#endif
-                RedisModule_Free(list);
-                return SELVA_ENOMEM;
-            }
 
             /*
              * Set to the array.
@@ -136,9 +129,6 @@ int SelvaArgsParser_StringSetList(
 
     if (excluded_out) {
         excl = RedisModule_CreateString(ctx, "", 0);
-        if (!excl) {
-            goto fail;
-        }
     }
 
     if (cur[0] != eos) {
@@ -207,9 +197,6 @@ int SelvaArgsParser_StringSetList(
                         RedisModuleString *el;
 
                         el = RedisModule_CreateString(NULL, cur_el, el_len);
-                        if (!el) {
-                            goto fail;
-                        }
 
                         /*
                          * Add to the list.

@@ -120,10 +120,6 @@ struct SelvaObject *SelvaObject_New(void) {
     struct SelvaObject *obj;
 
     obj = RedisModule_Alloc(sizeof(*obj));
-    if (!obj) {
-        return NULL;
-    }
-
     obj->obj_size = 0;
     obj->emb_res = (1 << NR_EMBEDDED_KEYS) - 1;
     RB_INIT(&obj->keys_head);
@@ -159,9 +155,6 @@ static int init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType su
     key->subtype = SELVA_OBJECT_NULL;
 
     key->array = RedisModule_Calloc(1, sizeof(SVector));
-    if (!key->array) {
-        return SELVA_ENOMEM;
-    }
 
     if (!SVector_Init(key->array, size, NULL)) {
         RedisModule_Free(key->array);

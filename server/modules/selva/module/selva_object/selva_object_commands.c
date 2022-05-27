@@ -21,10 +21,6 @@ static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleStri
      * Open the Redis key.
      */
     hkey_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
-    if (!hkey_name) {
-        replyWithSelvaError(ctx, SELVA_ENOMEM);
-        return NULL;
-    }
     hierarchy = SelvaModify_OpenHierarchy(ctx, hkey_name, mode);
     if (!hierarchy) {
         return NULL;

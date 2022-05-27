@@ -630,10 +630,6 @@ static struct Selva_Subscription *create_subscription(
     struct Selva_Subscription *sub;
 
     sub = RedisModule_Calloc(1, sizeof(struct Selva_Subscription));
-    if (!sub) {
-        return NULL;
-    }
-
     memcpy(sub->sub_id, sub_id, sizeof(sub->sub_id));
 
     if (!SVector_Init(&sub->markers, 1, marker_svector_compare)) {
@@ -677,11 +673,6 @@ static int new_marker(
     }
 
     marker = RedisModule_Calloc(1, sizeof(struct Selva_SubscriptionMarker));
-    if (!marker) {
-        /* The subscription won't be freed. */
-        return SELVA_SUBSCRIPTIONS_ENOMEM;
-    }
-
     marker->marker_id = marker_id;
     marker->marker_flags = flags;
     marker->dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
@@ -2324,11 +2315,6 @@ int SelvaSubscriptions_AddMissingCommand(RedisModuleCtx *ctx, RedisModuleString 
             ctx, "%s.%.*s",
             RedisModule_StringPtrLen(argv[i], NULL),
             (int)SELVA_SUBSCRIPTION_ID_STR_LEN, Selva_SubscriptionId2str(sub_id_str, sub_id));
-        if (!missing) {
-            err = SELVA_SUBSCRIPTIONS_ENOMEM;
-            return replyWithSelvaErrorf(ctx, err, "Creating missing markers");
-        }
-
         err = SelvaObject_SetPointer(hierarchy->subs.missing, missing, sub, NULL);
         if (err) {
             return replyWithSelvaError(ctx, err);

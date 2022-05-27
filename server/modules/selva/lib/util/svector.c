@@ -56,10 +56,6 @@ SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void
         /* RBTREE mode requires compar function */
         if (initial_len < SVECTOR_THRESHOLD || !compar) {
             vec->vec_arr = RedisModule_Alloc(VEC_SIZE(initial_len));
-
-            if (!vec->vec_arr) {
-                return NULL;
-            }
         } else {
             vec->vec_mode = SVECTOR_MODE_RBTREE;
             RB_INIT(&vec->vec_rbhead);
@@ -265,10 +261,6 @@ void *SVector_InsertFast(SVector *vec, void *el) {
 
             vec->vec_arr_len = sz;
             vec->vec_arr = RedisModule_Alloc(VEC_SIZE(sz));
-            if (!vec->vec_arr) {
-                fprintf(stderr, "SVector realloc failed\n");
-                abort(); /* This will cause a core dump. */
-            }
         }
 
         ssize_t l = 0;

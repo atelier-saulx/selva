@@ -92,10 +92,6 @@ static int add_lang(const char *lang, const char *locale_name) {
     int err;
 
     slang = RedisModule_Calloc(1, sizeof(*slang));
-    if (!slang) {
-        return SELVA_ENOMEM;
-    }
-
     slang->locale = newlocale(LC_ALL_MASK, locale_name, 0);
     if (!slang->locale) {
         if (errno == EINVAL) {
