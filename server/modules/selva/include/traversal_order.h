@@ -29,7 +29,9 @@ enum SelvaResultOrder {
     SELVA_RESULT_ORDER_DESC,
 };
 
-int SelvaTraversal_ParseOrder(
+int SelvaTraversal_ParseOrder(enum SelvaResultOrder *order, struct RedisModuleString *ord);
+
+int SelvaTraversal_ParseOrderArg(
         struct RedisModuleString **order_by_field,
         enum SelvaResultOrder *order,
         const struct RedisModuleString *txt,

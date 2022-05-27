@@ -29,6 +29,12 @@
 static float lpf_a; /*!< Popularity count average dampening coefficient. */
 Selva_SubscriptionId find_index_sub_id; /* zeroes. */
 
+static const enum SelvaTraversal allowed_dirs =
+    SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS |
+    SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS |
+    SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION;
+
+
 /*
  * Trace handles.
  */
@@ -864,11 +870,7 @@ int SelvaFindIndex_Auto(
     /*
      * Only index some traversals.
      */
-    if (!(dir & (
-                 SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS |
-                 SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS |
-                 SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION
-                ))) {
+    if (!(dir & allowed_dirs)) {
         return 0;
     }
 
@@ -1032,11 +1034,12 @@ static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **a
      */
     hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
-        /* Do not send redis messages here. */
+        /* Do not send Redis replies here. */
         return REDISMODULE_OK;
     }
+
     if (!hierarchy->dyn_index.index_map) {
-        return replyWithSelvaError(ctx, SELVA_ENOENT);
+        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "Indexing disabled");
     }
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
@@ -1046,58 +1049,82 @@ static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **a
 }
 
 static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    SelvaHierarchy *hierarchy;
-    enum SelvaTraversal dir;
-    RedisModuleString *dir_expression;
-    Selva_NodeId node_id;
-    RedisModuleString *filter;
-    struct SelvaFindIndexControlBlock *icb = NULL;
     int err;
-
-    if (argc != 6) {
-        return RedisModule_WrongArity(ctx);
-    }
 
     const int ARGV_REDIS_KEY = 1;
     const int ARGV_DIRECTION = 2;
     const int ARGV_REF_FIELD = 3;
-    const int ARGV_NODE_ID = 4;
-    const int ARGV_FILTER = 5;
+    const int ARGV_ORDER_ORD = 4;
+    const int ARGV_ORDER_FLD = 5;
+    const int ARGV_NODE_ID = 6;
+    const int ARGV_FILTER = 7;
+
+    if (argc != 8) {
+        return RedisModule_WrongArity(ctx);
+    }
 
     /*
      * Open the Redis key.
      */
+    SelvaHierarchy *hierarchy;
     hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
-        /* Do not send redis messages here. */
+        /* Do not send Redis replies here. */
         return REDISMODULE_OK;
     }
 
     if (!hierarchy->dyn_index.index_map) {
-        return replyWithSelvaError(ctx, SELVA_ENOENT);
+        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "Indexing disabled");
     }
 
+    enum SelvaTraversal dir;
     err = SelvaTraversal_ParseDir2(&dir, argv[ARGV_DIRECTION]);
     if (err) {
-        return replyWithSelvaErrorf(ctx, err, "Traversal argument");
+        return replyWithSelvaErrorf(ctx, err, "Traversal direction");
     }
 
+    RedisModuleString *dir_expression;
     if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
         dir_expression = argv[ARGV_REF_FIELD];
-    } else {
+    } else if ((dir & allowed_dirs) != 0) {
         dir_expression = NULL;
+    } else {
+        return replyWithSelvaErrorf(ctx, SELVA_ENOTSUP, "Traversal direction");
     }
 
+    enum SelvaResultOrder order;
+    err = SelvaTraversal_ParseOrder(&order, argv[ARGV_ORDER_ORD]);
+    if (err) {
+        return replyWithSelvaErrorf(ctx, err, "order");
+    }
+
+    Selva_NodeId node_id;
     err = Selva_RMString2NodeId(node_id, argv[ARGV_NODE_ID]);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "node_id");
     }
 
-    /* TODO Validate */
-    filter = argv[ARGV_FILTER];
+    /*
+     * Validate the expression.
+     * This is not strictly necessary but it will save us from at least the most
+     * obvious surprises with invalid expressions.
+     */
+    RedisModuleString *filter = argv[ARGV_FILTER];
+    TO_STR(filter);
+    struct rpn_expression *expr = rpn_compile(filter_str);
+    rpn_destroy_expression(expr);
+    if (!expr) {
+        return replyWithSelvaError(ctx, SELVA_RPN_ECOMP);
+    }
 
-    /* TODO support order */
-    err = SelvaFindIndex_Auto(ctx, hierarchy, dir, dir_expression, node_id, SELVA_RESULT_ORDER_NONE, NULL, filter, &icb);
+    /*
+     * Create the index.
+     */
+    struct SelvaFindIndexControlBlock *icb = NULL;
+    err = SelvaFindIndex_Auto(ctx, hierarchy,
+            dir, dir_expression, node_id,
+            order, order != SELVA_RESULT_ORDER_NONE ? argv[ARGV_ORDER_FLD] : NULL,
+            filter, &icb);
     if ((err && err != SELVA_ENOENT) || !icb) {
         return replyWithSelvaErrorf(ctx, err, "Failed to create an index");
     }
@@ -1152,11 +1179,12 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
      */
     hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
     if (!hierarchy) {
-        /* Do not send redis messages here. */
+        /* Do not send Redis replies here. */
         return REDISMODULE_OK;
     }
+
     if (!hierarchy->dyn_index.index_map) {
-        return replyWithSelvaError(ctx, SELVA_ENOENT);
+        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "Indexing disabled");
     }
 
     err = SelvaObject_GetPointer(hierarchy->dyn_index.index_map, argv[ARGV_INDEX], &p);

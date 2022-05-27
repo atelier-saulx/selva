@@ -21,42 +21,69 @@ struct order_data {
 
 typedef int (*orderFunc)(const void ** restrict a_raw, const void ** restrict b_raw);
 
-int SelvaTraversal_ParseOrder(
+static const struct SelvaArgParser_EnumType order_types[] = {
+    {
+        .name = "none",
+        .id = SELVA_RESULT_ORDER_NONE,
+    },
+    {
+        .name = "asc",
+        .id = SELVA_RESULT_ORDER_ASC,
+    },
+    {
+        .name = "desc",
+        .id = SELVA_RESULT_ORDER_DESC,
+    },
+    /* Must be last. */
+    {
+        .name = NULL,
+        .id = 0,
+    }
+};
+
+int SelvaTraversal_ParseOrder(enum SelvaResultOrder *order, struct RedisModuleString *ord) {
+    int res;
+
+    res = SelvaArgParser_Enum(order_types, ord);
+    if (res < 0) {
+        *order = SELVA_RESULT_ORDER_NONE;
+        return res;
+    }
+
+    *order = (enum SelvaResultOrder)res;
+    return 0;
+}
+
+int SelvaTraversal_ParseOrderArg(
         RedisModuleString **order_by_field,
         enum SelvaResultOrder *order,
         const RedisModuleString *txt,
         RedisModuleString *fld,
         RedisModuleString *ord) {
-    TO_STR(txt, fld, ord);
-    enum SelvaResultOrder tmpOrder;
+    TO_STR(txt, fld);
+    int err;
 
     if (strcmp("order", txt_str)) {
         return SELVA_HIERARCHY_ENOENT;
     }
-    if (unlikely(ord_len < 3)) {
-        goto einval;
-    }
 
-    if (ord_str[0] == 'a' && !strcmp("asc", ord_str)) {
-        tmpOrder = SELVA_RESULT_ORDER_ASC;
-    } else if (ord_str[0] == 'd' && !strcmp("desc", ord_str)) {
-        tmpOrder = SELVA_RESULT_ORDER_DESC;
-    } else {
-einval:
-        fprintf(stderr, "%s:%d: Invalid order \"%.*s\"\n",
+    err = SelvaTraversal_ParseOrder(order, ord);
+    if (err) {
+        TO_STR(ord);
+
+        fprintf(stderr, "%s:%d: Invalid order \"%.*s\": %s\n",
                 __FILE__, __LINE__,
-                (int)ord_len, ord_str);
+                (int)ord_len, ord_str,
+                getSelvaErrorStr(err));
         return SELVA_HIERARCHY_EINVAL;
     }
 
     if (fld_len == 0 || fld_str[0] == '\0') {
-        tmpOrder = SELVA_RESULT_ORDER_NONE;
+        *order = SELVA_RESULT_ORDER_NONE;
         *order_by_field = NULL;
     } else {
         *order_by_field = fld;
     }
-
-    *order = tmpOrder;
 
     return 0;
 }
