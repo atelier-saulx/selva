@@ -65,6 +65,8 @@ struct SelvaModify_AsyncTask {
     };
 };
 
+static const char *redis_addr = "127.0.0.1";
+
 static uint64_t total_publishes;
 static uint64_t missed_publishes;
 
@@ -96,14 +98,18 @@ static int getRedisPort(void) {
     return (int)strtol(str, NULL, 10);
 }
 
-static void selva_yield(void) {
+static void async_task_nsleep(long nsec) {
     const struct timespec tim = {
         .tv_sec = 0,
-        .tv_nsec = ASYNC_TASK_PEEK_INTERVAL_NS,
+        .tv_nsec = nsec,
     };
 
-    sched_yield();
     nanosleep(&tim, NULL);
+}
+
+static void async_task_yield(void) {
+    sched_yield();
+    async_task_nsleep(ASYNC_TASK_PEEK_INTERVAL_NS);
 }
 
 #define ASYNC_TASK_LOG(fmt, ...) \
@@ -113,10 +119,9 @@ static void selva_yield(void) {
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     uint64_t thread_idx = (uint64_t)argv;
     redisContext *ctx = NULL;
+    queue_cb_t *queue = queues + thread_idx;
 
     ASYNC_TASK_LOG("Started async task worker\n");
-
-    queue_cb_t *queue = queues + thread_idx;
 
     int port = getRedisPort();
     if (!port) {
@@ -124,17 +129,12 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         goto error;
     }
 
-    ASYNC_TASK_LOG("Connecting to Redis master on 127.0.0.1:%d\n", port);
+    ASYNC_TASK_LOG("Connecting to Redis master on %s:%d\n", redis_addr, port);
 
-    ctx = redisConnect("127.0.0.1", port);
+    ctx = redisConnect(redis_addr, port);
     if (ctx->err) {
-        const struct timespec tim = {
-            .tv_sec = 0,
-            .tv_nsec = 100000000L,
-        };
-
         ASYNC_TASK_LOG("Error connecting to the redis instance\n");
-        nanosleep(&tim, NULL);
+        async_task_nsleep(100000000L);
         goto error;
     }
 
@@ -147,7 +147,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
         char *next;
 
         if (!queue_peek(queue, (void **)&next)) {
-            selva_yield();
+            async_task_yield();
             continue;
         }
 
@@ -177,7 +177,7 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
             if (remaining > 0) {
                 if (!queue_peek(queue, (void **)&next)) {
-                    selva_yield();
+                    async_task_yield();
                     continue;
                 }
             }
@@ -199,17 +199,12 @@ retry:
             goto error;
         }
         if (!ctx) {
-            ASYNC_TASK_LOG("Reconnecting to Redis master on 127.0.0.1:%d\n", port);
+            ASYNC_TASK_LOG("Reconnecting to Redis master on %s:%d\n", redis_addr, port);
 
-            ctx = redisConnect("127.0.0.1", port);
+            ctx = redisConnect(redis_addr, port);
             if (ctx->err) {
-                const struct timespec tim = {
-                    .tv_sec = 0,
-                    .tv_nsec = 20000000L,
-                };
-
                 ASYNC_TASK_LOG("Error connecting to the redis instance\n");
-                nanosleep(&tim, NULL);
+                async_task_nsleep(20000000L);
                 RETRY;
             }
         }
@@ -258,7 +253,7 @@ retry:
     }
 
 error:
-    ASYNC_TASK_LOG("Thread restarting... Ran for %ld minutes", (cur_time.tv_sec - start_time.tv_sec) / 60);
+    ASYNC_TASK_LOG("Thread restarting... Ran for %ld minutes\n", (cur_time.tv_sec - start_time.tv_sec) / 60);
     thread_ids[thread_idx] = 0;
     redisFree(ctx);
 
@@ -332,10 +327,9 @@ void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {
         .type = SELVA_MODIFY_ASYNC_TASK_SUB_UPDATE,
     };
 
-    /* TODO if payload_str was aligned properly we could locate the struct directly inside it. */
     memcpy(publish_task.sub_update.sub_id, sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
-    memcpy(ptr, &total_len, sizeof(int32_t));
-    ptr += sizeof(int32_t);
+    memcpy(ptr, &total_len, sizeof(total_len));
+    ptr += sizeof(total_len);
     memcpy(ptr, &publish_task, struct_len);
 
     SelvaModify_SendAsyncTask(payload_str, payload_len);
@@ -351,11 +345,10 @@ void SelvaModify_PublishSubscriptionTrigger(const Selva_SubscriptionId sub_id, c
         .type = SELVA_MODIFY_ASYNC_TASK_SUB_TRIGGER,
     };
 
-    /* TODO if payload_str was aligned properly we could locate the struct directly inside it. */
     memcpy(publish_task.sub_trigger.sub_id, sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
     memcpy(publish_task.sub_trigger.node_id, node_id, SELVA_NODE_ID_SIZE);
-    memcpy(ptr, &total_len, sizeof(int32_t));
-    ptr += sizeof(int32_t);
+    memcpy(ptr, &total_len, sizeof(total_len));
+    ptr += sizeof(total_len);
     memcpy(ptr, &publish_task, struct_len);
 
     SelvaModify_SendAsyncTask(payload_str, payload_len);
