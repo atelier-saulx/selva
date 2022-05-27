@@ -90,7 +90,6 @@ int SelvaSet_field_has_string(
 
     err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_str, field_len, &cb);
 
-    /* TODO Errors? */
     return err ? 0 : !!data.found;
 }
 
@@ -114,7 +113,6 @@ int SelvaSet_field_has_double(
 
     err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_str, field_len, &cb);
 
-    /* TODO Errors? */
     return err ? 0 : !!data.found;
 }
 
@@ -138,6 +136,5 @@ int SelvaSet_field_has_longlong(
 
     err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_str, field_len, &cb);
 
-    /* TODO Errors? */
     return err ? 0 : !!data.found;
 }

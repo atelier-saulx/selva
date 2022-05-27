@@ -20,6 +20,7 @@ struct SelvaSet;
 
 /**
  * Test if a set-like field has a string value.
+ * @returns Boolean.
  */
 int SelvaSet_field_has_string(
         struct RedisModuleCtx *ctx,
@@ -32,6 +33,7 @@ int SelvaSet_field_has_string(
 
 /**
  * Test if a set-like field has a double value.
+ * @returns Boolean.
  */
 int SelvaSet_field_has_double(
         struct RedisModuleCtx *ctx,
@@ -43,6 +45,7 @@ int SelvaSet_field_has_double(
 
 /**
  * Test if a set-like field has a long long value.
+ * @returns Boolean.
  */
 int SelvaSet_field_has_longlong(
         struct RedisModuleCtx *ctx,
@@ -64,11 +67,13 @@ int SelvaSet_field_has_longlong(
 
 /**
  * Test if the set a is a subset of the set b.
+ * @returns Boolean.
  */
 int SelvaSet_seta_in_setb(struct SelvaSet *a, struct SelvaSet *b);
 
 /**
  * Test if the set a is a subset of the set-like field b.
+ * @returns Boolean.
  */
 int SelvaSet_seta_in_fieldb(
         struct RedisModuleCtx *ctx,
@@ -80,6 +85,7 @@ int SelvaSet_seta_in_fieldb(
 
 /**
  * Test if the set-like field a is a subset of set b.
+ * @returns Boolean.
  */
 int SelvaSet_fielda_in_setb(
         struct RedisModuleCtx *ctx,
@@ -91,6 +97,7 @@ int SelvaSet_fielda_in_setb(
 
 /**
  * Test if the set-like field a is a subset of the set-like field b.
+ * @returns Boolean.
  */
 int SelvaSet_fielda_in_fieldb(
         struct RedisModuleCtx *ctx,

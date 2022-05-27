@@ -60,7 +60,6 @@ static int issub_nodeid(struct SelvaSet *a, struct SelvaSet *b) {
 int SelvaSet_seta_in_setb(struct SelvaSet *a, struct SelvaSet *b) {
     if (a->type != b->type) {
         /* TODO Should we have double vs long long cross compat for RPN? */
-        /* TODO Error? */
         return 0;
     }
 
@@ -77,8 +76,6 @@ int SelvaSet_seta_in_setb(struct SelvaSet *a, struct SelvaSet *b) {
         /* Invalid type? */
         return 0;
     }
-
-    /* TODO Error? */
 
     return 0;
 }
