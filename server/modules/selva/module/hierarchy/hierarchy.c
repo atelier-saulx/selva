@@ -235,9 +235,8 @@ SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
         goto fail;
     }
 
-    /* TODO Configurable inact nodes size */
     if (selva_glob_config.hierarchy_auto_compress_period_ms > 0) {
-        if (SelvaHierarchy_InitInactiveNodes(hierarchy, 4096 / SELVA_NODE_ID_SIZE)) {
+        if (SelvaHierarchy_InitInactiveNodes(hierarchy, HIERARCHY_AUTO_COMPRESS_INACT_NODES_LEN)) {
             SelvaModify_DestroyHierarchy(hierarchy);
             hierarchy = NULL;
             goto fail;
@@ -505,40 +504,43 @@ static int repopulate_detached_head(SelvaHierarchyNode *node) {
 
 /**
  * Search from the normal node index.
- * This function doesn't decompress anything no checks if the node exists in the
- * detached node index.
+ * This function doesn't decompress subtrees nor checks if the node exists in
+ * the detached node index.
  */
-static SelvaHierarchyNode *find_node_simple(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
-    struct SelvaHierarchySearchFilter filter;
-
-    memcpy(&filter.id, id, SELVA_NODE_ID_SIZE);
-
-    return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaHierarchyNode *)(&filter));
-}
-
-SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
+static SelvaHierarchyNode *find_node_index(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     struct SelvaHierarchySearchFilter filter;
     SelvaHierarchyNode *node;
-    int err;
 
     memcpy(&filter.id, id, SELVA_NODE_ID_SIZE);
 
     SELVA_TRACE_BEGIN(find_inmem);
     node = RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaHierarchyNode *)(&filter));
     SELVA_TRACE_END(find_inmem);
-    if (node) {
-        if (!(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
-            return node;
-        } else if (isDecompressingSubtree) {
-            err = repopulate_detached_head(node);
-            if (err) {
-                return NULL;
-            }
 
-            return node;
+    return node;
+}
+
+SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
+    int err;
+
+    {
+        /* We want to reduce the scope of `node` for dev safety. */
+        SelvaHierarchyNode *node;
+
+        node = find_node_index(hierarchy, id);
+        if (node) {
+            if (!(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
+                return node;
+            } else if (isDecompressingSubtree) {
+                err = repopulate_detached_head(node);
+                if (err) {
+                    return NULL;
+                }
+
+                return node;
+            }
         }
     }
-    node = NULL; /* Make sure we don't use this accidentally. */
 
     /*
      * We don't want upsert to be looking from detached nodes.
@@ -560,7 +562,7 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
             return NULL;
         }
 
-        return RB_FIND(hierarchy_index_tree, &hierarchy->index_head, (SelvaHierarchyNode *)(&filter));
+        return find_node_index(hierarchy, id);
     }
 
     return NULL;
@@ -584,11 +586,8 @@ struct SelvaHierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
     SelvaHierarchyNode *node;
 
     node = SelvaHierarchy_FindNode(hierarchy, id);
-    if (!node) {
-        return NULL;
-    }
 
-    return &node->metadata;
+    return !node ? NULL : &node->metadata;
 }
 
 static const char * const excluded_fields[] = {
@@ -599,10 +598,8 @@ static const char * const excluded_fields[] = {
     NULL
 };
 
-int SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj) {
+void SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj) {
     SelvaObject_Clear(obj, excluded_fields);
-
-    return 0;
 }
 
 static inline void mkHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
@@ -610,6 +607,7 @@ static inline void mkHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
 }
 
 static inline void rmHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
+    /* Root should be never removed from heads. */
     if (memcmp(node->id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
         SVector_Remove(&hierarchy->heads, node);
     }
@@ -631,7 +629,8 @@ static void delete_node_aliases(RedisModuleCtx *ctx, struct SelvaObject *obj) {
             delete_aliases(aliases_key, node_aliases_set);
             RedisModule_CloseKey(aliases_key);
         } else {
-            fprintf(stderr, "%s: Unable to open aliases\n", __FILE__);
+            fprintf(stderr, "%s:%d: Unable to open aliases\n",
+                    __FILE__, __LINE__);
         }
     }
 }
@@ -1006,8 +1005,8 @@ static int crossRemove(
     SVECTOR_AUTOFREE(sub_markers);
 
     /*
-     * Backup the subscription markers so we can refresh them after the
-     * operation.
+     * Take a backup of the subscription markers so we can refresh them after
+     * the operation.
      */
 #ifndef PU_TEST_BUILD
     if (unlikely(!SVector_Clone(&sub_markers, &node->metadata.sub_markers.vec, NULL))) {
@@ -2938,7 +2937,7 @@ static void auto_compress_proc(RedisModuleCtx *ctx, void *data) {
                 break;
             }
 
-            node = find_node_simple(hierarchy, node_id);
+            node = find_node_index(hierarchy, node_id);
             if (!node || node->flags & SELVA_NODE_FLAGS_DETACHED) {
                 /* This should be unlikely to occur at this point. */
 #if 0

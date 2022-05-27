@@ -152,7 +152,8 @@ struct SelvaHierarchy {
          * Inactive nodeIds.
          * Inactive node ids are listed here on RDB save for further
          * processing. This is a pointer to a memory region shared with the
-         * RDB child process.
+         * RDB child process. We can access it lock free because we know exactly
+         * when it's being read and thus can avoid writing it at those times.
          * NodeIds listed here have been inactive for a long time and are
          * potential candidates for compression.
          */
@@ -292,7 +293,7 @@ ssize_t SelvaModify_GetHierarchyDepth(SelvaHierarchy *hierarchy, const Selva_Nod
 /**
  * Clear all user fields of a node SelvaObject.
  */
-int SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj);
+void SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj);
 
 /**
  * Delete all child edges of a node.
