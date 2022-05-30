@@ -1733,7 +1733,7 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
 
     while (*(s = *it++)) {
 #define LBL_OFF(label) (label - &&rpn_code_stop)
-        static const int op_arr[] = {
+        static const ptrdiff_t op_arr[] = {
             [RPN_CODE_STOP] = 0,
             [RPN_CODE_CALL] = LBL_OFF(&&rpn_code_call),
             [RPN_CODE_GET_REG_NUMBER] = LBL_OFF(&&rpn_code_get_reg_number),
