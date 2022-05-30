@@ -1596,9 +1596,7 @@ struct rpn_expression *rpn_compile(const char *input) {
             fprintf(stderr, "%s:%d:%s: RPN compilation error: %s\n",
                     __FILE__, __LINE__, __func__,
                     err >= 0 && err < num_elem(rpn_str_error) ? rpn_str_error[err] : "Unknown");
-fail:
-            rpn_destroy_expression(expr);
-            return NULL;
+            goto fail;
         }
 
         /*
@@ -1631,6 +1629,9 @@ next:
     memset(expr->expression[i], 0, sizeof(rpn_token));
 
     return expr;
+fail:
+    rpn_destroy_expression(expr);
+    return NULL;
 }
 
 void rpn_destroy_expression(struct rpn_expression *expr) {
