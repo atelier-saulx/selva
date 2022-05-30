@@ -40,7 +40,7 @@ enum rpn_code {
     RPN_CODE_GET_REG_SET,
     RPN_CODE_GET_LIT,
     RPN_CODE_JMP_FWD,
-};
+} __packed;
 
 /*
  * This type should match the alignment of `typedef struct redisObject` in Redis
@@ -1494,7 +1494,7 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
  * Write rpn_code following an uint32_t value to the expression token e.
  */
 static inline void compile_emit_code_uint32(char *e, enum rpn_code code, uint32_t v) {
-    e[0] = code;
+    e[0] = (char)code;
     memcpy(e + RPN_CODE_SIZE, &v, sizeof(uint32_t));
 }
 
