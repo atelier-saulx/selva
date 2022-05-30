@@ -22,7 +22,7 @@ const mangleResults = (
   delete schemaResult.prefixToTypeMapping
 }
 
-test.serial.failing('schemas - basic', async (t) => {
+test.serial('schemas - basic', async (t) => {
   const port = await getPort()
   const server = await start({
     port,
@@ -60,6 +60,8 @@ test.serial.failing('schemas - basic', async (t) => {
     name: {
       type: 'string',
     },
+    createdAt: { type: 'timestamp' },
+    updatedAt: { type: 'timestamp' },
   }
 
   const schema: SchemaOptions = {
@@ -71,6 +73,8 @@ test.serial.failing('schemas - basic', async (t) => {
         id: { type: 'id' },
         type: { type: 'type' },
         value: { type: 'number' },
+        createdAt: { type: 'timestamp' },
+        updatedAt: { type: 'timestamp' },
       },
     },
     types: {
@@ -272,35 +276,8 @@ test.serial.failing('schemas - basic', async (t) => {
     'can overwrite meta'
   )
 
-  // drop search index in this case (NOT SUPPORTED YET!)
-  // throws for now
-  let e = await t.throwsAsync(
-    client.updateSchema({
-      types: {
-        match: {
-          fields: {
-            flurpy: {
-              type: 'object',
-              properties: {
-                snurkels: {
-                  type: 'string',
-                },
-              },
-            },
-          },
-        },
-      },
-    })
-  )
-
-  t.true(
-    e.stack.includes(
-      'Can not change existing search types for flurpy.snurkels in type match, changing from ["TAG"] to ["TEXT"]. This will be supported in the future.'
-    )
-  )
-
   // test that you can't set custom types with 'ro' as prefix
-  e = await t.throwsAsync(
+  let e = await t.throwsAsync(
     client.updateSchema({
       types: {
         flurpydurpy: {
