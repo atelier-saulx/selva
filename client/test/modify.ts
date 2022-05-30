@@ -2601,7 +2601,7 @@ test.serial('set - insert and set further into array', async (t) => {
   client.destroy()
 })
 
-test.serial.failing('set with $noRoot', async (t) => {
+test.serial('set with $noRoot', async (t) => {
   const client = connect({ port })
 
   /*
