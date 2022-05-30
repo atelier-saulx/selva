@@ -266,7 +266,7 @@ static int clear_key_value(struct SelvaObjectKey *key) {
 
 /**
  * Get embedded key from index i.
- * Note: There is no bound checking in this function.
+ * Note: There is no bounds checking in this function.
  */
 static inline struct SelvaObjectKey *get_emb_key(struct SelvaObject *obj, size_t i) {
     return (struct SelvaObjectKey *)(obj->emb_keys + i * EMBEDDED_KEY_SIZE);
@@ -621,8 +621,10 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
 static struct SelvaObjectKey *find_key_emb(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     if (key_name_len < EMBEDDED_NAME_MAX) {
+        const unsigned k = obj->emb_res;
+
         for (int i = 0; i < NR_EMBEDDED_KEYS; i++) {
-            if ((obj->emb_res & (1 << i)) == 0) {
+            if ((k & (1 << i)) == 0) {
                 struct SelvaObjectKey *key = get_emb_key(obj, i);
 
                 if (key->name_len == key_name_len && !memcmp(key->name, key_name_str, key_name_len)) {
@@ -651,12 +653,12 @@ static struct SelvaObjectKey *find_key(struct SelvaObject *obj, const char *key_
     struct SelvaObjectKey *key;
 
     key = find_key_emb(obj, key_name_str, key_name_len);
-    if (key) {
-        return key;
+    if (!key) {
+        /* Otherwise look from the RB tree. */
+        key = find_key_rb(obj, key_name_str, key_name_len);
     }
 
-    /* Otherwise look from the RB tree. */
-    return find_key_rb(obj, key_name_str, key_name_len);
+    return key;
 }
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
@@ -1695,6 +1697,11 @@ int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, siz
         break;
     case SELVA_OBJECT_STRING:
         res->str = key->value;
+        /*
+         * It's likely that the caller will want to access the string and
+         * therefore it might be useful to prefetch it.
+         */
+        __builtin_prefetch(res->str, 0, 0);
         break;
     case SELVA_OBJECT_OBJECT:
         res->obj = key->value;
