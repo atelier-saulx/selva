@@ -385,7 +385,7 @@ test.serial('$db with $find', async (t) => {
   await client.destroy()
 })
 
-test.serial.failing('$db with $list.$find.$find', async (t) => {
+test.serial('$db with $list.$find.$find', async (t) => {
   const client = connect({ port: port1 }, { loglevel: 'info' })
 
   await client.set({
