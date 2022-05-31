@@ -65,6 +65,7 @@ typedef struct SelvaHierarchyNode {
     ssize_t depth;
 #endif
     struct SelvaObject *obj;
+    _Alignas(void *) char _obj_data[SELVA_OBJECT_BSIZE];
     struct SelvaHierarchyMetadata metadata;
     SVector parents;
     SVector children;
@@ -326,10 +327,7 @@ static int create_node_object(SelvaHierarchyNode *node) {
     int err;
 
     node_name = RedisModule_CreateStringPrintf(NULL, "%.*s", (int)SELVA_NODE_ID_SIZE, node->id);
-    node->obj = SelvaObject_New();
-    if (!node->obj) {
-        return SELVA_HIERARCHY_ENOMEM;
-    }
+    node->obj = SelvaObject_Init(node->_obj_data);
 
     err = SelvaObject_SetStringStr(node->obj, SELVA_ID_FIELD, sizeof(SELVA_ID_FIELD) - 1, node_name);
     if (err) {
@@ -426,6 +424,7 @@ static void SelvaModify_DestroyNode(RedisModuleCtx *ctx, SelvaHierarchy *hierarc
 
     SVector_Destroy(&node->parents);
     SVector_Destroy(&node->children);
+    SelvaObject_Destroy(node->obj);
 #if MEM_DEBUG
     memset(node, 0, sizeof(*node));
 #endif
@@ -653,7 +652,6 @@ static void del_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierar
 
         RB_REMOVE(hierarchy_index_tree, &hierarchy->index_head, node);
         SelvaModify_DestroyNode(ctx, hierarchy, node);
-        SelvaObject_Destroy(obj);
     }
 }
 
@@ -2979,7 +2977,7 @@ static int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarch
      * node->obj is currently NULL because it's not created when
      * isRdbLoading() is true.
      */
-    node->obj = SelvaObjectTypeRDBLoad(io, encver, NULL);
+    node->obj = SelvaObjectTypeRDBLoadTo(io, encver, node->_obj_data, NULL);
     if (!node->obj) {
         return SELVA_ENOENT;
     }
