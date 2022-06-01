@@ -36,6 +36,9 @@
 #define EMBEDDED_NAME_MAX               ALIGNED_SIZE(9, alignof(struct SelvaObjectKey))
 #define EMBEDDED_KEY_SIZE               (sizeof(struct SelvaObjectKey) + EMBEDDED_NAME_MAX)
 
+#define SELVA_OBJECT_FLAG_DYNAMIC       0x01 /*!< Dynamic allocation with SelvaObject_New(). */
+#define SELVA_OBJECT_FLAG_STATIC        0x02 /*!< Static allocation, do not free. */
+
 #define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
 #define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
 #define SELVA_OBJECT_GETKEY_PARTIAL     0x4 /*!< Return a partial result, the last key found, and the length of the match in key_name_str. */
@@ -63,10 +66,16 @@ struct SelvaObjectKey {
 
 struct SelvaObject {
     uint32_t obj_size;
-    uint32_t emb_res;
+    uint16_t emb_res;
+    uint16_t flags;
     struct SelvaObjectKeys keys_head;
     _Alignas(struct SelvaObjectKey) char emb_keys[NR_EMBEDDED_KEYS * EMBEDDED_KEY_SIZE];
 };
+
+/* Change SELVA_OBJECT_BSIZE in selva_object.h if this fails. */
+_Static_assert(SELVA_OBJECT_BSIZE == sizeof(struct SelvaObject), "Sizes must match");
+/* Change all the code using SelvaObject_Init() if this fails :) */
+_Static_assert(alignof(struct SelvaObject) == 8, "SelvaObject align should be well known");
 
 struct so_type_name {
     const char * const name;
@@ -90,7 +99,7 @@ RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
 static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key, unsigned flags);
 static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, unsigned flags, const char *excluded);
-static void *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data);
+static struct SelvaObject *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data);
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
     /*
@@ -116,13 +125,34 @@ static const struct so_type_name type_names[] = {
     [SELVA_OBJECT_POINTER] =      { "pointer",      7 },
 };
 
+static void init_obj(struct SelvaObject *obj) {
+    obj->obj_size = 0;
+    obj->emb_res = (1 << NR_EMBEDDED_KEYS) - 1;
+    RB_INIT(&obj->keys_head);
+}
+
 struct SelvaObject *SelvaObject_New(void) {
     struct SelvaObject *obj;
 
     obj = RedisModule_Alloc(sizeof(*obj));
-    obj->obj_size = 0;
-    obj->emb_res = (1 << NR_EMBEDDED_KEYS) - 1;
-    RB_INIT(&obj->keys_head);
+    init_obj(obj);
+    obj->flags = SELVA_OBJECT_FLAG_DYNAMIC;
+
+    return obj;
+}
+
+struct SelvaObject *SelvaObject_Init(char buf[SELVA_OBJECT_BSIZE]) {
+    struct SelvaObject *obj = (struct SelvaObject *)buf;
+
+    /*
+     * The given buffer must honor this unknown alignment (probably 8, see the
+     * static assert above) or we can't guarantee that it would work properly as
+     * a SelvaObject.
+     */
+    assert(((uintptr_t)(const void *)buf) % alignof(struct SelvaObject) == 0);
+
+    init_obj(obj);
+    obj->flags = SELVA_OBJECT_FLAG_STATIC;
 
     return obj;
 }
@@ -338,10 +368,17 @@ void SelvaObject_Destroy(struct SelvaObject *obj) {
     }
 
     SelvaObject_Clear(obj, NULL);
+    if (obj->flags & SELVA_OBJECT_FLAG_STATIC) {
+        memset(obj, 0, sizeof(*obj));
+    } else if (obj->flags & SELVA_OBJECT_FLAG_DYNAMIC) {
 #if MEM_DEBUG
-    memset(obj, 0, sizeof(*obj));
+        memset(obj, 0, sizeof(*obj));
 #endif
-    RedisModule_Free(obj);
+        RedisModule_Free(obj);
+    } else {
+        fprintf(stderr, "Corrupted object\n");
+        abort();
+    }
 }
 
 void _cleanup_SelvaObject_Destroy(struct SelvaObject **obj) {
@@ -2579,15 +2616,7 @@ static int rdb_load_field(RedisModuleIO *io, struct SelvaObject *obj, int encver
     return 0;
 }
 
-static void *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data) {
-    struct SelvaObject *obj;
-
-    obj = SelvaObject_New();
-    if (!obj) {
-        RedisModule_LogIOError(io, "warning", "Failed to create a new SelvaObject");
-        return NULL;
-    }
-
+static struct SelvaObject *rdb_load_object_to(RedisModuleIO *io, int encver, struct SelvaObject *obj, int level, void *ptr_load_data) {
     const size_t obj_size = RedisModule_LoadUnsigned(io);
     for (size_t i = 0; i < obj_size; i++) {
         int err;
@@ -2600,6 +2629,22 @@ static void *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr
     }
 
     return obj;
+}
+
+static struct SelvaObject *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data) {
+    struct SelvaObject *obj;
+
+    obj = SelvaObject_New();
+
+    return rdb_load_object_to(io, encver, obj, level, ptr_load_data);
+}
+
+struct SelvaObject *SelvaObjectTypeRDBLoadTo(RedisModuleIO *io, int encver, char buf[SELVA_OBJECT_BSIZE], void *ptr_load_data) {
+    struct SelvaObject *obj;
+
+    obj = SelvaObject_Init(buf);
+
+    return rdb_load_object_to(io, encver, obj, 0, ptr_load_data);
 }
 
 struct SelvaObject *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver, void *ptr_load_data) {
