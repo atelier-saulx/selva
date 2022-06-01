@@ -375,9 +375,6 @@ void SelvaObject_Destroy(struct SelvaObject *obj) {
         memset(obj, 0, sizeof(*obj));
 #endif
         RedisModule_Free(obj);
-    } else {
-        fprintf(stderr, "Corrupted object\n");
-        abort();
     }
 }
 
@@ -2646,11 +2643,7 @@ static struct SelvaObject *rdb_load_object(RedisModuleIO *io, int encver, int le
     return rdb_load_object_to(io, encver, obj, level, ptr_load_data);
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoadTo(RedisModuleIO *io, int encver, char buf[SELVA_OBJECT_BSIZE], void *ptr_load_data) {
-    struct SelvaObject *obj;
-
-    obj = SelvaObject_Init(buf);
-
+struct SelvaObject *SelvaObjectTypeRDBLoadTo(RedisModuleIO *io, int encver, struct SelvaObject *obj, void *ptr_load_data) {
     return rdb_load_object_to(io, encver, obj, 0, ptr_load_data);
 }
 

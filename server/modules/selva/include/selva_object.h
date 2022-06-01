@@ -394,7 +394,7 @@ int SelvaObject_ReplyWithObject(
  */
 struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data);
 
-struct SelvaObject *SelvaObjectTypeRDBLoadTo(struct RedisModuleIO *io, int encver, char buf[SELVA_OBJECT_BSIZE], void *ptr_load_data);
+struct SelvaObject *SelvaObjectTypeRDBLoadTo(struct RedisModuleIO *io, int encver, struct SelvaObject *obj, void *ptr_load_data);
 
 /**
  * Load a SelvaObject or NULL from RDB.
