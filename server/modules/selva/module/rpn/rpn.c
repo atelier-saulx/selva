@@ -313,10 +313,8 @@ static void free_rpn_operand(void *p) {
 
     if (v->flags.spused && v->flags.spfree && v->sp) {
         RedisModule_Free((void *)v->sp);
-        v->sp = NULL;
     } else if (v->flags.embset && v->flags.slvset) {
         SelvaSet_Destroy(&v->set_emb);
-        v->set = NULL;
     }
     if (v->flags.pooled) {
         struct rpn_operand *prev = small_operand_pool_next;
