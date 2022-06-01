@@ -6,8 +6,9 @@
  * Custom edge field management.
  */
 
-#include "selva.h"
 #include "svector.h"
+#include "selva.h"
+#include "selva_object.h"
 
 struct RedisModuleCtx;
 struct RedisModuleIO;
@@ -90,7 +91,7 @@ struct EdgeFieldConstraint {
  */
 struct EdgeFieldConstraints {
     struct EdgeFieldConstraint hard_constraints[2];
-    struct SelvaObject *dyn_constraints;
+    char dyn_constraints[SELVA_OBJECT_BSIZE];
 };
 
 /**
@@ -137,11 +138,11 @@ struct EdgeFieldContainer {
     struct SelvaObject *origins;
 };
 
-void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data);
-void Edge_DeinitEdgeFieldConstraints(struct EdgeFieldConstraints *data);
-int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, const struct EdgeFieldDynConstraintParams *params);
+void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *efc);
+void Edge_DeinitEdgeFieldConstraints(struct EdgeFieldConstraints *efc);
+int Edge_NewDynConstraint(struct EdgeFieldConstraints *efc, const struct EdgeFieldDynConstraintParams *params);
 const struct EdgeFieldConstraint *Edge_GetConstraint(
-        const struct EdgeFieldConstraints *data,
+        const struct EdgeFieldConstraints *efc,
         unsigned constraint_id,
         Selva_NodeType node_type,
         const char *field_name_str,
