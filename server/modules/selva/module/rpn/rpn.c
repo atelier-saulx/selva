@@ -28,6 +28,20 @@
 #define RPN_LVTYPE_STRING   1 /*<! Lvalue type code for string. */
 #define RPN_LVTYPE_SET      2 /*<! Lvalue type code for set. */
 
+/**
+ * Op codes for the RPN VM.
+ * Every RPN expression is compiled into these few opcodes.
+ */
+enum rpn_code {
+    RPN_CODE_STOP = 0,
+    RPN_CODE_CALL,
+    RPN_CODE_GET_REG_NUMBER,
+    RPN_CODE_GET_REG_STRING,
+    RPN_CODE_GET_REG_SET,
+    RPN_CODE_GET_LIT,
+    RPN_CODE_JMP_FWD,
+} __packed;
+
 /*
  * This type should match the alignment of `typedef struct redisObject` in Redis
  * so we can extract `ptr` properly. The struct is likely located in
@@ -299,10 +313,8 @@ static void free_rpn_operand(void *p) {
 
     if (v->flags.spused && v->flags.spfree && v->sp) {
         RedisModule_Free((void *)v->sp);
-        v->sp = NULL;
     } else if (v->flags.embset && v->flags.slvset) {
         SelvaSet_Destroy(&v->set_emb);
-        v->set = NULL;
     }
     if (v->flags.pooled) {
         struct rpn_operand *prev = small_operand_pool_next;
@@ -616,48 +628,6 @@ static inline double js_fmod(double x, double y) {
     }
 
     return copysign(result, x);
-}
-
-static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *str_index, int type) {
-    unsigned i;
-
-    memcpy(&i, str_index, sizeof(unsigned));
-    if (i >= (unsigned)ctx->nr_reg) {
-        fprintf(stderr, "%s:%d: Register index out of bounds: %u\n",
-                __FILE__, __LINE__, i);
-        return RPN_ERR_BNDS;
-    }
-
-    struct rpn_operand *r = ctx->reg[i];
-
-    if (!r) {
-        fprintf(stderr, "%s:%d: Register value is a NULL pointer: %u\n",
-                __FILE__, __LINE__, i);
-        return RPN_ERR_NPE;
-    }
-
-    if (type == RPN_LVTYPE_NUMBER) {
-        if (isnan(r->d)) {
-            fprintf(stderr, "%s:%d: Register value is not a number: %u\n",
-                    __FILE__, __LINE__, i);
-            return RPN_ERR_NAN;
-        }
-
-        return push(ctx, r);
-    } else if (type == RPN_LVTYPE_STRING) {
-        return push(ctx, r);
-    } else if (type == RPN_LVTYPE_SET) {
-        if (!r->flags.slvset) {
-            return RPN_ERR_TYPE;
-        }
-
-        return push(ctx, r);
-    }
-
-    fprintf(stderr, "%s:%d: Unknown type code: %d\n",
-            __FILE__, __LINE__, type);
-
-    return RPN_ERR_TYPE;
 }
 
 static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *field, int type) {
@@ -1419,7 +1389,7 @@ cont:
 }
 
 static enum rpn_error compile_push_literal(struct rpn_expression *expr, size_t i, struct rpn_operand *v) {
-    if (i >= RPN_MAX_D) {
+    if (i >= RPN_MAX_D - 1) {
         return RPN_ERR_BADSTK;
     }
 
@@ -1518,6 +1488,14 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
     return compile_push_literal(expr, i, v);
 }
 
+/**
+ * Write rpn_code following an uint32_t value to the expression token e.
+ */
+static inline void compile_emit_code_uint32(char *e, enum rpn_code code, uint32_t v) {
+    e[0] = (char)code;
+    memcpy(e + RPN_CODE_SIZE, &v, sizeof(uint32_t));
+}
+
 static enum rpn_error compile_operator(char *e, char c) {
     const size_t op = c - 'A';
 
@@ -1525,8 +1503,8 @@ static enum rpn_error compile_operator(char *e, char c) {
         return RPN_ERR_ILLOPC;
     }
 
-    e[0] = 'f';
-    memcpy(e + 1, &funcs[op], sizeof(void *));
+    e[0] = RPN_CODE_CALL;
+    memcpy(e + RPN_CODE_SIZE, &funcs[op], sizeof(void *));
 
     return RPN_ERR_OK;
 }
@@ -1541,7 +1519,7 @@ struct rpn_expression *rpn_compile(const char *input) {
 
     const char *delim = " \t\n\r\f";
     const char *group = "{\"";
-    size_t input_literal_reg_i = 0;
+    uint32_t input_literal_reg_i = 0;
     size_t i = 0;
     size_t tok_len = 0;
     const char *rest = NULL;
@@ -1551,7 +1529,6 @@ struct rpn_expression *rpn_compile(const char *input) {
         enum rpn_error err;
         char *e = expr->expression[i++];
         rpn_token *new;
-        unsigned tmp;
 
         if (tok_len == 0) {
             fprintf(stderr, "%s:%d:%s: Token length can't be zero\n",
@@ -1570,21 +1547,15 @@ struct rpn_expression *rpn_compile(const char *input) {
             err = compile_selvaset_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 2);
             break;
         case '@':
-            e[0] = '@';
-            tmp = fast_atou(tok_str + 1);
-            memcpy(e + 1, &tmp, sizeof(unsigned));
+            compile_emit_code_uint32(e, RPN_CODE_GET_REG_NUMBER, fast_atou(tok_str + 1));
             goto next;
         case '$':
-            e[0] = '$';
-            tmp = fast_atou(tok_str + 1);
-            memcpy(e + 1, &tmp, sizeof(unsigned));
+            compile_emit_code_uint32(e, RPN_CODE_GET_REG_STRING, fast_atou(tok_str + 1));
             goto next;
         case '&':
-            e[0] = '&';
-            tmp = fast_atou(tok_str + 1);
-            memcpy(e + 1, &tmp, sizeof(unsigned));
+            compile_emit_code_uint32(e, RPN_CODE_GET_REG_SET, fast_atou(tok_str + 1));
             goto next;
-        case '>': /* Conditional jump */
+        case '>': /* Conditional jump forward */
             if (tok_len < 2 || tok_str[1] == '-') {
                 fprintf(stderr, "%s:%d:%s: Invalid conditional jump\n",
                         __FILE__, __LINE__, __func__);
@@ -1598,9 +1569,7 @@ struct rpn_expression *rpn_compile(const char *input) {
                     goto fail;
                 }
 
-                e[0] = '>';
-                e[1] = (uint8_t)n;
-                e[2] = '\0';
+                compile_emit_code_uint32(e, RPN_CODE_JMP_FWD, n);
             }
             goto next;
         default:
@@ -1612,10 +1581,10 @@ struct rpn_expression *rpn_compile(const char *input) {
             }
 
             if (compile_operator(e, tok_str[0])) {
-                /* Not an operator */
-                /* TODO Not sure if this is even needed */
-                memcpy(e, tok_str, tok_len);
-                e[tok_len] = '\0';
+                fprintf(stderr, "%s:%d:%s: Invalid operator: %c\n",
+                        __FILE__, __LINE__, __func__,
+                        tok_str[0]);
+                goto fail;
             }
 
             goto next;
@@ -1625,9 +1594,7 @@ struct rpn_expression *rpn_compile(const char *input) {
             fprintf(stderr, "%s:%d:%s: RPN compilation error: %s\n",
                     __FILE__, __LINE__, __func__,
                     err >= 0 && err < num_elem(rpn_str_error) ? rpn_str_error[err] : "Unknown");
-fail:
-            rpn_destroy_expression(expr);
-            return NULL;
+            goto fail;
         }
 
         /*
@@ -1635,9 +1602,7 @@ fail:
          * All literals can be marked with the same prefix from now on as
          * fetching the value will happen with the same function.
          */
-        e[0] = '#';
-        memcpy(e + 1, &input_literal_reg_i, sizeof(int));
-        e[1 + sizeof(int)] = '\0';
+        compile_emit_code_uint32(e, RPN_CODE_GET_LIT, input_literal_reg_i);
         input_literal_reg_i++;
 next:
         new = RedisModule_Realloc(expr->expression, size);
@@ -1662,6 +1627,9 @@ next:
     memset(expr->expression[i], 0, sizeof(rpn_token));
 
     return expr;
+fail:
+    rpn_destroy_expression(expr);
+    return NULL;
 }
 
 void rpn_destroy_expression(struct rpn_expression *expr) {
@@ -1686,10 +1654,53 @@ void _rpn_auto_free_expression(void *p) {
     rpn_destroy_expression(expr);
 }
 
-static enum rpn_error get_literal(struct rpn_ctx *ctx, const struct rpn_expression *expr, const char *s) {
-    int i;
+static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *s, int type) {
+    uint32_t i;
 
-    memcpy(&i, s, sizeof(int));
+    memcpy(&i, s + RPN_CODE_SIZE, sizeof(uint32_t));
+    if (i >= (typeof(i))ctx->nr_reg) {
+        fprintf(stderr, "%s:%d: Register index out of bounds: %u\n",
+                __FILE__, __LINE__, (unsigned)i);
+        return RPN_ERR_BNDS;
+    }
+
+    struct rpn_operand *r = ctx->reg[i];
+
+    if (!r) {
+        fprintf(stderr, "%s:%d: Register value is a NULL pointer: %u\n",
+                __FILE__, __LINE__, (unsigned)i);
+        return RPN_ERR_NPE;
+    }
+
+    if (type == RPN_LVTYPE_NUMBER) {
+        if (isnan(r->d)) {
+            fprintf(stderr, "%s:%d: Register value is not a number: %u\n",
+                    __FILE__, __LINE__, (unsigned)i);
+            return RPN_ERR_NAN;
+        }
+
+        return push(ctx, r);
+    } else if (type == RPN_LVTYPE_STRING) {
+        return push(ctx, r);
+    } else if (type == RPN_LVTYPE_SET) {
+        if (!r->flags.slvset) {
+            return RPN_ERR_TYPE;
+        }
+
+        return push(ctx, r);
+    }
+
+    fprintf(stderr, "%s:%d: Unknown type code: %d\n",
+            __FILE__, __LINE__, type);
+
+    return RPN_ERR_TYPE;
+}
+
+
+static enum rpn_error get_literal(struct rpn_ctx *ctx, const struct rpn_expression *expr, const char *s) {
+    uint32_t i;
+
+    memcpy(&i, s + RPN_CODE_SIZE, sizeof(uint32_t));
 
     return push(ctx, expr->input_literal_reg[i]);
 }
@@ -1698,11 +1709,11 @@ static enum rpn_error cond_jump(struct rpn_ctx *ctx, const char *s, const rpn_to
     OPERAND(ctx, cond);
 
     if (to_bool(cond)) {
-        uint8_t n;
+        uint32_t n;
 
-        memcpy(&n, s, sizeof(uint8_t));
+        memcpy(&n, s + RPN_CODE_SIZE, sizeof(uint32_t));
 
-        for (int i = 0; i < (int)n; i++) {
+        for (uint32_t i = 0; i < n; i++) {
             if (***it) {
                 (*it)++;
             } else {
@@ -1719,63 +1730,61 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
     const char *s;
 
     while (*(s = *it++)) {
-        if (s[0] == 'f') { /* Operator */
-            rpn_fp fp;
-            enum rpn_error err;
+#define LBL_OFF(label) (label - &&rpn_code_stop)
+        static const ptrdiff_t op_arr[] = {
+            [RPN_CODE_STOP] = 0,
+            [RPN_CODE_CALL] = LBL_OFF(&&rpn_code_call),
+            [RPN_CODE_GET_REG_NUMBER] = LBL_OFF(&&rpn_code_get_reg_number),
+            [RPN_CODE_GET_REG_STRING] = LBL_OFF(&&rpn_code_get_reg_string),
+            [RPN_CODE_GET_REG_SET] = LBL_OFF(&&rpn_code_get_reg_set),
+            [RPN_CODE_GET_LIT] = LBL_OFF(&&rpn_code_get_lit),
+            [RPN_CODE_JMP_FWD] = LBL_OFF(&&rpn_code_jmp_fwd),
+        };
+#undef LBL_OFF
+        const long i = s[0];
+        rpn_fp fp;
+        enum rpn_error err;
 
-            memcpy(&fp, s + 1, sizeof(void *));
-            err = fp(redis_ctx, ctx);
-            if (err) {
-                if (err == RPN_ERR_BREAK) {
-                    /*
-                     * A breaking condition. This is currently reserved for the
-                     * modal logic operators. We just return whatever was last
-                     * in the stack.
-                     */
-                    OPERAND(ctx, x);
+        assert(i < (long)num_elem(op_arr));
+        goto *(&&rpn_code_stop + op_arr[i]);
 
-                    clear_stack(ctx);
-                    push(ctx, x);
-
-                    break;
-                }
-                clear_stack(ctx);
-
-                return err;
-            }
-        } else { /* Operand */
-            enum rpn_error err;
-
-            switch (s[0]) {
-            case '@':
-                err = rpn_get_reg(ctx, s + 1, RPN_LVTYPE_NUMBER);
-                break;
-            case '$':
-                err = rpn_get_reg(ctx, s + 1, RPN_LVTYPE_STRING);
-                break;
-            case '&':
-                err = rpn_get_reg(ctx, s + 1, RPN_LVTYPE_SET);
-                break;
-            case '#':
-                err = get_literal(ctx, expr, s + 1);
-                break;
-            case '>':
-                err = cond_jump(ctx, s + 1, &it);
-                break;
-            default:
+rpn_code_stop: /* Must be first. */
+rpn_code_call:
+        memcpy(&fp, s + RPN_CODE_SIZE, sizeof(void *));
+        err = fp(redis_ctx, ctx);
+        goto end;
+rpn_code_get_reg_number:
+        err = rpn_get_reg(ctx, s, RPN_LVTYPE_NUMBER);
+        goto end;
+rpn_code_get_reg_string:
+        err = rpn_get_reg(ctx, s, RPN_LVTYPE_STRING);
+        goto end;
+rpn_code_get_reg_set:
+        err = rpn_get_reg(ctx, s, RPN_LVTYPE_SET);
+        goto end;
+rpn_code_get_lit:
+        err = get_literal(ctx, expr, s);
+        goto end;
+rpn_code_jmp_fwd:
+        err = cond_jump(ctx, s, &it);
+end:
+        if (err) {
+            if (err == RPN_ERR_BREAK) {
                 /*
-                 * `s` might be longer than RPN_MAX_TOKEN_SIZE but it's safer
-                 * to limit what we print in this case.
+                 * A breaking condition. This is currently reserved for the
+                 * modal logic operators. We just return whatever was last
+                 * in the stack.
                  */
-                fprintf(stderr, "%s:%d: Illegal operand: \"%.*s\"\n",
-                        __FILE__, __LINE__, (int)RPN_MAX_TOKEN_SIZE, s);
-                err = RPN_ERR_ILLOPN;
-            }
+                OPERAND(ctx, x);
 
-            if (err) {
                 clear_stack(ctx);
-                return err;
+                push(ctx, x);
+
+                break;
             }
+            clear_stack(ctx);
+
+            return err;
         }
     }
 
