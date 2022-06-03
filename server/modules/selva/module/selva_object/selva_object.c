@@ -363,7 +363,7 @@ void SelvaObject_Clear(struct SelvaObject *obj, const char * const exclude[]) {
 }
 
 void SelvaObject_Destroy(struct SelvaObject *obj) {
-    if (!obj) {
+    if (!obj || !obj->flags) {
         return;
     }
 
