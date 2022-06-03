@@ -2633,11 +2633,7 @@ static struct SelvaObject *rdb_load_object_to(RedisModuleIO *io, int encver, str
 }
 
 static struct SelvaObject *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data) {
-    struct SelvaObject *obj;
-
-    obj = SelvaObject_New();
-
-    return rdb_load_object_to(io, encver, obj, level, ptr_load_data);
+    return rdb_load_object_to(io, encver, SelvaObject_New(), level, ptr_load_data);
 }
 
 struct SelvaObject *SelvaObjectTypeRDBLoadTo(RedisModuleIO *io, int encver, struct SelvaObject *obj, void *ptr_load_data) {
@@ -2716,7 +2712,7 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
     const struct SVector *array = key->array;
 
     RedisModule_SaveUnsigned(io, key->subtype);
-    RedisModule_SaveUnsigned(io, array->vec_last);
+    RedisModule_SaveUnsigned(io, SVector_Size(array));
 
     if (key->subtype == SELVA_OBJECT_LONGLONG) {
         void* num;
@@ -2749,7 +2745,7 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
             SelvaObjectTypeRDBSave(io, k, ptr_save_data);
         }
     } else {
-        RedisModule_LogIOError(io, "warning", "Unknown set type");
+        RedisModule_LogIOError(io, "warning", "Unknown object array type");
     }
 }
 
