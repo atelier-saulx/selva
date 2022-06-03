@@ -2633,11 +2633,7 @@ static struct SelvaObject *rdb_load_object_to(RedisModuleIO *io, int encver, str
 }
 
 static struct SelvaObject *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data) {
-    struct SelvaObject *obj;
-
-    obj = SelvaObject_New();
-
-    return rdb_load_object_to(io, encver, obj, level, ptr_load_data);
+    return rdb_load_object_to(io, encver, SelvaObject_New(), level, ptr_load_data);
 }
 
 struct SelvaObject *SelvaObjectTypeRDBLoadTo(RedisModuleIO *io, int encver, struct SelvaObject *obj, void *ptr_load_data) {
@@ -2714,23 +2710,24 @@ static void rdb_save_object_set(RedisModuleIO *io, struct SelvaObjectKey *key) {
 
 static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key, void *ptr_save_data) {
     const struct SVector *array = key->array;
+    const size_t array_size = SVector_Size(array);
 
     RedisModule_SaveUnsigned(io, key->subtype);
-    RedisModule_SaveUnsigned(io, array->vec_last);
+    RedisModule_SaveUnsigned(io, array_size);
 
     if (key->subtype == SELVA_OBJECT_LONGLONG) {
-        void* num;
-        struct SVectorIterator it;
-        SVector_ForeachBegin(&it, key->array);
-        while ((num = SVector_Foreach(&it))) {
+        for (size_t i = 0; i < array_size; i++) {
+            void *num;
+
+            num = SVector_GetIndex(array, i);
             RedisModule_SaveSigned(io, (long long)num);
         }
     } else if (key->subtype == SELVA_OBJECT_DOUBLE) {
-        void* num_ptr;
-        struct SVectorIterator it;
-        SVector_ForeachBegin(&it, key->array);
-        while ((num_ptr = SVector_Foreach(&it))) {
+        for (size_t i = 0; i < array_size; i++) {
+            void *num_ptr;
             double num;
+
+            num_ptr = SVector_GetIndex(array, i);
             memcpy(&num, &num_ptr, sizeof(double));
             RedisModule_SaveDouble(io, num);
         }
@@ -2742,14 +2739,14 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
             RedisModule_SaveString(io, str);
         }
     } else if (key->subtype == SELVA_OBJECT_OBJECT) {
-        struct SelvaObject *k;
-        struct SVectorIterator it;
-        SVector_ForeachBegin(&it, key->array);
-        while ((k = SVector_Foreach(&it))) {
-            SelvaObjectTypeRDBSave(io, k, ptr_save_data);
+        for (size_t i = 0; i < array_size; i++) {
+            struct SelvaObject *k;
+
+            k = SVector_GetIndex(array, i);
+            SelvaObjectTypeRDBSave2(io, k, ptr_save_data);
         }
     } else {
-        RedisModule_LogIOError(io, "warning", "Unknown set type");
+        RedisModule_LogIOError(io, "warning", "Unknown object array type");
     }
 }
 
