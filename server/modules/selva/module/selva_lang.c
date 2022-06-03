@@ -199,9 +199,6 @@ static void SelvaLang_Reply(struct RedisModuleCtx *ctx, void *p) {
 
 static int SelvaLang_OnLoad(RedisModuleCtx *ctx __unused) {
     langs = SelvaObject_New();
-    if (!langs) {
-        return SELVA_ENOMEM;
-    }
 
     FORALL_LANGS(LOAD_LANG)
 

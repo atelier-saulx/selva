@@ -123,9 +123,6 @@ int SelvaArgsParser_StringSetList(
     }
 
     obj = SelvaObject_New();
-    if (!obj) {
-        goto fail;
-    }
 
     if (excluded_out) {
         excl = RedisModule_CreateString(ctx, "", 0);

@@ -2979,7 +2979,7 @@ static int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarch
      * node object is currently empty because it's not created when
      * isRdbLoading() is true.
      */
-    if (!SelvaObjectTypeRDBLoadTo(io, encver, node->_obj_data, NULL)) {
+    if (!SelvaObjectTypeRDBLoadTo(io, encver, SelvaObject_Init(node->_obj_data), NULL)) {
         return SELVA_ENOENT;
     }
 

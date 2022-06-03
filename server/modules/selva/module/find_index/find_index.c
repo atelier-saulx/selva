@@ -784,9 +784,6 @@ int SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
     }
 
     hierarchy->dyn_index.index_map = SelvaObject_New();
-    if (!hierarchy->dyn_index.index_map) {
-        goto fail;
-    }
 
     hierarchy->dyn_index.ida = ida_init(FIND_INDICES_MAX_HINTS);
     if (!hierarchy->dyn_index.ida) {

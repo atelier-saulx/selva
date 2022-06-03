@@ -363,7 +363,7 @@ void SelvaObject_Clear(struct SelvaObject *obj, const char * const exclude[]) {
 }
 
 void SelvaObject_Destroy(struct SelvaObject *obj) {
-    if (!obj) {
+    if (!obj || !obj->flags) {
         return;
     }
 
@@ -375,9 +375,6 @@ void SelvaObject_Destroy(struct SelvaObject *obj) {
         memset(obj, 0, sizeof(*obj));
 #endif
         RedisModule_Free(obj);
-    } else {
-        fprintf(stderr, "Corrupted object\n");
-        abort();
     }
 }
 
@@ -452,9 +449,6 @@ static int _insert_new_obj_into_array(struct SelvaObject *obj, const char *s, si
     int err;
 
     new_obj = SelvaObject_New();
-    if (!new_obj) {
-        return SELVA_ENOMEM;
-    }
 
     err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
     if (err) {
@@ -2646,11 +2640,7 @@ static struct SelvaObject *rdb_load_object(RedisModuleIO *io, int encver, int le
     return rdb_load_object_to(io, encver, obj, level, ptr_load_data);
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoadTo(RedisModuleIO *io, int encver, char buf[SELVA_OBJECT_BSIZE], void *ptr_load_data) {
-    struct SelvaObject *obj;
-
-    obj = SelvaObject_Init(buf);
-
+struct SelvaObject *SelvaObjectTypeRDBLoadTo(RedisModuleIO *io, int encver, struct SelvaObject *obj, void *ptr_load_data) {
     return rdb_load_object_to(io, encver, obj, 0, ptr_load_data);
 }
 
@@ -2671,10 +2661,6 @@ struct SelvaObject *SelvaObjectTypeRDBLoad2(RedisModuleIO *io, int encver, void 
     }
 
     obj = SelvaObject_New();
-    if (!obj) {
-        RedisModule_LogIOError(io, "warning", "Failed to create a new SelvaObject");
-        return NULL;
-    }
 
     for (size_t i = 0; i < obj_size; i++) {
         int err;
