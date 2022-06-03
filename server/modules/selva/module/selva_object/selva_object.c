@@ -449,9 +449,6 @@ static int _insert_new_obj_into_array(struct SelvaObject *obj, const char *s, si
     int err;
 
     new_obj = SelvaObject_New();
-    if (!new_obj) {
-        return SELVA_ENOMEM;
-    }
 
     err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
     if (err) {
@@ -2664,10 +2661,6 @@ struct SelvaObject *SelvaObjectTypeRDBLoad2(RedisModuleIO *io, int encver, void 
     }
 
     obj = SelvaObject_New();
-    if (!obj) {
-        RedisModule_LogIOError(io, "warning", "Failed to create a new SelvaObject");
-        return NULL;
-    }
 
     for (size_t i = 0; i < obj_size; i++) {
         int err;
