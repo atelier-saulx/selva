@@ -161,7 +161,7 @@ test.serial('can reload from RDB', async (t) => {
     title: { en: 'hello' },
     stringAry: ['hello', 'world'],
     doubleAry: [1.0, 2.1, 3.2],
-    intAry: [7, 6, 5, 4, 3, 2, 999],
+    intAry: [7, 6, 5, 4, 0, 3, 2, 999],
     objAry: [
       {
         textyText: {
@@ -179,6 +179,8 @@ test.serial('can reload from RDB', async (t) => {
         strField: 'string value hello 2',
         numField: 113,
       },
+      {},
+      { strField: 'hello' },
     ],
   })
 
@@ -304,7 +306,7 @@ test.serial('can reload from RDB', async (t) => {
     title: { en: 'hello' },
     stringAry: ['hello', 'world'],
     doubleAry: [1.0, 2.1, 3.2],
-    intAry: [7, 6, 5, 4, 3, 2, 999],
+    intAry: [7, 6, 5, 4, 0, 3, 2, 999],
     objAry: [
       {
         textyText: {
@@ -322,6 +324,8 @@ test.serial('can reload from RDB', async (t) => {
         strField: 'string value hello 2',
         numField: 113,
       },
+      {},
+      { strField: 'hello' },
     ],
   })
 
@@ -424,7 +428,7 @@ test.serial('can reload from RDB', async (t) => {
     title: { en: 'hello' },
     stringAry: ['hello', 'world'],
     doubleAry: [1.0, 2.1, 3.2],
-    intAry: [7, 6, 5, 4, 3, 2, 999],
+    intAry: [7, 6, 5, 4, 0, 3, 2, 999],
     objAry: [
       {
         textyText: {
@@ -442,6 +446,8 @@ test.serial('can reload from RDB', async (t) => {
         strField: 'string value hello 2',
         numField: 113,
       },
+      {},
+      { strField: 'hello' },
     ],
   })
 
