@@ -300,7 +300,7 @@ test.serial('$field + object + all + nested', async (t) => {
   await client.destroy()
 })
 
-test.serial.failing('$field +  multiple options', async (t) => {
+test.serial('$field +  multiple options', async (t) => {
   const client = connect({ port: port })
 
   const types = ['match', 'region']
@@ -333,6 +333,8 @@ test.serial.failing('$field +  multiple options', async (t) => {
       },
     },
   })
+
+  await wait(500)
 
   await client.set({
     $id: 'reA',

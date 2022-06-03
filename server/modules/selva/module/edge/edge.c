@@ -209,10 +209,6 @@ __attribute__((nonnull (1, 4))) static struct EdgeField *Edge_NewField(
     edges = node_metadata->edge_fields.edges;
     if (!edges) {
         edges = SelvaObject_New();
-        if (!edges) {
-            return NULL;
-        }
-
         node_metadata->edge_fields.edges = edges;
     }
 
@@ -250,11 +246,6 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaHierarchyN
     if (!dst_node_metadata->edge_fields.origins) {
         /* The edge origin refs struct is initialized lazily. */
         dst_node_metadata->edge_fields.origins = SelvaObject_New();
-        if (!dst_node_metadata->edge_fields.origins) {
-            fprintf(stderr, "%s:%d: OOM while inserting an edge\n",
-                    __FILE__, __LINE__);
-            abort();
-        }
     }
 
     err = SelvaObject_AddArrayStr(dst_node_metadata->edge_fields.origins,

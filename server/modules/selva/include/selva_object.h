@@ -25,6 +25,12 @@ enum SelvaObjectType {
 #define SELVA_OBJECT_REPLY_SPLICE_FLAG 0x01 /*!< Set if the path should be spliced to start from the first wildcard. */
 #define SELVA_OBJECT_REPLY_BINUMF_FLAG 0x02 /*!< Send numeric fields in an LE binary format. */
 
+/**
+ * Size of struct SelvaObject.
+ * This must match with the actual size of selva_object.c won't compile.
+ */
+#define SELVA_OBJECT_BSIZE 304
+
 struct RedisModuleCtx;
 struct RedisModuleIO;
 struct RedisModuleKey;
@@ -112,6 +118,12 @@ struct SelvaObjectAny {
  *         In case of OOM a NULL pointer is returned.
  */
 struct SelvaObject *SelvaObject_New(void);
+/**
+ * Initialize a prealloced buffer as a SelvaObject.
+ * The given buffer must be aligned the same way as the struct SelvaObject is
+ * aligned.
+ */
+struct SelvaObject *SelvaObject_Init(char buf[SELVA_OBJECT_BSIZE]);
 /**
  * Clear all keys in the object, except those listed in exclude.
  */
@@ -381,6 +393,8 @@ int SelvaObject_ReplyWithObject(
  * @returns a SelvaObject.
  */
 struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data);
+
+struct SelvaObject *SelvaObjectTypeRDBLoadTo(struct RedisModuleIO *io, int encver, struct SelvaObject *obj, void *ptr_load_data);
 
 /**
  * Load a SelvaObject or NULL from RDB.

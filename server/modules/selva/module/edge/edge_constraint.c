@@ -26,22 +26,21 @@ static const struct SelvaObjectPointerOpts obj_opts = {
 };
 SELVA_OBJECT_POINTER_OPTS(obj_opts);
 
-void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
-    memset(data, 0, sizeof(*data));
-    data->hard_constraints[0].constraint_id = EDGE_FIELD_CONSTRAINT_ID_DEFAULT;
-    data->hard_constraints[1].constraint_id = EDGE_FIELD_CONSTRAINT_SINGLE_REF;
-    data->hard_constraints[1].flags = EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF;
-    data->dyn_constraints = SelvaObject_New();
-
-    if (!data->dyn_constraints) {
-        fprintf(stderr, "%s:%d: Fatal ENOMEM\n", __FILE__, __LINE__);
-        abort();
-    }
+static inline struct SelvaObject *get_dyn_constraints(const struct EdgeFieldConstraints *efc) {
+    return (struct SelvaObject *)(efc->dyn_constraints);
 }
 
-void Edge_DeinitEdgeFieldConstraints(struct EdgeFieldConstraints *data) {
-    SelvaObject_Destroy(data->dyn_constraints);
-    memset(data, 0, sizeof(*data));
+void Edge_InitEdgeFieldConstraints(struct EdgeFieldConstraints *efc) {
+    memset(efc, 0, sizeof(*efc));
+    efc->hard_constraints[0].constraint_id = EDGE_FIELD_CONSTRAINT_ID_DEFAULT;
+    efc->hard_constraints[1].constraint_id = EDGE_FIELD_CONSTRAINT_SINGLE_REF;
+    efc->hard_constraints[1].flags = EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF;
+    SelvaObject_Init(efc->dyn_constraints);
+}
+
+void Edge_DeinitEdgeFieldConstraints(struct EdgeFieldConstraints *efc) {
+    SelvaObject_Destroy(get_dyn_constraints(efc));
+    memset(efc, 0, sizeof(*efc));
 }
 
 /**
@@ -120,7 +119,7 @@ static struct EdgeFieldConstraint *create_constraint(const struct EdgeFieldDynCo
     return p;
 }
 
-int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, const struct EdgeFieldDynConstraintParams *params) {
+int Edge_NewDynConstraint(struct EdgeFieldConstraints *efc, const struct EdgeFieldDynConstraintParams *params) {
     size_t fwd_field_name_len;
     const char *fwd_field_name_str = RedisModule_StringPtrLen(params->fwd_field_name, &fwd_field_name_len);
     const size_t constraint_name_len = DYN_CONSTRAINT_NAME_LEN(fwd_field_name_len);
@@ -130,7 +129,7 @@ int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, const struct EdgeFi
 
     make_dyn_constraint_name(constraint_name_str, params->src_node_type, fwd_field_name_str, fwd_field_name_len);
 
-    err = SelvaObject_ExistsStr(data->dyn_constraints, constraint_name_str, constraint_name_len);
+    err = SelvaObject_ExistsStr(get_dyn_constraints(efc), constraint_name_str, constraint_name_len);
     if (err != SELVA_ENOENT) {
         return err;
     }
@@ -140,11 +139,11 @@ int Edge_NewDynConstraint(struct EdgeFieldConstraints *data, const struct EdgeFi
         return SELVA_ENOMEM;
     }
 
-    return SelvaObject_SetPointerStr(data->dyn_constraints, constraint_name_str, constraint_name_len, p, &obj_opts);
+    return SelvaObject_SetPointerStr(get_dyn_constraints(efc), constraint_name_str, constraint_name_len, p, &obj_opts);
 }
 
 const struct EdgeFieldConstraint *Edge_GetConstraint(
-        const struct EdgeFieldConstraints *data,
+        const struct EdgeFieldConstraints *efc,
         unsigned constraint_id,
         Selva_NodeType node_type,
         const char *field_name_str,
@@ -158,7 +157,7 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(
         int err;
 
         make_dyn_constraint_name(constraint_name_str, node_type, field_name_str, field_name_len);
-        err = SelvaObject_GetPointerStr(data->dyn_constraints, constraint_name_str, constraint_name_len, &p);
+        err = SelvaObject_GetPointerStr(get_dyn_constraints(efc), constraint_name_str, constraint_name_len, &p);
         if (err) {
             fprintf(stderr, "%s:%d: Failed to get a dynamic constraint. type: \"%.*s\" field_name: \"%.*s\" err: %s\n",
                     __FILE__, __LINE__,
@@ -168,8 +167,8 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(
         }
 
         constraint = p;
-    } else if (constraint_id < num_elem(data->hard_constraints)) {
-        constraint = &data->hard_constraints[constraint_id];
+    } else if (constraint_id < num_elem(efc->hard_constraints)) {
+        constraint = &efc->hard_constraints[constraint_id];
     }
 
     return constraint;
@@ -262,17 +261,15 @@ int EdgeConstraint_RdbLoad(struct RedisModuleIO *io, int encver, struct EdgeFiel
         return 0; /* Only the latest version supports loading metadata. */
     }
 
-    SelvaObject_Destroy(data->dyn_constraints); /* This was created in init and can be discarded now. */
-    data->dyn_constraints = SelvaObjectTypeRDBLoad(io, encver, NULL);
-    if (!data->dyn_constraints) {
-        return SELVA_ENOMEM;
+    if (!SelvaObjectTypeRDBLoadTo(io, encver, get_dyn_constraints(data), NULL)) {
+        return SELVA_ENOENT;
     }
 
     return 0;
 }
 
 void EdgeConstraint_RdbSave(struct RedisModuleIO *io, struct EdgeFieldConstraints *data) {
-    SelvaObjectTypeRDBSave(io, data->dyn_constraints, NULL);
+    SelvaObjectTypeRDBSave(io, get_dyn_constraints(data), NULL);
 }
 
 int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -365,7 +362,7 @@ int Edge_ListConstraintsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
         return REDISMODULE_OK;
     }
 
-    err = SelvaObject_ReplyWithObject(ctx, NULL, hierarchy->edge_field_constraints.dyn_constraints, NULL, 0);
+    err = SelvaObject_ReplyWithObject(ctx, NULL, get_dyn_constraints(&hierarchy->edge_field_constraints), NULL, 0);
     if (err) {
         return replyWithSelvaError(ctx, err);
     }

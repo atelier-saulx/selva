@@ -970,12 +970,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 int err;
 
                 new_obj = SelvaObject_New();
-                if (!new_obj) {
-                    replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to push new object to array index: %.*s[]",
-                            (int)field_len, field_str);
-                    continue;
-                }
-
                 err = SelvaObject_InsertArrayStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, new_obj);
                 if (err) {
                     replyWithSelvaErrorf(ctx, err, "Failed to push new object to array index: %.*s[]",
@@ -1004,12 +998,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
                 struct SelvaObject *new_obj = SelvaObject_New();
                 int err;
-
-                if (!new_obj) {
-                    replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to insert new object to array index: %.*s[]",
-                            (int)field_len, field_str);
-                    continue;
-                }
 
                 err = SelvaObject_InsertArrayIndexStr(obj, field_str, field_len, SELVA_OBJECT_OBJECT, insert_idx, new_obj);
                 if (err) {

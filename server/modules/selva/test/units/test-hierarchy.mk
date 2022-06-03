@@ -8,6 +8,7 @@ SRC-hierarchy += ../../lib/util/memrchr.c
 SRC-hierarchy += ../../lib/util/svector.c
 SRC-hierarchy += ../../lib/util/trx.c
 SRC-hierarchy += ../../module/alias.c
+SRC-hierarchy += ../../module/arg_parser.c
 SRC-hierarchy += ../../module/config.c
 SRC-hierarchy += ../../module/errors.c
 SRC-hierarchy += ../../module/hierarchy/hierarchy.c

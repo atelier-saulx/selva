@@ -16,11 +16,11 @@ const dir = join(process.cwd(), 'tmp', 'observable-raw-test')
 
 test.before(removeDump(dir))
 test.after(async (t) => {
-    await t.connectionsAreEmpty()
-    removeDump(dir)()
+  await t.connectionsAreEmpty()
+  removeDump(dir)()
 })
 
-test.serial.failing('Make some observables and many subs managers', async (t) => {
+test.serial('Make some observables and many subs managers', async (t) => {
   // maybe run all the servers in workers
   const port = await getPort()
   const registry = await startRegistry({ port })
@@ -293,7 +293,7 @@ test.serial.failing('Make some observables and many subs managers', async (t) =>
   await subsmanager.destroy()
   await subsmanager2.destroy()
 
-  await wait(3e3)
+  await wait(30e3)
 
   t.is(
     Object.values(await getServersSubscriptions()).reduce((a, b) => {

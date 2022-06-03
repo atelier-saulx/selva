@@ -440,10 +440,6 @@ int SelvaSubscriptions_InitHierarchy(SelvaHierarchy *hierarchy) {
     RB_INIT(&hierarchy->subs.head);
 
     hierarchy->subs.missing = SelvaObject_New();
-    if (!hierarchy->subs.missing) {
-        err = SELVA_SUBSCRIPTIONS_ENOMEM;
-        goto fail;
-    }
 
     err = SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers);
     if (err) {

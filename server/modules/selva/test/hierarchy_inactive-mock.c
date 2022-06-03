@@ -8,7 +8,7 @@ void SelvaHierarchy_DeinitInactiveNodes(struct SelvaHierarchy *hierarchy) {
     return;
 }
 
-void SelvaHierarchy_AddInactiveNodeId(struct SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
+void SelvaHierarchy_AddInactiveNodeId(struct SelvaHierarchy *hierarchy, const Selva_NodeId node_id) {
     return;
 }
 

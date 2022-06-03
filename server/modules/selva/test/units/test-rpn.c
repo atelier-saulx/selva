@@ -61,7 +61,7 @@ static char * test_number_invalid(void)
 
 static char * test_operand_pool_overflow(void)
 {
-    const size_t nr_operands = 5 * RPN_SMALL_OPERAND_POOL_SIZE;
+    const size_t nr_operands = RPN_SMALL_OPERAND_POOL_SIZE + 5;
     char expr_str[3 * nr_operands + 1];
 
     memset(expr_str, '\0', sizeof(expr_str));

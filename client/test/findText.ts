@@ -275,7 +275,7 @@ test.serial('find fields with a substring match', async (t) => {
   await client.destroy()
 })
 
-test.serial.failing('hhnn', async (t) => {
+test.serial.skip('hhnn', async (t) => {
   //let resp = await fetch(`http://localhost:${txtPort}/set`, {
   //  method: 'POST',
   //  headers: {
