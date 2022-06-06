@@ -1718,8 +1718,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                  * Hint: It's possible to disable ordered indices completely
                  * by changing order here to SELVA_RESULT_ORDER_NONE.
                  */
-                //ind_err = SelvaFindIndex_Auto(ctx, hierarchy, dir, dir_expr, nodeId, order, order_by_field, index_hints[j], &icb);
-                ind_err = SelvaFindIndex_Auto(ctx, hierarchy, dir, dir_expr, nodeId, SELVA_RESULT_ORDER_NONE, order_by_field, index_hints[j], &icb);
+                ind_err = SelvaFindIndex_Auto(ctx, hierarchy, dir, dir_expr, nodeId, order, order_by_field, index_hints[j], &icb);
                 ind_icb[j] = icb;
                 if (!ind_err) {
                     if (icb && (ind_select < 0 || SelvaFindIndex_IcbCard(icb) < SelvaFindIndex_IcbCard(ind_icb[ind_select]))) {

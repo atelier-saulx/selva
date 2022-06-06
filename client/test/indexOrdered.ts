@@ -403,3 +403,92 @@ test.serial('do not pick ordered index for unsorted result', async (t) => {
 
   await client.destroy()
 })
+
+test.serial('change the sorted field value', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  await client.set({
+    type: 'league',
+    name: 'league 0',
+  })
+  for (let i = 0; i < chars.length; i++) {
+    await client.set({
+      type: 'league',
+      name: `league ${i + 1}`,
+      thing: `${chars.charAt(i)}`,
+    })
+  }
+
+  const q = {
+    $id: 'root',
+    id: true,
+    items: {
+      name: true,
+      $list: {
+        $sort: { $field: 'thing', $order: 'asc' },
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'league',
+            },
+            {
+              $field: 'thing',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    },
+  }
+
+  for (let i = 0; i < 300; i++) {
+    t.deepEqual(
+      await client.get(q),
+      {
+        id: 'root',
+        items: Array(chars.length).fill(null).map((_, i) => ({ name: `league ${i + 1}` }))
+      }
+    )
+    await wait(1)
+  }
+
+  t.deepEqual((await client.redis.selva_index_list('___selva_hierarchy')).map((v, i) => i % 2 === 0 ? v : v[3]), [
+    'root.J.B.dGhpbmc=.ImxlIiBl',
+    '36',
+    'root.J.B.dGhpbmc=.InRoaW5nIiBo',
+    '35',
+  ])
+
+  await Promise.all((await client.get(
+    {
+      stuff: {
+        id: true,
+        thing: true,
+        $list: {
+         $find: {
+           $traverse: 'descendants',
+           $filter: {
+             $field: 'thing',
+             $operator: 'exists',
+           },
+         },
+        },
+      },
+    })).stuff.map(async (thing, i) => client.set({
+      $id: thing.id,
+      thing: `${thing.thing}${i}`
+    }))
+  )
+  t.deepEqual(
+    await client.get(q),
+    {
+      id: 'root',
+      items: Array(chars.length).fill(null).map((_, i) => ({ name: `league ${i + 1}` }))
+    }
+  )
+
+  await client.destroy()
+})

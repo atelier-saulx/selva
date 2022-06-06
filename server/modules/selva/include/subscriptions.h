@@ -112,12 +112,15 @@ enum Selva_SubscriptionTriggerType {
  * A callback that makes the actual defer action when a marker matches.
  * The action function must not hold a pointer to the node after the function
  * returns as the pointer is not guaranteed to be valid after the call.
+ * @param field_str is set if SELVA_SUBSCRIPTION_FLAG_CH_FIELD is set in event_flags.
  */
 typedef void Selva_SubscriptionMarkerAction(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct Selva_SubscriptionMarker *marker,
         unsigned short event_flags,
+        const char *field_str,
+        size_t field_len,
         struct SelvaHierarchyNode *node);
 
 /**
