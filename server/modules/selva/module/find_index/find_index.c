@@ -179,9 +179,7 @@ static void update_index(
 #endif
 
             icb_res_destroy(icb);
-            /*
-             * RFE Should we clear some of the icb accounting?
-             */
+            icb_clear_acc(icb); /* Clear to avoid stale data. */
         }
     } else if (event_flags & SELVA_SUBSCRIPTION_FLAG_REFRESH) {
         /*
