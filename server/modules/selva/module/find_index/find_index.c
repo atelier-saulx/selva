@@ -90,6 +90,10 @@ static int icb_res_init(struct SelvaFindIndexControlBlock *icb) {
     return err;
 }
 
+static void icb_clear_acc(struct SelvaFindIndexControlBlock *icb) {
+    memset(&icb->find_acc, 0, sizeof(icb->find_acc));
+}
+
 static void icb_res_destroy(struct SelvaFindIndexControlBlock *icb) {
     if (icb->flags.valid) {
         icb->flags.valid = 0;
@@ -100,12 +104,6 @@ static void icb_res_destroy(struct SelvaFindIndexControlBlock *icb) {
         } else {
             SelvaSet_Destroy(&icb->res.set);
         }
-
-        /*
-         * Clear the accounting.
-         * TODO Maybe we shouldn't clear all of this in every case?
-         */
-        memset(&icb->find_acc, 0, sizeof(icb->find_acc));
     }
 }
 
@@ -181,6 +179,9 @@ static void update_index(
 #endif
 
             icb_res_destroy(icb);
+            /*
+             * RFE Should we clear some of the icb accounting?
+             */
         }
     } else if (event_flags & SELVA_SUBSCRIPTION_FLAG_REFRESH) {
         /*
@@ -360,6 +361,7 @@ static int discard_index(
 
     /* Destroy the index but not the control block. */
     icb_res_destroy(icb);
+    icb_clear_acc(icb);
 
     return 0;
 }
