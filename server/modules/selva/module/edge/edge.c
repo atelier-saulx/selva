@@ -568,7 +568,8 @@ static void remove_related_edge_markers(
                   SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) &&
                 src_marker->sub == dst_marker->sub &&
                 !memcmp(src_marker->node_id, src_node_id, SELVA_NODE_ID_SIZE)) {
-                dst_marker->marker_action(ctx, hierarchy, dst_marker, SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY, dst_node);
+                unsigned short flags = SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
+                dst_marker->marker_action(ctx, hierarchy, dst_marker, flags, NULL, 0, dst_node);
                 (void)SelvaSubscriptions_DeleteMarkerByPtr(ctx, hierarchy, dst_marker);
             }
         }

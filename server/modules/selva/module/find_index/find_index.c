@@ -90,6 +90,10 @@ static int icb_res_init(struct SelvaFindIndexControlBlock *icb) {
     return err;
 }
 
+static void icb_clear_acc(struct SelvaFindIndexControlBlock *icb) {
+    memset(&icb->find_acc, 0, sizeof(icb->find_acc));
+}
+
 static void icb_res_destroy(struct SelvaFindIndexControlBlock *icb) {
     if (icb->flags.valid) {
         icb->flags.valid = 0;
@@ -147,6 +151,8 @@ static void update_index(
         struct SelvaHierarchy *hierarchy __unused,
         struct Selva_SubscriptionMarker *marker,
         unsigned short event_flags,
+        const char *field_str,
+        size_t field_len,
         struct SelvaHierarchyNode *node) {
     struct SelvaFindIndexControlBlock *icb;
 
@@ -173,12 +179,7 @@ static void update_index(
 #endif
 
             icb_res_destroy(icb);
-
-            /*
-             * Clear the accounting.
-             * TODO Maybe we shouldn't clear all of this?
-             */
-            memset(&icb->find_acc, 0, sizeof(icb->find_acc));
+            icb_clear_acc(icb); /* Clear to avoid stale data. */
         }
     } else if (event_flags & SELVA_SUBSCRIPTION_FLAG_REFRESH) {
         /*
@@ -222,8 +223,22 @@ static void update_index(
          * deleting and adding a node. However, we know that currently deleting
          * a node will cause also a SELVA_SUBSCRIPTION_FLAG_CL_HIERARCHY event.
          */
-        if (icb->flags.valid && Selva_SubscriptionFilterMatch(ctx, hierarchy, node, marker)) {
-            if (!skip_node(icb, node)) {
+        if (icb->flags.valid && !skip_node(icb, node)) {
+            size_t order_field_len;
+            const char *order_field_str = RedisModule_StringPtrLen(icb->sort.order_field, &order_field_len);
+
+            if (icb->flags.ordered &&
+                (event_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD) &&
+                field_len == order_field_len && !memcmp(field_str, order_field_str, order_field_len)) {
+                /*
+                 * Ordered indexing can't execute an additive change when the
+                 * field changed is the same as the field used for ordering
+                 * (`order_field`). If the value of `order_field` would change
+                 * it would cause the same node to occur twice or more in `res`.
+                 * Therefore we need to start over.
+                 */
+                icb_res_destroy(icb);
+            } else if (Selva_SubscriptionFilterMatch(ctx, hierarchy, node, marker)) {
                 icb_res_add(icb, node);
 #if 0
                 Selva_NodeId node_id;
@@ -344,9 +359,7 @@ static int discard_index(
 
     /* Destroy the index but not the control block. */
     icb_res_destroy(icb);
-
-    /* Clear accouting. */
-    memset(&icb->find_acc, 0, sizeof(icb->find_acc));
+    icb_clear_acc(icb);
 
     return 0;
 }
