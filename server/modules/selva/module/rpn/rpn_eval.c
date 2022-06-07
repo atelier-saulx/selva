@@ -4,6 +4,7 @@
 #include "selva.h"
 #include "selva_onload.h"
 #include "selva_set.h"
+#include "hierarchy.h"
 
 enum SelvaRpnEvalType {
     EVAL_TYPE_BOOL,
@@ -14,6 +15,7 @@ enum SelvaRpnEvalType {
 
 static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    struct SelvaHierarchy *hierarchy;
     enum rpn_error err;
 
     const int ARGV_KEY         = 1;
@@ -22,6 +24,12 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisM
 
     if (argc < 3) {
         return RedisModule_WrongArity(ctx);
+    }
+
+    RedisModuleString *hkey_name = RedisModule_CreateString(ctx, HIERARCHY_DEFAULT_KEY, sizeof(HIERARCHY_DEFAULT_KEY) - 1);
+    hierarchy = SelvaModify_OpenHierarchy(ctx, hkey_name, REDISMODULE_READ | REDISMODULE_WRITE);
+    if (!hierarchy) {
+        return REDISMODULE_OK;
     }
 
     /*
@@ -50,7 +58,18 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, RedisModuleCtx *ctx, RedisM
     /* Set reg[0] */
     RedisModuleString *reg0 = argv[ARGV_KEY];
     TO_STR(reg0);
+
+
     rpn_set_reg(rpn_ctx, 0, reg0_str, reg0_len, 0);
+    if (reg0_len >= SELVA_NODE_ID_SIZE) {
+        struct SelvaHierarchyNode *node;
+
+        node = SelvaHierarchy_FindNode(hierarchy, reg0_str);
+        if (node) {
+            rpn_set_hierarchy_node(rpn_ctx, hierarchy, node);
+            rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
+        }
+    }
 
     /*
      * Get the filter expression arguments and set them to the registers.
