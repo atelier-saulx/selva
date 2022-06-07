@@ -9,6 +9,9 @@ struct RedisModuleCtx;
 struct RedisModuleKey;
 struct RedisModuleString;
 
+/**
+ * Type of SelvaSet.
+ */
 enum SelvaSetType {
     SELVA_SET_TYPE_RMSTRING = 0,
     SELVA_SET_TYPE_DOUBLE = 1,
@@ -56,10 +59,16 @@ static inline int SelvaSet_isValidType(enum SelvaSetType type) {
     return type >= 0 && type < SELVA_SET_NR_TYPES;
 }
 
+/**
+ * Get the number of elements in the SelvaSet.
+ */
 static inline unsigned int SelvaSet_Size(const struct SelvaSet *set) {
     return set->size;
 }
 
+/**
+ * Initialize a SelvaSet.
+ */
 static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
     set->type = type;
     set->size = 0;
