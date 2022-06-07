@@ -1890,19 +1890,18 @@ enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ct
         return RPN_ERR_BADSTK;
     }
 
-    if (res->set) {
+    if (res->flags.slvset && res->set) {
         if (res->flags.regist) {
             err = SelvaSet_Union_err2rpn_error(SelvaSet_Union(out, res->set, NULL));
         } else {
             /* Safe to move the strings. */
             err = SelvaSet_Union_err2rpn_error(SelvaSet_Merge(out, res->set));
         }
-        free_rpn_operand(&res);
     } else if (to_bool(res)) {
         /* However, if res is falsy we interpret it as meaning an empty set. */
-        free_rpn_operand(&res);
-        return RPN_ERR_TYPE;
+        err = RPN_ERR_TYPE;
     }
+    free_rpn_operand(&res);
 
     return err;
 }
