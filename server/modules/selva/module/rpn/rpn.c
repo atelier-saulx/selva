@@ -1412,6 +1412,7 @@ static int parse_label(const char *tok_str, size_t tok_len) {
         return 0;
     }
 
+    memset(tmp, '\0', sizeof(tmp));
     for (size_t i = 1; i < min(tok_len, sizeof(tmp) - 1); i++) {
         int c = tok_str[i];
 
