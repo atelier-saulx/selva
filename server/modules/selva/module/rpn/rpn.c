@@ -1256,6 +1256,10 @@ static enum rpn_error rpn_op_abo(struct RedisModuleCtx *redis_ctx __unused, stru
     return RPN_ERR_ILLOPC;
 }
 
+static enum rpn_error rpn_op_nop(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx __unused) {
+    return RPN_ERR_OK;
+}
+
 typedef enum rpn_error (*rpn_fp)(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx);
 
 static rpn_fp funcs[] = {
@@ -1282,9 +1286,9 @@ static rpn_fp funcs[] = {
     rpn_op_drop,    /* U */
     rpn_op_over,    /* V */
     rpn_op_rot,     /* W */
-    rpn_op_abo,     /* X */
-    rpn_op_abo,     /* Y */
-    rpn_op_abo,     /* Z */
+    rpn_op_nop,     /* X */
+    rpn_op_abo,     /* Y spare */
+    rpn_op_abo,     /* Z spare */
     rpn_op_abo,     /* N/A */
     rpn_op_abo,     /* N/A */
     rpn_op_abo,     /* N/A */
@@ -1318,6 +1322,10 @@ static rpn_fp funcs[] = {
     rpn_op_abo,     /* y spare */
     rpn_op_union,   /* z spare */
 };
+
+#define RPN_DELIM " \t\n\r\f"
+#define RPN_GROUP "{\""
+#define RPN_MAX_LABELS 10 /* TODO Tunable */
 
 static const char *tokenize(const char *s, const char *delim, const char *group, const char **rest, size_t *len) {
     const char *spanp;
@@ -1388,7 +1396,99 @@ cont:
     } while (1);
 }
 
-static enum rpn_error compile_push_literal(struct rpn_expression *expr, size_t i, struct rpn_operand *v) {
+/**
+ * Parse a potential label.
+ * .<number>:
+ * .1:
+ * @returns 0 if no label was found;
+ *          -1 if the label was invald;
+ *          Otherwise the label number is returned.
+ */
+static int parse_label(const char *tok_str, size_t tok_len) {
+    char tmp[11];
+    int valid = 0;
+
+    if (tok_len < 3 || tok_str[0] != '.') {
+        return 0;
+    }
+
+    memset(tmp, '\0', sizeof(tmp));
+    for (size_t i = 1; i < min(tok_len, sizeof(tmp) - 1); i++) {
+        char c = tok_str[i];
+
+        if (isdigit(c)) {
+            tmp[i - 1] = c;
+        } else if (c == ':') {
+            valid = 1;
+            break;
+        } else {
+            return -1;
+        }
+    }
+
+    if (!valid) {
+        return -1;
+    }
+
+    tmp[sizeof(tmp) - 1] = '\0';
+    int l = fast_atou(tmp);
+
+    if (l == 0 || l >= RPN_MAX_LABELS) {
+        return -1;
+    }
+
+    return l;
+}
+
+/**
+ * Return a pointer past the label.
+ */
+static size_t skip_label(const char **tok_str_p, size_t tok_len) {
+    const char *tok_str = *tok_str_p;
+
+    if (parse_label(tok_str, tok_len) <= 0) {
+        return tok_len;
+    }
+
+    const char *code_begin = strchr(tok_str, ':') + 1;
+    ssize_t label_len = (ssize_t)(code_begin - tok_str);
+
+    *tok_str_p = code_begin;
+    return (size_t)(max((ssize_t)tok_len - label_len, 0l));
+}
+
+/**
+ * Find and map all labels in the input expression.
+ */
+static int find_labels(int labels[RPN_MAX_LABELS], const char *input) {
+    const char *delim = RPN_DELIM;
+    const char *group = RPN_GROUP;
+    size_t tok_len = 0;
+    const char *rest = NULL;
+    int i = 0;
+
+    for (const char *tok_str = tokenize(input, delim, group, &rest, &tok_len);
+         tok_str != NULL;
+         tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
+        int l = parse_label(tok_str, tok_len);
+
+        if (l > 0) {
+            if (labels[l] != 0) {
+                /* Disallow using the same label twice. */
+                return RPN_ERR_BADSTK;
+            }
+            labels[l] = i;
+        } else if (l == -1) {
+            /* Invalid label. */
+            return RPN_ERR_ILLOPN;
+        }
+        i++;
+    }
+
+    return RPN_ERR_OK;
+}
+
+static enum rpn_error compile_store_literal(struct rpn_expression *expr, size_t i, struct rpn_operand *v) {
     if (i >= RPN_MAX_D - 1) {
         return RPN_ERR_BADSTK;
     }
@@ -1420,7 +1520,7 @@ static enum rpn_error compile_num_literal(struct rpn_expression *expr, size_t i,
     v->s_size = 0;
     v->s[0] = '\0';
 
-    return compile_push_literal(expr, i, v);
+    return compile_store_literal(expr, i, v);
 }
 
 static enum rpn_error compile_str_literal(struct rpn_expression *expr, size_t i, const char *str, size_t len) {
@@ -1433,7 +1533,7 @@ static enum rpn_error compile_str_literal(struct rpn_expression *expr, size_t i,
     v->s[len] = '\0';
     v->d = nan("");
 
-    return compile_push_literal(expr, i, v);
+    return compile_store_literal(expr, i, v);
 }
 
 static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size_t i, const char *str, size_t len) {
@@ -1485,7 +1585,7 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
         }
     }
 
-    return compile_push_literal(expr, i, v);
+    return compile_store_literal(expr, i, v);
 }
 
 /**
@@ -1511,14 +1611,21 @@ static enum rpn_error compile_operator(char *e, char c) {
 
 struct rpn_expression *rpn_compile(const char *input) {
     struct rpn_expression *expr;
+    size_t size = 2 * sizeof(rpn_token);
+
     expr = RedisModule_Alloc(sizeof(struct rpn_expression));
     memset(expr->input_literal_reg, 0, sizeof(expr->input_literal_reg));
-
-    size_t size = 2 * sizeof(rpn_token);
     expr->expression = RedisModule_Alloc(size);
 
-    const char *delim = " \t\n\r\f";
-    const char *group = "{\"";
+    int labels[RPN_MAX_LABELS] = { 0 };
+    if (find_labels(labels, input)) {
+        fprintf(stderr, "%s:%d:%s: Failed to parse labels\n",
+                __FILE__, __LINE__, __func__);
+        goto fail;
+    }
+
+    const char *delim = RPN_DELIM;
+    const char *group = RPN_GROUP;
     uint32_t input_literal_reg_i = 0;
     size_t i = 0;
     size_t tok_len = 0;
@@ -1529,6 +1636,11 @@ struct rpn_expression *rpn_compile(const char *input) {
         enum rpn_error err;
         char *e = expr->expression[i++];
         rpn_token *new;
+
+        /*
+         * Check if there is a label and skip it.
+         */
+        tok_len = skip_label(&tok_str, tok_len);
 
         if (tok_len == 0) {
             fprintf(stderr, "%s:%d:%s: Token length can't be zero\n",
@@ -1561,15 +1673,30 @@ struct rpn_expression *rpn_compile(const char *input) {
                         __FILE__, __LINE__, __func__);
                 goto fail;
             } else {
-                unsigned n = fast_atou(tok_str + 1);
+                unsigned l = fast_atou(tok_str + 1);
+                int n;
 
-                if (n > 255) {
-                    fprintf(stderr, "%s:%d:%s: Conditional jump too long\n",
+                if (l >= RPN_MAX_LABELS) {
+                    fprintf(stderr, "%s:%d:%s: Invalid label\n",
                             __FILE__, __LINE__, __func__);
                     goto fail;
                 }
 
-                compile_emit_code_uint32(e, RPN_CODE_JMP_FWD, n);
+                n = labels[l];
+                if (n == 0) {
+                    fprintf(stderr, "%s:%d:%s: Label not found: %d\n",
+                            __FILE__, __LINE__, __func__,
+                            n);
+                    goto fail;
+                }
+                if (n <= (int)i - 1) {
+                    fprintf(stderr, "%s:%d:%s: Can't jump backwards to %d with `>`\n",
+                            __FILE__, __LINE__, __func__,
+                            n);
+                    goto fail;
+                }
+
+                compile_emit_code_uint32(e, RPN_CODE_JMP_FWD, n - i);
             }
             goto next;
         default:
