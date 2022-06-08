@@ -205,10 +205,10 @@
   dependencies:
     is-plain-obj "^3.0.0"
 
-"@saulx/validators@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.npmjs.org/@saulx/validators/-/validators-1.0.2.tgz"
-  integrity sha512-1vH5x802CZDCSo8kNjF+7rcIg6QHIcIskPNXRL4il3+IMMUhzJAskl5IGiexKjQpaMFzlcNk9H+a3mFCoI+lJg==
+"@saulx/validators@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@saulx/validators/-/validators-1.1.0.tgz#d875504850d0708d9a22208c37122d41a71ba825"
+  integrity sha512-oGz0nqFt35HDLOnwXgdZg2LvKU/zuaF/5fS/8bfGFORX3YidgXvNAxEY0rMgzMkLE6Vm5nW/bHPdH76+S7yQ7A==
 
 "@sindresorhus/fnv1a@^2.0.1":
   version "2.0.1"
