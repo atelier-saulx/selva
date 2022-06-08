@@ -152,10 +152,11 @@ Type codes used in the documentation:
 | `>`      | `(n) => <>`      | Conditional jump forward.               | `#1 >2 => <>`            |
 | `P`      | `(X) => n`       | Necessity `□a`. (It's necessary that a) | `#0 P #1 N => 0`         |
 | `Q`      | `(X) => n`       | Possibly `◇a`.                          | `#1 Q #0 M => 1`         |
+| `X`      | `(<>) => <>`     | No operation.                           | `#1 >1 .1:X`             |
 
 The conditional jump operator `>` jumps over specified number of tokens that is
-a compile time constant. The first an only argument popped from the stack is the
-boolean condition that decides whether the operator will execute a jump.
+a compile time constant. The first and only argument popped from the stack is
+the boolean condition that decides whether the operator will execute a jump.
 
 `P` and `Q` are short circuiting operators and don't represent classical modal
 logic. The `P` operator bails out immediately if the operand is not truthy and

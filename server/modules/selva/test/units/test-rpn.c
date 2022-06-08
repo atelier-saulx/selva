@@ -513,35 +513,41 @@ static char * test_selvaset_ill(void)
     const char expr_str4[] = "{abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\", \"nice\"}";
     const char expr_str5[] = "{abc\",\"def\",\"verylongtextisalsoprettynice\",\"this is another one that is fairly long and with spaces\", \"nice\",}";
 
-    pu_assert_equal("Fails", NULL,  rpn_compile(expr_str1));
-    pu_assert_equal("Fails", NULL,  rpn_compile(expr_str2));
-    pu_assert_equal("Fails", NULL,  rpn_compile(expr_str3));
-    pu_assert_equal("Fails", NULL,  rpn_compile(expr_str4));
-    pu_assert_equal("Fails", NULL,  rpn_compile(expr_str5));
+    pu_assert_equal("Fails", NULL, rpn_compile(expr_str1));
+    pu_assert_equal("Fails", NULL, rpn_compile(expr_str2));
+    pu_assert_equal("Fails", NULL, rpn_compile(expr_str3));
+    pu_assert_equal("Fails", NULL, rpn_compile(expr_str4));
+    pu_assert_equal("Fails", NULL, rpn_compile(expr_str5));
 
     return NULL;
 }
 
 static char * test_cond_jump(void)
 {
-    static const char expr_str[][22] = {
-        "#1 #1 A #1 >2 #1 A",
-        "#1 #1 A #0 >2 #1 A",
-        "#1 #1 A #1 >3 #1 A",
-        "#1 #1 A #1 >-3 #1 A",
-        "#1 #1 A #1 >30 #1 A",
-        "#1 #1 A #1 >9000 #1 A",
+    static const char expr_str[][30] = {
+        "#1 #1 A #1 >1  #1 A .1:X",
+        "#1 #1 A #0 >1  #1 A .1:X",
+        "#1 #1 A #1 >0  #1 A .1:X",
+        "#1 #1 A #1 >3  #1 A .1:X",
+        "#1 #1 A #1 >-3 #1 A .1:X",
+        "#1 R >1 .1:X",
+        "#1 R >1 X .1:X",
+        "#1 R >1 X .1:R >2 .2:X",
+        "#1 R >1 X .1:R >1 .1:X",
     };
     int expected[] = {
         2,
         3,
-        2, /* Too long jumps will just terminate early. */
+        -1, /* Invalid label. */
+        -1, /* Invalid label. */
         -1, /* Negative numbers should fail to compile. */
-        2, /* Too long jumps will just terminate early. */
-        -1, /* Jumps longer than 255 are not supported. */
+        1,
+        1,
+        1,
+        -1, /* Label reuse. */
     };
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < num_elem(expected); i++) {
         long long res;
         enum rpn_error err;
 

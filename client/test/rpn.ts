@@ -70,7 +70,7 @@ test.serial('eval to double', async (t) => {
 
   // Test swap, duplicate, and forward jump
   // a > 5 ? 0 : a
-  const expr2 = '@1 R #5 S I >2 #0 D'
+  const expr2 = '@1 R #5 S I >2 #0 D .2:X'
   t.deepEqual(
     Number(await client.redis.selva_rpn_evaldouble('node123456', expr2, '3')),
     0
@@ -88,7 +88,7 @@ test.serial('eval to double', async (t) => {
 
   // drop, forward jump, and swap
   // a > 5 ? 0 : a
-  const expr3 = '@2 @1 R #5 H >1 S U'
+  const expr3 = '@2 @1 R #5 H >1 S .1:U'
   t.deepEqual(
     Number(await client.redis.selva_rpn_evaldouble('node123456', expr3, '3', '6')),
     3
@@ -126,7 +126,7 @@ test.serial('eval to string', async (t) => {
   )
 
   // a + 1 == 2 ? "true" : "false"
-  const expr1 = '@1 #1 A #2 F L >3 "true" #1 >1 "false"'
+  const expr1 = '@1 #1 A #2 F L >3 "true" #1 >1 .3:"false" .1:X'
   t.deepEqual(
     await client.redis.selva_rpn_evalstring('node123456', expr1, '1'),
     'true'
