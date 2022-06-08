@@ -45,24 +45,21 @@ export default function bfsExpr2rpn(
   types: Record<string, { prefix?: string }>,
   t: TraverseByType
 ): string {
-  let rpn = ''
+  let label = 1
+  let rpn: string[] = []
+
   for (const typeName in t) {
     if (typeName === '$any') {
       continue
     }
 
-    // set up value expr
     const rule = t[typeName]
     const valueExpr = expr2rpn(types, rule)
-
     const typePrefix = typeName === 'root' ? 'ro' : types[typeName].prefix
-    const ternSegment = ` ${valueExpr} "${typePrefix}" e T`
 
-    rpn = ternSegment + rpn
+    rpn.push(`"${typePrefix}" e L >${label} ${valueExpr} Z .${label}`)
+    label++
   }
 
-  const $any: TraverseByTypeExpression = t.$any
-  const anyExpr = expr2rpn(types, $any)
-  rpn = anyExpr + rpn
-  return rpn
+  return `${rpn.join(':')}:${expr2rpn(types, t.$any)}`
 }

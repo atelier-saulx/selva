@@ -1260,6 +1260,10 @@ static enum rpn_error rpn_op_nop(struct RedisModuleCtx *redis_ctx __unused, stru
     return RPN_ERR_OK;
 }
 
+static enum rpn_error rpn_op_ret(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx __unused) {
+    return RPN_ERR_BREAK;
+}
+
 typedef enum rpn_error (*rpn_fp)(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx);
 
 static rpn_fp funcs[] = {
@@ -1288,7 +1292,7 @@ static rpn_fp funcs[] = {
     rpn_op_rot,     /* W */
     rpn_op_nop,     /* X */
     rpn_op_abo,     /* Y spare */
-    rpn_op_abo,     /* Z spare */
+    rpn_op_ret,     /* Z */
     rpn_op_abo,     /* N/A */
     rpn_op_abo,     /* N/A */
     rpn_op_abo,     /* N/A */
