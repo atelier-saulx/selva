@@ -1463,9 +1463,10 @@ static size_t skip_label(const char **tok_str_p, size_t tok_len) {
 static int find_labels(int labels[RPN_MAX_LABELS], const char *input) {
     const char *delim = RPN_DELIM;
     const char *group = RPN_GROUP;
-    size_t i = 0;
     size_t tok_len = 0;
     const char *rest = NULL;
+    int i = 0;
+
     for (const char *tok_str = tokenize(input, delim, group, &rest, &tok_len);
          tok_str != NULL;
          tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
