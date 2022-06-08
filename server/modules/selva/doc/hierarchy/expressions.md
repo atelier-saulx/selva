@@ -106,53 +106,53 @@ Type codes used in the documentation:
 
 **Arithmetic operators**
 
-| Operator | Operands       | Description                  | Example (expr => result) |
-| -------- | -------------- | ---------------------------- | ------------------------ |
-| `A`      | `(n, n) => n`  | Addition operator `+`.       | `#2 #1 A => 3`           |
-| `B`      | `(n, n) => n`  | Subtraction operator `-`.    | `#2 #1 B => 1`           |
-| `C`      | `(n, n) => n`  | Division operator `/`.       | `#2 #4 C => 2`           |
-| `D`      | `(n, n) => n`  | Multiplication operator `*`. | `#2 #2 D => 4`           |
-| `E`      | `(n, n) => n`  | Remainder operator `%`.      | `#4 #9 E => 1`           |
+| Operator | Operands                   | Description                               | Example (expr => result)  |
+| -------- | -------------------------- | ----------------------------------------- | ------------------------- |
+| `A`      | `(n, n) => n`              | Addition operator `+`.                    | `#2 #1 A => 3`            |
+| `B`      | `(n, n) => n`              | Subtraction operator `-`.                 | `#2 #1 B => 1`            |
+| `C`      | `(n, n) => n`              | Division operator `/`.                    | `#2 #4 C => 2`            |
+| `D`      | `(n, n) => n`              | Multiplication operator `*`.              | `#2 #2 D => 4`            |
+| `E`      | `(n, n) => n`              | Remainder operator `%`.                   | `#4 #9 E => 1`            |
 
 **Relational operators**
 
-| Operator | Operands      | Description                          | Example (expr => result) |
-| -------- | ------------- | ------------------------------------ | ------------------------ |
-| `F`      | `(n, n) => n` | Equality operator `==`.              | `#1 #1 F => 1`           |
-| `G`      | `(n, n) => n` | Not equal operator `!=`.             | `#1 #2 G => 1`           |
-| `H`      | `(n, n) => n` | Less than operator `<`.              | `#2 #1 H => 1`           |
-| `I`      | `(n, n) => n` | Greater than operator `>`.           | `#2 #1 I => 0`           |
-| `J`      | `(n, n) => n` | Less than or equal operator `<=`.    | `#2 #1 J => 1`           |
-| `K`      | `(n, n) => n` | Greater than or equal operator `>=`. | `#2 #1 K => 0`           |
+| Operator | Operands                   | Description                               | Example (expr => result)  |
+| -------- | -------------------------- | ----------------------------------------- | ------------------------- |
+| `F`      | `(n, n) => n`              | Equality operator `==`.                   | `#1 #1 F => 1`            |
+| `G`      | `(n, n) => n`              | Not equal operator `!=`.                  | `#1 #2 G => 1`            |
+| `H`      | `(n, n) => n`              | Less than operator `<`.                   | `#2 #1 H => 1`            |
+| `I`      | `(n, n) => n`              | Greater than operator `>`.                | `#2 #1 I => 0`            |
+| `J`      | `(n, n) => n`              | Less than or equal operator `<=`.         | `#2 #1 J => 1`            |
+| `K`      | `(n, n) => n`              | Greater than or equal operator `>=`.      | `#2 #1 K => 0`            |
 
 **Logical operators**
 
-| Operator | Operands         | Description                             | Example (expr => result) |
-| -------- | ---------------- | --------------------------------------- | ------------------------ |
-| `L`      | `(n) => n`       | Logical NOT operator. (unary)           | `#1 L => 0`              |
-| `M`      | `(n, n) => n`    | Logical AND operator.                   | `#1 #1 M => 1`           |
-| `N`      | `(n, n) => n`    | Logical OR operator.                    | `#0 #1 N => 1`           |
-| `O`      | `(n, n) => n`    | Logical XOR operator. `(!!a ^ !!b)`     | `#1 #1 O => 0`           |
-| `T`      | `(n, X, X) => X` | Ternary, `a ? b : c`.                   | `$3 $2 @1 T => X`        |
+| Operator | Operands                   | Description                               | Example (expr => result)  |
+| -------- | -------------------------- | ----------------------------------------- | ------------------------- |
+| `L`      | `(n) => n`                 | Logical NOT operator. (unary)             | `#1 L => 0`               |
+| `M`      | `(n, n) => n`              | Logical AND operator.                     | `#1 #1 M => 1`            |
+| `N`      | `(n, n) => n`              | Logical OR operator.                      | `#0 #1 N => 1`            |
+| `O`      | `(n, n) => n`              | Logical XOR operator. `(!!a ^ !!b)`       | `#1 #1 O => 0`            |
+| `T`      | `(n, X, X) => X`           | Ternary, `a ? b : c`.                     | `$3 $2 @1 T => X`         |
 
 **Stack manipulation operators**
 
-| Operator | Operands             | Description                                  | Example (expr => result) |
-| -------- | -------------------- | -------------------------------------------- | ------------------------ |
-| `R`      | `(X) => X, X`        | Duplicate the last values in the stack.      | `#1 R => 1, 1`           |
-| `S`      | `(X1, X2) => X2, X1` | Swap the last two values in the stack.       | `#1 #2 S => #1, #2`      |
-| `U`      | `(X) => {}`          | Drop, discard the top stack value.           | `#1 #2 D => #1`          |
-| `V`      | `(X1, X2) => X1, X2, X1`   | Copy the value under top of the stack. | `#1 #2 V => #1 #2 #1`    |
-| `W`      | `(X1, X2, X3) => X2 X3 X1` | Rotate top three values in the stack.  | `#1 #2 #3 W => #2 #3 #1` |
+| Operator | Operands                   | Description                               | Example (expr => result)  |
+| -------- | -------------------------- | ----------------------------------------- | ------------------------- |
+| `R`      | `(X) => X, X`              | Duplicate the last values in the stack.   | `#1 R => 1, 1`            |
+| `S`      | `(X1, X2) => X2, X1`       | Swap the last two values in the stack.    | `#1 #2 S => #1, #2`       |
+| `U`      | `(X) => <>`                | Drop, discard the top stack value.        | `#1 #2 D => #1`           |
+| `V`      | `(X1, X2) => X1, X2, X1`   | Copy the value under top of the stack.    | `#1 #2 V => #1 #2 #1`     |
+| `W`      | `(X1, X2, X3) => X2 X3 X1` | Rotate top three values in the stack.     | `#1 #2 #3 W => #2 #3 #1`  |
 
 **Control flow operators**
 
-| Operator | Operands         | Description                             | Example (expr => result) |
-| -------- | ---------------- | --------------------------------------- | ------------------------ |
-| `>`      | `(n) => <>`      | Conditional jump forward.               | `#1 >2 => <>`            |
-| `P`      | `(X) => n`       | Necessity `□a`. (It's necessary that a) | `#0 P #1 N => 0`         |
-| `Q`      | `(X) => n`       | Possibly `◇a`.                          | `#1 Q #0 M => 1`         |
-| `X`      | `(<>) => <>`     | No operation.                           | `#1 >1 .1:X`             |
+| Operator | Operands                   | Description                               | Example (expr => result)  |
+| -------- | -------------------------- | ----------------------------------------- | ------------------------- |
+| `>`      | `(n) => <>`                | Conditional jump forward.                 | `#1 >2 => <>`             |
+| `P`      | `(X) => n`                 | Necessity `□a`. (It's necessary that a)   | `#0 P #1 N => 0`          |
+| `Q`      | `(X) => n`                 | Possibly `◇a`.                            | `#1 Q #0 M => 1`          |
+| `X`      | `(<>) => <>`               | No operation.                              | `#1 >1 .1:X`             |
 
 The conditional jump operator `>` jumps over specified number of tokens that is
 a compile time constant. The first and only argument popped from the stack is
@@ -187,29 +187,29 @@ Therefore, neither of these yields the expected result.
 
 **Set operations**
 
-| Operator | Operands         | Description                             | Example (expr => result) |
-| -------- | ---------------- | --------------------------------------- | ------------------------ |
-| `z`      | `(Z, Z) => Z`    | Union of A and B.                       | `B A a => C`             |
+| Operator | Operands                   | Description                               | Example (expr => result)  |
+| -------- | -------------------------- | ----------------------------------------- | ------------------------- |
+| `z`      | `(Z, Z) => Z`              | Union of A and B.                         | `B A a => C`              |
 
 **Functions**
 
-| Operator | Arguments         | Description                           | Example (expr => result) |
-| -------- | ----------------- | ------------------------------------- | ------------------------ |
-| `a`      | `(z, s|n) => n`   | `has` function for SelvaSets.         | `"c" {"a","b"} a => 0`   |
-|          |                   |                                       | `"c" "field" a => 0`     |
-| `b`      | `(s) => s`        | Returns the type of a node id.        | `"xy123" b => "xy"`      |
-| `c`      | `(s, s) => n`     | Compare strings.                      | `$1 "hello" c => 1`      |
-| `d`      | `(s, s) => n`     | Compare node IDs.                     | `$1 $0 d => 1`           |
-| `e`      | `(s) => n`        | Compare the type of the current node. | `"ab" e`                 |
-| `f`      | `(s) => s`        | Get the string value of a node field. | `"field" f`              |
-| `g`      | `(s) => s`        | Get the number value of a node field. | `"field" g`              |
-| `h`      | `(s) => n`        | Field exists.                         | `"title.en" h => 1`      |
-| `i`      | `(n, n, n) => n`  | (interval) `b` is within `a` and `c`. `a <= b <= c` | `"#2 #1 #0 i => 1` |
-| `j`      | `(S) => S`        | Find first; take the name of the first non-empty field into a new set. (value is set or set is non-empty) | `{"nonfield","field"} j => {"field"}` |
-| `k`      | `(Z) => S`        | Take all or none (AON), pass the set or result an empty set. | `{"field1","field2"} k => {"field1","field2"}` |
-| `l`      | `(z, z) => n`     | Test if A is a subset of B. A and B are set-like. | `"field" {"a","b"} l => 1` |
-| `m`      | `(s, s) => n`     | Substring includes test.              | `"cd" "abcde" m`         |
-| `n`      | `() => n`         | Get the current value of `CLOCK_REALTIME` in ms. | `l => 1623253120970` |
+| Operator | Arguments                  | Description                               | Example (expr => result)  |
+| -------- | -------------------------- | ----------------------------------------- | ------------------------- |
+| `a`      | `(z, s|n) => n`            | `has` function for SelvaSets.             | `"c" {"a","b"} a => 0`    |
+|          |                            |                                           | `"c" "field" a => 0`      |
+| `b`      | `(s) => s`                 | Returns the type of a node id.            | `"xy123" b => "xy"`       |
+| `c`      | `(s, s) => n`              | Compare strings.                          | `$1 "hello" c => 1`       |
+| `d`      | `(s, s) => n`              | Compare node IDs.                         | `$1 $0 d => 1`            |
+| `e`      | `(s) => n`                 | Compare the type of the current node.     | `"ab" e`                  |
+| `f`      | `(s) => s`                 | Get the string value of a node field.     | `"field" f`               |
+| `g`      | `(s) => s`                 | Get the number value of a node field.     | `"field" g`               |
+| `h`      | `(s) => n`                 | Field exists.                             | `"title.en" h => 1`       |
+| `i`      | `(n, n, n) => n` | (interval) `b` is within `a` and `c`. `a <= b <= c` | `"#2 #1 #0 i => 1`        |
+| `j`      | `(S) => S`                 | Find first; take the name of the first non-empty field into a new set. (value is set or set is non-empty) | `{"nonfield","field"} j => {"field"}` |
+| `k`      | `(Z) => S`                 | Take all or none (AON), pass the set or result an empty set. | `{"field1","field2"} k => {"field1","field2"}` |
+| `l`      | `(z, z) => n`      | Test if A is a subset of B. A and B are set-like. | `"field" {"a","b"} l => 1` |
+| `m`      | `(s, s) => n`              | Substring includes test.                  | `"cd" "abcde" m`          |
+| `n`      | `() => n`                  | Get the current value of `CLOCK_REALTIME` in ms. | `l => 1623253120970` |
 
 `j` and `k` are only available if `rpn_set_hierarchy_node()` is called before
 executing an expression.
