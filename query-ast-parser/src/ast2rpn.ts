@@ -79,11 +79,6 @@ export default function ast2rpn(
       return
     }
 
-    if (f.$field === 'ancestors') {
-      out += ' #1'
-      return
-    }
-
     if (f.$operator == 'exists') {
       const fieldId = fieldNameToReg(f.$field)
 
