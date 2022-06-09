@@ -63,7 +63,7 @@ typedef char rpn_token[RPN_MAX_TOKEN_SIZE];
  */
 struct rpn_expression {
     rpn_token *expression; /*!< An array of compiled RPN tokens. */
-    struct rpn_operand *input_literal_reg[RPN_MAX_D]; /*!< Literals used in the expression. */
+    struct rpn_operand *literal_reg[RPN_MAX_D]; /*!< Literals used in the expression. */
 };
 
 #define RPN_SET_REG_FLAG_RMFREE 0x01 /*!< Free register values after unref. */
