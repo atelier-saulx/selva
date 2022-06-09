@@ -1331,6 +1331,11 @@ static rpn_fp funcs[] = {
 #define RPN_GROUP "{\""
 #define RPN_MAX_LABELS 10 /* TODO Tunable */
 
+/**
+ * Tokenize a C-string.
+ * The tokenizer can be used to tokenize RPN expressions and structures within
+ * the expressions, e.g. the set notation.
+ */
 static const char *tokenize(const char *s, const char *delim, const char *group, const char **rest, size_t *len) {
     const char *spanp;
     const char *tok;
@@ -1401,14 +1406,14 @@ cont:
 }
 
 /**
- * Parse a potential label.
+ * Parse a potential jump label.
  * .<number>:
  * .1:
  * @returns 0 if no label was found;
  *          -1 if the label was invald;
  *          Otherwise the label number is returned.
  */
-static int parse_label(const char *tok_str, size_t tok_len) {
+static int compile_parse_label(const char *tok_str, size_t tok_len) {
     char tmp[11];
     int valid = 0;
 
@@ -1445,12 +1450,15 @@ static int parse_label(const char *tok_str, size_t tok_len) {
 }
 
 /**
- * Return a pointer past the label.
+ * Skip a jump label in a token.
+ * Modifies the tok_str_p to point to the character right after the label if
+ * found and returns the length of the remaining string.
+ * @returns tok_len - label_len
  */
-static size_t skip_label(const char **tok_str_p, size_t tok_len) {
+static size_t compile_skip_label(const char **tok_str_p, size_t tok_len) {
     const char *tok_str = *tok_str_p;
 
-    if (parse_label(tok_str, tok_len) <= 0) {
+    if (compile_parse_label(tok_str, tok_len) <= 0) {
         return tok_len;
     }
 
@@ -1463,8 +1471,10 @@ static size_t skip_label(const char **tok_str_p, size_t tok_len) {
 
 /**
  * Find and map all labels in the input expression.
+ * @param labels is a map from label id to token index.
+ * @param input is a pointer to the original RPN expression.
  */
-static int find_labels(int labels[RPN_MAX_LABELS], const char *input) {
+static int compile_find_labels(int labels[RPN_MAX_LABELS], const char *input) {
     const char *delim = RPN_DELIM;
     const char *group = RPN_GROUP;
     size_t tok_len = 0;
@@ -1474,7 +1484,7 @@ static int find_labels(int labels[RPN_MAX_LABELS], const char *input) {
     for (const char *tok_str = tokenize(input, delim, group, &rest, &tok_len);
          tok_str != NULL;
          tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
-        int l = parse_label(tok_str, tok_len);
+        int l = compile_parse_label(tok_str, tok_len);
 
         if (l > 0) {
             if (labels[l] != 0) {
@@ -1492,17 +1502,25 @@ static int find_labels(int labels[RPN_MAX_LABELS], const char *input) {
     return RPN_ERR_OK;
 }
 
+/**
+ * Store a literal in the literal register file.
+ * The literal register file (literal_reg) works similar to the user defined
+ * register file but it only contains the literals used in the RPN expression.
+ */
 static enum rpn_error compile_store_literal(struct rpn_expression *expr, size_t i, struct rpn_operand *v) {
     if (i >= RPN_MAX_D - 1) {
         return RPN_ERR_BADSTK;
     }
 
     v->flags.regist = 1;
-    expr->input_literal_reg[i] = v;
+    expr->literal_reg[i] = v;
 
     return RPN_ERR_OK;
 }
 
+/**
+ * Parse a numeric literal into an operand and store it in the literal register file.
+ */
 static enum rpn_error compile_num_literal(struct rpn_expression *expr, size_t i, const char *str, size_t len) {
     char s[len + 1];
     char *e;
@@ -1527,6 +1545,9 @@ static enum rpn_error compile_num_literal(struct rpn_expression *expr, size_t i,
     return compile_store_literal(expr, i, v);
 }
 
+/**
+ * Parse a string literal into an operand and store it in the literal register file.
+ */
 static enum rpn_error compile_str_literal(struct rpn_expression *expr, size_t i, const char *str, size_t len) {
     size_t size = len + 1;
     RESULT_OPERAND(v);
@@ -1540,6 +1561,9 @@ static enum rpn_error compile_str_literal(struct rpn_expression *expr, size_t i,
     return compile_store_literal(expr, i, v);
 }
 
+/**
+ * Parse a set literal into a SelvaSet operand and store it in the literal register file.
+ */
 static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size_t i, const char *str, size_t len) {
     const char type = *str;
     RESULT_OPERAND(v);
@@ -1594,12 +1618,16 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
 
 /**
  * Write rpn_code following an uint32_t value to the expression token e.
+ * RPN code is the final form that can be executed/evaluated by the RPN VM.
  */
 static inline void compile_emit_code_uint32(char *e, enum rpn_code code, uint32_t v) {
     e[0] = (char)code;
     memcpy(e + RPN_CODE_SIZE, &v, sizeof(uint32_t));
 }
 
+/**
+ * Translate an ASCII opcode to an RPN_CODE + function pointer.
+ */
 static enum rpn_error compile_operator(char *e, char c) {
     const size_t op = c - 'A';
 
@@ -1614,15 +1642,15 @@ static enum rpn_error compile_operator(char *e, char c) {
 }
 
 struct rpn_expression *rpn_compile(const char *input) {
-    struct rpn_expression *expr;
+    struct rpn_expression *expr; /*!< The final "executable" expression. */
     size_t size = 2 * sizeof(rpn_token);
+    int labels[RPN_MAX_LABELS] = { 0 }; /*!< Jump labels. */
 
     expr = RedisModule_Alloc(sizeof(struct rpn_expression));
-    memset(expr->input_literal_reg, 0, sizeof(expr->input_literal_reg));
+    memset(expr->literal_reg, 0, sizeof(expr->literal_reg));
     expr->expression = RedisModule_Alloc(size);
 
-    int labels[RPN_MAX_LABELS] = { 0 };
-    if (find_labels(labels, input)) {
+    if (compile_find_labels(labels, input)) {
         fprintf(stderr, "%s:%d:%s: Failed to parse labels\n",
                 __FILE__, __LINE__, __func__);
         goto fail;
@@ -1630,7 +1658,7 @@ struct rpn_expression *rpn_compile(const char *input) {
 
     const char *delim = RPN_DELIM;
     const char *group = RPN_GROUP;
-    uint32_t input_literal_reg_i = 0;
+    uint32_t literal_reg_i = 0;
     size_t i = 0;
     size_t tok_len = 0;
     const char *rest = NULL;
@@ -1644,7 +1672,7 @@ struct rpn_expression *rpn_compile(const char *input) {
         /*
          * Check if there is a label and skip it.
          */
-        tok_len = skip_label(&tok_str, tok_len);
+        tok_len = compile_skip_label(&tok_str, tok_len);
 
         if (tok_len == 0) {
             fprintf(stderr, "%s:%d:%s: Token length can't be zero\n",
@@ -1654,13 +1682,13 @@ struct rpn_expression *rpn_compile(const char *input) {
 
         switch (tok_str[0]) {
         case '#': /* Number literal */
-            err = compile_num_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 1);
+            err = compile_num_literal(expr, literal_reg_i, tok_str + 1, tok_len - 1);
             break;
         case '"': /* String literal */
-            err = compile_str_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 2);
+            err = compile_str_literal(expr, literal_reg_i, tok_str + 1, tok_len - 2);
             break;
         case '{': /* Set literal */
-            err = compile_selvaset_literal(expr, input_literal_reg_i, tok_str + 1, tok_len - 2);
+            err = compile_selvaset_literal(expr, literal_reg_i, tok_str + 1, tok_len - 2);
             break;
         case '@':
             compile_emit_code_uint32(e, RPN_CODE_GET_REG_NUMBER, fast_atou(tok_str + 1));
@@ -1733,8 +1761,8 @@ struct rpn_expression *rpn_compile(const char *input) {
          * All literals can be marked with the same prefix from now on as
          * fetching the value will happen with the same function.
          */
-        compile_emit_code_uint32(e, RPN_CODE_GET_LIT, input_literal_reg_i);
-        input_literal_reg_i++;
+        compile_emit_code_uint32(e, RPN_CODE_GET_LIT, literal_reg_i);
+        literal_reg_i++;
 next:
         new = RedisModule_Realloc(expr->expression, size);
         if (!new) {
@@ -1755,6 +1783,7 @@ next:
         return NULL;
     }
 
+    /* An empty token acts as a terminator for the expression. */
     memset(expr->expression[i], 0, sizeof(rpn_token));
 
     return expr;
@@ -1765,7 +1794,7 @@ fail:
 
 void rpn_destroy_expression(struct rpn_expression *expr) {
     if (expr) {
-        struct rpn_operand **op = expr->input_literal_reg;
+        struct rpn_operand **op = expr->literal_reg;
 
         RedisModule_Free(expr->expression);
 
@@ -1785,8 +1814,12 @@ void _rpn_auto_free_expression(void *p) {
     rpn_destroy_expression(expr);
 }
 
+/**
+ * Get a register value and check that it can be used as `type`.
+ */
 static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *s, int type) {
     uint32_t i;
+    struct rpn_operand *r;
 
     memcpy(&i, s + RPN_CODE_SIZE, sizeof(uint32_t));
     if (i >= (typeof(i))ctx->nr_reg) {
@@ -1795,8 +1828,7 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *s, int type) 
         return RPN_ERR_BNDS;
     }
 
-    struct rpn_operand *r = ctx->reg[i];
-
+    r = ctx->reg[i];
     if (!r) {
         fprintf(stderr, "%s:%d: Register value is a NULL pointer: %u\n",
                 __FILE__, __LINE__, (unsigned)i);
@@ -1827,15 +1859,22 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *s, int type) 
     return RPN_ERR_TYPE;
 }
 
-
+/**
+ * Get a value from the literal register file.
+ * There is no type checking here because we already know that the type is
+ * matching the original input.
+ */
 static enum rpn_error get_literal(struct rpn_ctx *ctx, const struct rpn_expression *expr, const char *s) {
     uint32_t i;
 
     memcpy(&i, s + RPN_CODE_SIZE, sizeof(uint32_t));
 
-    return push(ctx, expr->input_literal_reg[i]);
+    return push(ctx, expr->literal_reg[i]);
 }
 
+/**
+ * Conditional jump forward.
+ */
 static enum rpn_error cond_jump(struct rpn_ctx *ctx, const char *s, const rpn_token * restrict *it) {
     OPERAND(ctx, cond);
 

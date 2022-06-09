@@ -156,8 +156,11 @@ Type codes used in the documentation:
 | `Z`      | `(<>) => <>`               | Return/Break execution.                   | `#1 Z L => #1`            |
 
 The conditional jump operator `>` jumps over specified number of tokens that is
-a compile time constant. The first and only argument popped from the stack is
-the boolean condition that decides whether the operator will execute a jump.
+determined from user defined labels at compilation time. The first and only
+argument popped from the stack is the boolean condition that decides whether the
+operator will execute a jump. Labels can be added to any operand or operator in
+the expression but the jump operator can only jump forward in the expression.
+The label syntax works as follows: `.<dec_number>:<op>` e.g. `.1:X`.
 
 `P` and `Q` are short circuiting operators and don't represent classical modal
 logic. The `P` operator bails out immediately if the operand is not truthy and
