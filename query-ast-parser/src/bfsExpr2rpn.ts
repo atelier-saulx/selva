@@ -61,5 +61,5 @@ export default function bfsExpr2rpn(
     label++
   }
 
-  return `${rpn.join(':')}:${expr2rpn(types, t.$any)}`
+  return `${rpn.length ? rpn.join(':') + ':' : ''}${expr2rpn(types, t.$any)}`
 }
