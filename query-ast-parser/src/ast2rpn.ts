@@ -79,11 +79,6 @@ export default function ast2rpn(
       return
     }
 
-    if (f.$field === 'ancestors') {
-      out += ' #1'
-      return
-    }
-
     if (f.$operator == 'exists') {
       const fieldId = fieldNameToReg(f.$field)
 
@@ -118,36 +113,32 @@ export default function ast2rpn(
         true
       )
       return
-    } else if (vType == 'string' || vType == 'number') {
+    } else if (vType == 'number') {
       const fieldId = fieldNameToReg(f.$field)
-
-      let valueId: string | number = regIndex
-      let isNowValue: boolean = false
-
-      if (
-        typeof f.$value === 'string' &&
-        f.$value.startsWith('now') &&
-        (f.$operator === '<' || f.$operator === '>')
-      ) {
-        valueId = convertNowFilter(<string>f.$value)
-        isNowValue = true
-      } else {
-        reg[regIndex++] = `${f.$value}`
-      }
-
-      const op =
-        vType == 'string' ? opMapString[f.$operator] : opMapNumber[f.$operator]
+      const op = opMapNumber[f.$operator]
       if (!op) {
         console.error(`Invalid op for ${vType} field`, f)
       }
 
-      if (isNowValue) {
-        out += ` ${valueId} $${fieldId} g ${op}`
-      } else if (vType === 'number') {
-        out += ` @${valueId} $${fieldId} g ${op}`
-      } else if (vType == 'string' && f.$operator == 'has') {
+      if (typeof f.$value === 'string' && f.$value.startsWith('now')) {
+        out += ` ${convertNowFilter(<string>f.$value)} $${fieldId} g ${op}`
+      } else {
+        out += ` #${f.$value} $${fieldId} g ${op}`
+      }
+    } else if (vType == 'string') {
+      const fieldId = fieldNameToReg(f.$field)
+      let valueId: string | number = regIndex
+
+      reg[regIndex++] = `${f.$value}`
+
+      const op = opMapString[f.$operator]
+      if (!op) {
+        console.error(`Invalid op for ${vType} field`, f)
+      }
+
+      if (vType == 'string' && f.$operator == 'has') {
         out += ` $${valueId} $${fieldId} ${op}`
-      } else { // Assume we can read the field as a string.
+      } else {
         out += ` $${valueId} $${fieldId} f ${op}`
       }
     } else if (vType == 'boolean') {
