@@ -66,11 +66,7 @@ static struct EdgeFieldConstraint *create_constraint(const struct EdgeFieldDynCo
     const char *fwd_field_name_str = RedisModule_StringPtrLen(params->fwd_field_name, &fwd_field_name_len);
     size_t bck_field_name_len = 0;
     const char *bck_field_name_str = NULL;
-    size_t dst_node_types_len = 0;
-    const char *dst_node_types_str = params->dst_node_types ? RedisModule_StringPtrLen(params->dst_node_types, &dst_node_types_len) : NULL;
     struct EdgeFieldConstraint *p;
-
-    assert(dst_node_types_len % SELVA_NODE_TYPE_SIZE == 0);
 
     if (is_bidir) {
         bck_field_name_str = RedisModule_StringPtrLen(params->bck_field_name, &bck_field_name_len);
@@ -78,7 +74,6 @@ static struct EdgeFieldConstraint *create_constraint(const struct EdgeFieldDynCo
 
     p = RedisModule_Calloc(1,
             sizeof(*p) +
-            dst_node_types_len + 2 +
             fwd_field_name_len + bck_field_name_len + 2);
     if (!p) {
         return NULL;
@@ -87,21 +82,12 @@ static struct EdgeFieldConstraint *create_constraint(const struct EdgeFieldDynCo
     /*
      * Set the string pointers.
      */
-    p->dst_node_types = (char *)p + sizeof(*p);
-    p->field_name_str = p->dst_node_types + dst_node_types_len + 2;
+    p->field_name_str = (char *)p + sizeof(*p);
     p->bck_field_name_str = p->field_name_str + fwd_field_name_len + 1;
 
     p->constraint_id = EDGE_FIELD_CONSTRAINT_DYNAMIC;
     p->flags = params->flags | EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC;
     memcpy(p->src_node_type, params->src_node_type, SELVA_NODE_TYPE_SIZE);
-
-    if (dst_node_types_str && dst_node_types_len > 0) {
-        memcpy(p->dst_node_types, dst_node_types_str, dst_node_types_len);
-        p->dst_node_types[dst_node_types_len] = '\0';
-        p->dst_node_types[dst_node_types_len + 1] = '\0';
-    } else {
-        p->dst_node_types = NULL;
-    }
 
     p->field_name_len = fwd_field_name_len;
     memcpy(p->field_name_str, fwd_field_name_str, fwd_field_name_len);
@@ -207,25 +193,17 @@ static void rdb_save_src_node_type(struct RedisModuleIO *io, const Selva_NodeTyp
     RedisModule_SaveStringBuffer(io, type, SELVA_NODE_TYPE_SIZE);
 }
 
-static void rdb_save_dst_node_types(struct RedisModuleIO *io, const char *types) {
-    if (types) {
-        RedisModule_SaveStringBuffer(io, types, strlen(types));
-    } else {
-        RedisModule_SaveStringBuffer(io, "", 0);
-    }
-
-}
-
 /**
  * Deserializer for SelvaObject ptr value.
  */
 static void *so_rdb_load(struct RedisModuleIO *io, int encver __unused, void *load_data __unused) {
+    RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
     struct EdgeFieldDynConstraintParams params = { 0 };
     struct EdgeFieldConstraint *constraint;
 
     params.flags = RedisModule_LoadUnsigned(io);
     rdb_load_src_node_type(io, params.src_node_type);
-    params.dst_node_types = RedisModule_LoadString(io);
+    RedisModule_FreeString(ctx, RedisModule_LoadString(io)); /* Legacy. */
     params.fwd_field_name = RedisModule_LoadString(io);
     if (params.flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
         params.bck_field_name = RedisModule_LoadString(io);
@@ -233,8 +211,6 @@ static void *so_rdb_load(struct RedisModuleIO *io, int encver __unused, void *lo
 
     constraint = create_constraint(&params);
 
-    RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
-    RedisModule_FreeString(ctx, params.dst_node_types);
     RedisModule_FreeString(ctx, params.fwd_field_name);
     RedisModule_FreeString(ctx, params.bck_field_name);
 
@@ -249,7 +225,7 @@ static void so_rdb_save(struct RedisModuleIO *io, void *value, void *save_data _
 
     RedisModule_SaveUnsigned(io, constraint->flags);
     rdb_save_src_node_type(io, constraint->src_node_type);
-    rdb_save_dst_node_types(io, constraint->dst_node_types);
+    RedisModule_SaveStringBuffer(io, "", 0); /* Legacy. */
     RedisModule_SaveStringBuffer(io, constraint->field_name_str, constraint->field_name_len);
     if (constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
         RedisModule_SaveStringBuffer(io, constraint->bck_field_name_str, constraint->bck_field_name_len);
@@ -278,7 +254,6 @@ int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     const int ARGV_CONSTRAINT_FLAGS = 3;
     const int ARGV_FWD_FIELD = 4;
     const int ARGV_BCK_FIELD = 5;
-    const int ARGC_DST_NODE_TYPES = 6;
     int err;
 
     if (argc != 6 && argc != 7) {
@@ -323,17 +298,6 @@ int Edge_AddConstraintCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         .fwd_field_name = argv[ARGV_FWD_FIELD],
         .bck_field_name = argv[ARGV_BCK_FIELD],
     };
-
-    if (argc > ARGC_DST_NODE_TYPES) {
-        size_t dst_node_types_len;
-
-        (void)RedisModule_StringPtrLen(argv[ARGC_DST_NODE_TYPES], &dst_node_types_len);
-        if (dst_node_types_len % SELVA_NODE_TYPE_SIZE != 0) {
-            return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "destination node type(s)");
-        }
-
-        params.dst_node_types = argv[ARGC_DST_NODE_TYPES];
-    }
 
     err = Edge_NewDynConstraint(&hierarchy->edge_field_constraints, &params);
     if (err == SELVA_EEXIST) {
