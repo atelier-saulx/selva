@@ -102,6 +102,11 @@
  */
 #define RPN_MAX_D                       256
 
+/**
+ * Max number of forward jump labels in a single expression.
+ */
+#define RPN_MAX_LABELS                  10
+
 /*
  * Dynamic Find Query Index Tunables.
  */

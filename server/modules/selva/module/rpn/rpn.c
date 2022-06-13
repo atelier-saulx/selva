@@ -1329,7 +1329,6 @@ static rpn_fp funcs[] = {
 
 #define RPN_DELIM " \t\n\r\f"
 #define RPN_GROUP "{\""
-#define RPN_MAX_LABELS 10 /* TODO Tunable */
 
 /**
  * Tokenize a C-string.
