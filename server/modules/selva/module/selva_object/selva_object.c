@@ -595,21 +595,16 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
 
             obj = key->value;
-        } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found &&
-                   (flags & SELVA_OBJECT_GETKEY_CREATE)) {
+        } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found && ary_idx >= 0) {
             /*
              * Keep nesting or return an object if this was the last token.
              */
             err = SelvaObject_GetArrayIndexAsSelvaObject(obj, s, slen, ary_idx, &obj);
-            if (err && err != SELVA_ENOENT) {
-                return err;
-            }
-
-            if (err == SELVA_ENOENT || !obj) {
+            if ((flags & SELVA_OBJECT_GETKEY_CREATE) && (err == SELVA_ENOENT || !obj)) {
                 err = _insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
-                if (err) {
-                    return err;
-                }
+            }
+            if (err) {
+                return err;
             }
         } else {
             /*
@@ -2232,6 +2227,7 @@ int SelvaObject_ReplyWithObjectStr(
         size_t key_name_len,
         unsigned flags) {
     struct SelvaObjectKey *key;
+    ssize_t ary_idx;
     int err;
 
     if (!key_name_str) {
@@ -2239,12 +2235,60 @@ int SelvaObject_ReplyWithObjectStr(
         return 0;
     }
 
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err) {
-        return err;
-    }
+    err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
+    if (err == -2) {
+        return SELVA_EINVAL;
+    } else if (err == 0) {
+        size_t new_len = (const char *)memrchr(key_name_str, '[', key_name_len) - key_name_str;
+        err = get_key(obj, key_name_str, new_len, 0, &key);
+        if (err) {
+            return err;
+        }
 
-    replyWithKeyValue(ctx, lang, key, flags);
+        if (key->type == SELVA_OBJECT_ARRAY) {
+            struct SelvaObjectKey k = {
+                .type = key->subtype,
+                    .subtype = SELVA_OBJECT_NULL,
+                    .user_meta = 0, /* TODO ? */
+                    .name_len = 0,
+            };
+            void *p = SVector_GetIndex(key->array, ary_idx);
+
+            switch (key->subtype) {
+            case SELVA_OBJECT_NULL:
+                k.value = NULL;
+                break;
+            case SELVA_OBJECT_DOUBLE:
+                memcpy(&k.emb_double_value, p, sizeof(double));
+                break;
+            case SELVA_OBJECT_LONGLONG:
+                memcpy(&k.emb_ll_value, p, sizeof(long long));
+                break;
+            case SELVA_OBJECT_POINTER: /* ptr opts not supported. */
+                k.ptr_opts = &default_ptr_opts;
+                __attribute__((fallthrough));
+            case SELVA_OBJECT_STRING:
+            case SELVA_OBJECT_OBJECT:
+            case SELVA_OBJECT_SET:
+                k.value = p;
+                break;
+            case SELVA_OBJECT_ARRAY:
+                k.array = p;
+                break;
+            }
+
+            replyWithKeyValue(ctx, lang, &k, flags);
+        } else {
+            return SELVA_ENOTSUP; /* How? */
+        }
+    } else {
+        err = get_key(obj, key_name_str, key_name_len, 0, &key);
+        if (err) {
+            return err;
+        }
+
+        replyWithKeyValue(ctx, lang, key, flags);
+    }
 
     return 0;
 }
