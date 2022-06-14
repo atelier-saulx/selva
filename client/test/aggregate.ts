@@ -28,6 +28,10 @@ test.beforeEach(async (t) => {
         fields: {
           name: { type: 'string' },
           thing: { type: 'string' },
+          matches: {
+            type: 'references',
+            bidirectional: { fromField: 'league' },
+          },
         },
       },
       match: {
@@ -39,6 +43,10 @@ test.beforeEach(async (t) => {
             type: 'number',
           },
           status: { type: 'number' },
+          league: {
+            type: 'reference',
+            bidirectional: { fromField: 'matches' },
+          },
         },
       },
     },
@@ -387,6 +395,62 @@ test.serial('simple aggregate', async (t) => {
     })
   )
   t.assert(err.stack.includes('contains unsupported characters'))
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.serial.only('simple aggregate with reference fields', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+  let sum = 0
+
+  await Promise.all([
+    await client.set({
+      $id: 'le0',
+      name: `league 0`,
+    }),
+    await client.set({
+      $id: 'le1',
+      name: `league 1`,
+    }),
+  ])
+
+  for (let i = 0; i < 4; i++) {
+    await client.set({
+      $id: 'ma' + i,
+      league: `le${i % 2}`,
+      type: 'match',
+      name: `match ${i}`,
+      value: i + 10,
+    })
+
+    sum += (i % 2) * (i + 10)
+  }
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'le1',
+      id: true,
+      valueSum: {
+        $aggregate: {
+          $function: { $name: 'sum', $args: ['value'] },
+          $traverse: 'matches',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match',
+            },
+            {
+              $field: 'value',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    }),
+    { id: 'le1', valueSum: sum }
+  )
 
   await client.delete('root')
   await client.destroy()
