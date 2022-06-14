@@ -60,7 +60,7 @@ struct EdgeFieldConstraint {
     enum EdgeFieldConstraintFlag flags;
 
     Selva_NodeType src_node_type; /*!< Source node type this constraint applies to. */
-    char *dst_node_types; /*!< Always size % SELVA_NODE_TYPE_SIZE == 0 */
+    char *dst_node_types; /*!< Always size % SELVA_NODE_TYPE_SIZE == 0 + 1 */
 
     /**
      * Forward traversing field of this constraint.
