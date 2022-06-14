@@ -3391,7 +3391,7 @@ static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
      * 3. Load the children normally
      */
 
-    encver = RedisModule_LoadUnsigned(io);
+    encver = RedisModule_LoadSigned(io);
     if (encver > HIERARCHY_ENCODING_VERSION) {
         RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
         return NULL;
@@ -3439,7 +3439,7 @@ static void Hierarchy_SubtreeRDBSave(RedisModuleIO *io, void *value) {
      * compressed subtrees from the disk and those files don't contain the
      * encoding version and Redis gives us version 0 on read.
      */
-    RedisModule_SaveUnsigned(io, HIERARCHY_ENCODING_VERSION);
+    RedisModule_SaveSigned(io, HIERARCHY_ENCODING_VERSION);
 
     /* Save nodeId. */
     RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
