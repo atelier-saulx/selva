@@ -41,7 +41,6 @@ enum EdgeFieldConstraintFlag {
 struct EdgeFieldDynConstraintParams {
     enum EdgeFieldConstraintFlag flags;
     Selva_NodeType src_node_type;
-    struct RedisModuleString *dst_node_types; /*!< Must satisfy len % SELVA_NODE_TYPE_SIZE == 0 */
     struct RedisModuleString *fwd_field_name;
     struct RedisModuleString *bck_field_name;
 };
@@ -60,7 +59,6 @@ struct EdgeFieldConstraint {
     enum EdgeFieldConstraintFlag flags;
 
     Selva_NodeType src_node_type; /*!< Source node type this constraint applies to. */
-    char *dst_node_types; /*!< Always size % SELVA_NODE_TYPE_SIZE == 0 + 1 */
 
     /**
      * Forward traversing field of this constraint.

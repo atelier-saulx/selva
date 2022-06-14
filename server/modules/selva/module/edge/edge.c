@@ -371,26 +371,6 @@ int Edge_Add(
     assert(constraint); /* A constraint should be always set. */
 
     /*
-     * Destination type constraint.
-     */
-    if (constraint->dst_node_types) {
-        Selva_NodeType dst_type;
-        SelvaHierarchy_GetNodeType(dst_type, dst_node);
-        int match = 0;
-
-        for (size_t i = 0; constraint->dst_node_types[i] != '\0'; i += SELVA_NODE_TYPE_SIZE) {
-            if (!memcmp(dst_type, constraint->dst_node_types + i, SELVA_NODE_TYPE_SIZE)) {
-                match = 1;
-                break;
-            }
-        }
-
-        if (!match) {
-            return SELVA_EINTYPE; /* dst_node has wrong type. */
-        }
-    }
-
-    /*
      * Single reference edge constraint.
      */
     if (constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_SINGLE_REF) {
