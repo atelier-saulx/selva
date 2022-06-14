@@ -3382,27 +3382,20 @@ static int load_nodeId(RedisModuleIO *io, Selva_NodeId nodeId) {
  */
 static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
     SelvaHierarchy *hierarchy = subtree_hierarchy;
+    Selva_NodeId nodeId;
     int err;
 
     /*
-     * TODO Currently Redis passes the encver always as 0. We might want to
-     * patch a support for some sort of enc version passing, either just as a
-     * long long inside the RDB string or some other way.
+     * 1. Load encoding version
+     * 2. Read nodeId
+     * 3. Load the children normally
      */
-    encver = HIERARCHY_ENCODING_VERSION;
-#if 0
+
+    encver = RedisModule_LoadSigned(io);
     if (encver > HIERARCHY_ENCODING_VERSION) {
         RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
         return NULL;
     }
-#endif
-
-    /*
-     * 1. Read nodeId
-     * 3. Load the children normally
-     */
-
-    Selva_NodeId nodeId;
 
     /*
      * Read nodeId.
@@ -3439,6 +3432,14 @@ static void Hierarchy_SubtreeRDBSave(RedisModuleIO *io, void *value) {
         .child_cb = HierarchyRDBSaveChild,
         .child_arg = io,
     };
+
+    /*
+     * Save encoding version.
+     * This needs to be stored separately because we need to be able to read
+     * compressed subtrees from the disk and those files don't contain the
+     * encoding version and Redis gives us version 0 on read.
+     */
+    RedisModule_SaveSigned(io, HIERARCHY_ENCODING_VERSION);
 
     /* Save nodeId. */
     RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
