@@ -59,7 +59,8 @@ test.serial('can use $delete inside array', async (t) => {
   })
 
   await client.set({
-    $language: 'en',
+    // Using lang here would leave an empty title object.
+    //$language: 'en',
     $id: id,
     formFields: {
       $assign: {
