@@ -78,6 +78,8 @@ test.serial('get a single keyval', async (t) => {
     await client.redis.selva_object_get('', 'maTest0001', 'title.en'),
     'ma1'
   )
+
+  await client.destroy()
 })
 
 test.serial('get all', async (t) => {
@@ -91,18 +93,24 @@ test.serial('get all', async (t) => {
     'type',
     'match',
   ])
+
+  await client.destroy()
 })
 
 test.serial('obj len', async (t) => {
   const client = connect({ port })
 
   t.deepEqual(await client.redis.selva_object_len('maTest0001'), 5)
+
+  await client.destroy()
 })
 
 test.serial('string len', async (t) => {
   const client = connect({ port })
 
   t.deepEqual(await client.redis.selva_object_len('maTest0001', 'title.en'), 3)
+
+  await client.destroy()
 })
 
 test.serial('meta', async (t) => {
@@ -119,6 +127,8 @@ test.serial('meta', async (t) => {
     1
   )
   t.deepEqual(await client.redis.selva_object_getmeta('maTest0001', 'a'), 0xbaddcafe)
+
+  await client.destroy()
 })
 
 test.serial('deleting deep objects', async (t) => {
@@ -130,4 +140,43 @@ test.serial('deleting deep objects', async (t) => {
 
   await client.redis.selva_object_del('maTest0001', 'a.r')
   t.deepEqual(await client.redis.selva_object_len('maTest0001', 'a'), 1)
+
+  await client.destroy()
+})
+
+test.serial('deleting a field from object arrays', async (t) => {
+  const client = connect({ port })
+
+  await client.redis.selva_object_set('maTest0001', 'a.r[0].s1', 's', 'Hello')
+  await client.redis.selva_object_set('maTest0001', 'a.r[0].s2', 's', 'Hello')
+  await client.redis.selva_object_set('maTest0001', 'a.r[0].s3', 's', 'Hello')
+  await client.redis.selva_object_set('maTest0001', 'a.r[1].s', 's', 'Hello')
+  t.deepEqual(await client.redis.selva_object_len('maTest0001', 'a.r'), 2)
+
+  t.deepEqual(
+    await client.redis.selva_object_get('', 'maTest0001', 'a.r[0]'),
+    [ 's1', 'Hello', 's2', 'Hello', 's3', 'Hello' ]
+  )
+
+  await client.redis.selva_modify('maTest0001', '', '7', 'a.r[0].s1', '')
+  t.deepEqual(
+    await client.redis.selva_object_get('', 'maTest0001', 'a.r[0]'),
+    [ 's2', 'Hello', 's3', 'Hello' ]
+  )
+
+  await client.redis.selva_object_del('maTest0001', 'a.r[0].s2')
+  t.deepEqual(
+    await client.redis.selva_object_get('', 'maTest0001', 'a.r[0]'),
+    [ 's3', 'Hello' ]
+  )
+
+  // This will delete the whole array
+  // Don't do this but use modify instead
+  //await client.redis.selva_object_del('maTest0001', 'a.r[0]')
+  //t.deepEqual(
+  //  await client.redis.selva_object_get('', 'maTest0001', 'a.r'),
+  //  [ [ 's', 'Hello' ] ]
+  //)
+
+  await client.destroy()
 })
