@@ -32,6 +32,10 @@ static int is_unsupported_field(const char *field_str, size_t field_len) {
     return 0;
 }
 
+static int is_edge_field(const struct SelvaHierarchyNode *node, const char *field_str, size_t field_len) {
+    return !!Edge_GetField(node, field_str, field_len);
+}
+
 static int hierarchy_foreach_cb(
         RedisModuleCtx *ctx __unused,
         struct SelvaHierarchy *hierarchy __unused,
@@ -131,11 +135,21 @@ int SelvaHierarchy_ForeachInField(
         return SelvaHierarchy_TraverseBFSDescendants(ctx, hierarchy, node, &hcb);
     } else if (is_unsupported_field(field_str, field_len)) {
         /* NOP */
-        /* TODO Edge */
-#if 0
-    } else if (is_edge_field()) {
-        /* TODO */
-#endif
+    } else if (is_edge_field(node, field_str, field_len)) {
+        Selva_NodeId id;
+        const struct SelvaHierarchyCallback hcb = {
+            .node_cb = hierarchy_foreach_cb,
+            .node_arg = (void *)cb,
+        };
+
+        SelvaHierarchy_GetNodeId(id, node);
+
+        return SelvaHierarchy_TraverseField(
+                ctx, hierarchy,
+                id,
+                SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD,
+                field_str, field_len,
+                &hcb);
     } else {
         /*
          * Test if it's an array or set field. Note that SELVA_ALIASES_FIELD is

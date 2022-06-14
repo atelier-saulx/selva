@@ -678,7 +678,6 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
                 return RPN_ERR_NAN;
             }
         } else { /* Assume RPN_LVTYPE_STRING */
-            /* TODO: Add lang support */
             if (field_type == SELVA_OBJECT_STRING && any.str) {
                 return push_rm_string_result(ctx, any.str);
             } else {
@@ -1329,7 +1328,6 @@ static rpn_fp funcs[] = {
 
 #define RPN_DELIM " \t\n\r\f"
 #define RPN_GROUP "{\""
-#define RPN_MAX_LABELS 10 /* TODO Tunable */
 
 /**
  * Tokenize a C-string.

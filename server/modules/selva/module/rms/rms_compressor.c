@@ -82,7 +82,7 @@ int rms_fwrite_compressed(const struct compressed_rms *compressed, FILE *fp) {
 
     res = fwrite(buf, sizeof(char), buf_size, fp);
     if (res != buf_size && ferror(fp)) {
-        return SELVA_EGENERAL; /* TODO Better error code? */
+        return SELVA_ENOBUFS;
     }
 
     return 0;
@@ -151,7 +151,7 @@ int rms_fread_compressed(struct compressed_rms *compressed, FILE *fp) {
     read_bytes = fread(buf, sizeof(char), file_size, fp);
     if (read_bytes != (size_t)file_size) {
         print_read_error(fp);
-        err = SELVA_EINVAL; /* TODO another error code? */
+        err = SELVA_EINVAL;
         goto fail;
     }
 

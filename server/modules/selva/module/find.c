@@ -987,8 +987,8 @@ static int exec_fields_expression(
     rpn_err = rpn_selvaset(redis_ctx, rpn_ctx, expr, &set);
     if (rpn_err) {
         /*
-         * TODO Not the best error to return here but the client won't see this
-         * anyway.
+         * The exact error code is not important here because it's not passed
+         * to the client. EGENERAL is fine enough.
          */
         return SELVA_EGENERAL;
     }
