@@ -82,7 +82,7 @@ int SelvaTraversal_ParseOrderArg(
         *order = SELVA_RESULT_ORDER_NONE;
         *order_by_field = NULL;
     } else {
-        *order_by_field = fld;
+        *order_by_field = *order == SELVA_RESULT_ORDER_NONE ? NULL : fld;
     }
 
     return 0;

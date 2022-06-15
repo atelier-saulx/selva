@@ -133,5 +133,28 @@ test.serial('find - sort by text', async (t) => {
     t.deepEqualIgnoreOrder(result2.children[i].title, `match${idx}`)
   }
 
+  const result3 = await client.get({
+    $id: 'root',
+    $language: 'en',
+    children: {
+      id: true,
+      title: true,
+      $list: {
+        $sort: {
+          $field: 'title',
+        },
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'match',
+          },
+        },
+      },
+    },
+  })
+  t.truthy(result3)
+
   await client.destroy()
 })
