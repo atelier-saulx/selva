@@ -330,24 +330,24 @@ static enum selva_op_repl_state modify_array_op(
         RedisModuleString *field,
         RedisModuleString *value) {
     TO_STR(field, value);
+    ssize_t new_len;
     ssize_t idx;
 
-    const int ary_err = get_array_field_index(field_str, field_len, &idx);
-    if (ary_err != 0) {
+
+    new_len = get_array_field_index(field_str, field_len, &idx);
+    if (new_len < 0) {
         replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid array index");
         return SELVA_OP_REPL_STATE_UNCHANGED;
     }
 
     struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
-    const ssize_t new_len = (const char *)memrchr(field_str, '[', field_len) - field_str;
 
     if (idx == -1) {
         const int ary_len = (int)SelvaObject_GetArrayLenStr(obj, field_str, new_len);
 
         idx = ary_len - 1 + has_push;
         if (idx < 0) {
-            /* TODO No idea what should be the error but the previous error was bogus. */
-            replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Unable to set value to array index %d", idx);
+            replyWithSelvaErrorf(ctx, SELVA_EINVAL, "Invalid array index %d", idx);
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     }
@@ -952,7 +952,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const char type_code = type_str[0]; /* [0] always points to a valid char in RM_String. */
         enum selva_op_repl_state repl_state = SELVA_OP_REPL_STATE_UNCHANGED;
 
-        if (get_array_field_index(field_str, field_len, NULL) == 0) {
+        if (get_array_field_index(field_str, field_len, NULL) >= 0) {
             repl_state = modify_array_op(ctx, node, &active_insert_idx, has_push, type_code, field, value);
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
             TO_STR(value);

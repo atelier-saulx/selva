@@ -102,7 +102,11 @@ size_t substring_count(const char *string, const char *substring, size_t n) {
     return count;
 }
 
-int get_array_field_index(const char *field_str, size_t field_len, ssize_t *res) {
+ssize_t get_array_field_index(const char *field_str, size_t field_len, ssize_t *res) {
+    const char *si;
+    char *end;
+    ssize_t i;
+
     if (field_str[field_len - 1] != ']') {
         return -1;
     }
@@ -111,20 +115,20 @@ int get_array_field_index(const char *field_str, size_t field_len, ssize_t *res)
         return -2;
     }
 
-    for (ssize_t i = field_len - 2; i > 0; i--) {
-        if (field_str[i] == '[') {
-            ssize_t v;
-
-            v = (ssize_t)strtol(field_str + i + 1, NULL, 10);
-
-            if (res) {
-                *res = v;
-            }
-            return 0;
-        }
+    si = memrchr(field_str, '[', field_len - 2);
+    if (!si) {
+        return -2;
     }
 
-    return -2;
+    i = (ssize_t)strtoll(si + 1, &end, 10);
+    if (end != field_str + field_len - 1) {
+        return -2;
+    }
+    if (res) {
+        *res = i;
+    }
+
+    return (ssize_t)(si - field_str);
 }
 
 int ch_count(const char *s, char ch) {
