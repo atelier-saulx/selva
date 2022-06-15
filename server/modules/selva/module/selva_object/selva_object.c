@@ -484,8 +484,8 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         const int ary_err = get_array_field_index(s, slen, &ary_idx);
         if (ary_err == -2) {
             return SELVA_EINVAL;
-        } else if (ary_err == 0) {
-            new_len = (const char *)memrchr(s, '[', slen) - s;
+        } else if (ary_err >= 0) {
+            new_len = ary_err;
 
             if (ary_idx == -1) {
                 ary_idx = SelvaObject_GetArrayLenStr(obj, s, new_len) - 1;
@@ -708,8 +708,8 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
     ary_err = get_array_field_index(key_name_str, key_name_len, NULL);
     if (ary_err == -2) {
         return SELVA_EINVAL;
-    } else if (ary_err == 0) {
-        key_name_len = (const char *)memrchr(key_name_str, '[', key_name_len) - key_name_str;
+    } else if (ary_err >= 0) {
+        key_name_len = ary_err;
     }
 
     key = find_key(obj, key_name_str, key_name_len);
@@ -2238,8 +2238,9 @@ int SelvaObject_ReplyWithObjectStr(
     err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
     if (err == -2) {
         return SELVA_EINVAL;
-    } else if (err == 0) {
-        size_t new_len = (const char *)memrchr(key_name_str, '[', key_name_len) - key_name_str;
+    } else if (err >= 0) {
+        size_t new_len = err;
+
         err = get_key(obj, key_name_str, new_len, 0, &key);
         if (err) {
             return err;
