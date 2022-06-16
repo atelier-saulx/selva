@@ -7,11 +7,10 @@ import redis, { RedisClient } from '@saulx/redis-client'
 import './assertions'
 import { wait } from './assertions'
 import getPort from 'get-port'
+import { joinIds } from '../src/util'
 
 let srv
 let port: number
-
-const toCArr = (arr) => arr.map(s => s.padEnd(10, '\0')).join('')
 
 test.before(async (t) => {
   port = await getPort()
@@ -78,7 +77,7 @@ test.serial('basic edge ops', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma1', 'ma3']),
+    $add: joinIds(['ma1', 'ma3']),
     $delete: null,
     $value: null,
   }))
@@ -86,7 +85,7 @@ test.serial('basic edge ops', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma4']),
+    $add: joinIds(['ma4']),
     $delete: null,
     $value: null,
   }))
@@ -94,7 +93,7 @@ test.serial('basic edge ops', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma2']),
+    $add: joinIds(['ma2']),
     $delete: null,
     $value: null,
   }))
@@ -162,7 +161,7 @@ test.serial('edge metadata', async (t) => {
       op_set_type: 1,
       delete_all: 0,
       constraint_id: 0,
-      $add: toCArr(['ma2', 'ma3']),
+      $add: joinIds(['ma2', 'ma3']),
       $delete: null,
       $value: null,
   }),
@@ -209,7 +208,7 @@ test.serial('traverse a custom field', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma1', 'ma2']),
+    $add: joinIds(['ma1', 'ma2']),
     $delete: null,
     $value: null,
   }))
@@ -217,7 +216,7 @@ test.serial('traverse a custom field', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma3']),
+    $add: joinIds(['ma3']),
     $delete: null,
     $value: null,
   }))
@@ -225,7 +224,7 @@ test.serial('traverse a custom field', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma4']),
+    $add: joinIds(['ma4']),
     $delete: null,
     $value: null,
   }))
@@ -251,7 +250,7 @@ test.serial('find can return edge fields', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma1', 'ma2']),
+    $add: joinIds(['ma1', 'ma2']),
     $delete: null,
     $value: null,
   }))
@@ -259,7 +258,7 @@ test.serial('find can return edge fields', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma3']),
+    $add: joinIds(['ma3']),
     $delete: null,
     $value: null,
   }))
@@ -267,7 +266,7 @@ test.serial('find can return edge fields', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma4']),
+    $add: joinIds(['ma4']),
     $delete: null,
     $value: null,
   }))
@@ -324,7 +323,7 @@ test.serial('find can do nested traversals', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma01', 'ma02']),
+    $add: joinIds(['ma01', 'ma02']),
     $delete: null,
     $value: null,
   }))
@@ -332,7 +331,7 @@ test.serial('find can do nested traversals', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma11']),
+    $add: joinIds(['ma11']),
     $delete: null,
     $value: null,
   }))
@@ -340,7 +339,7 @@ test.serial('find can do nested traversals', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma12']),
+    $add: joinIds(['ma12']),
     $delete: null,
     $value: null,
   }))
@@ -348,7 +347,7 @@ test.serial('find can do nested traversals', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma21']),
+    $add: joinIds(['ma21']),
     $delete: null,
     $value: null,
   }))
@@ -356,7 +355,7 @@ test.serial('find can do nested traversals', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma22']),
+    $add: joinIds(['ma22']),
     $delete: null,
     $value: null,
   }))
@@ -410,7 +409,7 @@ test.serial('find can select with edge metadata', async (t) => {
       op_set_type: 1,
       delete_all: 0,
       constraint_id: 0,
-      $add: toCArr(['ma2', 'ma3', 'ma4']),
+      $add: joinIds(['ma2', 'ma3', 'ma4']),
       $delete: null,
       $value: null,
     }),
@@ -455,7 +454,7 @@ test.serial('missing edges are added automatically', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma1', 'ma2']),
+    $add: joinIds(['ma1', 'ma2']),
     $delete: null,
     $value: null,
   }))
@@ -479,7 +478,7 @@ test.serial('edge modify `add` values diff', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma1', 'ma2']),
+    $add: joinIds(['ma1', 'ma2']),
     $delete: null,
     $value: null,
   })
@@ -515,7 +514,7 @@ test.serial('edge modify `delete` values diff', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma1', 'ma2']),
+    $add: joinIds(['ma1', 'ma2']),
     $delete: null,
     $value: null,
   })
@@ -524,7 +523,7 @@ test.serial('edge modify `delete` values diff', async (t) => {
     delete_all: 0,
     constraint_id: 0,
     $add: null,
-    $delete: toCArr(['ma1', 'ma2']),
+    $delete: joinIds(['ma1', 'ma2']),
     $value: null,
   })
 
@@ -569,7 +568,7 @@ test.serial('edge modify `value` values diff', async (t) => {
     constraint_id: 0,
     $add: null,
     $delete: null,
-    $value: toCArr(['ma1', 'ma2']),
+    $value: joinIds(['ma1', 'ma2']),
   })
 
   t.deepEqual(
@@ -605,14 +604,14 @@ test.serial('edge modify `add` and `delete` values diff', async (t) => {
     constraint_id: 0,
     $add: null,
     $delete: null,
-    $value: toCArr(['ma1']),
+    $value: joinIds(['ma1']),
   })
   const rec2 = createRecord(setRecordDefCstring, {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma2', 'ma3']),
-    $delete: toCArr(['ma1']),
+    $add: joinIds(['ma2', 'ma3']),
+    $delete: joinIds(['ma1']),
     $value: null,
   })
 
@@ -660,7 +659,7 @@ test.serial('edge modify `delete_all`', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma1', 'ma2']),
+    $add: joinIds(['ma1', 'ma2']),
     $delete: null,
     $value: null,
   })
@@ -704,7 +703,7 @@ test.serial('traverse by expression', async(t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma1']),
+    $add: joinIds(['ma1']),
     $delete: null,
     $value: null,
   })
@@ -712,7 +711,7 @@ test.serial('traverse by expression', async(t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma2']),
+    $add: joinIds(['ma2']),
     $delete: null,
     $value: null,
   })
@@ -757,7 +756,7 @@ test.serial('deref node references on find', async(t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 1,
-    $add: toCArr(['team1']),
+    $add: joinIds(['team1']),
     $delete: null,
     $value: null,
   })
@@ -765,7 +764,7 @@ test.serial('deref node references on find', async(t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 1,
-    $add: toCArr(['club1']),
+    $add: joinIds(['club1']),
     $delete: null,
     $value: null,
   })
@@ -773,7 +772,7 @@ test.serial('deref node references on find', async(t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 1,
-    $add: toCArr(['manager1']),
+    $add: joinIds(['manager1']),
     $delete: null,
     $value: null,
   })
@@ -851,7 +850,7 @@ test.serial('bidirectional edge fields', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['te1']),
+    $add: joinIds(['te1']),
     $delete: null,
     $value: null,
   }))
@@ -861,7 +860,7 @@ test.serial('bidirectional edge fields', async (t) => {
     constraint_id: 2,
     $add: null,
     $delete: null,
-    $value: toCArr(['pl1', 'pl2', 'pl3']),
+    $value: joinIds(['pl1', 'pl2', 'pl3']),
   })), ['te1', 'UPDATED'])
 
   t.deepEqual(
@@ -911,7 +910,7 @@ test.serial('bidirectional edge fields', async (t) => {
     delete_all: 0,
     constraint_id: 2,
     $add: null,
-    $delete: toCArr(['te1']),
+    $delete: joinIds(['te1']),
     $value: null,
   })), ['pl2', 'UPDATED'])
   t.deepEqual(
@@ -949,7 +948,7 @@ test.serial('biedge missing symmetric constraint', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 2,
-    $add: toCArr(['pl1']),
+    $add: joinIds(['pl1']),
     $delete: null,
     $value: null,
   }))
@@ -999,7 +998,7 @@ test.serial('edge type constraints', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 2,
-    $add: toCArr(['te1']),
+    $add: joinIds(['te1']),
     $delete: null,
     $value: null,
   }))
@@ -1012,7 +1011,7 @@ test.serial('edge type constraints', async (t) => {
     constraint_id: 2,
     $add: null,
     $delete: null,
-    $value: toCArr(['te1']),
+    $value: joinIds(['te1']),
   }))
   t.deepEqual(res[1], 'UPDATED')
 
@@ -1021,7 +1020,7 @@ test.serial('edge type constraints', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 2,
-    $add: toCArr(['root']),
+    $add: joinIds(['root']),
     $delete: null,
     $value: null,
   }))
@@ -1031,7 +1030,7 @@ test.serial('edge type constraints', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 2,
-    $add: toCArr(['pl1']),
+    $add: joinIds(['pl1']),
     $delete: null,
     $value: null,
   }))
@@ -1042,7 +1041,7 @@ test.serial('edge type constraints', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 2,
-    $add: toCArr(['root']),
+    $add: joinIds(['root']),
     $delete: null,
     $value: null,
   }))
@@ -1052,7 +1051,7 @@ test.serial('edge type constraints', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 2,
-    $add: toCArr(['te1']),
+    $add: joinIds(['te1']),
     $delete: null,
     $value: null,
   }))
@@ -1080,7 +1079,7 @@ test.serial('wildcard find with edge fields', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 1,
-    $add: toCArr(['ma1']),
+    $add: joinIds(['ma1']),
     $delete: null,
     $value: null,
   })
@@ -1088,7 +1087,7 @@ test.serial('wildcard find with edge fields', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 0,
-    $add: toCArr(['ma1', 'ma2']),
+    $add: joinIds(['ma1', 'ma2']),
     $delete: null,
     $value: null,
   })
@@ -1179,7 +1178,7 @@ test.serial('wildcard find with edge fields and data fields', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 1,
-    $add: toCArr(['da3']),
+    $add: joinIds(['da3']),
     $delete: null,
     $value: null,
   })
@@ -1246,7 +1245,7 @@ test.serial('wildcard find with exclusions', async (t) => {
     op_set_type: 1,
     delete_all: 0,
     constraint_id: 1,
-    $add: toCArr(['da3']),
+    $add: joinIds(['da3']),
     $delete: null,
     $value: null,
   })

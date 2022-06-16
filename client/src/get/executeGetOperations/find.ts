@@ -24,11 +24,14 @@ import {
 } from '@saulx/selva-query-ast-parser'
 
 import {
-  setNestedResult,
-  getNestedSchema,
   padId,
   joinIds,
   EMPTY_ID,
+  NODE_ID_SIZE,
+} from '../../util'
+import {
+  setNestedResult,
+  getNestedSchema,
 } from '../utils'
 import { makeLangArg } from './util'
 import { mkIndex } from './indexing'
@@ -456,8 +459,8 @@ export const findIds = async (
 
     if (op.nested) {
       let added = false
-      for (let i = 0; i < op.id.length; i += 10) {
-        let endLen = 10
+      for (let i = 0; i < op.id.length; i += NODE_ID_SIZE) {
+        let endLen = NODE_ID_SIZE
         while (op.id[i + endLen - 1] === '\0') {
           endLen--
         }
@@ -487,8 +490,8 @@ export const findIds = async (
       }
     } else {
       const schema = client.schemas[ctx.db]
-      for (let i = 0; i < op.id.length; i += 10) {
-        let endLen = 10
+      for (let i = 0; i < op.id.length; i += NODE_ID_SIZE) {
+        let endLen = NODE_ID_SIZE
         while (op.id[i + endLen - 1] === '\0') {
           endLen--
         }
@@ -649,8 +652,8 @@ const findFields = async (
 
     if (op.nested) {
       let added = false
-      for (let i = 0; i < op.id.length; i += 10) {
-        let endLen = 10
+      for (let i = 0; i < op.id.length; i += NODE_ID_SIZE) {
+        let endLen = NODE_ID_SIZE
         while (op.id[i + endLen - 1] === '\0') {
           endLen--
         }

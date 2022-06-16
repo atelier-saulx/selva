@@ -48,3 +48,12 @@ export function validateFieldPath(fieldName: string) {
 export const serverId = (serverDescriptor: ServerDescriptor): string => {
   return serverDescriptor.host + ':' + serverDescriptor.port
 }
+
+export const NODE_ID_SIZE = 10
+export const EMPTY_ID = '\0'.repeat(NODE_ID_SIZE)
+
+export const padId = (id: string): string =>
+  id.padEnd(NODE_ID_SIZE, '\0')
+
+export const joinIds = (ids: string[]): string =>
+  ids.map((id) => padId(id)).join('')

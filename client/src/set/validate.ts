@@ -139,9 +139,7 @@ export default async function parseSetObject(
         }
 
         const arr = aliasIsArray ? payload[key] : [payload[key]]
-        const toCArr = (a: string[]) => a.map((s) => `${s}\0`).join('')
-
-        result.push('6', key, toCArr(arr))
+        result.push('6', key, arr.map((s) => `${s}\0`).join(''))
       } else if (key === '$language') {
         if (
           typeof payload[key] !== 'string' ||

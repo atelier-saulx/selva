@@ -1,4 +1,5 @@
 import globals from './globals'
+const NODE_ID_SIZE = 10
 
 const SPECIAL_CHARS = {
   165: 'a', // å
@@ -93,8 +94,8 @@ export function joinPaddedIds(ids: string[]): string {
   let str = ''
   for (let i = 0; i < ids.length; i++) {
     str += ids[i]
-    if (ids[i].length < 10) {
-      for (let j = ids[i].length; j < 10; j++) {
+    if (ids[i].length < NODE_ID_SIZE) {
+      for (let j = ids[i].length; j < NODE_ID_SIZE; j++) {
         str += '\0'
       }
     }

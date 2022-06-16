@@ -5,6 +5,7 @@ import { Schema, FieldSchemaReferences } from '../../schema'
 import { getNestedSchema } from '../../get/utils'
 import * as verifiers from '@saulx/validators'
 import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
+import { padId } from '../../util'
 
 const id = verifiers.id
 
@@ -126,7 +127,7 @@ export default async (
         delete_all: false,
         $add: '',
         $delete: '',
-        $value: id.padEnd(10, '\0'),
+        $value: padId(id),
       })
     )
 
@@ -142,7 +143,7 @@ export default async (
       delete_all: false,
       $add: '',
       $delete: '',
-      $value: id.padEnd(10, '\0'),
+      $value: padId(id),
     })
   )
 
