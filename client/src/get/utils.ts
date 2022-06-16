@@ -120,10 +120,6 @@ export function getNestedSchema(
   return prop
 }
 
-export const padId = (id: string): string => {
-  return id.padEnd(10, '\0')
-}
-
 export const setNestedResult = (
   result: GetResult,
   field: string,
@@ -160,8 +156,3 @@ export const setNestedResult = (
     result[field] = value
   }
 }
-
-export const joinIds = (ids: string[]): string =>
-  ids.map((id) => padId(id)).join('')
-
-export const EMPTY_ID = '\0'.repeat(10)

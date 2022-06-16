@@ -8,8 +8,6 @@ import getPort from 'get-port'
 let srv
 let port: number
 
-const toCArr = (arr) => arr.map(s => s.padEnd(10, '\0')).join('')
-
 test.before(async (t) => {
   port = await getPort()
   srv = await start({

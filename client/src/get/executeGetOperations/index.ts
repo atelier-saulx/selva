@@ -16,6 +16,7 @@ import { FieldSchemaArrayLike, Schema } from '~selva/schema'
 import { ServerDescriptor } from '~selva/types'
 import { makeLangArg } from './util'
 import { deepMerge } from '@saulx/utils'
+import { padId } from '../../util'
 
 export type ExecContext = {
   db: string
@@ -567,7 +568,7 @@ const TYPE_TO_SPECIAL_OP: Record<
     lang?: string,
     schema?: Schema
   ) => {
-    const paddedId = id.padEnd(10, '\0')
+    const paddedId = padId(id)
     if (field === 'ancestors') {
       return client.redis.selva_hierarchy_find(
         ctx.originDescriptors[ctx.db] || { name: ctx.db },

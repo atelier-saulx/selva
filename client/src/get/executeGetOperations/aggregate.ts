@@ -15,7 +15,8 @@ import {
   sourceFieldToFindArgs,
   addMarker,
 } from './'
-import { padId, joinIds, getNestedSchema } from '../utils'
+import { padId, joinIds } from '../../util'
+import { getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 import { deepCopy } from '@saulx/utils'
 

@@ -24,11 +24,13 @@ import {
 } from '@saulx/selva-query-ast-parser'
 
 import {
-  setNestedResult,
-  getNestedSchema,
   padId,
   joinIds,
   EMPTY_ID,
+} from '../../util'
+import {
+  setNestedResult,
+  getNestedSchema,
 } from '../utils'
 import { makeLangArg } from './util'
 import { mkIndex } from './indexing'

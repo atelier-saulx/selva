@@ -5,6 +5,7 @@ import { getNestedSchema } from '../../get/utils'
 import { Schema, FieldSchemaReferences } from '../../schema'
 import * as verifiers from '@saulx/validators'
 import { OPT_SET_TYPE, setRecordDefCstring } from '../modifyDataRecords'
+import { padId } from '../../util'
 
 const id = verifiers.id
 
@@ -92,7 +93,7 @@ const toCArr = async (
   }
 
   if (typeof setObj === 'string') {
-    return setObj.padEnd(10, '\0')
+    return padId(setObj)
   }
 
   const ids: string[] = []
@@ -175,7 +176,7 @@ const toCArr = async (
 
   return ids
     .filter((s: string | null) => !!s)
-    .map((s: string) => s.padEnd(10, '\0'))
+    .map((s: string) => padId(s))
     .join('')
 }
 
