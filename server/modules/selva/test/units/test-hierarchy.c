@@ -36,7 +36,7 @@ static Selva_NodeId *NodeList_Insert(Selva_NodeId *list, const Selva_NodeId id, 
     return newList;
 }
 
-int node_cb(struct SelvaHierarchyNode *node, void *arg) {
+int node_cb(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, void *arg) {
     void **args = (void **)arg;
     const char *headId = (char *)args[0];
     Selva_NodeId nodeId;
