@@ -134,7 +134,7 @@ static inline int Selva_CmpNodeType(const char t1[SELVA_NODE_TYPE_SIZE], const c
     memcpy(&a, t1, SELVA_NODE_TYPE_SIZE);
     memcpy(&b, t2, SELVA_NODE_TYPE_SIZE);
 
-    return a ^ b;
+    return a - b;
 }
 
 /**
