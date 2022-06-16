@@ -50,6 +50,7 @@ export const serverId = (serverDescriptor: ServerDescriptor): string => {
 }
 
 export const NODE_ID_SIZE = 10
+export const NODE_ID_TYPE_SIZE = 2
 export const EMPTY_ID = '\0'.repeat(NODE_ID_SIZE)
 
 export const padId = (id: string): string =>
@@ -57,3 +58,6 @@ export const padId = (id: string): string =>
 
 export const joinIds = (ids: string[]): string =>
   ids.map((id) => padId(id)).join('')
+
+export const id2type = (id: string): string =>
+  id.slice(0, NODE_ID_TYPE_SIZE)

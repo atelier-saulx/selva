@@ -1,5 +1,6 @@
 import { FieldSchema, Schema } from '../schema'
 import { GetResult, TraverseByType, TraverseOptions } from './types'
+import { id2type } from '../util'
 
 export function isTraverseOptions(traverse: any): traverse is TraverseOptions {
   return (
@@ -45,7 +46,7 @@ export function getTypeFromId(schema: Schema, id: string): string | undefined {
     return 'root'
   }
 
-  return schema.prefixToTypeMapping[id.substr(0, 2)]
+  return schema.prefixToTypeMapping[id2type(id)]
 }
 
 export function getNestedSchema(

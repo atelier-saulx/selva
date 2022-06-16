@@ -374,7 +374,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * Get types.
      */
     size_t nr_types;
-    const Selva_NodeType *types = (char const (*)[2])RedisModule_StringPtrLen(argv[ARGV_TYPES], &nr_types);
+    const Selva_NodeType *types = (char const (*)[SELVA_NODE_TYPE_SIZE])RedisModule_StringPtrLen(argv[ARGV_TYPES], &nr_types);
     nr_types /= SELVA_NODE_TYPE_SIZE;
 
     /*

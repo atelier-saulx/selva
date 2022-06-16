@@ -995,11 +995,7 @@ static enum rpn_error rpn_op_typeof(struct RedisModuleCtx *redis_ctx __unused, s
         return RPN_ERR_TYPE;
     }
 
-#if SELVA_NODE_TYPE_SIZE != 2
-#error Expected SELVA_NODE_TYPE_SIZE to be 2
-#endif
-    t[0] = s[0];
-    t[1] = s[1];
+    memcpy(t, s, SELVA_NODE_TYPE_SIZE);
 
     return push_string_result(ctx, t, sizeof(t));
 }
