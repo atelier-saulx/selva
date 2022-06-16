@@ -50,7 +50,7 @@ export const serverId = (serverDescriptor: ServerDescriptor): string => {
 }
 
 export const NODE_ID_SIZE = 10
-export const EMPTY_ID = '\0'.repeat(10)
+export const EMPTY_ID = '\0'.repeat(NODE_ID_SIZE)
 
 export const padId = (id: string): string =>
   id.padEnd(NODE_ID_SIZE, '\0')
