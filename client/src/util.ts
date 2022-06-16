@@ -49,12 +49,11 @@ export const serverId = (serverDescriptor: ServerDescriptor): string => {
   return serverDescriptor.host + ':' + serverDescriptor.port
 }
 
-export const padId = (id: string): string => {
-  return id.padEnd(10, '\0')
-}
+export const NODE_ID_SIZE = 10
+export const EMPTY_ID = '\0'.repeat(10)
+
+export const padId = (id: string): string =>
+  id.padEnd(NODE_ID_SIZE, '\0')
 
 export const joinIds = (ids: string[]): string =>
   ids.map((id) => padId(id)).join('')
-
-export const NODE_ID_SIZE = 10
-export const EMPTY_ID = '\0'.repeat(10)
