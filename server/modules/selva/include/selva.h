@@ -121,7 +121,13 @@ int Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *r
  * Compare node types.
  */
 static inline int Selva_CmpNodeType(const char t1[SELVA_NODE_TYPE_SIZE], const char t2[SELVA_NODE_TYPE_SIZE]) {
+#if SELVA_NODE_TYPE_SIZE == 2
     unsigned short a, b;
+#elif SELVA_NODE_TYPE_SIZE == 4
+    unsigned int a, b;
+#else
+#error Unsupported SELVA_NODE_TYPE_SIZE
+#endif
 
     _Static_assert(SELVA_NODE_TYPE_SIZE == sizeof(a), "type size matches the cmp variable");
 
