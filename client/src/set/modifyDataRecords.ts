@@ -1,4 +1,5 @@
 import { compile } from 'data-record'
+import { NODE_ID_SIZE } from '../util'
 
 export const doubleDef = compile([{ name: 'd', type: 'double' }])
 
@@ -42,7 +43,7 @@ export const setRecordDefInt64 = compile([
 export const edgeMetaDef = compile([
   { name: 'op_code', type: 'int8' },
   { name: 'delete_all', type: 'int8' },
-  { name: 'dst_node_id', type: 'cstring', size: 10 }, // TODO NODE_ID_SIZE
+  { name: 'dst_node_id', type: 'cstring', size: NODE_ID_SIZE },
   { name: 'meta_field_name', type: 'cstring_p' },
   { name: 'meta_field_value', type: 'cstring_p' },
 ])

@@ -56,4 +56,5 @@ export const padId = (id: string): string => {
 export const joinIds = (ids: string[]): string =>
   ids.map((id) => padId(id)).join('')
 
+export const NODE_ID_SIZE = 10
 export const EMPTY_ID = '\0'.repeat(10)
