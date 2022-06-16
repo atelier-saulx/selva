@@ -1,12 +1,13 @@
 import { SelvaClient } from '../'
 import { SetOptions } from '../set'
 import { Schema, FieldSchemaObject } from '.'
+import { id2type } from '../util'
 
 function getTypeFromId(schema: Schema, id: string): string | undefined {
   if (id === 'root') {
     return 'root'
   }
-  return schema.prefixToTypeMapping[id.substring(0, 2)]
+  return schema.prefixToTypeMapping[id2type(id)]
 }
 
 export default async function conformToSchema(

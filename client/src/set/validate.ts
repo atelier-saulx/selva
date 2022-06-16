@@ -3,6 +3,7 @@ import { Schema, TypeSchema } from '../schema'
 import { SelvaClient } from '..'
 import fieldParsers from './fieldParsers'
 import * as verifiers from '@saulx/validators'
+import { id2type } from '../util'
 
 const ALLOWED_OPTIONS_DOCS = `
 Record identification (if neither $id or $alias is provided, 'root' id is assumed)
@@ -62,7 +63,7 @@ export default async function parseSetObject(
   }
 
   if (!payload.type && schemas.prefixToTypeMapping && payload.$id) {
-    payload.type = schemas.prefixToTypeMapping[payload.$id.substring(0, 2)]
+    payload.type = schemas.prefixToTypeMapping[id2type(payload.$id)]
   }
 
   if (!payload.type && payload.$id === 'root') {
@@ -79,7 +80,7 @@ export default async function parseSetObject(
   if (!schema) {
     throw new Error(
       `Cannot find type ${
-        type || `from prefix ${payload.$id.substring(0, 2)}`
+        type || `from prefix ${id2type(payload.$id)}`
       } from set-object ${JSON.stringify(payload, null, 2)}`
     )
   }

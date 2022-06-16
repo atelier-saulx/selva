@@ -3,6 +3,8 @@ import { Id, Schema } from '../../src/schema/index'
 import { getSchema } from '../../lua/src/schema/index'
 import * as logger from './logger'
 
+let NODE_ID_TYPE_SIZE = 2
+
 let typePrefix: Record<string, string>
 let inverseTypePrefix: Record<string, string>
 
@@ -16,7 +18,7 @@ export function getTypeFromId(id: Id): string {
     typePrefix = schema.prefixToTypeMapping || {}
   }
 
-  return typePrefix[id.substring(0, 2)]
+  return typePrefix[id.substring(0, NODE_ID_TYPE_SIZE)]
 }
 
 export function getPrefixFromType(prefix: string): string {

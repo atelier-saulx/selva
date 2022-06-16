@@ -6,6 +6,7 @@ import list from './list'
 import all from './all'
 import createInheritOperation from './inherit'
 import { getNestedSchema } from '../utils'
+import { id2type } from '../../util'
 
 export default function createGetOperations(
   client: SelvaClient,
@@ -178,7 +179,7 @@ export default function createGetOperations(
       const type =
         id === 'root'
           ? 'root'
-          : client.schemas[db].prefixToTypeMapping[id.slice(0, 2)]
+          : client.schemas[db].prefixToTypeMapping[id2type(id)]
 
       const additionalFields = props.$fieldsByType[type]
       if (additionalFields) {
