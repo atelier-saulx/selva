@@ -1690,7 +1690,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         struct SelvaFindIndexControlBlock *ind_icb[max(nr_index_hints, 1)];
         int ind_select = -1; /* Selected index. The smallest of all found. */
 
-        memset(ind_icb, 0, nr_index_hints * sizeof(struct SelvaFindIndexControlBlock *));
+        memset(ind_icb, 0, max(nr_index_hints, 1) * sizeof(struct SelvaFindIndexControlBlock *));
 
         /* find_indices_max == 0 => indexing disabled */
         if (nr_index_hints > 0 && selva_glob_config.find_indices_max > 0) {
