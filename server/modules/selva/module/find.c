@@ -1838,23 +1838,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         /*
          * Do index accounting.
          */
-        for (int j = 0; j < nr_index_hints; j++) {
-            struct SelvaFindIndexControlBlock *icb = ind_icb[j];
-
-            if (!icb) {
-                continue;
-            }
-
-            if (j == ind_select) {
-                SelvaFindIndex_Acc(icb, args.acc_take, args.acc_tot);
-            } else if (ind_select == -1) {
-                /* No index was selected so all will get the same take. */
-                SelvaFindIndex_Acc(icb, args.acc_take, args.acc_tot);
-            } else {
-                /* Nothing taken from this index. */
-                SelvaFindIndex_Acc(icb, 0, args.acc_tot);
-            }
-        }
+        SelvaFindIndex_AccMulti(ind_icb, nr_index_hints, ind_select, args.acc_take, args.acc_tot);
     }
 
     /*

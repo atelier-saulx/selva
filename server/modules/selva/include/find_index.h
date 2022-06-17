@@ -43,7 +43,6 @@ int SelvaFindIndex_Auto(
         struct RedisModuleString *order_field,
         struct RedisModuleString *filter,
         struct SelvaFindIndexControlBlock **icb_out);
-
 int SelvaFindIndex_AutoMulti(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
@@ -78,6 +77,12 @@ int SelvaFindIndex_Traverse(
  */
 void SelvaFindIndex_Acc(
         struct SelvaFindIndexControlBlock * restrict icb,
+        size_t acc_take,
+        size_t acc_tot);
+void SelvaFindIndex_AccMulti(
+        struct SelvaFindIndexControlBlock *ind_icb[],
+        size_t nr_index_hints,
+        int ind_select,
         size_t acc_take,
         size_t acc_tot);
 

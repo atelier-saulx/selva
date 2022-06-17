@@ -1024,6 +1024,31 @@ void SelvaFindIndex_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t
     }
 }
 
+void SelvaFindIndex_AccMulti(
+        struct SelvaFindIndexControlBlock *ind_icb[],
+        size_t nr_index_hints,
+        int ind_select,
+        size_t acc_take,
+        size_t acc_tot) {
+    for (int i = 0; i < (int)nr_index_hints; i++) {
+        struct SelvaFindIndexControlBlock *icb = ind_icb[i];
+
+        if (!icb) {
+            continue;
+        }
+
+        if (i == ind_select) {
+            SelvaFindIndex_Acc(icb, acc_take, acc_tot);
+        } else if (ind_select == -1) {
+            /* No index was selected so all will get the same take. */
+            SelvaFindIndex_Acc(icb, acc_take, acc_tot);
+        } else {
+            /* Nothing taken from this index. */
+            SelvaFindIndex_Acc(icb, 0, acc_tot);
+        }
+    }
+}
+
 /* TODO Could use the built-in reply functionality. */
 static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     SelvaObject_Iterator *it;
