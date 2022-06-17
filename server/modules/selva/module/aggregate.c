@@ -780,9 +780,6 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
              * Select the best index res set.
              */
             ind_select = SelvaFindIndex_AutoMulti(ctx, hierarchy, dir, dir_expr, nodeId, order, order_by_field, index_hints, nr_index_hints, ind_icb);
-            fprintf(stderr, "ord: %s ind sel: %d\n",
-                    SelvaTraversal_Dir2str(dir),
-                    ind_select);
         }
 
         /*
@@ -888,7 +885,6 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         /*
          * Do index accounting.
          */
-        fprintf(stderr, "acc %d %d\n",  (int)args.find_args.acc_take, (int)args.find_args.acc_tot);
         SelvaFindIndex_AccMulti(ind_icb, nr_index_hints, ind_select, args.find_args.acc_take, args.find_args.acc_tot);
     }
 
