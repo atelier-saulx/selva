@@ -19,6 +19,7 @@ import { padId, joinIds, NODE_ID_SIZE } from '../../util'
 import { getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 import { deepCopy } from '@saulx/utils'
+import { mkIndex } from './indexing'
 
 const FN_TO_ENUM = {
   count: '0',
@@ -402,6 +403,7 @@ const executeAggregateOperation = async (
         false,
         op.byType
       ),
+      ...mkIndex(schema, op),
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'none',

@@ -1,5 +1,5 @@
 import { Schema } from '../../'
-import { GetOperationFind } from '../types'
+import { GetOperationAggregate, GetOperationFind } from '../types'
 import {
   Fork,
   FilterAST,
@@ -66,7 +66,7 @@ function ast2inlineRpn(schema: Schema, f: FilterAST | null): string | null {
 
 const nonIndexedFields = new Set(['node', 'ancestors'])
 
-export function mkIndex(schema: Schema, op: GetOperationFind): string[] {
+export function mkIndex(schema: Schema, op: GetOperationFind | GetOperationAggregate): string[] {
   if (!op.filter || !op.filter.$and) {
     return []
   }

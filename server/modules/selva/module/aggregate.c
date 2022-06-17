@@ -8,7 +8,9 @@
 #include "cdefs.h"
 #include "funmap.h"
 #include "selva.h"
+#include "config.h"
 #include "redismodule.h"
+#include "auto_free.h"
 #include "arg_parser.h"
 #include "errors.h"
 #include "hierarchy.h"
@@ -21,6 +23,7 @@
 #include "svector.h"
 #include "traversal.h"
 #include "traversal_order.h"
+#include "find_index.h"
 
 enum SelvaHierarchy_AggregateType {
     SELVA_AGGREGATE_TYPE_COUNT_NODE = '0',
@@ -210,6 +213,7 @@ static int AggregateCommand_NodeCb(
 
     SelvaHierarchy_GetNodeId(nodeId, node);
 
+    args->find_args.acc_tot++;
     if (take && rpn_ctx) {
         int err;
 
@@ -233,6 +237,8 @@ static int AggregateCommand_NodeCb(
 
     if (take) {
         const int sort = !!args->find_args.order_field;
+
+        args->find_args.acc_take++;
 
         if (!sort) {
             ssize_t *nr_nodes = args->find_args.nr_nodes;
@@ -485,6 +491,8 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     const int ARGV_AGG_FN    = 3;
     const int ARGV_DIRECTION = 4;
     const int ARGV_REF_FIELD = 5;
+    int ARGV_INDEX_TXT       = 5;
+    int ARGV_INDEX_VAL       = 6;
     int ARGV_ORDER_TXT       = 5;
     int ARGV_ORDER_FLD       = 6;
     int ARGV_ORDER_ORD       = 7;
@@ -498,6 +506,8 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     int ARGV_FILTER_EXPR     = 6;
     int ARGV_FILTER_ARGS     = 7;
 #define SHIFT_ARGS(i) \
+    ARGV_INDEX_TXT += i; \
+    ARGV_INDEX_VAL += i; \
     ARGV_ORDER_TXT += i; \
     ARGV_ORDER_FLD += i; \
     ARGV_ORDER_ORD += i; \
@@ -521,7 +531,10 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     struct rpn_ctx *traversal_rpn_ctx = NULL;
     struct rpn_expression *traversal_expression = NULL;
     struct rpn_ctx *rpn_ctx = NULL;
+    RedisModuleString *argv_filter_expr = NULL;
     struct rpn_expression *filter_expression = NULL;
+    __auto_free RedisModuleString **index_hints = NULL;
+    int nr_index_hints = 0;
 
     /*
      * Open the Redis key.
@@ -584,6 +597,16 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         initial_double_val = DBL_MIN;
     } else if (agg_fn_val == SELVA_AGGREGATE_TYPE_MIN_FIELD) {
         initial_double_val = DBL_MAX;
+    }
+
+    /*
+     * Parse the indexing hint.
+     */
+    nr_index_hints = SelvaArgParser_IndexHints(&index_hints, argv + ARGV_INDEX_TXT, argc - ARGV_INDEX_TXT);
+    if (nr_index_hints < 0) {
+        return replyWithSelvaError(ctx, SELVA_ENOMEM);
+    } else if (nr_index_hints > 0) {
+        SHIFT_ARGS(2 * nr_index_hints);
     }
 
     /*
@@ -658,8 +681,8 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      * Prepare the filter expression if given.
      */
     if (argc >= ARGV_FILTER_EXPR + 1) {
+        argv_filter_expr = argv[ARGV_FILTER_EXPR];
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
-        const char *input;
 
         rpn_ctx = rpn_init(nr_reg);
         if (!rpn_ctx) {
@@ -670,8 +693,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         /*
          * Compile the filter expression.
          */
-        input = RedisModule_StringPtrLen(argv[ARGV_FILTER_EXPR], NULL);
-        filter_expression = rpn_compile(input);
+        filter_expression = rpn_compile(RedisModule_StringPtrLen(argv_filter_expr, NULL));
         if (!filter_expression) {
             replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
             goto out;
@@ -725,13 +747,63 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         Selva_NodeId nodeId;
 
         Selva_NodeIdCpy(nodeId, ids_str + i);
+        if (nodeId[0] == '\0') {
+            /* Just skip empty IDs. */
+            continue;
+        }
+
+        /*
+         * Note that SelvaArgParser_IndexHints() limits the nr_index_hints to
+         * FIND_INDICES_MAX_HINTS_FIND
+         */
+        struct SelvaFindIndexControlBlock *ind_icb[max(nr_index_hints, 1)];
+        int ind_select = -1; /* Selected index. The smallest of all found. */
+
+        memset(ind_icb, 0, max(nr_index_hints, 1) * sizeof(struct SelvaFindIndexControlBlock *));
+
+        /* find_indices_max == 0 => indexing disabled */
+        if (nr_index_hints > 0 && selva_glob_config.find_indices_max > 0) {
+            RedisModuleString *dir_expr = NULL;
+
+            if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
+                       SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
+                /*
+                 * We know it's valid because it was already parsed and compiled once.
+                 * However, the indexing subsystem can't use the already compiled
+                 * expression because its lifetime is unpredictable and it's not easy
+                 * to change that.
+                 */
+                dir_expr = argv[ARGV_REF_FIELD];
+            }
+
+            /*
+             * Select the best index res set.
+             */
+            ind_select = SelvaFindIndex_AutoMulti(ctx, hierarchy, dir, dir_expr, nodeId, order, order_by_field, index_hints, nr_index_hints, ind_icb);
+            fprintf(stderr, "ord: %s ind sel: %d\n",
+                    SelvaTraversal_Dir2str(dir),
+                    ind_select);
+        }
+
+        /*
+         * If the index is already ordered then we don't need to sort the
+         * response. This won't work if we have multiple nodeIds because
+         * obviously the order might differ and we may not have an ordered
+         * index for each id.
+         */
+        if (ind_select >= 0 &&
+            ids_len == SELVA_NODE_ID_SIZE &&
+            SelvaFindIndex_IsOrdered(ind_icb[ind_select], order, order_by_field)) {
+            order = SELVA_RESULT_ORDER_NONE;
+            order_by_field = NULL; /* This controls sorting in the callback. */
+        }
 
         /*
          * Run BFS/DFS.
          */
         ssize_t tmp_limit = -1;
-        const size_t skip = SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
-        struct FindCommand_Args find_args = {
+        const size_t skip = ind_select >= 0 ? 0 : SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
+        args.find_args = (struct FindCommand_Args){
             .lang = lang,
             .nr_nodes = &nr_nodes,
             .offset = (order == SELVA_RESULT_ORDER_NONE) ? offset + skip : skip,
@@ -744,18 +816,23 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             .order_field = order_by_field,
             .order_result = &order_result,
         };
-        args.find_args = find_args;
-
-        const struct SelvaHierarchyCallback cb = {
-            .node_cb = AggregateCommand_NodeCb,
-            .node_arg = &args,
-        };
 
         if (limit == 0) {
             break;
         }
 
-        if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
+        if (ind_select >= 0) {
+            /*
+             * There is no need to run the filter again if the indexing was
+             * executing the same filter already.
+             */
+            if (argv_filter_expr && !RedisModule_StringCompare(argv_filter_expr, index_hints[ind_select])) {
+                args.find_args.rpn_ctx = NULL;
+                args.find_args.filter = NULL;
+            }
+
+            err = SelvaFindIndex_Traverse(ctx, hierarchy, ind_icb[ind_select], AggregateCommand_NodeCb, &args);
+        } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             const struct SelvaObjectArrayForeachCallback ary_cb = {
                 .cb = AggregateCommand_ArrayObjectCb,
                 .cb_arg = &args,
@@ -767,14 +844,33 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
                    (dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
                            SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
                            SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD))) {
+            const struct SelvaHierarchyCallback cb = {
+                .node_cb = AggregateCommand_NodeCb,
+                .node_arg = &args,
+            };
             TO_STR(ref_field);
 
             err = SelvaHierarchy_TraverseField(ctx, hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+            const struct SelvaHierarchyCallback cb = {
+                .node_cb = AggregateCommand_NodeCb,
+                .node_arg = &args,
+            };
+
             err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, NULL, NULL, &cb);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) {
+            const struct SelvaHierarchyCallback cb = {
+                .node_cb = AggregateCommand_NodeCb,
+                .node_arg = &args,
+            };
+
             err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, NULL, NULL, &cb);
         } else {
+            const struct SelvaHierarchyCallback cb = {
+                .node_cb = AggregateCommand_NodeCb,
+                .node_arg = &args,
+            };
+
             err = SelvaHierarchy_Traverse(ctx, hierarchy, nodeId, dir, &cb);
         }
         if (err != 0) {
@@ -782,10 +878,18 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            fprintf(stderr, "%s:%d: Aggregate failed for node: \"%.*s\"\n",
+            fprintf(stderr, "%s:%d: Aggregate failed. err: %s dir: %s node_id: \"%.*s\"\n",
                     __FILE__, __LINE__,
+                    getSelvaErrorStr(err),
+                    SelvaTraversal_Dir2str(dir),
                     (int)SELVA_NODE_ID_SIZE, nodeId);
         }
+
+        /*
+         * Do index accounting.
+         */
+        fprintf(stderr, "acc %d %d\n",  (int)args.find_args.acc_take, (int)args.find_args.acc_tot);
+        SelvaFindIndex_AccMulti(ind_icb, nr_index_hints, ind_select, args.find_args.acc_take, args.find_args.acc_tot);
     }
 
     /*
