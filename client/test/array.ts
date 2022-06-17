@@ -26,6 +26,12 @@ test.before(async (t) => {
               type: 'object',
               properties: {
                 title: { type: 'text' },
+                dropdownOptions: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                  },
+                },
               },
             },
           },
@@ -82,6 +88,52 @@ test.serial('can use $delete inside array', async (t) => {
     type: 'thing',
     formFields: [{}],
   })
+
+  await client.destroy()
+})
+
+test.serial.only('Fire on change in nested Array change', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+  const id = await client.set({
+    $language: 'en',
+    type: 'thing',
+    formFields: [
+      {
+        dropdownOptions: ['foo'],
+      },
+    ],
+  })
+
+  let dropdownOptionsLength
+
+  await client
+    .observe({
+      $id: id,
+      $all: true,
+    })
+    .subscribe((data) => {
+      dropdownOptionsLength = data.formFields[0].dropdownOptions.length
+    })
+
+  await wait(500)
+
+  t.is(dropdownOptionsLength, 1)
+
+  await client.set({
+    $id: id,
+    formFields: {
+      $assign: {
+        $idx: 0,
+        $value: {
+          dropdownOptions: ['foo', 'bar'],
+        },
+      },
+    },
+  })
+
+  await wait(500)
+
+  t.is(dropdownOptionsLength, 2)
 
   await client.destroy()
 })
