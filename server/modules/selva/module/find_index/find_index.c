@@ -877,7 +877,7 @@ int SelvaFindIndex_Auto(
      * Only index some traversals.
      */
     if (!(dir & allowed_dirs)) {
-        return 0;
+        return SELVA_ENOTSUP;
     }
 
     struct icb_descriptor icb_desc = {
@@ -928,7 +928,7 @@ int SelvaFindIndex_AutoMulti(
                  SelvaFindIndex_IcbCard(icb) < SelvaFindIndex_IcbCard(ind_icb_out[ind_select]))) {
                 ind_select = i; /* Select the smallest index res set for fastest lookup. */
             }
-        } else if (err != SELVA_ENOENT) {
+        } else if (err != SELVA_ENOENT && err != SELVA_ENOTSUP) {
             fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
                     __FILE__, __LINE__,
                     getSelvaErrorStr(err));
