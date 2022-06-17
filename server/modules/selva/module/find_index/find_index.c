@@ -877,7 +877,7 @@ int SelvaFindIndex_Auto(
      * Only index some traversals.
      */
     if (!(dir & allowed_dirs)) {
-        return 0;
+        return SELVA_ENOTSUP;
     }
 
     struct icb_descriptor icb_desc = {
@@ -898,6 +898,44 @@ int SelvaFindIndex_Auto(
     }
 
     return 0;
+}
+
+int SelvaFindIndex_AutoMulti(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        enum SelvaTraversal dir, RedisModuleString *dir_expression,
+        const Selva_NodeId node_id,
+        enum SelvaResultOrder order,
+        RedisModuleString *order_field,
+        RedisModuleString *index_hints[],
+        size_t nr_index_hints,
+        struct SelvaFindIndexControlBlock *ind_icb_out[]) {
+    int ind_select = -1;
+
+    for (size_t i = 0; i < nr_index_hints; i++) {
+        struct SelvaFindIndexControlBlock *icb = NULL;
+        int err;
+
+        /*
+         * Hint: It's possible to disable ordered indices completely
+         * by changing order here to SELVA_RESULT_ORDER_NONE.
+         */
+        err = SelvaFindIndex_Auto(ctx, hierarchy, dir, dir_expression, node_id, order, order_field, index_hints[i], &icb);
+        ind_icb_out[i] = icb;
+        if (!err) {
+            if (icb &&
+                (ind_select < 0 ||
+                 SelvaFindIndex_IcbCard(icb) < SelvaFindIndex_IcbCard(ind_icb_out[ind_select]))) {
+                ind_select = i; /* Select the smallest index res set for fastest lookup. */
+            }
+        } else if (err != SELVA_ENOENT && err != SELVA_ENOTSUP) {
+            fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
+                    __FILE__, __LINE__,
+                    getSelvaErrorStr(err));
+        }
+    }
+
+    return ind_select;
 }
 
 int SelvaFindIndex_IsOrdered(
@@ -982,6 +1020,31 @@ void SelvaFindIndex_Acc(struct SelvaFindIndexControlBlock * restrict icb, size_t
         if ((float)acc_take > icb->find_acc.take_max || (float)acc_tot > icb->find_acc.tot_max) {
             icb->find_acc.take_max = (float)acc_take;
             icb->find_acc.tot_max = (float)acc_tot;
+        }
+    }
+}
+
+void SelvaFindIndex_AccMulti(
+        struct SelvaFindIndexControlBlock *ind_icb[],
+        size_t nr_index_hints,
+        int ind_select,
+        size_t acc_take,
+        size_t acc_tot) {
+    for (int i = 0; i < (int)nr_index_hints; i++) {
+        struct SelvaFindIndexControlBlock *icb = ind_icb[i];
+
+        if (!icb) {
+            continue;
+        }
+
+        if (i == ind_select) {
+            SelvaFindIndex_Acc(icb, acc_take, acc_tot);
+        } else if (ind_select == -1) {
+            /* No index was selected so all will get the same take. */
+            SelvaFindIndex_Acc(icb, acc_take, acc_tot);
+        } else {
+            /* Nothing taken from this index. */
+            SelvaFindIndex_Acc(icb, 0, acc_tot);
         }
     }
 }

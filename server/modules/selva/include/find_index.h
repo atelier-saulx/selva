@@ -43,6 +43,16 @@ int SelvaFindIndex_Auto(
         struct RedisModuleString *order_field,
         struct RedisModuleString *filter,
         struct SelvaFindIndexControlBlock **icb_out);
+int SelvaFindIndex_AutoMulti(
+        struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        enum SelvaTraversal dir, struct RedisModuleString *dir_expression,
+        const Selva_NodeId node_id,
+        enum SelvaResultOrder order,
+        struct RedisModuleString *order_field,
+        struct RedisModuleString *index_hints[],
+        size_t nr_index_hints,
+        struct SelvaFindIndexControlBlock *ind_icb_out[]);
 
 /**
  * Check whether an ICB is created as an ordered.
@@ -67,6 +77,12 @@ int SelvaFindIndex_Traverse(
  */
 void SelvaFindIndex_Acc(
         struct SelvaFindIndexControlBlock * restrict icb,
+        size_t acc_take,
+        size_t acc_tot);
+void SelvaFindIndex_AccMulti(
+        struct SelvaFindIndexControlBlock *ind_icb[],
+        size_t nr_index_hints,
+        int ind_select,
         size_t acc_take,
         size_t acc_tot);
 

@@ -1690,7 +1690,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         struct SelvaFindIndexControlBlock *ind_icb[max(nr_index_hints, 1)];
         int ind_select = -1; /* Selected index. The smallest of all found. */
 
-        memset(ind_icb, 0, nr_index_hints * sizeof(struct SelvaFindIndexControlBlock *));
+        memset(ind_icb, 0, max(nr_index_hints, 1) * sizeof(struct SelvaFindIndexControlBlock *));
 
         /* find_indices_max == 0 => indexing disabled */
         if (nr_index_hints > 0 && selva_glob_config.find_indices_max > 0) {
@@ -1710,26 +1710,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             /*
              * Select the best index res set.
              */
-            for (int j = 0; j < nr_index_hints; j++) {
-                struct SelvaFindIndexControlBlock *icb = NULL;
-                int ind_err;
-
-                /*
-                 * Hint: It's possible to disable ordered indices completely
-                 * by changing order here to SELVA_RESULT_ORDER_NONE.
-                 */
-                ind_err = SelvaFindIndex_Auto(ctx, hierarchy, dir, dir_expr, nodeId, order, order_by_field, index_hints[j], &icb);
-                ind_icb[j] = icb;
-                if (!ind_err) {
-                    if (icb && (ind_select < 0 || SelvaFindIndex_IcbCard(icb) < SelvaFindIndex_IcbCard(ind_icb[ind_select]))) {
-                        ind_select = j; /* Select the smallest index res set for fastest lookup. */
-                    }
-                } else if (ind_err != SELVA_ENOENT) {
-                    fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
-                            __FILE__, __LINE__,
-                            getSelvaErrorStr(ind_err));
-                }
-            }
+            ind_select = SelvaFindIndex_AutoMulti(ctx, hierarchy, dir, dir_expr, nodeId, order, order_by_field, index_hints, nr_index_hints, ind_icb);
         }
 
         /*
@@ -1857,23 +1838,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         /*
          * Do index accounting.
          */
-        for (int j = 0; j < nr_index_hints; j++) {
-            struct SelvaFindIndexControlBlock *icb = ind_icb[j];
-
-            if (!icb) {
-                continue;
-            }
-
-            if (j == ind_select) {
-                SelvaFindIndex_Acc(icb, args.acc_take, args.acc_tot);
-            } else if (ind_select == -1) {
-                /* No index was selected so all will get the same take. */
-                SelvaFindIndex_Acc(icb, args.acc_take, args.acc_tot);
-            } else {
-                /* Nothing taken from this index. */
-                SelvaFindIndex_Acc(icb, 0, args.acc_tot);
-            }
-        }
+        SelvaFindIndex_AccMulti(ind_icb, nr_index_hints, ind_select, args.acc_take, args.acc_tot);
     }
 
     /*
