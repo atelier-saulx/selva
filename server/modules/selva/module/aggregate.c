@@ -31,14 +31,19 @@ enum SelvaHierarchy_AggregateType {
     SELVA_AGGREGATE_TYPE_MAX_FIELD = '5',
 };
 
+struct AggregateCommand_Args;
+typedef int (*agg_func)(struct SelvaObject *, struct AggregateCommand_Args *);
+
 struct AggregateCommand_Args {
     struct RedisModuleCtx *ctx;
     struct FindCommand_Args find_args;
 
+    enum SelvaHierarchy_AggregateType aggregate_type;
+    agg_func agg;
+
     /*
      * Aggregation state.
      */
-    enum SelvaHierarchy_AggregateType aggregate_type;
     long long int aggregation_result_int;
     double aggregation_result_double;
     size_t item_count;
@@ -177,30 +182,21 @@ static int agg_fn_max_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     return 0;
 }
 
-static int (*agg_funcs[])(struct SelvaObject *, struct AggregateCommand_Args *) = {
+static int agg_fn_none(struct SelvaObject *obj __unused, struct AggregateCommand_Args* args __unused) {
+    return 0;
+}
+
+static agg_func agg_funcs[] = {
     agg_fn_count_obj,
     agg_fn_count_uniq_obj,
     agg_fn_sum_obj,
     agg_fn_avg_obj,
     agg_fn_min_obj,
     agg_fn_max_obj,
-    NULL
+    agg_fn_none,
 };
 
-GENERATE_STATIC_FUNMAP(get_agg_func, agg_funcs, int, num_elem(agg_funcs) - 1);
-
-static int apply_agg_fn_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
-    int index = args->aggregate_type - '0';
-    int (*agg_func)(struct SelvaObject *, struct AggregateCommand_Args *);
-
-    agg_func = get_agg_func(index);
-
-    return (!agg_func) ? 0 : agg_func(obj, args);
-}
-
-static inline int apply_agg_fn(struct SelvaHierarchyNode *node, struct AggregateCommand_Args* args) {
-    return apply_agg_fn_obj(SelvaHierarchy_GetNodeObject(node), args);
-}
+GENERATE_STATIC_FUNMAP(get_agg_func, agg_funcs, int, num_elem(agg_funcs) - 2);
 
 static int AggregateCommand_NodeCb(
         RedisModuleCtx *ctx,
@@ -243,8 +239,7 @@ static int AggregateCommand_NodeCb(
             ssize_t * restrict limit = args->find_args.limit;
             int err;
 
-            err = apply_agg_fn(node, args);
-
+            err = args->agg(SelvaHierarchy_GetNodeObject(node), args);
             if (err) {
                 fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                         __FILE__, __LINE__,
@@ -328,7 +323,7 @@ static int AggregateCommand_ArrayObjectCb(
             ssize_t *nr_nodes = args->find_args.nr_nodes;
             ssize_t * restrict limit = args->find_args.limit;
 
-            (void)apply_agg_fn_obj(obj, args);
+            (void)args->agg(obj, args);
 
             *nr_nodes = *nr_nodes + 1;
 
@@ -365,11 +360,10 @@ static size_t AggregateCommand_AggregateOrderResult(
         ssize_t limit,
         struct SelvaObject *fields __unused,
         SVector *order_result) {
+    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
     struct TraversalOrderItem *item;
     struct SVectorIterator it;
     size_t len = 0;
-
-    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
 
     /*
      * First handle the offsetting.
@@ -392,7 +386,7 @@ static size_t AggregateCommand_AggregateOrderResult(
         }
 
         if (node) {
-            err = apply_agg_fn(node, args);
+            err = args->agg(SelvaHierarchy_GetNodeObject(node), args);
         } else {
             err = SELVA_HIERARCHY_ENOENT;
         }
@@ -442,7 +436,9 @@ static size_t AggregateCommand_AggregateOrderArrayResult(
         }
 
         if (item->data_obj) {
-            err = apply_agg_fn_obj(item->data_obj, arg);
+            struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
+
+            args->agg(item->data_obj, args);
             len++;
         } else {
             err = SELVA_HIERARCHY_ENOENT;
@@ -716,6 +712,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     struct AggregateCommand_Args args = {
         .ctx = ctx,
         .aggregate_type = agg_fn_val,
+        .agg = get_agg_func(agg_fn_val - '0'),
         .aggregation_result_int = 0,
         .aggregation_result_double = initial_double_val,
         .item_count = 0,
@@ -799,6 +796,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         struct AggregateCommand_Args ord_args = {
             .ctx = ctx,
             .aggregate_type = agg_fn_val,
+            .agg = get_agg_func(agg_fn_val - '0'),
             .aggregation_result_int = 0,
             .aggregation_result_double = initial_double_val,
             .item_count = 0,
@@ -1015,6 +1013,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     struct AggregateCommand_Args args = {
         .ctx = ctx,
         .aggregate_type = agg_fn_val,
+        .agg = get_agg_func(agg_fn_val - '0'),
         .aggregation_result_int = 0,
         .aggregation_result_double = initial_double_val,
         .item_count = 0,
@@ -1055,6 +1054,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         struct AggregateCommand_Args ord_args = {
             .ctx = ctx,
             .aggregate_type = agg_fn_val,
+            .agg = get_agg_func(agg_fn_val - '0'),
             .aggregation_result_int = 0,
             .aggregation_result_double = initial_double_val,
             .item_count = 0,
