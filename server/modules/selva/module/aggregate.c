@@ -444,7 +444,7 @@ static size_t AggregateCommand_AggregateOrderArrayResult(
         if (item->data_obj) {
             struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
 
-            args->agg(item->data_obj, args);
+            err = args->agg(item->data_obj, args);
             len++;
         } else {
             err = SELVA_HIERARCHY_ENOENT;
