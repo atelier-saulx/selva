@@ -900,6 +900,44 @@ int SelvaFindIndex_Auto(
     return 0;
 }
 
+int SelvaFindIndex_AutoMulti(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        enum SelvaTraversal dir, RedisModuleString *dir_expression,
+        const Selva_NodeId node_id,
+        enum SelvaResultOrder order,
+        RedisModuleString *order_field,
+        RedisModuleString *index_hints[],
+        size_t nr_index_hints,
+        struct SelvaFindIndexControlBlock *ind_icb_out[]) {
+    int ind_select = -1;
+
+    for (size_t i = 0; i < nr_index_hints; i++) {
+        struct SelvaFindIndexControlBlock *icb = NULL;
+        int err;
+
+        /*
+         * Hint: It's possible to disable ordered indices completely
+         * by changing order here to SELVA_RESULT_ORDER_NONE.
+         */
+        err = SelvaFindIndex_Auto(ctx, hierarchy, dir, dir_expression, node_id, order, order_field, index_hints[i], &icb);
+        ind_icb_out[i] = icb;
+        if (!err) {
+            if (icb &&
+                (ind_select < 0 ||
+                 SelvaFindIndex_IcbCard(icb) < SelvaFindIndex_IcbCard(ind_icb_out[ind_select]))) {
+                ind_select = i; /* Select the smallest index res set for fastest lookup. */
+            }
+        } else if (err != SELVA_ENOENT) {
+            fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
+                    __FILE__, __LINE__,
+                    getSelvaErrorStr(err));
+        }
+    }
+
+    return ind_select;
+}
+
 int SelvaFindIndex_IsOrdered(
         struct SelvaFindIndexControlBlock *icb,
         enum SelvaResultOrder order,

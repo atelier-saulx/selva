@@ -1710,26 +1710,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             /*
              * Select the best index res set.
              */
-            for (int j = 0; j < nr_index_hints; j++) {
-                struct SelvaFindIndexControlBlock *icb = NULL;
-                int ind_err;
-
-                /*
-                 * Hint: It's possible to disable ordered indices completely
-                 * by changing order here to SELVA_RESULT_ORDER_NONE.
-                 */
-                ind_err = SelvaFindIndex_Auto(ctx, hierarchy, dir, dir_expr, nodeId, order, order_by_field, index_hints[j], &icb);
-                ind_icb[j] = icb;
-                if (!ind_err) {
-                    if (icb && (ind_select < 0 || SelvaFindIndex_IcbCard(icb) < SelvaFindIndex_IcbCard(ind_icb[ind_select]))) {
-                        ind_select = j; /* Select the smallest index res set for fastest lookup. */
-                    }
-                } else if (ind_err != SELVA_ENOENT) {
-                    fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
-                            __FILE__, __LINE__,
-                            getSelvaErrorStr(ind_err));
-                }
-            }
+            ind_select = SelvaFindIndex_AutoMulti(ctx, hierarchy, dir, dir_expr, nodeId, order, order_by_field, index_hints, nr_index_hints, ind_icb);
         }
 
         /*
