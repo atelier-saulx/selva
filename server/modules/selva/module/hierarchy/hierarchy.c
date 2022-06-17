@@ -64,7 +64,7 @@ typedef struct SelvaHierarchyNode {
 #if HIERARCHY_SORT_BY_DEPTH
     ssize_t depth;
 #endif
-    _Alignas(void *) char _obj_data[SELVA_OBJECT_BSIZE];
+    STATIC_SELVA_OBJECT(_obj_data);
     struct SelvaHierarchyMetadata metadata;
     SVector parents;
     SVector children;

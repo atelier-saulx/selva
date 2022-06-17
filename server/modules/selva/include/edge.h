@@ -89,7 +89,7 @@ struct EdgeFieldConstraint {
  */
 struct EdgeFieldConstraints {
     struct EdgeFieldConstraint hard_constraints[2];
-    char dyn_constraints[SELVA_OBJECT_BSIZE];
+    STATIC_SELVA_OBJECT(dyn_constraints);
 };
 
 /**
