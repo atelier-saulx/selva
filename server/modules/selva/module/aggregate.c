@@ -57,6 +57,36 @@ static int agg_fn_count_obj(struct SelvaObject *obj __unused, struct AggregateCo
     return 0;
 }
 
+static int get_first_field_value(struct SelvaObject *obj, struct SelvaObject *fields_obj, double *out) {
+    SVector *fields;
+    struct SVectorIterator it;
+    const RedisModuleString *field;
+    int err;
+
+    err = SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
+    if (err || !fields) {
+        return SELVA_ENOENT;
+    }
+
+    SVector_ForeachBegin(&it, fields);
+    while ((field = SVector_Foreach(&it))) {
+        struct SelvaObjectAny value;
+
+        err = SelvaObject_GetAny(obj, field, &value);
+        if (!err) {
+            if (value.type == SELVA_OBJECT_LONGLONG) {
+                *out = (double)value.ll;
+                return 0;
+            } else if (value.type == SELVA_OBJECT_DOUBLE) {
+                *out = value.d;
+                return 0;
+            }
+        }
+    }
+
+    return SELVA_ENOENT;
+}
+
 static int agg_fn_count_uniq_obj(struct SelvaObject *obj __unused, struct AggregateCommand_Args* args __unused) {
     /* TODO */
     return 0;
@@ -64,35 +94,11 @@ static int agg_fn_count_uniq_obj(struct SelvaObject *obj __unused, struct Aggreg
 
 static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     struct SelvaObject *fields_obj = args->find_args.send_param.fields;
-    SVector *fields;
-    const RedisModuleString *field;
-    int err;
+    double d;
 
-    err = SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
-    if (err || !fields) {
-        return 0;
-    }
-
-    struct SVectorIterator it;
-    SVector_ForeachBegin(&it, fields);
-    while ((field = SVector_Foreach(&it))) {
-        enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
-
-        if (field_type == SELVA_OBJECT_LONGLONG) {
-            long long lv = 0;
-
-            SelvaObject_GetLongLong(obj, field, &lv);
-            args->aggregation_result_double += (double)lv;
-            args->item_count++;
-            break;
-        } else if (field_type == SELVA_OBJECT_DOUBLE) {
-            double dv = 0;
-            SelvaObject_GetDouble(obj, field, &dv);
-            args->aggregation_result_double += dv;
-
-            args->item_count++;
-            break;
-        }
+    if (!get_first_field_value(obj, fields_obj, &d)) {
+        args->aggregation_result_double += d;
+        args->item_count++;
     }
 
     return 0;
@@ -104,40 +110,11 @@ static int agg_fn_avg_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
 
 static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     struct SelvaObject *fields_obj = args->find_args.send_param.fields;
-    SVector *fields = NULL;
-    const RedisModuleString *field;
-    int err;
+    double d;
 
-    err = SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
-    if (err || !fields) {
-        return 0;
-    }
-
-    struct SVectorIterator it;
-    SVector_ForeachBegin(&it, fields);
-    while ((field = SVector_Foreach(&it))) {
-        enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
-
-        if (field_type == SELVA_OBJECT_LONGLONG) {
-            long long lv;
-            double dv = 0.0;
-
-            SelvaObject_GetLongLong(obj, field, &lv);
-            dv = (double)lv;
-            if (dv < args->aggregation_result_double) {
-                args->aggregation_result_double = dv;
-            }
-
-            break;
-        } else if (field_type == SELVA_OBJECT_DOUBLE) {
-            double dv = 0;
-
-            SelvaObject_GetDouble(obj, field, &dv);
-            if (dv < args->aggregation_result_double) {
-                args->aggregation_result_double = dv;
-            }
-
-            break;
+    if (!get_first_field_value(obj, fields_obj, &d)) {
+        if (d < args->aggregation_result_double) {
+            args->aggregation_result_double = d;
         }
     }
 
@@ -146,39 +123,11 @@ static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
 
 static int agg_fn_max_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
     struct SelvaObject *fields_obj = args->find_args.send_param.fields;
-    SVector *fields = NULL;
-    const RedisModuleString *field;
-    int err;
+    double d;
 
-    err = SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
-    if (err || !fields) {
-        return 0;
-    }
-
-    struct SVectorIterator it;
-    SVector_ForeachBegin(&it, fields);
-    while ((field = SVector_Foreach(&it))) {
-        enum SelvaObjectType field_type = SelvaObject_GetType(obj, field);
-
-        if (field_type == SELVA_OBJECT_LONGLONG) {
-            long long lv;
-            double dv = 0.0;
-
-            SelvaObject_GetLongLong(obj, field, &lv);
-            if (dv > args->aggregation_result_double) {
-                args->aggregation_result_double = dv;
-            }
-
-            break;
-        } else if (field_type == SELVA_OBJECT_DOUBLE) {
-            double dv = 0;
-
-            SelvaObject_GetDouble(obj, field, &dv);
-            if (dv > args->aggregation_result_double) {
-                args->aggregation_result_double = dv;
-            }
-
-            break;
+    if (!get_first_field_value(obj, fields_obj, &d)) {
+        if (d > args->aggregation_result_double) {
+            args->aggregation_result_double = d;
         }
     }
 
