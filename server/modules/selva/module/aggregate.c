@@ -538,9 +538,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         SHIFT_ARGS(1);
     }
 
-    const RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
-    TO_STR(agg_fn_rms);
-    const char agg_fn_val = agg_fn_rms_str[0];
+    const char agg_fn_val = RedisModule_StringPtrLen(argv[ARGV_AGG_FN], NULL)[0];
     double initial_double_val = 0;
     if (agg_fn_val == SELVA_AGGREGATE_TYPE_MAX_FIELD) {
         initial_double_val = DBL_MIN;
@@ -925,9 +923,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return REDISMODULE_OK;
     }
 
-    const RedisModuleString *agg_fn_rms = argv[ARGV_AGG_FN];
-    TO_STR(agg_fn_rms);
-    const char agg_fn_val = agg_fn_rms_str[0];
+    const char agg_fn_val = RedisModule_StringPtrLen(argv[ARGV_AGG_FN], NULL)[0];
     double initial_double_val = 0;
     if (agg_fn_val == SELVA_AGGREGATE_TYPE_MAX_FIELD) {
         initial_double_val = DBL_MIN;
