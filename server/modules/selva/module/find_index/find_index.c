@@ -810,7 +810,6 @@ void SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
     create_indexing_timer(ctx, hierarchy);
 }
 
-/* TODO Could possibly use the built-in free */
 static void deinit_index_obj(struct SelvaHierarchy *hierarchy, struct SelvaObject *obj) {
     SelvaObject_Iterator *it;
     enum SelvaObjectType type;
@@ -835,6 +834,7 @@ void SelvaFindIndex_Deinit(struct SelvaHierarchy *hierarchy) {
         deinit_index_obj(hierarchy, hierarchy->dyn_index.index_map);
         SelvaObject_Destroy(hierarchy->dyn_index.index_map);
     }
+
     poptop_deinit(&hierarchy->dyn_index.top_indices);
     ida_destroy(hierarchy->dyn_index.ida);
 
@@ -1039,7 +1039,6 @@ void SelvaFindIndex_AccMulti(
     }
 }
 
-/* TODO Could use the built-in reply functionality. */
 static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     SelvaObject_Iterator *it;
     enum SelvaObjectType type;
@@ -1209,7 +1208,6 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
 
 static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     SelvaHierarchy *hierarchy;
-    void *p;
     struct SelvaFindIndexControlBlock *icb;
     int discard = 0;
     int err;
@@ -1246,8 +1244,9 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "Indexing disabled");
     }
 
-    err = SelvaObject_GetPointer(hierarchy->dyn_index.index_map, argv[ARGV_INDEX], &p);
-    icb = p;
+    size_t name_len;
+    const char *name_str = RedisModule_StringPtrLen(argv[ARGV_INDEX], &name_len);
+    err = SelvaFindIndexICB_Get(hierarchy, name_str, name_len, &icb);
     if (err == SELVA_ENOENT) {
         return RedisModule_ReplyWithLongLong(ctx, 0);
     } else if (err) {
