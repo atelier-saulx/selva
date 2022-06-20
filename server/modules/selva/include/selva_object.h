@@ -31,6 +31,11 @@ enum SelvaObjectType {
  */
 #define SELVA_OBJECT_BSIZE 304
 
+/**
+ * Define a for holding a SelvaObject.
+ */
+#define STATIC_SELVA_OBJECT(name) _Alignas(void *) char name[SELVA_OBJECT_BSIZE]
+
 struct RedisModuleCtx;
 struct RedisModuleIO;
 struct RedisModuleKey;

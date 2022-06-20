@@ -64,7 +64,7 @@ typedef struct SelvaHierarchyNode {
 #if HIERARCHY_SORT_BY_DEPTH
     ssize_t depth;
 #endif
-    _Alignas(void *) char _obj_data[SELVA_OBJECT_BSIZE];
+    STATIC_SELVA_OBJECT(_obj_data);
     struct SelvaHierarchyMetadata metadata;
     SVector parents;
     SVector children;
@@ -2061,34 +2061,30 @@ __attribute__((nonnull (5))) static int exec_edge_filter(
         const SVector *adj_vec,
         struct SelvaHierarchyNode *node) {
     struct EdgeField *edge_field = containerof(adj_vec, struct EdgeField, arcs);
+    STATIC_SELVA_OBJECT(tmp_obj);
     struct SelvaObject *edge_metadata;
     int err;
+    enum rpn_error rpn_err;
+    int res;
 
     err = Edge_GetFieldEdgeMetadata(edge_field, node->id, 0, &edge_metadata);
     if (err == SELVA_HIERARCHY_ENOENT || err == SELVA_ENOENT) {
-        /* TODO Should probably run the filter with an empty object. */
-        return 0;
+        /* Execute the filter with an empty object. */
+        edge_metadata = SelvaObject_Init(tmp_obj);
     } else if (err) {
         fprintf(stderr, "%s:%d: Failed to get edge metadata %.*s -> %.*s\n",
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE, edge_field->src_node_id,
                 (int)SELVA_NODE_ID_SIZE, node->id);
         return 0;
-    } else {
-        enum rpn_error rpn_err;
-        int res;
-
-        rpn_set_reg(edge_filter_ctx, 0, node->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
-        rpn_set_hierarchy_node(edge_filter_ctx, hierarchy, node);
-        rpn_set_obj(edge_filter_ctx, edge_metadata);
-
-        rpn_err = rpn_bool(ctx, edge_filter_ctx, edge_filter, &res); /* TODO Handle RPN errors. */
-        if (!rpn_err && res) {
-            return 1;
-        }
     }
 
-    return 0;
+    rpn_set_reg(edge_filter_ctx, 0, node->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
+    rpn_set_hierarchy_node(edge_filter_ctx, hierarchy, node);
+    rpn_set_obj(edge_filter_ctx, edge_metadata);
+    rpn_err = rpn_bool(ctx, edge_filter_ctx, edge_filter, &res);
+
+    return (!rpn_err && res) ? 1 : 0;
 }
 
 /**
