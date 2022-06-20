@@ -81,19 +81,14 @@ static int skip_node(const struct SelvaFindIndexControlBlock *icb, const struct 
     return SelvaTraversal_GetSkip(icb->traversal.dir) && !memcmp(node_id, icb->traversal.node_id, SELVA_NODE_ID_SIZE);
 }
 
-static int icb_res_init(struct SelvaFindIndexControlBlock *icb) {
-    int err;
-
+static void icb_res_init(struct SelvaFindIndexControlBlock *icb) {
     if (icb->flags.ordered) {
         const size_t initial_len = (size_t)icb->find_acc.take_max_ave;
 
-        err = SelvaTraversalOrder_InitOrderResult(&icb->res.ord, icb->sort.order, initial_len);
+        SelvaTraversalOrder_InitOrderResult(&icb->res.ord, icb->sort.order, initial_len);
     } else {
         SelvaSet_Init(&icb->res.set, SELVA_SET_TYPE_NODEID);
-        err = 0;
     }
-
-    return err;
 }
 
 static void icb_clear_acc(struct SelvaFindIndexControlBlock *icb) {

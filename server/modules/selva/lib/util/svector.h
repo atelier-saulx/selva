@@ -80,7 +80,7 @@ static inline int SVector_IsInitialized(const SVector *vec) {
     return vec->vec_mode != SVECTOR_MODE_NONE;
 }
 
-SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a, const void **b));
+void SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a, const void **b));
 void SVector_Destroy(SVector *vec);
 SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const void **a, const void **b));
 void SVector_Insert(SVector *vec, void *el);

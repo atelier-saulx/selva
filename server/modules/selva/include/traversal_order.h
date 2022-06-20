@@ -70,7 +70,7 @@ int SelvaTraversal_ParseOrderArg(
  * @param order is the order requested.
  * @param limit is the expected length for the final SVector. Generally this can be the same as limit size of the response. 0 = auto.
  */
-int SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResultOrder order, ssize_t limit);
+void SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResultOrder order, ssize_t limit);
 
 /**
  * Destroy an order_result SVector and free its items properly.

@@ -1653,10 +1653,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     TO_STR(ids);
 
     if (order != SELVA_RESULT_ORDER_NONE) {
-        err = SelvaTraversalOrder_InitOrderResult(&order_result, order, limit);
-        if (err) {
-            return replyWithSelvaError(ctx, err);
-        }
+        SelvaTraversalOrder_InitOrderResult(&order_result, order, limit);
     }
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
@@ -2008,11 +2005,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
     SVECTOR_AUTOFREE(order_result); /*!< for ordered result. */
     if (order != SELVA_RESULT_ORDER_NONE) {
-        err = SelvaTraversalOrder_InitOrderResult(&order_result, order, limit);
-        if (err) {
-            replyWithSelvaError(ctx, err);
-            goto out;
-        }
+        SelvaTraversalOrder_InitOrderResult(&order_result, order, limit);
     }
 
     ssize_t array_len = 0;
@@ -2065,7 +2058,6 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
     RedisModule_ReplySetArrayLength(ctx, array_len);
 
-out:
     rpn_destroy(rpn_ctx);
 #if MEM_DEBUG
     memset(filter_expression, 0, sizeof(*filter_expression));

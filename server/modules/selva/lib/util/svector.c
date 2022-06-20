@@ -38,11 +38,7 @@ static int svector_rbtree_compar_wrap(struct SVector_rbnode *a, struct SVector_r
 
 RB_GENERATE_STATIC(SVector_rbtree, SVector_rbnode, entry, svector_rbtree_compar_wrap)
 
-SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a, const void **b)) {
-    if (unlikely(!vec)) {
-        return NULL;
-    }
-
+void SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a, const void **b)) {
     *vec = (SVector){
         .vec_mode = SVECTOR_MODE_ARRAY,
         .vec_compar = compar,
@@ -62,8 +58,6 @@ SVector *SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void
             mempool_init(&vec->vec_rbmempool, SVECTOR_SLAB_SIZE, sizeof(struct SVector_rbnode), alignof(struct SVector_rbnode));
         }
     }
-
-    return vec;
 }
 
 void SVector_Destroy(SVector *vec) {
@@ -145,10 +139,11 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
 
     assert(src->vec_arr_shift_index == 0);
 
-    if ((mode != SVECTOR_MODE_ARRAY && mode != SVECTOR_MODE_RBTREE) ||
-        !SVector_Init(dest, SVector_Size(src), compar)) {
+    if (mode != SVECTOR_MODE_ARRAY && mode != SVECTOR_MODE_RBTREE) {
         return NULL;
     }
+
+    SVector_Init(dest, SVector_Size(src), compar);
 
     /* Support lazy alloc. */
     if (unlikely(!src->vec_arr)) {

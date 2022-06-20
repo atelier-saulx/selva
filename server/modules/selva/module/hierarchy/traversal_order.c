@@ -130,10 +130,10 @@ static orderFunc order_functions[] = {
 
 GENERATE_STATIC_FUNMAP(SelvaTraversal_GetOrderFunc, order_functions, enum SelvaResultOrder, SELVA_RESULT_ORDER_NONE);
 
-int SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResultOrder order, ssize_t limit) {
+void SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResultOrder order, ssize_t limit) {
     const size_t initial_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
 
-    return SVector_Init(order_result, initial_len, SelvaTraversal_GetOrderFunc(order)) ? 0 : SELVA_ENOMEM;
+    SVector_Init(order_result, initial_len, SelvaTraversal_GetOrderFunc(order));
 }
 
 void SelvaTraversalOrder_DestroyOrderResult(RedisModuleCtx *ctx, SVector *order_result) {

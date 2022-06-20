@@ -169,9 +169,7 @@ static int update_edge(
         SVECTOR_AUTOFREE(new_ids);
 
         /* The comparator works for both nodes and nodeIds. */
-        if (!SVector_Init(&new_ids, setOpts->$value_len / SELVA_NODE_ID_SIZE, SelvaSVectorComparator_Node)) {
-            return SELVA_ENOMEM;
-        }
+        SVector_Init(&new_ids, setOpts->$value_len / SELVA_NODE_ID_SIZE, SelvaSVectorComparator_Node);
 
         for (size_t i = 0; i < setOpts->$value_len; i += SELVA_NODE_ID_SIZE) {
             char *dst_node_id = setOpts->$value + i;
