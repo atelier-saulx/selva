@@ -4,8 +4,8 @@
 #include "traversal.h"
 #include "find_index.h"
 
-int SelvaFindIndex_Init(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy) {
-    return 0;
+void SelvaFindIndex_Init(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy) {
+    return;
 }
 
 void SelvaFindIndex_Deinit(struct SelvaHierarchy *hierarchy) {

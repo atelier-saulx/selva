@@ -100,18 +100,6 @@ int SelvaFindIndexICB_Get(struct SelvaHierarchy *hierarchy, const char *name_str
     err = SelvaObject_GetPointerStr(dyn_index, name_str, name_len, &p);
     *icb = p;
 
-    /* TODO This requires testing. Should we do it also here or only here? */
-#if 0
-    /*
-     * Increment popularity counter.
-     * We do it here too so that the counter is updated even if we end up
-     * falling back to another index.
-     */
-    if (icb && icb->pop_count.cur < INT_MAX) {
-        icb->pop_count.cur++;
-    }
-#endif
-
     return err;
 }
 
@@ -122,5 +110,11 @@ int SelvaFindIndexICB_Set(struct SelvaHierarchy *hierarchy, const char *name_str
 }
 
 int SelvaFindIndexICB_Del(struct SelvaHierarchy *hierarchy, const struct SelvaFindIndexControlBlock *icb) {
-    return SelvaObject_DelKeyStr(hierarchy->dyn_index.index_map, icb->name_str, icb->name_len);
+    /*
+     * Just ignore if the index_map is already destroyed.
+     */
+    if (hierarchy->dyn_index.index_map) {
+        return SelvaObject_DelKeyStr(hierarchy->dyn_index.index_map, icb->name_str, icb->name_len);
+    }
+    return 0;
 }

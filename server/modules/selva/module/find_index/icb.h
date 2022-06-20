@@ -10,6 +10,8 @@
  * Manage ICB map: name -> ICB.
  */
 
+struct SelvaHierarchy;
+
 /**
  * Sorting descriptor for ordered index.
  */
