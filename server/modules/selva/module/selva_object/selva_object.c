@@ -180,22 +180,11 @@ retry:
  * Init an array on key.
  * The key must be cleared before calling this function.
  */
-static int init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType subtype, size_t size) {
-    key->type = SELVA_OBJECT_NULL;
-    key->subtype = SELVA_OBJECT_NULL;
-
-    key->array = RedisModule_Calloc(1, sizeof(SVector));
-
-    if (!SVector_Init(key->array, size, NULL)) {
-        RedisModule_Free(key->array);
-        key->array = NULL;
-        return SELVA_ENOMEM;
-    }
-
+static void init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType subtype, size_t size) {
     key->type = SELVA_OBJECT_ARRAY;
     key->subtype = subtype;
-
-    return 0;
+    key->array = RedisModule_Calloc(1, sizeof(SVector));
+    SVector_Init(key->array, size, NULL);
 }
 
 static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
@@ -541,11 +530,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                 clear_key_value(key);
             }
 
-            err = init_object_array(key, SELVA_OBJECT_OBJECT, ary_idx + 1);
-            if (err) {
-                return err;
-            }
-
+            init_object_array(key, SELVA_OBJECT_OBJECT, ary_idx + 1);
             err = _insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
             if (err) {
                 return err;
@@ -1416,10 +1401,7 @@ int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, s
             return err;
         }
 
-        err = init_object_array(key, subtype, 1);
-        if (err) {
-            return err;
-        }
+        init_object_array(key, subtype, 1);
     }
 
     SVector_Insert(key->array, p);
@@ -1450,10 +1432,7 @@ int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str
             return err;
         }
 
-        err = init_object_array(key, subtype, 1);
-        if (err) {
-            return err;
-        }
+        init_object_array(key, subtype, 1);
     }
 
     SVector_Insert(key->array, p);
@@ -1484,10 +1463,7 @@ int SelvaObject_AssignArrayIndexStr(struct SelvaObject *obj, const char *key_nam
             return err;
         }
 
-        err = init_object_array(key, subtype, idx + 1);
-        if (err) {
-            return err;
-        }
+        init_object_array(key, subtype, idx + 1);
     }
 
     SVector_SetIndex(key->array, idx, p);
@@ -1517,10 +1493,7 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
             return err;
         }
 
-        err = init_object_array(key, subtype, idx + 1);
-        if (err) {
-            return err;
-        }
+        init_object_array(key, subtype, idx + 1);
     }
 
     SVector_InsertIndex(key->array, idx, p);

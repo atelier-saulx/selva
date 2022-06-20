@@ -209,15 +209,7 @@ SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     SelvaHierarchy *hierarchy = RedisModule_Calloc(1, sizeof(*hierarchy));
 
     RB_INIT(&hierarchy->index_head);
-    if (!SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare)) {
-#if MEM_DEBUG
-        memset(hierarchy, 0, sizeof(*hierarchy));
-#endif
-        RedisModule_Free(hierarchy);
-        hierarchy = NULL;
-        goto fail;
-    }
-
+    SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare);
     Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
     SelvaSubscriptions_InitHierarchy(hierarchy);
     SelvaFindIndex_Init(ctx, hierarchy);
@@ -363,18 +355,9 @@ static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
             (int)SELVA_NODE_ID_SIZE, id);
 #endif
 
-    if (unlikely(!SVector_Init(&node->parents,  selva_glob_config.hierarchy_initial_vector_len, SVector_HierarchyNode_id_compare) ||
-                 !SVector_Init(&node->children, selva_glob_config.hierarchy_initial_vector_len, SVector_HierarchyNode_id_compare))) {
-        SVector_Destroy(&node->parents);
-        SVector_Destroy(&node->children);
-#if MEM_DEBUG
-        memset(node, 0, sizeof(*node));
-#endif
-        RedisModule_Free(node);
-        return NULL;
-    }
-
     memcpy(node->id, id, SELVA_NODE_ID_SIZE);
+    SVector_Init(&node->parents,  selva_glob_config.hierarchy_initial_vector_len, SVector_HierarchyNode_id_compare);
+    SVector_Init(&node->children, selva_glob_config.hierarchy_initial_vector_len, SVector_HierarchyNode_id_compare);
 
     /* The SelvaObject is created elsewhere if we are loading and ctx is not set. */
     if (likely(ctx)) {
@@ -663,10 +646,7 @@ static void updateDepth(SelvaHierarchy *hierarchy, SelvaHierarchyNode *head) {
         return;
     }
 
-    if (unlikely(!SVector_Init(&q, selva_glob_config.hierarchy_expected_resp_len, NULL))) {
-        fprintf(stderr, "%s:%d: Depth update error\n", __FILE__, __LINE__);
-        abort();
-    }
+    SVector_Init(&q, selva_glob_config.hierarchy_expected_resp_len, NULL);
 
     Trx_Begin(&hierarchy->current_trx);
     Trx_Stamp(&hierarchy->current_trx, &head->visit_stamp);
@@ -1753,9 +1733,7 @@ static int dfs(
     }
 
     SVECTOR_AUTOFREE(stack);
-    if (unlikely(!SVector_Init(&stack, selva_glob_config.hierarchy_expected_resp_len, NULL))) {
-        return SELVA_HIERARCHY_ENOMEM;
-    }
+    SVector_Init(&stack, selva_glob_config.hierarchy_expected_resp_len, NULL);
 
     int err = 0;
     struct trx trx_cur;
@@ -1825,9 +1803,7 @@ static int full_dfs(
     SelvaHierarchyNode *head;
     SVECTOR_AUTOFREE(stack);
 
-    if (unlikely(!SVector_Init(&stack, selva_glob_config.hierarchy_expected_resp_len, NULL))) {
-        return SELVA_HIERARCHY_ENOMEM;
-    }
+    SVector_Init(&stack, selva_glob_config.hierarchy_expected_resp_len, NULL);
 
     struct trx trx_cur;
     if (Trx_Begin(&hierarchy->trx_state, &trx_cur)) {
@@ -1953,9 +1929,7 @@ out:
     SelvaHierarchyChildCallback child_cb = (cb)->child_cb ? (cb)->child_cb : SelvaHierarchyChildCallback_Dummy; \
     \
     SVECTOR_AUTOFREE(_bfs_q); \
-    if (unlikely(!SVector_Init(&_bfs_q, selva_glob_config.hierarchy_expected_resp_len, NULL))) { \
-        return SELVA_HIERARCHY_ENOMEM; \
-    } \
+    SVector_Init(&_bfs_q, selva_glob_config.hierarchy_expected_resp_len, NULL); \
     \
     struct trx trx_cur; \
     if (Trx_Begin(&(hierarchy)->trx_state, &trx_cur)) { \

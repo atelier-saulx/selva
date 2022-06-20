@@ -420,45 +420,27 @@ static void destroy_all_sub_markers(RedisModuleCtx *ctx, SelvaHierarchy *hierarc
     }
 }
 
-static int SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers) {
-    if (!SVector_Init(&markers->vec, 0, marker_svector_compare)) {
-        return SELVA_SUBSCRIPTIONS_ENOMEM;
-    }
-
+static void SelvaSubscriptions_InitMarkersStruct(struct Selva_SubscriptionMarkers *markers) {
+    SVector_Init(&markers->vec, 0, marker_svector_compare);
     markers->flags_filter = 0;
-
-    return 0;
 }
 
-static int SelvaSubscriptions_InitDeferredEvents(struct SelvaHierarchy *hierarchy) {
+static void SelvaSubscriptions_InitDeferredEvents(struct SelvaHierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
 
-    return !SVector_Init(&def->updates, 2, SelvaSubscription_svector_compare) ||
-           !SVector_Init(&def->triggers, 3, marker_svector_compare)
-           ? SELVA_SUBSCRIPTIONS_ENOMEM : 0;
+    SVector_Init(&def->updates, 2, SelvaSubscription_svector_compare);
+    SVector_Init(&def->triggers, 3, marker_svector_compare);
 }
 
 int SelvaSubscriptions_InitHierarchy(SelvaHierarchy *hierarchy) {
-    int err = 0;
-
     RB_INIT(&hierarchy->subs.head);
 
     hierarchy->subs.missing = SelvaObject_New();
 
-    err = SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers);
-    if (err) {
-        goto fail;
-    }
-
-    err = SelvaSubscriptions_InitDeferredEvents(hierarchy);
-    if (err) {
-        goto fail;
-    }
+    SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers);
+    SelvaSubscriptions_InitDeferredEvents(hierarchy);
 
     return 0;
-fail:
-    SelvaSubscriptions_DestroyAll(NULL, hierarchy);
-    return err;
 }
 
 void SelvaSubscriptions_DestroyAll(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
@@ -481,16 +463,7 @@ void SelvaSubscriptions_DestroyAll(RedisModuleCtx *ctx, SelvaHierarchy *hierarch
 static void init_node_metadata_subs(
         const Selva_NodeId id __unused,
         struct SelvaHierarchyMetadata *metadata) {
-    int err;
-
-    err = SelvaSubscriptions_InitMarkersStruct(&metadata->sub_markers);
-    if (err) {
-        /* RFE Would be nicer to not crash here on OOM. */
-        fprintf(stderr, "%s:%d: %s\n",
-                __FILE__, __LINE__,
-                getSelvaErrorStr(err));
-        abort();
-    }
+    SelvaSubscriptions_InitMarkersStruct(&metadata->sub_markers);
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(init_node_metadata_subs);
 
@@ -632,11 +605,7 @@ static struct Selva_Subscription *create_subscription(
 
     sub = RedisModule_Calloc(1, sizeof(struct Selva_Subscription));
     memcpy(sub->sub_id, sub_id, sizeof(sub->sub_id));
-
-    if (!SVector_Init(&sub->markers, 1, marker_svector_compare)) {
-        RedisModule_Free(sub);
-        return NULL;
-    }
+    SVector_Init(&sub->markers, 1, marker_svector_compare);
 
     /*
      * Add to the list of subscriptions.
