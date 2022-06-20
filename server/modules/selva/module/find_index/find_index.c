@@ -48,7 +48,7 @@ SELVA_TRACE_HANDLE(FindIndex_refresh);
 static void create_icb_timer(RedisModuleCtx *ctx, struct SelvaFindIndexControlBlock *icb);
 static void create_indexing_timer(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy);
 
-static int isIndexingActive(struct SelvaHierarchy *hierarchy) {
+static int is_indexing_active(const struct SelvaHierarchy *hierarchy) {
     return !!hierarchy->dyn_index.index_map;
 }
 
@@ -1100,7 +1100,7 @@ static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return REDISMODULE_OK;
     }
 
-    if (!isIndexingActive(hierarchy)) {
+    if (!is_indexing_active(hierarchy)) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
     }
 
@@ -1135,7 +1135,7 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         return REDISMODULE_OK;
     }
 
-    if (!isIndexingActive(hierarchy)) {
+    if (!is_indexing_active(hierarchy)) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
     }
 
@@ -1244,7 +1244,7 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         return REDISMODULE_OK;
     }
 
-    if (!isIndexingActive(hierarchy)) {
+    if (!is_indexing_active(hierarchy)) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
     }
 
