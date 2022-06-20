@@ -26,6 +26,8 @@
 #include "pick_icb.h"
 #include "find_index.h"
 
+#define INDEX_ERR_MSG_DISABLED "Indexing disabled"
+
 static float lpf_a; /*!< Popularity count average dampening coefficient. */
 Selva_SubscriptionId find_index_sub_id; /* zeroes. */
 
@@ -45,6 +47,10 @@ SELVA_TRACE_HANDLE(FindIndex_refresh);
 
 static void create_icb_timer(RedisModuleCtx *ctx, struct SelvaFindIndexControlBlock *icb);
 static void create_indexing_timer(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy);
+
+static int isIndexingActive(struct SelvaHierarchy *hierarchy) {
+    return !!hierarchy->dyn_index.index_map;
+}
 
 /**
  * Set a new unique marker_id to the given icb.
@@ -388,15 +394,13 @@ __attribute__((nonnull (2, 3))) static int destroy_icb(
         return err;
     }
 
-    if (hierarchy->dyn_index.index_map) {
-        err = SelvaFindIndexICB_Del(hierarchy, icb);
-        if (err) {
-            fprintf(stderr, "%s:%d: Failed to destroy an index for \"%.*s\": %s\n",
-                    __FILE__, __LINE__,
-                    (int)icb->name_len, icb->name_str,
-                    getSelvaErrorStr(err));
-            return err;
-        }
+    err = SelvaFindIndexICB_Del(hierarchy, icb);
+    if (err) {
+        fprintf(stderr, "%s:%d: Failed to destroy an index for \"%.*s\": %s\n",
+                __FILE__, __LINE__,
+                (int)icb->name_len, icb->name_str,
+                getSelvaErrorStr(err));
+        return err;
     }
 
     if (icb->flags.valid_marked_id) {
@@ -1096,8 +1100,8 @@ static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return REDISMODULE_OK;
     }
 
-    if (!hierarchy->dyn_index.index_map) {
-        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "Indexing disabled");
+    if (!isIndexingActive(hierarchy)) {
+        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
     }
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
@@ -1131,8 +1135,8 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         return REDISMODULE_OK;
     }
 
-    if (!hierarchy->dyn_index.index_map) {
-        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "Indexing disabled");
+    if (!isIndexingActive(hierarchy)) {
+        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
     }
 
     enum SelvaTraversal dir;
@@ -1240,8 +1244,8 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         return REDISMODULE_OK;
     }
 
-    if (!hierarchy->dyn_index.index_map) {
-        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, "Indexing disabled");
+    if (!isIndexingActive(hierarchy)) {
+        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
     }
 
     size_t name_len;

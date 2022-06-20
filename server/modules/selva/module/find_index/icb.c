@@ -110,5 +110,11 @@ int SelvaFindIndexICB_Set(struct SelvaHierarchy *hierarchy, const char *name_str
 }
 
 int SelvaFindIndexICB_Del(struct SelvaHierarchy *hierarchy, const struct SelvaFindIndexControlBlock *icb) {
-    return SelvaObject_DelKeyStr(hierarchy->dyn_index.index_map, icb->name_str, icb->name_len);
+    /*
+     * Just ignore if the index_map is already destroyed.
+     */
+    if (hierarchy->dyn_index.index_map) {
+        return SelvaObject_DelKeyStr(hierarchy->dyn_index.index_map, icb->name_str, icb->name_len);
+    }
+    return 0;
 }
