@@ -220,12 +220,7 @@ SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
 
     Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
     SelvaSubscriptions_InitHierarchy(hierarchy);
-
-    if (SelvaFindIndex_Init(ctx, hierarchy)) {
-        SelvaModify_DestroyHierarchy(hierarchy);
-        hierarchy = NULL;
-        goto fail;
-    }
+    SelvaFindIndex_Init(ctx, hierarchy);
 
     if (SelvaModify_SetHierarchy(isRdbLoading(ctx) ? NULL : ctx, hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL, NULL) < 0) {
         SelvaModify_DestroyHierarchy(hierarchy);

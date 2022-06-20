@@ -19,7 +19,7 @@ struct indexing_timer_args;
 /**
  * Initialize a new indexing subsystem instance for hierarchy.
  */
-int SelvaFindIndex_Init(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy);
+void SelvaFindIndex_Init(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy);
 
 /**
  * Deinit the indexing subsystem instance initialized for hierarchy.

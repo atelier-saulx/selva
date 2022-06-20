@@ -791,17 +791,13 @@ static void create_indexing_timer(RedisModuleCtx *ctx, struct SelvaHierarchy *hi
     hierarchy->dyn_index.proc_timer_active = 1;
 }
 
-int SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
+void SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
     if (selva_glob_config.find_indices_max == 0) {
-        return 0; /* Indexing disabled. */
+        return; /* Indexing disabled. */
     }
 
     hierarchy->dyn_index.index_map = SelvaObject_New();
-
     hierarchy->dyn_index.ida = ida_init(FIND_INDICES_MAX_HINTS);
-    if (!hierarchy->dyn_index.ida) {
-        goto fail;
-    }
 
     /*
      * We allow a max of 2 * FIND_INDICES_MAX so we always have more to choose
@@ -812,12 +808,6 @@ int SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
     poptop_init(&hierarchy->dyn_index.top_indices, 2 * selva_glob_config.find_indices_max, 0.0f);
 
     create_indexing_timer(ctx, hierarchy);
-
-    return 0;
-fail:
-    SelvaObject_Destroy(hierarchy->dyn_index.index_map);
-    ida_destroy(hierarchy->dyn_index.ida);
-    return SELVA_ENOMEM;
 }
 
 /* TODO Could possibly use the built-in free */
