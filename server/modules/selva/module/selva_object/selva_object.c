@@ -2223,7 +2223,7 @@ int SelvaObject_ReplyWithObjectStr(
             struct SelvaObjectKey k = {
                 .type = key->subtype,
                     .subtype = SELVA_OBJECT_NULL,
-                    .user_meta = 0, /* TODO ? */
+                    .user_meta = 0, /* TODO What's the meta value for array members. */
                     .name_len = 0,
             };
             void *p = SVector_GetIndex(key->array, ary_idx);
@@ -2798,7 +2798,6 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, struct SelvaObject *obj, void *pt
         case SELVA_OBJECT_OBJECT:
             if (!key->value) {
                 RedisModule_LogIOError(io, "warning", "OBJECT value missing");
-                /* TODO This would create a fatally broken RDB file. */
                 break;
             }
             SelvaObjectTypeRDBSave(io, key->value, ptr_save_data);
