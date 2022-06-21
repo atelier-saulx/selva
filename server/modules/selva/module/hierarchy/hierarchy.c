@@ -2789,7 +2789,6 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
 
     /*
      * Create a new dummy node with the detached flag set.
-     * TODO Handle error?
      */
     new_detached_node(ctx, hierarchy, node_id, parents, nr_parents);
 
