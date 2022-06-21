@@ -432,15 +432,13 @@ static void SelvaSubscriptions_InitDeferredEvents(struct SelvaHierarchy *hierarc
     SVector_Init(&def->triggers, 3, marker_svector_compare);
 }
 
-int SelvaSubscriptions_InitHierarchy(SelvaHierarchy *hierarchy) {
+void SelvaSubscriptions_InitHierarchy(SelvaHierarchy *hierarchy) {
     RB_INIT(&hierarchy->subs.head);
 
     hierarchy->subs.missing = SelvaObject_New();
 
     SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers);
     SelvaSubscriptions_InitDeferredEvents(hierarchy);
-
-    return 0;
 }
 
 void SelvaSubscriptions_DestroyAll(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
