@@ -41,6 +41,13 @@ test.beforeEach(async (t) => {
         fields: {
           name: { type: 'string' },
           value: { type: 'number' },
+          mascot: { type: 'reference' },
+        },
+      },
+      mascot: {
+        prefix: 'rq',
+        fields: {
+          name: { type: 'string' },
         },
       },
     },
@@ -69,6 +76,17 @@ test.beforeEach(async (t) => {
           value: i % 3,
         }
       ]
+    })
+  }
+
+  for (let i = 1; i <= 50; i++) {
+    await client.set({
+      $id: `te${i}`,
+      mascot: {
+        type: 'mascot',
+        $id: `rq${i}`,
+        name: ['Matt', 'Jim', 'Kord'][(i - 1) % 3],
+      },
     })
   }
 
@@ -195,6 +213,39 @@ test.serial('filter by parents', async (t) => {
   }), {
     matches: [
       { id: 'ma351' },
+    ]
+  })
+
+  await client.destroy()
+})
+
+test.serial('set like match to reference', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  t.deepEqual(await client.get({
+    mascots: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'team',
+            },
+            {
+              $field: 'mascot',
+              $operator: 'has',
+              $value: 'rq5',
+            },
+          ],
+        },
+      },
+    },
+  }), {
+    mascots: [
+      { id: 'te5' },
     ]
   })
 
