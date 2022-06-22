@@ -402,7 +402,7 @@ test.serial('basic trigger deleted subscriptions', async (t) => {
     no: 'initial value',
   })
 
-  t.plan(1)
+  t.plan(2)
 
   let o2counter = 0
   const other = client.observeEvent('deleted', {
@@ -420,9 +420,12 @@ test.serial('basic trigger deleted subscriptions', async (t) => {
     aliases: false,
   })
 
+  let deleteResp = null
   const sub2 = other.subscribe((d) => {
     if (o2counter === 0) {
       // yes
+
+      deleteResp = d
       console.log('d', d)
       t.pass()
     } else {
@@ -484,6 +487,8 @@ test.serial('basic trigger deleted subscriptions', async (t) => {
   })
 
   await wait(500 * 2)
+
+  t.deepEqual({ id: thing }, deleteResp)
 
   sub2.unsubscribe()
 
