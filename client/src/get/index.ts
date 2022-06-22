@@ -136,6 +136,11 @@ async function get(
         ...ids
       )
     }
+
+    if (newProps?.$trigger?.$event === 'deleted' && newProps?.id?.$value) {
+      return { id: newProps.id.$value }
+    }
+
     return { $isNull: true }
   }
 

@@ -48,6 +48,9 @@ const sendUpdate = async (
 
     inProgressTriggers.add(subscription.channel + ':' + nodeId)
     getOptions.$id = nodeId
+    if (getOptions.$all === true || getOptions.id === true) {
+      getOptions.id = { $value: nodeId }
+    }
   }
 
   const startTime = Date.now()
