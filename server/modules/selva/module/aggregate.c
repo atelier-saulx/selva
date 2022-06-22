@@ -41,8 +41,9 @@ struct AggregateCommand_Args {
     struct RedisModuleCtx *ctx;
     struct FindCommand_Args find_args;
 
-    enum SelvaHierarchy_AggregateType aggregate_type;
     agg_func agg;
+    enum SelvaHierarchy_AggregateType aggregate_type;
+    int uniq_initialized;
 
     /*
      * Aggregation state.
@@ -50,14 +51,47 @@ struct AggregateCommand_Args {
     long long int aggregation_result_int;
     double aggregation_result_double;
     size_t item_count;
+    struct {
+        struct SelvaSet set_rmstring;
+        struct SelvaSet set_double;
+        struct SelvaSet set_longlong;
+    } uniq;
 };
+
+static void init_uniq(struct AggregateCommand_Args *args) {
+    if (args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
+        SelvaSet_Init(&args->uniq.set_rmstring, SELVA_SET_TYPE_RMSTRING);
+        SelvaSet_Init(&args->uniq.set_double, SELVA_SET_TYPE_DOUBLE);
+        SelvaSet_Init(&args->uniq.set_longlong, SELVA_SET_TYPE_LONGLONG);
+        args->uniq_initialized = 1;
+    } else {
+        args->uniq_initialized = 0;
+    }
+}
+
+static void destroy_uniq(struct AggregateCommand_Args *args) {
+    if (args->uniq_initialized) {
+        SelvaSet_Destroy(&args->uniq.set_rmstring);
+        SelvaSet_Destroy(&args->uniq.set_double);
+        SelvaSet_Destroy(&args->uniq.set_longlong);
+        args->uniq_initialized = 0;
+    }
+}
+
+static void count_uniq(struct AggregateCommand_Args *args) {
+    if (args->uniq_initialized && args->aggregate_type == SELVA_AGGREGATE_TYPE_COUNT_UNIQUE_FIELD) {
+        args->aggregation_result_int = SelvaSet_Size(&args->uniq.set_rmstring) +
+                                       SelvaSet_Size(&args->uniq.set_double) +
+                                       SelvaSet_Size(&args->uniq.set_longlong);
+    }
+}
 
 static int agg_fn_count_obj(struct SelvaObject *obj __unused, struct AggregateCommand_Args* args) {
     args->item_count++;
     return 0;
 }
 
-static int get_first_field_value(struct SelvaObject *obj, struct SelvaObject *fields_obj, double *out) {
+static int get_first_field_value_double(struct SelvaObject *obj, struct SelvaObject *fields_obj, double *out) {
     SVector *fields;
     struct SVectorIterator it;
     const RedisModuleString *field;
@@ -87,8 +121,41 @@ static int get_first_field_value(struct SelvaObject *obj, struct SelvaObject *fi
     return SELVA_ENOENT;
 }
 
-static int agg_fn_count_uniq_obj(struct SelvaObject *obj __unused, struct AggregateCommand_Args* args __unused) {
-    /* TODO */
+static int agg_fn_count_uniq_obj(struct SelvaObject *obj, struct AggregateCommand_Args* args) {
+    struct SelvaObject *fields_obj = args->find_args.send_param.fields;
+    SVector *fields;
+    struct SVectorIterator it;
+    const RedisModuleString *field;
+    int err;
+
+    err = SelvaObject_GetArrayStr(fields_obj, "0", 1, NULL, &fields);
+    if (err || !fields) {
+        return SELVA_ENOENT;
+    }
+
+    SVector_ForeachBegin(&it, fields);
+    while ((field = SVector_Foreach(&it))) {
+        struct SelvaObjectAny value;
+
+        err = SelvaObject_GetAny(obj, field, &value);
+        if (!err) {
+            if (value.type == SELVA_OBJECT_DOUBLE) {
+                SelvaSet_Add(&args->uniq.set_double, value.d);
+                break;
+            } else if (value.type == SELVA_OBJECT_LONGLONG) {
+                SelvaSet_Add(&args->uniq.set_longlong, value.ll);
+                break;
+            } else if (value.type == SELVA_OBJECT_STRING) {
+                RedisModuleString *tmp = RedisModule_HoldString(NULL, value.str);
+
+                if (SelvaSet_Add(&args->uniq.set_rmstring, tmp)) {
+                    RedisModule_FreeString(NULL, tmp);
+                }
+                break;
+            }
+        }
+    }
+
     return 0;
 }
 
@@ -96,7 +163,7 @@ static int agg_fn_sum_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     struct SelvaObject *fields_obj = args->find_args.send_param.fields;
     double d;
 
-    if (!get_first_field_value(obj, fields_obj, &d)) {
+    if (!get_first_field_value_double(obj, fields_obj, &d)) {
         args->aggregation_result_double += d;
         args->item_count++;
     }
@@ -112,7 +179,7 @@ static int agg_fn_min_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     struct SelvaObject *fields_obj = args->find_args.send_param.fields;
     double d;
 
-    if (!get_first_field_value(obj, fields_obj, &d)) {
+    if (!get_first_field_value_double(obj, fields_obj, &d)) {
         if (d < args->aggregation_result_double) {
             args->aggregation_result_double = d;
         }
@@ -125,7 +192,7 @@ static int agg_fn_max_obj(struct SelvaObject *obj, struct AggregateCommand_Args*
     struct SelvaObject *fields_obj = args->find_args.send_param.fields;
     double d;
 
-    if (!get_first_field_value(obj, fields_obj, &d)) {
+    if (!get_first_field_value_double(obj, fields_obj, &d)) {
         if (d > args->aggregation_result_double) {
             args->aggregation_result_double = d;
         }
@@ -683,6 +750,8 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         .item_count = 0,
     };
 
+    init_uniq(&args);
+
     ssize_t nr_nodes = 0;
     size_t merge_nr_fields = 0;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
@@ -847,16 +916,22 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             }
         };
 
+        init_uniq(&ord_args);
         nr_nodes = (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY)
             ? AggregateCommand_AggregateOrderArrayResult(ctx, lang, &ord_args, hierarchy, offset, limit, fields, &order_result)
             : AggregateCommand_AggregateOrderResult(ctx, lang, &ord_args, offset, limit, fields, &order_result);
-
+        count_uniq(&args);
         AggregateCommand_PrintAggregateResult(ctx, &ord_args);
+        destroy_uniq(&args);
     } else {
+        count_uniq(&args);
         AggregateCommand_PrintAggregateResult(ctx, &args);
     }
 
+
 out:
+    destroy_uniq(&args);
+
     if (traversal_rpn_ctx) {
         rpn_destroy(traversal_rpn_ctx);
         rpn_destroy_expression(traversal_expression);
@@ -1054,6 +1129,9 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         .aggregation_result_double = initial_double_val,
         .item_count = 0,
     };
+
+    init_uniq(&args);
+
     ssize_t array_len = 0;
     for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
         struct SelvaHierarchyNode *node;
@@ -1101,13 +1179,19 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             }
         };
 
+        init_uniq(&ord_args);
         AggregateCommand_AggregateOrderResult(ctx, lang, &ord_args, offset, limit, fields, &order_result);
+        count_uniq(&ord_args);
         AggregateCommand_PrintAggregateResult(ctx, &ord_args);
+        destroy_uniq(&ord_args);
     } else {
+        count_uniq(&args);
         AggregateCommand_PrintAggregateResult(ctx, &args);
     }
 
 out:
+    destroy_uniq(&args);
+
     if (rpn_ctx) {
         rpn_destroy(rpn_ctx);
         rpn_destroy_expression(filter_expression);
