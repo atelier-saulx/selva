@@ -187,11 +187,6 @@ void _rpn_auto_free_ctx(void *p) {
     rpn_destroy(ctx);
 }
 
-/*
- * TODO We should decide and be consistent about when the d value is set as NaN
- * and when as nan_undefined. Once that is done we can also start utilizing it
- * better.
- */
 static double nan_undefined(void) {
     return nan("1");
 }
@@ -561,7 +556,6 @@ enum rpn_error rpn_set_reg_slvobj(struct rpn_ctx *ctx, size_t i, struct SelvaObj
          */
         r->flags.regist = 1;
         r->flags.slvobj = 1;
-        /* RFE This is used elsewhere but it's not necessarily correct. */
         r->d = nan_undefined();
         r->obj = obj;
 
@@ -596,7 +590,6 @@ enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet
          */
         r->flags.regist = 1;
         r->flags.slvset = 1;
-        /* RFE This is used elsewhere but it's not necessarily correct. */
         r->d = nan_undefined();
         r->set = set;
 
