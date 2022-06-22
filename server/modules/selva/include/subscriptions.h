@@ -225,7 +225,7 @@ Selva_SubscriptionMarkerId Selva_GenSubscriptionMarkerId(Selva_SubscriptionMarke
 /**
  * Init subscriptions data structures in the hierarchy.
  */
-int SelvaSubscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy);
+void SelvaSubscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy);
 
 /**
  * Destroy all data structures of the subscriptions subsystem and cancel all deferred events.
