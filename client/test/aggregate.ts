@@ -346,6 +346,44 @@ test.serial('simple aggregate', async (t) => {
     { id: 'root', value: 13 }
   )
 
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      value: {
+        $aggregate: {
+          $function: { $name: 'countUnique', $args: ['value'] },
+          $traverse: 'descendants',
+          $filter: [
+            {
+              $field: 'type',
+              $operator: '=',
+              $value: 'match',
+            },
+            {
+              $field: 'value',
+              $operator: 'exists',
+            },
+          ],
+        },
+      },
+    }),
+    { id: 'root', value: 4 }
+  )
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      id: true,
+      value: {
+        $aggregate: {
+          $function: { $name: 'countUnique', $args: ['type'] },
+          $traverse: 'descendants',
+        },
+      },
+    }),
+    { id: 'root', value: 2 }
+  )
+
   let err = await t.throwsAsync(
     client.get({
       $id: 'root',
@@ -400,7 +438,7 @@ test.serial('simple aggregate', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('simple aggregate with reference fields', async (t) => {
+test.serial('simple aggregate with reference fields', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
   let sum = 0
 
