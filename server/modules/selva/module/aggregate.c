@@ -928,10 +928,9 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         AggregateCommand_PrintAggregateResult(ctx, &args);
     }
 
-
-out:
     destroy_uniq(&args);
 
+out:
     if (traversal_rpn_ctx) {
         rpn_destroy(traversal_rpn_ctx);
         rpn_destroy_expression(traversal_expression);
@@ -1189,9 +1188,9 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         AggregateCommand_PrintAggregateResult(ctx, &args);
     }
 
-out:
     destroy_uniq(&args);
 
+out:
     if (rpn_ctx) {
         rpn_destroy(rpn_ctx);
         rpn_destroy_expression(filter_expression);
