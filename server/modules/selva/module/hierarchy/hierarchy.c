@@ -2769,7 +2769,6 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
             compress_subtree(ctx, hierarchy, node, &compression_ratio),
             type);
     if (!tag_compressed) {
-        /* TODO Maybe it would be nice to get the error codes passed here. */
         return SELVA_HIERARCHY_EGENERAL;
     }
 
@@ -2789,7 +2788,6 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
 
     /*
      * Create a new dummy node with the detached flag set.
-     * TODO Handle error?
      */
     new_detached_node(ctx, hierarchy, node_id, parents, nr_parents);
 
