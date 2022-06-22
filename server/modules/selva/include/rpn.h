@@ -95,7 +95,6 @@ static inline void rpn_set_hierarchy_node(struct rpn_ctx *ctx, struct SelvaHiera
 }
 
 static inline void rpn_set_obj(struct rpn_ctx *ctx, struct SelvaObject *obj) {
-    /* TODO obj should be const but selva_object isn't good with const atm. */
     ctx->obj = obj;
 }
 
