@@ -91,12 +91,6 @@ void replicateModify(RedisModuleCtx *ctx, const struct bitmap *replset, RedisMod
     }
 
     argv = RedisModule_PoolAlloc(ctx, ((size_t)((long long)leading_args + 3 * count + (rs->created + rs->updated) * 3)) * sizeof(RedisModuleString *));
-    if (!argv) {
-        fprintf(stderr, "%s:%d: Replication error: %s\n",
-                __FILE__, __LINE__,
-                getSelvaErrorStr(SELVA_ENOMEM));
-        return;
-    }
 
     /*
      * Copy the leading args.
@@ -211,14 +205,11 @@ static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, co
     /* TODO Support __ORDER_BIG_ENDIAN__ */
     _Static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Only little endian host is supported");
 
-    if (!data_str && data_len < sizeof(struct SelvaModify_OpSet)) {
+    if (!data || data_len == 0 || data_len < sizeof(struct SelvaModify_OpSet)) {
         return NULL;
     }
 
     op = RedisModule_PoolAlloc(ctx, data_len);
-    if (!op) {
-        return NULL;
-    }
 
     memcpy(op, data_str, data_len);
     op->$add    = op->$add    ? ((char *)op + (ptrdiff_t)op->$add)    : NULL;
@@ -242,14 +233,11 @@ static struct SelvaModify_OpEdgeMeta *SelvaModify_OpEdgeMeta_align(RedisModuleCt
     /* TODO Support __ORDER_BIG_ENDIAN__ */
     _Static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Only little endian host is supported");
 
-    if (!data_str && data_len < sizeof(struct SelvaModify_OpEdgeMeta)) {
+    if (!data || data_len == 0 || data_len < sizeof(struct SelvaModify_OpEdgeMeta)) {
         return NULL;
     }
 
     op = RedisModule_PoolAlloc(ctx, data_len);
-    if (!op) {
-        return NULL;
-    }
 
     memcpy(op, data_str, data_len);
     if (!op->meta_field_name_str || !op->meta_field_value_str) {
@@ -927,9 +915,6 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     const int nr_triplets = (argc - 3) / 3;
     struct bitmap *replset = RedisModule_PoolAlloc(ctx, BITMAP_ALLOC_SIZE(nr_triplets));
 
-    if (!replset) {
-        return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "Failed to allocate memory for replication");
-    }
     replset->nbits = nr_triplets;
     bitmap_erase(replset);
 

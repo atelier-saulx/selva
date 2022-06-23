@@ -382,9 +382,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     const size_t nr_field_names = argc - ARGV_FIELD_NAMES;
     RedisModuleString **field_names = RedisModule_PoolAlloc(ctx, nr_field_names * sizeof(RedisModuleString *));
-    if (!field_names) {
-        return replyWithSelvaError(ctx, SELVA_ENOMEM);
-    }
+
     memcpy(field_names, argv + ARGV_FIELD_NAMES, nr_field_names * sizeof(RedisModuleString *));
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
