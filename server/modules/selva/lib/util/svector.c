@@ -187,6 +187,7 @@ static void SVector_Resize(SVector *vec, size_t i) {
     if (!vec_arr || i >= vec_len - 1) {
         size_t new_len;
         size_t new_size;
+        void **new_arr;
 
         new_len = calc_new_len(vec_len);
         if (new_len < i) {
@@ -194,16 +195,7 @@ static void SVector_Resize(SVector *vec, size_t i) {
         }
         new_size = VEC_SIZE(new_len);
 
-        void **new_arr = RedisModule_Realloc(vec_arr, new_size);
-        if (!new_arr) {
-            fprintf(stderr, "SVector realloc failed\n");
-            /*
-             * TODO We shouldn't abort here but there is absolutely no safe way
-             * to fail as of now.
-             */
-            abort(); /* This will cause a core dump. */
-        }
-
+        new_arr = RedisModule_Realloc(vec_arr, new_size);
         vec->vec_arr = new_arr;
         vec->vec_arr_len = new_len;
     }
@@ -285,12 +277,7 @@ void *SVector_InsertFast(SVector *vec, void *el) {
         if (vec->vec_last >= vec->vec_arr_len - 1) {
             const size_t new_len = calc_new_len(vec->vec_arr_len);
             const size_t new_size = VEC_SIZE(new_len);
-
             void **new_arr = RedisModule_Realloc(vec_arr, new_size);
-            if (!new_arr) {
-                fprintf(stderr, "SVector realloc failed\n");
-                abort(); /* This will cause a core dump. */
-            }
 
             vec->vec_arr = new_arr;
             vec->vec_arr_len = new_len;
