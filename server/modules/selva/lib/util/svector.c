@@ -185,8 +185,14 @@ static void SVector_Resize(SVector *vec, size_t i) {
     size_t vec_len = vec->vec_arr_len;
 
     if (!vec_arr || i >= vec_len - 1) {
-        const size_t new_len = calc_new_len(vec_len);
-        const size_t new_size = VEC_SIZE(new_len);
+        size_t new_len;
+        size_t new_size;
+
+        new_len = calc_new_len(vec_len);
+        if (new_len < i) {
+            new_len = i + 1;
+        }
+        new_size = VEC_SIZE(new_len);
 
         void **new_arr = RedisModule_Realloc(vec_arr, new_size);
         if (!new_arr) {
@@ -449,22 +455,19 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
 
 void SVector_SetIndex(SVector * restrict vec, size_t index, void *el) {
     assert(("vec_compare must not be set", !vec->vec_compar));
+    assert(vec->vec_mode == SVECTOR_MODE_ARRAY);
 
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
-        SVector_ShiftReset(vec);
-        if (index < vec->vec_last) {
-            vec->vec_arr[index] = el;
-        } else if (index < vec->vec_arr_len) {
-            memset(vec->vec_arr + vec->vec_last, 0, VEC_SIZE(vec->vec_arr_len - vec->vec_last));
+    SVector_ShiftReset(vec);
+    if (index < vec->vec_last) {
+        vec->vec_arr[index] = el;
+    } else if (index < vec->vec_arr_len) {
+        memset(vec->vec_arr + vec->vec_last, 0, VEC_SIZE(vec->vec_arr_len - vec->vec_last));
 
-            vec->vec_arr[index] = el;
-            vec->vec_last = index + 1;
-        } else {
-            SVector_Resize(vec, index);
-            SVector_SetIndex(vec, index, el);
-        }
+        vec->vec_arr[index] = el;
+        vec->vec_last = index + 1;
     } else {
-        abort();
+        SVector_Resize(vec, index);
+        SVector_SetIndex(vec, index, el);
     }
 }
 

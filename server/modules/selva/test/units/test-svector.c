@@ -370,6 +370,18 @@ static char * test_insert_no_compar(void)
     return NULL;
 }
 
+static char * test_insert_setIndex(void)
+{
+    struct data el[] = { { 1 } };
+
+    SVector_Init(&vec, 1, NULL);
+    SVector_SetIndex(&vec, 4095, &el[0]);
+
+    pu_assert_ptr_equal("el[0] was inserted correctly", vec.vec_arr[4095], &el[0]);
+
+    return NULL;
+}
+
 static char * test_search_index_unordered(void)
 {
     struct data el[] = { { 1 }, { 5 }, { 15 }, { 800 }, { 3 }, { 300 }, { 10 }, { 20 } };
@@ -794,6 +806,7 @@ void all_tests(void)
     pu_def_test(test_insertFast_dedup, PU_RUN);
     pu_def_test(test_mixed_insertFast_and_Remove, PU_RUN);
     pu_def_test(test_insert_no_compar, PU_RUN);
+    pu_def_test(test_insert_setIndex, PU_RUN);
     pu_def_test(test_search_index_unordered, PU_RUN);
     pu_def_test(test_search_index_ordered, PU_RUN);
     pu_def_test(test_search, PU_RUN);
