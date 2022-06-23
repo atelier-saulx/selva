@@ -32,9 +32,8 @@ static void teardown(void)
 
 static char * test_init_works(void)
 {
-    SVector *vecP = SVector_Init(&vec, 50, compar);
+    SVector_Init(&vec, 50, compar);
 
-    pu_assert_ptr_equal("the vector is returned", vecP, &vec);
     pu_assert_ptr_equal("compar is set", vec.vec_compar, compar);
     pu_assert_equal("length is correct", vec.vec_arr_len, 50);
     pu_assert_equal("last is zeroed", vec.vec_last, 0);
@@ -45,9 +44,8 @@ static char * test_init_works(void)
 
 static char * test_init_works_huge(void)
 {
-    SVector *vecP = SVector_Init(&vec, 1000, compar);
+    SVector_Init(&vec, 1000, compar);
 
-    pu_assert_ptr_equal("the vector is returned", vecP, &vec);
     pu_assert_ptr_equal("compar is set", vec.vec_compar, compar);
     pu_assert_equal("last is zeroed", vec.vec_last, 0);
     pu_assert_equal("mode is set correctly", SVector_Mode(&vec), SVECTOR_MODE_RBTREE);
@@ -57,9 +55,8 @@ static char * test_init_works_huge(void)
 
 static char * test_init_lazy_alloc(void)
 {
-    SVector *vecP = SVector_Init(&vec, 0, compar);
+    SVector_Init(&vec, 0, compar);
 
-    pu_assert_ptr_equal("the vector is returned", vecP, &vec);
     pu_assert_ptr_equal("compar is set", vec.vec_compar, compar);
     pu_assert_ptr_equal("vec_arr is not allocated", vec.vec_arr, NULL);
     pu_assert_equal("length is correct", vec.vec_arr_len, 0);
@@ -70,11 +67,11 @@ static char * test_init_lazy_alloc(void)
 
 static char * test_can_destroy(void)
 {
-    SVector *vecP = SVector_Init(&vec, 100, compar);
+    SVector_Init(&vec, 100, compar);
 
-    SVector_Destroy(vecP);
+    SVector_Destroy(&vec);
     // multiple times
-    SVector_Destroy(vecP);
+    SVector_Destroy(&vec);
 
     return NULL;
 }
@@ -253,18 +250,6 @@ static char * test_insertFast_many(void)
     }
 
     pu_assert_equal("last is incremented", vec.vec_last, 333);
-
-    /* TODO Fix asserts */
-#if 0
-    pu_assert_equal("el[0] was inserted correctly", data[0]->id, 1);
-    pu_assert_equal("el[1] was inserted correctly", data[1]->id, 3);
-    pu_assert_equal("el[2] was inserted correctly", data[2]->id, 5);
-    pu_assert_equal("el[3] was inserted correctly", data[3]->id, 10);
-    pu_assert_equal("el[4] was inserted correctly", data[4]->id, 15);
-    pu_assert_equal("el[5] was inserted correctly", data[5]->id, 20);
-    pu_assert_equal("el[6] was inserted correctly", data[6]->id, 130);
-    pu_assert_equal("el[7] was inserted correctly", data[7]->id, 132);
-#endif
     pu_assert_equal("size is correct", SVector_Size(&vec), 333);
     pu_assert_equal("mode was changed", SVector_Mode(&vec), SVECTOR_MODE_RBTREE);
 
@@ -665,10 +650,6 @@ static char * test_shift_reset(void)
     pu_assert_ptr_equal("Shifts el[2]", SVector_Shift(&vec), &el[2]);
     pu_assert_equal("shift index is changed", vec.vec_arr_shift_index, 3);
     pu_assert_ptr_equal("Shifts el[3]", SVector_Shift(&vec), &el[3]);
-    /* TODO Much larger shift is now allowed. */
-#if 0
-    pu_assert_equal("shift index is reset", vec.vec_arr_shift_index, 1);
-#endif
 
     SVector_ShiftReset(&vec);
     pu_assert_equal("shift index is reset", vec.vec_arr_shift_index, 0);

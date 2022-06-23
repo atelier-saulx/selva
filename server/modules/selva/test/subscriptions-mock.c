@@ -8,7 +8,7 @@
 struct SelvaHierarchy;
 struct SelvaHierarchyMetadata;
 
-int SelvaSubscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy) {
+void SelvaSubscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
 
     hierarchy->subs.missing = SelvaObject_New();
@@ -16,8 +16,6 @@ int SelvaSubscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy) {
     SVector_Init(&def->triggers, 3, NULL);
     SVector_Init(&hierarchy->subs.detached_markers.vec, 0, NULL);
     hierarchy->subs.detached_markers.flags_filter = 0;
-
-    return 0;
 }
 
 void SelvaSubscriptions_DestroyAll(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy) {
