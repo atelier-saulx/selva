@@ -797,7 +797,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     /*
      * We expect two fixed arguments and a number of [type, field, value] triplets.
      */
-    if (argc < 3 || (argc - 3) % 3) {
+    if (argc < 6 || (argc - 3) % 3) {
         return RedisModule_WrongArity(ctx);
     }
 
