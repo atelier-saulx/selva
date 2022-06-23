@@ -290,6 +290,50 @@ test.serial('subscribe and delete one item', async (t) => {
   const client = connect({ port })
   let cnt = 0
   const observable = client.observe({
+    $id: 'thing1',
+    things: {
+      id: true,
+      yesh: true,
+      $list: {
+        $find: {
+          $traverse: 'children', // also desc
+          $filter: {
+            $operator: '=',
+            $value: 'thing',
+            $field: 'type',
+          },
+        },
+      },
+    },
+  })
+
+  const s = observable.subscribe((d) => {
+    cnt++ // 1
+  })
+
+  await wait(1000)
+
+  const id = (await client.set({
+    type: 'thing',
+    yesh: 12,
+    parents: ['thing1']
+  })) as string // 2
+  await wait(1000)
+  await client.delete({ $id: id }) // 3
+  await wait(1000)
+
+  t.is(cnt, 3)
+
+  s.unsubscribe()
+  await client.delete('root')
+  await wait(1000)
+  await client.destroy()
+})
+
+test.serial('subscribe and delete one item: root', async (t) => {
+  const client = connect({ port })
+  let cnt = 0
+  const observable = client.observe({
     $id: 'root',
     things: {
       id: true,
@@ -317,20 +361,14 @@ test.serial('subscribe and delete one item', async (t) => {
     type: 'thing',
     yesh: 12,
   })) as string // 2
-
   await wait(1000)
-
   await client.delete({ $id: id }) // 3
-
   await wait(1000)
 
   t.is(cnt, 3)
 
   s.unsubscribe()
-
   await client.delete('root')
-
   await wait(1000)
-
   await client.destroy()
 })
