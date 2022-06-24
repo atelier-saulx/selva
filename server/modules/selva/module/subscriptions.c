@@ -532,10 +532,11 @@ static int set_node_marker_cb(
         Selva_NodeId node_id;
 
         if (memcmp(SelvaHierarchy_GetNodeId(node_id, node), marker->node_id, SELVA_NODE_ID_SIZE)) {
-            /* FIXME ref markers don't really work as one might expect. */
             /*
              * ref markers are not propagated beyond the first node because
-             * it's impossible to track them.
+             * it's impossible to track them. This means that there is no
+             * descendants-like (or recursive) behavior available for ref
+             * markers.
              */
             return 0;
         }
