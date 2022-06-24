@@ -325,9 +325,11 @@ static void do_sub_marker_removal(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy
          */
         if (ctx) {
             clear_node_sub(ctx, hierarchy, marker, marker->node_id);
+#if 0
         } else {
             fprintf(stderr, "%s:%d: Warning no RedisModuleCtx given. This usually means that the whole hierarchy key will be deleted.\n",
                     __FILE__, __LINE__);
+#endif
         }
     }
     destroy_marker(marker);
