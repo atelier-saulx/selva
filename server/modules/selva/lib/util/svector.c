@@ -339,7 +339,7 @@ ssize_t SVector_SearchIndex(const SVector * restrict vec, void *key) {
 
             return -1;
         }
-    } else /* if (vec->vec_mode == SVECTOR_MODE_RBTREE) */ {
+    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
         struct SVector_rbnode *n;
         size_t i = 0;
 
@@ -353,6 +353,8 @@ ssize_t SVector_SearchIndex(const SVector * restrict vec, void *key) {
             }
         }
 
+        return -1;
+    } else {
         return -1;
     }
 }
