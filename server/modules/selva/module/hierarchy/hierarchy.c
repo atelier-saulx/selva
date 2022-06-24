@@ -119,7 +119,7 @@ static void SelvaModify_DestroyNode(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         SelvaHierarchyNode *node);
-static void removeRelationships(
+static int removeRelationships(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         SelvaHierarchyNode *node,
@@ -600,6 +600,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierar
     struct SelvaObject *obj = GET_NODE_OBJ(node);
     Selva_NodeId id;
     int is_root;
+    int err;
 
     memcpy(id, node->id, SELVA_NODE_ID_SIZE);
     is_root = !memcmp(id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE);
@@ -608,7 +609,13 @@ static void del_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierar
         SelvaSubscriptions_DeferTriggerEvents(ctx, hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_DELETED);
     }
 
-    removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
+    err = removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
+    if (err < 0) {
+        /* Presumably bad things could happen if we'd proceed now. */
+        fprintf(stderr, "%s:%d: Failed to remove node parent relationships\n",
+                __FILE__, __LINE__);
+        return;
+    }
     SelvaSubscriptions_DeferHierarchyDeletionEvents(ctx, hierarchy, node);
 
     if (likely(ctx)) {
@@ -621,7 +628,16 @@ static void del_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierar
     if (is_root) {
         SelvaHierarchy_ClearNodeFields(obj);
     } else {
-        removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
+        err = removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
+        if (err < 0) {
+            /*
+             * Well, this is embarassing. The caller won't be happy about
+             * having a half-deleted node dangling there.
+             */
+            fprintf(stderr, "%s:%d: Failed to remove node child relationships\n",
+                    __FILE__, __LINE__);
+            return;
+        }
 
         /*
          * The node was now marked as a head but we are going to get rid of it
@@ -1063,8 +1079,9 @@ static int crossRemove(
 
 /**
  * Remove all relationships rel of node.
+ * @returns the number removed relationships. The nodes aren't necessary deleted.
  */
-static void removeRelationships(
+static int removeRelationships(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         SelvaHierarchyNode *node,
@@ -1072,6 +1089,7 @@ static void removeRelationships(
     SVector *vec_a;
     size_t offset_a;
     size_t offset_b;
+    int nr_removed;
     SVECTOR_AUTOFREE(sub_markers);
 
     switch (rel) {
@@ -1087,12 +1105,13 @@ static void removeRelationships(
         break;
     default:
         assert(("rel is invalid", 0));
-        return;
+        return 0;
     }
 
     vec_a = (SVector *)((char *)node + offset_a);
-    if (SVector_Size(vec_a) == 0) {
-        return;
+    nr_removed = SVector_Size(vec_a);
+    if (nr_removed == 0) {
+        return nr_removed;
     }
 
     /*
@@ -1101,8 +1120,8 @@ static void removeRelationships(
      */
 #ifndef PU_TEST_BUILD
     if (unlikely(!SVector_Clone(&sub_markers, &node->metadata.sub_markers.vec, NULL))) {
-        fprintf(stderr, "%s:%d: ENOMEM\n", __FILE__, __LINE__);
-        return;
+        fprintf(stderr, "%s:%d: Cloning markers failed\n", __FILE__, __LINE__);
+        return SELVA_HIERARCHY_EINVAL;
     }
 #endif
 
@@ -1133,20 +1152,22 @@ static void removeRelationships(
     if (rel == RELATIONSHIP_CHILD) {
         mkHead(hierarchy, node);
     }
+
+    return nr_removed;
 }
 
-void SelvaHierarchy_DelChildren(
+int SelvaHierarchy_DelChildren(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         SelvaHierarchyNode *node) {
-    removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
+    return removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
 }
 
-void SelvaHierarchy_DelParents(
+int SelvaHierarchy_DelParents(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         SelvaHierarchyNode *node) {
-    removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
+    return removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
 }
 
 int SelvaModify_SetHierarchy(
@@ -1189,9 +1210,13 @@ int SelvaModify_SetHierarchy(
 
         res++;
     } else {
-        /* Clear the existing node relationships */
-        removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
-        removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
+        /*
+         * Clear the existing node relationships.
+         * Note that we can't really tell the called how many relationships were
+         * removed because there is only one count we return.
+         */
+        (void)removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
+        (void)removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
     }
 
     /*
@@ -1292,9 +1317,7 @@ int SelvaModify_SetHierarchyParents(
 
     if (nr_parents == 0) {
         /* Clear the existing node relationships. */
-        removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
-
-        return 1; /* I guess we could deleting all as a single change. */
+        return removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
     }
 
     /*
@@ -1334,9 +1357,7 @@ int SelvaModify_SetHierarchyChildren(
 
     if (nr_children == 0) {
         /* Clear the existing node relationships */
-        removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
-
-        return 1;
+        return removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
     }
 
     /*

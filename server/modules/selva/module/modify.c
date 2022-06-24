@@ -733,25 +733,22 @@ int SelvaModify_ModifySet(
 
         if (setOpts->delete_all) {
             /* If delete_all is set the other fields are ignored. */
-            if (isChildren) {
-                SelvaHierarchy_DelChildren(ctx, hierarchy, node);
-                /* TODO We'd potentially want to see the real number of deletions here. */
-                return 1;
-            } else if (isParents) {
-                SelvaHierarchy_DelParents(ctx, hierarchy, node);
-                /* TODO We'd potentially want to see the real number of deletions here. */
-                return 1;
-            } else {
-                int err;
+            int err;
 
+            if (isChildren) {
+                err = SelvaHierarchy_DelChildren(ctx, hierarchy, node);
+            } else if (isParents) {
+                err = SelvaHierarchy_DelParents(ctx, hierarchy, node);
+            } else {
                 err = Edge_ClearField(ctx, hierarchy, node, field_str, field_len);
-                if (err >= 0) {
-                    return err;
-                } else if (err == SELVA_ENOENT || err == SELVA_HIERARCHY_ENOENT) {
-                    return 0;
-                } else {
-                    return err;
-                }
+            }
+
+            if (err >= 0) {
+                return err;
+            } else if (err == SELVA_ENOENT || err == SELVA_HIERARCHY_ENOENT) {
+                return 0;
+            } else {
+                return err;
             }
         } else if (isChildren || isParents) {
             return update_hierarchy(ctx, hierarchy, node_id, field_str, setOpts);
@@ -812,12 +809,12 @@ int SelvaModify_ModifyDel(
     const RedisModuleString *field
 ) {
     TO_STR(field);
-    int err = 0;
+    int err;
 
     if (!strcmp(field_str, "children")) {
-        SelvaHierarchy_DelChildren(ctx, hierarchy, node);
+        err = SelvaHierarchy_DelChildren(ctx, hierarchy, node);
     } else if (!strcmp(field_str, "parents")) {
-        SelvaHierarchy_DelParents(ctx, hierarchy, node);
+        err = SelvaHierarchy_DelParents(ctx, hierarchy, node);
     } else { /* It's either an edge field or an object field. */
         err = Edge_DeleteField(ctx, hierarchy, node, field_str, field_len);
         if (err == SELVA_ENOENT) {
@@ -826,5 +823,5 @@ int SelvaModify_ModifyDel(
         }
     }
 
-    return err;
+    return err > 0 ? 0 : err;
 }

@@ -298,14 +298,14 @@ void SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj);
 /**
  * Delete all child edges of a node.
  */
-void SelvaHierarchy_DelChildren(
+int SelvaHierarchy_DelChildren(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node);
 /**
  * Delete all parent edges of a node.
  */
-void SelvaHierarchy_DelParents(
+int SelvaHierarchy_DelParents(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node);
