@@ -1218,13 +1218,10 @@ void SelvaSubscriptions_InheritParent(
         struct SVectorIterator it;
         struct Selva_SubscriptionMarker *marker;
         struct Selva_SubscriptionMarkers *node_sub_markers = &node_metadata->sub_markers;
+        const SVector *markers_vec;
 
         SelvaHierarchy_GetNodeId(parent_id, parent);
-
-        /*
-         * Note that normally root markers are detached and don't need to be inherited.
-         */
-        const SVector *markers_vec = &SelvaHierarchy_GetNodeMetadataByPtr(parent)->sub_markers.vec;
+        markers_vec = &SelvaHierarchy_GetNodeMetadataByPtr(parent)->sub_markers.vec;
 
         SVector_ForeachBegin(&it, markers_vec);
         while ((marker = SVector_Foreach(&it))) {
@@ -1276,9 +1273,6 @@ void SelvaSubscriptions_InheritChild(
         struct Selva_SubscriptionMarker *marker;
         struct Selva_SubscriptionMarkers *node_sub_markers;
 
-        /*
-         * Note that normally root markers are detached and don't need to be inherited.
-         */
         node_sub_markers = &node_metadata->sub_markers;
         SelvaHierarchy_GetNodeId(child_id, child);
 
@@ -2016,13 +2010,7 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
 
     unsigned short marker_flags = 0;
 
-    if (!memcmp(node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
-        /*
-         * A root node marker is a special case which is stored as detached to
-         * save time and space.
-         */
-        marker_flags = SELVA_SUBSCRIPTION_FLAG_DETACH;
-    } else if (sub_dir & (SELVA_HIERARCHY_TRAVERSAL_CHILDREN | SELVA_HIERARCHY_TRAVERSAL_PARENTS)) {
+    if (sub_dir & (SELVA_HIERARCHY_TRAVERSAL_CHILDREN | SELVA_HIERARCHY_TRAVERSAL_PARENTS)) {
         /*
          * RFE We might want to have an arg for REF flag
          * but currently it seems to be enough to support
