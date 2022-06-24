@@ -202,7 +202,7 @@ static void SVector_Resize(SVector *vec, size_t i) {
 }
 
 void SVector_Insert(SVector *vec, void *el) {
-    assert(vec->vec_mode == SVECTOR_MODE_ARRAY || vec_mode == SVECTOR_MODE_RBTREE);
+    assert(vec->vec_mode == SVECTOR_MODE_ARRAY || vec->vec_mode == SVECTOR_MODE_RBTREE);
 
     if (vec->vec_mode == SVECTOR_MODE_ARRAY && vec->vec_compar &&
         vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD) {
@@ -303,6 +303,9 @@ void *SVector_InsertFast(SVector *vec, void *el) {
         }
 
         return res;
+    } else {
+        /* Uninitialized SVector. */
+        return NULL;
     }
 }
 
@@ -336,7 +339,7 @@ ssize_t SVector_SearchIndex(const SVector * restrict vec, void *key) {
 
             return -1;
         }
-    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+    } else /* if (vec->vec_mode == SVECTOR_MODE_RBTREE) */ {
         struct SVector_rbnode *n;
         size_t i = 0;
 
@@ -377,6 +380,8 @@ void *SVector_Search(const SVector * restrict vec, void *key) {
         res = rbtree_find(vec, key);
 
         return !res ? NULL : res->p;
+    } else {
+        return NULL;
     }
 }
 
@@ -404,6 +409,8 @@ void *SVector_GetIndex(const SVector * restrict vec, size_t index) {
             }
         }
 
+        return NULL;
+    } else {
         return NULL;
     }
 }
@@ -526,6 +533,8 @@ void *SVector_Remove(SVector * restrict vec, void *key) {
         vec->vec_last--;
 
         return p;
+    } else {
+        return NULL;
     }
 }
 
