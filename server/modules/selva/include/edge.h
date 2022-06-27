@@ -169,8 +169,7 @@ static inline size_t Edge_GetFieldLength(const struct EdgeField *edge_field) {
 }
 
 static inline enum EdgeFieldConstraintFlag Edge_GetFieldConstraintFlags(const struct EdgeField *edge_field) {
-    /* RFE constraint should always exist, right? */
-    return edge_field->constraint ? edge_field->constraint->flags : 0;
+    return edge_field->constraint->flags;
 }
 
 /**
