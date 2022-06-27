@@ -2701,26 +2701,18 @@ static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarc
         return NULL;
     }
 
-    compressed = rms_alloc_compressed();
-    if (!compressed) {
-        fprintf(stderr, "%s:%d: Failed to allocate memory for a compressed subtree of %.*s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node->id);
-        /* ENOMEM */
-        return NULL;
-    }
 
     struct SelvaHierarchySubtree subtree = {
         .hierarchy = hierarchy,
         .node = node,
     };
+
     raw = RedisModule_SaveDataTypeToString(ctx, &subtree, HierarchySubtreeType);
     if (!raw) {
-        rms_free_compressed(compressed);
-
         return NULL;
     }
 
+    compressed = rms_alloc_compressed();
     err = rms_compress(compressed, raw, cratio);
     RedisModule_FreeString(ctx, raw);
     if (err) {
@@ -2973,13 +2965,6 @@ static int load_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selv
     int err;
 
     compressed = rms_alloc_compressed();
-    if (!compressed) {
-        fprintf(stderr, "%s:%d: Failed to allocate memory for a compressed subtree of %.*s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node_id);
-        return SELVA_HIERARCHY_ENOMEM;
-    }
-
     type = RedisModule_LoadSigned(io);
     rms_RDBLoadCompressed(io, compressed);
 
