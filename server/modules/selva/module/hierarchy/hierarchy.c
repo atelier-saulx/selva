@@ -2663,7 +2663,13 @@ static int verifyDetachableSubtree(RedisModuleCtx *ctx, struct SelvaHierarchy *h
         .child_cb = NULL,
         .child_arg = NULL,
     };
-    int err = 0;
+    int err;
+
+    if (!Trx_Fin(trx_state)) {
+        fprintf(stderr, "%s:%d: Cannot compress a subtree while another transaction is being executed\n",
+                __FILE__, __LINE__);
+        return SELVA_HIERARCHY_ETRMAX;
+    }
 
     if (Trx_Begin(trx_state, &data.trx_cur)) {
         return SELVA_HIERARCHY_ETRMAX;
@@ -2673,7 +2679,12 @@ static int verifyDetachableSubtree(RedisModuleCtx *ctx, struct SelvaHierarchy *h
     if (!err && data.err) {
         err = SELVA_HIERARCHY_ENOTSUP;
     }
-    Trx_End(&hierarchy->trx_state, &data.trx_cur);
+
+    /*
+     * TODO Here we can check if all the edge fields seend are pointing nodes within the subtree.
+     */
+
+    Trx_End(trx_state, &data.trx_cur);
 
     return err;
 }

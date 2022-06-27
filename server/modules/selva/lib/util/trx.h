@@ -67,6 +67,13 @@ int Trx_HasVisited(const struct trx * restrict cur_trx, const struct trx * restr
 void Trx_End(struct trx_state * restrict state, struct trx * restrict cur);
 
 /**
+ * Test if the transaction has finished.
+ */
+static inline int Trx_Fin(const struct trx_state * restrict state) {
+    return state->cl == 0;
+}
+
+/**
  * Calculate the age of the given label.
  * The label age is practically a distance or a difference between the current
  * id and when the label was stamped with an id the last time.
