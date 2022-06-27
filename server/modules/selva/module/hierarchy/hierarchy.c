@@ -2595,6 +2595,8 @@ static int verifyDetachableSubtreeNodeCb(
         struct SelvaHierarchyNode *node,
         void *arg) {
     struct verifyDetachableSubtree *data = (struct verifyDetachableSubtree *)arg;
+    struct SVectorIterator it;
+    const SelvaHierarchyNode *parent;
 
     /*
      * Currently we don't consider a subtree detachable if it uses any Edge features:
@@ -2614,9 +2616,6 @@ static int verifyDetachableSubtreeNodeCb(
         data->err = "markers";
         return 1;
     }
-
-    struct SVectorIterator it;
-    const SelvaHierarchyNode *parent;
 
     /*
      * A subtree is allowed be a acyclic but `node` must be its true parent,
@@ -2651,6 +2650,7 @@ static int verifyDetachableSubtreeNodeCb(
  *         Otherwise a SelvaError is returned.
  */
 static int verifyDetachableSubtree(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
+    struct trx_state * restrict trx_state = &hierarchy->trx_state;
     struct verifyDetachableSubtree data = {
         .err = NULL,
         .head = node,
@@ -2665,14 +2665,12 @@ static int verifyDetachableSubtree(RedisModuleCtx *ctx, struct SelvaHierarchy *h
     };
     int err = 0;
 
-    if (Trx_Begin(&hierarchy->trx_state, &data.trx_cur)) {
+    if (Trx_Begin(trx_state, &data.trx_cur)) {
         return SELVA_HIERARCHY_ETRMAX;
     }
 
     err = bfs(ctx, hierarchy, node, RELATIONSHIP_CHILD, &cb);
-    if (err) {
-        /* NOP */
-    } else if (data.err) {
+    if (!err && data.err) {
         err = SELVA_HIERARCHY_ENOTSUP;
     }
     Trx_End(&hierarchy->trx_state, &data.trx_cur);
@@ -2689,7 +2687,7 @@ static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarc
     struct compressed_rms *compressed;
     int err;
 
-    err =verifyDetachableSubtree(ctx, hierarchy, node);
+    err = verifyDetachableSubtree(ctx, hierarchy, node);
     if (err) {
         /* Not a valid subtree. */
 #if 0
