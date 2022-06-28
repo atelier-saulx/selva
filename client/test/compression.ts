@@ -33,6 +33,7 @@ test.beforeEach(async (t) => {
           title: { type: 'text' },
           value: { type: 'number' },
           description: { type: 'text' },
+          ref: { type: 'reference' },
         },
       },
     },
@@ -418,6 +419,231 @@ test.serial('Restore from disk', async (t) => {
       value: 10,
     }
   )
+
+  await client.destroy()
+})
+
+test.serial('internal reference in a subtree', async (t) => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'ma1',
+    title: { de: 'hallo' },
+    value: 10,
+    description: { en: 'compress me well' },
+    children: [
+      {
+        $id: 'ma2',
+        title: { en: 'hello' },
+        value: 11,
+        description: { en: 'compress me well' },
+      },
+      {
+        $id: 'ma3',
+        title: { en: 'hello' },
+        value: 12,
+        description: { en: 'compress me well' },
+      }
+    ],
+  })
+  await client.set({
+    $id: 'ma2',
+    ref: 'ma3',
+  })
+
+  t.deepEqual(await client.redis.selva_hierarchy_compress('___selva_hierarchy', 'ma1'), 1)
+  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_listcompressed('___selva_hierarchy'), ['ma1', 'ma2', 'ma3'])
+
+  t.deepEqual(
+    await client.get({
+      $id: 'ma1',
+      id: true,
+      title: true,
+      value: true,
+      description: true,
+      d: {
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+          }
+        },
+        id: true,
+        title: true,
+        value: true,
+        description: true,
+        ref: true,
+      }
+    }),
+    {
+      id: 'ma1',
+      title: { de: 'hallo' },
+      value: 10,
+      description: { en: 'compress me well' },
+      d: [
+        { id: 'ma2', ref: 'ma3', title: { en: 'hello' }, value: 11, description: { en: 'compress me well' } },
+        { id: 'ma3', title: { en: 'hello' }, value: 12, description: { en: 'compress me well' } }
+      ]
+    }
+  )
+
+  t.deepEqual(await client.redis.selva_hierarchy_listcompressed('___selva_hierarchy'), [])
+
+  await client.destroy()
+})
+
+test.serial('external reference from the subtree', async (t) => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'ma1',
+    title: { de: 'hallo' },
+    value: 10,
+    description: { en: 'compress me well' },
+    children: [
+      {
+        $id: 'ma2',
+        title: { en: 'hello' },
+        value: 11,
+        description: { en: 'compress me well' },
+      },
+      {
+        $id: 'ma3',
+        title: { en: 'hello' },
+        value: 12,
+        description: { en: 'compress me well' },
+      }
+    ],
+  })
+  await client.set({
+    $id: 'ma2',
+    ref: 'ma4',
+  })
+
+  t.deepEqual(await client.redis.selva_hierarchy_compress('___selva_hierarchy', 'ma1'), 1)
+  t.deepEqualIgnoreOrder(await client.redis.selva_hierarchy_listcompressed('___selva_hierarchy'), ['ma1', 'ma2', 'ma3'])
+
+  t.deepEqual(
+    await client.get({
+      $id: 'ma1',
+      id: true,
+      title: true,
+      value: true,
+      description: true,
+      d: {
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+          }
+        },
+        id: true,
+        title: true,
+        value: true,
+        description: true,
+        ref: true,
+      }
+    }),
+    {
+      id: 'ma1',
+      title: { de: 'hallo' },
+      value: 10,
+      description: { en: 'compress me well' },
+      d: [
+        { id: 'ma2', ref: 'ma4', title: { en: 'hello' }, value: 11, description: { en: 'compress me well' } },
+        { id: 'ma3', title: { en: 'hello' }, value: 12, description: { en: 'compress me well' } }
+      ]
+    }
+  )
+
+  t.deepEqual(await client.redis.selva_hierarchy_listcompressed('___selva_hierarchy'), [])
+
+  await client.destroy()
+})
+
+test.serial('external reference into the subtree', async (t) => {
+  const client = connect({ port })
+
+  await client.set({
+    $id: 'ma1',
+    title: { de: 'hallo' },
+    value: 10,
+    description: { en: 'compress me well' },
+    children: [
+      {
+        $id: 'ma2',
+        title: { en: 'hello' },
+        value: 11,
+        description: { en: 'compress me well' },
+      },
+      {
+        $id: 'ma3',
+        title: { en: 'hello' },
+        value: 12,
+        description: { en: 'compress me well' },
+      }
+    ],
+  })
+  await client.set({
+    $id: 'ma4',
+    ref: 'ma3',
+  })
+  t.deepEqual(
+    await client.get({
+      $id: 'ma4',
+      id: true,
+      ref: true,
+    }),
+    {
+      id: 'ma4',
+      ref: 'ma3',
+    }
+  )
+
+  t.throwsAsync(() => client.redis.selva_hierarchy_compress('___selva_hierarchy', 'ma1'))
+
+  t.deepEqual(
+    await client.get({
+      $id: 'ma1',
+      id: true,
+      title: true,
+      value: true,
+      description: true,
+      d: {
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+          }
+        },
+        id: true,
+        title: true,
+        value: true,
+        description: true,
+        ref: true,
+      }
+    }),
+    {
+      id: 'ma1',
+      title: { de: 'hallo' },
+      value: 10,
+      description: { en: 'compress me well' },
+      d: [
+        { id: 'ma2', title: { en: 'hello' }, value: 11, description: { en: 'compress me well' } },
+        { id: 'ma3', title: { en: 'hello' }, value: 12, description: { en: 'compress me well' } }
+      ]
+    }
+  )
+  t.deepEqual(
+    await client.get({
+      $id: 'ma4',
+      id: true,
+      ref: true,
+    }),
+    {
+      id: 'ma4',
+      ref: 'ma3',
+    }
+  )
+
+  t.deepEqual(await client.redis.selva_hierarchy_listcompressed('___selva_hierarchy'), [])
 
   await client.destroy()
 })
