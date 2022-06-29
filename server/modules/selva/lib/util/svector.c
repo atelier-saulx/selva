@@ -185,25 +185,25 @@ static void SVector_Resize(SVector *vec, size_t i) {
     size_t vec_len = vec->vec_arr_len;
 
     if (!vec_arr || i >= vec_len - 1) {
-        const size_t new_len = calc_new_len(vec_len);
-        const size_t new_size = VEC_SIZE(new_len);
+        size_t new_len;
+        size_t new_size;
+        void **new_arr;
 
-        void **new_arr = RedisModule_Realloc(vec_arr, new_size);
-        if (!new_arr) {
-            fprintf(stderr, "SVector realloc failed\n");
-            /*
-             * TODO We shouldn't abort here but there is absolutely no safe way
-             * to fail as of now.
-             */
-            abort(); /* This will cause a core dump. */
+        new_len = calc_new_len(vec_len);
+        if (new_len < i) {
+            new_len = i + 1;
         }
+        new_size = VEC_SIZE(new_len);
 
+        new_arr = RedisModule_Realloc(vec_arr, new_size);
         vec->vec_arr = new_arr;
         vec->vec_arr_len = new_len;
     }
 }
 
 void SVector_Insert(SVector *vec, void *el) {
+    assert(vec->vec_mode == SVECTOR_MODE_ARRAY || vec->vec_mode == SVECTOR_MODE_RBTREE);
+
     if (vec->vec_mode == SVECTOR_MODE_ARRAY && vec->vec_compar &&
         vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD) {
         migrate_arr_to_rbtree(vec);
@@ -233,14 +233,13 @@ void SVector_Insert(SVector *vec, void *el) {
         if (!rbtree_insert(vec, el)) {
             vec->vec_last++;
         }
-    } else {
-        abort();
     }
 }
 
 void *SVector_InsertFast(SVector *vec, void *el) {
     assert(el);
     assert(vec->vec_compar);
+    assert(vec->vec_mode == SVECTOR_MODE_ARRAY || vec->vec_mode == SVECTOR_MODE_RBTREE);
 
     if (vec->vec_mode == SVECTOR_MODE_ARRAY &&
         vec->vec_last - vec->vec_arr_shift_index >= SVECTOR_THRESHOLD) {
@@ -279,12 +278,7 @@ void *SVector_InsertFast(SVector *vec, void *el) {
         if (vec->vec_last >= vec->vec_arr_len - 1) {
             const size_t new_len = calc_new_len(vec->vec_arr_len);
             const size_t new_size = VEC_SIZE(new_len);
-
             void **new_arr = RedisModule_Realloc(vec_arr, new_size);
-            if (!new_arr) {
-                fprintf(stderr, "SVector realloc failed\n");
-                abort(); /* This will cause a core dump. */
-            }
 
             vec->vec_arr = new_arr;
             vec->vec_arr_len = new_len;
@@ -310,11 +304,16 @@ void *SVector_InsertFast(SVector *vec, void *el) {
 
         return res;
     } else {
-        abort();
+        /* Uninitialized SVector. */
+        return NULL;
     }
 }
 
 ssize_t SVector_SearchIndex(const SVector * restrict vec, void *key) {
+    const enum SVectorMode vec_mode = vec->vec_mode;
+
+    assert(vec_mode == SVECTOR_MODE_ARRAY || vec_mode == SVECTOR_MODE_RBTREE);
+
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
         /* The array might be unset in case of lazy alloc was requested. */
         if (unlikely(!vec->vec_arr)) {
@@ -356,14 +355,17 @@ ssize_t SVector_SearchIndex(const SVector * restrict vec, void *key) {
 
         return -1;
     } else {
-        abort();
+        return -1;
     }
 }
 
 void *SVector_Search(const SVector * restrict vec, void *key) {
-    assert(("vec_compar must be set", vec->vec_compar));
+    const enum SVectorMode vec_mode = vec->vec_mode;
 
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+    assert(("vec_compar must be set", vec->vec_compar));
+    assert(vec_mode == SVECTOR_MODE_ARRAY || vec_mode == SVECTOR_MODE_RBTREE);
+
+    if (vec_mode == SVECTOR_MODE_ARRAY) {
         /* The array might be unset in case of lazy alloc was requested. */
         if (unlikely(!vec->vec_arr)) {
             return NULL;
@@ -374,19 +376,23 @@ void *SVector_Search(const SVector * restrict vec, void *key) {
                             sizeof(void *), VEC_COMPAR(vec->vec_compar));
 
         return !pp ? NULL : *pp;
-    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+    } else if (vec_mode == SVECTOR_MODE_RBTREE) {
         struct SVector_rbnode *res;
 
         res = rbtree_find(vec, key);
 
         return !res ? NULL : res->p;
     } else {
-        abort();
+        return NULL;
     }
 }
 
 void *SVector_GetIndex(const SVector * restrict vec, size_t index) {
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+    const enum SVectorMode vec_mode = vec->vec_mode;
+
+    assert(vec_mode == SVECTOR_MODE_ARRAY || vec_mode == SVECTOR_MODE_RBTREE);
+
+    if (vec_mode == SVECTOR_MODE_ARRAY) {
         const size_t i = vec->vec_arr_shift_index + index;
 
         if (i >= vec->vec_last) {
@@ -394,7 +400,7 @@ void *SVector_GetIndex(const SVector * restrict vec, size_t index) {
         }
 
         return vec->vec_arr[i];
-    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+    } else if (vec_mode == SVECTOR_MODE_RBTREE) {
         size_t i = 0;
 
         for (struct SVector_rbnode *n = RB_MIN(SVector_rbtree, (struct SVector_rbtree *)&vec->vec_rbhead);
@@ -407,14 +413,17 @@ void *SVector_GetIndex(const SVector * restrict vec, size_t index) {
 
         return NULL;
     } else {
-        abort();
+        return NULL;
     }
 }
 
 void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
+    const enum SVectorMode vec_mode = vec->vec_mode;
     void *p = NULL;
 
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+    assert(vec_mode == SVECTOR_MODE_ARRAY || vec_mode == SVECTOR_MODE_RBTREE);
+
+    if (vec_mode == SVECTOR_MODE_ARRAY) {
         SVector_ShiftReset(vec);
         const size_t i = vec->vec_arr_shift_index + index;
 
@@ -424,7 +433,7 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
             memmove(&vec->vec_arr[i], &vec->vec_arr[i + 1], VEC_SIZE(vec->vec_last - i - 1));
             vec->vec_last--;
         }
-    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+    } else if (vec_mode == SVECTOR_MODE_RBTREE) {
         size_t i = 0;
         struct SVector_rbnode *n;
 
@@ -440,8 +449,6 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
                 }
             }
         }
-    } else {
-        abort();
     }
 
     return p;
@@ -449,22 +456,19 @@ void *SVector_RemoveIndex(SVector * restrict vec, size_t index) {
 
 void SVector_SetIndex(SVector * restrict vec, size_t index, void *el) {
     assert(("vec_compare must not be set", !vec->vec_compar));
+    assert(vec->vec_mode == SVECTOR_MODE_ARRAY);
 
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
-        SVector_ShiftReset(vec);
-        if (index < vec->vec_last) {
-            vec->vec_arr[index] = el;
-        } else if (index < vec->vec_arr_len) {
-            memset(vec->vec_arr + vec->vec_last, 0, VEC_SIZE(vec->vec_arr_len - vec->vec_last));
+    SVector_ShiftReset(vec);
+    if (index < vec->vec_last) {
+        vec->vec_arr[index] = el;
+    } else if (index < vec->vec_arr_len) {
+        memset(vec->vec_arr + vec->vec_last, 0, VEC_SIZE(vec->vec_arr_len - vec->vec_last));
 
-            vec->vec_arr[index] = el;
-            vec->vec_last = index + 1;
-        } else {
-            SVector_Resize(vec, index);
-            SVector_SetIndex(vec, index, el);
-        }
+        vec->vec_arr[index] = el;
+        vec->vec_last = index + 1;
     } else {
-        abort();
+        SVector_Resize(vec, index);
+        SVector_SetIndex(vec, index, el);
     }
 }
 
@@ -489,9 +493,12 @@ void SVector_InsertIndex(SVector * restrict vec, size_t index, void *el) {
 }
 
 void *SVector_Remove(SVector * restrict vec, void *key) {
+    const enum SVectorMode vec_mode = vec->vec_mode;
+
+    assert(vec_mode == SVECTOR_MODE_ARRAY || vec_mode == SVECTOR_MODE_RBTREE);
     assert(("vec_compar must be set", vec->vec_compar));
 
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+    if (vec_mode == SVECTOR_MODE_ARRAY) {
         /* Support lazy alloc. */
         if (unlikely(!vec->vec_arr)) {
             return NULL;
@@ -514,7 +521,7 @@ void *SVector_Remove(SVector * restrict vec, void *key) {
         assert(vec->vec_last <= vec->vec_arr_len);
 
         return el;
-    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+    } else if (vec_mode == SVECTOR_MODE_RBTREE) {
         struct SVector_rbnode *n = rbtree_find(vec, key);
         void *p;
 
@@ -529,21 +536,24 @@ void *SVector_Remove(SVector * restrict vec, void *key) {
 
         return p;
     } else {
-        abort();
+        return NULL;
     }
 }
 
 void *SVector_Pop(SVector * restrict vec) {
+    const enum SVectorMode vec_mode = vec->vec_mode;
     void *last = NULL;
 
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+    assert(vec_mode == SVECTOR_MODE_ARRAY || vec_mode == SVECTOR_MODE_RBTREE);
+
+    if (vec_mode == SVECTOR_MODE_ARRAY) {
         if (vec->vec_last == vec->vec_arr_shift_index) {
             return NULL;
         }
 
         assert(vec->vec_last <= vec->vec_arr_len);
         last = vec->vec_arr[--vec->vec_last];
-    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+    } else if (vec_mode == SVECTOR_MODE_RBTREE) {
         struct SVector_rbnode *n = RB_MAX(SVector_rbtree, &vec->vec_rbhead);
 
         if (!n) {
@@ -554,17 +564,18 @@ void *SVector_Pop(SVector * restrict vec) {
         RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, last);
         mempool_return(&vec->vec_rbmempool, n);
         vec->vec_last--;
-    } else {
-        abort();
     }
 
     return last;
 }
 
 void *SVector_Shift(SVector * restrict vec) {
+    const enum SVectorMode vec_mode = vec->vec_mode;
     void *first = NULL;
 
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+    assert(vec_mode == SVECTOR_MODE_ARRAY || vec_mode == SVECTOR_MODE_RBTREE);
+
+    if (vec_mode == SVECTOR_MODE_ARRAY) {
         if (vec->vec_last == vec->vec_arr_shift_index) {
             return NULL;
         }
@@ -576,7 +587,7 @@ void *SVector_Shift(SVector * restrict vec) {
         }
 
         first = vec->vec_arr[vec->vec_arr_shift_index++];
-    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+    } else if (vec_mode == SVECTOR_MODE_RBTREE) {
         struct SVector_rbnode *n = RB_MIN(SVector_rbtree, &vec->vec_rbhead);
 
         if (!n) {
@@ -587,17 +598,18 @@ void *SVector_Shift(SVector * restrict vec) {
         RB_REMOVE(SVector_rbtree, &vec->vec_rbhead, n);
         mempool_return(&vec->vec_rbmempool, n);
         vec->vec_last--;
-    } else {
-        abort();
     }
 
     return first;
 }
 
 void *SVector_Peek(SVector * restrict vec) {
+    const enum SVectorMode vec_mode = vec->vec_mode;
     void *first = NULL;
 
-    if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
+    assert(vec_mode == SVECTOR_MODE_ARRAY || vec_mode == SVECTOR_MODE_RBTREE);
+
+    if (vec_mode == SVECTOR_MODE_ARRAY) {
         if (vec->vec_last == vec->vec_arr_shift_index) {
             return NULL;
         }
@@ -605,7 +617,7 @@ void *SVector_Peek(SVector * restrict vec) {
         assert(vec->vec_arr_shift_index <= vec->vec_last);
 
         first = vec->vec_arr[vec->vec_arr_shift_index];
-    } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
+    } else if (vec_mode == SVECTOR_MODE_RBTREE) {
         struct SVector_rbnode *n = RB_MIN(SVector_rbtree, &vec->vec_rbhead);
 
         if (!n) {
