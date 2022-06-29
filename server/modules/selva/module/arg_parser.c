@@ -56,9 +56,6 @@ int SelvaArgsParser_StringList(
 
     const size_t list_size = n * sizeof(RedisModuleString *);
     list = RedisModule_Realloc(list, list_size);
-    if (!list) {
-        return SELVA_ENOMEM;
-    }
 
     list[n - 1] = NULL;
     if (cur[0] != '\0') {
@@ -310,10 +307,6 @@ int SelvaArgParser_IndexHints(RedisModuleStringList *out, RedisModuleString **ar
 
         const size_t list_size = ++n * sizeof(RedisModuleString *);
         new_list = RedisModule_Realloc(list, list_size);
-        if (!new_list) {
-            RedisModule_Free(list);
-            return SELVA_ENOMEM;
-        }
 
         list = new_list;
         list[n - 1] = argv[i + 1];

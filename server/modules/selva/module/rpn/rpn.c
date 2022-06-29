@@ -1752,11 +1752,6 @@ struct rpn_expression *rpn_compile(const char *input) {
         literal_reg_i++;
 next:
         new = RedisModule_Realloc(expr->expression, size);
-        if (!new) {
-            fprintf(stderr, "%s:%d:%s: Realloc failed\n",
-                    __FILE__, __LINE__, __func__);
-            goto fail;
-        }
         expr->expression = new;
 
         size += sizeof(rpn_token);

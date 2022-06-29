@@ -2159,9 +2159,6 @@ int SelvaSubscriptions_AddMarkerFieldsCommand(RedisModuleCtx *ctx, RedisModuleSt
     const size_t old_len = fields ? strlen(fields) : 0;
 
     fields = RedisModule_Realloc(fields, old_len + new_fields_len + 2);
-    if (!fields) {
-        return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_ENOMEM);
-    }
 
     if (old_len > 0) {
         fields[old_len] = '\n';

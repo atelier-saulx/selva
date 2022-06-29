@@ -57,10 +57,6 @@ int SelvaSet_AddRms(struct SelvaSet *set, struct RedisModuleString *s) {
     }
 
     el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
-    if (!el) {
-        return SELVA_ENOMEM;
-    }
-
     el->value_rms = s;
 
     (void)RB_INSERT(SelvaSetRms, &set->head_rms, el);
@@ -85,10 +81,6 @@ int SelvaSet_AddDouble(struct SelvaSet *set, double d) {
     }
 
     el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
-    if (!el) {
-        return SELVA_ENOMEM;
-    }
-
     el->value_d = d;
 
     (void)RB_INSERT(SelvaSetDouble, &set->head_d, el);
@@ -109,10 +101,6 @@ int SelvaSet_AddLongLong(struct SelvaSet *set, long long ll) {
     }
 
     el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
-    if (!el) {
-        return SELVA_ENOMEM;
-    }
-
     el->value_ll = ll;
 
     (void)RB_INSERT(SelvaSetLongLong, &set->head_ll, el);
@@ -133,10 +121,6 @@ int SelvaSet_AddNodeId(struct SelvaSet *set, const Selva_NodeId node_id) {
     }
 
     el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
-    if (!el) {
-        return SELVA_ENOMEM;
-    }
-
     memcpy(el->value_nodeId, node_id, SELVA_NODE_ID_SIZE);
 
     (void)RB_INSERT(SelvaSetNodeId, &set->head_nodeId, el);

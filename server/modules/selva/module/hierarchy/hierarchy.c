@@ -1598,9 +1598,6 @@ static int SelvaModify_DelHierarchyNodeP(
         Selva_NodeId *ids;
 
         ids = RedisModule_PoolAlloc(ctx, nr_ids * SELVA_NODE_ID_SIZE);
-        if (!ids) {
-            return SELVA_HIERARCHY_ENOMEM;
-        }
 
         copy_nodeIds(ids, &node->parents);
         for (size_t i = 0; i < nr_ids; i++) {
@@ -1624,9 +1621,6 @@ static int SelvaModify_DelHierarchyNodeP(
         Selva_NodeId *ids;
 
         ids = RedisModule_PoolAlloc(ctx, nr_ids * SELVA_NODE_ID_SIZE);
-        if (!ids) {
-            return SELVA_HIERARCHY_ENOMEM;
-        }
 
         copy_nodeIds(ids, &node->children);
         for (size_t i = 0; i < nr_ids; i++) {
@@ -2753,13 +2747,6 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
 
     if (nr_parents > 0) {
         parents = RedisModule_PoolAlloc(ctx, nr_parents * SELVA_NODE_ID_SIZE);
-        if (!parents) {
-            fprintf(stderr, "%s:%d: Failed to allocate memory for detaching %.*s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node->id);
-            return SELVA_HIERARCHY_ENOMEM;
-        }
-
         copy_nodeIds(parents, &node->parents);
     }
 
