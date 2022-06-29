@@ -943,7 +943,8 @@ int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy
  */
 static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused void *save_data) {
     const struct EdgeField *edge_field = (struct EdgeField *)value;
-    unsigned constraint_id = edge_field->constraint ? edge_field->constraint->constraint_id : EDGE_FIELD_CONSTRAINT_ID_DEFAULT;
+    const struct EdgeFieldConstraint *constraint = edge_field->constraint;
+    unsigned constraint_id = constraint->constraint_id;
     struct SVectorIterator vec_it;
     const struct SelvaHierarchyNode *dst_node;
 
@@ -952,8 +953,6 @@ static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused vo
      */
     RedisModule_SaveUnsigned(io, constraint_id);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
-        const struct EdgeFieldConstraint *constraint = edge_field->constraint;
-
         RedisModule_SaveStringBuffer(io, constraint->src_node_type, SELVA_NODE_TYPE_SIZE);
         RedisModule_SaveStringBuffer(io, constraint->field_name_str, constraint->field_name_len);
     }
