@@ -6,6 +6,7 @@ import getPort from 'get-port'
 
 let srv
 let port: number
+
 test.before(async (t) => {
   port = await getPort()
   srv = await start({
@@ -13,8 +14,12 @@ test.before(async (t) => {
   })
 
   await wait(500)
+})
 
+test.beforeEach(async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
+
+  await client.redis.flushall()
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -155,6 +160,46 @@ test.serial('find - sort by text', async (t) => {
     },
   })
   t.truthy(result3)
+
+  await client.destroy()
+})
+
+test.serial('sort by text with missing field values', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+  await client.set({
+    type: 'match',
+    title: { en: 'abc' },
+  })
+  await client.set({
+    type: 'match',
+    title: { en: 'mazzzz' },
+  })
+  await client.set({
+    type: 'match',
+  })
+  await client.set({
+    type: 'match',
+    title: { en: '4' },
+  })
+  await client.set({
+    type: 'match',
+  })
+
+  t.deepEqual(
+    await client.get({
+      $language: 'en',
+      children: {
+        title: true,
+        $list: {
+          $sort: {
+            $field: 'title',
+            $order: 'asc',
+          },
+        },
+      },
+    }),
+    { children: [ { title: '4' }, { title: 'abc' }, { title: 'mazzzz' }, {}, {} ] }
+  )
 
   await client.destroy()
 })

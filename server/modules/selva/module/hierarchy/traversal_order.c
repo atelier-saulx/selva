@@ -95,8 +95,8 @@ static int SelvaTraversalOrder_CompareNone(const void ** restrict a_raw __unused
 static int SelvaTraversalOrder_CompareAsc(const void ** restrict a_raw, const void ** restrict b_raw) {
     const struct TraversalOrderItem *a = *(const struct TraversalOrderItem **)a_raw;
     const struct TraversalOrderItem *b = *(const struct TraversalOrderItem **)b_raw;
-    const char *aStr = a->data;
-    const char *bStr = b->data;
+    const char *a_str = a->data;
+    const char *b_str = b->data;
 
     if (a->type == ORDER_ITEM_TYPE_DOUBLE &&
         b->type == ORDER_ITEM_TYPE_DOUBLE) {
@@ -108,12 +108,16 @@ static int SelvaTraversalOrder_CompareAsc(const void ** restrict a_raw, const vo
         } else if (x > y) {
             return 1;
         }
-    } else if (a->data_len && b->data_len) {
-        const int res = strcmp(aStr, bStr);
+    } else if (a->type == ORDER_ITEM_TYPE_TEXT &&
+               b->type == ORDER_ITEM_TYPE_TEXT &&
+               a->data_len && b->data_len) {
+        const int res = strcmp(a_str, b_str);
 
         if (res != 0) {
             return res;
         }
+    } else if (b->type - a->type) {
+        return b->type - a->type;
     }
 
     return memcmp(a->node_id, b->node_id, SELVA_NODE_ID_SIZE);
