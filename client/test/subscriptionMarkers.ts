@@ -1,4 +1,4 @@
-import test from 'ava'
+import test, { ExecutionContext } from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import redis, { RedisClient } from '@saulx/redis-client'
@@ -10,14 +10,14 @@ let srv
 let port: number
 let rclient: RedisClient | null = null
 
-function tNrMarkersSet (t, client, arr: Array<string>, nr: number) {
+function tNrMarkersSet (t: ExecutionContext, client: ReturnType<typeof connect>, arr: Array<string>, nr: number, err: Error) {
   return Promise.all(arr.map(async (id) => {
     const mrk = await client.redis.selva_subscriptions_debug(
       '___selva_hierarchy',
       id
     )
     //console.log(id, mrk)
-    t.is(mrk.length, nr, `all markers set for ${id}`)
+    t.is(mrk.length, nr, err.stack + '\n' + (err.message ? err. message : `all markers set for ${id}`))
   }))
 }
 
@@ -722,11 +722,11 @@ test.serial('Several markers', async (t) => {
     'maTest0021'
   )).length, 2, 'both markers set')
 
-  await tNrMarkersSet(t, client, ['root'], 1)
-  await tNrMarkersSet(t, client, ['maTest0002', 'maTest0012', 'maTest0021', 'maTest0031'], 2)
-  await tNrMarkersSet(t, client, ['maTest0013'], 3)
-  await tNrMarkersSet(t, client, ['maTest0011'], 4)
-  await tNrMarkersSet(t, client, ['maTest0001'], 5)
+  await tNrMarkersSet(t, client, ['root'], 1, new Error())
+  await tNrMarkersSet(t, client, ['maTest0002', 'maTest0012', 'maTest0021', 'maTest0031'], 2, new Error())
+  await tNrMarkersSet(t, client, ['maTest0013'], 3, new Error())
+  await tNrMarkersSet(t, client, ['maTest0011'], 4, new Error())
+  await tNrMarkersSet(t, client, ['maTest0001'], 5, new Error())
 
   await client.delete('root')
   client.destroy()
@@ -798,9 +798,9 @@ test.serial('Markers with a filter', async (t) => {
   t.deepEqual(s1marker1[5], 'filter_expression: set')
   t.deepEqual(s1marker1[6], 'fields: "(null)"')
 
-  await tNrMarkersSet(t, client, ['maTest0011', 'maTest0021', 'maTest0022'], 0)
+  await tNrMarkersSet(t, client, ['maTest0011', 'maTest0021', 'maTest0022'], 0, new Error())
   await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
-  await tNrMarkersSet(t, client, ['maTest0011', 'maTest0021', 'maTest0022'], 1)
+  await tNrMarkersSet(t, client, ['maTest0011', 'maTest0021', 'maTest0022'], 1, new Error())
 
   await client.delete('root')
   client.destroy()
@@ -919,14 +919,14 @@ test.serial('Markers with a filter starting from the root', async (t) => {
   const s1marker1 = s1[0]
   t.deepEqual(s1marker1[0], `sub_id: ${subId1}`)
   t.deepEqual(s1marker1[1], 'marker_id: 1')
-  t.deepEqual(s1marker1[2], 'flags: 0x0200')
+  t.deepEqual(s1marker1[2], 'flags: 0x0000')
   t.deepEqual(s1marker1[3], 'node_id: "root"')
   t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
   t.deepEqual(s1marker1[5], 'filter_expression: set')
   t.deepEqual(s1marker1[6], 'fields: "(null)"')
 
   await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
-  await tNrMarkersSet(t, client, ['maTest0013', 'maTest0012', 'maTest0022'], 0)
+  await tNrMarkersSet(t, client, ['maTest0013', 'maTest0012', 'maTest0022'], 1, new Error())
 
   await client.delete('root')
   client.destroy()
@@ -1143,7 +1143,7 @@ test.serial('subscribe with a type expression', async (t) => {
       [
         'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
         'marker_id: 1',
-        'flags: 0x0206',
+        'flags: 0x0006',
         'node_id: "root"',
         'dir: bfs_descendants',
         'filter_expression: set',
@@ -1171,7 +1171,17 @@ test.serial('subscribe with a type expression', async (t) => {
       '___selva_hierarchy',
       'maTest0001'
     ),
-    []
+    [
+      [
+        'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+        'marker_id: 1',
+        'flags: 0x0006',
+        'node_id: "root"',
+        'dir: bfs_descendants',
+        'filter_expression: set',
+        'fields: "descendants"',
+      ],
+    ]
   )
   await wait(100)
   t.deepEqual(msgCount, 1)
@@ -1187,7 +1197,17 @@ test.serial('subscribe with a type expression', async (t) => {
       '___selva_hierarchy',
       'gaTest0001'
     ),
-    []
+    [
+      [
+        'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+        'marker_id: 1',
+        'flags: 0x0006',
+        'node_id: "root"',
+        'dir: bfs_descendants',
+        'filter_expression: set',
+        'fields: "descendants"',
+      ],
+    ]
   )
   await wait(100)
   t.deepEqual(msgCount, 0)
@@ -1210,7 +1230,17 @@ test.serial('subscribe with a type expression', async (t) => {
       '___selva_hierarchy',
       'maTest0002'
     ),
-    []
+    [
+      [
+        'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+        'marker_id: 1',
+        'flags: 0x0006',
+        'node_id: "root"',
+        'dir: bfs_descendants',
+        'filter_expression: set',
+        'fields: "descendants"',
+      ],
+    ]
   )
   await wait(100)
   t.deepEqual(msgCount, 2)
@@ -1233,7 +1263,17 @@ test.serial('subscribe with a type expression', async (t) => {
       '___selva_hierarchy',
       'gaTest0002'
     ),
-    []
+    [
+      [
+        'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+        'marker_id: 1',
+        'flags: 0x0006',
+        'node_id: "root"',
+        'dir: bfs_descendants',
+        'filter_expression: set',
+        'fields: "descendants"',
+      ],
+    ]
   )
   await wait(100)
   t.deepEqual(msgCount, 0)
@@ -1251,7 +1291,17 @@ test.serial('subscribe with a type expression', async (t) => {
       '___selva_hierarchy',
       'maTest0003'
     ),
-    []
+    [
+      [
+        'sub_id: fc35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b72',
+        'marker_id: 1',
+        'flags: 0x0006',
+        'node_id: "root"',
+        'dir: bfs_descendants',
+        'filter_expression: set',
+        'fields: "descendants"',
+      ],
+    ]
   )
   await wait(100)
   t.deepEqual(msgCount, 1)
