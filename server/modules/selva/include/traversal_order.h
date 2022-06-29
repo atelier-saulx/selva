@@ -13,7 +13,7 @@ struct SelvaObject;
  * encodes the type to help finding the right way to compare two items.
  */
 enum TraversalOrderItemType {
-    ORDER_ITEM_TYPE_EMPTY,
+    ORDER_ITEM_TYPE_EMPTY = 0,
     ORDER_ITEM_TYPE_TEXT,
     ORDER_ITEM_TYPE_DOUBLE,
 };
