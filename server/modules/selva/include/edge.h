@@ -149,8 +149,8 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(
 /**
  * Assess the usage of Edge features in a hierarchy node.
  * @returns 0 if no Edge features are used in the given node;
- *          1 if edge fields in other nodes are pointing to this node;
- *          2 if this node has edge fields;
+ *          1 if this node has edge fields;
+ *          2 if edge fields in other nodes are pointing to this node;
  *          3 both 1 and 2.
  */
 int Edge_Usage(const struct SelvaHierarchyNode *node);

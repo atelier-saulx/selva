@@ -98,6 +98,7 @@ struct verifyDetachableSubtree {
     const char *err; /*!< Set to a reason string if subtree doesn't verify. */
     struct trx trx_cur; /*!< This is used to check if the children of node form a true subtree. */
     SelvaHierarchyNode *head;
+    struct SelvaSet edge_origin_node_ids;
 };
 
 /**
@@ -2610,15 +2611,25 @@ static int verifyDetachableSubtreeNodeCb(
         struct SelvaHierarchyNode *node,
         void *arg) {
     struct verifyDetachableSubtree *data = (struct verifyDetachableSubtree *)arg;
+    struct SVectorIterator it;
+    const SelvaHierarchyNode *parent;
 
     /*
-     * Currently we don't consider a subtree detachable if it uses any Edge features:
-     * 1) any other node pointing to any node in the subtree using an edge field.
-     * 2) any node in the subtree using edge fields.
+     * If edges from other nodes are pointing to this node, we want to
+     * verify it later that all those edges are within the subtree.
      */
-    if (Edge_Usage(node) != 0) {
-        data->err = "edges";
-        return 1;
+    if (Edge_Usage(node) & 2) {
+        struct SelvaObject *origins = node->metadata.edge_fields.origins;
+        SelvaObject_Iterator *it;
+        const char *origin;
+
+        it = SelvaObject_ForeachBegin(origins);
+        while ((origin = SelvaObject_ForeachKey(origins, &it))) {
+            Selva_NodeId origin_id;
+
+            Selva_NodeIdCpy(origin_id, origin);
+            SelvaSet_Add(&data->edge_origin_node_ids, origin_id);
+        }
     }
 
     /*
@@ -2629,9 +2640,6 @@ static int verifyDetachableSubtreeNodeCb(
         data->err = "markers";
         return 1;
     }
-
-    struct SVectorIterator it;
-    const SelvaHierarchyNode *parent;
 
     /*
      * A subtree is allowed be a acyclic but `node` must be its true parent,
@@ -2659,13 +2667,11 @@ static int verifyDetachableSubtreeNodeCb(
  * This function checks that the children of node form a proper subtree that
  * and there are no active subscription markers or other live dependencies on
  * any of the nodes.
- * TODO Currently edge fields are not supported and thus if there are any edge
- * fields the check will return an error. Techincally a valid subtree could have
- * edge fields that only points to other nodes of the same subtree.
  * @return 0 is returned if the subtree is detachable;
  *         Otherwise a SelvaError is returned.
  */
 static int verifyDetachableSubtree(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
+    struct trx_state * restrict trx_state = &hierarchy->trx_state;
     struct verifyDetachableSubtree data = {
         .err = NULL,
         .head = node,
@@ -2678,19 +2684,46 @@ static int verifyDetachableSubtree(RedisModuleCtx *ctx, struct SelvaHierarchy *h
         .child_cb = NULL,
         .child_arg = NULL,
     };
-    int err = 0;
+    int err;
 
-    if (Trx_Begin(&hierarchy->trx_state, &data.trx_cur)) {
+    if (!Trx_Fin(trx_state)) {
+        fprintf(stderr, "%s:%d: Cannot compress a subtree while another transaction is being executed\n",
+                __FILE__, __LINE__);
         return SELVA_HIERARCHY_ETRMAX;
     }
 
+    if (Trx_Begin(trx_state, &data.trx_cur)) {
+        return SELVA_HIERARCHY_ETRMAX;
+    }
+    SelvaSet_Init(&data.edge_origin_node_ids, SELVA_SET_TYPE_NODEID);
+
     err = bfs(ctx, hierarchy, node, RELATIONSHIP_CHILD, &cb);
-    if (err) {
-        /* NOP */
-    } else if (data.err) {
+    if (!err && data.err) {
         err = SELVA_HIERARCHY_ENOTSUP;
     }
-    Trx_End(&hierarchy->trx_state, &data.trx_cur);
+
+    /*
+     * Verify that all edge sources were visited by the traversal.
+     * TODO It would be good to allow referenced nodes that are not
+     * children in the subtree but still contained within the subgraph.
+     */
+    if (!err && SelvaSet_Size(&data.edge_origin_node_ids) > 0) {
+        struct SelvaSetElement *el;
+
+        SELVA_SET_NODEID_FOREACH(el, &data.edge_origin_node_ids) {
+            SelvaHierarchyNode *node;
+
+            node = find_node_index(hierarchy, el->value_nodeId);
+            if (!node ||
+                node->trx_label.id != data.trx_cur.id ||
+                ((data.trx_cur.cl << 1) & node->trx_label.cl) == 0) {
+                err = SELVA_HIERARCHY_ENOTSUP;
+            }
+        }
+    }
+
+    SelvaSet_Destroy(&data.edge_origin_node_ids);
+    Trx_End(trx_state, &data.trx_cur);
 
     return err;
 }
@@ -2704,7 +2737,7 @@ static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarc
     struct compressed_rms *compressed;
     int err;
 
-    err =verifyDetachableSubtree(ctx, hierarchy, node);
+    err = verifyDetachableSubtree(ctx, hierarchy, node);
     if (err) {
         /* Not a valid subtree. */
 #if 0
@@ -2716,26 +2749,18 @@ static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarc
         return NULL;
     }
 
-    compressed = rms_alloc_compressed();
-    if (!compressed) {
-        fprintf(stderr, "%s:%d: Failed to allocate memory for a compressed subtree of %.*s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node->id);
-        /* ENOMEM */
-        return NULL;
-    }
 
     struct SelvaHierarchySubtree subtree = {
         .hierarchy = hierarchy,
         .node = node,
     };
+
     raw = RedisModule_SaveDataTypeToString(ctx, &subtree, HierarchySubtreeType);
     if (!raw) {
-        rms_free_compressed(compressed);
-
         return NULL;
     }
 
+    compressed = rms_alloc_compressed();
     err = rms_compress(compressed, raw, cratio);
     RedisModule_FreeString(ctx, raw);
     if (err) {
@@ -2981,13 +3006,6 @@ static int load_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selv
     int err;
 
     compressed = rms_alloc_compressed();
-    if (!compressed) {
-        fprintf(stderr, "%s:%d: Failed to allocate memory for a compressed subtree of %.*s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node_id);
-        return SELVA_HIERARCHY_ENOMEM;
-    }
-
     type = RedisModule_LoadSigned(io);
     rms_RDBLoadCompressed(io, compressed);
 
@@ -3858,7 +3876,7 @@ int SelvaHierarchy_ListCompressedCommand(RedisModuleCtx *ctx, RedisModuleString 
     }
 
     if (!hierarchy->detached.obj) {
-        return RedisModule_ReplyWithNull(ctx);
+        return RedisModule_ReplyWithArray(ctx, 0);
     }
 
     RedisModule_ReplyWithArray(ctx, SelvaObject_Len(hierarchy->detached.obj, NULL));
