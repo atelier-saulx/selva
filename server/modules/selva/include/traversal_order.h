@@ -18,8 +18,17 @@ enum TraversalOrderItemType {
     ORDER_ITEM_TYPE_DOUBLE,
 };
 
+/**
+ * Tag type for tagp in struct TraversalOrderItem.
+ */
 enum TraversalOrderItemPtype {
+    /**
+     * A pointer to a node.
+     */
     TRAVERSAL_ORDER_ITEM_PTYPE_NODE = 0,
+    /**
+     * A pointer to a SelvaObject.
+     */
     TRAVERSAL_ORDER_ITEM_PTYPE_OBJ,
 };
 
@@ -29,10 +38,25 @@ enum TraversalOrderItemPtype {
  * SelvaTraversalOrder_InitOrderResult().
  */
 struct TraversalOrderItem {
+    /**
+     * Value type of this ordered item.
+     */
     enum TraversalOrderItemType type;
+    /**
+     * Associated NodeId of this item.
+     */
     Selva_NodeId node_id;
+    /**
+     * A pointer tagged with TraversalOrderItemPtype.
+     */
     void *tagp;
+    /**
+     * Double value.
+     */
     double d;
+    /**
+     * Sortable data for ORDER_ITEM_TYPE_TEXT.
+     */
     char data[];
 };
 
