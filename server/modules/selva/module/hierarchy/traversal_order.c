@@ -276,7 +276,6 @@ static struct TraversalOrderItem *create_item(RedisModuleCtx *ctx, const struct 
         item->d = tmp->d;
     }
 
-    item->ptype = order_ptype;
     switch (order_ptype) {
     case TRAVERSAL_ORDER_ITEM_PTYPE_NODE:
         item->tagp = PTAG(p, TRAVERSAL_ORDER_ITEM_PTYPE_NODE);

@@ -30,7 +30,6 @@ enum TraversalOrderItemPtype {
  */
 struct TraversalOrderItem {
     enum TraversalOrderItemType type;
-    enum TraversalOrderItemPtype ptype;
     Selva_NodeId node_id;
     void *tagp;
     double d;
