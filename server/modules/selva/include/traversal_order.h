@@ -18,6 +18,11 @@ enum TraversalOrderItemType {
     ORDER_ITEM_TYPE_DOUBLE,
 };
 
+enum TraversalOrderItemPtype {
+    TRAVERSAL_ORDER_ITEM_PTYPE_NODE,
+    TRAVERSAL_ORDER_ITEM_PTYPE_OBJ,
+};
+
 /**
  * Traversal order item.
  * These are usually stored in an SVector initialized by
@@ -25,9 +30,12 @@ enum TraversalOrderItemType {
  */
 struct TraversalOrderItem {
     enum TraversalOrderItemType type;
+    enum TraversalOrderItemPtype ptype;
     Selva_NodeId node_id;
-    struct SelvaHierarchyNode *node;
-    struct SelvaObject *data_obj;
+    union {
+        struct SelvaHierarchyNode *node;
+        struct SelvaObject *data_obj;
+    };
     double d;
     size_t data_len;
     char data[];
@@ -92,11 +100,6 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateOrderItem(
         const struct RedisModuleString *order_field);
 
 /**
- * Destroy TraversalOrderItem created by SelvaTraversalOrder_CreateOrderItem().
- */
-void SelvaTraversalOrder_DestroyOrderItem(struct RedisModuleCtx *ctx, struct TraversalOrderItem *item);
-
-/**
  * Create a TraversalOrderItem that points to a SelvaObject.
  * This function can be used to determine an order for several SelvaObjects.
  * @param lang is the language for text fields.
@@ -108,5 +111,10 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectBasedOrderItem(
         struct RedisModuleString *lang,
         struct SelvaObject *obj,
         const struct RedisModuleString *order_field);
+
+/**
+ * Destroy TraversalOrderItem created by SelvaTraversalOrder_CreateOrderItem().
+ */
+void SelvaTraversalOrder_DestroyOrderItem(struct RedisModuleCtx *ctx, struct TraversalOrderItem *item);
 
 #endif /* SELVA_TRAVERSAL_ORDER_H */
