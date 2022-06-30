@@ -13,6 +13,7 @@
 #include "auto_free.h"
 #include "arg_parser.h"
 #include "errors.h"
+#include "ptag.h"
 #include "hierarchy.h"
 #include "modify.h"
 #include "rpn.h"
@@ -400,8 +401,10 @@ static size_t AggregateCommand_AggregateOrderResult(
      */
     SVector_ForeachBegin(&it, order_result);
     while ((item = SVector_Foreach(&it))) {
-        struct SelvaHierarchyNode *node = item->node;
+        struct SelvaHierarchyNode *node = PTAG_GETP(item->tagp);
         int err;
+
+        assert(PTAG_GETTAG(item->tagp) == TRAVERSAL_ORDER_ITEM_PTYPE_NODE);
 
         if (limit-- == 0) {
             break;
@@ -429,12 +432,13 @@ static size_t AggregateCommand_AggregateOrderResult(
 static size_t AggregateCommand_AggregateOrderArrayResult(
         RedisModuleCtx *ctx,
         RedisModuleString *lang __unused,
-        void *arg __unused,
+        void *arg,
         SelvaHierarchy *hierarchy __unused,
         ssize_t offset,
         ssize_t limit,
         struct SelvaObject *fields __unused,
         SVector *order_result) {
+    struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
     struct TraversalOrderItem *item;
     struct SVectorIterator it;
     size_t len = 0;
@@ -453,18 +457,14 @@ static size_t AggregateCommand_AggregateOrderArrayResult(
     SVector_ForeachBegin(&it, order_result);
     while ((item = SVector_Foreach(&it))) {
         int err;
+
         if (limit-- == 0) {
             break;
         }
 
-        if (item->data_obj) {
-            struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
-
-            err = args->agg(item->data_obj, args);
-            len++;
-        } else {
-            err = SELVA_HIERARCHY_ENOENT;
-        }
+        assert(PTAG_GETTAG(item->tagp) == TRAVERSAL_ORDER_ITEM_PTYPE_OBJ);
+        err = args->agg(PTAG_GETP(item->tagp), args);
+        len++;
 
         if (err) {
             RedisModule_ReplyWithNull(ctx);

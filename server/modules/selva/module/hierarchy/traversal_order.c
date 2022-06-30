@@ -4,6 +4,7 @@
 #include "funmap.h"
 #include "selva.h"
 #include "errors.h"
+#include "ptag.h"
 #include "hierarchy.h"
 #include "selva_lang.h"
 #include "selva_object.h"
@@ -280,11 +281,11 @@ static struct TraversalOrderItem *create_item(RedisModuleCtx *ctx, const struct 
     item->ptype = order_ptype;
     switch (order_ptype) {
     case TRAVERSAL_ORDER_ITEM_PTYPE_NODE:
-        item->node = p;
-        SelvaHierarchy_GetNodeId(item->node_id, item->node);
+        item->tagp = PTAG(p, TRAVERSAL_ORDER_ITEM_PTYPE_NODE);
+        SelvaHierarchy_GetNodeId(item->node_id, p);
         break;
     case TRAVERSAL_ORDER_ITEM_PTYPE_OBJ:
-        item->data_obj = p;
+        item->tagp = PTAG(p, TRAVERSAL_ORDER_ITEM_PTYPE_OBJ);
         memcpy(item->node_id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
         break;
     default:

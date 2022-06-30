@@ -32,10 +32,7 @@ struct TraversalOrderItem {
     enum TraversalOrderItemType type;
     enum TraversalOrderItemPtype ptype;
     Selva_NodeId node_id;
-    union {
-        struct SelvaHierarchyNode *node;
-        struct SelvaObject *data_obj;
-    };
+    void *tagp;
     double d;
     size_t data_len;
     char data[];

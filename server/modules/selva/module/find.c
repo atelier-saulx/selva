@@ -11,6 +11,7 @@
 #include "auto_free.h"
 #include "arg_parser.h"
 #include "errors.h"
+#include "ptag.h"
 #include "hierarchy.h"
 #include "rpn.h"
 #include "selva.h"
@@ -1257,8 +1258,8 @@ static size_t FindCommand_PrintOrderedResult(
             break;
         }
 
-        assert(item->ptype == TRAVERSAL_ORDER_ITEM_PTYPE_NODE);
-        err = print_node(ctx, lang, hierarchy, item->node, args, nr_fields_out);
+        assert(PTAG_GETTAG(item->tagp) == TRAVERSAL_ORDER_ITEM_PTYPE_NODE);
+        err = print_node(ctx, lang, hierarchy, PTAG_GETP(item->tagp), args, nr_fields_out);
         if (err) {
             RedisModule_ReplyWithNull(ctx);
             fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
@@ -1302,8 +1303,8 @@ static size_t FindCommand_PrintOrderedArrayResult(
             break;
         }
 
-        assert(item->ptype == TRAVERSAL_ORDER_ITEM_PTYPE_OBJ);
-        err = send_array_object_fields(ctx, lang, item->data_obj, fields);
+        assert(PTAG_GETTAG(item->tagp) == TRAVERSAL_ORDER_ITEM_PTYPE_OBJ);
+        err = send_array_object_fields(ctx, lang, PTAG_GETP(item->tagp), fields);
         if (err) {
             RedisModule_ReplyWithNull(ctx);
             fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
