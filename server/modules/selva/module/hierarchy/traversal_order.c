@@ -237,11 +237,11 @@ static int obj2order_data(RedisModuleString *lang, struct SelvaObject *obj, cons
     return 0;
 }
 
-static size_t calc_final_data_len(enum TraversalOrderItemType type, const char *data_lang, const char *data, size_t data_len, locale_t *locale_p) {
+static size_t calc_final_data_len(const char *data_lang, const char *data, size_t data_len, locale_t *locale_p) {
     size_t final_data_len = data_len;
     locale_t locale = 0;
 
-    if (type == ORDER_ITEM_TYPE_TEXT && data_len > 0) {
+    if (data_len > 0) {
         locale = SelvaLang_GetLocale(data_lang, strlen(data_lang));
         final_data_len = strxfrm_l(NULL, data, 0, locale);
     }
@@ -261,17 +261,21 @@ static struct TraversalOrderItem *alloc_item(RedisModuleCtx *ctx, size_t data_si
 }
 
 static struct TraversalOrderItem *create_item(RedisModuleCtx *ctx, const struct order_data * restrict tmp, enum TraversalOrderItemPtype order_ptype, void *p) {
-    locale_t locale;
-    const size_t final_data_len = calc_final_data_len(tmp->type, tmp->data_lang, tmp->data, tmp->data_len, &locale);
+    locale_t locale = 0;
+    size_t data_size = 0;
     struct TraversalOrderItem *item;
 
-    item = alloc_item(ctx, tmp->type == ORDER_ITEM_TYPE_TEXT ? final_data_len + 1 : 0);
+    if (tmp->type == ORDER_ITEM_TYPE_TEXT) {
+        data_size = calc_final_data_len(tmp->data_lang, tmp->data, tmp->data_len, &locale) + 1;
+    }
+
+    item = alloc_item(ctx, data_size);
     item->type = tmp->type;
 
     if (tmp->type == ORDER_ITEM_TYPE_TEXT) {
         item->d = nan("");
         if (tmp->data_len > 0) {
-            strxfrm_l(item->data, tmp->data, final_data_len + 1, locale);
+            strxfrm_l(item->data, tmp->data, data_size, locale);
         }
     } else if (tmp->type == ORDER_ITEM_TYPE_DOUBLE) {
         item->d = tmp->d;
