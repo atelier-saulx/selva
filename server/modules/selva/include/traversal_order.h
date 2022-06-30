@@ -19,7 +19,7 @@ enum TraversalOrderItemType {
 };
 
 enum TraversalOrderItemPtype {
-    TRAVERSAL_ORDER_ITEM_PTYPE_NODE,
+    TRAVERSAL_ORDER_ITEM_PTYPE_NODE = 0,
     TRAVERSAL_ORDER_ITEM_PTYPE_OBJ,
 };
 
