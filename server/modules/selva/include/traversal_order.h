@@ -34,7 +34,6 @@ struct TraversalOrderItem {
     Selva_NodeId node_id;
     void *tagp;
     double d;
-    size_t data_len;
     char data[];
 };
 

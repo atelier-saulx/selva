@@ -111,8 +111,7 @@ static int SelvaTraversalOrder_CompareAsc(const void ** restrict a_raw, const vo
             return 1;
         }
     } else if (a->type == ORDER_ITEM_TYPE_TEXT &&
-               b->type == ORDER_ITEM_TYPE_TEXT &&
-               a->data_len && b->data_len) {
+               b->type == ORDER_ITEM_TYPE_TEXT) {
         const int res = strcmp(a_str, b_str);
 
         if (res != 0) {
@@ -251,8 +250,8 @@ static size_t calc_final_data_len(enum TraversalOrderItemType type, const char *
     return final_data_len;
 }
 
-static struct TraversalOrderItem *alloc_item(RedisModuleCtx *ctx, size_t final_data_len) {
-    const size_t item_size = sizeof(struct TraversalOrderItem) + final_data_len + 1;
+static struct TraversalOrderItem *alloc_item(RedisModuleCtx *ctx, size_t data_size) {
+    const size_t item_size = sizeof(struct TraversalOrderItem) + data_size;
 
     if (ctx) {
         return RedisModule_PoolAlloc(ctx, item_size);
@@ -266,15 +265,14 @@ static struct TraversalOrderItem *create_item(RedisModuleCtx *ctx, const struct 
     const size_t final_data_len = calc_final_data_len(tmp->type, tmp->data_lang, tmp->data, tmp->data_len, &locale);
     struct TraversalOrderItem *item;
 
-    item = alloc_item(ctx, final_data_len);
+    item = alloc_item(ctx, tmp->type == ORDER_ITEM_TYPE_TEXT ? final_data_len + 1 : 0);
     item->type = tmp->type;
 
-    if (tmp->type == ORDER_ITEM_TYPE_TEXT && tmp->data_len > 0) {
-        strxfrm_l(item->data, tmp->data, final_data_len + 1, locale);
-        item->data_len = final_data_len;
-        item->d = nan("");
+    if (tmp->type == ORDER_ITEM_TYPE_TEXT) {
+        if (tmp->data_len > 0) {
+            strxfrm_l(item->data, tmp->data, final_data_len + 1, locale);
+        }
     } else if (tmp->type == ORDER_ITEM_TYPE_DOUBLE) {
-        item->data_len = 0;
         item->d = tmp->d;
     }
 
@@ -303,7 +301,6 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateOrderItem(
         const RedisModuleString *order_field) {
     struct SelvaObject *obj;
     struct order_data tmp = {
-        .data_len = 0,
         .type = ORDER_ITEM_TYPE_EMPTY,
     };
 
@@ -322,7 +319,6 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectBasedOrderItem(
         struct SelvaObject *obj,
         const RedisModuleString *order_field) {
     struct order_data tmp = {
-        .data_len = 0,
         .type = ORDER_ITEM_TYPE_EMPTY,
     };
 
