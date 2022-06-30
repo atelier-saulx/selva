@@ -302,14 +302,11 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateOrderItem(
         RedisModuleString *lang,
         struct SelvaHierarchyNode *node,
         const RedisModuleString *order_field) {
-    struct SelvaObject *obj;
     struct order_data tmp = {
         .type = ORDER_ITEM_TYPE_EMPTY,
     };
 
-    obj = SelvaHierarchy_GetNodeObject(node);
-
-    if (obj2order_data(lang, obj, order_field, &tmp)) {
+    if (obj2order_data(lang, SelvaHierarchy_GetNodeObject(node), order_field, &tmp)) {
         return NULL;
     }
 
@@ -336,4 +333,5 @@ void SelvaTraversalOrder_DestroyOrderItem(RedisModuleCtx *ctx, struct TraversalO
     if (!ctx) {
         RedisModule_Free(item);
     }
+    /* Otherwise it's from the pool. */
 }
