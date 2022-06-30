@@ -150,7 +150,6 @@ void SelvaTraversalOrder_DestroyOrderResult(RedisModuleCtx *ctx, SVector *order_
         SelvaTraversalOrder_DestroyOrderItem(ctx, item);
     }
 
-
     SVector_Destroy(order_result);
 }
 
