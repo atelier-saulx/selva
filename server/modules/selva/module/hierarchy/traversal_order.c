@@ -269,6 +269,7 @@ static struct TraversalOrderItem *create_item(RedisModuleCtx *ctx, const struct 
     item->type = tmp->type;
 
     if (tmp->type == ORDER_ITEM_TYPE_TEXT) {
+        item->d = nan("");
         if (tmp->data_len > 0) {
             strxfrm_l(item->data, tmp->data, final_data_len + 1, locale);
         }
