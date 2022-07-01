@@ -54,7 +54,6 @@ const selva_commands = [
   'selva.inherit',
   'selva.resolve.nodeid',
   'selva.subscriptions.add',
-  'selva.subscriptions.addmarkerfields',
   'selva.subscriptions.addalias',
   'selva.subscriptions.addmissing',
   'selva.subscriptions.addtrigger',

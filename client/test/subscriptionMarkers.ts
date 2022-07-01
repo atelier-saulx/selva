@@ -796,7 +796,6 @@ test.serial('Markers with a filter', async (t) => {
   t.deepEqual(s1marker1[3], 'node_id: "maTest0001"')
   t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
   t.deepEqual(s1marker1[5], 'filter_expression: set')
-  t.deepEqual(s1marker1[6], 'fields: "(null)"')
 
   await tNrMarkersSet(t, client, ['maTest0011', 'maTest0021', 'maTest0022'], 0, new Error())
   await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
@@ -923,7 +922,6 @@ test.serial('Markers with a filter starting from the root', async (t) => {
   t.deepEqual(s1marker1[3], 'node_id: "root"')
   t.deepEqual(s1marker1[4], 'dir: bfs_descendants')
   t.deepEqual(s1marker1[5], 'filter_expression: set')
-  t.deepEqual(s1marker1[6], 'fields: "(null)"')
 
   await client.redis.selva_subscriptions_refresh('___selva_hierarchy', subId1)
   await tNrMarkersSet(t, client, ['maTest0013', 'maTest0012', 'maTest0022'], 1, new Error())
@@ -1349,7 +1347,6 @@ test.serial.skip('subscribe to a soft reference', async (t) => {
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ]
   )
@@ -1375,7 +1372,6 @@ test.serial.skip('subscribe to a soft reference', async (t) => {
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
       [
         `sub_id: ${subId1}`,
@@ -1384,7 +1380,6 @@ test.serial.skip('subscribe to a soft reference', async (t) => {
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ]
   )
@@ -1401,7 +1396,6 @@ test.serial.skip('subscribe to a soft reference', async (t) => {
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ],
   )
@@ -1422,7 +1416,6 @@ test.serial.skip('subscribe to a soft reference', async (t) => {
         'node_id: "maTest0001"',
         'dir: ref',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ],
   )
@@ -1471,7 +1464,6 @@ test.serial('subscribe to a reference (ref)', async (t) => {
         'dir: ref',
         'field: venue',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ]
   )
@@ -1503,7 +1495,6 @@ test.serial('subscribe to a reference (ref)', async (t) => {
         'dir: ref',
         'field: venue',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ]
   )
@@ -1532,7 +1523,6 @@ test.serial('subscribe to a reference (ref)', async (t) => {
         'dir: ref',
         'field: venue',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ]
   )
@@ -1550,7 +1540,6 @@ test.serial('subscribe to a reference (ref)', async (t) => {
     //    'node_id: "maTest0001"',
     //    'dir: ref',
     //    'filter_expression: unset',
-    //    'fields: "(null)"',
     //  ],
     ]
   )
@@ -1602,7 +1591,6 @@ test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
         'dir: bfs_edge_field',
         'field: venue',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ]
   )
@@ -1634,7 +1622,6 @@ test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
         'dir: bfs_edge_field',
         'field: venue',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ]
   )
@@ -1652,7 +1639,6 @@ test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
         'dir: bfs_edge_field',
         'field: venue',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ]
   )
@@ -1674,7 +1660,6 @@ test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
         'dir: bfs_edge_field',
         'field: venue',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ]
   )
@@ -1692,7 +1677,6 @@ test.serial('subscribe to a reference (bfs_edge_field)', async (t) => {
         'dir: bfs_edge_field',
         'field: venue',
         'filter_expression: unset',
-        'fields: "(null)"',
       ],
     ]
   )
