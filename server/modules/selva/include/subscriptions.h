@@ -130,20 +130,6 @@ struct Selva_SubscriptionMarker {
     Selva_SubscriptionMarkerId marker_id;
     unsigned short marker_flags;
 
-    /**
-     * A function that should defer an action that will be typically taken at later moment.
-     * Typically this function should add the subscription in one of the
-     * deferred events lists and eventually SelvaSubscriptions_SendDeferredEvents
-     * will be called to handle the event. Normally all this mangling is done just
-     * to dedup multiple events for the same subscription but this function
-     * pointer can be alternatively used to execute or defer any action.
-     */
-    Selva_SubscriptionMarkerAction *marker_action;
-    /**
-     * A pointer to optional data for the action to grab the required context.
-     */
-    void *marker_action_owner_ctx;
-
     enum SelvaTraversal dir;
     union {
         /*
@@ -161,7 +147,20 @@ struct Selva_SubscriptionMarker {
     };
     struct rpn_ctx *filter_ctx;
     struct rpn_expression *filter_expression;
-    char *fields; /* \n separated and \0 terminated list of field names considered for change events. */
+
+    /**
+     * A function that should defer an action that will be typically taken at later moment.
+     * Typically this function should add the subscription in one of the
+     * deferred events lists and eventually SelvaSubscriptions_SendDeferredEvents
+     * will be called to handle the event. Normally all this mangling is done just
+     * to dedup multiple events for the same subscription but this function
+     * pointer can be alternatively used to execute or defer any action.
+     */
+    Selva_SubscriptionMarkerAction *marker_action;
+    /**
+     * A pointer to optional data for the action to grab the required context.
+     */
+    void *marker_action_owner_ctx;
 
     /*
      * Temp storage for tracking filter result changes.
@@ -182,6 +181,7 @@ struct Selva_SubscriptionMarker {
         int res;
     } filter_history;
     struct Selva_Subscription *sub; /* Pointer back to the subscription. */
+    char fields[]; /* \n separated and \0 terminated list of field names considered for change events. */
 };
 
 /**
