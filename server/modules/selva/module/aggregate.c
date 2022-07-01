@@ -592,11 +592,6 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         TO_STR(input);
 
         traversal_rpn_ctx = rpn_init(1);
-        if (!traversal_rpn_ctx) {
-            replyWithSelvaError(ctx, SELVA_ENOMEM);
-            goto out;
-        }
-
         traversal_expression = rpn_compile(input_str);
         if (!traversal_expression) {
             replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the traversal expression");
@@ -618,7 +613,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
      */
     nr_index_hints = SelvaArgParser_IndexHints(&index_hints, argv + ARGV_INDEX_TXT, argc - ARGV_INDEX_TXT);
     if (nr_index_hints < 0) {
-        return replyWithSelvaError(ctx, SELVA_ENOMEM);
+        return replyWithSelvaError(ctx, nr_index_hints);
     } else if (nr_index_hints > 0) {
         SHIFT_ARGS(2 * nr_index_hints);
     }
@@ -699,10 +694,6 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
 
         rpn_ctx = rpn_init(nr_reg);
-        if (!rpn_ctx) {
-            replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "filter expression");
-            goto out;
-        }
 
         /*
          * Compile the filter expression.
@@ -1075,9 +1066,6 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         const char *input;
 
         rpn_ctx = rpn_init(nr_reg);
-        if (!rpn_ctx) {
-            return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "filter expression");
-        }
 
         /*
          * Compile the filter expression.
