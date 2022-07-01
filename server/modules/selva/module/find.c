@@ -1025,13 +1025,9 @@ static int print_node(
     } else if (args->fields_expression) { /* Select fields using an RPN expression. */
         selvaobject_autofree struct SelvaObject *fields = SelvaObject_New();
 
-        if (!fields) {
-            err = SELVA_ENOMEM;
-        } else {
-            err = exec_fields_expression(ctx, hierarchy, node, args->fields_rpn_ctx, args->fields_expression, fields);
-            if (!err) {
-                err = send_node_fields(ctx, lang, hierarchy, node, fields, args->excluded_fields);
-            }
+        err = exec_fields_expression(ctx, hierarchy, node, args->fields_rpn_ctx, args->fields_expression, fields);
+        if (!err) {
+            err = send_node_fields(ctx, lang, hierarchy, node, fields, args->excluded_fields);
         }
     } else { /* Otherwise the nodeId is sent. */
         Selva_NodeId nodeId;
@@ -1438,10 +1434,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         TO_STR(input);
 
         traversal_rpn_ctx = rpn_init(1);
-        if (!traversal_rpn_ctx) {
-            return replyWithSelvaError(ctx, SELVA_ENOMEM);
-        }
-
         traversal_expression = rpn_compile(input_str);
         if (!traversal_expression) {
             return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the traversal expression");
@@ -1462,10 +1454,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             }
 
             edge_filter_ctx = rpn_init(1);
-            if (!edge_filter_ctx) {
-                return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "edge_filter");
-            }
-
             edge_filter = rpn_compile(expr_str);
             if (!edge_filter) {
                 return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "edge_filter");
@@ -1480,7 +1468,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
      */
     nr_index_hints = SelvaArgParser_IndexHints(&index_hints, argv + ARGV_INDEX_TXT, argc - ARGV_INDEX_TXT);
     if (nr_index_hints < 0) {
-        return replyWithSelvaError(ctx, SELVA_ENOMEM);
+        return replyWithSelvaError(ctx, nr_index_hints);
     } else if (nr_index_hints > 0) {
         SHIFT_ARGS(2 * nr_index_hints);
     }
@@ -1572,10 +1560,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             err = SelvaArgParser_StrOpt(&expr_str, "fields_rpn", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
             if (err == 0) {
                 fields_rpn_ctx = rpn_init(1);
-                if (!fields_rpn_ctx) {
-                    return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "fields_rpn");
-                }
-
                 fields_expression = rpn_compile(expr_str);
                 if (!fields_expression) {
                     return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "fields_rpn");
@@ -1618,13 +1602,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
 
         rpn_ctx = rpn_init(nr_reg);
-        if (!rpn_ctx) {
-            return replyWithSelvaErrorf(ctx, SELVA_ENOMEM, "filter expression");
-        }
-
-        /*
-         * Compile the filter expression.
-         */
         filter_expression = rpn_compile(RedisModule_StringPtrLen(argv_filter_expr, NULL));
         if (!filter_expression) {
             return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
@@ -1972,10 +1949,6 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
     int nr_reg = argc - ARGV_FILTER_ARGS + 1;
     struct rpn_ctx *rpn_ctx = rpn_init(nr_reg);
-    if (!rpn_ctx) {
-        return replyWithSelvaError(ctx, SELVA_ENOMEM);
-    }
-
     const RedisModuleString *ids = argv[ARGV_NODE_IDS];
     const RedisModuleString *filter = argv[ARGV_FILTER_EXPR];
     TO_STR(ids, filter);
