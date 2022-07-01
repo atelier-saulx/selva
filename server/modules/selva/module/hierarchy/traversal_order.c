@@ -1,8 +1,10 @@
+#include <math.h>
 #include "redismodule.h"
 #include "cdefs.h"
 #include "funmap.h"
 #include "selva.h"
 #include "errors.h"
+#include "ptag.h"
 #include "hierarchy.h"
 #include "selva_lang.h"
 #include "selva_object.h"
@@ -109,8 +111,7 @@ static int SelvaTraversalOrder_CompareAsc(const void ** restrict a_raw, const vo
             return 1;
         }
     } else if (a->type == ORDER_ITEM_TYPE_TEXT &&
-               b->type == ORDER_ITEM_TYPE_TEXT &&
-               a->data_len && b->data_len) {
+               b->type == ORDER_ITEM_TYPE_TEXT) {
         const int res = strcmp(a_str, b_str);
 
         if (res != 0) {
@@ -148,7 +149,6 @@ void SelvaTraversalOrder_DestroyOrderResult(RedisModuleCtx *ctx, SVector *order_
     while ((item = SVector_Foreach(&it))) {
         SelvaTraversalOrder_DestroyOrderItem(ctx, item);
     }
-
 
     SVector_Destroy(order_result);
 }
@@ -195,8 +195,8 @@ static int obj2order_data(RedisModuleString *lang, struct SelvaObject *obj, cons
             char *rest = NULL;
 
             for (const char *token = strtok_r(buf, sep, &rest);
-                    token != NULL;
-                    token = strtok_r(NULL, sep, &rest)) {
+                 token != NULL;
+                 token = strtok_r(NULL, sep, &rest)) {
                 const size_t slen = strlen(token);
 
                 RedisModuleString *raw_value = NULL;
@@ -236,11 +236,11 @@ static int obj2order_data(RedisModuleString *lang, struct SelvaObject *obj, cons
     return 0;
 }
 
-static size_t calc_final_data_len(enum TraversalOrderItemType type, const char *data_lang, const char *data, size_t data_len, locale_t *locale_p) {
+static size_t calc_final_data_len(const char *data_lang, const char *data, size_t data_len, locale_t *locale_p) {
     size_t final_data_len = data_len;
     locale_t locale = 0;
 
-    if (type == ORDER_ITEM_TYPE_TEXT && data_len > 0) {
+    if (data_len > 0) {
         locale = SelvaLang_GetLocale(data_lang, strlen(data_lang));
         final_data_len = strxfrm_l(NULL, data, 0, locale);
     }
@@ -249,8 +249,8 @@ static size_t calc_final_data_len(enum TraversalOrderItemType type, const char *
     return final_data_len;
 }
 
-static struct TraversalOrderItem *alloc_item(RedisModuleCtx *ctx, size_t final_data_len) {
-    const size_t item_size = sizeof(struct TraversalOrderItem) + final_data_len + 1;
+static struct TraversalOrderItem *alloc_item(RedisModuleCtx *ctx, size_t data_size) {
+    const size_t item_size = sizeof(struct TraversalOrderItem) + data_size;
 
     if (ctx) {
         return RedisModule_PoolAlloc(ctx, item_size);
@@ -259,51 +259,58 @@ static struct TraversalOrderItem *alloc_item(RedisModuleCtx *ctx, size_t final_d
     }
 }
 
+static struct TraversalOrderItem *create_item(RedisModuleCtx *ctx, const struct order_data * restrict tmp, enum TraversalOrderItemPtype order_ptype, void *p) {
+    locale_t locale = 0;
+    size_t data_size = 0;
+    struct TraversalOrderItem *item;
+
+    if (tmp->type == ORDER_ITEM_TYPE_TEXT) {
+        data_size = calc_final_data_len(tmp->data_lang, tmp->data, tmp->data_len, &locale) + 1;
+    }
+
+    item = alloc_item(ctx, data_size);
+    item->type = tmp->type;
+
+    if (tmp->type == ORDER_ITEM_TYPE_TEXT) {
+        item->d = nan("");
+        if (tmp->data_len > 0) {
+            strxfrm_l(item->data, tmp->data, data_size, locale);
+        }
+    } else if (tmp->type == ORDER_ITEM_TYPE_DOUBLE) {
+        item->d = tmp->d;
+    }
+
+    switch (order_ptype) {
+    case TRAVERSAL_ORDER_ITEM_PTYPE_NODE:
+        item->tagp = PTAG(p, TRAVERSAL_ORDER_ITEM_PTYPE_NODE);
+        SelvaHierarchy_GetNodeId(item->node_id, p);
+        break;
+    case TRAVERSAL_ORDER_ITEM_PTYPE_OBJ:
+        item->tagp = PTAG(p, TRAVERSAL_ORDER_ITEM_PTYPE_OBJ);
+        memcpy(item->node_id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
+        break;
+    default:
+        SelvaTraversalOrder_DestroyOrderItem(NULL, item);
+        return NULL;
+    }
+
+    return item;
+}
+
 struct TraversalOrderItem *SelvaTraversalOrder_CreateOrderItem(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         struct SelvaHierarchyNode *node,
         const RedisModuleString *order_field) {
-    Selva_NodeId nodeId;
-    struct SelvaObject *obj;
     struct order_data tmp = {
-        .d = 0.0,
-        .data = NULL,
-        .data_len = 0,
         .type = ORDER_ITEM_TYPE_EMPTY,
     };
 
-    memset(tmp.data_lang, '\0', sizeof(tmp.data_lang));
-    SelvaHierarchy_GetNodeId(nodeId, node);
-    obj = SelvaHierarchy_GetNodeObject(node);
-
-    if (obj2order_data(lang, obj, order_field, &tmp)) {
+    if (obj2order_data(lang, SelvaHierarchy_GetNodeObject(node), order_field, &tmp)) {
         return NULL;
     }
 
-    locale_t locale;
-    const size_t final_data_len = calc_final_data_len(tmp.type, tmp.data_lang, tmp.data, tmp.data_len, &locale);
-    struct TraversalOrderItem *item = alloc_item(ctx, final_data_len);
-    if (!item) {
-        return NULL;
-    }
-
-    item->type = tmp.type;
-    memcpy(item->node_id, nodeId, SELVA_NODE_ID_SIZE);
-    item->node = node;
-    if (tmp.type == ORDER_ITEM_TYPE_TEXT && tmp.data_len > 0) {
-        strxfrm_l(item->data, tmp.data, final_data_len + 1, locale);
-    }
-    item->data_len = final_data_len;
-    item->d = tmp.d;
-
-    return item;
-}
-
-void SelvaTraversalOrder_DestroyOrderItem(RedisModuleCtx *ctx, struct TraversalOrderItem *item) {
-    if (!ctx) {
-        RedisModule_Free(item);
-    }
+    return create_item(ctx, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_NODE, node);
 }
 
 struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectBasedOrderItem(
@@ -312,34 +319,19 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectBasedOrderItem(
         struct SelvaObject *obj,
         const RedisModuleString *order_field) {
     struct order_data tmp = {
-        .d = 0.0,
-        .data = NULL,
-        .data_len = 0,
         .type = ORDER_ITEM_TYPE_EMPTY,
     };
-
-    memset(tmp.data_lang, '\0', sizeof(tmp.data_lang));
 
     if (obj2order_data(lang, obj, order_field, &tmp)) {
         return NULL;
     }
 
-    locale_t locale;
-    const size_t final_data_len = calc_final_data_len(tmp.type, tmp.data_lang, tmp.data, tmp.data_len, &locale);
-    struct TraversalOrderItem *item = alloc_item(ctx, final_data_len);
-    if (!item) {
-        return NULL;
-    }
+    return create_item(ctx, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_OBJ, obj);
+}
 
-    item->type = tmp.type;
-    memcpy(item->node_id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
-    item->node = NULL;
-    if (tmp.type == ORDER_ITEM_TYPE_TEXT && tmp.data_len > 0) {
-        strxfrm_l(item->data, tmp.data, final_data_len + 1, locale);
+void SelvaTraversalOrder_DestroyOrderItem(RedisModuleCtx *ctx, struct TraversalOrderItem *item) {
+    if (!ctx) {
+        RedisModule_Free(item);
     }
-    item->data_len = final_data_len;
-    item->d = tmp.d;
-    item->data_obj = obj;
-
-    return item;
+    /* Otherwise it's from the pool. */
 }
