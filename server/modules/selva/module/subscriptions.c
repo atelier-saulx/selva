@@ -2091,80 +2091,6 @@ out:
 }
 
 /*
- * SELVA.SUBSCRIPTIONS.addMarkerField KEY SUB_ID MARKER_ID field_names
- */
-int SelvaSubscriptions_AddMarkerFieldsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    int err;
-
-    if (argc != 5) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    const int ARGV_REDIS_KEY     = 1;
-    const int ARGV_SUB_ID        = 2;
-    const int ARGV_MARKER_ID     = 3;
-    const int ARGV_FIELD_NAMES   = 4;
-
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
-
-    /*
-     * Get the subscription id.
-     */
-    Selva_SubscriptionId sub_id;
-    err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
-    if (err) {
-        return replyWithSelvaErrorf(ctx, err, "Subscription ID");
-    }
-
-    /*
-     * Get the marker id.
-     */
-    Selva_SubscriptionMarkerId marker_id;
-    err = SelvaArgParser_MarkerId(&marker_id, argv[ARGV_MARKER_ID]);
-    if (err) {
-        return replyWithSelvaErrorf(ctx, err, "Marker ID");
-    }
-
-    /*
-     * Get field names for change events.
-     */
-    const char *new_fields = NULL;
-    size_t new_fields_len;
-    new_fields = RedisModule_StringPtrLen(argv[ARGV_FIELD_NAMES], &new_fields_len);
-
-    struct Selva_SubscriptionMarker *marker;
-    marker = SelvaSubscriptions_GetMarker(hierarchy, sub_id, marker_id);
-    if (!marker) {
-        return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_ENOENT);
-    }
-
-    char *fields = marker->fields;
-    const size_t old_len = fields ? strlen(fields) : 0;
-
-    fields = RedisModule_Realloc(fields, old_len + new_fields_len + 2);
-
-    if (old_len > 0) {
-        fields[old_len] = '\n';
-        memcpy(fields + old_len + 1, new_fields, new_fields_len + 1);
-    } else {
-        memcpy(fields, new_fields, new_fields_len + 1);
-    }
-
-    marker->fields = fields;
-    marker->marker_flags |= SELVA_SUBSCRIPTION_FLAG_CH_FIELD; /* This is not set yet if old was NULL. */
-
-    RedisModule_ReplyWithLongLong(ctx, 1);
-    return REDISMODULE_OK;
-}
-
-/*
  * KEY SUB_ID MARKER_ID ALIAS_NAME
  */
 int SelvaSubscriptions_AddAliasCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -2773,7 +2699,6 @@ static int Hierarchy_Subscriptions_OnLoad(RedisModuleCtx *ctx) {
      * because we need to be able to create markers on readonly replicas.
      */
     if (RedisModule_CreateCommand(ctx, "selva.subscriptions.add", SelvaSubscriptions_AddMarkerCommand, "readonly deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.subscriptions.addMarkerFields", SelvaSubscriptions_AddMarkerFieldsCommand, "readonly deny-oom", 1, 1 ,1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.addAlias", SelvaSubscriptions_AddAliasCommand, "readonly deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.addMissing", SelvaSubscriptions_AddMissingCommand, "readonly deny-oom", 1, 1 ,1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.subscriptions.addTrigger", SelvaSubscriptions_AddTriggerCommand, "readonly deny-oom", 1, 1 ,1) == REDISMODULE_ERR ||
