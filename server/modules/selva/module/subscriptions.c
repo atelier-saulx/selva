@@ -637,7 +637,7 @@ static int new_marker(
     if (!sub) {
         sub = create_subscription(hierarchy, sub_id);
         if (!sub) {
-            return SELVA_SUBSCRIPTIONS_ENOMEM;
+            return SELVA_SUBSCRIPTIONS_EINVAL;
         }
     } else {
         if (find_sub_marker(sub, marker_id)) {
@@ -704,15 +704,11 @@ static void marker_set_action_owner_ctx(struct Selva_SubscriptionMarker *marker,
  * must not be set.
  * @param ref_field is the field used for traversal that must be a c-string.
  */
-static int marker_set_ref_field(struct Selva_SubscriptionMarker *marker, const char *ref_field) {
+static void marker_set_ref_field(struct Selva_SubscriptionMarker *marker, const char *ref_field) {
     assert((marker->dir & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD | SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD)) &&
            !(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_TRIGGER));
 
     marker->ref_field = RedisModule_Strdup(ref_field);
-    if (!marker->ref_field) {
-        return SELVA_ENOMEM;
-    }
-    return 0;
 }
 
 static void marker_set_traversal_expression(struct Selva_SubscriptionMarker *marker, struct rpn_expression *traversal_expression) {
@@ -764,10 +760,6 @@ int Selva_AddSubscriptionAliasMarker(
     }
 
     filter_ctx = rpn_init(3);
-    if (!filter_ctx) {
-        err = SELVA_SUBSCRIPTIONS_ENOMEM;
-        goto fail;
-    }
 
     /*
      * Set RPN registers
@@ -849,10 +841,6 @@ int SelvaSubscriptions_AddCallbackMarker(
         }
 
         filter_ctx = rpn_init(1);
-        if (!filter_ctx) {
-            err = SELVA_ENOMEM;
-            goto out;
-        }
     }
 
     /*
@@ -862,7 +850,6 @@ int SelvaSubscriptions_AddCallbackMarker(
      */
     err = new_marker(hierarchy, sub_id, marker_id, filter ? "" : NULL, 0, marker_flags, callback, &marker);
     if (err) {
-        err = SELVA_ENOMEM;
         goto out;
     }
 
@@ -950,16 +937,12 @@ static int SelvaSubscriptions_TraverseMarker(
         struct rpn_ctx *rpn_ctx;
 
         rpn_ctx = rpn_init(1);
-        if (rpn_ctx) {
-            if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
-                err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, NULL, NULL, &cb);
-            } else {
-                err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, NULL, NULL, &cb);
-            }
-            rpn_destroy(rpn_ctx);
+        if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+            err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, NULL, NULL, &cb);
         } else {
-            err = SELVA_ENOMEM;
+            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, NULL, NULL, &cb);
         }
+        rpn_destroy(rpn_ctx);
     } else {
         /*
          * The rest of the traversal directions are handled by the following
@@ -1113,16 +1096,12 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy
 #endif
 
         rpn_ctx = rpn_init(1);
-        if (rpn_ctx) {
-            if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
-                err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, NULL, NULL, &cb);
-            } else {
-                err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, NULL, NULL, &cb);
-            }
-            rpn_destroy(rpn_ctx);
+        if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
+            err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, NULL, NULL, &cb);
         } else {
-            err = SELVA_ENOMEM;
+            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, marker->node_id, rpn_ctx, marker->traversal_expression, NULL, NULL, &cb);
         }
+        rpn_destroy(rpn_ctx);
         /* RFE SELVA_HIERARCHY_ENOENT is not good in case something was left but it's too late then */
         if (err && err != SELVA_HIERARCHY_ENOENT) {
             char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
@@ -1979,11 +1958,6 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
         size_t input_len;
 
         filter_ctx = rpn_init(nr_reg);
-        if (!filter_ctx) {
-            err = SELVA_SUBSCRIPTIONS_ENOMEM;
-            replyWithSelvaErrorf(ctx, err, "Filter");
-            goto out;
-        }
 
         /*
          * Compile the filter expression.
@@ -2053,11 +2027,7 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
     marker_set_node_id(marker, node_id);
     marker_set_dir(marker, sub_dir);
     if (ref_field) {
-        err = marker_set_ref_field(marker, ref_field);
-        if (err) {
-            replyWithSelvaErrorf(ctx, err, "ref_field");
-            goto out;
-        }
+        marker_set_ref_field(marker, ref_field);
     }
     if (traversal_expression) {
         marker_set_traversal_expression(marker, traversal_expression);
@@ -2191,7 +2161,7 @@ int SelvaSubscriptions_AddMissingCommand(RedisModuleCtx *ctx, RedisModuleString 
     if (!sub) {
         sub = create_subscription(hierarchy, sub_id);
         if (!sub) {
-            return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_ENOMEM);
+            return replyWithSelvaError(ctx, SELVA_SUBSCRIPTIONS_EINVAL);
         }
     }
 
@@ -2285,11 +2255,6 @@ int SelvaSubscriptions_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString 
         size_t input_len;
 
         filter_ctx = rpn_init(nr_reg);
-        if (!filter_ctx) {
-            err = SELVA_SUBSCRIPTIONS_ENOMEM;
-            replyWithSelvaErrorf(ctx, err, "Filter");
-            goto out;
-        }
 
         /*
          * Compile the filter expression.

@@ -149,7 +149,7 @@ struct rpn_ctx *rpn_init(int nr_reg) {
     struct rpn_ctx * ctx;
 
     if (nr_reg < 1) {
-        return NULL;
+        nr_reg = 1;
     }
 
     ctx = RedisModule_Calloc(1, sizeof(struct rpn_ctx) + nr_reg * sizeof(struct rpn_operand *));
