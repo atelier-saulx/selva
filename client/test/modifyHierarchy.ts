@@ -307,6 +307,8 @@ test.serial('complex hierarchy on two sets', async (t) => {
     ),
     ['maTest0031']
   )
+
+  await client.destroy()
 })
 
 test.serial('complex hierarchy using add', async (t) => {
@@ -434,6 +436,8 @@ test.serial('complex hierarchy using add', async (t) => {
     ),
     ['maTest0031']
   )
+
+  await client.destroy()
 })
 
 test.serial('Undo complex hierarchy using set', async (t) => {
@@ -517,4 +521,6 @@ test.serial('Undo complex hierarchy using set', async (t) => {
     ),
     ['maTest0021']
   )
+
+  await client.destroy()
 })
