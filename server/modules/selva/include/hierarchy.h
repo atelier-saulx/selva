@@ -290,6 +290,8 @@ struct SelvaHierarchyMetadata *SelvaHierarchy_GetNodeMetadata(
 ssize_t SelvaModify_GetHierarchyDepth(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 #endif
 
+int SelvaHierarchy_ClearNodeFlagImplicit(struct SelvaHierarchyNode *node);
+
 /**
  * Clear all user fields of a node SelvaObject.
  */

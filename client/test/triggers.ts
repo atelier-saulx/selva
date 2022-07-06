@@ -185,7 +185,7 @@ test.serial(
       aliases: false,
     })
 
-    const sub2 = obs.subscribe((d) => {
+    const sub = obs.subscribe((d) => {
       // gets start event
       t.deepEqualIgnoreOrder(d, {
         id: d.id,
@@ -212,7 +212,10 @@ test.serial(
     await client.set({
       $id: thing,
       children: {
-        $add: ['ye001'],
+        $add: [
+          'ye001', // trigger
+          'ye002', // no trigger
+        ],
       },
     })
     await client.set({
@@ -221,7 +224,7 @@ test.serial(
     })
 
     await wait(300)
-    sub2.unsubscribe()
+    sub.unsubscribe()
     await client.delete('root')
     await client.destroy()
   }

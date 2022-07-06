@@ -185,19 +185,6 @@ static int in_mem_range(const void *p, const void *start, size_t size) {
     return (ptrdiff_t)p >= (ptrdiff_t)start && (ptrdiff_t)p < (ptrdiff_t)start + (ptrdiff_t)size;
 }
 
-static bool wasImplicitlyCreated(struct SelvaHierarchyNode *node) {
-    struct SelvaObject *obj;
-    enum SelvaObjectType type;
-
-    obj = SelvaHierarchy_GetNodeObject(node);
-    type = SelvaObject_GetTypeStr(obj, SELVA_TYPE_FIELD, sizeof(SELVA_TYPE_FIELD) - 1);
-
-    /*
-     * Nodes created implicitly won't have a type yet.
-     */
-    return type == SELVA_OBJECT_NULL;
-}
-
 static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, const struct RedisModuleString *data) {
     TO_STR(data);
     struct SelvaModify_OpSet *op;
@@ -889,15 +876,13 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         if (err < 0) {
             return replyWithSelvaErrorf(ctx, err, "ERR Failed to initialize the node hierarchy for id: \"%s\"", RedisModule_StringPtrLen(id, NULL));
         }
-        created = true;
     } else if (FISSET_CREATE(flags)) {
         /* if the specified id exists but $operation: 'insert' specified. */
         RedisModule_ReplyWithNull(ctx);
         return REDISMODULE_OK;
     }
 
-    created = created || wasImplicitlyCreated(node);
-
+    created = SelvaHierarchy_ClearNodeFlagImplicit(node);
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
 
     if (!created && FISSET_NO_MERGE(flags)) {
