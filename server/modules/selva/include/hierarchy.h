@@ -14,7 +14,7 @@
 #include "selva_set.h"
 #include "subscriptions.h"
 
-#define HIERARCHY_ENCODING_VERSION  4
+#define HIERARCHY_ENCODING_VERSION  5
 
 /* Forward declarations */
 struct RedisModuleCtx;
@@ -83,6 +83,13 @@ struct SelvaHierarchy {
      * Orphan nodes aka heads of the hierarchy.
      */
     SVector heads;
+
+    /**
+     * Node types.
+     */
+    struct {
+        STATIC_SELVA_OBJECT(_obj_data);
+    } types;
 
     /**
      * Edge field constraints.
@@ -210,6 +217,9 @@ struct SelvaHierarchyCallback {
     } flags;
 };
 
+#define SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy) \
+    ((struct SelvaObject *)((hierarchy)->types._obj_data))
+
 /**
  * Flags for SelvaModify_DelHierarchyNode().
  */
@@ -233,6 +243,13 @@ void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy);
  * Open a hierarchy key.
  */
 SelvaHierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name, int mode);
+
+/**
+ * Get the type name for a type prefix.
+ * It's the caller's responsibility to call RedisModule_FreeString() for the
+ * returned string.
+ */
+RedisModuleString *SelvaHierarchyTypes_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeType type);
 
 /**
  * Copy nodeId to a buffer.

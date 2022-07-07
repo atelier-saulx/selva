@@ -28,6 +28,7 @@ OBJS := \
 	module/hierarchy/hierarchy_reply.o \
 	module/hierarchy/traversal.o \
 	module/hierarchy/traversal_order.o \
+	module/hierarchy/types.o \
 	module/ida.o \
 	module/inherit.o \
 	module/modify.o \

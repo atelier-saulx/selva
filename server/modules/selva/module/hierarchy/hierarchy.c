@@ -217,6 +217,7 @@ SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
 
     RB_INIT(&hierarchy->index_head);
     SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare);
+    SelvaObject_Init(hierarchy->types._obj_data);
     Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
     SelvaSubscriptions_InitHierarchy(hierarchy);
     SelvaFindIndex_Init(ctx, hierarchy);
@@ -317,7 +318,12 @@ SelvaHierarchy *SelvaModify_OpenHierarchy(RedisModuleCtx *ctx, RedisModuleString
     return hierarchy;
 }
 
-static int create_node_object(SelvaHierarchyNode *node) {
+/**
+ * Create the default fields of a node object.
+ * This function should be called when creating a new node but not when loading
+ * nodes from an RDB data.
+ */
+static int create_node_object(struct SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     const long long now = ts_now();
     struct SelvaObject *obj;
     RedisModuleString *node_name;
@@ -342,6 +348,17 @@ static int create_node_object(SelvaHierarchyNode *node) {
             RedisModule_FreeString(NULL, type);
             return err;
         }
+    } else {
+        RedisModuleString *type;
+
+        type = SelvaHierarchyTypes_Get(hierarchy, node->id);
+        if (type) {
+            err = SelvaObject_SetStringStr(obj, SELVA_TYPE_FIELD, sizeof(SELVA_TYPE_FIELD) - 1, type);
+            if (err) {
+                RedisModule_FreeString(NULL, type);
+                return err;
+            }
+        }
     }
 
     SelvaObject_SetLongLongStr(obj, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, now);
@@ -353,7 +370,7 @@ static int create_node_object(SelvaHierarchyNode *node) {
 /**
  * Create a new node.
  */
-static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
+static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     SelvaHierarchyNode *node = RedisModule_Calloc(1, sizeof(SelvaHierarchyNode));
 
 #if 0
@@ -370,7 +387,7 @@ static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
     if (likely(ctx)) {
         int err;
 
-        err = create_node_object(node);
+        err = create_node_object(hierarchy, node);
         if (err) {
             fprintf(stderr, "%s:%d: Failed to create a node object for \"%.*s\": %s\n",
                     __FILE__, __LINE__,
@@ -461,10 +478,10 @@ static void new_detached_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, co
  * There should be no need to ever call this function from anywhere else but
  * SelvaHierarchy_FindNode().
  */
-static int repopulate_detached_head(SelvaHierarchyNode *node) {
+static int repopulate_detached_head(struct SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     int err;
 
-    err = create_node_object(node);
+    err = create_node_object(hierarchy, node);
     if (err) {
         fprintf(stderr, "%s:%d: Failed to repopulate a detached dummy node %.*s\n",
                 __FILE__, __LINE__,
@@ -507,7 +524,7 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
             if (!(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
                 return node;
             } else if (isDecompressingSubtree) {
-                err = repopulate_detached_head(node);
+                err = repopulate_detached_head(hierarchy, node);
                 if (err) {
                     return NULL;
                 }
@@ -1213,7 +1230,7 @@ int SelvaModify_SetHierarchy(
 
     node = SelvaHierarchy_FindNode(hierarchy, id);
     if (!node) {
-        node = newNode(ctx, id);
+        node = newNode(ctx, hierarchy, id);
         if (unlikely(!node)) {
             return SELVA_HIERARCHY_ENOMEM;
         }
@@ -1430,7 +1447,7 @@ int SelvaHierarchy_UpsertNode(
      * newNode skips some tasks if ctx is set as NULL and it should be set NULL
      * when loading.
      */
-     node = newNode(isLoading ? NULL : ctx, id);
+     node = newNode(isLoading ? NULL : ctx, hierarchy, id);
      if (unlikely(!node)) {
          return SELVA_HIERARCHY_ENOMEM;
      }
@@ -3228,6 +3245,13 @@ static void *Hierarchy_RDBLoad(RedisModuleIO *io, int encver) {
         return NULL;
     }
 
+    if (encver >= 5) {
+        if (!SelvaObjectTypeRDBLoadTo(io, encver, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL)) {
+            RedisModule_LogIOError(io, "warning", "Failed to node types");
+            return NULL;
+        }
+    }
+
     err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
     if (err) {
         RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints: %s", getSelvaErrorStr(err));
@@ -3367,12 +3391,14 @@ static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
 
     /*
      * Serialization format:
+     * TYPE_MAP
      * EDGE_CONSTRAINTS
      * NODE_ID1 | FLAGS | METADATA | NR_CHILDREN | CHILD_ID_0,..
      * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
      * HIERARCHY_RDB_EOF
      */
     isRdbSaving = 1;
+    SelvaObjectTypeRDBSave(io, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL);
     EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
     save_hierarchy(io, hierarchy);
     isRdbSaving = 0;

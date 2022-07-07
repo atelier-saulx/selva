@@ -431,7 +431,15 @@ export async function updateSchema(
     )
 
     if (updated) {
-      client.schemas[selector.name] = JSON.parse(updated)
+      const schema = JSON.parse(updated)
+      const { types } = schema
+
+      client.schemas[selector.name] = schema
+
+      await client.redis.selva_hierarchy_types_clear('___selva_hierarchy')
+      for (const name in types) {
+        await client.redis.selva_hierarchy_types_add('___selva_hierarchy', types[name].prefix, name)
+      }
     }
   } catch (e) {
     if (
