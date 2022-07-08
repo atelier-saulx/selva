@@ -52,6 +52,12 @@ enum SelvaNodeFlags {
      * and the subtree must be restored to make this node usable.
      */
     SELVA_NODE_FLAGS_DETACHED = 0x01,
+    /**
+     * Implicitly created node.
+     * Nodes that are created through child or references lists are implicit.
+     * The flag should be cleared when the node is actually taken into use.
+     */
+    SELVA_NODE_FLAGS_IMPLICIT = 0x02,
 } __packed;
 
 /**
@@ -371,6 +377,13 @@ static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, const Selva_NodeId id) {
                     (int)SELVA_NODE_ID_SIZE, id,
                     selvaStrError[-err]);
         }
+
+        /*
+         * Every node is implicit unless it isn't. Modify should clear this flag
+         * when explicitly creating a node, that can happen on a later command
+         * call. This flag will be also persisted in the RDB.
+         */
+        node->flags |= SELVA_NODE_FLAGS_IMPLICIT;
     }
 
     SelvaHierarchyMetadataConstructorHook **metadata_ctor_p;
@@ -559,6 +572,16 @@ static const char * const excluded_fields[] = {
     SELVA_ALIASES_FIELD,
     NULL
 };
+
+int SelvaHierarchy_ClearNodeFlagImplicit(SelvaHierarchyNode *node) {
+    const int v = !!(node->flags & SELVA_NODE_FLAGS_IMPLICIT);
+
+    if (v) {
+        node->flags &= ~SELVA_NODE_FLAGS_IMPLICIT;
+    }
+
+    return v;
+}
 
 void SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj) {
     SelvaObject_Clear(obj, excluded_fields);
@@ -1171,6 +1194,10 @@ int SelvaHierarchy_DelParents(
     return removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
 }
 
+static inline SelvaHierarchyNode *index_new_node(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
+    return RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node);
+}
+
 int SelvaModify_SetHierarchy(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
@@ -1198,7 +1225,7 @@ int SelvaModify_SetHierarchy(
     }
 
     if (isNewNode) {
-        if (unlikely(RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node) != NULL)) {
+        if (unlikely(index_new_node(hierarchy, node))) {
             SelvaModify_DestroyNode(ctx, hierarchy, node);
 
             return SELVA_HIERARCHY_EEXIST;
@@ -1419,7 +1446,7 @@ int SelvaHierarchy_UpsertNode(
      /*
       * All nodes must be indexed.
       */
-     prev_node = RB_INSERT(hierarchy_index_tree, &hierarchy->index_head, node);
+     prev_node = index_new_node(hierarchy, node);
      if (prev_node) {
          /*
           * We are being extremely paranoid here as this shouldn't be possible.
