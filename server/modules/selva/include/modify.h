@@ -13,6 +13,7 @@ struct SelvaHierarchy;
 struct SelvaObject;
 
 enum SelvaModify_ArgType {
+    SELVA_MODIFY_ARG_INVALID = '\0',
     /* Node object string field operations. */
     SELVA_MODIFY_ARG_DEFAULT_STRING = '2', /*!< Set a string value if unset. */
     SELVA_MODIFY_ARG_STRING = '0', /*!< Value is a string. */
@@ -92,6 +93,19 @@ struct SelvaModify_OpEdgeMeta {
     char *meta_field_value_str;
     size_t meta_field_value_len;
 };
+
+/**
+ * Modify op arg handler status.
+ */
+enum selva_op_repl_state {
+    SELVA_OP_REPL_STATE_UNCHANGED,  /*!< No changes, do not replicate, reply with OK or ERR. */
+    SELVA_OP_REPL_STATE_UPDATED,    /*!< Value changed, replicate, reply with UPDATED */
+    SELVA_OP_REPL_STATE_REPLICATE,  /*!< Value might have changed, replicate, reply with OK */
+};
+
+struct SelvaModify_OpSet *SelvaModify_OpSet_align(
+        struct RedisModuleCtx *ctx,
+        const struct RedisModuleString *data);
 
 /**
  * Modify a set.

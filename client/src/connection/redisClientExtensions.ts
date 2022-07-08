@@ -29,6 +29,7 @@ const redisSearchCommands = [
 const selva_commands = [
   'selva.id',
   'selva.modify',
+  'selva.update',
   'selva.object.del',
   'selva.object.exists',
   'selva.object.get',

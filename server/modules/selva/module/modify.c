@@ -48,15 +48,6 @@
     replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: %s", typeof_str(v))
 
 /**
- * Modify op arg handler status.
- */
-enum selva_op_repl_state {
-    SELVA_OP_REPL_STATE_UNCHANGED,  /*!< No changes, do not replicate, reply with OK or ERR. */
-    SELVA_OP_REPL_STATE_UPDATED,    /*!< Value changed, replicate, reply with UPDATED */
-    SELVA_OP_REPL_STATE_REPLICATE,  /*!< Value might have changed, replicate, reply with OK */
-};
-
-/**
  * Struct type for replicating the automatic timestamps.
  */
 struct replicate_ts {
@@ -941,7 +932,7 @@ static int in_mem_range(const void *p, const void *start, size_t size) {
     return (ptrdiff_t)p >= (ptrdiff_t)start && (ptrdiff_t)p < (ptrdiff_t)start + (ptrdiff_t)size;
 }
 
-static struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, const struct RedisModuleString *data) {
+struct SelvaModify_OpSet *SelvaModify_OpSet_align(RedisModuleCtx *ctx, const struct RedisModuleString *data) {
     TO_STR(data);
     struct SelvaModify_OpSet *op;
 
@@ -1218,7 +1209,7 @@ static enum selva_op_repl_state modify_op(
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING ||
-            type_code == SELVA_MODIFY_ARG_STRING) {
+               type_code == SELVA_MODIFY_ARG_STRING) {
         const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
         RedisModuleString *old_value;
         RedisModuleString *shared;

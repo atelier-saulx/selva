@@ -3638,6 +3638,21 @@ async selva_modify(opts: any, ...args: args): Promise<any> {
 }
 
 
+async selva_update(opts: ServerSelector, ...args: args): Promise<any>
+async selva_update(...args: args): Promise<any>
+async selva_update(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_update', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_update', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
 async selva_resolve_nodeid(opts: ServerSelector, ...args: args): Promise<any>
 async selva_resolve_nodeid(...args: args): Promise<any>
 async selva_resolve_nodeid(opts: any, ...args: args): Promise<any> {
