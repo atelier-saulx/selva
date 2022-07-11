@@ -197,7 +197,6 @@ function parseBinaryBuffer (parser) {
 function parseError (parser) {
   var string = parseSimpleString(parser)
   if (string !== undefined) {
-    console.log(string)
     if (parser.optionReturnBuffers === true) {
       string = string.toString()
     }
