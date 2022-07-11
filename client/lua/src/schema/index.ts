@@ -67,6 +67,11 @@ export function saveSchema(schema: Schema, timeseries?: Timeseries): string {
 
   constructPrefixMap(schema)
 
+  r.types_clear()
+  for (const prefix in schema.prefixToTypeMapping) {
+    r.types_add(prefix, schema.prefixToTypeMapping[prefix])
+  }
+
   let encoded = cjson.encode(schema)
   const sha = redis.sha1hex(encoded)
   schema.sha = sha
