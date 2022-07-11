@@ -432,7 +432,6 @@ export async function updateSchema(
 
     if (updated) {
       const schema = JSON.parse(updated)
-      const { types } = schema
 
       client.schemas[selector.name] = schema
     }
