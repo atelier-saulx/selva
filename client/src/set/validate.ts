@@ -95,7 +95,9 @@ export default async function parseSetObject(
   }
 
   for (const key in payload) {
-    if (key[0] === '$') {
+    if (key === 'type') {
+      // Drop
+    } else if (key[0] === '$') {
       if (key === '$merge') {
         if (!(payload[key] === true || payload[key] === false)) {
           throw new Error(`$merge needs to be a a boolean `)
@@ -191,6 +193,11 @@ ${allowedFieldsDoc(schemas, type)}
         $lang
       )
     }
+  }
+
+  // Only send type field if there are no other changes
+  if (result.length <= 1) {
+    result.push('0', 'type', payload.type)
   }
   return result
 }
