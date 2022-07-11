@@ -15,6 +15,14 @@ export function log(clientId: string, loglevel: LogLevel, msg: any): void {
   )
 }
 
+export function types_clear() {
+  redis.call('selva.hierarchy.types.clear', DEFAULT_HIERARCHY)
+}
+
+export function types_add(prefix: string, name: string) {
+  redis.call('selva.hierarchy.types.add', DEFAULT_HIERARCHY, prefix, name)
+}
+
 export function id(externalIdStr?: string): string {
   if (externalIdStr) {
     return redis.call('selva.id', externalIdStr)

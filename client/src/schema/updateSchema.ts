@@ -431,7 +431,9 @@ export async function updateSchema(
     )
 
     if (updated) {
-      client.schemas[selector.name] = JSON.parse(updated)
+      const schema = JSON.parse(updated)
+
+      client.schemas[selector.name] = schema
     }
   } catch (e) {
     if (
