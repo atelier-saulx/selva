@@ -23,16 +23,8 @@ import {
   bfsExpr2rpn,
 } from '@saulx/selva-query-ast-parser'
 
-import {
-  padId,
-  joinIds,
-  EMPTY_ID,
-  NODE_ID_SIZE,
-} from '../../util'
-import {
-  setNestedResult,
-  getNestedSchema,
-} from '../utils'
+import { padId, joinIds, EMPTY_ID, NODE_ID_SIZE } from '../../util'
+import { setNestedResult, getNestedSchema } from '../utils'
 import { makeLangArg } from './util'
 import { mkIndex } from './indexing'
 
@@ -870,28 +862,48 @@ const executeFindOperation = async (
           const nestedField = v[i]
           const nestedValue = v[i + 1]
           const isReferences = path.endsWith('[]')
-          const fullPath = `${isReferences ? path.slice(0, -2) : path}.${nestedField}`
+          const fullPath = `${
+            isReferences ? path.slice(0, -2) : path
+          }.${nestedField}`
 
-          const nestedFieldSchema = getNestedSchema(schema, nestedId, nestedField)
-          if (nestedFieldSchema?.type === 'reference' && isNestedObject(nestedValue)) {
+          const nestedFieldSchema = getNestedSchema(
+            schema,
+            nestedId,
+            nestedField
+          )
+          if (
+            nestedFieldSchema?.type === 'reference' &&
+            isNestedObject(nestedValue)
+          ) {
             parseNestedFieldReference(fullPath, nestedValue[0])
-          } else if (nestedFieldSchema?.type === 'references' && isNestedObject(nestedValue)) {
-              for (let i = 0; i < value.length; i++) {
-                parseNestedFieldReference(`${fullPath}[]`, nestedValue[i])
-              }
+          } else if (
+            nestedFieldSchema?.type === 'references' &&
+            isNestedObject(nestedValue)
+          ) {
+            for (let i = 0; i < value.length; i++) {
+              parseNestedFieldReference(`${fullPath}[]`, nestedValue[i])
+            }
           } else {
             const mapping = fieldMapping[`${path}.${nestedField}`]
             const targetField = mapping?.targetField
-            const casted = typeCast(nestedValue, nestedId, nestedField, schema, lang)
+            const casted = typeCast(
+              nestedValue,
+              nestedId,
+              nestedField,
+              schema,
+              lang
+            )
 
             if (targetField) {
               // TODO This won't work?
-              //for (const f of targetField) {
+              // for (const f of targetField) {
               //  setNestedResult(entryRes, f, casted)
-              //}
+              // }
             } else {
               if (isReferences) {
-                setNestedResult(entryRes, path.slice(0, -2), [{ [nestedField]: casted }])
+                setNestedResult(entryRes, path.slice(0, -2), [
+                  { [nestedField]: casted },
+                ])
               } else {
                 setNestedResult(entryRes, fullPath, casted)
               }
@@ -903,7 +915,10 @@ const executeFindOperation = async (
       const sourceFieldSchema = getNestedSchema(schema, id, field)
       if (sourceFieldSchema?.type === 'reference' && isNestedObject(value)) {
         parseNestedFieldReference(field, value[0])
-      } else if (sourceFieldSchema?.type === 'references' && isNestedObject(value)) {
+      } else if (
+        sourceFieldSchema?.type === 'references' &&
+        isNestedObject(value)
+      ) {
         for (let i = 0; i < value.length; i++) {
           parseNestedFieldReference(`${field}[]`, value[i])
         }

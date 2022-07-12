@@ -1,5 +1,4 @@
 import test from 'ava'
-import './assertions'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import getPort from 'get-port'
@@ -22,13 +21,14 @@ test.beforeEach(async (t) => {
   await client.updateSchema({
     languages: ['en'],
     rootType: {
-      fields: { },
+      fields: {},
     },
     types: {
       thing: {
         prefix: 'th',
         fields: {
           str: { type: 'string' },
+          flap: { type: 'boolean' },
         },
       },
       notthing: {
@@ -72,28 +72,40 @@ test.serial('basic batch update', async (t) => {
     ],
   })
 
-  await client.redis.selva_update('___selva_hierarchy', 'descendants', '1', '0', 'str', 'hello', id, '"th" e')
-  t.deepEqual(await client.get({
-    $id: id,
-    rest: {
-      $list: {
-        $find: {
-          $traverse: 'descendants',
+  await client.redis.selva_update(
+    '___selva_hierarchy',
+    'descendants',
+    '1',
+    '0',
+    'str',
+    'hello',
+    <string>id,
+    '"th" e'
+  )
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      rest: {
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+          },
+          $sort: { $field: 'type' },
         },
-        $sort: { $field: 'type' }
+        type: true,
+        str: true,
       },
-      type: true,
-      str: true,
+    }),
+    {
+      rest: [
+        { type: 'notthing', str: 'something' },
+        { type: 'thing', str: 'hello' },
+        { type: 'thing', str: 'hello' },
+      ],
     }
-  }), {
-    rest: [
-      { type: 'notthing', str: 'something' },
-      { type: 'thing', str: 'hello' },
-      { type: 'thing', str: 'hello' }
-    ]
-  })
+  )
 
-  await client.destroy();
+  await client.destroy()
 })
 
 test.serial('subscription and batch update', async (t) => {
@@ -133,8 +145,8 @@ test.serial('subscription and batch update', async (t) => {
               $field: 'type',
               $operator: '=',
               $value: 'thing',
-            }
-          ]
+            },
+          ],
         },
       },
     },
@@ -142,54 +154,114 @@ test.serial('subscription and batch update', async (t) => {
 
   let i = 0
   const sub = obs.subscribe((e) => {
-    switch(i++) {
-    case 0:
-      t.deepEqual(e, {
-        items: [
-          { type: 'thing', str: 'something' },
-          { type: 'thing', str: 'something' },
-          { type: 'thing', str: 'something' },
-        ]
-      })
-      break;
-    case 1:
-      t.deepEqual(e, {
-        items: [
-          { type: 'thing', str: 'hello' },
-          { type: 'thing', str: 'hello' },
-          { type: 'thing', str: 'hello' },
-        ]
-      })
-      break;
-    default:
-      t.fail()
+    switch (i++) {
+      case 0:
+        t.deepEqual(e, {
+          items: [
+            { type: 'thing', str: 'something' },
+            { type: 'thing', str: 'something' },
+            { type: 'thing', str: 'something' },
+          ],
+        })
+        break
+      case 1:
+        t.deepEqual(e, {
+          items: [
+            { type: 'thing', str: 'hello' },
+            { type: 'thing', str: 'hello' },
+            { type: 'thing', str: 'hello' },
+          ],
+        })
+        break
+      default:
+        t.fail()
     }
   })
   await wait(100)
 
-  await client.redis.selva_update('___selva_hierarchy', 'descendants', '1', '0', 'str', 'hello', id, '"th" e')
-  t.deepEqual(await client.get({
-    all: {
-      $list: {
-        $find: {
-          $traverse: 'descendants',
+  await client.redis.selva_update(
+    '___selva_hierarchy',
+    'descendants',
+    '1',
+    '0',
+    'str',
+    'hello',
+    <string>id,
+    '"th" e'
+  )
+  t.deepEqual(
+    await client.get({
+      all: {
+        $list: {
+          $find: {
+            $traverse: 'descendants',
+          },
+          $sort: { $field: 'type', $order: 'asc' },
         },
-        $sort: { $field: 'type', $order: 'asc' }
+        type: true,
+        str: true,
       },
-      type: true,
-      str: true,
+    }),
+    {
+      all: [
+        { type: 'notthing', str: 'something' },
+        { type: 'thing', str: 'hello' },
+        { type: 'thing', str: 'hello' },
+        { type: 'thing', str: 'hello' },
+      ],
     }
-  }), {
-    all: [
-      { type: 'notthing', str: 'something' },
-      { type: 'thing', str: 'hello' },
-      { type: 'thing', str: 'hello' },
-      { type: 'thing', str: 'hello' },
-    ]
-  })
+  )
 
   await wait(100)
   sub.unsubscribe()
+
+  await client.destroy()
+})
+
+test.serial.only('update batch - api wrapper', async (t) => {
+  const client = connect({
+    port,
+  })
+
+  await client.set({
+    type: 'thing',
+    str: 'blurgh',
+  })
+
+  await client.update(
+    {
+      type: 'thing',
+      str: 'bla',
+      flap: true,
+    },
+    {
+      $find: {
+        $traverse: 'children',
+        $filter: {
+          $operator: '=',
+          $value: 'thing',
+          $field: 'type',
+        },
+      },
+    }
+  )
+
+  const x = await client.get({
+    children: {
+      flap: true,
+      str: true,
+      $list: true,
+    },
+  })
+
+  console.info(x)
+
+  for (const thing in x.children) {
+    // @ts-ignore
+    if (!thing.flap && thing.str !== 'bla') {
+      t.fail('all things need a flap and str')
+    }
+  }
 
   await client.destroy()
 })

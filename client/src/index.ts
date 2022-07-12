@@ -39,8 +39,9 @@ import destroy from './destroy'
 import { v4 as uuidv4 } from 'uuid'
 import getServer from './getServer'
 import { ObservableOptions, ObsSettings } from './observable/types'
-import { SetMetaResponse } from './set/types'
+import { SetMetaResponse, SetItem } from './set/types'
 import extractSchemaDelOpts from './schema/extractSchemaDelOpts'
+import { update, UpdateQuery } from './update'
 
 export * as constants from './constants'
 
@@ -172,6 +173,14 @@ export class SelvaClient extends EventEmitter {
     }
 
     return get(this, getOpts)
+  }
+
+  async update(
+    setOpts: Omit<SetItem, '$id' | '$alias'> & { $db?: string },
+    query: UpdateQuery
+  ): Promise<boolean | void> {
+    await this.initializeSchema(setOpts)
+    return update(this, setOpts, query)
   }
 
   async set(setOpts: SetOptions, schema?: Schema): Promise<Id | undefined> {
