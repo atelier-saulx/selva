@@ -254,8 +254,6 @@ test.serial.only('update batch - api wrapper', async (t) => {
     },
   })
 
-  console.info(x)
-
   for (const thing in x.children) {
     // @ts-ignore
     if (!thing.flap && thing.str !== 'bla') {
