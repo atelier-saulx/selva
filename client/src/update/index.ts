@@ -69,7 +69,7 @@ async function update(
   //   ...args,
   // ]
 
-  const x = await client.redis.selva_update(
+  await client.redis.selva_update(
     { name: payload.$db || 'default' },
     '___selva_hierarchy',
     query.$find.$traverse,
@@ -78,8 +78,6 @@ async function update(
     padId(op.id),
     ...args
   )
-
-  console.info(x)
 }
 
 export { update }
