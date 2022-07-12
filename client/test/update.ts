@@ -254,8 +254,6 @@ test.serial('update batch - api wrapper', async (t) => {
     },
   })
 
-  console.info(x)
-
   for (const thing of x.children) {
     if (!thing.flap && thing.str !== 'bla') {
       t.fail('all things need a flap and str')
