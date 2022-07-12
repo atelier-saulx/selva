@@ -35,20 +35,25 @@ export default async function parseSetObject(
   client: SelvaClient,
   payload: SetOptions,
   schemas: Schema,
-  $lang?: string
+  $lang?: string,
+  noTarget?: boolean
 ): Promise<string[]> {
   // id, R|N, field enum, fieldName, value
   const result: string[] = ['']
 
-  if (!payload.$id && !payload.$alias) {
-    payload.$id = await client.id({
-      db: payload.$db || 'default',
-      type: payload.type,
-    })
-  }
+  if (noTarget) {
+    // dont do too many things special
+  } else {
+    if (!payload.$id && !payload.$alias) {
+      payload.$id = await client.id({
+        db: payload.$db || 'default',
+        type: payload.type,
+      })
+    }
 
-  if (payload.$id) {
-    ;(<any>result).$id = payload.$id
+    if (payload.$id) {
+      ;(<any>result).$id = payload.$id
+    }
   }
 
   if (payload.$db) {
