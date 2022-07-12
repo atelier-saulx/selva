@@ -665,7 +665,7 @@ static int new_marker(
     marker->sub = sub;
 
     if (fields_str) {
-        mempcpy(marker->fields, fields_str, fields_len);
+        memcpy(marker->fields, fields_str, fields_len);
         marker->fields[fields_len] = '\0';
     }
 
