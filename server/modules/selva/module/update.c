@@ -59,7 +59,7 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
     *update_ops = RedisModule_PoolAlloc(ctx, nr_update_ops * sizeof(struct update_op));
 
     argv++;
-    for (long long i = 0; i < nr_update_ops; i += 3) {
+    for (long long i = 0; i < nr_update_ops * 3; i += 3) {
         struct update_op op = {
             .type_code = RedisModule_StringPtrLen(argv[i], NULL)[0],
             .field = argv[i + 1],
@@ -122,7 +122,7 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
             }
         }
 
-        memcpy(&(*update_ops)[i], &op, sizeof(op));
+        memcpy(&(*update_ops)[i / 3], &op, sizeof(op));
     }
 
     return (int)nr_update_ops;
