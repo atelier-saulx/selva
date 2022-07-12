@@ -218,7 +218,7 @@ test.serial('subscription and batch update', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('update batch - api wrapper', async (t) => {
+test.serial('update batch - api wrapper', async (t) => {
   const client = connect({
     port,
   })
@@ -253,6 +253,8 @@ test.serial.only('update batch - api wrapper', async (t) => {
       $list: true,
     },
   })
+
+  console.info(x)
 
   for (const thing in x.children) {
     // @ts-ignore
