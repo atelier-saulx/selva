@@ -103,6 +103,12 @@ enum selva_op_repl_state {
     SELVA_OP_REPL_STATE_REPLICATE,  /*!< Value might have changed, replicate, reply with OK */
 };
 
+enum selva_op_repl_state SelvaModify_ModifyMetadata(
+        struct RedisModuleCtx *ctx,
+        struct SelvaObject *obj,
+        const struct RedisModuleString *field,
+        const struct RedisModuleString *value);
+
 struct SelvaModify_OpSet *SelvaModify_OpSet_align(
         struct RedisModuleCtx *ctx,
         const struct RedisModuleString *data);
