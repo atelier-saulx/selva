@@ -304,7 +304,7 @@ test.serial.only('update batch - api wrapper', async (t) => {
     },
   })
 
-  t.is(x2.children.length, 0)
+  t.deepEqual(x2.children, [])
 
   // const x3 = await client.get({
   //   descendants: {
