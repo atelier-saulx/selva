@@ -81,6 +81,12 @@ test.beforeEach(async (t) => {
       },
     },
     types: {
+      team: {
+        prefix: 'te',
+        fields: {
+          name: { type: 'text' },
+        },
+      },
       match: {
         prefix: 'ma',
         fields: {
@@ -2738,4 +2744,136 @@ test.serial('createdAt and updatedAt replication', async (t) => {
 
   t.deepEqual(updatedAtOrigin, updatedAtReplica)
   t.deepEqual(createdAtOrigin, createdAtReplica)
+})
+
+test.serial('replicate updates - text', async (t) => {
+  await wait(5000)
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $language: 'en',
+    $id: 'root',
+    children: [
+      {
+        $id: 'ma1',
+        title: 'match 1',
+      },
+      {
+        $id: 'ma2',
+        title: 'match 2',
+      },
+      {
+        $id: 'ma3',
+        title: 'match 3',
+      },
+    ],
+  })
+
+  await client.update({
+    $language: 'en',
+    type: 'match',
+    title: 'same',
+  }, {
+    $find: {
+      $traverse: 'children',
+      $filter: {
+        $operator: '=',
+        $value: 'match',
+        $field: 'type',
+      },
+    },
+  })
+
+  client.destroy()
+  await wait(500)
+
+  for (const id of ['ma1', 'ma2', 'ma3']) {
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        rclientOrigin.send_command(
+          'selva.object.get',
+          ['en', id, 'title'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      'same'
+    )
+    t.deepEqual(
+      await new Promise((resolve, reject) =>
+        rclientReplica.send_command(
+          'selva.object.get',
+          ['en', id, 'title'],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      ),
+      'same'
+    )
+  }
+})
+
+test.serial.failing('replicate updates - parents', async (t) => {
+  await wait(5000)
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $language: 'en',
+    $id: 'te1',
+    name: 'Team',
+  })
+  await client.set({
+    $language: 'en',
+    $id: 'root',
+    children: [
+      {
+        $id: 'ma1',
+        title: 'match 1',
+      },
+      {
+        $id: 'ma2',
+        title: 'match 2',
+      },
+      {
+        $id: 'ma3',
+        title: 'match 3',
+      },
+    ],
+  })
+
+  await client.update({
+    type: 'match',
+    parents: ['te1'],
+  }, {
+    $find: {
+      $traverse: 'children',
+      $filter: {
+        $operator: '=',
+        $value: 'match',
+        $field: 'type',
+      },
+    },
+  })
+
+  client.destroy()
+  await wait(500)
+
+  t.deepEqualIgnoreOrder(
+    await new Promise((resolve, reject) =>
+      rclientOrigin.send_command(
+        'selva.hierarchy.children',
+        ['___selva_hierarchy', 'te1'],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    ['ma1', 'ma2', 'ma3']
+  )
+  t.deepEqualIgnoreOrder(
+    await new Promise((resolve, reject) =>
+      rclientReplica.send_command(
+        'selva.hierarchy.children',
+        ['___selva_hierarchy', 'te1'],
+        (err, res) => (err ? reject(err) : resolve(res))
+      )
+    ),
+    ['ma1', 'ma2', 'ma3']
+  )
 })
