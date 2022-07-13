@@ -190,9 +190,11 @@ export default async (
   type: string,
   $lang?: string
 ): Promise<number> => {
-  let noRoot = false
+  let noRoot = field === 'parents'
   const r: SetOptions = {}
   const isEmpty = (v: any) => !v || !v.length
+
+  // TODO: fix noRoot
 
   if (
     typeof payload === 'object' &&

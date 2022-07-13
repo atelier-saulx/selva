@@ -2,13 +2,16 @@ import test from 'ava'
 import { performance } from 'perf_hooks'
 import { connect } from '../../src/index'
 import { start, startReplica } from '@saulx/selva-server'
-import { wait } from '../assertions'
+import { wait, removeDump } from '../assertions'
 import getPort from 'get-port'
-
+import path from 'path'
 let srv
 let port: number
 
 test.before(async (t) => {
+  const r = removeDump(path.join(__dirname, '../../tmp'))
+
+  r()
   port = await getPort()
   srv = await start({
     port,
@@ -110,10 +113,10 @@ test.serial('perf: find descendants', async (t) => {
   for (let i = 0; i < 1000; i++) {
     const start = performance.now()
     const q: any[] = []
-    for (let i = 0; i < 10000; i++) {
+    for (let i = 0; i < 10e3; i++) {
       q.push(
         client.set({
-          // parents: [user],
+          parents: [user],
           type: 'email',
         })
       )

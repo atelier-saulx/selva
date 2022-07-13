@@ -63,7 +63,8 @@ export default async function parseSetObject(
   // for batched sets
   ;(<any>result).$extraQueries = []
 
-  if (payload.parents && (<any>payload.parents).$noRoot) {
+  //  && (<any>payload.parents).$noRoot
+  if (payload.parents) {
     result[0] += 'N'
   }
 

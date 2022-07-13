@@ -50,7 +50,7 @@ async function update(
     payload.$db || 'default',
     query.$find,
     {},
-    payload.$id || 'root',
+    query.$id || 'root',
     '',
     false
   )
