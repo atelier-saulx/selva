@@ -47,6 +47,8 @@ export * as constants from './constants'
 
 let clientId = 0
 
+console.log('heloo sleva!@!#§')
+
 export class SelvaClient extends EventEmitter {
   public redis: Redis
   public pg: TimeseriesClient
