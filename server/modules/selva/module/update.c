@@ -354,7 +354,6 @@ static int update_node_cb(
      * too much.
      */
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
-    RedisModule_ReplicateVerbatim(ctx);
 
     return 0;
 }
@@ -580,6 +579,7 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     RedisModule_ReplyWithLongLong(ctx, nr_nodes);
+    RedisModule_ReplicateVerbatim(ctx);
 
     return REDISMODULE_OK;
 #undef SHIFT_ARGS
