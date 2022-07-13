@@ -264,12 +264,7 @@ static enum selva_op_repl_state update_op(
             }
         }
     } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-        /* TODO support meta */
-#if 0
-        (void)handle_modify_arg_op_obj_meta(ctx, obj, field, op->value);
-#endif
-        fprintf(stderr, "%s:%d: selva.update doesn't support metadata updates\n",
-                __FILE__, __LINE__);
+        return SelvaModify_ModifyMetadata(ctx, obj, field, op->value);
     } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
         int err;
 

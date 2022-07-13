@@ -1005,7 +1005,7 @@ void get_replicate_ts(struct replicate_ts *rs, struct SelvaHierarchyNode *node, 
     }
 }
 
-enum selva_op_repl_state handle_modify_arg_op_obj_meta(
+enum selva_op_repl_state SelvaModify_ModifyMetadata(
         RedisModuleCtx *ctx,
         struct SelvaObject *obj,
         const RedisModuleString *field,
@@ -1139,7 +1139,7 @@ static enum selva_op_repl_state modify_array_op(
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-        return handle_modify_arg_op_obj_meta(ctx, obj, field, value);
+        return SelvaModify_ModifyMetadata(ctx, obj, field, value);
     } else {
         replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "ERR Invalid operation type with array syntax: \"%c\"", type_code);
         return SELVA_OP_REPL_STATE_UNCHANGED;
@@ -1312,7 +1312,7 @@ static enum selva_op_repl_state modify_op(
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-        return handle_modify_arg_op_obj_meta(ctx, obj, field, value);
+        return SelvaModify_ModifyMetadata(ctx, obj, field, value);
     } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
         uint32_t v;
         int err;
