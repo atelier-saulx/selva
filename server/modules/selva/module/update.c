@@ -354,6 +354,7 @@ static int update_node_cb(
      * too much.
      */
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
+    RedisModule_ReplicateVerbatim(ctx);
 
     return 0;
 }
