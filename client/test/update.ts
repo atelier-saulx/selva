@@ -306,17 +306,17 @@ test.serial.only('update batch - api wrapper', async (t) => {
 
   t.is(x2.children.length, 0)
 
-  const x3 = await client.get({
-    descendants: {
-      name: true,
-      flap: true,
-      str: true,
-      parents: true,
-      $list: true,
-    },
-  })
+  // const x3 = await client.get({
+  //   descendants: {
+  //     name: true,
+  //     flap: true,
+  //     str: true,
+  //     parents: true,
+  //     $list: true,
+  //   },
+  // })
 
-  console.log(JSON.stringify(x3, null, 2))
+  // console.log(JSON.stringify(x3, null, 2))
 
   await client.destroy()
 
