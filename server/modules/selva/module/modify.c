@@ -1260,16 +1260,7 @@ static enum selva_op_repl_state modify_op(
         if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
             err = SelvaObject_SetLongLongDefault(obj, field, ll);
         } else {
-            long long old_value;
-
-            if (!SelvaObject_GetLongLong(obj, field, &old_value)) {
-                if (old_value == ll) {
-                    RedisModule_ReplyWithSimpleString(ctx, "OK");
-                    return SELVA_OP_REPL_STATE_UNCHANGED;
-                }
-            }
-
-            err = SelvaObject_SetLongLong(obj, field, ll);
+            err = SelvaObject_UpdateLongLong(obj, field, ll);
         }
         if (err == SELVA_EEXIST) { /* Default handling. */
             RedisModule_ReplyWithSimpleString(ctx, "OK");
@@ -1293,16 +1284,7 @@ static enum selva_op_repl_state modify_op(
         if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
             err = SelvaObject_SetDoubleDefault(obj, field, d);
         } else {
-            double old_value;
-
-            if (!SelvaObject_GetDouble(obj, field, &old_value)) {
-                if (old_value == d) {
-                    RedisModule_ReplyWithSimpleString(ctx, "OK");
-                    return SELVA_OP_REPL_STATE_UNCHANGED;
-                }
-            }
-
-            err = SelvaObject_SetDouble(obj, field, d);
+            err = SelvaObject_UpdateDouble(obj, field, d);
         }
         if (err == SELVA_EEXIST) { /* Default handling. */
             RedisModule_ReplyWithSimpleString(ctx, "OK");

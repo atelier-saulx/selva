@@ -920,6 +920,38 @@ int SelvaObject_SetDoubleDefault(struct SelvaObject *obj, const RedisModuleStrin
     return SelvaObject_SetDoubleDefaultStr(obj, key_name_str, key_name_len, value);
 }
 
+int SelvaObject_UpdateDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
+    const enum SelvaObjectType type = SELVA_OBJECT_DOUBLE;
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+    if (err) {
+        return err;
+    } else if (key->type == type &&
+               key->emb_double_value == value) {
+        return SELVA_EEXIST;
+    }
+
+    err = clear_key_value(key);
+    if (err) {
+        return err;
+    }
+
+    key->type = type;
+    key->emb_double_value = value;
+
+    return 0;
+}
+
+int SelvaObject_UpdateDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+    TO_STR(key_name);
+
+    return SelvaObject_UpdateDoubleStr(obj, key_name_str, key_name_len, value);
+}
+
 int SelvaObject_SetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
     struct SelvaObjectKey *key;
     int err;
@@ -984,6 +1016,38 @@ int SelvaObject_SetLongLongDefault(struct SelvaObject *obj, const RedisModuleStr
     TO_STR(key_name);
 
     return SelvaObject_SetLongLongDefaultStr(obj, key_name_str, key_name_len, value);
+}
+
+int SelvaObject_UpdateLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
+    const enum SelvaObjectType type = SELVA_OBJECT_LONGLONG;
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+    if (err) {
+        return err;
+    } else if (key->type == type &&
+               key->emb_ll_value == value) {
+        return SELVA_EEXIST;
+    }
+
+    err = clear_key_value(key);
+    if (err) {
+        return err;
+    }
+
+    key->type = type;
+    key->emb_ll_value = value;
+
+    return 0;
+}
+
+int SelvaObject_UpdateLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+    TO_STR(key_name);
+
+    return SelvaObject_UpdateLongLongStr(obj, key_name_str, key_name_len, value);
 }
 
 int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, RedisModuleString *value) {
