@@ -177,10 +177,18 @@ int SelvaObject_SetDoubleStr(struct SelvaObject *obj, const char *key_name_str, 
 int SelvaObject_SetDouble(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
 int SelvaObject_SetDoubleDefaultStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value);
 int SelvaObject_SetDoubleDefault(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
+int SelvaObject_UpdateDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value);
+int SelvaObject_UpdateDouble(struct SelvaObject *obj, const struct RedisModuleString *key_name, double value);
 int SelvaObject_SetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value);
 int SelvaObject_SetLongLong(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long value);
 int SelvaObject_SetLongLongDefaultStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value);
 int SelvaObject_SetLongLongDefault(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long value);
+int SelvaObject_UpdateLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value);
+/**
+ * Update a field value.
+ * Return SELVA_EEXIST if the current value equals value; Otherwise set value.
+ */
+int SelvaObject_UpdateLongLong(struct SelvaObject *obj, const struct RedisModuleString *key_name, long long value);
 int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct RedisModuleString *value);
 /**
  * Set a string value.

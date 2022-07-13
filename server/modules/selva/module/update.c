@@ -211,57 +211,37 @@ static enum selva_op_repl_state update_op(
 
             RedisModule_RetainString(ctx, value);
         }
-    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
-               type_code == SELVA_MODIFY_ARG_LONGLONG) {
+    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
         long long ll = op->ll;
+        int err;
 
-        if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
-            int err;
-
-            err = SelvaObject_SetLongLongDefault(obj, field, ll);
-            if (err) {
-                return SELVA_OP_REPL_STATE_UNCHANGED;
-            }
-        } else {
-            long long old_value;
-            int err;
-
-            if (!SelvaObject_GetLongLong(obj, field, &old_value)) {
-                if (old_value == ll) {
-                    return SELVA_OP_REPL_STATE_UNCHANGED;
-                }
-            }
-
-            err = SelvaObject_SetLongLong(obj, field, ll);
-            if (err) {
-                return SELVA_OP_REPL_STATE_UNCHANGED;
-            }
+        err = SelvaObject_SetLongLongDefault(obj, field, ll);
+        if (err) {
+            return SELVA_OP_REPL_STATE_UNCHANGED;
         }
-    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE ||
-               type_code == SELVA_MODIFY_ARG_DOUBLE) {
+    } else if (type_code == SELVA_MODIFY_ARG_LONGLONG) {
+        long long ll = op->ll;
+        int err;
+
+        err = SelvaObject_UpdateLongLong(obj, field, ll);
+        if (err) {
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
         double d = op->d;
+        int err;
 
-        if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
-            int err;
+        err = SelvaObject_SetDoubleDefault(obj, field, d);
+        if (err) {
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
+    } else if (type_code == SELVA_MODIFY_ARG_DOUBLE) {
+        double d = op->d;
+        int err;
 
-            err = SelvaObject_SetDoubleDefault(obj, field, d);
-            if (err) {
-                return SELVA_OP_REPL_STATE_UNCHANGED;
-            }
-        } else {
-            double old_value;
-            int err;
-
-            if (!SelvaObject_GetDouble(obj, field, &old_value)) {
-                if (old_value == d) {
-                    return SELVA_OP_REPL_STATE_UNCHANGED;
-                }
-            }
-
-            err = SelvaObject_SetDouble(obj, field, d);
-            if (err) {
-                return SELVA_OP_REPL_STATE_UNCHANGED;
-            }
+        err = SelvaObject_UpdateDouble(obj, field, d);
+        if (err) {
+            return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
         /* TODO support meta */
