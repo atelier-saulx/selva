@@ -1,20 +1,26 @@
 import test from 'ava'
+import { join } from 'path'
 import { performance } from 'perf_hooks'
 import { connect } from '../../src/index'
 import { start, startReplica } from '@saulx/selva-server'
 import { wait, removeDump } from '../assertions'
 import getPort from 'get-port'
-import path from 'path'
+
+const dirOrigin = join(process.cwd(), 'tmp', 'setParents-origin')
+const dirReplica = join(process.cwd(), 'tmp', 'setParents-replica')
+const rOrigin = removeDump(dirOrigin)
+const rReplica = removeDump(dirOrigin)
 let srv
 let port: number
 
 test.before(async (t) => {
-  const r = removeDump(path.join(__dirname, '../../tmp'))
+  rOrigin()
+  rReplica()
 
-  r()
   port = await getPort()
   srv = await start({
     port,
+    dir: dirOrigin,
     // selvaOptions: [
     //   'FIND_INDICES_MAX',
     //   '100',
@@ -29,6 +35,7 @@ test.before(async (t) => {
 
   await startReplica({
     name: 'default',
+    dir: dirReplica,
     registry: { port },
     selvaOptions: [
       'FIND_INDICES_MAX',
@@ -74,6 +81,8 @@ test.after(async (t) => {
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
+  rOrigin()
+  rReplica()
 })
 
 test.serial('perf: find descendants', async (t) => {
