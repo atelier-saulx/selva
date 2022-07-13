@@ -218,15 +218,28 @@ test.serial('subscription and batch update', async (t) => {
   await client.destroy()
 })
 
-test.serial('update batch - api wrapper', async (t) => {
+test.serial.only('update batch - api wrapper', async (t) => {
   const client = connect({
     port,
   })
 
-  await client.set({
+  const id = await client.set({
     type: 'thing',
     str: 'blurgh',
   })
+
+  for (let i = 0; i < 10; i++) {
+    client.set({
+      $id: id,
+      children: [
+        {
+          type: 'thing',
+          flap: false,
+          name: 'bla ' + i,
+        },
+      ],
+    })
+  }
 
   await client.update(
     {
@@ -259,6 +272,51 @@ test.serial('update batch - api wrapper', async (t) => {
       t.fail('all things need a flap and str')
     }
   }
+
+  await client.update(
+    {
+      type: 'thing',
+      name: 'BLA',
+      parents: {
+        $add: 'root',
+        $delete: id,
+      },
+    },
+    {
+      $id: id,
+      $find: {
+        $traverse: 'children',
+        $filter: {
+          $operator: '=',
+          $value: 'thing',
+          $field: 'type',
+        },
+      },
+    }
+  )
+
+  const x2 = await client.get({
+    $id: id,
+    children: {
+      flap: true,
+      str: true,
+      $list: true,
+    },
+  })
+
+  t.is(x2.children.length, 0)
+
+  const x3 = await client.get({
+    descendants: {
+      name: true,
+      flap: true,
+      str: true,
+      parents: true,
+      $list: true,
+    },
+  })
+
+  console.log(JSON.stringify(x3, null, 2))
 
   await client.destroy()
 
