@@ -93,13 +93,6 @@ export default async function parseSetObject(
 
   const fields = schema.fields
 
-  if (!payload.updatedAt && fields.updatedAt?.type === 'timestamp') {
-    result[0] += 'u'
-  }
-  if (!payload.createdAt && fields.createdAt?.type === 'timestamp') {
-    result[0] += 'c'
-  }
-
   for (const key in payload) {
     if (key === 'type') {
       // Drop
