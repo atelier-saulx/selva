@@ -70,7 +70,7 @@ async function update(
   // ]
 
   await client.redis.selva_update(
-    { name: payload.$db || 'default' },
+    { name: payload.$db || 'default', type: 'origin' },
     '___selva_hierarchy',
     query.$find.$traverse,
     (parsed.length - 1) / 3,
