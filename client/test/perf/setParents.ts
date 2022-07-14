@@ -3,6 +3,7 @@ import { join } from 'path'
 import { performance } from 'perf_hooks'
 import { connect } from '../../src/index'
 import { start, startReplica } from '@saulx/selva-server'
+import redis, { RedisClient, ReplyError } from '@saulx/redis-client'
 import { wait, removeDump } from '../assertions'
 import getPort from 'get-port'
 
@@ -10,8 +11,9 @@ const dirOrigin = join(process.cwd(), 'tmp', 'setParents-origin')
 const dirReplica = join(process.cwd(), 'tmp', 'setParents-replica')
 const rOrigin = removeDump(dirOrigin)
 const rReplica = removeDump(dirOrigin)
-let srv
 let port: number
+let srv
+let replica
 
 test.before(async (t) => {
   rOrigin()
@@ -33,7 +35,7 @@ test.before(async (t) => {
     // ],
   })
 
-  await startReplica({
+  replica = await startReplica({
     name: 'default',
     dir: dirReplica,
     registry: { port },
@@ -89,6 +91,26 @@ test.serial('perf: find descendants', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   await wait(2e3)
 
+  const setBufLimit = async (redisPort: number) => {
+    const rclientOrigin = redis.createClient(redisPort)
+    const disableLimit = async (className: string) => {
+      const res = await new Promise((resolve, reject) =>
+        rclientOrigin.send_command(
+          'config',
+          ['set', 'client-output-buffer-limit', `${className} 0 0 0`],
+          (err, res) => (err ? reject(err) : resolve(res))
+        )
+      )
+      console.log('set client-output-buffer-limit:', res)
+    }
+
+    disableLimit('normal')
+    disableLimit('replica')
+    disableLimit('pubsub')
+    rclientOrigin.end(true)
+  }
+  await setBufLimit(replica.origin.port)
+
   const user = 'use8a03954'
 
   await client.set({
@@ -134,6 +156,7 @@ test.serial('perf: find descendants', async (t) => {
 
     const time = performance.now() - start
     console.info('round:', i, time, 'ms')
+    //await wait(1000)
   }
 
   t.pass('smurp')
