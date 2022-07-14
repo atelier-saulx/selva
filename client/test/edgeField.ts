@@ -1109,18 +1109,20 @@ test.serial('wildcard find with edge fields', async (t) => {
     await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'thing.*', 'root'),
     [
       [
-        "root",
+        'root',
         [
-          "thing",
+          'thing',
           [[
-            "id",
-            "ma1",
-            "ding",
-            "dong",
-            "dong",
-            "ding",
-            "id",
-            "ma1",
+            'id',
+            'ma1',
+            'ding',
+            'dong',
+            'dong',
+            'ding',
+            'id',
+            'ma1',
+            'type',
+            'match',
           ]]
         ]
       ]
@@ -1139,8 +1141,10 @@ test.serial('wildcard find with edge fields', async (t) => {
           'dong',
           'dong',
           'ding',
-          "id",
-          "ma1",
+          'id',
+          'ma1',
+          'type',
+          'match',
         ],
         [
           'id',
@@ -1151,6 +1155,8 @@ test.serial('wildcard find with edge fields', async (t) => {
           'ding',
           'id',
           'ma2',
+          'type',
+          'match',
         ],
       ],
     ]]]
