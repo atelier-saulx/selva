@@ -41,8 +41,7 @@ let rclientReplica: RedisClient | null = null
 const dir = join(process.cwd(), 'tmp', 'replication')
 
 test.before(async (t) => {
-  await removeDump(dir)()
-
+  removeDump(dir)()
   port = await getPort()
   srv = await start({
     port,
@@ -2876,4 +2875,81 @@ test.serial.failing('replicate updates - parents', async (t) => {
     ),
     ['ma1', 'ma2', 'ma3']
   )
+})
+
+test.serial('replication + subscribe & flush', async (t) => {
+  await wait(5000)
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.set({
+    $language: 'en',
+    $id: 'te1',
+    name: 'Team',
+    children: [
+      {
+        $id: 'ma1',
+        title: 'match 1',
+      },
+      {
+        $id: 'ma2',
+        title: 'match 2',
+      },
+      {
+        $id: 'ma3',
+        title: 'match 3',
+      },
+    ],
+  })
+
+  const sub = client.observe({
+    $id: 'te1',
+    children: true,
+  }).subscribe(() => {})
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      descendants: true,
+    }),
+    {
+      descendants: [ 'te1', 'ma1', 'ma2', 'ma3' ],
+    }
+  )
+
+  //await client.redis.flushall()
+  await new Promise((resolve, reject) =>
+    rclientOrigin.send_command(
+      'FLUSHALL',
+      [],
+      (err, res) => (err ? reject(err) : resolve(res))
+    )
+  )
+  //try {
+  //  const rclient = redis.createClient(replica.origin.port)
+  //  await new Promise((resolve, reject) =>
+  //    rclient.send_command(
+  //      'SHUTDOWN',
+  //      [],
+  //      (err, res) => (err ? reject(err) : resolve(res))
+  //    )
+  //  )
+  //  await wait(500)
+  //} catch (err) {
+  //  console.log('err:', err)
+  //}
+  await wait(500)
+  sub.destroy()
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      descendants: true,
+    }),
+    {
+      descendants: [],
+    }
+  )
+
+  client.destroy()
+  await wait(500)
 })
