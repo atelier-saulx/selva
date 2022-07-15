@@ -71,6 +71,10 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
             if (!op.set_opts) {
                 return SELVA_EINVAL;
             }
+
+            if (op.set_opts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
+                return SELVA_ENOTSUP;
+            }
         } else if (op.type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             size_t len;
             const char *str = RedisModule_StringPtrLen(op.value, &len);
