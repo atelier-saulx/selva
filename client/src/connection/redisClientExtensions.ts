@@ -55,6 +55,7 @@ const selva_commands = [
   'selva.hierarchy.types.add',
   'selva.hierarchy.types.clear',
   'selva.hierarchy.types.list',
+  'selva.hierarchy.ver',
   'selva.inherit',
   'selva.resolve.nodeid',
   'selva.subscriptions.add',
