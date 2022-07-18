@@ -36,7 +36,7 @@
  * This is used to track the Selva module version used to create and modify the
  * hierarchy that was serialized and later deserialized.
  */
-struct SelvaDbVersionInfo {
+static struct SelvaDbVersionInfo {
     RedisModuleString *created_with;
     RedisModuleString *updated_with;
 } selva_db_version_info;
@@ -3941,6 +3941,35 @@ int SelvaHierarchy_ListCompressedCommand(RedisModuleCtx *ctx, RedisModuleString 
     return REDISMODULE_OK;
 }
 
+int SelvaHierarchy_VerCommand(RedisModuleCtx *ctx, RedisModuleString **argv __unused, int argc) {
+    RedisModule_AutoMemory(ctx);
+
+    if (argc != 1) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    RedisModule_ReplyWithArray(ctx, 6);
+
+    RedisModule_ReplyWithSimpleString(ctx, "running");
+    RedisModule_ReplyWithSimpleString(ctx, selva_version);
+
+    RedisModule_ReplyWithSimpleString(ctx, "created");
+    if (selva_db_version_info.created_with) {
+        RedisModule_ReplyWithString(ctx, selva_db_version_info.created_with);
+    } else {
+        RedisModule_ReplyWithNull(ctx);
+    }
+
+    RedisModule_ReplyWithSimpleString(ctx, "updated");
+    if (selva_db_version_info.updated_with) {
+        RedisModule_ReplyWithString(ctx, selva_db_version_info.updated_with);
+    } else {
+        RedisModule_ReplyWithNull(ctx);
+    }
+
+    return REDISMODULE_OK;
+}
+
 static int SelvaVersion_AuxLoad(RedisModuleIO *io, int encver __unused, int when __unused) {
     selva_db_version_info.created_with = RedisModule_LoadString(io);
     selva_db_version_info.updated_with = RedisModule_LoadString(io);
@@ -3953,12 +3982,14 @@ static int SelvaVersion_AuxLoad(RedisModuleIO *io, int encver __unused, int when
 }
 
 static void SelvaVersion_AuxSave(RedisModuleIO *io, int when __unused) {
+    const size_t len = strlen(selva_version);
+
     if (selva_db_version_info.created_with) {
         RedisModule_SaveString(io, selva_db_version_info.created_with);
     } else {
-        RedisModule_SaveStringBuffer(io, selva_version, strlen(selva_version));
+        RedisModule_SaveStringBuffer(io, selva_version, len);
     }
-    RedisModule_SaveStringBuffer(io, selva_version, strlen(selva_version));
+    RedisModule_SaveStringBuffer(io, selva_version, len);
 }
 
 static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
@@ -3999,7 +4030,8 @@ static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {
         RedisModule_CreateCommand(ctx, "selva.hierarchy.edgeget", SelvaHierarchy_EdgeGetCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.edgegetmetadata", SelvaHierarchy_EdgeGetMetadataCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.hierarchy.compress", SelvaHierarchy_CompressCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.listcompressed", SelvaHierarchy_ListCompressedCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.listcompressed", SelvaHierarchy_ListCompressedCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.hierarchy.ver", SelvaHierarchy_VerCommand, "readonly allow-stale fast", 0, 0, 0) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
