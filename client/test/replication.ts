@@ -2810,7 +2810,8 @@ test.serial('replicate updates - text', async (t) => {
   }
 })
 
-test.serial.failing('replicate updates - parents', async (t) => {
+// Updating ref fields is not supported
+test.serial.skip('replicate updates - parents', async (t) => {
   await wait(5000)
   const client = connect({ port }, { loglevel: 'info' })
 
