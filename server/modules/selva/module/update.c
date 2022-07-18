@@ -69,57 +69,61 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         if (op.type_code == SELVA_MODIFY_ARG_OP_SET) {
             op.set_opts = SelvaModify_OpSet_align(ctx, op.value);
             if (!op.set_opts) {
-                op.type_code = SELVA_MODIFY_ARG_INVALID;
+                return SELVA_EINVAL;
+            }
+
+            if (op.set_opts->op_set_type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE) {
+                return SELVA_ENOTSUP;
             }
         } else if (op.type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             size_t len;
             const char *str = RedisModule_StringPtrLen(op.value, &len);
 
-            if (len == sizeof(struct SelvaModify_OpIncrement)) {
-                memcpy(&op.increment_opts_int64, (const struct SelvaModify_OpIncrement *)str, len);
-            } else {
-                op.type_code = SELVA_MODIFY_ARG_INVALID;
+            if (len != sizeof(struct SelvaModify_OpIncrement)) {
+                return SELVA_EINVAL;
             }
+
+            memcpy(&op.increment_opts_int64, (const struct SelvaModify_OpIncrement *)str, len);
         } else if (op.type_code == SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE) {
             size_t len;
             const char *str = RedisModule_StringPtrLen(op.value, &len);
 
-            if (len == sizeof(struct SelvaModify_OpIncrementDouble)) {
-                memcpy(&op.increment_opts_double, (const struct SelvaModify_OpIncrementDouble *)str, len);
-            } else {
-                op.type_code = SELVA_MODIFY_ARG_INVALID;
+            if (len != sizeof(struct SelvaModify_OpIncrementDouble)) {
+                return SELVA_EINVAL;
             }
+
+            memcpy(&op.increment_opts_double, (const struct SelvaModify_OpIncrementDouble *)str, len);
         } else if (op.type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
                    op.type_code == SELVA_MODIFY_ARG_LONGLONG) {
             size_t value_len;
             const char *value_str = RedisModule_StringPtrLen(op.value, &value_len);
             long long ll;
 
-            if (value_len == sizeof(ll)) {
-                memcpy(&op.ll, value_str, sizeof(ll));
-            } else {
-                op.type_code = SELVA_MODIFY_ARG_INVALID;
+            if (value_len != sizeof(ll)) {
+                return SELVA_EINVAL;
             }
+
+            memcpy(&op.ll, value_str, sizeof(ll));
         } else if (op.type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE ||
                    op.type_code == SELVA_MODIFY_ARG_DOUBLE) {
             size_t value_len;
             const char *value_str = RedisModule_StringPtrLen(op.value, &value_len);
             double d;
 
-            if (value_len == sizeof(d)) {
-                memcpy(&op.d, value_str, sizeof(d));
-            } else {
-                op.type_code = SELVA_MODIFY_ARG_INVALID;
+            if (value_len != sizeof(d)) {
+                return SELVA_EINVAL;
             }
+
+            memcpy(&op.d, value_str, sizeof(d));
         } else if (op.type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
             size_t value_len;
             const char *value_str = RedisModule_StringPtrLen(op.value, &value_len);
 
-            if (value_len == sizeof(uint32_t)) {
-                memcpy(&op.u32, value_str, sizeof(uint32_t));
-            } else {
-                op.type_code = SELVA_MODIFY_ARG_INVALID;
+            if (value_len != sizeof(uint32_t)) {
+                return SELVA_EINVAL;
             }
+
+            memcpy(&op.u32, value_str, sizeof(uint32_t));
         }
 
         memcpy(&(*update_ops)[i / 3], &op, sizeof(op));

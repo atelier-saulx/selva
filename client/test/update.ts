@@ -218,7 +218,39 @@ test.serial('subscription and batch update', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('update batch - api wrapper', async (t) => {
+test.serial('update refs not supported', async (t) => {
+  const client = connect({ port })
+
+  const id1 = await client.set({ type: 'notthing' })
+  await client.set({
+    $id: 'root',
+    children: [
+     { type: 'thing' },
+     { type: 'thing' },
+    ]
+  })
+
+  await t.throwsAsync(() => client.update(
+    {
+      type: 'thing',
+      parents: [id1],
+    },
+    {
+      $find: {
+        $traverse: 'descendants',
+        $filter: {
+          $operator: '=',
+          $value: 'thing',
+          $field: 'type',
+        },
+      },
+    }
+  ))
+
+  await client.destroy()
+})
+
+test.serial.skip('update batch - api wrapper', async (t) => {
   const client = connect({
     port,
   })
