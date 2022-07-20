@@ -22,8 +22,9 @@ enum SelvaObjectType {
     SELVA_OBJECT_POINTER = 7,
 } __packed;
 
-#define SELVA_OBJECT_REPLY_SPLICE_FLAG 0x01 /*!< Set if the path should be spliced to start from the first wildcard. */
-#define SELVA_OBJECT_REPLY_BINUMF_FLAG 0x02 /*!< Send numeric fields in an LE binary format. */
+#define SELVA_OBJECT_REPLY_SPLICE_FLAG  0x01 /*!< Set if the path should be spliced to start from the first wildcard. */
+#define SELVA_OBJECT_REPLY_BINUMF_FLAG  0x02 /*!< Send numeric fields in an LE binary format. */
+#define SELVA_OBJECT_REPLY_ANY_OBJ_FLAG 0x03 /*!< Send any object as a wildcard reply from SelvaObject_GetPointerPartialMatchStr(). */
 
 /**
  * Size of struct SelvaObject.
