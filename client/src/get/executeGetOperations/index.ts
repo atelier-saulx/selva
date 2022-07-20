@@ -661,10 +661,6 @@ const TYPE_TO_SPECIAL_OP: Record<
   ) => {
     const { db } = ctx
 
-    if (!schema) {
-      schema = client.schemas[db]
-    }
-
     const r = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       '',
@@ -673,7 +669,22 @@ const TYPE_TO_SPECIAL_OP: Record<
       'fields', field,
       padId(id)
     )
-    return r[0][1]
+
+    let out = []
+    const fields = r[0] ? r[0][1] : []
+
+    for (let i = 0; i < fields.length; i += 2) {
+      if (fields[i] == field) {
+        out.push(...fields[i + 1])
+      } else {
+        out.push(
+          fields[i].substring(field.length + 1),
+          fields[i + 1]
+        )
+      }
+    }
+
+    return out
   }
 }
 

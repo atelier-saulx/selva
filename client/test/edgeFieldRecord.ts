@@ -67,7 +67,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.failing('references in a record', async (t) => {
+test.serial('references in a record', async (t) => {
   const client = connect({ port })
 
   const fr1 = await client.set({
@@ -109,7 +109,7 @@ test.serial.failing('references in a record', async (t) => {
   client.destroy()
 })
 
-test.serial.failing('object record with references', async (t) => {
+test.serial('object record with references', async (t) => {
   const client = connect({ port })
 
   const fr1 = await client.set({
