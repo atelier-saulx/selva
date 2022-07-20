@@ -651,6 +651,30 @@ const TYPE_TO_SPECIAL_OP: Record<
       return o
     }
   },
+  record: async (
+    client: SelvaClient,
+    ctx: ExecContext,
+    id: string,
+    field: string,
+    lang?: string,
+    schema?: Schema
+  ) => {
+    const { db } = ctx
+
+    if (!schema) {
+      schema = client.schemas[db]
+    }
+
+    const r = await client.redis.selva_hierarchy_find(
+      ctx.originDescriptors[ctx.db] || { name: ctx.db },
+      '',
+      '___selva_hierarchy',
+      'node',
+      'fields', field,
+      padId(id)
+    )
+    return r[0][1]
+  }
 }
 
 export const executeNestedGetOperations = async (
