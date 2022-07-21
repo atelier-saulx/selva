@@ -1,7 +1,7 @@
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import { wait } from './assertions'
+import { wait, getIndexingState } from './assertions'
 import getPort from 'get-port'
 
 let srv
@@ -161,17 +161,17 @@ test.serial('find index', async (t) => {
     await client.get(q)
   }
 
-  const ilist = await client.redis.selva_index_list('___selva_hierarchy')
-  t.deepEqual(ilist[0], 'root.J.ImxlIiBl')
-  t.truthy(ilist[1][0] > 140, `${ilist[1][0]}`)
-  t.truthy(ilist[1][1] > 700, `${ilist[1][1]}`)
-  t.truthy(ilist[1][2] < 1, `${ilist[1][2]}`)
-  t.truthy(ilist[1][3] === '3002', `${ilist[1][2]}`)
-  t.deepEqual(ilist[2], 'root.J.InRoaW5nIiBo')
-  t.truthy(ilist[3][0] > 200, `${ilist[1][0]}`)
-  t.truthy(ilist[3][1] > 700, `${ilist[1][1]}`)
-  t.truthy(ilist[3][2] > 700, `${ilist[1][2]}`)
-  t.truthy(ilist[3][3] === '1001', `${ilist[1][2]}`)
+  const istate = await getIndexingState(client)
+  t.truthy(istate['root.J.ImxlIiBl'])
+  t.truthy(istate['root.J.ImxlIiBl'].take_max_ave > 140, istate['root.J.ImxlIiBl'].take_max_ave)
+  t.truthy(istate['root.J.ImxlIiBl'].tot_max_ave > 400, istate['root.J.ImxlIiBl'].tot_max_ave)
+  t.truthy(istate['root.J.ImxlIiBl'].ind_take_max_ave < 1, istate['root.J.ImxlIiBl'].ind_take_max_ave)
+  t.truthy(istate['root.J.ImxlIiBl'].card === '3002', istate['root.J.ImxlIiBl'].card)
+  t.truthy(istate['root.J.InRoaW5nIiBo'])
+  t.truthy(istate['root.J.InRoaW5nIiBo'].take_max_ave > 150, istate['root.J.InRoaW5nIiBo'].take_max_ave)
+  t.truthy(istate['root.J.InRoaW5nIiBo'].tot_max_ave > 400, istate['root.J.InRoaW5nIiBo'].tot_max_ave)
+  t.truthy(istate['root.J.InRoaW5nIiBo'].ind_take_max_ave > 700, istate['root.J.InRoaW5nIiBo'].ind_take_max_ave)
+  t.truthy(istate['root.J.InRoaW5nIiBo'].card === '1001', istate['root.J.InRoaW5nIiBo'].card)
 
   await client.destroy()
 })
@@ -353,17 +353,17 @@ test.serial('find index string sets', async (t) => {
   }
   await wait(1e3)
 
-  const ilist = await client.redis.selva_index_list('___selva_hierarchy')
-  t.deepEqual(ilist[0], 'root.J.ImciICJ0aGluZ3MiIGE=')
-  t.truthy(ilist[1][0] > 90, `${ilist[1][0]}`)
-  t.truthy(ilist[1][1] > 90, `${ilist[1][1]}`)
-  t.truthy(ilist[1][2] > 5, `${ilist[1][2]}`)
-  t.truthy(ilist[1][3] > 5, `${ilist[1][2]}`)
-  t.deepEqual(ilist[2], 'root.J.InRoaW5nIiBmICJhYmMiIGM=')
-  t.truthy(ilist[3][0] > 90, `${ilist[1][0]}`)
-  t.truthy(ilist[3][1] > 90, `${ilist[1][1]}`)
-  t.truthy(ilist[3][2] > 5, `${ilist[1][2]}`)
-  t.truthy(ilist[3][3] > 5, `${ilist[1][2]}`)
+  const istate = await getIndexingState(client)
+  t.truthy(istate['root.J.ImciICJ0aGluZ3MiIGE='])
+  t.truthy(istate['root.J.ImciICJ0aGluZ3MiIGE='].take_max_ave > 80, istate['root.J.ImciICJ0aGluZ3MiIGE='].take_max_ave)
+  t.truthy(istate['root.J.ImciICJ0aGluZ3MiIGE='].tot_max_ave > 80, istate['root.J.ImciICJ0aGluZ3MiIGE='].tot_max_ave)
+  t.truthy(istate['root.J.ImciICJ0aGluZ3MiIGE='].ind_take_max_ave > 10, istate['root.J.ImciICJ0aGluZ3MiIGE='].ind_take_max_ave)
+  t.truthy(istate['root.J.ImciICJ0aGluZ3MiIGE='].card === '10', istate['root.J.ImciICJ0aGluZ3MiIGE='].card)
+  t.truthy(istate['root.J.InRoaW5nIiBmICJhYmMiIGM='])
+  t.truthy(istate['root.J.InRoaW5nIiBmICJhYmMiIGM='].take_max_ave > 80, istate['root.J.InRoaW5nIiBmICJhYmMiIGM='].take_max_ave)
+  t.truthy(istate['root.J.InRoaW5nIiBmICJhYmMiIGM='].tot_max_ave > 80, istate['root.J.InRoaW5nIiBmICJhYmMiIGM='].tot_max_ave)
+  t.truthy(istate['root.J.InRoaW5nIiBmICJhYmMiIGM='].ind_take_max_ave > 5, istate['root.J.InRoaW5nIiBmICJhYmMiIGM='].ind_take_max_ave)
+  t.truthy(istate['root.J.InRoaW5nIiBmICJhYmMiIGM='].card === '1000', istate['root.J.InRoaW5nIiBmICJhYmMiIGM='].card)
 
   await client.destroy()
 })
