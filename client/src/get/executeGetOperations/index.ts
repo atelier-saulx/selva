@@ -442,7 +442,9 @@ export const TYPE_CASTS: Record<
           ['object', 'text'].includes(fieldSchema.type) &&
           Array.isArray(val)
         ) {
-          o[key] = {}
+          if (!o[key]) {
+            o[key] = {}
+          }
           parse(o[key], f, val)
         } else {
           val = typeCast(val, id, f, schema, lang)
