@@ -139,7 +139,7 @@ test.serial('object record with references', async (t) => {
     },
   })
 
-  t.deepEqual(
+  t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'root',
       groups: true,
