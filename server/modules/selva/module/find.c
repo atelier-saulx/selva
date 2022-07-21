@@ -127,11 +127,12 @@ static int send_edge_field(
         return SELVA_ENOENT;
     }
 
-    if (iswildcard(field_str, field_len)) {
-        field_len = 0;
-    } else if (field_len > 2 && field_str[field_len - 2] == '.' && field_str[field_len - 1] == '*') {
+#if 0
+    if (field_len > 2 && field_str[field_len - 2] == '.' && field_str[field_len - 1] == '*') {
         field_len -= 2;
     } else if (memmem(field_str, field_len, ".*.", 3)) {
+#endif
+    if (memmem(field_str, field_len, ".*.", 3)) {
         long resp_count = 0;
         int err;
 
@@ -155,6 +156,10 @@ static int send_edge_field(
         SelvaObject_Iterator *it;
         const char *key;
         int res = 0;
+
+        if (iswildcard(field_str, field_len)) {
+            field_len = 0;
+        }
 
         if (SelvaObject_GetObjectStr(edges, field_str, field_len, &next_obj)) {
             /* Fail if type wasn't SELVA_OBJECT_OBJECT */
@@ -213,7 +218,7 @@ static int send_edge_field(
 
         const char *next_field_str = field_str + off;
         const size_t next_field_len = field_len - off;
-        const int is_wildcard = iswildcard(next_field_str, field_len);
+        const int is_wildcard = iswildcard(next_field_str, next_field_len);
 
         const char *next_prefix_str;
         size_t next_prefix_len;
@@ -388,7 +393,9 @@ static int send_node_field(
 
         if (field_len >= 2 && field_str[field_len - 2] == '.' && field_str[field_len - 1] == '*') {
             field_len -= 2;
-        } else if (SelvaObject_ExistsStr(obj, field_str, field_len)) {
+        }
+
+        if (SelvaObject_ExistsStr(obj, field_str, field_len)) {
             /* Field didn't exist in the node. */
             return res;
         }

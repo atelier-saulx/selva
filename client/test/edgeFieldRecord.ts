@@ -136,6 +136,9 @@ test.serial('object record with references', async (t) => {
         name: 'worst friends',
         members: [fr3],
       },
+      c: {
+        name: 'empty',
+      },
     },
   })
 
@@ -152,6 +155,50 @@ test.serial('object record with references', async (t) => {
         },
         b: {
           name: 'worst friends',
+          members: [fr3],
+        },
+        c: {
+          name: 'empty',
+        },
+      }
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      groups: {
+        '*': { name: true },
+      },
+    }),
+    {
+      groups: {
+        a: {
+          name: 'best friends',
+        },
+        b: {
+          name: 'worst friends',
+        },
+        c: {
+          name: 'empty',
+        },
+      }
+    }
+  )
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: 'root',
+      groups: {
+        '*': { members: true },
+      }
+    }),
+    {
+      groups: {
+        a: {
+          members: [fr1, fr2],
+        },
+        b: {
           members: [fr3],
         },
       }
