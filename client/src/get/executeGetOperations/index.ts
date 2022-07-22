@@ -592,13 +592,19 @@ const TYPE_TO_SPECIAL_OP: Record<
     lang?: string,
     schema?: Schema
   ) => {
-    const r = await client.redis.selva_hierarchy_edgeget(
-      ctx.originDescriptors[ctx.db] || { name: ctx.db },
+    const paddedId = padId(id)
+    const { db } = ctx
+
+    const r = await client.redis.selva_hierarchy_find(
+      ctx.originDescriptors[db] || { name: db },
+      '',
       '___selva_hierarchy',
-      id,
-      field
+      'node',
+      'fields', field,
+      padId(id)
     )
-    return r && r[1]
+
+    return findNodeRes2array(field, r)
   },
   references: async (
     client: SelvaClient,
