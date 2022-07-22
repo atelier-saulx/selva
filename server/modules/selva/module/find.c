@@ -104,22 +104,85 @@ static int send_hierarchy_field(
 #undef IS_FIELD
 }
 
+static int iswildcard(const char *field_str, size_t field_len) {
+    return field_len == 1 && field_str[0] == WILDCARD_CHAR;
+}
+
 static int send_edge_field(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         SelvaHierarchy *hierarchy,
-        struct SelvaObject *edges,
+        struct SelvaHierarchyNode *node,
         const char *field_prefix_str,
         size_t field_prefix_len,
         const char *field_str,
         size_t field_len,
         RedisModuleString *excluded_fields) {
+    struct SelvaHierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
+    struct SelvaObject *edges = metadata->edge_fields.edges;
     struct EdgeField *edge_field;
     void *p;
 
+    if (!edges) {
+        return SELVA_ENOENT;
+    }
+
+#if 0
+    if (field_len > 2 && field_str[field_len - 2] == '.' && field_str[field_len - 1] == '*') {
+        field_len -= 2;
+    } else if (memmem(field_str, field_len, ".*.", 3)) {
+#endif
+    if (memmem(field_str, field_len, ".*.", 3)) {
+        long resp_count = 0;
+        int err;
+
+        err = SelvaObject_ReplyWithWildcardStr(ctx, NULL, edges, field_str, field_len, &resp_count, 0, SELVA_OBJECT_REPLY_ANY_OBJ_FLAG);
+        if (err && err != SELVA_ENOENT) {
+            Selva_NodeId node_id;
+
+            fprintf(stderr, "%s:%d: Sending edge fields with a wildcard \"%.*s\" of %.*s failed: %s\n",
+                    __FILE__, __LINE__,
+                    (int)field_len, field_str,
+                    (int)SELVA_NODE_ID_SIZE, SelvaHierarchy_GetNodeId(node_id, node),
+                    getSelvaErrorStr(err));
+        }
+        return (int)(resp_count / 2);
+    }
+
     const int off = SelvaObject_GetPointerPartialMatchStr(edges, field_str, field_len, &p);
     edge_field = p;
-    if (off < 0) {
+    if (off == SELVA_EINTYPE) {
+        struct SelvaObject *next_obj;
+        SelvaObject_Iterator *it;
+        const char *key;
+        int res = 0;
+
+        if (iswildcard(field_str, field_len)) {
+            field_len = 0;
+        }
+
+        if (SelvaObject_GetObjectStr(edges, field_str, field_len, &next_obj)) {
+            /* Fail if type wasn't SELVA_OBJECT_OBJECT */
+            return off;
+        }
+
+        it = SelvaObject_ForeachBegin(next_obj);
+        while ((key = SelvaObject_ForeachKey(edges, &it))) {
+            const size_t next_field_len = field_len + 1 + strlen(key);
+            char next_field_str[next_field_len + 1];
+            int err;
+
+            snprintf(next_field_str, next_field_len + 1, "%.*s.%s", (int)field_len, field_str, key);
+            err = send_edge_field(ctx, lang, hierarchy, node, field_prefix_str, field_prefix_len, next_field_str, next_field_len, excluded_fields);
+            if (err >= 0) {
+                res += err;
+            } else {
+                /* TODO What to do in case of an error? */
+            }
+        }
+
+        return res;
+    } else if (off < 0) {
         return off;
     } else if (!edge_field) {
         return SELVA_ENOENT;
@@ -134,7 +197,7 @@ static int send_edge_field(
         }
 
         replyWithEdgeField(ctx, edge_field);
-        return 0;
+        return 1;
     } else {
         /*
          * Note: The dst_node might be the same as node but this shouldn't case
@@ -155,7 +218,7 @@ static int send_edge_field(
 
         const char *next_field_str = field_str + off;
         const size_t next_field_len = field_len - off;
-        const int is_wildcard = next_field_len == 1 && next_field_str[0] == WILDCARD_CHAR;
+        const int is_wildcard = iswildcard(next_field_str, next_field_len);
 
         const char *next_prefix_str;
         size_t next_prefix_len;
@@ -227,7 +290,7 @@ static int send_edge_field(
             RedisModule_ReplySetArrayLength(ctx, 2 * nr_fields);
         }
 
-        return 0;
+        return 1;
     }
     /* NOT REACHED */
 }
@@ -278,6 +341,8 @@ static int send_node_field(
         }
     }
 
+    int res = 0;
+
     /*
      * Check if the field name is a hierarchy field name.
      */
@@ -295,64 +360,64 @@ static int send_node_field(
         /*
          * Check if the field name is an edge field.
          */
-        struct SelvaHierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
-        struct SelvaObject *edges = metadata->edge_fields.edges;
-
-        if (edges) {
-            err = send_edge_field(ctx, lang, hierarchy, edges, field_prefix_str, field_prefix_len, field_str, field_len, excluded_fields);
-            if (err == 0) {
-               return 1;
-            } else if (err != SELVA_ENOENT) {
-                return 0;
-            }
+        err = send_edge_field(ctx, lang, hierarchy, node, field_prefix_str, field_prefix_len, field_str, field_len, excluded_fields);
+        if (err < 0 && err != SELVA_ENOENT) {
+            return 0;
+        } else if (err >= 0) {
+            res += err;
         }
     }
 
     /*
      * Check if we have a wildcard in the middle of the field name
      * and process it.
+     * TODO Might be better to use memmem()
      */
     if (strstr(field_str, ".*.")) {
         long resp_count = 0;
 
         err = SelvaObject_ReplyWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err && err != SELVA_ENOENT) {
-            fprintf(stderr, "%s:%d: Sending wildcard field %.*s of %.*s failed: %s\n",
+            fprintf(stderr, "%s:%d: Sending wildcard field \"%.*s\" of %.*s failed: %s\n",
                     __FILE__, __LINE__,
                     (int)field_len, field_str,
                     (int)SELVA_NODE_ID_SIZE, nodeId,
                     getSelvaErrorStr(err));
         }
 
-        return (int)(resp_count / 2);
+        res += (int)(resp_count / 2);
+    } else {
+        /*
+         * Finally check if the field name is a key on the node object.
+         */
+
+        if (field_len >= 2 && field_str[field_len - 2] == '.' && field_str[field_len - 1] == '*') {
+            field_len -= 2;
+        }
+
+        if (SelvaObject_ExistsStr(obj, field_str, field_len)) {
+            /* Field didn't exist in the node. */
+            return res;
+        }
+
+        /*
+         * Send the reply.
+         */
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str));
+        err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        if (err) {
+            fprintf(stderr, "%s:%d: Failed to send the field (%.*s) for node_id: \"%.*s\" err: \"%s\"\n",
+                    __FILE__, __LINE__,
+                    (int)field_len, field_str,
+                    (int)SELVA_NODE_ID_SIZE, nodeId,
+                    getSelvaErrorStr(err));
+            RedisModule_ReplyWithNull(ctx);
+        }
+
+        res++;
     }
 
-    /*
-     * Finally check if the field name is a key on the node object.
-     */
-
-    if (field_len >= 2 && field_str[field_len - 2] == '.' && field_str[field_len - 1] == '*') {
-        field_len -= 2;
-    } else if (SelvaObject_ExistsStr(obj, field_str, field_len)) {
-        /* Field didn't exist in the node. */
-        return 0;
-    }
-
-    /*
-     * Send the reply.
-     */
-    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str));
-    err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
-    if (err) {
-        fprintf(stderr, "%s:%d: Failed to send the field (%.*s) for node_id: \"%.*s\" err: \"%s\"\n",
-                __FILE__, __LINE__,
-                (int)field_len, field_str,
-                (int)SELVA_NODE_ID_SIZE, nodeId,
-                getSelvaErrorStr(err));
-        RedisModule_ReplyWithNull(ctx);
-    }
-
-    return 1;
+    return res;
 }
 
 /**

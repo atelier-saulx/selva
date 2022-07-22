@@ -442,7 +442,9 @@ export const TYPE_CASTS: Record<
           ['object', 'text'].includes(fieldSchema.type) &&
           Array.isArray(val)
         ) {
-          o[key] = {}
+          if (!o[key]) {
+            o[key] = {}
+          }
           parse(o[key], f, val)
         } else {
           val = typeCast(val, id, f, schema, lang)
@@ -523,6 +525,44 @@ export function typeCast(
   return cast(x, id, field, schema, lang)
 }
 
+function findNodeRes2field(field: string, findRes: any) {
+  const fields = findRes[0] ? findRes[0][1] : []
+  let out = []
+
+  for (let i = 0; i < fields.length; i += 2) {
+    if (fields[i] === field) {
+      out.push(...fields[i + 1])
+    } else /* if (fields[i].substring(0, field.length) === field) */ {
+      out.push(
+        fields[i].substring(field.length + 1),
+        fields[i + 1]
+      )
+    }
+  }
+
+  return out
+}
+
+function findNodeRes2array(field: string, findRes: any) {
+  const fields = findRes[0] ? findRes[0][1] : []
+  let out = []
+
+  if (field.includes('.*.')) {
+    for (let i = 0; i < fields.length; i += 2) {
+      out.push(
+        fields[i].substring(field.indexOf('*')),
+        fields[i + 1]
+      )
+    }
+  } else {
+    for (let i = 0; i < fields.length; i += 2) {
+      out.push(...fields[i + 1])
+    }
+  }
+
+  return out
+}
+
 const TYPE_TO_SPECIAL_OP: Record<
   string,
   (
@@ -569,47 +609,18 @@ const TYPE_TO_SPECIAL_OP: Record<
     schema?: Schema
   ) => {
     const paddedId = padId(id)
-    if (field === 'ancestors') {
-      return client.redis.selva_hierarchy_find(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '',
-        '___selva_hierarchy',
-        'ancestors',
-        paddedId
-      )
-    } else if (field === 'descendants') {
-      return client.redis.selva_hierarchy_find(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '',
-        '___selva_hierarchy',
-        'descendants',
-        paddedId
-      )
-    } else if (field === 'parents') {
-      return client.redis.selva_hierarchy_parents(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '___selva_hierarchy',
-        id
-      )
-    } else if (field === 'children') {
-      return client.redis.selva_hierarchy_children(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '___selva_hierarchy',
-        id
-      )
-    } else {
-      const r = await client.redis.selva_hierarchy_edgeget(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '___selva_hierarchy',
-        id,
-        field
-      )
-      if (!r || r.length === 1) {
-        return null
-      }
-      r.shift()
-      return r
-    }
+    const { db } = ctx
+
+    const r = await client.redis.selva_hierarchy_find(
+      ctx.originDescriptors[db] || { name: db },
+      '',
+      '___selva_hierarchy',
+      'node',
+      'fields', field,
+      padId(id)
+    )
+
+    return findNodeRes2array(field, r)
   },
   text: async (
     client: SelvaClient,
@@ -651,6 +662,27 @@ const TYPE_TO_SPECIAL_OP: Record<
       return o
     }
   },
+  record: async (
+    client: SelvaClient,
+    ctx: ExecContext,
+    id: string,
+    field: string,
+    lang?: string,
+    schema?: Schema
+  ) => {
+    const { db } = ctx
+
+    const r = await client.redis.selva_hierarchy_find(
+      ctx.originDescriptors[db] || { name: db },
+      '',
+      '___selva_hierarchy',
+      'node',
+      'fields', field,
+      padId(id)
+    )
+
+    return findNodeRes2field(field, r)
+  }
 }
 
 export const executeNestedGetOperations = async (

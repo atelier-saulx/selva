@@ -138,7 +138,10 @@ test.serial('subscription to a reference', async (t) => {
       case 3:
         t.deepEqual(v, {
           title: 'football match',
-          venue: { title: 'Fake Ipurua Stadium' },
+          venue: {
+            seats: [],
+            title: 'Fake Ipurua Stadium'
+          },
         })
         break
       default:

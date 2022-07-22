@@ -886,6 +886,7 @@ test.serial('get - field with empty array', async (t) => {
     children: [],
     descendants: [],
     dong: { dingdong: [] },
+    refs: [],
   })
 
   t.deepEqualIgnoreOrder(
@@ -2400,6 +2401,7 @@ test.serial('get - field with array', async (t) => {
     dingdongs: ['a', 'b', 'test'],
     intArray: [1, 2, 3, 4, 5],
     floatArray: [1.1, 2.2, 3.3, 4.4],
+    refs: [],
     tsArray: [1634032349768, 1634032355278],
     objRec: {
       abba: {
