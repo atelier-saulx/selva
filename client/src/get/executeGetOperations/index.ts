@@ -758,7 +758,9 @@ export const executeGetOperation = async (
         )
 
         if (id) {
-          if (typeof id[1] === 'string') {
+          if (id.length == 1) {
+            id = id[0]
+          } else if (typeof id[1] === 'string') {
             id = id[1]
           } else {
             // references from a wildcard record
