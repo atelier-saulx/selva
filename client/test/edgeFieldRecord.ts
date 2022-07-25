@@ -218,7 +218,7 @@ test.serial('object record with references', async (t) => {
   client.destroy()
 })
 
-test.serial.only('single references in an object record', async (t) => {
+test.serial('single references in an object record', async (t) => {
   const client = connect({ port })
 
   const fr1 = await client.set({
@@ -351,33 +351,33 @@ test.serial.only('single references in an object record', async (t) => {
     }
   )
 
-  //t.deepEqual(
-  //  await client.get({
-  //    $id: 'root',
-  //    info: {
-  //      '*': {
-  //        kind: true,
-  //        ref: { name: true },
-  //      },
-  //    },
-  //  }),
-  //  {
-  //    info: {
-  //      cohen: {
-  //        kind: 'good',
-  //        ref: { name: 'Cohen Gilliam' },
-  //      },
-  //      maometto: {
-  //        kind: 'bad',
-  //        ref: { name: 'Mohamad Bentley' },
-  //      },
-  //      fitz: {
-  //        kind: 'best',
-  //        ref: { name: 'Letitia Fitzgerald' },
-  //      }
-  //    },
-  //  }
-  //)
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      info: {
+        '*': {
+          kind: true,
+          ref: { name: true },
+        },
+      },
+    }),
+    {
+      info: {
+        cohen: {
+          kind: 'good',
+          ref: { name: 'Cohen Gilliam' },
+        },
+        maometto: {
+          kind: 'bad',
+          ref: { name: 'Mohamad Bentley' },
+        },
+        fitz: {
+          kind: 'best',
+          ref: { name: 'Letitia Fitzgerald' },
+        }
+      },
+    }
+  )
 
   client.destroy()
 })

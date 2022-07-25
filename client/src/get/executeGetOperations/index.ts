@@ -731,12 +731,7 @@ export const executeGetOperation = async (
         : [op.field]
 
       let id = op.fromReference
-        ? await client.redis.selva_hierarchy_edgeget(
-            ctx.originDescriptors[ctx.db] || { name: ctx.db },
-            '___selva_hierarchy',
-            op.id,
-            ...field
-          )
+        ? await TYPE_TO_SPECIAL_OP.reference(client, ctx, op.id, field.join('\n'), lang, schema)
         : await client.redis.selva_object_get(
             ctx.originDescriptors[ctx.db] || { name: ctx.db },
             makeLangArg((schema || client.schemas[ctx.db]).languages, lang),
@@ -763,20 +758,20 @@ export const executeGetOperation = async (
         )
 
         if (id) {
-          id = id[1]
+          if (typeof id[1] === 'string') {
+            id = id[1]
+          } else {
+            // references from a wildcard record
+            let tmp = {}
+            for (let i = 0; i < id.length; i += 2) {
+              tmp[id[i]] = id[i + 1]
+            }
+            id = tmp
+          }
         }
       }
 
-      if (!id) {
-        return null
-      }
-
-      const props = Object.assign({}, op.props, { $id: id })
-      if (!op.props.$db && ctx.db && ctx.db !== 'default') {
-        props.$db = ctx.db
-      }
-
-      return executeNestedGetOperations(
+      const execGetOp = (props) => executeNestedGetOperations(
         client,
         props,
         lang,
@@ -785,6 +780,33 @@ export const executeGetOperation = async (
         op.fromReference === true ? false : true,
         schema
       )
+
+      if (typeof id === 'string') {
+        const props = Object.assign({}, op.props, { $id: id })
+
+        if (!op.props.$db && ctx.db && ctx.db !== 'default') {
+          props.$db = ctx.db
+        }
+
+        return execGetOp(props)
+      } else if (typeof id === 'object') {
+        const res = {}
+
+        await Promise.all(Object.keys(id).map(async (key) => {
+          const props = Object.assign({}, op.props, { $id: id[key] })
+
+          if (!op.props.$db && ctx.db && ctx.db !== 'default') {
+            props.$db = ctx.db
+          }
+
+          setNestedResult(res, key, await execGetOp(props))
+        }))
+
+        return res;
+      } else {
+          return null;
+      }
+
     } else {
       const id = await resolveId(client, op.props)
       if (!id) return null
