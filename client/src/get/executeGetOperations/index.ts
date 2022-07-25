@@ -758,13 +758,16 @@ export const executeGetOperation = async (
         )
 
         if (id) {
-          if (id.length == 1) {
+          if (id.length == 0) {
+            return null
+          } else if (id.length == 1) {
             id = id[0]
           } else if (typeof id[1] === 'string') {
             id = id[1]
           } else {
             // references from a wildcard record
-            let tmp = {}
+            const tmp = {}
+
             for (let i = 0; i < id.length; i += 2) {
               tmp[id[i]] = id[i + 1]
             }
