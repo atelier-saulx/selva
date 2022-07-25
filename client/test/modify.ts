@@ -1641,6 +1641,7 @@ test.serial('$delete: true', async (t) => {
       title: {
         en: 'yes title is back!!!',
       },
+      reffyRefs: [],
       settySet: ['hmmmm'],
     }
   )
@@ -1665,6 +1666,7 @@ test.serial('$delete: true', async (t) => {
       title: {
         en: 'yes title is back!!!',
       },
+      reffyRefs: [],
     }
   )
 
