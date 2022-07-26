@@ -94,18 +94,18 @@ test.serial('basic trigger created subscriptions', async (t) => {
 
   await wait(500)
 
-  try {
-    const subs = await client.redis.selva_subscriptions_list(
-      '___selva_hierarchy'
-    )
+  //try {
+  //  const subs = await client.redis.selva_subscriptions_list(
+  //    '___selva_hierarchy'
+  //  )
 
-    const sub = subs[0]
-    console.log(
-      await client.redis.selva_subscriptions_debug('___selva_hierarchy', sub)
-    )
-  } catch (e) {
-    console.log('wtf', e)
-  }
+  //  const sub = subs[0]
+  //  console.log(
+  //    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sub)
+  //  )
+  //} catch (e) {
+  //  console.log('wtf', e)
+  //}
 
   await wait(500 * 2)
 
@@ -265,7 +265,7 @@ test.serial('basic trigger updated subscriptions', async (t) => {
     no: 'initial value',
   })
 
-  t.plan(2)
+  t.plan(3)
 
   let o2counter = 0
   const other = client.observeEvent('updated', {
@@ -280,6 +280,7 @@ test.serial('basic trigger updated subscriptions', async (t) => {
       },
     },
     $all: true,
+    parents: true,
     aliases: false,
   })
 
@@ -290,6 +291,7 @@ test.serial('basic trigger updated subscriptions', async (t) => {
         id: thing,
         type: 'yeshType',
         yesh: 'extra nice',
+        parents: ['root'],
       })
     } else if (o2counter === 1) {
       // gets start event
@@ -297,9 +299,17 @@ test.serial('basic trigger updated subscriptions', async (t) => {
         id: thing2,
         type: 'noType',
         no: 'hmm',
+        parents: ['root'],
+      })
+    } else if (o2counter === 2) {
+      t.deepEqualIgnoreOrder(d, {
+        id: thing2,
+        type: 'noType',
+        no: 'hmm',
+        parents: [thing],
       })
     } else {
-      t.fail
+      t.fail()
     }
     o2counter++
   })
@@ -326,19 +336,24 @@ test.serial('basic trigger updated subscriptions', async (t) => {
     $id: thing2,
     no: 'hmm',
   })
+  await wait(10)
+  await client.set({
+    $id: thing2,
+    parents: [thing],
+  })
 
-  try {
-    const subs = await client.redis.selva_subscriptions_list(
-      '___selva_hierarchy'
-    )
+  //try {
+  //  const subs = await client.redis.selva_subscriptions_list(
+  //    '___selva_hierarchy'
+  //  )
 
-    const sub = subs[0]
-    console.log(
-      await client.redis.selva_subscriptions_debug('___selva_hierarchy', sub)
-    )
-  } catch (e) {
-    console.log('wtf', e)
-  }
+  //  const sub = subs[0]
+  //  console.log(
+  //    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sub)
+  //  )
+  //} catch (e) {
+  //  console.log('wtf', e)
+  //}
 
   await wait(500 * 2)
 
@@ -429,7 +444,7 @@ test.serial('basic trigger deleted subscriptions', async (t) => {
       // yes
 
       deleteResp = d
-      console.log('d', d)
+      //console.log('d', d)
       t.pass()
     } else {
       t.fail
@@ -459,18 +474,18 @@ test.serial('basic trigger deleted subscriptions', async (t) => {
     no: 'hmm',
   })
 
-  try {
-    const subs = await client.redis.selva_subscriptions_list(
-      '___selva_hierarchy'
-    )
+  //try {
+  //  const subs = await client.redis.selva_subscriptions_list(
+  //    '___selva_hierarchy'
+  //  )
 
-    const sub = subs[0]
-    console.log(
-      await client.redis.selva_subscriptions_debug('___selva_hierarchy', sub)
-    )
-  } catch (e) {
-    console.log('wtf', e)
-  }
+  //  const sub = subs[0]
+  //  console.log(
+  //    await client.redis.selva_subscriptions_debug('___selva_hierarchy', sub)
+  //  )
+  //} catch (e) {
+  //  console.log('wtf', e)
+  //}
 
   await wait(500 * 2)
 
