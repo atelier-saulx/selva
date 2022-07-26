@@ -41,6 +41,16 @@ test.beforeEach(async (t) => {
             },
           },
         },
+        info: {
+          type: 'record',
+          values: {
+            type: 'object',
+            properties: {
+              kind: { type: 'string' },
+              ref: { type: 'reference' },
+            },
+          },
+        },
       },
     },
     types: {
@@ -202,6 +212,170 @@ test.serial('object record with references', async (t) => {
           members: [fr3],
         },
       }
+    }
+  )
+
+  client.destroy()
+})
+
+test.serial('single references in an object record', async (t) => {
+  const client = connect({ port })
+
+  const fr1 = await client.set({
+    type: 'friend',
+    name: 'Cohen Gilliam',
+  })
+  const fr2 = await client.set({
+    type: 'friend',
+    name: 'Mohamad Bentley',
+  })
+  const fr3 = await client.set({
+    type: 'friend',
+    name: 'Letitia Fitzgerald',
+  })
+
+  await client.set({
+    $id: 'root',
+    info: {
+      cohen: {
+        kind: 'good',
+        ref: fr1,
+      },
+      maometto: {
+        kind: 'bad',
+        ref: fr2,
+      },
+      fitz: {
+        kind: 'best',
+        ref: fr3,
+      }
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      info: true,
+    }),
+    {
+      info: {
+        cohen: {
+          kind: 'good',
+          ref: fr1,
+        },
+        maometto: {
+          kind: 'bad',
+          ref: fr2,
+        },
+        fitz: {
+          kind: 'best',
+          ref: fr3,
+        }
+      },
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      info: {
+        '*': {
+          ref: true,
+        },
+      },
+    }),
+    {
+      info: {
+        cohen: {
+          ref: fr1,
+        },
+        maometto: {
+          ref: fr2,
+        },
+        fitz: {
+          ref: fr3,
+        }
+      },
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      info: {
+        '*': {
+          kind: true,
+        },
+      },
+    }),
+    {
+      info: {
+        cohen: {
+          kind: 'good',
+        },
+        maometto: {
+          kind: 'bad',
+        },
+        fitz: {
+          kind: 'best',
+        }
+      },
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      info: {
+        '*': {
+          kind: true,
+          ref: true,
+        },
+      },
+    }),
+    {
+      info: {
+        cohen: {
+          kind: 'good',
+          ref: fr1,
+        },
+        maometto: {
+          kind: 'bad',
+          ref: fr2,
+        },
+        fitz: {
+          kind: 'best',
+          ref: fr3,
+        }
+      },
+    }
+  )
+
+  t.deepEqual(
+    await client.get({
+      $id: 'root',
+      info: {
+        '*': {
+          kind: true,
+          ref: { name: true },
+        },
+      },
+    }),
+    {
+      info: {
+        cohen: {
+          kind: 'good',
+          ref: { name: 'Cohen Gilliam' },
+        },
+        maometto: {
+          kind: 'bad',
+          ref: { name: 'Mohamad Bentley' },
+        },
+        fitz: {
+          kind: 'best',
+          ref: { name: 'Letitia Fitzgerald' },
+        }
+      },
     }
   )
 
