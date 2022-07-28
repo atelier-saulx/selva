@@ -90,6 +90,15 @@ Object.assign(Assertions.prototype, {
   deepEqualIgnoreOrder(actual, expected, message = '') {
     const actCopy = deepCopy(actual)
     const expCopy = deepCopy(expected)
+
+    if (!expCopy['createdAt']) {
+      delete actCopy['createdAt']
+    }
+
+    if (!expCopy['updatedAt']) {
+      delete actCopy['updatedAt']
+    }
+
     deepSort(actCopy, expCopy)
     this.deepEqual(actCopy, expCopy, message)
   },

@@ -150,16 +150,22 @@ test.serial('inherit single reference', async (t) => {
     'Inherit all fields from venue'
   )
 
-  t.deepEqual(
-    await client.get({
-      $id: child,
-      $language: 'en',
-      title: true,
-      venue: {
-        $inherit: true,
-        $all: true,
-      },
-    }),
+  const res = await client.get({
+    $id: child,
+    $language: 'en',
+    title: true,
+    venue: {
+      $inherit: true,
+      $all: true,
+      // TODO This is throwing
+      //createdAt: false,
+      //updatedAt: false,
+    },
+  })
+  delete res.venue.createdAt
+  delete res.venue.updatedAt
+  t.deepEqualIgnoreOrder(
+    res,
     {
       title: 'football match',
       venue: { id: venue, type: 'venue', title: 'Ipurua Stadium' },
