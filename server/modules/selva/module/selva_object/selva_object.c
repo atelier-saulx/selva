@@ -2268,7 +2268,7 @@ int SelvaObject_ReplyWithObjectStr(
     int err;
 
     if (!key_name_str) {
-        replyWithObject(ctx, lang, obj, flags, SELVA_HIDDEN_FIELDS);
+        replyWithObject(ctx, lang, obj, flags, NULL);
         return 0;
     }
 
@@ -2341,7 +2341,7 @@ int SelvaObject_ReplyWithObject(
         TO_STR(key_name);
         return SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len, flags);
     } else {
-        replyWithObject(ctx, lang, obj, flags, SELVA_HIDDEN_FIELDS);
+        replyWithObject(ctx, lang, obj, flags, NULL);
         return 0;
     }
 }
