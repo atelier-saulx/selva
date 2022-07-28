@@ -454,7 +454,7 @@ test.serial('singular reference inherit reference', async (t) => {
   await client.destroy()
 })
 
-test.serial.failing('list of simple singular reference', async (t) => {
+test.serial('list of simple singular reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   // const match1 = await client.set({

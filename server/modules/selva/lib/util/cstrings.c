@@ -2,10 +2,12 @@
  * Copyright (c) 2020-2021 SAULX
  * SPDX-License-Identifier: MIT
  */
-#include <string.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
+#define _GNU_SOURCE
+#include <string.h>
 #include "cstrings.h"
 
 /* int is probably large enough for Selva users. */
@@ -83,6 +85,59 @@ int stringlist_searchn(const char *list, const char *str, size_t n) {
     }
 
     return 0;
+}
+
+static char * prefixed_only_cpy(char *dst, const char *src, size_t len, const char *prefix_str, size_t prefix_len) {
+    if (len > prefix_len && !strncmp(src, prefix_str, prefix_len)) {
+        size_t cpy_len = len - prefix_len;
+
+        memcpy(dst, src + prefix_len, cpy_len);
+        return dst + cpy_len;
+    }
+
+    return dst;
+}
+
+void stringlist_remove_prefix(char *dst, const char *src, int len, const char *prefix_str, size_t prefix_len) {
+    const char *s = src;
+
+    if (len == 0) {
+        return;
+    }
+
+    dst[0] = '\0';
+
+    while (len > 0) {
+        const char *end;
+
+        end = memmem(s, len, "\n", 1);
+        if (!end) {
+            end = s + len;
+        }
+
+        const size_t slen = end - s;
+
+        if (prefix_str && prefix_len > 0) {
+            char *new_dst;
+
+            new_dst = prefixed_only_cpy(dst, s, slen, prefix_str, prefix_len);
+            if (new_dst != dst) {
+                dst = new_dst;
+                *(dst++) = '\n';
+            }
+        } else {
+            memcpy(dst, s, slen);
+            dst += slen;
+            *(dst++) = '\n';
+        }
+
+        s += slen + 1;
+        len -= slen + 1;
+    }
+
+    if (len <= 0) {
+        *(--dst) = '\0';
+    }
 }
 
 size_t substring_count(const char *string, const char *substring, size_t n) {

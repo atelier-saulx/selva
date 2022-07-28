@@ -258,6 +258,34 @@ static int send_edge_field(
             RedisModule_ReplyWithStringBuffer(ctx, SELVA_ID_FIELD, sizeof(SELVA_ID_FIELD) - 1);
             RedisModule_ReplyWithStringBuffer(ctx, dst_node_id, Selva_NodeIdLen(dst_node_id));
 
+            RedisModuleString *new_excluded_fields = NULL;
+            if (excluded_fields) {
+                TO_STR(excluded_fields);
+                size_t field_stop;
+                char new_excluded_fields_str[excluded_fields_len + 1];
+                size_t new_excluded_fields_len;
+
+                if (is_wildcard) {
+                    field_stop = field_len - 1;
+                } else {
+                    char *s = memchr(field_str, '.', field_len);
+
+                    if (s) {
+                        field_stop = (size_t)(s - field_str + 1);
+                    } else {
+                        /* RFE is this a case? */
+                        field_stop = field_len;
+                    }
+                }
+
+                stringlist_remove_prefix(new_excluded_fields_str, excluded_fields_str, excluded_fields_len, field_str, field_stop);
+                new_excluded_fields_len = strlen(new_excluded_fields_str);
+
+                if (new_excluded_fields_len > 0) {
+                    new_excluded_fields = RedisModule_CreateString(ctx, new_excluded_fields_str, new_excluded_fields_len);
+                }
+            }
+
             if (is_wildcard) {
                 int res;
 
@@ -268,10 +296,7 @@ static int send_edge_field(
                     nr_fields++;
                 }
 
-                /*
-                 * RFE Excluding fields doesn't currently work with wildcard.
-                 */
-                res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, NULL, 0, NULL);
+                res = send_all_node_data_fields(ctx, lang, hierarchy, dst_node, NULL, 0, new_excluded_fields);
                 if (next_prefix_str) {
                     RedisModule_ReplySetArrayLength(ctx, res > 0 ? res : 0);
                 } else if (res >= 0) {
@@ -281,7 +306,7 @@ static int send_edge_field(
                 struct SelvaObject *dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
                 int res;
 
-                res = send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field_str, next_field_len, excluded_fields);
+                res = send_node_field(ctx, lang, hierarchy, dst_node, dst_obj, next_prefix_str, next_prefix_len, next_field_str, next_field_len, new_excluded_fields);
                 if (res > 0) {
                     nr_fields += res;
                 }
