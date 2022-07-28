@@ -295,12 +295,15 @@ test.serial('root', async (t) => {
     [match]
   )
 
-  t.deepEqual(await client.get({ $id: 'root', $all: true }), {
-    id: 'root',
-    type: 'root',
-    value: 9001,
-    hello: 'http://example.com/hello--yo-yes',
-  })
+  t.deepEqualIgnoreOrder(
+    await client.get({ $id: 'root', $all: true }),
+    {
+      id: 'root',
+      type: 'root',
+      value: 9001,
+      hello: 'http://example.com/hello--yo-yes',
+    }
+  )
 
   await client.delete('root')
   await client.destroy()

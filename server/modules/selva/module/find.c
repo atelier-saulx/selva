@@ -375,10 +375,6 @@ static int send_all_node_data_fields(
         size_t field_name_len = strlen(field_name_str);
         int res;
 
-        if (stringlist_searchn(SELVA_HIDDEN_FIELDS, field_name_str, field_name_len)) {
-            continue;
-        }
-
         res = send_node_field(ctx, lang, hierarchy, node, obj, field_prefix_str, field_prefix_len, field_name_str, field_name_len, excluded_fields);
         if (res >= 0) {
             nr_fields += res;

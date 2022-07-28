@@ -627,18 +627,24 @@ test.serial('alias and merge = false', async (t) => {
 
   t.deepEqual(
     await client.redis.hgetall('___selva_aliases'),
-    { nice_match: match1, nicer_match: match2 });
+    { nice_match: match1, nicer_match: match2 }
+  )
+  const res1 = await client.redis.selva_object_get('', match1)
   t.deepEqual(
-    await client.redis.selva_object_get('', match1),
+    res1,
     [
       'aliases',
       [ 'nice_match' ],
+      'createdAt',
+      res1[3],
       'id',
       match1,
       'title',
       [ 'en', 'lol' ],
       'type',
-      'match'
+      'match',
+      'updatedAt',
+      res1[11]
     ]
   )
 

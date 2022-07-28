@@ -404,7 +404,7 @@ test.serial('Restore from disk', async (t) => {
 
   // TODO Test that we didn't fallback to inmem
 
-  t.deepEqual(
+  t.deepEqualIgnoreOrder(
     await client.get({ $id: 'ma1', $all: true }),
     {
       description: {

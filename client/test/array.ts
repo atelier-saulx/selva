@@ -75,8 +75,9 @@ test.serial('can use $delete inside array', async (t) => {
   const result = await client.get({
     $id: id,
     $all: true,
+    createdAt: false,
+    updatedAt: false,
   })
-
   t.deepEqual(result, {
     id: id,
     type: 'thing',

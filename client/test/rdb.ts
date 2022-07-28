@@ -299,7 +299,13 @@ test.serial('can reload from RDB', async (t) => {
   await wait(5000)
   client = connect({ port })
 
-  t.deepEqual(await client.get({ $id: 'viTest', $all: true, parents: true }), {
+  t.deepEqual(await client.get({
+    $id: 'viTest',
+    $all: true,
+    parents: true,
+    createdAt: false,
+    updatedAt: false,
+  }), {
     id: 'viTest',
     type: 'lekkerType',
     parents: ['root'],
@@ -421,7 +427,13 @@ test.serial('can reload from RDB', async (t) => {
   await wait(5000)
   client = connect({ port })
 
-  t.deepEqual(await client.get({ $id: 'viTest', $all: true, parents: true }), {
+  t.deepEqual(await client.get({
+      $id: 'viTest',
+      $all: true,
+      parents: true,
+      createdAt: false,
+      updatedAt: false,
+  }), {
     id: 'viTest',
     type: 'lekkerType',
     parents: ['root'],
