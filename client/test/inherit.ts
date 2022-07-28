@@ -645,6 +645,8 @@ test.serial('$all + object', async (t) => {
       $inherit: { $type: 'genre' },
     },
   })
+  delete result.createdAt
+  delete result.updatedAt
 
   t.deepEqual(
     result,

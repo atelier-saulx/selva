@@ -454,7 +454,7 @@ test.serial('singular reference inherit reference', async (t) => {
   await client.destroy()
 })
 
-test.serial('list of simple singular reference', async (t) => {
+test.serial.failing('list of simple singular reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
   // const match1 = await client.set({
@@ -560,6 +560,8 @@ test.serial('list of simple singular reference', async (t) => {
       $language: 'en',
       children: {
         $all: true,
+        createdAt: false,
+        updatedAt: false,
         parents: true,
         specialMatch: {
           id: true,
@@ -595,8 +597,12 @@ test.serial('list of simple singular reference', async (t) => {
     await client.get({
       $id: 'clA',
       $all: true,
+      createdAt: false,
+      updatedAt: false,
       specialMatch: {
         $all: true,
+        createdAt: false,
+        updatedAt: false,
       },
     }),
     {
@@ -620,10 +626,16 @@ test.serial('list of simple singular reference', async (t) => {
     await client.get({
       $id: 'clA',
       $all: true,
+      createdAt: false,
+      updatedAt: false,
       specialMatch: {
         $all: true,
+        createdAt: false,
+        updatedAt: false,
         bidirClub: {
           $all: true,
+          createdAt: false,
+          updatedAt: false,
         },
       },
     }),
@@ -650,8 +662,12 @@ test.serial('list of simple singular reference', async (t) => {
       $language: 'en',
       children: {
         $all: true,
+        createdAt: false,
+        updatedAt: false,
         specialMatch: {
           $all: true,
+          createdAt: false,
+          updatedAt: false,
         },
         $list: {
           $find: {

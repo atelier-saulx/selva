@@ -560,12 +560,15 @@ test.serial('get - $all simple', async (t) => {
     },
   })
 
+  const res = await client.get({
+    $id: 'maA',
+    $all: true,
+    aliases: false,
+  })
+  delete res.createdAt
+  delete res.updatedAt
   t.deepEqual(
-    await client.get({
-      $id: 'maA',
-      $all: true,
-      aliases: false,
-    }),
+    res,
     {
       id: 'maA',
       type: 'match',
@@ -600,15 +603,18 @@ test.serial('get - $all root level whitelist + $all', async (t) => {
     },
   })
 
+  const res = await client.get({
+    $id: 'clA',
+    image: {
+      thumb: true,
+    },
+    $all: true,
+    aliases: false,
+  })
+  delete res.createdAt
+  delete res.updatedAt
   t.deepEqual(
-    await client.get({
-      $id: 'clA',
-      image: {
-        thumb: true,
-      },
-      $all: true,
-      aliases: false,
-    }),
+    res,
     {
       id: 'clA',
       type: 'club',
@@ -648,18 +654,21 @@ test.serial(
       },
     })
 
-    t.deepEqual(
-      await client.get({
-        $id: 'clA',
-        image: {
-          $all: true,
-          thumb: true,
-          poster: false,
-        },
-        description: false,
+    const res = await client.get({
+      $id: 'clA',
+      image: {
         $all: true,
-        aliases: false,
-      }),
+        thumb: true,
+        poster: false,
+      },
+      description: false,
+      $all: true,
+      aliases: false,
+    })
+    delete res.updatedAt
+    delete res.createdAt
+    t.deepEqual(
+      res,
       {
         id: 'clA',
         type: 'club',
@@ -673,7 +682,6 @@ test.serial(
     )
 
     await client.delete('root')
-
     await client.destroy()
   }
 )
