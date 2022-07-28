@@ -50,9 +50,6 @@ export const defaultFields: Record<string, FieldSchema> = {
   type: {
     type: 'type',
   },
-  name: {
-    type: 'string',
-  },
   children: {
     type: 'references',
   },
