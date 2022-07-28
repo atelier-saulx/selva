@@ -339,6 +339,8 @@ test.serial('can reload from RDB', async (t) => {
     await client.get({
       $id: 'viLink1',
       $all: true,
+      createdAt: false,
+      updatedAt: false,
       lekkerLink: true,
       fren: true,
     }),
@@ -354,6 +356,8 @@ test.serial('can reload from RDB', async (t) => {
     await client.get({
       $id: 'viLink2',
       $all: true,
+      createdAt: false,
+      updatedAt: false,
       lekkerLink: true,
       fren: true,
     }),
@@ -368,6 +372,8 @@ test.serial('can reload from RDB', async (t) => {
     await client.get({
       $id: 'viLink3',
       $all: true,
+      createdAt: false,
+      updatedAt: false,
       lekkerLink: true,
       fren: true,
     }),
@@ -378,7 +384,13 @@ test.serial('can reload from RDB', async (t) => {
     }
   )
   t.deepEqual(
-    await client.get({ $id: 'viLink4', $all: true, lekkerLink: true }),
+    await client.get({
+      $id: 'viLink4',
+      $all: true,
+      createdAt: false,
+      updatedAt: false,
+      lekkerLink: true
+    }),
     {
       id: 'viLink4',
       type: 'lekkerType',
@@ -463,7 +475,7 @@ test.serial('can reload from RDB', async (t) => {
     ],
   })
 
-  t.deepEqual(
+  t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'viLink1',
       $all: true,
@@ -478,7 +490,7 @@ test.serial('can reload from RDB', async (t) => {
       fren: 'viLink3',
     }
   )
-  t.deepEqual(
+  t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'viLink2',
       $all: true,
@@ -492,7 +504,7 @@ test.serial('can reload from RDB', async (t) => {
       lekkerLink: 'viLink1',
     }
   )
-  t.deepEqual(
+  t.deepEqualIgnoreOrder(
     await client.get({
       $id: 'viLink3',
       $all: true,

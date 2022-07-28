@@ -145,7 +145,13 @@ test.serial('basic id based nested query subscriptions', async (t) => {
   let o2counter = 0
   const other = client.observe({
     $id: 'root',
-    item: { $id: thing, $all: true, aliases: false },
+    item: {
+      $id: thing,
+      $all: true,
+      updatedAt: false,
+      createdAt: false,
+      aliases: false
+    },
   })
   const sub2 = other.subscribe((d) => {
     if (o2counter === 0) {
