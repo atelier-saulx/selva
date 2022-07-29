@@ -1289,6 +1289,7 @@ static int FindCommand_ArrayObjectCb(
             }
         } else {
             struct TraversalOrderItem *item;
+
             item = SelvaTraversalOrder_CreateObjectBasedOrderItem(args->ctx, find_args->lang, obj, find_args->order_field);
             if (item) {
                 SVector_InsertFast(find_args->order_result, item);
@@ -1299,7 +1300,7 @@ static int FindCommand_ArrayObjectCb(
                  * life, it's fairly ok to just log the error and return what
                  * we can.
                  */
-                fprintf(stderr, "%s:%d: Out of memory while creating an order result item\n",
+                fprintf(stderr, "%s:%d Failed to create an order item\n",
                         __FILE__, __LINE__);
             }
         }
