@@ -268,7 +268,7 @@ static int send_edge_field(
                 if (is_wildcard) {
                     field_stop = field_len - 1;
                 } else {
-                    char *s = memchr(field_str, '.', field_len);
+                    const char *s = memchr(field_str, '.', field_len);
 
                     if (s) {
                         field_stop = (size_t)(s - field_str + 1);
@@ -278,7 +278,7 @@ static int send_edge_field(
                     }
                 }
 
-                stringlist_remove_prefix(new_excluded_fields_str, excluded_fields_str, excluded_fields_len, field_str, field_stop);
+                stringlist_remove_prefix(new_excluded_fields_str, excluded_fields_str, (int)excluded_fields_len, field_str, field_stop);
                 new_excluded_fields_len = strlen(new_excluded_fields_str);
 
                 if (new_excluded_fields_len > 0) {
