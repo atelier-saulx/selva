@@ -101,7 +101,7 @@ static char * prefixed_only_cpy(char *dst, const char *src, size_t len, const ch
 void stringlist_remove_prefix(char *dst, const char *src, int len, const char *prefix_str, size_t prefix_len) {
     const char *s = src;
 
-    if (len == 0) {
+    if (len <= 0) {
         return;
     }
 
