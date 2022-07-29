@@ -687,7 +687,6 @@ static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierar
         } else if (type == SELVA_OBJECT_ARRAY) {
             struct SVector *array = p;
             enum SelvaObjectType subtype;
-            struct SVectorIterator it;
 
             if (SelvaObject_GetArrayStr(obj, name, strlen(name), &subtype, NULL)) {
                 fprintf(stderr, "%s:%d: Failed to read the subtype of an edges array: \"%s\"\n",
@@ -697,19 +696,21 @@ static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierar
             }
 
             if (subtype == SELVA_OBJECT_POINTER) {
+                struct SVectorIterator sub_it;
                 void *efield_p;
 
-                SVector_ForeachBegin(&it, array);
-                while ((efield_p = SVector_Foreach(&it))) {
+                SVector_ForeachBegin(&sub_it, array);
+                while ((efield_p = SVector_Foreach(&sub_it))) {
                     /* The pointer value is a pointer to an edge_field. */
                     /* RFE Presumably we can get away with any errors? */
                     (void)clear_field(ctx, hierarchy, node, efield_p);
                 }
             } else if (subtype == SELVA_OBJECT_OBJECT) {
+                struct SVectorIterator sub_it;
                 void *arr_obj;
 
-                SVector_ForeachBegin(&it, array);
-                while ((arr_obj = SVector_Foreach(&it))) {
+                SVector_ForeachBegin(&sub_it, array);
+                while ((arr_obj = SVector_Foreach(&sub_it))) {
                     _clear_all_fields(ctx, hierarchy, node, arr_obj);
                 }
             } else {
