@@ -672,21 +672,58 @@ static int clear_field(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, st
 
 static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, struct SelvaObject *obj) {
     SelvaObject_Iterator *it;
+    const char *name;
     enum SelvaObjectType type;
     void *p;
 
     it = SelvaObject_ForeachBegin(obj);
-    while ((p = SelvaObject_ForeachValueType(obj, &it, NULL, &type))) {
+    while ((p = SelvaObject_ForeachValueType(obj, &it, &name, &type))) {
         if (type == SELVA_OBJECT_POINTER) {
             /* The pointer value is a pointer to an edge_field. */
             /* RFE Presumably we can get away with any errors? */
             (void)clear_field(ctx, hierarchy, node, p);
         } else if (type == SELVA_OBJECT_OBJECT) {
             _clear_all_fields(ctx, hierarchy, node, p);
+        } else if (type == SELVA_OBJECT_ARRAY) {
+            struct SVector *array = p;
+            enum SelvaObjectType subtype;
+
+            if (SelvaObject_GetArrayStr(obj, name, strlen(name), &subtype, NULL)) {
+                fprintf(stderr, "%s:%d: Failed to read the subtype of an edges array: \"%s\"\n",
+                        __FILE__, __LINE__,
+                        name);
+                continue;
+            }
+
+            if (subtype == SELVA_OBJECT_POINTER) {
+                struct SVectorIterator sub_it;
+                void *efield_p;
+
+                SVector_ForeachBegin(&sub_it, array);
+                while ((efield_p = SVector_Foreach(&sub_it))) {
+                    /* The pointer value is a pointer to an edge_field. */
+                    /* RFE Presumably we can get away with any errors? */
+                    (void)clear_field(ctx, hierarchy, node, efield_p);
+                }
+            } else if (subtype == SELVA_OBJECT_OBJECT) {
+                struct SVectorIterator sub_it;
+                void *arr_obj;
+
+                SVector_ForeachBegin(&sub_it, array);
+                while ((arr_obj = SVector_Foreach(&sub_it))) {
+                    _clear_all_fields(ctx, hierarchy, node, arr_obj);
+                }
+            } else {
+                fprintf(stderr, "%s:%d: Unsupported subtype for an array in edges: %s key: \"%s\"\n",
+                        __FILE__, __LINE__,
+                        SelvaObject_Type2String(subtype, NULL),
+                        name);
+            }
         } else {
-            fprintf(stderr, "%s:%d: edges should not contain %s values\n",
+            fprintf(stderr, "%s:%d: Unsupported value type in an edges object: %s key: \"%s\"\n",
                     __FILE__, __LINE__,
-                    SelvaObject_Type2String(type, NULL));
+                    SelvaObject_Type2String(type, NULL),
+                    name);
         }
     }
 }
@@ -695,9 +732,9 @@ static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierar
  * Clear all edge fields of node.
  */
 static void clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
-    struct SelvaObject *obj = SelvaHierarchy_GetNodeMetadataByPtr(node)->edge_fields.edges;
+    struct SelvaObject *edges = SelvaHierarchy_GetNodeMetadataByPtr(node)->edge_fields.edges;
 
-    _clear_all_fields(ctx, hierarchy, node, obj);
+    _clear_all_fields(ctx, hierarchy, node, edges);
 }
 
 int Edge_ClearField(
