@@ -81,7 +81,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.failing('retrieving nested refs with fields arg', async (t) => {
+test.serial('retrieving nested refs with fields arg', async (t) => {
   const client = connect({ port })
 
   for (let i = 0; i < 2; i++) {
@@ -105,7 +105,7 @@ test.serial.failing('retrieving nested refs with fields arg', async (t) => {
     })
   }
 
-  const res1 = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'limit', '1', 'fields', 'docs.*', 'root', '"th" e')
+  const res1 = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'limit', '1', 'fields', 'docs.*\n!docs.createdAt\n!docs.updatedAt', 'root', '"th" e')
   t.deepEqualIgnoreOrder(res1[0][1], [
     "docs",
     [
@@ -177,7 +177,7 @@ test.serial.failing('retrieving nested refs with fields arg', async (t) => {
   t.deepEqual(res4[0][1][0], 'id', 'id not excluded')
 
   // Excluding fields over a multi-edge field doesn't currently work
-  const res5 = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'fields', 'docs.id\ndocs.name\ndocs.mirrors.*\n!docs.mirrors.id', 'root', '"th" e')
+  const res5 = await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'fields', 'docs.id\ndocs.name\ndocs.mirrors.*\n!docs.mirrors.id\n!mirrors.url\n!docs.mirrors.createdAt\n!docs.mirrors.updatedAt', 'root', '"th" e')
   t.deepEqual(res5[0][1][0], 'docs')
   t.deepEqual(res5[0][1][1][0][0], 'id') // hence we have id here anyway
   t.deepEqual(res5[0][1][1][1][0], 'id')
@@ -189,8 +189,8 @@ test.serial.failing('retrieving nested refs with fields arg', async (t) => {
   t.deepEqual(res5[0][1][4], 'docs')
   t.deepEqual(res5[0][1][5][0][2], 'mirrors')
   t.deepEqual(res5[0][1][5][0][3].length, 2)
-  t.deepEqual(res5[0][1][5][0][3][0].length, 8)
-  t.deepEqual(res5[0][1][5][0][3][1].length, 8)
+  t.deepEqual(res5[0][1][5][0][3][0].length, 6)
+  t.deepEqual(res5[0][1][5][0][3][1].length, 6)
   t.deepEqual(res5[1][1][0], 'docs')
   t.deepEqual(res5[1][1][1][0][0], 'id')
   t.deepEqual(res5[1][1][1][1][0], 'id')
@@ -202,8 +202,8 @@ test.serial.failing('retrieving nested refs with fields arg', async (t) => {
   t.deepEqual(res5[1][1][4], 'docs')
   t.deepEqual(res5[1][1][5][0][2], 'mirrors')
   t.deepEqual(res5[1][1][5][0][3].length, 2)
-  t.deepEqual(res5[1][1][5][0][3][0].length, 8)
-  t.deepEqual(res5[1][1][5][0][3][1].length, 8)
+  t.deepEqual(res5[1][1][5][0][3][0].length, 6)
+  t.deepEqual(res5[1][1][5][0][3][1].length, 6)
 
   const res6 = await client.get({
     files: {

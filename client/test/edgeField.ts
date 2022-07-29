@@ -1106,7 +1106,7 @@ test.serial('wildcard find with edge fields', async (t) => {
     [[ 'root', [ 'thing', [[ 'id', 'ma1', 'ding', 'dong' ]]]]]
   )
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'thing.*', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'thing.*\n!thing.createdAt\n!thing.updatedAt', 'root'),
     [
       [
         'root',
@@ -1130,7 +1130,7 @@ test.serial('wildcard find with edge fields', async (t) => {
   )
   // Can't do this with multi-ref
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'things.*', 'root'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'things.*\n!things.createdAt\n!things.updatedAt', 'root'),
     [[ 'root', [
       'things',
       [
@@ -1198,7 +1198,7 @@ test.serial('wildcard find with edge fields and data fields', async (t) => {
     await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'thing', 'ma1'),
     await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'node', 'fields', 'thing.*', 'ma1'))
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'fields', 'thing.*', 'root', '"ma" e'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'fields', 'thing.*\n!thing.createdAt\n!thing.updatedAt', 'root', '"ma" e'),
     [
       [
         "ma1",
@@ -1262,7 +1262,7 @@ test.serial('wildcard find with exclusions', async (t) => {
   )
 
   t.deepEqual(
-    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'fields', 'thing.*\n!id', 'root', '"ma" e'),
+    await client.redis.selva_hierarchy_find('', '___selva_hierarchy', 'descendants', 'fields', 'thing.*\n!id\n!thing.createdAt\n!thing.updatedAt', 'root', '"ma" e'),
     [
       [
         'ma1',

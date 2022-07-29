@@ -17,6 +17,13 @@ int stringlist_search(const char *list, const char *str);
 int stringlist_searchn(const char *list, const char *str, size_t n);
 size_t substring_count(const char *string, const char *substring, size_t n);
 
+/**
+ * Filter strings by prefix and remove the prefix when inserting to dst.
+ * @param dst must be large enough to fit src in the worst case.
+ * @param prefix_str is an optional prefix.
+ */
+void stringlist_remove_prefix(char *dst, const char *src, int len, const char *prefix_str, size_t prefix_len);
+
 ssize_t get_array_field_index(const char *field_str, size_t field_len, ssize_t *res);
 
 /**
