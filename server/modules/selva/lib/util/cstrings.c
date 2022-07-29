@@ -2,11 +2,11 @@
  * Copyright (c) 2020-2021 SAULX
  * SPDX-License-Identifier: MIT
  */
+#define _GNU_SOURCE
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#define _GNU_SOURCE
 #include <string.h>
 #include "cstrings.h"
 
