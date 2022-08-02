@@ -221,7 +221,7 @@ test.serial('find - traverse expression - low level', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('find - traverse expression with records', async (t) => {
+test.serial('find - traverse expression with records', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   await client.updateSchema({
@@ -383,12 +383,33 @@ test.serial.only('find - traverse expression with records', async (t) => {
     }
   )
 
+  await client.set({
+    $id: 'sc1',
+    $language: 'en',
+    revisionedChildren: {
+      v3: [
+        {
+          $id: 'sc6',
+          type: 'section',
+          name: 'Prologue',
+          text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+        },
+        {
+          $id: 'sc7',
+          type: 'section',
+          name: 'Epilogue',
+          text: 'Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?',
+        },
+      ]
+    }
+  })
+
   t.deepEqual(
     await client.redis.selva_hierarchy_find(
       'en',
       '___selva_hierarchy',
       'bfs_expression',
-      '"bk" e >1 "v2" "J" "revisionedChildren" o Z .1:{"revisions[0].contents"}',
+      '"bk" e >1 "v2" "lJ" "revisionedChildren" o Z .1:{"revisions[0].contents"}',
       //'"bk" e >1 "revisionedChildren.v2" h L >2 {"revisionedChildren.v2"} Z .2:"revisionedChildren.v1" h L >3 {"revisionedChildren.v1"} Z .3:{} Z .1:{"revisions[0].contents"}',
       'fields',
       'name',

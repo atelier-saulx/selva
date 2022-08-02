@@ -646,6 +646,18 @@ static enum rpn_error add2slvset_res(struct rpn_operand *res, const char *str, s
     return RPN_ERR_OK;
 }
 
+static enum rpn_error add_rec_key2slvset_res(
+        struct rpn_operand *res,
+        const char *field_str, size_t field_len,
+        const char *key_str, size_t key_len) {
+    size_t full_field_len = field_len + key_len + 1;
+    char full_field_str[full_field_len + 1];
+
+    snprintf(full_field_str, full_field_len + 1, "%.*s.%.*s",
+            (int)field_len, field_str,
+            (int)key_len, key_str);
+    return add2slvset_res(res, full_field_str, full_field_len);
+}
 
 /*
  * This is way faster than strtoll() in glibc.
@@ -1224,16 +1236,28 @@ static enum rpn_error rpn_op_rec_filter(struct RedisModuleCtx *redis_ctx __unuse
     RESULT_OPERAND(res);
     const char *field_str = OPERAND_GET_S(a);
     const size_t field_len = OPERAND_GET_S_LEN(a);
-    const char op = OPERAND_GET_S(b)[0];
+    const char sel = OPERAND_GET_S(b)[0];
+    const char op = OPERAND_GET_S(b)[1]; /* This should be always valid. */
     const char *v_str = OPERAND_GET_S(c);
     const size_t v_len = OPERAND_GET_S_LEN(c);
     struct SelvaObject *obj;
     SelvaObject_Iterator *it;
-    const char *rec_key_str;
+    const char *tmp;
+    const char *last_rec_key_str = NULL; /* Last match for 'l' */
+    size_t last_rec_key_len = 0; /* Last match for 'l' */
     int err;
 
-    if (OPERAND_GET_S_LEN(b) != 1) {
+    if (OPERAND_GET_S_LEN(b) != 2) {
         return RPN_ERR_ILLOPC;
+    }
+
+    /*
+     * a = all
+     * f = first match
+     * l = last match
+     */
+    if (!strpbrk((char []){ sel, '\0' }, "afl")) {
+        return RPN_ERR_ILLOPN;
     }
 
     if (v_len == 0) {
@@ -1264,10 +1288,11 @@ static enum rpn_error rpn_op_rec_filter(struct RedisModuleCtx *redis_ctx __unuse
     }
 
     it = SelvaObject_ForeachBegin(obj);
-    while ((rec_key_str = SelvaObject_ForeachKey(obj, &it))) {
+    while ((tmp = SelvaObject_ForeachKey(obj, &it))) {
+        const char *rec_key_str = tmp;
         const size_t rec_key_len = strlen(rec_key_str);
-        const int r = strcmp(v_str, rec_key_str);
-        int match = 0;
+        int r = strcmp(rec_key_str, v_str);
+        int match;
 
         switch (op) {
         case 'F': /* == */
@@ -1296,18 +1321,32 @@ static enum rpn_error rpn_op_rec_filter(struct RedisModuleCtx *redis_ctx __unuse
         }
 
         if (match) {
-            size_t full_field_len = field_len + rec_key_len + 1;
-            char full_field_str[full_field_len + 1];
-            enum rpn_error rpn_err;
+            if (sel == 'a' || sel == 'f') {
+                enum rpn_error rpn_err;
 
-            snprintf(full_field_str, full_field_len + 1, "%.*s.%.*s",
-                    (int)field_len, field_str,
-                    (int)rec_key_len, rec_key_str);
-            fprintf(stderr, "Match %s\n", full_field_str);
-            rpn_err = add2slvset_res(res, full_field_str, full_field_len);
-            if (rpn_err) {
-                return rpn_err;
+                rpn_err = add_rec_key2slvset_res(res, field_str, field_len, rec_key_str, rec_key_len);
+                if (rpn_err) {
+                    return rpn_err;
+                }
+
+                /* First match breaks. */
+                if (sel == 'f') {
+                    break;
+                }
+            } else /* if (sel = 'l') */ {
+                last_rec_key_str = rec_key_str;
+                last_rec_key_len = rec_key_len;
             }
+        }
+    }
+
+    /* Return only last match. */
+    if (sel == 'l' && last_rec_key_str) {
+        enum rpn_error rpn_err;
+
+        rpn_err = add_rec_key2slvset_res(res, field_str, field_len, last_rec_key_str, last_rec_key_len);
+        if (rpn_err) {
+            return rpn_err;
         }
     }
 
