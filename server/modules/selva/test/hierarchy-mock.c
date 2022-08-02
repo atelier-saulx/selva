@@ -10,6 +10,14 @@ struct SelvaObject *SelvaHierarchy_GetNodeObject(const struct SelvaHierarchyNode
     return NULL;
 }
 
+const struct SelvaHierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByConstPtr(const struct SelvaHierarchyNode *node) {
+    return NULL; /* TODO Shouldn't be NULL! */
+}
+
+struct SelvaHierarchyMetadata *_SelvaHierarchy_GetNodeMetadataByPtr(struct SelvaHierarchyNode *node) {
+    return NULL; /* TODO Shouldn't be NULL! */
+}
+
 int SelvaHierarchy_ForeachInField(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
