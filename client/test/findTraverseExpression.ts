@@ -296,6 +296,26 @@ test.serial.only('find - traverse expression with records', async (t) => {
       },
     ],
   })
+  await client.set({
+    $id: 'sc1',
+    $language: 'en',
+    revisionedChildren: {
+      v2: [
+        {
+          $id: 'sc4',
+          type: 'section',
+          name: '1. Prologue',
+          text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+        },
+        {
+          $id: 'sc5',
+          type: 'section',
+          name: '2. Epilogue',
+          text: 'Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?',
+        },
+      ]
+    }
+  })
 
   // TODO reference field in an object in an array connot be visited with SELVA_HIERARCHY_TRAVERSAL_ARRAY
   //const preface = await client.get({
@@ -308,18 +328,97 @@ test.serial.only('find - traverse expression with records', async (t) => {
   //  },
   //})
 
-  const sections = await client.get({
-    $id: 'sc1',
-    name: true,
-    revisionedChildren: {
-      '*': {
-        $all: true,
-        $list: true,
-      },
-    },
-  })
-  console.log(sections)
+  // TODO This doesn't currently work
+  //const sections = await client.get({
+  //  $id: 'sc1',
+  //  name: true,
+  //  revisionedChildren: {
+  //    '*': {
+  //      $all: true,
+  //      $list: true,
+  //    },
+  //  },
+  //})
 
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $id: 'sc1',
+      name: true,
+      revisionedChildren: true,
+    }),
+    {
+    name: 'Preface',
+    revisionedChildren: {
+      v1: ['sc2', 'sc3'],
+      v2: ['sc4', 'sc5'],
+    }
+  })
+
+  // TODO recursive expressions not supported yet so we can't select the version nicely
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $id: book,
+      $language: 'en',
+      sections: {
+        name: true,
+        $list: {
+          $find: {
+            $recursive: true,
+            $traverse: {
+              book: 'revisions[0].contents',
+              section: 'revisionedChildren.v2',
+              $any: false,
+            },
+          },
+        },
+      },
+    }),
+    {
+      sections: [
+        { name: 'Preface' },
+        { name: '1. Prologue' },
+        { name: '2. Epilogue' },
+      ]
+    }
+  )
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_find(
+      'en',
+      '___selva_hierarchy',
+      'bfs_expression',
+      '"bk" e >1 "v2" "J" "revisionedChildren" o Z .1:{"revisions[0].contents"}',
+      //'"bk" e >1 "revisionedChildren.v2" h L >2 {"revisionedChildren.v2"} Z .2:"revisionedChildren.v1" h L >3 {"revisionedChildren.v1"} Z .3:{} Z .1:{"revisions[0].contents"}',
+      'fields',
+      'name',
+      book,
+      '"sc" e'
+    ),
+    [
+      [
+        'sc1',
+        [
+          'name',
+          'Preface',
+        ],
+      ],
+      [
+        'sc4',
+        [
+          'name',
+          '1. Prologue',
+        ],
+      ],
+      [
+        'sc5',
+        [
+          'name',
+          '2. Epilogue',
+        ],
+      ],
+    ]
+  )
 
   await client.destroy()
 })

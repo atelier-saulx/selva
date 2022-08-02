@@ -601,6 +601,52 @@ enum rpn_error rpn_set_reg_slvset(struct rpn_ctx *ctx, size_t i, struct SelvaSet
     return RPN_ERR_OK;
 }
 
+static enum rpn_error SelvaSet_Add_err2rpn_error(int err) {
+    if (err && err != SELVA_EEXIST) {
+        if (err == SELVA_ENOMEM) {
+            return RPN_ERR_ENOMEM;
+        } else {
+            /* Report other errors as a type error. */
+            return RPN_ERR_TYPE;
+        }
+    }
+
+    return RPN_ERR_OK;
+}
+
+static enum rpn_error SelvaSet_Union_err2rpn_error(int err) {
+    if (err >= 0) {
+        return RPN_ERR_OK;
+    } else if (err == SELVA_ENOMEM) {
+        return RPN_ERR_ENOMEM;
+    } else if (err == SELVA_EINVAL) {
+        return RPN_ERR_ILLOPN;
+    } else if (err == SELVA_EINTYPE) {
+        return RPN_ERR_TYPE;
+    } else {
+        /* Report other errors as type errors. */
+        return RPN_ERR_TYPE;
+    }
+}
+
+static enum rpn_error add2slvset_res(struct rpn_operand *res, const char *str, size_t len) {
+    RedisModuleString *s;
+    int err;
+
+    s = RedisModule_CreateString(NULL, str, len);
+    err = SelvaSet_Add(res->set, s);
+    if (err) {
+        RedisModule_FreeString(NULL, s);
+
+        if (err != SELVA_EEXIST) {
+            return SelvaSet_Add_err2rpn_error(err);
+        }
+    }
+
+    return RPN_ERR_OK;
+}
+
+
 /*
  * This is way faster than strtoll() in glibc.
  */
@@ -993,38 +1039,6 @@ static enum rpn_error rpn_op_typeof(struct RedisModuleCtx *redis_ctx __unused, s
     return push_string_result(ctx, t, sizeof(t));
 }
 
-static inline size_t size_min(size_t a, size_t b) {
-    return (a < b ? a : b);
-}
-
-static enum rpn_error SelvaSet_Add_err2rpn_error(int err) {
-    if (err && err != SELVA_EEXIST) {
-        if (err == SELVA_ENOMEM) {
-            return RPN_ERR_ENOMEM;
-        } else {
-            /* Report other errors as a type error. */
-            return RPN_ERR_TYPE;
-        }
-    }
-
-    return RPN_ERR_OK;
-}
-
-static enum rpn_error SelvaSet_Union_err2rpn_error(int err) {
-    if (err >= 0) {
-        return RPN_ERR_OK;
-    } else if (err == SELVA_ENOMEM) {
-        return RPN_ERR_ENOMEM;
-    } else if (err == SELVA_EINVAL) {
-        return RPN_ERR_ILLOPN;
-    } else if (err == SELVA_EINTYPE) {
-        return RPN_ERR_TYPE;
-    } else {
-        /* Report other errors as type errors. */
-        return RPN_ERR_TYPE;
-    }
-}
-
 static enum rpn_error rpn_op_strcmp(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -1035,7 +1049,7 @@ static enum rpn_error rpn_op_strcmp(struct RedisModuleCtx *redis_ctx __unused, s
     return push_int_result(ctx, !sizeDiff &&
                            !strncmp(OPERAND_GET_S(a),
                                     OPERAND_GET_S(b),
-                                    size_min(a_size, b_size)));
+                                    a_size));
 }
 
 static enum rpn_error rpn_op_idcmp(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
@@ -1100,26 +1114,16 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
         const char *field_str = RedisModule_StringPtrLen(el->value_rms, &field_len);
 
         if (SelvaHierarchy_IsNonEmptyField(node, field_str, field_len)) {
-            RedisModuleString *s;
-            int err;
+            enum rpn_error err;
 
             /*
              * If we'd be care careful we could potentially reuse the original
              * string, but let's be on the safe side because you never know how
              * the original string was created.
              */
-            s = RedisModule_CreateString(NULL, field_str, field_len);
-            err = SelvaSet_Add(result->set, s);
+            err = add2slvset_res(result, field_str, field_len);
             if (err) {
-                RedisModule_FreeString(NULL, s);
-
-                if (err != SELVA_EEXIST) {
-                    return SelvaSet_Add_err2rpn_error(err);
-                }
-                /*
-                 * SELVA_EEXIST doesn't seem like it would happen but let's
-                 * ignore it anyway.
-                 */
+                return err;
             }
 
             break;
@@ -1213,6 +1217,103 @@ static enum rpn_error rpn_op_get_clock_realtime(struct RedisModuleCtx *redis_ctx
     return push_int_result(ctx, ts_now());
 }
 
+static enum rpn_error rpn_op_rec_filter(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+    OPERAND(ctx, a); /* field */
+    OPERAND(ctx, b); /* operator */
+    OPERAND(ctx, c); /* value */
+    RESULT_OPERAND(res);
+    const char *field_str = OPERAND_GET_S(a);
+    const size_t field_len = OPERAND_GET_S_LEN(a);
+    const char op = OPERAND_GET_S(b)[0];
+    const char *v_str = OPERAND_GET_S(c);
+    const size_t v_len = OPERAND_GET_S_LEN(c);
+    struct SelvaObject *obj;
+    SelvaObject_Iterator *it;
+    const char *rec_key_str;
+    int err;
+
+    if (OPERAND_GET_S_LEN(b) != 1) {
+        return RPN_ERR_ILLOPC;
+    }
+
+    if (v_len == 0) {
+        return RPN_ERR_ILLOPN;
+    }
+
+    if (!ctx->obj) {
+        return RPN_ERR_NPE;
+    }
+
+    /* TODO Check from metadata that it's actually a record? */
+    err = SelvaObject_GetObjectStr(ctx->obj, field_str, field_len, &obj);
+    if (err == SELVA_ENOENT) {
+        /* RFE Is it possible to know if this is a record? */
+        struct SelvaObject *edges = SelvaHierarchy_GetNodeMetadataByPtr(ctx->node)->edge_fields.edges;
+
+        if (edges) {
+            err = SelvaObject_GetObjectStr(edges, field_str, field_len, &obj);
+        }
+    }
+    if (err) {
+        return push_empty_value(ctx);
+    }
+
+    res = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
+    if (!res) {
+        return RPN_ERR_ENOMEM;
+    }
+
+    it = SelvaObject_ForeachBegin(obj);
+    while ((rec_key_str = SelvaObject_ForeachKey(obj, &it))) {
+        const size_t rec_key_len = strlen(rec_key_str);
+        const int r = strcmp(v_str, rec_key_str);
+        int match = 0;
+
+        switch (op) {
+        case 'F': /* == */
+            match = r == 0;
+            break;
+        case 'G': /* != */
+            match = r != 0;
+            break;
+        case 'H': /* < */
+            match = r < 0;
+            break;
+        case 'I': /* > */
+            match = r > 0;
+            break;
+        case 'J': /* <= */
+            match = r <= 0;
+            break;
+        case 'K': /* >= */
+            match = r >= 0;
+            break;
+        case 'm': /* v.includes(rec_key) */
+            match = !!memmem(rec_key_str, rec_key_len, v_str, v_len);
+            break;
+        default:
+            return RPN_ERR_ILLOPC;
+        }
+
+        if (match) {
+            size_t full_field_len = field_len + rec_key_len + 1;
+            char full_field_str[full_field_len + 1];
+            enum rpn_error rpn_err;
+
+            snprintf(full_field_str, full_field_len + 1, "%.*s.%.*s",
+                    (int)field_len, field_str,
+                    (int)rec_key_len, rec_key_str);
+            fprintf(stderr, "Match %s\n", full_field_str);
+            rpn_err = add2slvset_res(res, full_field_str, full_field_len);
+            if (rpn_err) {
+                return rpn_err;
+            }
+        }
+    }
+
+    return push(ctx, res);
+}
+
 static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -1301,7 +1402,7 @@ static rpn_fp funcs[] = {
     rpn_op_in,      /* l */
     rpn_op_str_includes, /* m */
     rpn_op_get_clock_realtime, /* n */
-    rpn_op_abo,     /* o spare */
+    rpn_op_rec_filter, /* o */
     rpn_op_abo,     /* p spare */
     rpn_op_abo,     /* q spare */
     rpn_op_abo,     /* r spare */
@@ -1312,7 +1413,7 @@ static rpn_fp funcs[] = {
     rpn_op_abo,     /* w spare */
     rpn_op_abo,     /* x spare */
     rpn_op_abo,     /* y spare */
-    rpn_op_union,   /* z spare */
+    rpn_op_union,   /* z */
 };
 
 #define RPN_DELIM " \t\n\r\f"
@@ -1577,22 +1678,17 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
         for (const char *tok_str = tokenize(tmp, delim, group, &rest, &tok_len);
              tok_str != NULL;
              tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
-            int err;
+            enum rpn_error err;
+
             if (tok_len == 0 || tok_str[0] != '\"' || tok_str[tok_len - 1] != '\"') {
                 return RPN_ERR_ILLOPN;
             }
             tok_str++;
             tok_len -= 2;
 
-            RedisModuleString *rms = RedisModule_CreateString(NULL, tok_str, tok_len);
-            err = SelvaSet_Add(v->set, rms);
+            err = add2slvset_res(v, tok_str, tok_len);
             if (err) {
-                RedisModule_FreeString(NULL, rms);
-
-                if (err != SELVA_EEXIST) {
-                    return SelvaSet_Add_err2rpn_error(err);
-                }
-                /* Ignore SELVA_EEXIST. */
+                return err;
             }
         }
         if (tok_len == 0) {

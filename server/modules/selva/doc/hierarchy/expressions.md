@@ -214,6 +214,7 @@ Therefore, neither of these yields the expected result.
 | `l`      | `(z, z) => n`      | Test if A is a subset of B. A and B are set-like. | `"field" {"a","b"} l => 1` |
 | `m`      | `(s, s) => n`              | Substring includes test.                  | `"cd" "abcde" m`          |
 | `n`      | `() => n`                  | Get the current value of `CLOCK_REALTIME` in ms. | `l => 1623253120970` |
+| `o`      | `(s, s, s) => Z`           | Filter record field property name.        | `"myprefix_" "m" "rec" o => {"myprefix_a","myprefix_b"}` |
 
 `j` and `k` are only available if `rpn_set_hierarchy_node()` is called before
 executing an expression.
