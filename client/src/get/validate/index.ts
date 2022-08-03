@@ -318,14 +318,15 @@ export default async function validateTopLevel(
         if (schema) {
           if (
             !schema.languages ||
+            !Array.isArray(schema.languages) ||
             !schema.languages.includes(props.$language)
           ) {
             throw new Error(
-              `$language ${
-                props.$language
-              } is unsupported, should be one of: ${schema.languages.join(
-                ', '
-              )}`
+              `$language ${props.$language} is unsupported, should be one of: ${
+                Array.isArray(schema.languages)
+                  ? schema.languages.join(', ')
+                  : '(no languages set)'
+              }`
             )
           }
         }

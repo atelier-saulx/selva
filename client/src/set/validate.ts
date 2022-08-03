@@ -155,14 +155,17 @@ export default async function parseSetObject(
         if (
           schemas &&
           schemas.languages &&
-          !schemas.languages.includes(payload[key])
+          (!Array.isArray(schemas.languages) ||
+            !schemas.languages.includes(payload[key]))
         ) {
           throw new Error(
             `Wrong value for language ${
               payload[key]
-            }, schema allows the following languages to be set: ${schemas.languages.join(
-              ', '
-            )}`
+            }, schema allows the following languages to be set: ${
+              Array.isArray(schemas.languages)
+                ? schemas.languages.join(', ')
+                : '(no languages set)'
+            }`
           )
         }
 
