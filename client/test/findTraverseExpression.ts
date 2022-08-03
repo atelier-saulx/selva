@@ -252,7 +252,7 @@ test.serial('find - traverse expression with records', async (t) => {
           revisionedChildren: {
             type: 'record',
             values: {
-              type: 'references'
+              type: 'references',
             },
           },
         },
@@ -270,7 +270,7 @@ test.serial('find - traverse expression with records', async (t) => {
     revisions: [
       {
         version: 'v1',
-        publishedAt: (new Date('2000')).getTime(),
+        publishedAt: new Date('2000').getTime(),
         contents: {
           type: 'section',
           $id: 'sc1',
@@ -313,8 +313,8 @@ test.serial('find - traverse expression with records', async (t) => {
           name: '2. Epilogue',
           text: 'Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?',
         },
-      ]
-    }
+      ],
+    },
   })
 
   // TODO reference field in an object in an array connot be visited with SELVA_HIERARCHY_TRAVERSAL_ARRAY
@@ -348,12 +348,13 @@ test.serial('find - traverse expression with records', async (t) => {
       revisionedChildren: true,
     }),
     {
-    name: 'Preface',
-    revisionedChildren: {
-      v1: ['sc2', 'sc3'],
-      v2: ['sc4', 'sc5'],
+      name: 'Preface',
+      revisionedChildren: {
+        v1: ['sc2', 'sc3'],
+        v2: ['sc4', 'sc5'],
+      },
     }
-  })
+  )
 
   // TODO recursive expressions not supported yet so we can't select the version nicely
   t.deepEqualIgnoreOrder(
@@ -379,7 +380,7 @@ test.serial('find - traverse expression with records', async (t) => {
         { name: 'Preface' },
         { name: '1. Prologue' },
         { name: '2. Epilogue' },
-      ]
+      ],
     }
   )
 
@@ -400,8 +401,8 @@ test.serial('find - traverse expression with records', async (t) => {
           name: 'Epilogue',
           text: 'Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?',
         },
-      ]
-    }
+      ],
+    },
   })
 
   t.deepEqual(
@@ -417,29 +418,157 @@ test.serial('find - traverse expression with records', async (t) => {
       '"sc" e'
     ),
     [
-      [
-        'sc1',
-        [
-          'name',
-          'Preface',
-        ],
-      ],
-      [
-        'sc4',
-        [
-          'name',
-          '1. Prologue',
-        ],
-      ],
-      [
-        'sc5',
-        [
-          'name',
-          '2. Epilogue',
-        ],
-      ],
+      ['sc1', ['name', 'Preface']],
+      ['sc4', ['name', '1. Prologue']],
+      ['sc5', ['name', '2. Epilogue']],
     ]
   )
+
+  await client.destroy()
+})
+
+test.serial.only('find - versioned hierarchies', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  const versionedHierarchyFields: any = {
+    versionedChildren: {
+      type: 'record',
+      values: {
+        type: 'references',
+        // TODO
+        // bidirectional: {
+        //   fromField: 'versionedParents',
+        // },
+      },
+    },
+    versionedParents: {
+      type: 'record',
+      values: {
+        type: 'references',
+        // TODO
+        // bidirectional: {
+        //   fromField: 'versionedChildren',
+        // },
+      },
+    },
+  }
+
+  await client.updateSchema({
+    languages: ['en'],
+    types: {
+      category: {
+        prefix: 'ca',
+        fields: {
+          title: { type: 'text' },
+          description: { type: 'text' },
+          ...versionedHierarchyFields,
+        },
+      },
+      post: {
+        prefix: 'po',
+        fields: {
+          title: { type: 'text' },
+          description: { type: 'text' },
+          ...versionedHierarchyFields,
+        },
+      },
+    },
+  })
+
+  const cooking = await client.set({
+    $language: 'en',
+    type: 'category',
+    name: 'Cooking',
+    description: 'Food, tasty',
+    versionedChildren: { v1: ['po1', 'po2'] },
+  })
+
+  await client.set({
+    $id: 'po1',
+    $language: 'en',
+    name: 'Food 1',
+    description: 'Nice food 1',
+    versionedParents: {
+      v1: [cooking],
+    },
+  })
+
+  await client.set({
+    $id: 'po2',
+    $language: 'en',
+    name: 'Food 2',
+    description: 'Nice food 2',
+    versionedParents: {
+      v1: [cooking],
+    },
+  })
+
+  // change hierarchy and stuff
+  const travel = await client.set({
+    $language: 'en',
+    type: 'category',
+    name: 'Travel',
+    description: 'Travel, crazy',
+    versionedChildren: {
+      v2: ['po2v2'],
+    },
+  })
+
+  await client.set({
+    $id: cooking,
+    versionedChildren: {
+      v2: ['po1'],
+    },
+  })
+
+  await client.set({
+    $id: 'po2v2',
+    $language: 'en',
+    name: 'Travel 1',
+    parents: ['po1'],
+    versionedParents: {
+      v2: [travel],
+    },
+  })
+
+  for (let i = 1; i <= 2; i++) {
+    const q = {
+      things: {
+        name: { $inherit: true },
+        description: { $inherit: true },
+        $list: {
+          $find: {
+            $recursive: true,
+            $traverse: {
+              root: 'children',
+              $any: {
+                $fn: 'maxRecordKeyLEQ',
+                $args: ['versionedChildren', 'v' + i],
+              },
+            },
+          },
+        },
+      },
+    }
+
+    const res = await client.get({
+      $language: 'en',
+      cooking: {
+        $id: cooking,
+        ...q,
+      },
+
+      travel: {
+        $id: travel,
+        ...q,
+      },
+    })
+
+    console.log('RES', i, JSON.stringify(res, null, 2))
+  }
+
+  // A small delay is needed after setting the schema
+  await new Promise((r) => setTimeout(r, 100))
 
   await client.destroy()
 })
