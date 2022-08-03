@@ -214,7 +214,14 @@ Therefore, neither of these yields the expected result.
 | `l`      | `(z, z) => n`      | Test if A is a subset of B. A and B are set-like. | `"field" {"a","b"} l => 1` |
 | `m`      | `(s, s) => n`              | Substring includes test.                  | `"cd" "abcde" m`          |
 | `n`      | `() => n`                  | Get the current value of `CLOCK_REALTIME` in ms. | `l => 1623253120970` |
-| `o`      | `(s, s, s) => Z`           | Filter record field property name.        | `"myprefix_" "m" "rec" o => {"myprefix_a","myprefix_b"}` |
+| `o`      | `(s, s, s) => Z`           | Filter by record edge field property names. | `"myprefix_" "am" "rec" o => {"myprefix_a","myprefix_b"}` |
 
-`j` and `k` are only available if `rpn_set_hierarchy_node()` is called before
+`j`, `k`, and `o` are only available if `rpn_set_hierarchy_node()` is called before
 executing an expression.
+
+`o` takes three operands, field name, selector + comparison operator and a
+string value. The selector and operand are concatenated as a string. Three
+selectors are supported `a` for taking all matches, `f` for first match,
+and `l` for last match. The property names are guaranteed to be sorted in an
+`strcmp()`-like order. Valid operators for this function are `F`, `G`, `H`, `I`,
+`J`, `K`, and `m`.
