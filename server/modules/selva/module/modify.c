@@ -1224,7 +1224,16 @@ static enum selva_op_repl_state modify_op(
             TO_STR(old_value);
 
             if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
-                RedisModule_ReplyWithSimpleString(ctx, "OK");
+                if (!strcmp(field_str, "type")) {
+                    /*
+                     * Always send "UPDATED" for the "type" field because the
+                     * client will/should only send a it for a new node but
+                     * typically the field is already set by using the type map.
+                     */
+                    RedisModule_ReplyWithSimpleString(ctx, "UPDATED");
+                } else {
+                    RedisModule_ReplyWithSimpleString(ctx, "OK");
+                }
                 return SELVA_OP_REPL_STATE_UNCHANGED;
             }
         }
@@ -1657,7 +1666,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         return REDISMODULE_OK;
     }
 
-    created = SelvaHierarchy_ClearNodeFlagImplicit(node);
+    created = updated = SelvaHierarchy_ClearNodeFlagImplicit(node);
     SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
 
     if (!created && FISSET_NO_MERGE(flags)) {
