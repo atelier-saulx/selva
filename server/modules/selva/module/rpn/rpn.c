@@ -1313,7 +1313,7 @@ static enum rpn_error rpn_op_rec_filter(struct RedisModuleCtx *redis_ctx __unuse
         case 'K': /* >= */
             match = r >= 0;
             break;
-        case 'm': /* v.includes(rec_key) */
+        case 'm': /* rec_key.includes(v) */
             match = !!memmem(rec_key_str, rec_key_len, v_str, v_len);
             break;
         default:
