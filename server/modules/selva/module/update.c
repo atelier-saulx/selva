@@ -52,7 +52,7 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         return SELVA_EINVAL;
     }
 
-    if (nr_update_ops == 0 || (nr_update_ops * 3) > (argc - 1) || nr_update_ops > 300) { // TODO Tunable?
+    if (nr_update_ops == 0 || (nr_update_ops * 3) > (argc - 1) || nr_update_ops > SELVA_CMD_UPDATE_MAX) {
         return SELVA_EINVAL;
     }
 

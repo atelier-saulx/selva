@@ -78,6 +78,15 @@
 #define HIERARCHY_AUTO_COMPRESS_INACT_NODES_LEN (4096 / SELVA_NODE_ID_SIZE)
 
 /*
+ * Command tunables.
+ */
+
+/**
+ * Maximum number of update operations on a sinlge command.
+ */
+#define SELVA_CMD_UPDATE_MAX 300
+
+/*
  * RPN Tunables.
  */
 
