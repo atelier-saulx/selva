@@ -139,7 +139,8 @@ test.serial('can delete root', async (t) => {
   )
 
   await client.delete('root')
-  t.deepEqual(await client.redis.selva_object_get('', 'root'), [
+  const res: any[] = await client.redis.selva_object_get('', 'root')
+  t.deepEqual(res.slice(2), [
     'id',
     'root',
     'type',
