@@ -215,7 +215,7 @@ RB_GENERATE_STATIC(hierarchy_index_tree, SelvaHierarchyNode, _index_entry, Selva
 SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     SelvaHierarchy *hierarchy = RedisModule_Calloc(1, sizeof(*hierarchy));
 
-    mempool_init(&hierarchy->node_pool, 33554432, sizeof(SelvaHierarchyNode), _Alignof(SelvaHierarchyNode));
+    mempool_init(&hierarchy->node_pool, HIERARCHY_SLAB_SIZE, sizeof(SelvaHierarchyNode), _Alignof(SelvaHierarchyNode));
     RB_INIT(&hierarchy->index_head);
     SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare);
     SelvaObject_Init(hierarchy->types._obj_data);
@@ -670,6 +670,13 @@ static void del_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierar
      */
     if (is_root) {
         SelvaHierarchy_ClearNodeFields(obj);
+
+        /*
+         * There might be something to collect if this was a large hierarchy.
+         * Regardless, running the gc is a relatively cheap operation and makes
+         * sense here.
+         */
+        mempool_gc(&hierarchy->node_pool);
     } else {
         err = removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
         if (err < 0) {

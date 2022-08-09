@@ -39,6 +39,11 @@
  */
 
 /**
+ * Hierarchy node pool slab size in bytes.
+ */
+#define HIERARCHY_SLAB_SIZE 33554432
+
+/**
  * Initial vector lengths for children and parents lists.
  */
 #define HIERARCHY_INITIAL_VECTOR_LEN    50
