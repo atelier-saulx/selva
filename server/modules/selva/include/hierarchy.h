@@ -6,6 +6,7 @@
 #include "linker_set.h"
 #include "selva.h"
 #include "svector.h"
+#include "mempool.h"
 #include "tree.h"
 #include "trx.h"
 #include "edge.h"
@@ -78,6 +79,7 @@ struct SelvaHierarchy {
      * Index of all hierarchy nodes by ID.
      */
     struct hierarchy_index_tree index_head;
+    struct mempool node_pool;
 
     /**
      * Orphan nodes aka heads of the hierarchy.
