@@ -375,6 +375,8 @@ static int create_node_object(struct SelvaHierarchy *hierarchy, SelvaHierarchyNo
 static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     SelvaHierarchyNode *node = mempool_get(&hierarchy->node_pool);
 
+    memset(node, 0, sizeof(*node));
+
 #if 0
     fprintf(stderr, "%s:%d: Creating node %.*s\n",
             __FILE__, __LINE__,
