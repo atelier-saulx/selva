@@ -425,7 +425,7 @@ test.serial('find - traverse expression with records', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('find - versioned hierarchies', async (t) => {
+test.serial('find - versioned hierarchies', async (t) => {
   const client = connect({ port: port }, { loglevel: 'info' })
 
   const versionedHierarchyFields: any = {
@@ -529,6 +529,7 @@ test.serial.only('find - versioned hierarchies', async (t) => {
     },
   })
 
+  const responses = []
   for (let i = 1; i <= 2; i++) {
     const q = {
       things: {
@@ -562,8 +563,48 @@ test.serial.only('find - versioned hierarchies', async (t) => {
       },
     })
 
+    responses.push(res)
+
     console.log('RES', i, JSON.stringify(res, null, 2))
   }
+
+  t.deepEqual(responses, [
+    {
+      cooking: {
+        things: [
+          {
+            name: 'Food 1',
+            description: 'Nice food 1',
+          },
+          {
+            name: 'Food 2',
+            description: 'Nice food 2',
+          },
+        ],
+      },
+      travel: {
+        things: [],
+      },
+    },
+    {
+      cooking: {
+        things: [
+          {
+            name: 'Food 1',
+            description: 'Nice food 1',
+          },
+        ],
+      },
+      travel: {
+        things: [
+          {
+            name: 'Travel 1',
+            description: 'Nice food 1',
+          },
+        ],
+      },
+    },
+  ])
 
   // A small delay is needed after setting the schema
   await new Promise((r) => setTimeout(r, 100))
