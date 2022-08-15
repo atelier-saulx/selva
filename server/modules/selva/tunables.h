@@ -39,6 +39,11 @@
  */
 
 /**
+ * Hierarchy node pool slab size in bytes.
+ */
+#define HIERARCHY_SLAB_SIZE 33554432
+
+/**
  * Initial vector lengths for children and parents lists.
  */
 #define HIERARCHY_INITIAL_VECTOR_LEN    50
@@ -76,6 +81,15 @@
  * time.
  */
 #define HIERARCHY_AUTO_COMPRESS_INACT_NODES_LEN (4096 / SELVA_NODE_ID_SIZE)
+
+/*
+ * Command tunables.
+ */
+
+/**
+ * Maximum number of update operations on a sinlge command.
+ */
+#define SELVA_CMD_UPDATE_MAX 300
 
 /*
  * RPN Tunables.

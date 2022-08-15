@@ -1240,6 +1240,7 @@ static enum rpn_error rpn_op_rec_filter(struct RedisModuleCtx *redis_ctx __unuse
     const char op = OPERAND_GET_S(b)[1]; /* This should be always valid. */
     const char *v_str = OPERAND_GET_S(c);
     const size_t v_len = OPERAND_GET_S_LEN(c);
+    struct SelvaObject *edges;
     struct SelvaObject *obj;
     SelvaObject_Iterator *it;
     const char *tmp;
@@ -1264,20 +1265,17 @@ static enum rpn_error rpn_op_rec_filter(struct RedisModuleCtx *redis_ctx __unuse
         return RPN_ERR_ILLOPN;
     }
 
-    if (!ctx->obj) {
+    if (!ctx->obj || !ctx->node) {
         return RPN_ERR_NPE;
     }
 
-    /* TODO Check from metadata that it's actually a record? */
-    err = SelvaObject_GetObjectStr(ctx->obj, field_str, field_len, &obj);
-    if (err == SELVA_ENOENT) {
-        /* RFE Is it possible to know if this is a record? */
-        struct SelvaObject *edges = SelvaHierarchy_GetNodeMetadataByPtr(ctx->node)->edge_fields.edges;
-
-        if (edges) {
-            err = SelvaObject_GetObjectStr(edges, field_str, field_len, &obj);
-        }
+    /* RFE Is it possible to know if this is a record? */
+    edges = SelvaHierarchy_GetNodeMetadataByPtr(ctx->node)->edge_fields.edges;
+    if (!edges) {
+        return push_empty_value(ctx);
     }
+
+    err = SelvaObject_GetObjectStr(edges, field_str, field_len, &obj);
     if (err) {
         return push_empty_value(ctx);
     }

@@ -215,6 +215,7 @@ RB_GENERATE_STATIC(hierarchy_index_tree, SelvaHierarchyNode, _index_entry, Selva
 SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
     SelvaHierarchy *hierarchy = RedisModule_Calloc(1, sizeof(*hierarchy));
 
+    mempool_init(&hierarchy->node_pool, HIERARCHY_SLAB_SIZE, sizeof(SelvaHierarchyNode), _Alignof(SelvaHierarchyNode));
     RB_INIT(&hierarchy->index_head);
     SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare);
     SelvaObject_Init(hierarchy->types._obj_data);
@@ -273,6 +274,7 @@ void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy) {
         (void)RedisModule_StopTimerUnsafe(hierarchy->inactive.auto_compress_timer, NULL);
     }
     SelvaHierarchy_DeinitInactiveNodes(hierarchy);
+    mempool_destroy(&hierarchy->node_pool);
 
 #if MEM_DEBUG
     memset(hierarchy, 0, sizeof(*hierarchy));
@@ -371,7 +373,9 @@ static int create_node_object(struct SelvaHierarchy *hierarchy, SelvaHierarchyNo
  * Create a new node.
  */
 static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const Selva_NodeId id) {
-    SelvaHierarchyNode *node = RedisModule_Calloc(1, sizeof(SelvaHierarchyNode));
+    SelvaHierarchyNode *node = mempool_get(&hierarchy->node_pool);
+
+    memset(node, 0, sizeof(*node));
 
 #if 0
     fprintf(stderr, "%s:%d: Creating node %.*s\n",
@@ -440,7 +444,7 @@ static void SelvaModify_DestroyNode(RedisModuleCtx *ctx, SelvaHierarchy *hierarc
 #if MEM_DEBUG
     memset(node, 0, sizeof(*node));
 #endif
-    RedisModule_Free(node);
+    mempool_return(&hierarchy->node_pool, node);
 }
 
 /**
@@ -668,6 +672,13 @@ static void del_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierar
      */
     if (is_root) {
         SelvaHierarchy_ClearNodeFields(obj);
+
+        /*
+         * There might be something to collect if this was a large hierarchy.
+         * Regardless, running the gc is a relatively cheap operation and makes
+         * sense here.
+         */
+        mempool_gc(&hierarchy->node_pool);
     } else {
         err = removeRelationships(ctx, hierarchy, node, RELATIONSHIP_CHILD);
         if (err < 0) {

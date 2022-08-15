@@ -154,8 +154,6 @@ test.serial('find - traverse expression - low level', async (t) => {
     ],
   })
 
-  await client.destroy()
-
   const traversal =
     '{"children"} {"author","publisher"} j "bk" e T {"books"} "li" e T'
   const filter = '$0 b {"bk","au","pb"} a'
