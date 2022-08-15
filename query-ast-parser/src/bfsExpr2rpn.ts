@@ -1,5 +1,20 @@
 import { TraverseByType, TraverseByTypeExpression } from './types'
 
+const SUPPORTED_OPS = {
+  maxRecordKeyLEQ: ([field, val]) => `"${val}" "lJ" "${field}" o`,
+}
+
+function op2rpn(
+  types: Record<string, { prefix?: string }>,
+  rule: { $fn?: string; $args?: any[] }
+): string {
+  if (!SUPPORTED_OPS[rule.$fn]) {
+    throw new Error(`Unsupported RPN operation ${rule.$fn}`)
+  }
+
+  return SUPPORTED_OPS[rule.$fn](rule.$args)
+}
+
 function expr2rpn(
   types: Record<string, { prefix?: string }>,
   rule: TraverseByTypeExpression
@@ -8,6 +23,8 @@ function expr2rpn(
     ? `{"${rule}"}`
     : rule === false
     ? '{}'
+    : rule.$fn
+    ? op2rpn(types, rule)
     : rule.$all
     ? all2rpn(types, { $all: rule.$all })
     : first2rpn(types, { $first: rule.$first })

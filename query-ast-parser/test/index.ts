@@ -26,7 +26,7 @@ test('basic filter', async (t) => {
     ],
   })
 
-  const rpn = createRpn(filter)
+  const rpn = createRpn({ team: { prefix: 'te' } }, filter)
 
   printAst(ast)
 
@@ -115,7 +115,7 @@ test('complex filter', async (t) => {
     ],
   })
 
-  const rpn = createRpn(filter)
+  const rpn = createRpn({ team: { prefix: 'te' } }, filter)
 
   printAst(ast)
 

@@ -24,7 +24,15 @@ export type Filter =
   | ExistsFilter
   | GeoFilter
   | {
-      $operator: '=' | '!=' | '>' | '<' | '..' | 'has' | 'includes' | 'textSearch'
+      $operator:
+        | '='
+        | '!='
+        | '>'
+        | '<'
+        | '..'
+        | 'has'
+        | 'includes'
+        | 'textSearch'
       $field: string
       $value: string | number | (string | number)[]
       $and?: Filter
@@ -63,6 +71,9 @@ export type TraverseByTypeExpression =
   | false
   | string
   | {
+      $fn?: string
+      $args?: any[]
+
       $first?: TraverseByTypeExpression[]
       $all?: TraverseByTypeExpression[]
     }
