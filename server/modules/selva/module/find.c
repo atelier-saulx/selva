@@ -1098,7 +1098,7 @@ static int exec_fields_expression(
     return 0;
 }
 
-static int print_node(
+static void print_node(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         SelvaHierarchy *hierarchy,
@@ -1126,7 +1126,16 @@ static int print_node(
         err = 0;
     }
 
-    return err;
+    if (err) {
+        Selva_NodeId nodeId;
+
+        RedisModule_ReplyWithNull(ctx);
+
+        fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, SelvaHierarchy_GetNodeId(nodeId, node),
+                getSelvaErrorStr(err));
+    }
 }
 
 static __hot int FindCommand_NodeCb(
@@ -1171,23 +1180,10 @@ static __hot int FindCommand_NodeCb(
         if (!sort) {
             ssize_t *nr_nodes = args->nr_nodes;
             ssize_t * restrict limit = args->limit;
-            int err;
 
-            err = print_node(ctx, args->lang, hierarchy, node, &args->send_param, args->merge_nr_fields);
-            if (err) {
-                Selva_NodeId nodeId;
-
-                RedisModule_ReplyWithNull(ctx);
-
-                SelvaHierarchy_GetNodeId(nodeId, node);
-                fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, nodeId,
-                        getSelvaErrorStr(err));
-            }
+            print_node(ctx, args->lang, hierarchy, node, &args->send_param, args->merge_nr_fields);
 
             *nr_nodes = *nr_nodes + 1;
-
             *limit = *limit - 1;
             if (*limit == 0) {
                 return 1;
@@ -1338,21 +1334,12 @@ static size_t FindCommand_PrintOrderedResult(
      */
     SVector_ForeachBegin(&it, order_result);
     while ((item = SVector_Foreach(&it))) {
-        int err;
-
         if (limit-- == 0) {
             break;
         }
 
         assert(PTAG_GETTAG(item->tagp) == TRAVERSAL_ORDER_ITEM_PTYPE_NODE);
-        err = print_node(ctx, lang, hierarchy, PTAG_GETP(item->tagp), args, nr_fields_out);
-        if (err) {
-            RedisModule_ReplyWithNull(ctx);
-            fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, item->node_id,
-                    getSelvaErrorStr(err));
-        }
+        print_node(ctx, lang, hierarchy, PTAG_GETP(item->tagp), args, nr_fields_out);
 
         len++;
     }
