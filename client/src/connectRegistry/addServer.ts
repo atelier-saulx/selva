@@ -9,8 +9,7 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
   } else if (type === 'replica') {
     if (!selvaClient.servers.replicas[server.name]) {
       selvaClient.servers.replicas[server.name] = []
-    }
-    if (
+    } else if (
       !selvaClient.servers.replicas[server.name].find(
         (s) =>
           s.host === server.host &&
@@ -25,7 +24,7 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
       )
     }
   } else if (type === 'subscriptionManager') {
-    // TODO: should we checking the server.ids instead?
+    // TODO: should we be checking the server.ids instead?
     if (
       !selvaClient.servers.subsManagers.find(
         (s) =>
