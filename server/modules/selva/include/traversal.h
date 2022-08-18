@@ -101,6 +101,15 @@ typedef int (*SelvaFind_ProcessObject)(
         struct FindCommand_Args *args,
         struct SelvaObject *obj);
 
+typedef void (*SelvaFind_Postprocess)(
+        struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct RedisModuleString *lang,
+        ssize_t offset,
+        ssize_t limit,
+        struct SelvaNodeSendParam *args,
+        SVector *result);
+
 struct FindCommand_Args {
     struct RedisModuleString *lang;
 
@@ -114,6 +123,9 @@ struct FindCommand_Args {
     struct SelvaNodeSendParam send_param;
     size_t *merge_nr_fields;
 
+#if 0
+    enum SelvaResultOrder order; /*!< Result order. */
+#endif
     const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
     SVector *order_result; /*!< Results of the find wrapped in TraversalOrderItem structs.
                             *   Only used if sorting is requested. */
