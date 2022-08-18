@@ -1100,8 +1100,8 @@ static int exec_fields_expression(
 
 static void print_node(
         RedisModuleCtx *ctx,
-        RedisModuleString *lang,
         SelvaHierarchy *hierarchy,
+        RedisModuleString *lang,
         struct SelvaHierarchyNode *node,
         struct SelvaNodeSendParam *args,
         size_t *merge_nr_fields) {
@@ -1136,6 +1136,50 @@ static void print_node(
                 (int)SELVA_NODE_ID_SIZE, SelvaHierarchy_GetNodeId(nodeId, node),
                 getSelvaErrorStr(err));
     }
+}
+
+static int process_node_send(
+        RedisModuleCtx *ctx,
+        SelvaHierarchy *hierarchy,
+        struct FindCommand_Args *args,
+        struct SelvaHierarchyNode *node) {
+    ssize_t *nr_nodes = args->nr_nodes;
+    ssize_t * restrict limit = args->limit;
+
+    print_node(ctx, hierarchy, args->lang, node, &args->send_param, args->merge_nr_fields);
+
+    *nr_nodes = *nr_nodes + 1;
+    *limit = *limit - 1;
+
+    return *limit == 0;
+}
+
+static int process_node_sort(
+        RedisModuleCtx *ctx,
+        SelvaHierarchy *hierarchy __unused,
+        struct FindCommand_Args *args,
+        struct SelvaHierarchyNode *node) {
+    struct TraversalOrderItem *item;
+
+    item = SelvaTraversalOrder_CreateOrderItem(ctx, args->lang, node, args->order_field);
+    if (item) {
+        SVector_InsertFast(args->order_result, item);
+    } else {
+        Selva_NodeId nodeId;
+
+        /*
+         * It's not so easy to make the response fail at this point.
+         * Given that we shouldn't generally even end up here in real
+         * life, it's fairly ok to just log the error and return what
+         * we can.
+         */
+        SelvaHierarchy_GetNodeId(nodeId, node);
+        fprintf(stderr, "%s:%d: Failed to create an order item for %.*s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, nodeId);
+    }
+
+    return 0;
 }
 
 static __hot int FindCommand_NodeCb(
@@ -1173,42 +1217,59 @@ static __hot int FindCommand_NodeCb(
     }
 
     if (take) {
-        const int sort = !!args->order_field;
-
         args->acc_take++;
 
-        if (!sort) {
-            ssize_t *nr_nodes = args->nr_nodes;
-            ssize_t * restrict limit = args->limit;
+        return args->process_node(ctx, hierarchy, args, node);
+    }
 
-            print_node(ctx, args->lang, hierarchy, node, &args->send_param, args->merge_nr_fields);
+    return 0;
+}
 
-            *nr_nodes = *nr_nodes + 1;
-            *limit = *limit - 1;
-            if (*limit == 0) {
-                return 1;
-            }
-        } else {
-            struct TraversalOrderItem *item;
+static int process_array_obj_send(
+        RedisModuleCtx *ctx,
+        struct FindCommand_Args *args,
+        struct SelvaObject *obj) {
+    ssize_t *nr_nodes = args->nr_nodes;
+    ssize_t * restrict limit =  args->limit;
 
-            item = SelvaTraversalOrder_CreateOrderItem(ctx, args->lang, node, args->order_field);
-            if (item) {
-                SVector_InsertFast(args->order_result, item);
-            } else {
-                Selva_NodeId nodeId;
+    if (args->send_param.fields) {
+        int err;
 
-                /*
-                 * It's not so easy to make the response fail at this point.
-                 * Given that we shouldn't generally even end up here in real
-                 * life, it's fairly ok to just log the error and return what
-                 * we can.
-                 */
-                SelvaHierarchy_GetNodeId(nodeId, node);
-                fprintf(stderr, "%s:%d: Out of memory while creating an order result item for %.*s\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, nodeId);
-            }
+        err = send_array_object_fields(ctx, args->lang, obj, args->send_param.fields);
+        if (err) {
+            RedisModule_ReplyWithNull(ctx);
+            fprintf(stderr, "%s:%d: Failed to handle field(s), err: %s\n",
+                    __FILE__, __LINE__,
+                    getSelvaErrorStr(err));
         }
+    } else {
+        RedisModule_ReplyWithStringBuffer(ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
+    }
+
+    *nr_nodes = *nr_nodes + 1;
+    *limit = *limit - 1;
+
+    return *limit == 0;
+}
+
+static int process_array_obj_sort(
+        RedisModuleCtx *ctx,
+        struct FindCommand_Args *args,
+        struct SelvaObject *obj) {
+    struct TraversalOrderItem *item;
+
+    item = SelvaTraversalOrder_CreateObjectBasedOrderItem(ctx, args->lang, obj, args->order_field);
+    if (item) {
+        SVector_InsertFast(args->order_result, item);
+    } else {
+        /*
+         * It's not so easy to make the response fail at this point.
+         * Given that we shouldn't generally even end up here in real
+         * life, it's fairly ok to just log the error and return what
+         * we can.
+         */
+        fprintf(stderr, "%s:%d: Failed to create an order item\n",
+                __FILE__, __LINE__);
     }
 
     return 0;
@@ -1257,49 +1318,7 @@ static int FindCommand_ArrayObjectCb(
     }
 
     if (take) {
-        const int sort = !!find_args->order_field;
-
-        if (!sort) {
-            ssize_t *nr_nodes = find_args->nr_nodes;
-            ssize_t * restrict limit = find_args->limit;
-            int err;
-
-            if (find_args->send_param.fields) {
-                err = send_array_object_fields(args->ctx, find_args->lang, obj, find_args->send_param.fields);
-            } else {
-                RedisModule_ReplyWithStringBuffer(args->ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
-                err = 0;
-            }
-            if (err) {
-                RedisModule_ReplyWithNull(args->ctx);
-                fprintf(stderr, "%s:%d: Failed to handle field(s), err: %s\n",
-                        __FILE__, __LINE__,
-                        getSelvaErrorStr(err));
-            }
-
-            *nr_nodes = *nr_nodes + 1;
-
-            *limit = *limit - 1;
-            if (*limit == 0) {
-                return 1;
-            }
-        } else {
-            struct TraversalOrderItem *item;
-
-            item = SelvaTraversalOrder_CreateObjectBasedOrderItem(args->ctx, find_args->lang, obj, find_args->order_field);
-            if (item) {
-                SVector_InsertFast(find_args->order_result, item);
-            } else {
-                /*
-                 * It's not so easy to make the response fail at this point.
-                 * Given that we shouldn't generally even end up here in real
-                 * life, it's fairly ok to just log the error and return what
-                 * we can.
-                 */
-                fprintf(stderr, "%s:%d Failed to create an order item\n",
-                        __FILE__, __LINE__);
-            }
-        }
+        return find_args->process_obj(args->ctx, find_args, obj);
     }
 
     return 0;
@@ -1339,7 +1358,7 @@ static size_t FindCommand_PrintOrderedResult(
         }
 
         assert(PTAG_GETTAG(item->tagp) == TRAVERSAL_ORDER_ITEM_PTYPE_NODE);
-        print_node(ctx, lang, hierarchy, PTAG_GETP(item->tagp), args, nr_fields_out);
+        print_node(ctx, hierarchy, lang, PTAG_GETP(item->tagp), args, nr_fields_out);
 
         len++;
     }
@@ -1798,6 +1817,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .order_result = &order_result,
             .acc_tot = 0,
             .acc_take = 0,
+            .process_node = (order == SELVA_RESULT_ORDER_NONE) ? process_node_send : process_node_sort,
         };
 
         if (limit == 0) {
@@ -1827,6 +1847,9 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 .cb_arg = &array_args,
             };
             TO_STR(ref_field);
+
+            /* Switch the processing function. */
+            args.process_obj = (order == SELVA_RESULT_ORDER_NONE) ? process_array_obj_send : process_array_obj_sort;
 
             SELVA_TRACE_BEGIN(cmd_find_array);
             err = SelvaHierarchy_TraverseArray(ctx, hierarchy, nodeId, ref_field_str, ref_field_len, &ary_cb);
@@ -2081,6 +2104,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             .order_result = &order_result,
             .acc_take = 0,
             .acc_tot = 0,
+            .process_node = (order == SELVA_RESULT_ORDER_NONE) ? process_node_send : process_node_sort,
         };
 
         node = SelvaHierarchy_FindNode(hierarchy, ids_str + i);

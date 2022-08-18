@@ -815,6 +815,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             .merge_nr_fields = &merge_nr_fields,
             .order_field = order_by_field,
             .order_result = &order_result,
+            .process_node = NULL, /* Not used. */
         };
 
         if (limit == 0) {
@@ -1138,6 +1139,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .send_param.excluded_fields = NULL,
             .order_field = order_by_field,
             .order_result = &order_result,
+            .process_node = NULL, /* Not used. */
         };
 
         args.find_args = find_args;

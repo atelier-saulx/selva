@@ -201,5 +201,23 @@ test.serial('sort by text with missing field values', async (t) => {
     { children: [ { title: '4' }, { title: 'abc' }, { title: 'mazzzz' }, {}, {} ] }
   )
 
+  t.deepEqual(
+    await client.get({
+      $language: 'en',
+      children: {
+        title: true,
+        $list: {
+          $sort: {
+            $field: 'title',
+            $order: 'asc',
+          },
+          $offset: 1,
+          $limit: 1,
+        },
+      },
+    }),
+    { children: [ { title: 'abc' } ] }
+  )
+
   await client.destroy()
 })
