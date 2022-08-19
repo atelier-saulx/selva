@@ -1846,18 +1846,18 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
         if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY) {
             if (order != SELVA_RESULT_ORDER_NONE) {
-                args.process_obj = process_array_obj_sort;
-                postprocess = postprocess_array;
+                args.process_obj = &process_array_obj_sort;
+                postprocess = &postprocess_array;
             } else {
-                args.process_obj = process_array_obj_send;
+                args.process_obj = &process_array_obj_send;
                 postprocess = NULL;
             }
         } else {
             if (order != SELVA_RESULT_ORDER_NONE) {
-                args.process_node = process_node_sort;
-                postprocess = post_process_nodes;
+                args.process_node = &process_node_sort;
+                postprocess = &post_process_nodes;
             } else {
-                args.process_node = process_node_send;
+                args.process_node = &process_node_send;
                 postprocess = NULL;
             }
         }
@@ -2130,7 +2130,7 @@ int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             .order_result = &order_result,
             .acc_take = 0,
             .acc_tot = 0,
-            .process_node = (order == SELVA_RESULT_ORDER_NONE) ? process_node_send : process_node_sort,
+            .process_node = (order == SELVA_RESULT_ORDER_NONE) ? &process_node_send : &process_node_sort,
         };
 
         node = SelvaHierarchy_FindNode(hierarchy, ids_str + i);
