@@ -8,7 +8,7 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
     selvaClient.servers.origins[server.name] = server
   } else if (type === 'replica') {
     if (!selvaClient.servers.replicas[server.name]) {
-      selvaClient.servers.replicas[server.name] = [server]
+      selvaClient.servers.replicas[server.name] = [{ ...server, index: 0 }]
     } else if (
       !selvaClient.servers.replicas[server.name].find(
         (s) =>
