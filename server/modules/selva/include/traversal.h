@@ -5,8 +5,9 @@
 #include "svector.h"
 #include "arg_parser.h"
 
-struct RedisModuleString;
+struct FindCommand_Args;
 struct RedisModuleCtx;
+struct RedisModuleString;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 
@@ -90,6 +91,25 @@ struct SelvaNodeSendParam {
     struct RedisModuleString *excluded_fields;
 };
 
+typedef int (*SelvaFind_ProcessNode)(
+        struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct FindCommand_Args *args,
+        struct SelvaHierarchyNode *node);
+typedef int (*SelvaFind_ProcessObject)(
+        struct RedisModuleCtx *ctx,
+        struct FindCommand_Args *args,
+        struct SelvaObject *obj);
+
+typedef void (*SelvaFind_Postprocess)(
+        struct RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct RedisModuleString *lang,
+        ssize_t offset,
+        ssize_t limit,
+        struct SelvaNodeSendParam *args,
+        SVector *result);
+
 struct FindCommand_Args {
     struct RedisModuleString *lang;
 
@@ -103,6 +123,9 @@ struct FindCommand_Args {
     struct SelvaNodeSendParam send_param;
     size_t *merge_nr_fields;
 
+#if 0
+    enum SelvaResultOrder order; /*!< Result order. */
+#endif
     const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
     SVector *order_result; /*!< Results of the find wrapped in TraversalOrderItem structs.
                             *   Only used if sorting is requested. */
@@ -112,6 +135,11 @@ struct FindCommand_Args {
     /* Accounting */
     size_t acc_take; /*!< Numer of nodes selected during the traversal. */
     size_t acc_tot; /*!< Total number of nodes visited during the traversal. */
+
+    union {
+        SelvaFind_ProcessNode process_node;
+        SelvaFind_ProcessObject process_obj;
+    };
 };
 
 /**
