@@ -10,6 +10,7 @@ struct RedisModuleCtx;
 struct RedisModuleString;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
+struct SelvaObjectAny;
 
 /**
  * Hierarchy traversal order.
@@ -80,7 +81,7 @@ enum TraversalOrderItemPtype {
     /**
      * A pointer to a node.
      */
-    TRAVERSAL_ORDER_ITEM_PTYPE_NODE = 0,
+    TRAVERSAL_ORDER_ITEM_PTYPE_NODE = 1,
     /**
      * A pointer to a SelvaObject.
      */
@@ -116,6 +117,18 @@ struct TraversalOrderItem {
 };
 
 struct SelvaNodeSendParam {
+    /*
+     * Order-by information is needed if the sorting is made in the
+     * postprocessing step, i.e. when the args->result SVector isn't
+     * sorted.
+     */
+    enum SelvaResultOrder order; /*!< Result order. */
+    const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
+
+    /**
+     * Merge strategy.
+     * A merge is executed if this field is set to other than MERGE_STRATEGY_NONE.
+     */
     enum SelvaMergeStrategy merge_strategy;
     struct RedisModuleString *merge_path;
 
@@ -152,6 +165,13 @@ struct SelvaNodeSendParam {
      * using an RPN expression that returns a set on field names.
      */
     struct rpn_expression *fields_expression;
+
+    /**
+     * Inherit fields using ancestors traversal.
+     * Optional, can be set to NULL.
+     * The last element shall be NULL.
+     */
+    struct RedisModuleString **inherit_fields;
 
     /**
      * Fields that should be excluded when `fields` contains a wildcard.
@@ -198,9 +218,7 @@ struct FindCommand_Args {
 #if 0
     enum SelvaResultOrder order; /*!< Result order. */
 #endif
-    const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
-    SVector *order_result; /*!< Results of the find wrapped in TraversalOrderItem structs.
-                            *   Only used if sorting is requested. */
+    SVector *result; /*!< Results of the find for postprocessing. Wrapped in TraversalOrderItem structs if sorting is requested. */
 
     struct Selva_SubscriptionMarker *marker; /*!< Used by FindInSub. */
 
@@ -286,38 +304,48 @@ void SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResult
 
 /**
  * Destroy an order_result SVector and free its items properly.
- * If SelvaTraversalOrder_CreateOrderItem() was called with a ctx then ctx this
+ * If SelvaTraversalOrder_Create*OrderItem() was called with a ctx then ctx this
  * function should be called with a ctx too. Alternatively the order_result
  * SVector can be declared with SVECTOR_AUTOFREE().
  */
 void SelvaTraversalOrder_DestroyOrderResult(struct RedisModuleCtx *ctx, SVector *order_result);
 
 /**
- * Create a new TraversalOrderItem that can be sorted.
+ * Create a new node based TraversalOrderItem that can be sorted.
  * @param[in] ctx if given the item will be freed when the context exits; if NULL the caller must free the item returned.
  * @returns Returns a TraversalOrderItem if succeed; Otherwise a NULL pointer is returned.
  */
-struct TraversalOrderItem *SelvaTraversalOrder_CreateOrderItem(
+struct TraversalOrderItem *SelvaTraversalOrder_CreateNodeOrderItem(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
         struct SelvaHierarchyNode *node,
         const struct RedisModuleString *order_field);
 
 /**
- * Create a TraversalOrderItem that points to a SelvaObject.
+ * Create a new node based TraversalOrderItem that can be sorted with user defined value.
+ * @param[in] ctx if given the item will be freed when the context exits; if NULL the caller must free the item returned.
+ * @returns Returns a TraversalOrderItem if succeed; Otherwise a NULL pointer is returned.
+ */
+struct TraversalOrderItem *SelvaTraversalOrder_CreateAnyNodeOrderItem(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchyNode *node,
+        struct SelvaObjectAny *any);
+
+/**
+ * Create a new SelvaObject based TraversalOrderItem that can be sorted.
  * This function can be used to determine an order for several SelvaObjects.
  * @param lang is the language for text fields.
  * @param order_field is a field on obj.
  * @returns Returns a TraversalOrderItem if succeed; Otherwise a NULL pointer is returned.
  */
-struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectBasedOrderItem(
+struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectOrderItem(
         struct RedisModuleCtx *ctx,
         struct RedisModuleString *lang,
         struct SelvaObject *obj,
         const struct RedisModuleString *order_field);
 
 /**
- * Destroy TraversalOrderItem created by SelvaTraversalOrder_CreateOrderItem().
+ * Destroy TraversalOrderItem created by SelvaTraversalOrder_Create*OrderItem().
  */
 void SelvaTraversalOrder_DestroyOrderItem(struct RedisModuleCtx *ctx, struct TraversalOrderItem *item);
 

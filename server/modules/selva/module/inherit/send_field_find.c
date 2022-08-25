@@ -9,9 +9,8 @@
 #include "inherit_fields.h"
 
 /*
- * Send field in the inherit command style:
- * [node_id, field_name, field_value]
- * i.e. Each response is encapsulated in an array.
+ * Send field in the find command style:
+ * field_name, [node_id, field_value]
  */
 
 static int send_field_value(
@@ -25,9 +24,9 @@ static int send_field_value(
         size_t field_len);
 
 static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id, RedisModuleString *full_field, struct EdgeField *edge_field) {
-    RedisModule_ReplyWithArray(ctx, 3);
-    RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
     RedisModule_ReplyWithString(ctx, full_field);
+    RedisModule_ReplyWithArray(ctx, 2);
+    RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
     replyWithEdgeField(ctx, edge_field);
 
     return 0;
@@ -74,9 +73,9 @@ static int send_edge_field_deref_value(
          */
         TO_STR(full_field);
 
-        RedisModule_ReplyWithArray(ctx, 3);
-        RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId)); /* The actual node_id. */
         RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
+        RedisModule_ReplyWithArray(ctx, 2);
+        RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId)); /* The actual node_id. */
         SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
     } else {
         const struct SelvaHierarchyNode *node;
@@ -107,9 +106,9 @@ static int send_object_field_value(
 
         SelvaHierarchy_GetNodeId(node_id, node);
 
-        RedisModule_ReplyWithArray(ctx, 3);
-        RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
         RedisModule_ReplyWithString(ctx, full_field);
+        RedisModule_ReplyWithArray(ctx, 2);
+        RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
 
         err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
@@ -163,7 +162,7 @@ static int send_field_value(
     return send_object_field_value(ctx, lang, node, obj, full_field, field_str, field_len);
 }
 
-int Inherit_SendField(
+int Inherit_SendFieldFind(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         RedisModuleString *lang,

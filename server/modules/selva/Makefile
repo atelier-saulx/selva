@@ -33,6 +33,7 @@ OBJS := \
 	module/inherit/get_field.o \
 	module/inherit/inherit.o \
 	module/inherit/send_field.o \
+	module/inherit/send_field_find.o \
 	module/modify.o \
 	module/modinfo.o \
 	module/resolve.o \

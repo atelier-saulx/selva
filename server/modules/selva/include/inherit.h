@@ -12,7 +12,7 @@ struct SelvaObjectAny;
  * @param ctx is a pointer to the current Redis context.
  * @param hierarchy is a pointer to the hierarchy.
  * @param lang an optional lang list.
- * @param node_is is the starting node_id.
+ * @param node_id is the starting node_id.
  * @param types is a list of types allowed for inherit.
  * @param nr_types is the number of ids in `types`.
  * @param field_name_str is a pointer to the field name.
@@ -29,5 +29,22 @@ int Inherit_FieldValue(
         const char *field_name_str,
         size_t field_name_len,
         struct SelvaObjectAny *res);
+
+/**
+ * Inherit fields and send them to the client in the find command format.
+ * @param ctx is a pointer to the current Redis context.
+ * @param hierarchy is a pointer to the hierarchy.
+ * @param lang an optional lang list.
+ * @param node_id is the starting node_id.
+ * @param field_names is an array of pointers to field names.
+ * @param Returns the number of fields sent.
+ */
+size_t Inherit_SendFields(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        RedisModuleString *lang,
+        const Selva_NodeId node_id,
+        RedisModuleString **field_names,
+        size_t nr_field_names);
 
 #endif /* _SELVA_INHERIT_H_ */

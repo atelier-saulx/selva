@@ -29,6 +29,13 @@ struct InheritFieldValue_Args {
     struct SelvaObjectAny *res;
 };
 
+struct InheritSendFields_Args {
+    size_t nr_fields;
+    RedisModuleString *lang;
+    RedisModuleString **field_names;
+    ssize_t nr_results; /*!< Number of results sent. */
+};
+
 struct InheritCommand_Args {
     size_t first_node; /*!< We ignore the type of the first node. */
     size_t nr_fields;
@@ -118,6 +125,92 @@ int Inherit_FieldValue(
     };
 
     return SelvaHierarchy_Traverse(ctx, hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
+}
+
+static int Inherit_SendFields_NodeCb(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        void *arg) {
+    struct InheritSendFields_Args *restrict args = (struct InheritSendFields_Args *)arg;
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    int err;
+
+    for (size_t i = 0; i < args->nr_fields; i++) {
+        RedisModuleString *field_name = args->field_names[i];
+
+        /* Field already found. */
+        if (!field_name) {
+            continue;
+        }
+
+        /*
+         * Get and send the field value to the client.
+         * The response should always start like this: [node_id, field_name, ...]
+         * but we don't send the header yet.
+         */
+        TO_STR(field_name);
+        err = Inherit_SendFieldFind(ctx, hierarchy, args->lang,
+                                node, obj,
+                                field_name, /* Initially full_field is the same as field_name. */
+                                field_name_str, field_name_len);
+        if (err == 0) { /* found */
+            args->field_names[i] = NULL; /* No need to look for this one anymore. */
+            args->nr_results++;
+
+            /* Stop traversing if all fields were found. */
+            if (args->nr_results == (ssize_t)args->nr_fields) {
+                return 1;
+            }
+        } else if (err != SELVA_ENOENT) {
+            Selva_NodeId nodeId;
+
+            SelvaHierarchy_GetNodeId(nodeId, node);
+
+            /*
+             * SELVA_ENOENT is expected as not all nodes have all fields set;
+             * Any other error is unexpected.
+             */
+            fprintf(stderr, "%s:%d: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
+                    __FILE__, __LINE__,
+                    (int)SELVA_NODE_ID_SIZE, nodeId,
+                    RedisModule_StringPtrLen(field_name, NULL),
+                    getSelvaErrorStr(err));
+        }
+    }
+
+    return 0;
+}
+
+int Inherit_SendFields(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        RedisModuleString *lang,
+        const Selva_NodeId node_id,
+        RedisModuleString **field_names,
+        size_t nr_field_names) {
+    struct InheritSendFields_Args args = {
+        .lang = lang,
+        .field_names = RedisModule_PoolAlloc(ctx, nr_field_names * sizeof(RedisModuleString *)),
+        .nr_fields = nr_field_names,
+        .nr_results = 0,
+    };
+    const struct SelvaHierarchyCallback cb = {
+        .node_cb = Inherit_SendFields_NodeCb,
+        .node_arg = &args,
+    };
+    int err;
+
+    memcpy(args.field_names, field_names, nr_field_names * sizeof(RedisModuleString *));
+    err = SelvaHierarchy_Traverse(ctx, hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
+    if (err) {
+        /* TODO Better error handling? */
+        fprintf(stderr, "%s:%d: Inherit failed: %s\n",
+                __FILE__, __LINE__,
+                getSelvaErrorStr(err));
+    }
+
+    return args.nr_results;
 }
 
 static int InheritCommand_NodeCb(

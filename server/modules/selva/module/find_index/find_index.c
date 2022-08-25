@@ -116,7 +116,7 @@ static int icb_res_add(struct SelvaFindIndexControlBlock *icb, struct SelvaHiera
          */
         RedisModuleString *lang = NULL;
 
-        item = SelvaTraversalOrder_CreateOrderItem(NULL, lang, node, icb->sort.order_field);
+        item = SelvaTraversalOrder_CreateNodeOrderItem(NULL, lang, node, icb->sort.order_field);
         if (SVector_InsertFast(&icb->res.ord, item)) {
             SelvaTraversalOrder_DestroyOrderItem(NULL, item);
         }

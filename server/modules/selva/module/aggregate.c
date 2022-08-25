@@ -252,7 +252,7 @@ static int AggregateCommand_NodeCb(
     }
 
     if (take) {
-        const int sort = !!args->find_args.order_field;
+        const int sort = !!args->find_args.send_param.order_field;
 
         args->find_args.acc_take++;
 
@@ -278,9 +278,9 @@ static int AggregateCommand_NodeCb(
         } else {
             struct TraversalOrderItem *item;
 
-            item = SelvaTraversalOrder_CreateOrderItem(ctx, args->find_args.lang, node, args->find_args.order_field);
+            item = SelvaTraversalOrder_CreateNodeOrderItem(ctx, args->find_args.lang, node, args->find_args.send_param.order_field);
             if (item) {
-                SVector_InsertFast(args->find_args.order_result, item);
+                SVector_InsertFast(args->find_args.result, item);
             } else {
                 /*
                  * It's not so easy to make the response fail at this point.
@@ -339,7 +339,7 @@ static int AggregateCommand_ArrayObjectCb(
     }
 
     if (take) {
-        const int sort = !!args->find_args.order_field;
+        const int sort = !!args->find_args.send_param.order_field;
 
         if (!sort) {
             ssize_t *nr_nodes = args->find_args.nr_nodes;
@@ -356,9 +356,9 @@ static int AggregateCommand_ArrayObjectCb(
         } else {
             struct TraversalOrderItem *item;
 
-            item = SelvaTraversalOrder_CreateObjectBasedOrderItem(args->ctx, args->find_args.lang, obj, args->find_args.order_field);
+            item = SelvaTraversalOrder_CreateObjectOrderItem(args->ctx, args->find_args.lang, obj, args->find_args.send_param.order_field);
             if (item) {
-                SVector_InsertFast(args->find_args.order_result, item);
+                SVector_InsertFast(args->find_args.result, item);
             } else {
                 /*
                  * It's not so easy to make the response fail at this point.
@@ -812,8 +812,9 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             .send_param.fields = fields,
             .send_param.excluded_fields = NULL,
             .merge_nr_fields = &merge_nr_fields,
-            .order_field = order_by_field,
-            .order_result = &order_result,
+            .send_param.order = order,
+            .send_param.order_field = order_by_field,
+            .result = &order_result,
             .process_node = NULL, /* Not used. */
         };
 
@@ -1136,8 +1137,9 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .merge_nr_fields = NULL,
             .send_param.fields = fields,
             .send_param.excluded_fields = NULL,
-            .order_field = order_by_field,
-            .order_result = &order_result,
+            .send_param.order = order,
+            .send_param.order_field = order_by_field,
+            .result = &order_result,
             .process_node = NULL, /* Not used. */
         };
 

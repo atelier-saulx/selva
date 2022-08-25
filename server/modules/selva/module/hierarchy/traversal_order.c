@@ -158,36 +158,27 @@ void SelvaTraversalOrder_DestroyOrderResult(RedisModuleCtx *ctx, SVector *order_
  * For most part all errors are ignored and we just won't be able determine a
  * satisfying order.
  */
-static int obj2order_data(RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *order_field, struct order_data *tmp) {
-    struct SelvaObjectAny any;
-    int err;
+static void obj_any2order_data(struct SelvaObjectAny *any, struct order_data *tmp) {
 
-    err = SelvaObject_GetAnyLang(obj, lang, order_field, &any);
-    if (err) {
-        return (err != SELVA_ENOENT) ? err : 0;
-    }
-
-    if (any.type == SELVA_OBJECT_STRING) {
-        RedisModuleString *value = any.str;
+    if (any->type == SELVA_OBJECT_STRING) {
+        RedisModuleString *value = any->str;
 
         if (value) {
             tmp->data = RedisModule_StringPtrLen(value, &tmp->data_len);
             tmp->type = ORDER_ITEM_TYPE_TEXT;
 
-            if (any.user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
-                memcpy(tmp->data_lang, any.str_lang, min(sizeof(tmp->data_lang), sizeof(any.str_lang)));
+            if (any->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
+                memcpy(tmp->data_lang, any->str_lang, min(sizeof(tmp->data_lang), sizeof(any->str_lang)));
                 tmp->data_lang[sizeof(tmp->data_lang) - 1] = '\0';
             }
         }
-    } else if (any.type == SELVA_OBJECT_DOUBLE) {
-        tmp->d = any.d;
+    } else if (any->type == SELVA_OBJECT_DOUBLE) {
+        tmp->d = any->d;
         tmp->type = ORDER_ITEM_TYPE_DOUBLE;
-    } else if (any.type == SELVA_OBJECT_LONGLONG) {
-        tmp->d = (double)any.ll;
+    } else if (any->type == SELVA_OBJECT_LONGLONG) {
+        tmp->d = (double)any->ll;
         tmp->type = ORDER_ITEM_TYPE_DOUBLE;
     }
-
-    return 0;
 }
 
 static size_t calc_final_data_len(const char *data_lang, const char *data, size_t data_len, locale_t *locale_p) {
@@ -251,32 +242,54 @@ static struct TraversalOrderItem *create_item(RedisModuleCtx *ctx, const struct 
     return item;
 }
 
-struct TraversalOrderItem *SelvaTraversalOrder_CreateOrderItem(
+struct TraversalOrderItem *SelvaTraversalOrder_CreateNodeOrderItem(
         RedisModuleCtx *ctx,
         RedisModuleString *lang,
         struct SelvaHierarchyNode *node,
         const RedisModuleString *order_field) {
+    int err;
+    struct SelvaObjectAny any;
     struct order_data tmp = {
         .type = ORDER_ITEM_TYPE_EMPTY,
     };
 
-    if (obj2order_data(lang, SelvaHierarchy_GetNodeObject(node), order_field, &tmp)) {
+    err = SelvaObject_GetAnyLang(SelvaHierarchy_GetNodeObject(node), lang, order_field, &any);
+    if (!err) {
+        obj_any2order_data(&any, &tmp);
+    } else if (err != SELVA_ENOENT) {
         return NULL;
     }
 
     return create_item(ctx, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_NODE, node);
 }
 
-struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectBasedOrderItem(
+struct TraversalOrderItem *SelvaTraversalOrder_CreateAnyNodeOrderItem(
         RedisModuleCtx *ctx,
-        RedisModuleString *lang,
-        struct SelvaObject *obj,
-        const RedisModuleString *order_field) {
+        struct SelvaHierarchyNode *node,
+        struct SelvaObjectAny *any) {
     struct order_data tmp = {
         .type = ORDER_ITEM_TYPE_EMPTY,
     };
 
-    if (obj2order_data(lang, obj, order_field, &tmp)) {
+    obj_any2order_data(any, &tmp);
+    return create_item(ctx, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_NODE, node);
+}
+
+struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectOrderItem(
+        RedisModuleCtx *ctx,
+        RedisModuleString *lang,
+        struct SelvaObject *obj,
+        const RedisModuleString *order_field) {
+    int err;
+    struct SelvaObjectAny any;
+    struct order_data tmp = {
+        .type = ORDER_ITEM_TYPE_EMPTY,
+    };
+
+    err = SelvaObject_GetAnyLang(obj, lang, order_field, &any);
+    if (!err) {
+        obj_any2order_data(&any, &tmp);
+    } else if (err != SELVA_ENOENT) {
         return NULL;
     }
 
