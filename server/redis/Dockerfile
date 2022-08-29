@@ -9,6 +9,7 @@ RUN cd redis && \
     git apply /redis-patches/0001-Add-RM_ReplicateVerbatimArgs.patch && \
     git apply /redis-patches/0002-Add-ReplyWithBinaryBuffer-for-sending-bin-bufs.patch && \
     git apply /redis-patches/0003-Add-RedisModule_StopTimerUnsafe.patch && \
+    git apply /redis-patches/0004-Never-size-limit-the-slave-replication-buffers.patch && \
     make PROG_SUFFIX="-selva"
 
 CMD cp /redis/src/redis-server-selva /dist/redis-server-selva; echo "Done"
