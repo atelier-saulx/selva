@@ -262,6 +262,8 @@ int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleStri
  */
 int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void **out_p);
 
+int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, struct RedisModuleString *lang, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res);
+int SelvaObject_GetAnyLang(struct SelvaObject *obj, struct RedisModuleString *lang, const struct RedisModuleString *key_name, struct SelvaObjectAny *res);
 int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res);
 int SelvaObject_GetAny(struct SelvaObject *obj, const struct RedisModuleString *key_name, struct SelvaObjectAny *res);
 
