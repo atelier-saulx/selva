@@ -85,7 +85,12 @@ test.serial('get a single keyval', async (t) => {
 test.serial('get all', async (t) => {
   const client = connect({ port })
 
-  t.deepEqual(await client.redis.selva_object_get('', 'maTest0001'), [
+  const res: string[] = await client.redis.selva_object_get('', 'maTest0001')
+  res.shift()
+  res.shift()
+  res.pop()
+  res.pop()
+  t.deepEqual(res, [
     'id',
     'maTest0001',
     'title',
