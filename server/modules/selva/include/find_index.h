@@ -7,7 +7,6 @@
 #define _FIND_INDEX_H_
 
 #include "traversal.h"
-#include "traversal_order.h"
 
 struct RedisModuleCtx;
 struct RedisModuleString;

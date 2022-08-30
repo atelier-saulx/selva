@@ -43,6 +43,78 @@ enum SelvaMergeStrategy {
 
 extern const struct SelvaArgParser_EnumType merge_types[3];
 
+/**
+ * Traversal result order.
+ */
+enum SelvaResultOrder {
+    /**
+     * Result is not ordered by any field but can be usually expected to have a
+     * deterministic order.
+     */
+    SELVA_RESULT_ORDER_NONE,
+    /**
+     * Ascending order.
+     */
+    SELVA_RESULT_ORDER_ASC,
+    /**
+     * Descending order.
+     */
+    SELVA_RESULT_ORDER_DESC,
+};
+
+/**
+ * Traversal order item type.
+ * As a TraversalOrderItem can contain data of different types, this enum
+ * encodes the type to help finding the right way to compare two items.
+ */
+enum TraversalOrderItemType {
+    ORDER_ITEM_TYPE_EMPTY = 0,
+    ORDER_ITEM_TYPE_TEXT,
+    ORDER_ITEM_TYPE_DOUBLE,
+};
+
+/**
+ * Tag type for tagp in struct TraversalOrderItem.
+ */
+enum TraversalOrderItemPtype {
+    /**
+     * A pointer to a node.
+     */
+    TRAVERSAL_ORDER_ITEM_PTYPE_NODE = 0,
+    /**
+     * A pointer to a SelvaObject.
+     */
+    TRAVERSAL_ORDER_ITEM_PTYPE_OBJ,
+};
+
+/**
+ * Traversal order item.
+ * These are usually stored in an SVector initialized by
+ * SelvaTraversalOrder_InitOrderResult().
+ */
+struct TraversalOrderItem {
+    /**
+     * Value type of this ordered item.
+     */
+    enum TraversalOrderItemType type;
+    /**
+     * Associated NodeId of this item.
+     */
+    Selva_NodeId node_id;
+    /**
+     * A pointer tagged with TraversalOrderItemPtype.
+     */
+    void *tagp;
+    /**
+     * Double value.
+     */
+    double d;
+    /**
+     * Sortable data for ORDER_ITEM_TYPE_TEXT.
+     */
+    char data[];
+};
+
 struct SelvaNodeSendParam {
     enum SelvaMergeStrategy merge_strategy;
     struct RedisModuleString *merge_path;
@@ -188,8 +260,65 @@ typedef void (*SelvaHierarchyChildCallback)(
         void *arg);
 
 int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct RedisModuleString *arg);
+int SelvaTraversal_ParseOrder(enum SelvaResultOrder *order, struct RedisModuleString *ord);
+
+/**
+ * Parse an `order` argument in a command call.
+ */
+int SelvaTraversal_ParseOrderArg(
+        struct RedisModuleString **order_by_field,
+        enum SelvaResultOrder *order,
+        const struct RedisModuleString *txt,
+        struct RedisModuleString *fld,
+        struct RedisModuleString *ord);
+
 int SelvaTraversal_FieldsContains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len);
 int SelvaTraversal_GetSkip(enum SelvaTraversal dir);
 const char *SelvaTraversal_Dir2str(enum SelvaTraversal dir);
+
+/**
+ * Init an SVector for storing TraversalOrderItems.
+ * @param order_result is a pointer to the SVector to be initialized.
+ * @param order is the order requested.
+ * @param limit is the expected length for the final SVector. Generally this can be the same as limit size of the response. 0 = auto.
+ */
+void SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResultOrder order, ssize_t limit);
+
+/**
+ * Destroy an order_result SVector and free its items properly.
+ * If SelvaTraversalOrder_CreateOrderItem() was called with a ctx then ctx this
+ * function should be called with a ctx too. Alternatively the order_result
+ * SVector can be declared with SVECTOR_AUTOFREE().
+ */
+void SelvaTraversalOrder_DestroyOrderResult(struct RedisModuleCtx *ctx, SVector *order_result);
+
+/**
+ * Create a new TraversalOrderItem that can be sorted.
+ * @param[in] ctx if given the item will be freed when the context exits; if NULL the caller must free the item returned.
+ * @returns Returns a TraversalOrderItem if succeed; Otherwise a NULL pointer is returned.
+ */
+struct TraversalOrderItem *SelvaTraversalOrder_CreateOrderItem(
+        struct RedisModuleCtx *ctx,
+        struct RedisModuleString *lang,
+        struct SelvaHierarchyNode *node,
+        const struct RedisModuleString *order_field);
+
+/**
+ * Create a TraversalOrderItem that points to a SelvaObject.
+ * This function can be used to determine an order for several SelvaObjects.
+ * @param lang is the language for text fields.
+ * @param order_field is a field on obj.
+ * @returns Returns a TraversalOrderItem if succeed; Otherwise a NULL pointer is returned.
+ */
+struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectBasedOrderItem(
+        struct RedisModuleCtx *ctx,
+        struct RedisModuleString *lang,
+        struct SelvaObject *obj,
+        const struct RedisModuleString *order_field);
+
+/**
+ * Destroy TraversalOrderItem created by SelvaTraversalOrder_CreateOrderItem().
+ */
+void SelvaTraversalOrder_DestroyOrderItem(struct RedisModuleCtx *ctx, struct TraversalOrderItem *item);
 
 #endif /* SELVA_TRAVERSAL_H */

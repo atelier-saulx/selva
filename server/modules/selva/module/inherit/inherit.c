@@ -7,8 +7,9 @@
 #include "selva.h"
 #include "redismodule.h"
 #include "cstrings.h"
-#include "arg_parser.h"
+#include "svector.h"
 #include "errors.h"
+#include "arg_parser.h"
 #include "hierarchy.h"
 #include "modify.h"
 #include "rpn.h"
@@ -16,180 +17,107 @@
 #include "selva_onload.h"
 #include "selva_set.h"
 #include "subscriptions.h"
-#include "svector.h"
+#include "inherit_fields.h"
 
-struct InheritCommand_Args {
-    RedisModuleCtx *ctx;
-    SelvaHierarchy *hierarchy;
-    RedisModuleString *lang;
-
+struct InheritFieldValue_Args {
     size_t first_node; /*!< We ignore the type of the first node. */
     size_t nr_types;
     const Selva_NodeType *types;
-    RedisModuleString **field_names;
+    RedisModuleString *lang;
+    const char *field_name_str;
+    size_t field_name_len;
+    struct SelvaObjectAny *res;
+};
+
+struct InheritCommand_Args {
+    size_t first_node; /*!< We ignore the type of the first node. */
     size_t nr_fields;
+    size_t nr_types;
+    const Selva_NodeType *types;
+    RedisModuleString *lang;
+    RedisModuleString **field_names;
     ssize_t nr_results; /*!< Number of results sent. */
 };
 
-static int send_field_value(
-        RedisModuleCtx *ctx,
-        SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
-        const struct SelvaHierarchyNode *node,
-        struct SelvaObject *obj,
-        RedisModuleString *full_field,
-        const char *field_str,
-        size_t field_len);
-
-static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id, RedisModuleString *full_field, struct EdgeField *edge_field) {
-    /*
-     * Start a new array reply:
-     * [node_id, field_name, field_value]
-     */
-    RedisModule_ReplyWithArray(ctx, 3);
-    RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
-    RedisModule_ReplyWithString(ctx, full_field);
-    replyWithEdgeField(ctx, edge_field);
-
-    return 0;
-}
-
-static int deref_single_ref(
-        const struct EdgeField *edge_field,
-        Selva_NodeId node_id_out,
-        struct SelvaObject **obj_out) {
-    struct SelvaHierarchyNode *node;
+static int Inherit_FieldValue_NodeCb(
+        RedisModuleCtx *ctx __unused,
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        void *arg) {
+    struct InheritFieldValue_Args *restrict args = (struct InheritFieldValue_Args *)arg;
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
     int err;
 
-    err = Edge_DerefSingleRef(edge_field, &node);
-    if (err) {
-        return err;
-    }
-
-    SelvaHierarchy_GetNodeId(node_id_out, node);
-    *obj_out = SelvaHierarchy_GetNodeObject(node);
-    return 0;
-}
-
-static int send_edge_field_deref_value(
-        RedisModuleCtx *ctx,
-        SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
-        RedisModuleString *full_field,
-        const struct EdgeField *edge_field,
-        const char *field_str,
-        size_t field_len) {
-    struct SelvaObject *obj;
-    Selva_NodeId nodeId;
-    int err;
-
-    err = deref_single_ref(edge_field, nodeId, &obj);
-    if (err) {
-        return err;
-    }
-
-    if (field_len == 1 && field_str[0] == '*') {
-        /*
-         * It's a wildcard and we should send the whole node object excluding
-         * reference fields.
-         */
-        TO_STR(full_field);
-
-        /*
-         * Start a new array reply:
-         * [node_id, field_name, field_value]
-         */
-        RedisModule_ReplyWithArray(ctx, 3);
-        RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId)); /* The actual node_id. */
-        RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
-        SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
-    } else {
-        const struct SelvaHierarchyNode *node;
-
-        node = SelvaHierarchy_FindNode(hierarchy, nodeId);
-        if (!node) {
-            return SELVA_ENOENT; /* RFE Should we return SELVA_HIERARCHY_ENOENT? */
-        }
-
-        return send_field_value(ctx, hierarchy, lang, node, obj, full_field, field_str, field_len);
-    }
-
-    return 0;
-}
-
-static int send_object_field_value(
-        RedisModuleCtx *ctx,
-        RedisModuleString *lang,
-        const struct SelvaHierarchyNode *node,
-        struct SelvaObject *obj,
-        RedisModuleString *full_field,
-        const char *field_str,
-        size_t field_len) {
-    int err = SELVA_ENOENT;
-
-    if (!SelvaObject_ExistsStr(obj, field_str, field_len)) {
-        Selva_NodeId node_id;
-
-        SelvaHierarchy_GetNodeId(node_id, node);
-
-        /*
-         * Start a new array reply:
-         * [node_id, field_name, field_value]
-         */
-        RedisModule_ReplyWithArray(ctx, 3);
-        RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
-        RedisModule_ReplyWithString(ctx, full_field);
-
-        err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
-        if (err) {
-            (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
-        }
-    }
-
-    return err;
-}
-
-static int send_field_value(
-        RedisModuleCtx *ctx,
-        SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
-        const struct SelvaHierarchyNode *node,
-        struct SelvaObject *obj,
-        RedisModuleString *full_field,
-        const char *field_str,
-        size_t field_len) {
-    struct EdgeField *edge_field;
-
     /*
-     * If field is an edge field then the client wants to get the value of it,
-     * usually an array of node ids.
+     * Check that the node is of an accepted type.
      */
-    edge_field = Edge_GetField(node, field_str, field_len);
-    if (edge_field) {
-        Selva_NodeId node_id;
+    if (likely(!args->first_node)) {
+        Selva_NodeId nodeId;
+        int match = 0;
 
-        SelvaHierarchy_GetNodeId(node_id, node);
+        SelvaHierarchy_GetNodeId(nodeId, node);
 
-        return send_edge_field_value(ctx, node_id, full_field, edge_field);
-    } else {
-        /*
-         * If field was not an edge field perhaps a substring of field is an edge field.
-         */
-        ssize_t n = field_len;
-
-        while ((n = strrnchr(field_str, n, '.')) > 0) {
-            edge_field = Edge_GetField(node, field_str, n);
-            if (edge_field) {
-                const char *rest_str = field_str + n + 1;
-                const size_t rest_len = field_len - n - 1;
-
-                return send_edge_field_deref_value(ctx, hierarchy, lang, full_field, edge_field, rest_str, rest_len);
-            }
+        for (size_t i = 0; i < args->nr_types; i++) {
+            match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
         }
+        if (!match && args->nr_types > 0) {
+            /*
+             * This node type is not accepted and we don't need to check whether
+             * the field set.
+             */
+            return 0;
+        }
+    } else {
+        args->first_node = 0;
     }
 
-    /* Finally try from a node object field. */
-    return send_object_field_value(ctx, lang, node, obj, full_field, field_str, field_len);
+    err = Inherit_GetField(hierarchy, args->lang, node, obj, args->field_name_str, args->field_name_len, args->res);
+    if (err == 0) {
+        return 1; /* found */
+    } else if (err != SELVA_ENOENT) {
+        Selva_NodeId nodeId;
+
+        SelvaHierarchy_GetNodeId(nodeId, node);
+
+        /*
+         * SELVA_ENOENT is expected as not all nodes have all fields set;
+         * Any other error is unexpected.
+         */
+        fprintf(stderr, "%s:%d: Failed to get a field value. nodeId: %.*s fieldName: \"%.*s\" error: %s\n",
+                __FILE__, __LINE__,
+                (int)SELVA_NODE_ID_SIZE, nodeId,
+                (int)args->field_name_len, args->field_name_str,
+                getSelvaErrorStr(err));
+    }
+
+    return 0;
+}
+
+int Inherit_FieldValue(
+        RedisModuleCtx *ctx,
+        struct SelvaHierarchy *hierarchy,
+        RedisModuleString *lang,
+        const Selva_NodeId node_id,
+        const Selva_NodeType *types,
+        size_t nr_types,
+        const char *field_name_str,
+        size_t field_name_len,
+        struct SelvaObjectAny *res) {
+    struct InheritFieldValue_Args args = {
+        .lang = lang,
+        .first_node = 1,
+        .nr_types = nr_types,
+        .types = types,
+        .field_name_str = field_name_str,
+        .field_name_len = field_name_len,
+        .res = res,
+    };
+    const struct SelvaHierarchyCallback cb = {
+        .node_cb = Inherit_FieldValue_NodeCb,
+        .node_arg = &args,
+    };
+
+    return SelvaHierarchy_Traverse(ctx, hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
 }
 
 static int InheritCommand_NodeCb(
@@ -238,10 +166,10 @@ static int InheritCommand_NodeCb(
          * but we don't send the header yet.
          */
         TO_STR(field_name);
-        err = send_field_value(ctx, hierarchy, args->lang,
-                               node, obj,
-                               field_name, /* Initially full_field is the same as field_name. */
-                               field_name_str, field_name_len);
+        err = Inherit_SendField(ctx, hierarchy, args->lang,
+                                node, obj,
+                                field_name, /* Initially full_field is the same as field_name. */
+                                field_name_str, field_name_len);
         if (err == 0) { /* found */
             args->field_names[i] = NULL; /* No need to look for this one anymore. */
             args->nr_results++;
@@ -375,6 +303,10 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      */
     size_t nr_types;
     const Selva_NodeType *types = (char const (*)[SELVA_NODE_TYPE_SIZE])RedisModule_StringPtrLen(argv[ARGV_TYPES], &nr_types);
+
+    if (nr_types % SELVA_NODE_TYPE_SIZE != 0) {
+        return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "types");
+    }
     nr_types /= SELVA_NODE_TYPE_SIZE;
 
     /*

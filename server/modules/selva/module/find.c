@@ -26,7 +26,6 @@
 #include "svector.h"
 #include "cstrings.h"
 #include "traversal.h"
-#include "traversal_order.h"
 #include "find_index.h"
 
 #define WILDCARD_CHAR '*'

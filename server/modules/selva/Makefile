@@ -30,7 +30,9 @@ OBJS := \
 	module/hierarchy/traversal_order.o \
 	module/hierarchy/types.o \
 	module/ida.o \
-	module/inherit.o \
+	module/inherit/get_field.o \
+	module/inherit/inherit.o \
+	module/inherit/send_field.o \
 	module/modify.o \
 	module/modinfo.o \
 	module/resolve.o \
