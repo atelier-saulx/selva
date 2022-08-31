@@ -8,7 +8,6 @@
 #include "svector.h"
 #include "selva.h"
 #include "traversal.h"
-#include "traversal_order.h"
 #include "hierarchy.h"
 #include "icb.h"
 

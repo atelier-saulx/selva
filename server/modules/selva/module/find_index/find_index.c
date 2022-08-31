@@ -21,7 +21,6 @@
 #include "selva_onload.h"
 #include "selva_set.h"
 #include "selva_trace.h"
-#include "traversal_order.h"
 #include "icb.h"
 #include "pick_icb.h"
 #include "find_index.h"

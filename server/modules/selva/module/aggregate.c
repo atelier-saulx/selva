@@ -23,7 +23,6 @@
 #include "subscriptions.h"
 #include "svector.h"
 #include "traversal.h"
-#include "traversal_order.h"
 #include "find_index.h"
 
 enum SelvaHierarchy_AggregateType {
