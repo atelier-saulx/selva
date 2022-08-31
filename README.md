@@ -168,7 +168,3 @@ const sub = obs.subscribe((data) => {
   console.log('Data changed: ', data)
 })
 ```
-
-## License
-
-TBD
