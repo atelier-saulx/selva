@@ -168,3 +168,7 @@ const sub = obs.subscribe((data) => {
   console.log('Data changed: ', data)
 })
 ```
+
+---
+
+This project was funded through the NGI0 Discovery Fund, a fund established by NLnet with financial support from the European Commission's Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 825322.
