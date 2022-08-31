@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "bluebird": "^3.0.2",
-    "coveralls": "^2.11.2",
+    "coveralls": "^3.1.1",
     "eslint": "^4.2.0",
     "intercept-stdout": "~0.1.2",
     "metrics": "^0.1.9",
