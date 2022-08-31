@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include "selva_set.h"
+#include "selva_lang.h"
 
 /*
  * Object key types.
@@ -107,6 +108,7 @@ struct SelvaObjectAny {
     enum SelvaObjectType type; /*!< Type of the value. */
     enum SelvaObjectType subtype; /*!< Subtype of the value. Arrays use this. */
     SelvaObjectMeta_t user_meta; /*!< User defined metadata. */
+    char str_lang[LANG_MAX + 1]; /*!< Language of str if applicable. */
     union {
         double d; /*!< SELVA_OBJECT_DOUBLE */
         long long ll; /*!< SELVA_OBJECT_LONGLONG */
