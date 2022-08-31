@@ -159,34 +159,28 @@ void SelvaTraversalOrder_DestroyOrderResult(RedisModuleCtx *ctx, SVector *order_
  * satisfying order.
  */
 static int obj2order_data(RedisModuleString *lang, struct SelvaObject *obj, const RedisModuleString *order_field, struct order_data *tmp) {
-    enum SelvaObjectType obj_type;
+    struct SelvaObjectAny any;
+    int err;
 
-    obj_type = SelvaObject_GetType(obj, order_field);
-    if (obj_type == SELVA_OBJECT_STRING) {
-        RedisModuleString *value = NULL;
-        int err;
+    err = SelvaObject_GetAny(obj, order_field, &any);
+    if (err) {
+        return (err != SELVA_ENOENT) ? err : 0;
+    }
 
-        err = SelvaObject_GetString(obj, order_field, &value);
-        if (!err && value) {
+    if (any.type == SELVA_OBJECT_STRING) {
+        RedisModuleString *value = any.str;
+
+        if (value) {
             tmp->data = RedisModule_StringPtrLen(value, &tmp->data_len);
             tmp->type = ORDER_ITEM_TYPE_TEXT;
         }
-    } else if (obj_type == SELVA_OBJECT_OBJECT) {
-        SelvaObjectMeta_t meta;
-
-        SelvaObject_GetUserMeta(obj, order_field, &meta);
-        if (meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
-            struct SelvaObject *text_obj;
+    } else if (any.type == SELVA_OBJECT_OBJECT) {
+        if (any.user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
+            struct SelvaObject *text_obj = any.obj;
             TO_STR(lang);
-            int err;
 
             if (lang_len == 0) {
                 return SELVA_EINVAL;
-            }
-
-            err = SelvaObject_GetObject(obj, order_field, &text_obj);
-            if (err) {
-                return err;
             }
 
             char buf[lang_len + 1];
@@ -215,22 +209,12 @@ static int obj2order_data(RedisModuleString *lang, struct SelvaObject *obj, cons
                 }
             }
         }
-    } else if (obj_type == SELVA_OBJECT_DOUBLE) {
-        int err;
-
-        err = SelvaObject_GetDouble(obj, order_field, &tmp->d);
-        if (!err) {
-            tmp->type = ORDER_ITEM_TYPE_DOUBLE;
-        }
-    } else if (obj_type == SELVA_OBJECT_LONGLONG) {
-        long long v;
-        int err;
-
-        err = SelvaObject_GetLongLong(obj, order_field, &v);
-        if (!err) {
-            tmp->d = (double)v;
-            tmp->type = ORDER_ITEM_TYPE_DOUBLE;
-        }
+    } else if (any.type == SELVA_OBJECT_DOUBLE) {
+        tmp->d = any.d;
+        tmp->type = ORDER_ITEM_TYPE_DOUBLE;
+    } else if (any.type == SELVA_OBJECT_LONGLONG) {
+        tmp->d = (double)any.ll;
+        tmp->type = ORDER_ITEM_TYPE_DOUBLE;
     }
 
     return 0;

@@ -1733,7 +1733,35 @@ int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *k
     return off;
 }
 
-int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) {
+static void get_any_string(struct SelvaObjectKey *key, RedisModuleString *lang, struct SelvaObjectAny *res) {
+    TO_STR(lang);
+
+    if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT && lang_len > 0) {
+        char buf[lang_len + 1];
+        memcpy(buf, lang_str, lang_len + 1);
+        const char *sep = "\n";
+        char *rest;
+
+        for (const char *s = strtok_r(buf, sep, &rest);
+             s != NULL;
+             s = strtok_r(NULL, sep, &rest)) {
+            const size_t slen = strlen(s);
+            struct SelvaObjectKey *text_key;
+            int err = get_key(key->value, s, slen, 0, &text_key);
+
+            /* Ignore errors on purpose. */
+            if (!err && text_key->type == SELVA_OBJECT_STRING) {
+                res->type = text_key->type;
+                res->subtype = text_key->subtype;
+                res->str = text_key->value;
+
+                break;
+            }
+        }
+    }
+}
+
+int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, RedisModuleString *lang, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) {
     struct SelvaObjectKey *key;
     enum SelvaObjectType type;
     int err;
@@ -1768,6 +1796,10 @@ int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, siz
         break;
     case SELVA_OBJECT_OBJECT:
         res->obj = key->value;
+
+        if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT && lang) {
+            get_any_string(key, lang, res);
+        }
         break;
     case SELVA_OBJECT_SET:
         res->set = &key->selva_set;
@@ -1783,10 +1815,20 @@ int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, siz
     return 0;
 }
 
+int SelvaObject_GetAnyLang(struct SelvaObject *obj, RedisModuleString *lang, const RedisModuleString *key_name, struct SelvaObjectAny *res) {
+    TO_STR(key_name);
+
+    return SelvaObject_GetAnyLangStr(obj, lang, key_name_str, key_name_len, res);
+}
+
+int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) {
+    return SelvaObject_GetAnyLangStr(obj, NULL, key_name_str, key_name_len, res);
+}
+
 int SelvaObject_GetAny(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObjectAny *res) {
     TO_STR(key_name);
 
-    return SelvaObject_GetAnyStr(obj, key_name_str, key_name_len, res);
+    return SelvaObject_GetAnyLangStr(obj, NULL, key_name_str, key_name_len, res);
 }
 
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
