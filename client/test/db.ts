@@ -57,10 +57,8 @@ test.before(async (t) => {
 
 test.after(async (t) => {
   let client = connect({ port: port1 })
-  await client.delete('root')
-  await srv1.destroy()
-  await client.delete({ $id: 'root', $db: 'matchdb' })
   await client.destroy()
+  await srv1.destroy()
   await srv2.destroy()
   await t.connectionsAreEmpty()
 })
