@@ -1908,12 +1908,29 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-    /*
-     * Limit and indexing can be only used together when an order is requested
-     * to guarantee a deterministic response order.
-     */
-    if (nr_index_hints > 0 && limit != -1 && order == SELVA_RESULT_ORDER_NONE) {
-        nr_index_hints = 0;
+    if (nr_index_hints > 0) {
+        /*
+         * Limit and indexing can be only used together when an order is requested
+         * to guarantee a deterministic response order.
+         */
+        if (limit != -1 && order == SELVA_RESULT_ORDER_NONE) {
+            nr_index_hints = 0;
+        }
+
+        /*
+         * The client must never try to index by inherit field because the
+         * indexing system doesn't do inherit nor would track changes over
+         * inherit.
+         */
+#if 0
+        /*
+         * Inherit and indexing are incompatible because we don't track field
+         * changes over inherited fields.
+         */
+        if (inherit_fields) {
+            nr_index_hints = 0;
+        }
+#endif
     }
 
     /*
