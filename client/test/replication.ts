@@ -230,22 +230,22 @@ test.serial('modify command is replicated', async (t) => {
   t.deepEqual(
     await new Promise((resolve, reject) =>
       rclientOrigin.send_command(
-        'selva.object.get',
-        ['', 'grphnode_a'],
+        'selva.hierarchy.find',
+        ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
-    ['id', 'grphnode_a', 'value', '5', 'value1', '100']
+    [['grphnode_a', ['id', 'grphnode_a', 'value', '5', 'value1', '100']]]
   )
   t.deepEqual(
     await new Promise((resolve, reject) =>
       rclientReplica.send_command(
-        'selva.object.get',
-        ['', 'grphnode_a'],
+        'selva.hierarchy.find',
+        ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
-    ['id', 'grphnode_a', 'value', '5', 'value1', '100']
+    [['grphnode_a', ['id', 'grphnode_a', 'value', '5', 'value1', '100']]]
   )
 
   // Only one update
@@ -261,22 +261,22 @@ test.serial('modify command is replicated', async (t) => {
   t.deepEqual(
     await new Promise((resolve, reject) =>
       rclientOrigin.send_command(
-        'selva.object.get',
-        ['', 'grphnode_a'],
+        'selva.hierarchy.find',
+        ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
-    ['id', 'grphnode_a', 'value', '5', 'value1', '2']
+    [['grphnode_a', ['id', 'grphnode_a', 'value', '5', 'value1', '2']]]
   )
   t.deepEqual(
     await new Promise((resolve, reject) =>
       rclientReplica.send_command(
-        'selva.object.get',
-        ['', 'grphnode_a'],
+        'selva.hierarchy.find',
+        ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
-    ['id', 'grphnode_a', 'value', '5', 'value1', '2']
+    [['grphnode_a', ['id', 'grphnode_a', 'value', '5', 'value1', '2']]]
   )
 })
 
@@ -296,22 +296,22 @@ test.serial('modify command is replicated ignoring errors', async (t) => {
   t.deepEqual(
     await new Promise((resolve, reject) =>
       rclientOrigin.send_command(
-        'selva.object.get',
-        ['', 'grphnode_a'],
+        'selva.hierarchy.find',
+        ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
-    ['id', 'grphnode_a', 'value', '5']
+    [['grphnode_a', ['id', 'grphnode_a', 'value', '5']]]
   )
   t.deepEqual(
     await new Promise((resolve, reject) =>
       rclientReplica.send_command(
-        'selva.object.get',
-        ['', 'grphnode_a'],
+        'selva.hierarchy.find',
+        ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
         (err, res) => (err ? reject(err) : resolve(res))
       )
     ),
-    ['id', 'grphnode_a', 'value', '5']
+    [['grphnode_a', ['id', 'grphnode_a', 'value', '5']]]
   )
 })
 
@@ -517,11 +517,13 @@ test.serial('modify all cases are replicated', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...['f01', 'abc'],
           ...['f02', 'abc'],
           ...['f03', 'def'],
@@ -538,7 +540,7 @@ test.serial('modify all cases are replicated', async (t) => {
           ...['f15', createRecord(doubleDef, { d: 4.1500000000000004 })],
           ...['f16', ['lal', 'lol']],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -692,11 +694,13 @@ test.serial('modify all cases are replicated', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...['f01', 'abc'],
           ...['f02', 'abc'],
           ...['f03', 'def'],
@@ -713,7 +717,7 @@ test.serial('modify all cases are replicated', async (t) => {
           ...['f15', createRecord(doubleDef, { d: 5.1600000000000001 })],
           ...['f16', ['lal', 'lol']],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -774,11 +778,13 @@ test.serial('modify set ops are replicated (cstring)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['f01', ['abc', 'def', 'ghi']], ...['id', 'grphnode_a']]
+        [['grphnode_a', [...['f01', ['abc', 'def', 'ghi']], ...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -837,11 +843,13 @@ test.serial('modify set ops are replicated (cstring)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['f01', ['abc', 'def', 'ghi', 'xyz']], ...['id', 'grphnode_a']]
+        [['grphnode_a', [...['f01', ['abc', 'def', 'ghi', 'xyz']], ...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -900,11 +908,13 @@ test.serial('modify set ops are replicated (cstring)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['f01', ['abc', 'ghi', 'xyz']], ...['id', 'grphnode_a']]
+        [['grphnode_a', [...['f01', ['abc', 'ghi', 'xyz']], ...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -939,11 +949,13 @@ test.serial('modify set ops are replicated (cstring)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['f01', ['hallo']], ...['id', 'grphnode_a']]
+        [['grphnode_a', [...['f01', ['hallo']], ...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -1002,11 +1014,13 @@ test.serial('modify set ops are replicated (cstring)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['id', 'grphnode_a']]
+        [['grphnode_a', [...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -1041,11 +1055,13 @@ test.serial('modify set ops are replicated (cstring)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['id', 'grphnode_a']]
+        [['grphnode_a', [...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -1080,11 +1096,13 @@ test.serial('modify set ops are replicated (cstring)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['f01', ['xyz']], ...['id', 'grphnode_a']]
+        [['grphnode_a', [...['f01', ['xyz']], ...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -1609,17 +1627,19 @@ test.serial('modify set ops are replicated (double)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...[
             'f01',
             ['1', '2', '3'].map((d) => createRecord(doubleDef, { d })),
           ],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -1678,17 +1698,19 @@ test.serial('modify set ops are replicated (double)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...[
             'f01',
             ['1', '2', '3', '4'].map((d) => createRecord(doubleDef, { d })),
           ],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -1747,17 +1769,19 @@ test.serial('modify set ops are replicated (double)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...[
             'f01',
             ['1', '3', '4'].map((d) => createRecord(doubleDef, { d })),
           ],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -1792,14 +1816,16 @@ test.serial('modify set ops are replicated (double)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...['f01', ['5', '6'].map((d) => createRecord(doubleDef, { d }))],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -1858,11 +1884,13 @@ test.serial('modify set ops are replicated (double)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['id', 'grphnode_a']]
+        [['grphnode_a', [...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -1897,11 +1925,13 @@ test.serial('modify set ops are replicated (double)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['id', 'grphnode_a']]
+        [['grphnode_a', [...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -1936,17 +1966,19 @@ test.serial('modify set ops are replicated (double)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...[
             'f01',
             ['13.369999999999999'].map((d) => createRecord(doubleDef, { d })),
           ],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -2007,17 +2039,19 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...[
             'f01',
             [1, 2, 3].map((d) => createRecord(longLongDef, { d: BigInt(d) })),
           ],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -2076,11 +2110,13 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...[
             'f01',
             [1, 2, 3, 4].map((d) =>
@@ -2088,7 +2124,7 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
             ),
           ],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -2147,17 +2183,19 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...[
             'f01',
             [1, 3, 4].map((d) => createRecord(longLongDef, { d: BigInt(d) })),
           ],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -2192,17 +2230,19 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...[
             'f01',
             [5, 6].map((d) => createRecord(longLongDef, { d: BigInt(d) })),
           ],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -2261,11 +2301,13 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['id', 'grphnode_a']]
+        [['grphnode_a', [...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -2300,11 +2342,13 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['id', 'grphnode_a']]
+        [['grphnode_a', [...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -2339,17 +2383,19 @@ test.serial('modify set ops are replicated (long long)', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [
+        [['grphnode_a', [
           ...[
             'f01',
             [13].map((d) => createRecord(longLongDef, { d: BigInt(d) })),
           ],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
@@ -2409,11 +2455,13 @@ test.serial('modify aliases is replicated', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['aliases', ['ali1', 'ali2']], ...['id', 'grphnode_a']]
+        [['grphnode_a', [...['aliases', ['ali1', 'ali2']], ...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -2463,11 +2511,13 @@ test.serial('modify aliases is replicated', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => err ? reject(err) : resolve(res)
           )
         ),
-        [...['aliases', ['ali2']], ...['id', 'grphnode_a']]
+        [['grphnode_a', [...['aliases', ['ali2']], ...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -2521,11 +2571,13 @@ test.serial('modify $alias query is replicated', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => (err ? reject(err) : resolve(res))
           )
         ),
-        [...['aliases', ['ali1', 'ali2']], ...['id', 'grphnode_a']]
+        [['grphnode_a', [...['aliases', ['ali1', 'ali2']], ...['id', 'grphnode_a']]]]
       )
     })
   )
@@ -2566,15 +2618,17 @@ test.serial('modify $alias query is replicated', async (t) => {
     [rclientOrigin, rclientReplica].map(async (r) => {
       t.deepEqual(
         await new Promise((resolve, reject) =>
-          r.send_command('selva.object.get', ['', 'grphnode_a'], (err, res) =>
-            err ? reject(err) : resolve(res)
+          r.send_command(
+            'selva.hierarchy.find',
+            ['', '___selva_hierarchy', 'node', 'fields', '*\n!updatedAt\n!createdAt', 'grphnode_a'],
+            (err, res) => (err ? reject(err) : resolve(res))
           )
         ),
-        [
+        [['grphnode_a', [
           ...['aliases', ['ali1', 'ali2']],
           ...['f01', 'hallo'],
           ...['id', 'grphnode_a'],
-        ]
+        ]]]
       )
     })
   )
