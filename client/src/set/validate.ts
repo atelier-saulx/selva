@@ -64,7 +64,8 @@ export default async function parseSetObject(
   ;(<any>result).$extraQueries = []
 
   //  && (<any>payload.parents).$noRoot
-  if (payload.parents) {
+  const isNonEmpty = (v: any): boolean => !!(v && v.length)
+  if (payload.parents && (payload.parents['$noRoot'] || Array.isArray(payload.parents) || payload.parents.$value || isNonEmpty(payload.parents['$add']))) {
     result[0] += 'N'
   }
 
