@@ -7,16 +7,13 @@ import getPort from 'get-port'
 
 let srv
 let port: number
-const dir = pathJoin(process.cwd(), 'tmp', 'z19-youri-ref-test')
 
 test.before(async (t) => {
-  removeDump(dir)()
   port = await getPort()
   srv = await start({
     port,
-    save: true,
-    dir,
   })
+
   const client = connect({ port })
 
   await client.updateSchema({
@@ -50,7 +47,6 @@ test.after(async (t) => {
   await client.destroy()
   await srv.destroy()
   await t.connectionsAreEmpty()
-  removeDump(dir)()
 })
 
 test.serial('update refs in descendants query', async (t) => {
