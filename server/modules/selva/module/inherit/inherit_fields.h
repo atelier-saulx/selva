@@ -34,4 +34,17 @@ int Inherit_SendField(
         const char *field_str,
         size_t field_len);
 
+/**
+ * Send a field value to the client in the find command format.
+ */
+int Inherit_SendFieldFind(
+        RedisModuleCtx *ctx,
+        SelvaHierarchy *hierarchy,
+        RedisModuleString *lang,
+        const struct SelvaHierarchyNode *node,
+        struct SelvaObject *obj,
+        RedisModuleString *full_field,
+        const char *field_str,
+        size_t field_len);
+
 #endif /* _SELVA_INHERIT_FIELDS_H_ */
