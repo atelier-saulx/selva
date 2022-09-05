@@ -8,19 +8,37 @@ const addServer = (selvaClient: SelvaClient, server: ServerDescriptor) => {
     selvaClient.servers.origins[server.name] = server
   } else if (type === 'replica') {
     if (!selvaClient.servers.replicas[server.name]) {
-      selvaClient.servers.replicas[server.name] = []
+      selvaClient.servers.replicas[server.name] = [{ ...server, index: 0 }]
+    } else if (
+      !selvaClient.servers.replicas[server.name].find(
+        (s) =>
+          s.host === server.host &&
+          s.port === server.port &&
+          s.type === server.type
+      )
+    ) {
+      selvaClient.servers.replicas[server.name].splice(
+        server.index === -1 ? 0 : server.index || 0,
+        0,
+        server
+      )
     }
-    selvaClient.servers.replicas[server.name].splice(
-      server.index === -1 ? 0 : server.index || 0,
-      0,
-      server
-    )
   } else if (type === 'subscriptionManager') {
-    selvaClient.servers.subsManagers.splice(
-      server.index === -1 ? 0 : server.index || 0,
-      0,
-      server
-    )
+    // TODO: should we be checking the server.ids instead?
+    if (
+      !selvaClient.servers.subsManagers.find(
+        (s) =>
+          s.host === server.host &&
+          s.port === server.port &&
+          s.type === server.type
+      )
+    ) {
+      selvaClient.servers.subsManagers.splice(
+        server.index === -1 ? 0 : server.index || 0,
+        0,
+        server
+      )
+    }
   } else if (type === 'subscriptionRegistry') {
     selvaClient.servers.subRegisters[id] = server
   } else if (type === 'timeseriesQueue') {
