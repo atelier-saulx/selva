@@ -162,7 +162,7 @@ static int obj2order_data(RedisModuleString *lang, struct SelvaObject *obj, cons
     struct SelvaObjectAny any;
     int err;
 
-    err = SelvaObject_GetAny(obj, order_field, &any);
+    err = SelvaObject_GetAnyLang(obj, lang, order_field, &any);
     if (err) {
         return (err != SELVA_ENOENT) ? err : 0;
     }
@@ -173,40 +173,10 @@ static int obj2order_data(RedisModuleString *lang, struct SelvaObject *obj, cons
         if (value) {
             tmp->data = RedisModule_StringPtrLen(value, &tmp->data_len);
             tmp->type = ORDER_ITEM_TYPE_TEXT;
-        }
-    } else if (any.type == SELVA_OBJECT_OBJECT) {
-        if (any.user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
-            struct SelvaObject *text_obj = any.obj;
-            TO_STR(lang);
 
-            if (lang_len == 0) {
-                return SELVA_EINVAL;
-            }
-
-            char buf[lang_len + 1];
-            memcpy(buf, lang_str, lang_len + 1);
-            const char *sep = "\n";
-            char *rest = NULL;
-
-            for (const char *token = strtok_r(buf, sep, &rest);
-                 token != NULL;
-                 token = strtok_r(NULL, sep, &rest)) {
-                const size_t slen = strlen(token);
-
-                RedisModuleString *raw_value = NULL;
-                err = SelvaObject_GetStringStr(text_obj, token, slen, &raw_value);
-                if (!err && raw_value) {
-                    TO_STR(raw_value);
-
-                    if (raw_value_len) {
-                        strncpy(tmp->data_lang, token, sizeof(tmp->data_lang) - 1);
-                        tmp->data_lang[sizeof(tmp->data_lang) - 1] = '\0';
-                        tmp->data = raw_value_str;
-                        tmp->data_len = raw_value_len;
-                        tmp->type = ORDER_ITEM_TYPE_TEXT;
-                        break;
-                    }
-                }
+            if (any.user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
+                memcpy(tmp->data_lang, any.str_lang, min(sizeof(tmp->data_lang), sizeof(any.str_lang)));
+                tmp->data_lang[sizeof(tmp->data_lang) - 1] = '\0';
             }
         }
     } else if (any.type == SELVA_OBJECT_DOUBLE) {

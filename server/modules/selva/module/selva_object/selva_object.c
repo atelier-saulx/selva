@@ -1753,6 +1753,9 @@ static void get_any_string(struct SelvaObjectKey *key, RedisModuleString *lang, 
             if (!err && text_key->type == SELVA_OBJECT_STRING) {
                 res->type = text_key->type;
                 res->subtype = text_key->subtype;
+                res->user_meta = SELVA_OBJECT_META_SUBTYPE_TEXT;
+                memset(res->str_lang, '\0', sizeof(res->str_lang));
+                memcpy(res->str_lang, s, min(slen, LANG_MAX));
                 res->str = text_key->value;
 
                 break;
