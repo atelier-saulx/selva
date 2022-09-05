@@ -1654,7 +1654,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             return REDISMODULE_OK;
         }
 
-        const size_t nr_parents = FISSET_NO_ROOT(flags) ? 0 : 1;
+        const size_t nr_parents = !FISSET_NO_ROOT(flags);
 
         err = SelvaModify_SetHierarchy(ctx, hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL, &node);
         if (err < 0) {

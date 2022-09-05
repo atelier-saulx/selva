@@ -85,7 +85,6 @@ const toCArr = async (
   schema: Schema,
   result: any,
   setObj: ({ [index: string]: any } | string)[] | string | undefined | null,
-  noRoot: boolean,
   lang?: string
 ) => {
   if (!setObj) {
@@ -190,11 +189,8 @@ export default async (
   type: string,
   $lang?: string
 ): Promise<number> => {
-  let noRoot = field === 'parents'
   const r: SetOptions = {}
   const isEmpty = (v: any) => !v || !v.length
-
-  // TODO: fix noRoot
 
   if (
     typeof payload === 'object' &&
@@ -263,9 +259,6 @@ export default async (
 
         r.$noRoot = payload[k]
         hasKeys = true
-        if (field === 'parents') {
-          noRoot = payload[k]
-        }
       } else if (k === '$_itemCount') {
         // ignore this internal field if setting with a split payload
       } else {
@@ -289,7 +282,6 @@ export default async (
             schema,
             result,
             r.$add,
-            noRoot,
             $lang
           ),
           $delete: await toCArr(
@@ -299,7 +291,6 @@ export default async (
             schema,
             result,
             r.$delete,
-            noRoot,
             $lang
           ),
           $value: await toCArr(
@@ -309,7 +300,6 @@ export default async (
             schema,
             result,
             r.$value,
-            noRoot,
             $lang
           ),
         })
@@ -337,7 +327,6 @@ export default async (
       schema,
       result,
       r,
-      noRoot,
       $lang
     )
 
