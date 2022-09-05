@@ -63,18 +63,20 @@ CFLAGS += $(IDIR) -include tunables.h \
 	-fPIC \
 	-fno-strict-aliasing
 LIBDIR := $(patsubst %,lib/%,$(LIBS))
-SHOBJ_LDLIBS := -lc -lhiredis -lcrypto -lssl
+SHOBJ_LDLIBS := -lc -ljemalloc -lhiredis -lcrypto -lssl
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
 	CFLAGS += -include include/linux_cdefs.h \
 			  -fisolate-erroneous-paths-attribute
 	SHOBJ_CFLAGS ?= -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Bsymbolic
+	LIBDIR += ../binaries/linux_x64
 endif
 ifeq ($(uname_S),Darwin) # macOS
 	CFLAGS += -include include/macos_cdefs.h
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
+	LIBDIR += ../binaries/darwin_x64
 	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib $(wildcard /usr/local/Cellar/openssl@1.1/1.1.1*/lib)
 endif
 ifeq ($(SELVA_TRACE),1)

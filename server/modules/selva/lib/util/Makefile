@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: MIT
 include ../../common.mk
 
-RM_INCLUDE_DIR := ../../include
+RM_INCLUDE_DIR := ../../include ../jemalloc
 
 CFLAGS += -fPIC -O2 -Wno-unused-function -fno-strict-aliasing
-CFLAGS += -I$(RM_INCLUDE_DIR)
+CFLAGS += $(patsubst %,-I%,$(RM_INCLUDE_DIR))
 CC := gcc
 
 OBJS := \
