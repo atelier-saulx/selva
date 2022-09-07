@@ -139,7 +139,7 @@ export type FieldInputSchema =
 
 // maybe null?
 
-export type DeleteField = { $delete: true }
+export type DeleteField = { $delete: boolean }
 
 export type InputFields = Record<string, FieldInputSchema>
 
@@ -147,7 +147,7 @@ export type InputTypeSchema = {
   prefix?: string
   hierarchy?: HierarchySchema
   fields?: InputFields
-  $delete?: true
+  $delete?: boolean
   meta?: any
 }
 

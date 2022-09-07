@@ -183,12 +183,12 @@ export class SelvaClient extends EventEmitter {
     return update(this, setOpts, query)
   }
 
-  async set(setOpts: SetOptions, schema?: Schema): Promise<Id | undefined> {
+  async set(setOpts: SetOptions, schema?: Schema): Promise<Id> {
     await this.initializeSchema(setOpts)
     return set(this, setOpts, schema)
   }
 
-  async setWithMeta(setOpts: SetOptions): Promise<SetMetaResponse | undefined> {
+  async setWithMeta(setOpts: SetOptions): Promise<SetMetaResponse> {
     await this.initializeSchema(setOpts)
     return setWithMeta(this, setOpts)
   }
@@ -210,9 +210,12 @@ export class SelvaClient extends EventEmitter {
     opts: SchemaOpts,
     name: string = 'default',
     allowMutations: boolean = false,
-    handleMutations?: (old: { [field: string]: any }) => {
-      [field: string]: any
-    } | null
+    handleMutations?: (old: { [field: string]: any }) =>
+      | {
+          [field: string]: any
+        }
+      | null
+      | undefined
   ): Promise<SchemaMutations> {
     await this.initializeSchema({ $db: name }, false)
 
