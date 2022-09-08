@@ -44,6 +44,7 @@ test.serial('get - correct order', async (t) => {
       folder: {
         prefix: 'fl',
         fields: {
+          name: { type: 'string' },
           published: { type: 'boolean' },
           title: { type: 'text' },
         },

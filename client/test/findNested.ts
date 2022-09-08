@@ -24,12 +24,14 @@ test.before(async (t) => {
       team: {
         prefix: 'te',
         fields: {
+          name: { type: 'string' },
           value: { type: 'number' },
         },
       },
       match: {
         prefix: 'ma',
         fields: {
+          name: { type: 'string' },
           value: { type: 'number' },
           status: { type: 'number' },
         },

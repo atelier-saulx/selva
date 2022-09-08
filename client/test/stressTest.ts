@@ -120,6 +120,7 @@ test.before(async (t) => {
       match: {
         prefix: 'ma',
         fields: {
+          name: { type: 'string' },
           title: { type: 'text' },
           published: { type: 'boolean' },
           homeTeam: { type: 'reference' },

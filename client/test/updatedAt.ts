@@ -69,6 +69,7 @@ test.before(async (t) => {
       team: {
         prefix: 'te',
         fields: {
+          name: { type: 'string' },
           updatedAt: {
             type: 'timestamp',
           },

@@ -26,6 +26,7 @@ test.beforeEach(async (t) => {
       league: {
         prefix: 'le',
         fields: {
+          name: { type: 'string' },
           value: { type: 'number' },
         },
       },

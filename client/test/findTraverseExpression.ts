@@ -84,6 +84,7 @@ test.serial('find - traverse expression - low level', async (t) => {
       author: {
         prefix: 'au',
         fields: {
+          name: { type: 'string' },
           books: {
             type: 'references',
             bidirectional: {

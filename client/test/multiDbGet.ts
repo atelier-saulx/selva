@@ -62,6 +62,7 @@ test.before(async (t) => {
         user: {
           prefix: 'us',
           fields: {
+            name: { type: 'string' },
             value: { type: 'number' },
             age: { type: 'number' },
             auth: {
