@@ -458,6 +458,7 @@ test.serial('find - versioned hierarchies', async (t) => {
       category: {
         prefix: 'ca',
         fields: {
+          name: { type: 'string' },
           title: { type: 'text' },
           description: { type: 'text' },
           ...versionedHierarchyFields,
@@ -466,6 +467,7 @@ test.serial('find - versioned hierarchies', async (t) => {
       post: {
         prefix: 'po',
         fields: {
+          name: { type: 'string' },
           title: { type: 'text' },
           description: { type: 'text' },
           ...versionedHierarchyFields,

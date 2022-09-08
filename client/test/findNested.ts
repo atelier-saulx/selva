@@ -19,7 +19,9 @@ test.before(async (t) => {
     types: {
       league: {
         prefix: 'le',
-        fields: {},
+        fields: {
+          name: { type: 'string' },
+        },
       },
       team: {
         prefix: 'te',

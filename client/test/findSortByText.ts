@@ -33,6 +33,7 @@ test.beforeEach(async (t) => {
       match: {
         prefix: 'ma',
         fields: {
+          name: { type: 'string' },
           title: { type: 'text' },
           fun: { type: 'set', items: { type: 'string' } },
           related: { type: 'references' },
