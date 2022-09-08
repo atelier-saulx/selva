@@ -139,7 +139,7 @@ test.serial('subscribe - simple alias', async (t) => {
     },
   })
 
-  const obs = await client.observe({
+  const obs = client.observe({
     $id: 'viA',
     id: true,
     enTitle: {
@@ -209,7 +209,7 @@ test.serial.skip('subscribe - simple alias with variable', async (t) => {
   })
 
   const results = []
-  const obs = await client.observe({
+  const obs = client.observe({
     $id: 'viB',
     id: true,
     somethingWithVariable: {
@@ -279,7 +279,7 @@ test.serial('subscribe - alias with nested structure variable', async (t) => {
   })
 
   const results = []
-  const obs = await client.observe({
+  const obs = client.observe({
     $id: 'viC',
     id: true,
     nestedFun: {
@@ -349,7 +349,7 @@ test.serial.skip('subscribe - alias with variables', async (t) => {
   })
 
   const results = []
-  const obs = await client.observe({
+  const obs = client.observe({
     $id: 'viD',
     id: true,
     niceFromJson: {
@@ -477,7 +477,7 @@ test.serial(
     })
 
     const results = []
-    const obs = await client.observe({
+    const obs = client.observe({
       $id: 'viF',
       id: true,
       valueOrAge: { $field: ['value', 'age'] },
@@ -629,7 +629,7 @@ test.serial('get - simple $field with $inherit', async (t) => {
   })
 
   const results = []
-  const obs = await client.observe({
+  const obs = client.observe({
     $id: 'viI',
     id: true,
     germanTitle: {
@@ -712,7 +712,7 @@ test.serial('subscribe - simple $field with $inherit: $type', async (t) => {
   })
 
   const results = []
-  const obs = await client.observe({
+  const obs = client.observe({
     $id: 'viK',
     id: true,
     germanTitle: {
