@@ -45,7 +45,7 @@ export type TraversalType =
 export type SubscriptionMarker = {
   type: TraversalType
   refField?: string
-  traversal?: string // an RPN for bfs_expression
+  traversal?: string // an RPN for type = 'bfs_expression'
   id: string
   fields: string[]
   rpn?: Rpn
