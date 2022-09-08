@@ -44,6 +44,7 @@ test.beforeEach(async (t) => {
       match: {
         prefix: 'ma',
         fields: {
+          name: { type: 'string' },
           flupriflu: { type: 'string' },
           date: { type: 'number' },
           // need to warn if you change this!!!
@@ -54,6 +55,7 @@ test.beforeEach(async (t) => {
       video: {
         prefix: 'vi',
         fields: {
+          name: { type: 'string' },
           title: { type: 'text' },
           date: { type: 'number' },
           // making it different here should tell you something or at least take it over
