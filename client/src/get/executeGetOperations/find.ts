@@ -839,12 +839,17 @@ const executeFindOperation = async (
     passedSchema
   )
 
+  // **SubscriptionMarker mgmt**
+  // Track ambiguous/implicit reference fields found in the query response that might need markers.
+  // If `op` contains a `$find` then we are already tracking it elsewhere as we know there may
+  // be references in the response.
+  const ambiguousReferenceFields = op.props['$find'] ? null : new Map<string, string[]>() // nodeId = [originField, ...fieldName(s)]
+
   const allMappings = new Set(Object.keys(fieldMapping))
   const result = []
   for (const entry of results) {
     const [id, fieldResults] = entry
     const entryRes: any = {}
-
     const usedMappings = new Set()
     for (let i = 0; i < fieldResults.length; i += 2) {
       const field = fieldResults[i]
@@ -893,6 +898,14 @@ const executeFindOperation = async (
               schema,
               lang
             )
+
+            if (ambiguousReferenceFields && nestedId != id && !ambiguousReferenceFields.get(id)) {
+              const destFields = op.props[field]
+
+              if (destFields) {
+                ambiguousReferenceFields.set(id, [field, ...Object.keys(destFields)])
+              }
+            }
 
             if (targetField) {
               // TODO This won't work?
@@ -954,6 +967,21 @@ const executeFindOperation = async (
     }
 
     result.push(entryRes)
+  }
+
+  if (ambiguousReferenceFields) {
+    for (const v of ambiguousReferenceFields) {
+      const [id, [originField, ...fields]] = v
+
+      if (await addMarker(client, ctx, {
+        type: 'edge_field',
+        refField: originField,
+        id,
+        fields,
+      })) {
+        ctx.hasFindMarkers = true
+      }
+    }
   }
 
   if (op.single) {
