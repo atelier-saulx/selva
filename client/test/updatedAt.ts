@@ -77,6 +77,9 @@ test.before(async (t) => {
       },
       competition: {
         prefix: 'co',
+        fields: {
+          name: { type: 'string' },
+        },
       },
       camera: {
         prefix: 'ca',
