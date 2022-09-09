@@ -69,7 +69,7 @@
   "dependencies": {
     "@saulx/validators": "^1.1.0",
     "pg": "8.7.1",
-    "pg-native": "3.0.0",
+    "pg-native": "3.0.1",
     "squel": "^5.13.0",
     "data-record": "^1.0.0",
     "@saulx/selva-query-ast-parser": "^4.0.2",
