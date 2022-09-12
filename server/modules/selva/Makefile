@@ -139,7 +139,7 @@ clean: FORCE
 	find . -type f -name "*.gcno" -exec rm -f {} \;
 	find . -type f -name "*.gcov" -exec rm -f {} \;
 	$(MAKE) -C test clean
-	$(MAKE) -C lib/deflate clean
+	$(foreach lib,$(LIBS),pushd "lib/$(lib)" && $(MAKE) clean; popd;)
 
 FORCE:
 
