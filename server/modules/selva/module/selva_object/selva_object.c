@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "cdefs.h"
 #include "linker_set.h"
 #include "endian.h"
@@ -134,7 +135,7 @@ static void init_obj(struct SelvaObject *obj) {
 struct SelvaObject *SelvaObject_New(void) {
     struct SelvaObject *obj;
 
-    obj = RedisModule_Alloc(sizeof(*obj));
+    obj = selva_malloc(sizeof(*obj));
     init_obj(obj);
     obj->flags = SELVA_OBJECT_FLAG_DYNAMIC;
 
@@ -183,7 +184,7 @@ retry:
 static void init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType subtype, size_t size) {
     key->type = SELVA_OBJECT_ARRAY;
     key->subtype = subtype;
-    key->array = RedisModule_Calloc(1, sizeof(SVector));
+    key->array = selva_calloc(1, sizeof(SVector));
     SVector_Init(key->array, size, NULL);
 }
 
@@ -232,7 +233,7 @@ static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
     }
 
     SVector_Destroy(array);
-    RedisModule_Free(array);
+    selva_free(array);
 }
 
 static int clear_key_value(struct SelvaObjectKey *key) {
@@ -301,7 +302,7 @@ static struct SelvaObjectKey *alloc_key(struct SelvaObject *obj, size_t name_len
         obj->emb_res &= ~(1 << i); /* Reserve it. */
         key = get_emb_key(obj, i);
     } else {
-        key = RedisModule_Alloc(key_size);
+        key = selva_malloc(key_size);
     }
 
     if (key) {
@@ -324,7 +325,7 @@ static void remove_key(struct SelvaObject *obj, struct SelvaObjectKey *key) {
         obj->emb_res |= 1 << i; /* Mark it free. */
     } else {
         /* The key was allocated with RedisModule_Alloc(). */
-        RedisModule_Free(key);
+        selva_free(key);
     }
 }
 
@@ -363,7 +364,7 @@ void SelvaObject_Destroy(struct SelvaObject *obj) {
 #if MEM_DEBUG
         memset(obj, 0, sizeof(*obj));
 #endif
-        RedisModule_Free(obj);
+        selva_free(obj);
     }
 }
 
