@@ -8,9 +8,6 @@ var redis = require('../index');
 var totalTime = 0;
 var metrics = require('metrics');
 var tests = [];
-// var bluebird = require('bluebird');
-// bluebird.promisifyAll(redis.RedisClient.prototype);
-// bluebird.promisifyAll(redis.Multi.prototype);
 
 function returnArg (name, def) {
     var matches = process.argv.filter(function (entry) {
