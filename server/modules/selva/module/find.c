@@ -1648,7 +1648,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     __auto_free_rpn_expression struct rpn_expression *traversal_expression = NULL;
     __auto_free_rpn_ctx struct rpn_ctx *edge_filter_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *edge_filter = NULL;
-    __auto_free RedisModuleStringList index_hints = NULL;
+    __selva_autofree RedisModuleStringList index_hints = NULL;
     int nr_index_hints = 0;
 
     /*

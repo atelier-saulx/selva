@@ -2,6 +2,7 @@
 #include <string.h>
 #include <tgmath.h>
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "arg_parser.h"
 #include "cdefs.h"
 #include "errors.h"
@@ -55,7 +56,7 @@ int SelvaArgsParser_StringList(
     }
 
     const size_t list_size = n * sizeof(RedisModuleString *);
-    list = RedisModule_Realloc(list, list_size);
+    list = selva_realloc(list, list_size);
 
     list[n - 1] = NULL;
     if (cur[0] != '\0') {
@@ -81,7 +82,7 @@ int SelvaArgsParser_StringList(
             /*
              * Set to the array.
              */
-            list = RedisModule_Realloc(list, ++n * sizeof(RedisModuleString *));
+            list = selva_realloc(list, ++n * sizeof(RedisModuleString *));
             list[n - 2] = el;
             list[n - 1] = NULL;
 
@@ -306,7 +307,7 @@ int SelvaArgParser_IndexHints(RedisModuleStringList *out, RedisModuleString **ar
         }
 
         const size_t list_size = ++n * sizeof(RedisModuleString *);
-        new_list = RedisModule_Realloc(list, list_size);
+        new_list = selva_realloc(list, list_size);
 
         list = new_list;
         list[n - 1] = argv[i + 1];

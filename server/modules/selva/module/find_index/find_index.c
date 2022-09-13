@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <tgmath.h>
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "config.h"
 #include "bitmap.h"
 #include "lpf.h"
@@ -422,7 +423,7 @@ __attribute__((nonnull (2, 3))) static int destroy_icb(
     }
 
     memset(icb, 0, sizeof(*icb));
-    RedisModule_Free(icb);
+    selva_free(icb);
 
     return 0;
 }
@@ -688,7 +689,7 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
          * yet but we are going to start counting wether it makes sense to start
          * indexing a query described by the arguments of this function.
          */
-        icb = RedisModule_Calloc(1, sizeof(*icb) + name_len);
+        icb = selva_calloc(1, sizeof(*icb) + name_len);
         icb->name_len = name_len;
         memcpy(icb->name_str, name_str, name_len);
 

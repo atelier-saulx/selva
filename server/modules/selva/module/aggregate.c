@@ -549,7 +549,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     struct rpn_ctx *rpn_ctx = NULL;
     RedisModuleString *argv_filter_expr = NULL;
     struct rpn_expression *filter_expression = NULL;
-    __auto_free RedisModuleString **index_hints = NULL;
+    __selva_autofree RedisModuleStringList index_hints = NULL;
     int nr_index_hints = 0;
 
     /*
