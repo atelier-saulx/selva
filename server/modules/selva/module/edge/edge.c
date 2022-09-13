@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "auto_free.h"
 #include "errors.h"
 #include "svector.h"
@@ -105,7 +106,7 @@ __attribute__((nonnull (1, 2))) static struct EdgeField *alloc_EdgeField(
 
     assert(constraint);
 
-    edgeField = RedisModule_Calloc(1, sizeof(struct EdgeField));
+    edgeField = selva_calloc(1, sizeof(struct EdgeField));
     edgeField->constraint = constraint;
     memcpy(edgeField->src_node_id, src_node_id, SELVA_NODE_ID_SIZE);
     SVector_Init(&edgeField->arcs, initial_size, SelvaSVectorComparator_Node);
@@ -843,7 +844,7 @@ static void EdgeField_Free(void *p) {
 #endif
     SVector_Destroy(&edge_field->arcs);
     SelvaObject_Destroy(edge_field->metadata);
-    RedisModule_Free(p);
+    selva_free(p);
 }
 
 /**
@@ -886,8 +887,8 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
      */
     constraint_id = RedisModule_LoadUnsigned(io);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
-        char *node_type __auto_free = NULL;
-        char *field_name_str __auto_free = NULL;
+        __auto_free char *node_type = NULL;
+        __auto_free char *field_name_str = NULL;
         size_t field_name_len;
 
         node_type = RedisModule_LoadStringBuffer(io, NULL);
@@ -914,7 +915,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
      * Edges/arcs.
      */
     for (size_t i = 0; i < nr_edges; i++) {
-        char *dst_id_str __auto_free = NULL;
+        __auto_free char *dst_id_str = NULL;
         size_t dst_id_len;
         struct SelvaHierarchyNode *dst_node;
         int err;
