@@ -1,4 +1,5 @@
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "selva.h"
 #include "selva_onload.h"
 #include "selva_object.h"

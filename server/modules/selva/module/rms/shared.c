@@ -1,5 +1,6 @@
-#include "selva_set.h"
 #include "redismodule.h"
+#include "selva_set.h"
+#include "jemalloc.h"
 #include "cdefs.h"
 #include "rms.h"
 
