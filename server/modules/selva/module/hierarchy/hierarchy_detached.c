@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "cdefs.h"
 #include "errors.h"
 #include "ptag.h"
