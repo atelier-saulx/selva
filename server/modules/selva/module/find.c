@@ -1848,7 +1848,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         fields = SelvaObject_New();
     }
 
-    __auto_free RedisModuleStringList inherit_fields = NULL;
+    __selva_autofree RedisModuleStringList inherit_fields = NULL;
     if (argc > ARGV_INHERIT_VAL) {
         err = SelvaArgsParser_StringList(ctx, &inherit_fields, "inherit", argv[ARGV_INHERIT_TXT], argv[ARGV_INHERIT_VAL]);
         if (err == 0) {

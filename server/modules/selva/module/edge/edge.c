@@ -887,8 +887,8 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
      */
     constraint_id = RedisModule_LoadUnsigned(io);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
-        __auto_free char *node_type = NULL;
-        __auto_free char *field_name_str = NULL;
+        __rm_autofree char *node_type = NULL;
+        __rm_autofree char *field_name_str = NULL;
         size_t field_name_len;
 
         node_type = RedisModule_LoadStringBuffer(io, NULL);
@@ -915,7 +915,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
      * Edges/arcs.
      */
     for (size_t i = 0; i < nr_edges; i++) {
-        __auto_free char *dst_id_str = NULL;
+        __rm_autofree char *dst_id_str = NULL;
         size_t dst_id_len;
         struct SelvaHierarchyNode *dst_node;
         int err;

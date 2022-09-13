@@ -178,7 +178,7 @@ static void EdgeConstraint_Reply(struct RedisModuleCtx *ctx, void *p) {
 }
 
 static void rdb_load_src_node_type(struct RedisModuleIO *io, Selva_NodeType type) {
-    __auto_free char *s;
+    __rm_autofree char *s;
     size_t len;
 
     s = RedisModule_LoadStringBuffer(io, &len);

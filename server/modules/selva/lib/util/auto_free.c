@@ -8,7 +8,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void _wrapFree(void *p) {
+void _wrap_RM_Free(void *p) {
     void **pp = (void **)p;
 
     RedisModule_Free(*pp);

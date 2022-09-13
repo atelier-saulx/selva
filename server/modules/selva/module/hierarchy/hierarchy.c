@@ -3043,7 +3043,7 @@ static int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarch
  * Should be only called by load_node().
  */
 static int load_node_id(RedisModuleIO *io, Selva_NodeId node_id_out) {
-    __auto_free const char *node_id = NULL;
+    __rm_autofree const char *node_id = NULL;
     size_t len = 0;
 
     node_id = RedisModule_LoadStringBuffer(io, &len);
@@ -3417,7 +3417,7 @@ static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
 }
 
 static int load_nodeId(RedisModuleIO *io, Selva_NodeId nodeId) {
-    __auto_free const char *buf = NULL;
+    __rm_autofree const char *buf = NULL;
     size_t len;
 
     buf = RedisModule_LoadStringBuffer(io, &len);
