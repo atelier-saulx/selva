@@ -1648,7 +1648,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     __auto_free_rpn_expression struct rpn_expression *traversal_expression = NULL;
     __auto_free_rpn_ctx struct rpn_ctx *edge_filter_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *edge_filter = NULL;
-    __auto_free RedisModuleString **index_hints = NULL;
+    __auto_free RedisModuleStringList index_hints = NULL;
     int nr_index_hints = 0;
 
     /*
@@ -1848,7 +1848,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         fields = SelvaObject_New();
     }
 
-    RedisModuleStringList inherit_fields = NULL;
+    __auto_free RedisModuleStringList inherit_fields = NULL;
     if (argc > ARGV_INHERIT_VAL) {
         err = SelvaArgsParser_StringList(ctx, &inherit_fields, "inherit", argv[ARGV_INHERIT_TXT], argv[ARGV_INHERIT_VAL]);
         if (err == 0) {
