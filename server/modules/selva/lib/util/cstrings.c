@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * SPDX-License-Identifier: MIT
  */
 #define _GNU_SOURCE
@@ -8,7 +8,28 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
+#include "jemalloc.h"
 #include "cstrings.h"
+
+char *selva_strndup(const char *s, size_t n) {
+  const size_t len = strnlen(s, n);
+  char *copy = selva_malloc(len + 1);
+
+  memcpy(copy, s, len);
+  copy[len] = '\0';
+
+  return copy;
+}
+
+char *selva_strdup(const char *s) {
+    const size_t len = strlen(s);
+    char *copy = selva_malloc(len + 1);
+
+    memcpy(copy, s, len);
+    copy[len] = '\0';
+
+    return copy;
+}
 
 /* int is probably large enough for Selva users. */
 int strrnchr(const char *str, size_t len, char c) {
