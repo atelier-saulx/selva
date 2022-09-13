@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "jemalloc.h"
 #include "cdefs.h"
 #include "../rmutil/sds.h"
 #include "redismodule.h"
@@ -152,7 +153,7 @@ struct rpn_ctx *rpn_init(int nr_reg) {
         nr_reg = 1;
     }
 
-    ctx = RedisModule_Calloc(1, sizeof(struct rpn_ctx) + nr_reg * sizeof(struct rpn_operand *));
+    ctx = selva_calloc(1, sizeof(struct rpn_ctx) + nr_reg * sizeof(struct rpn_operand *));
     ctx->nr_reg = nr_reg;
 
     return ctx;
@@ -177,7 +178,7 @@ void rpn_destroy(struct rpn_ctx *ctx) {
         if (ctx->rms) {
             RedisModule_FreeString(NULL, ctx->rms);
         }
-        RedisModule_Free(ctx);
+        selva_free(ctx);
     }
 }
 
@@ -270,7 +271,7 @@ static struct rpn_operand *alloc_rpn_operand(size_t s_size) {
     } else {
         const size_t size = sizeof(struct rpn_operand) - RPN_SMALL_OPERAND_SIZE + s_size;
 
-        v = RedisModule_Calloc(1, size);
+        v = selva_calloc(1, size);
     }
 
     return v;
@@ -307,7 +308,7 @@ static void free_rpn_operand(void *p) {
     }
 
     if (v->flags.spused && v->flags.spfree && v->sp) {
-        RedisModule_Free((void *)v->sp);
+        selva_free((void *)v->sp);
     } else if (v->flags.embset && v->flags.slvset) {
         SelvaSet_Destroy(&v->set_emb);
     }
@@ -320,7 +321,7 @@ static void free_rpn_operand(void *p) {
         small_operand_pool_next = v;
         small_operand_pool_next->next_free = prev;
     } else {
-        RedisModule_Free(v);
+        selva_free(v);
     }
 }
 
@@ -501,7 +502,7 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
          */
         r->flags.regist = 1; /* Can't be freed when this flag is set. */
         r->flags.spused = 1;
-        r->flags.spfree = (flags & RPN_SET_REG_FLAG_RMFREE) == RPN_SET_REG_FLAG_RMFREE;
+        r->flags.spfree = (flags & RPN_SET_REG_FLAG_SELVA_FREE) == RPN_SET_REG_FLAG_SELVA_FREE;
         r->s_size = size;
         r->sp = s;
 
@@ -533,9 +534,9 @@ enum rpn_error rpn_set_reg_rms(struct rpn_ctx *ctx, size_t i, RedisModuleString 
     const size_t size = rms_len + 1;
     char *arg;
 
-    arg = RedisModule_Alloc(size);
+    arg = selva_malloc(size);
     memcpy(arg, rms_str, size);
-    return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_RMFREE);
+    return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_SELVA_FREE);
 }
 
 /* TODO free flag for rpn_set_reg_slvobj() */
@@ -1766,9 +1767,9 @@ struct rpn_expression *rpn_compile(const char *input) {
     size_t size = 2 * sizeof(rpn_token);
     int labels[RPN_MAX_LABELS] = { 0 }; /*!< Jump labels. */
 
-    expr = RedisModule_Alloc(sizeof(struct rpn_expression));
+    expr = selva_malloc(sizeof(struct rpn_expression));
     memset(expr->literal_reg, 0, sizeof(expr->literal_reg));
-    expr->expression = RedisModule_Alloc(size);
+    expr->expression = selva_malloc(size);
 
     if (compile_find_labels(labels, input)) {
         fprintf(stderr, "%s:%d:%s: Failed to parse labels\n",
@@ -1884,7 +1885,7 @@ struct rpn_expression *rpn_compile(const char *input) {
         compile_emit_code_uint32(e, RPN_CODE_GET_LIT, literal_reg_i);
         literal_reg_i++;
 next:
-        new = RedisModule_Realloc(expr->expression, size);
+        new = selva_realloc(expr->expression, size);
         expr->expression = new;
 
         size += sizeof(rpn_token);
@@ -1911,7 +1912,7 @@ void rpn_destroy_expression(struct rpn_expression *expr) {
     if (expr) {
         struct rpn_operand **op = expr->literal_reg;
 
-        RedisModule_Free(expr->expression);
+        selva_free(expr->expression);
 
         while (*op) {
             (*op)->flags.regist = 0;
@@ -1919,7 +1920,7 @@ void rpn_destroy_expression(struct rpn_expression *expr) {
             op++;
         }
 
-        RedisModule_Free(expr);
+        selva_free(expr);
     }
 }
 
