@@ -244,7 +244,7 @@ extern "C" {
 /*
  * The je_ prefix on the following public symbol declarations is an artifact
  * of namespace management, and should be omitted in application code unless
- * JEMALLOC_NO_DEMANGLE is defined (see jemalloc_mangle.h).
+ * JEMALLOC_NO_DEMANGLE is defined (see jemalloc_mangle_selva.h).
  */
 extern JEMALLOC_EXPORT const char	*je_malloc_conf;
 extern JEMALLOC_EXPORT void		(*je_malloc_message)(void *cbopaque,
