@@ -63,7 +63,7 @@ CFLAGS += $(IDIR) -include tunables.h \
 	-fPIC \
 	-fno-strict-aliasing
 LIBDIR := $(patsubst %,lib/%,$(LIBS))
-SHOBJ_LDLIBS := -lc -ljemalloc -lhiredis -lcrypto -lssl
+SHOBJ_LDLIBS := -lc -ljemalloc_selva -lhiredis -lcrypto -lssl
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
 	CFLAGS += -include include/linux_cdefs.h \
@@ -75,7 +75,7 @@ endif
 ifeq ($(uname_S),Darwin) # macOS
 	CFLAGS += -include include/macos_cdefs.h
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
-	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
+	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup -install_name @rpath/libjemalloc_selva.2.dylib -rpath @executable_path/../binaries/darwin_x64/
 	LIBDIR += ../binaries/darwin_x64
 	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib $(wildcard /usr/local/Cellar/openssl@1.1/1.1.1*/lib)
 endif

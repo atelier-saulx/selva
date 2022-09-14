@@ -44,7 +44,11 @@ export default class RedisManager extends ProcessManager {
                 '../../modules/binaries/linux_x64/locale'
               ), // MacOS libSystem will ignore this
             }
-          : { REDIS_PORT: port.toString(), SERVER_TYPE: type },
+          : {
+              REDIS_PORT: port.toString(),
+              SERVER_TYPE: type ,
+              DYLD_FALLBACK_LIBRARY_PATH: `${__dirname}/../../modules/binaries/darwin_x64`,
+            },
     })
 
     this.opts = opts
