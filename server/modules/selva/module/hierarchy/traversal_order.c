@@ -1,5 +1,6 @@
 #include <math.h>
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "cdefs.h"
 #include "funmap.h"
 #include "selva.h"
@@ -200,7 +201,7 @@ static struct TraversalOrderItem *alloc_item(RedisModuleCtx *ctx, size_t data_si
     if (ctx) {
         return RedisModule_PoolAlloc(ctx, item_size);
     } else {
-        return RedisModule_Calloc(1, item_size);
+        return selva_calloc(1, item_size);
     }
 }
 
@@ -298,7 +299,7 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectOrderItem(
 
 void SelvaTraversalOrder_DestroyOrderItem(RedisModuleCtx *ctx, struct TraversalOrderItem *item) {
     if (!ctx) {
-        RedisModule_Free(item);
+        selva_free(item);
     }
-    /* Otherwise it's from the pool. */
+    /* Otherwise it's allocated from the pool. */
 }

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "redismodule.h"
+#include "jemalloc.h"
 #include "../tunables.h"
 #include "mempool.h"
 #include "svector.h"
@@ -51,7 +51,7 @@ void SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a
     if (initial_len > (size_t)0) {
         /* RBTREE mode requires compar function */
         if (initial_len < SVECTOR_THRESHOLD || !compar) {
-            vec->vec_arr = RedisModule_Alloc(VEC_SIZE(initial_len));
+            vec->vec_arr = selva_malloc(VEC_SIZE(initial_len));
         } else {
             vec->vec_mode = SVECTOR_MODE_RBTREE;
             RB_INIT(&vec->vec_rbhead);
@@ -62,7 +62,7 @@ void SVector_Init(SVector *vec, size_t initial_len, int (*compar)(const void **a
 
 void SVector_Destroy(SVector *vec) {
     if (vec->vec_mode == SVECTOR_MODE_ARRAY) {
-        RedisModule_Free(vec->vec_arr);
+        selva_free(vec->vec_arr);
     } else if (vec->vec_mode == SVECTOR_MODE_RBTREE) {
         mempool_destroy(&vec->vec_rbmempool);
     }
@@ -128,7 +128,7 @@ static void migrate_arr_to_rbtree(SVector *vec) {
         (void)rbtree_insert(vec, *pp);
     }
 
-    RedisModule_Free(vec_arr);
+    selva_free(vec_arr);
     vec->vec_mode = SVECTOR_MODE_RBTREE;
     vec->vec_last = len;
     vec->vec_arr_shift_index = 0;
@@ -195,7 +195,7 @@ static void SVector_Resize(SVector *vec, size_t i) {
         }
         new_size = VEC_SIZE(new_len);
 
-        new_arr = RedisModule_Realloc(vec_arr, new_size);
+        new_arr = selva_realloc(vec_arr, new_size);
         vec->vec_arr = new_arr;
         vec->vec_arr_len = new_len;
     }
@@ -252,7 +252,7 @@ void *SVector_InsertFast(SVector *vec, void *el) {
             const size_t sz = 1;
 
             vec->vec_arr_len = sz;
-            vec->vec_arr = RedisModule_Alloc(VEC_SIZE(sz));
+            vec->vec_arr = selva_malloc(VEC_SIZE(sz));
         }
 
         ssize_t l = 0;
@@ -278,7 +278,7 @@ void *SVector_InsertFast(SVector *vec, void *el) {
         if (vec->vec_last >= vec->vec_arr_len - 1) {
             const size_t new_len = calc_new_len(vec->vec_arr_len);
             const size_t new_size = VEC_SIZE(new_len);
-            void **new_arr = RedisModule_Realloc(vec_arr, new_size);
+            void **new_arr = selva_realloc(vec_arr, new_size);
 
             vec->vec_arr = new_arr;
             vec->vec_arr_len = new_len;

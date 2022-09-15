@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "auto_free.h"
 #include "selva.h"
 #include "alias.h"
@@ -213,7 +214,7 @@ static int SelvaHierarchyNode_Compare(const SelvaHierarchyNode *a, const SelvaHi
 RB_GENERATE_STATIC(hierarchy_index_tree, SelvaHierarchyNode, _index_entry, SelvaHierarchyNode_Compare)
 
 SelvaHierarchy *SelvaModify_NewHierarchy(RedisModuleCtx *ctx) {
-    SelvaHierarchy *hierarchy = RedisModule_Calloc(1, sizeof(*hierarchy));
+    SelvaHierarchy *hierarchy = selva_calloc(1, sizeof(*hierarchy));
 
     mempool_init(&hierarchy->node_pool, HIERARCHY_SLAB_SIZE, sizeof(SelvaHierarchyNode), _Alignof(SelvaHierarchyNode));
     RB_INIT(&hierarchy->index_head);
@@ -279,7 +280,7 @@ void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy) {
 #if MEM_DEBUG
     memset(hierarchy, 0, sizeof(*hierarchy));
 #endif
-    RedisModule_Free(hierarchy);
+    selva_free(hierarchy);
 }
 
 SelvaHierarchy *SelvaModify_OpenHierarchy(RedisModuleCtx *ctx, RedisModuleString *key_name, int mode) {
@@ -3042,7 +3043,7 @@ static int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarch
  * Should be only called by load_node().
  */
 static int load_node_id(RedisModuleIO *io, Selva_NodeId node_id_out) {
-    char *node_id __auto_free = NULL;
+    __rm_autofree const char *node_id = NULL;
     size_t len = 0;
 
     node_id = RedisModule_LoadStringBuffer(io, &len);
@@ -3107,10 +3108,10 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
      * Load the ids of child nodes.
      */
     uint64_t nr_children = RedisModule_LoadUnsigned(io);
-    Selva_NodeId *children __auto_free = NULL;
+    Selva_NodeId *children __selva_autofree = NULL;
 
     if (nr_children > 0) {
-        children = RedisModule_Alloc(nr_children * SELVA_NODE_ID_SIZE);
+        children = selva_malloc(nr_children * SELVA_NODE_ID_SIZE);
 
         /* Create/Update children */
         for (uint64_t i = 0; i < nr_children; i++) {
@@ -3416,7 +3417,7 @@ static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
 }
 
 static int load_nodeId(RedisModuleIO *io, Selva_NodeId nodeId) {
-    const char *buf __auto_free;
+    __rm_autofree const char *buf = NULL;
     size_t len;
 
     buf = RedisModule_LoadStringBuffer(io, &len);

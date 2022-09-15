@@ -3,6 +3,7 @@
 #include <string.h>
 #include <strings.h>
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "selva_onload.h"
 #include "cdefs.h"
 #include "errors.h"
@@ -91,7 +92,7 @@ static int add_lang(const char *lang, const char *locale_name) {
     struct SelvaLang *slang;
     int err;
 
-    slang = RedisModule_Calloc(1, sizeof(*slang));
+    slang = selva_calloc(1, sizeof(*slang));
     slang->locale = newlocale(LC_ALL_MASK, locale_name, 0);
     if (!slang->locale) {
         if (errno == EINVAL) {
@@ -122,7 +123,7 @@ static int add_lang(const char *lang, const char *locale_name) {
 
     err = SelvaObject_SetPointerStr(langs, lang, strnlen(lang, LANG_NAME_MAX), slang, &obj_opts);
     if (err) {
-        RedisModule_Free(slang);
+        selva_free(slang);
     }
 
     return err;
@@ -132,7 +133,7 @@ static void SelvaLang_Free(void *p) {
     struct SelvaLang *slang = (struct SelvaLang *)p;
 
     freelocale(slang->locale);
-    RedisModule_Free(slang);
+    selva_free(slang);
 }
 
 locale_t SelvaLang_GetLocale(const char *lang_str, size_t lang_len) {

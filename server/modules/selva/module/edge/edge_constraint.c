@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include "redismodule.h"
+#include "jemalloc.h"
+#include "auto_free.h"
 #include "cstrings.h"
 #include "errors.h"
 #include "hierarchy.h"
@@ -72,7 +74,7 @@ static struct EdgeFieldConstraint *create_constraint(const struct EdgeFieldDynCo
         bck_field_name_str = RedisModule_StringPtrLen(params->bck_field_name, &bck_field_name_len);
     }
 
-    p = RedisModule_Calloc(1,
+    p = selva_calloc(1,
             sizeof(*p) +
             fwd_field_name_len + bck_field_name_len + 2);
     if (!p) {
@@ -176,7 +178,7 @@ static void EdgeConstraint_Reply(struct RedisModuleCtx *ctx, void *p) {
 }
 
 static void rdb_load_src_node_type(struct RedisModuleIO *io, Selva_NodeType type) {
-    char *s;
+    __rm_autofree char *s;
     size_t len;
 
     s = RedisModule_LoadStringBuffer(io, &len);
@@ -185,8 +187,6 @@ static void rdb_load_src_node_type(struct RedisModuleIO *io, Selva_NodeType type
     } else {
         memset(type, '\0', SELVA_NODE_TYPE_SIZE);
     }
-
-    RedisModule_Free(s);
 }
 
 static void rdb_save_src_node_type(struct RedisModuleIO *io, const Selva_NodeType type) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -7,6 +7,9 @@
 #define _UTIL_CSTRINGS_H_
 
 #include <stddef.h>
+
+char *selva_strndup(const char *s, size_t n);
+char *selva_strdup(const char *s);
 
 /**
  * Locate last occurrence of character in string.

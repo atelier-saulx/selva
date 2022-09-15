@@ -519,11 +519,11 @@ typedef struct RedisModuleTypeMethods {
 #define REDISMODULE_ATTR REDISMODULE_ATTR_COMMON
 #endif
 
-REDISMODULE_API void * (*RedisModule_Alloc)(size_t bytes) REDISMODULE_ATTR;
-REDISMODULE_API void * (*RedisModule_Realloc)(void *ptr, size_t bytes) REDISMODULE_ATTR;
-REDISMODULE_API void (*RedisModule_Free)(void *ptr) REDISMODULE_ATTR;
-REDISMODULE_API void * (*RedisModule_Calloc)(size_t nmemb, size_t size) REDISMODULE_ATTR;
-REDISMODULE_API char * (*RedisModule_Strdup)(const char *str) REDISMODULE_ATTR;
+REDISMODULE_API void * (*RedisModule_Alloc)(size_t bytes) REDISMODULE_ATTR __attribute__ ((deprecated));
+REDISMODULE_API void * (*RedisModule_Realloc)(void *ptr, size_t bytes) REDISMODULE_ATTR __attribute__ ((deprecated));
+REDISMODULE_API void (*RedisModule_Free)(void *ptr) REDISMODULE_ATTR __attribute__ ((deprecated));
+REDISMODULE_API void * (*RedisModule_Calloc)(size_t nmemb, size_t size) REDISMODULE_ATTR __attribute__ ((deprecated));
+REDISMODULE_API char * (*RedisModule_Strdup)(const char *str) REDISMODULE_ATTR __attribute__ ((deprecated));
 REDISMODULE_API int (*RedisModule_GetApi)(const char *, void *) REDISMODULE_ATTR;
 REDISMODULE_API int (*RedisModule_CreateCommand)(RedisModuleCtx *ctx, const char *name, RedisModuleCmdFunc cmdfunc, const char *strflags, int firstkey, int lastkey, int keystep) REDISMODULE_ATTR;
 REDISMODULE_API void (*RedisModule_SetModuleAttribs)(RedisModuleCtx *ctx, const char *name, int ver, int apiver) REDISMODULE_ATTR;
@@ -767,6 +767,9 @@ REDISMODULE_API int *(*RedisModule_GetCommandKeys)(RedisModuleCtx *ctx, RedisMod
 #endif
 
 #define RedisModule_IsAOFClient(id) ((id) == CLIENT_ID_AOF)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 /* This is included inline inside each Redis module. */
 static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver, int apiver) REDISMODULE_ATTR_UNUSED;
@@ -1021,6 +1024,8 @@ static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver, int 
     RedisModule_SetModuleAttribs(ctx,name,ver,apiver);
     return REDISMODULE_OK;
 }
+
+#pragma GCC diagnostic pop
 
 #define RedisModule_Assert(_e) ((_e)?(void)0 : (RedisModule__Assert(#_e,__FILE__,__LINE__),exit(1)))
 

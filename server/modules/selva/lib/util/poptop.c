@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <tgmath.h>
-#include "redismodule.h"
+#include "jemalloc.h"
 #include "poptop.h"
 
 /**
@@ -21,13 +21,13 @@ int poptop_init(struct poptop *l, unsigned int max_size, float initial_cut) {
     l->max_size = max_size;
     l->current_size = 0;
     l->cut_limit = initial_cut;
-    l->list = RedisModule_Calloc(max_size, sizeof(struct poptop_list_el));
+    l->list = selva_calloc(max_size, sizeof(struct poptop_list_el));
 
     return !l->list;
 }
 
 void poptop_deinit(struct poptop *l) {
-    RedisModule_Free(l->list);
+    selva_free(l->list);
     memset(l, 0, sizeof(*l));
 }
 

@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "cdefs.h"
 #include "auto_free.h"
 #include "arg_parser.h"
