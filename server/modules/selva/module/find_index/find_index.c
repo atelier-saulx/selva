@@ -167,7 +167,7 @@ static void update_index(
         /*
          * A node within the index was deleted.
          *
-         * Delete the res to trigger a full refresh.
+         * Delete the res to trigger a full rebuild.
          */
         if (icb->flags.valid) {
 #if 0
@@ -330,7 +330,8 @@ static int refresh_index(
 }
 
 /**
- * Destroy-Discard an index.
+ * Discard an index.
+ * Discard the index and make it inactive to avoid rebuilding.
  */
 static int discard_index(
         struct RedisModuleCtx *ctx,
@@ -366,7 +367,7 @@ static int discard_index(
 }
 
 /**
- * Destroy index control block completely.
+ * Destroy an index control block and free all the memory.
  */
 __attribute__((nonnull (2, 3))) static int destroy_icb(
         RedisModuleCtx *ctx,
