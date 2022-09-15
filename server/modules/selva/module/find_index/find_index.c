@@ -78,14 +78,14 @@ static int skip_node(const struct SelvaFindIndexControlBlock *icb, const struct 
     Selva_NodeId node_id;
 
     SelvaHierarchy_GetNodeId(node_id, node);
-    return SelvaTraversal_GetSkip(icb->traversal.dir) && !memcmp(node_id, icb->traversal.node_id, SELVA_NODE_ID_SIZE);
+    return SelvaTraversal_GetSkip(icb->traversal.dir) && !memcmp(node_id, icb->node_id, SELVA_NODE_ID_SIZE);
 }
 
 static void icb_res_init(struct SelvaFindIndexControlBlock *icb) {
     if (icb->flags.ordered) {
         const size_t initial_len = (size_t)icb->find_acc.take_max_ave;
 
-        SelvaTraversalOrder_InitOrderResult(&icb->res.ord, icb->sort.order, initial_len);
+        SelvaTraversalOrder_InitOrderResult(&icb->res.ord, icb->traversal.sort.order, initial_len);
     } else {
         SelvaSet_Init(&icb->res.set, SELVA_SET_TYPE_NODEID);
     }
@@ -117,7 +117,7 @@ static int icb_res_add(struct SelvaFindIndexControlBlock *icb, struct SelvaHiera
          */
         RedisModuleString *lang = NULL;
 
-        item = SelvaTraversalOrder_CreateNodeOrderItem(NULL, lang, node, icb->sort.order_field);
+        item = SelvaTraversalOrder_CreateNodeOrderItem(NULL, lang, node, icb->traversal.sort.order_field);
         if (SVector_InsertFast(&icb->res.ord, item)) {
             SelvaTraversalOrder_DestroyOrderItem(NULL, item);
         }
@@ -226,7 +226,7 @@ static void update_index(
          */
         if (icb->flags.valid && !skip_node(icb, node)) {
             size_t order_field_len;
-            const char *order_field_str = RedisModule_StringPtrLen(icb->sort.order_field, &order_field_len);
+            const char *order_field_str = RedisModule_StringPtrLen(icb->traversal.sort.order_field, &order_field_len);
 
             if (icb->flags.ordered &&
                 (event_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD) &&
@@ -285,7 +285,7 @@ static int start_index(
 
     err = SelvaSubscriptions_AddCallbackMarker(
             hierarchy, find_index_sub_id, icb->marker_id, marker_flags,
-            icb->traversal.node_id, icb->traversal.dir, dir_field, dir_expression, RedisModule_StringPtrLen(icb->traversal.filter, NULL),
+            icb->node_id, icb->traversal.dir, dir_field, dir_expression, RedisModule_StringPtrLen(icb->traversal.filter, NULL),
             update_index,
             icb);
     if (err) {
@@ -719,23 +719,18 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
         /*
          * Set traversal params.
          */
-        memcpy(icb->traversal.node_id, node_id, SELVA_NODE_ID_SIZE);
-        icb->traversal.dir = desc->dir;
+        memcpy(icb->node_id, node_id, SELVA_NODE_ID_SIZE);
 
-        /* Note that dir_field is not supported. */
-        if (desc->dir_expression) {
-            RedisModule_RetainString(ctx, desc->dir_expression);
+        /* Note that dir_field is not supported for indexing. */
+        icb->traversal = *desc;
+        if (icb->traversal.dir_expression) {
+            RedisModule_RetainString(ctx, icb->traversal.dir_expression);
         }
-        icb->traversal.dir_expression = desc->dir_expression;
-        RedisModule_RetainString(ctx, desc->filter);
-        icb->traversal.filter = desc->filter;
+        RedisModule_RetainString(ctx, icb->traversal.filter);
 
-        /* Order */
-        icb->sort.order = desc->sort.order;
-        if (desc->sort.order != SELVA_RESULT_ORDER_NONE) {
+        if (icb->traversal.sort.order != SELVA_RESULT_ORDER_NONE) {
             icb->flags.ordered = 1;
-            RedisModule_RetainString(ctx, desc->sort.order_field);
-            icb->sort.order_field = desc->sort.order_field;
+            RedisModule_RetainString(ctx, icb->traversal.sort.order_field);
         }
 
         /*
@@ -932,9 +927,9 @@ int SelvaFindIndex_IsOrdered(
         enum SelvaResultOrder order,
         RedisModuleString *order_field) {
     return order != SELVA_RESULT_ORDER_NONE &&
-           icb->sort.order == order &&
+           icb->traversal.sort.order == order &&
            icb->flags.ordered &&
-           !RedisModule_StringCompare(icb->sort.order_field, order_field);
+           !RedisModule_StringCompare(icb->traversal.sort.order_field, order_field);
 }
 
 int SelvaFindIndex_Traverse(
