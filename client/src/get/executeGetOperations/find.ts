@@ -416,10 +416,11 @@ export const findIds = async (
   // TODO: change this if ctx.subId (for markers)
   if (op.inKeys) {
     // can make this a bit better....
-    const ids = await client.redis.selva_hierarchy_findin(
+    const ids = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
+      'node',
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'none',
@@ -607,10 +608,11 @@ const findFields = async (
       }
     }
 
-    const result = await client.redis.selva_hierarchy_findin(
+    const result = await client.redis.selva_hierarchy_find(
       ctx.originDescriptors[ctx.db] || { name: ctx.db },
       makeLangArg(client.schemas[ctx.db].languages, lang),
       '___selva_hierarchy',
+      'node',
       'order',
       op.options.sort?.$field || '',
       op.options.sort?.$order || 'none',
