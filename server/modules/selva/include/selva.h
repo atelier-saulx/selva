@@ -189,7 +189,7 @@ struct _selva_dyndebug_msg {
     const char * file; /*!< Source code file of this message. */
 };
 
-void selva_log(enum selva_log_level level, const char * restrict where, const char * restrict fmt, ...);
+void selva_log(enum selva_log_level level, const char * restrict where, const char * restrict fmt, ...) __attribute__((format(printf, 3, 4)));
 
 #define _SELVA_LOG_WHERESTR (__FILE__ ":" S__LINE__ ": ")
 #define _SELVA_LOG(level, where, fmt, ...) \
