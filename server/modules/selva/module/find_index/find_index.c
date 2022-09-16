@@ -382,19 +382,17 @@ __attribute__((nonnull (2, 3))) static int destroy_icb(
 
     err = discard_index(ctx, hierarchy, icb);
     if (err) {
-        fprintf(stderr, "%s:%d: Failed to discard an index for \"%.*s\": %s\n",
-                __FILE__, __LINE__,
-                (int)icb->name_len, icb->name_str,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to discard an index for \"%.*s\": %s\n",
+                  (int)icb->name_len, icb->name_str,
+                  getSelvaErrorStr(err));
         return err;
     }
 
     err = SelvaFindIndexICB_Del(hierarchy, icb);
     if (err) {
-        fprintf(stderr, "%s:%d: Failed to destroy an index for \"%.*s\": %s\n",
-                __FILE__, __LINE__,
-                (int)icb->name_len, icb->name_str,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy an index for \"%.*s\": %s\n",
+                  (int)icb->name_len, icb->name_str,
+                  getSelvaErrorStr(err));
         return err;
     }
 
@@ -473,16 +471,14 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
                  */
                 int err;
 
-                fprintf(stderr, "%s:%d: Discarding index for \"%.*s\"\n",
-                        __FILE__, __LINE__,
-                        (int)icb->name_len, icb->name_str);
+                SELVA_LOG(SELVA_LOGL_INFO, "Discarding index for \"%.*s\"\n",
+                          (int)icb->name_len, icb->name_str);
 
                 err = discard_index(ctx, hierarchy, icb);
                 if (err) {
-                    fprintf(stderr, "%s:%d: Failed to discard the index for \"%.*s\": %s\n",
-                            __FILE__, __LINE__,
-                            (int)icb->name_len, icb->name_str,
-                            getSelvaErrorStr(err));
+                    SELVA_LOG(SELVA_LOGL_ERR, "Failed to discard the index for \"%.*s\": %s\n",
+                              (int)icb->name_len, icb->name_str,
+                              getSelvaErrorStr(err));
                 }
             } else {
                 /*
@@ -492,16 +488,14 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
                  */
                 int err;
 
-                fprintf(stderr, "%s:%d: Destroying index for \"%.*s\"\n",
-                        __FILE__, __LINE__,
-                        (int)icb->name_len, icb->name_str);
+                SELVA_LOG(SELVA_LOGL_INFO, "Destroying index for \"%.*s\"\n",
+                          (int)icb->name_len, icb->name_str);
 
                 err = destroy_icb(ctx, hierarchy, icb);
                 if (err) {
-                    fprintf(stderr, "%s:%d: Failed to destroy the index for \"%.*s\": %s\n",
-                            __FILE__, __LINE__,
-                            (int)icb->name_len, icb->name_str,
-                            getSelvaErrorStr(err));
+                    SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy the index for \"%.*s\": %s\n",
+                              (int)icb->name_len, icb->name_str,
+                              getSelvaErrorStr(err));
                 }
             }
         }
@@ -540,14 +534,12 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
              */
             err = start_index(hierarchy, icb);
             if (err) {
-                fprintf(stderr, "%s:%d: Failed to create an index for \"%.*s\": %s\n",
-                        __FILE__, __LINE__,
-                        (int)icb->name_len, icb->name_str,
-                        getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an index for \"%.*s\": %s\n",
+                          (int)icb->name_len, icb->name_str,
+                          getSelvaErrorStr(err));
             } else {
-                fprintf(stderr, "%s:%d: Created an index for \"%.*s\"\n",
-                       __FILE__, __LINE__,
-                      (int)icb->name_len, icb->name_str);
+                SELVA_LOG(SELVA_LOGL_INFO, "Created an index for \"%.*s\"\n",
+                          (int)icb->name_len, icb->name_str);
             }
         }
 
@@ -558,10 +550,9 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
          */
         err = refresh_index(ctx, hierarchy, icb);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to refresh the index for \"%.*s\": %s\n",
-                    __FILE__, __LINE__,
-                    (int)icb->name_len, icb->name_str,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to refresh the index for \"%.*s\": %s\n",
+                      (int)icb->name_len, icb->name_str,
+                      getSelvaErrorStr(err));
 
             /*
              * Destroy the ICB because it's likely that creating this index would
@@ -571,10 +562,9 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
              */
             err = destroy_icb(ctx, hierarchy, icb);
             if (err) {
-                fprintf(stderr, "%s:%d: Failed to destroy the index for \"%.*s\": %s\n",
-                        __FILE__, __LINE__,
-                        (int)icb->name_len, icb->name_str,
-                        getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy the index for \"%.*s\": %s\n",
+                          (int)icb->name_len, icb->name_str,
+                          getSelvaErrorStr(err));
             }
         }
     }
@@ -697,10 +687,9 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
 
         err = set_marker_id(hierarchy, icb);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to get a new marker id for an index \"%.*s\": %s\n",
-                    __FILE__, __LINE__,
-                    (int)icb->name_len, icb->name_str,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a new marker id for an index \"%.*s\": %s\n",
+                      (int)icb->name_len, icb->name_str,
+                      getSelvaErrorStr(err));
 
             destroy_icb(ctx, hierarchy, icb);
             return NULL;
@@ -743,10 +732,9 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
          */
         err = SelvaFindIndexICB_Set(hierarchy, name_str, name_len, icb);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to insert a new ICB at \"%.*s\": %s\n",
-                    __FILE__, __LINE__,
-                    (int)name_len, name_str,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to insert a new ICB at \"%.*s\": %s\n",
+                      (int)name_len, name_str,
+                      getSelvaErrorStr(err));
 
             destroy_icb(ctx, hierarchy, icb);
             return NULL;
@@ -755,10 +743,9 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
         /* Finally create a proc timer. */
         create_icb_timer(ctx, icb);
     } else if (err) {
-        fprintf(stderr, "%s:%d: Get ICB for \"%.*s\" failed: %s\n",
-                __FILE__, __LINE__,
-                (int)name_len, name_str,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Get ICB for \"%.*s\" failed: %s\n",
+                  (int)name_len, name_str,
+                  getSelvaErrorStr(err));
 
         icb = NULL;
     }
@@ -918,9 +905,8 @@ int SelvaFindIndex_AutoMulti(
                 ind_select = i; /* Select the smallest index res set for fastest lookup. */
             }
         } else if (err != SELVA_ENOENT && err != SELVA_ENOTSUP) {
-            fprintf(stderr, "%s:%d: AutoIndex returned an error: %s\n",
-                    __FILE__, __LINE__,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "AutoIndex returned an error: %s\n",
+                      getSelvaErrorStr(err));
         }
     }
 
@@ -1068,9 +1054,8 @@ static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
         } else if (type == SELVA_OBJECT_OBJECT) {
             n += list_index(ctx, (struct SelvaObject *)p);
         } else {
-            fprintf(stderr, "%s:%d: Unsupported index type: %s\n",
-                    __FILE__, __LINE__,
-                    SelvaObject_Type2String(type, NULL));
+            SELVA_LOG(SELVA_LOGL_ERR, "Unsupported index type: %s\n",
+                      SelvaObject_Type2String(type, NULL));
         }
     }
 
