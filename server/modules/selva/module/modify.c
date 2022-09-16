@@ -309,9 +309,8 @@ static int update_edge(
                 err = SelvaHierarchy_UpsertNode(ctx, hierarchy, setOpts->$add + i, &dst_node);
                 if ((err && err != SELVA_HIERARCHY_EEXIST) || !dst_node) {
                     /* See similar case with $value */
-                    fprintf(stderr, "%s:%d: Upserting a node failed: %s\n",
-                            __FILE__, __LINE__,
-                            getSelvaErrorStr(err));
+                    SELVA_LOG(SELVA_LOGL_ERR, "Upserting a node failed: %s\n",
+                              getSelvaErrorStr(err));
                     return err;
                 }
 
@@ -442,9 +441,9 @@ static int add_set_values(
                 res++;
             } else if (err != SELVA_EEXIST) {
                 if (alias_key) {
-                    fprintf(stderr, "%s:%d: Alias update failed\n", __FILE__, __LINE__);
+                    SELVA_LOG(SELVA_LOGL_ERR, "Alias update failed");
                 } else {
-                    fprintf(stderr, "%s:%d: String set field update failed\n", __FILE__, __LINE__);
+                    SELVA_LOG(SELVA_LOGL_ERR, "String set field update failed");
                 }
                 res = err;
                 goto string_err;
@@ -520,10 +519,9 @@ string_err:
             if (err == 0) {
                 res++;
             } else if (err != SELVA_EEXIST) {
-                fprintf(stderr, "%s:%d: Set (%s) field update failed: %s\n",
-                        __FILE__, __LINE__,
-                        (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE) ? "double" : "long long",
-                        getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "Set (%s) field update failed: %s\n",
+                          (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE) ? "double" : "long long",
+                          getSelvaErrorStr(err));
                 return err;
             }
 
@@ -684,7 +682,7 @@ static int del_set_values(
                 err != SELVA_ENOENT &&
                 err != SELVA_EEXIST &&
                 err != SELVA_EINVAL) {
-                fprintf(stderr, "%s:%d: Double set field update failed\n", __FILE__, __LINE__);
+                SELVA_LOG(SELVA_LOGL_ERR, "Double set field update failed");
                 return err;
             }
             if (err == 0) {
@@ -720,7 +718,7 @@ static int update_set(
     if (!strcmp(field_str, SELVA_ALIASES_FIELD)) {
         alias_key = open_aliases_key(ctx);
         if (!alias_key) {
-            fprintf(stderr, "%s:%d: Unable to open aliases\n", __FILE__, __LINE__);
+            SELVA_LOG(SELVA_LOGL_ERR, "Unable to open aliases");
             return SELVA_ENOENT;
         }
     }
@@ -820,8 +818,7 @@ int SelvaModify_ModifySet(
 
                 alias_key = open_aliases_key(ctx);
                 if (!alias_key) {
-                    fprintf(stderr, "%s:%d: Unable to open aliases\n",
-                            __FILE__, __LINE__);
+                    SELVA_LOG(SELVA_LOGL_ERR, "Unable to open aliases");
                     return SELVA_ENOENT;
                 }
 
@@ -1841,8 +1838,8 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                  * impossible to rollback the command, so we'll just log any
                  * errors received here.
                  */
-                fprintf(stderr, "%s:%d: An error occurred while setting an alias \"%s\" -> %s: %s\n",
-                        __FILE__, __LINE__, alias, id_str, getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "An error occurred while setting an alias \"%s\" -> %s: %s\n",
+                          alias, id_str, getSelvaErrorStr(err));
             }
         }
     }
