@@ -1073,6 +1073,54 @@ static int list_index(RedisModuleCtx *ctx, struct SelvaObject *obj) {
     return n;
 }
 
+static int _debug_index(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaObject *obj, int n, int i) {
+    SelvaObject_Iterator *it;
+    enum SelvaObjectType type;
+    void *p;
+
+    if (!obj) {
+        return n;
+    }
+
+    it = SelvaObject_ForeachBegin(obj);
+    while ((p = SelvaObject_ForeachValueType(obj, &it, NULL, &type))) {
+        if (type == SELVA_OBJECT_POINTER) {
+            const struct SelvaFindIndexControlBlock *icb = (const struct SelvaFindIndexControlBlock *)p;
+
+            if (n++ == i) {
+                struct Selva_SubscriptionMarker *marker;
+
+                marker = SelvaSubscriptions_GetMarker(hierarchy, find_index_sub_id, icb->marker_id);
+                if (marker) {
+                    SelvaSubscriptions_ReplyWithMarker(ctx, marker);
+                } else {
+                    RedisModule_ReplyWithNull(ctx);
+                }
+
+                return n;
+            }
+        } else if (type == SELVA_OBJECT_OBJECT) {
+            n += _debug_index(ctx, hierarchy, (struct SelvaObject *)p, n, i);
+            if (n > i) {
+                return n;
+            }
+        } else {
+            fprintf(stderr, "%s:%d: Unsupported index type: %s\n",
+                    __FILE__, __LINE__,
+                    SelvaObject_Type2String(type, NULL));
+        }
+    }
+
+    return n;
+}
+static void debug_index(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, int i) {
+    struct SelvaObject *obj = hierarchy->dyn_index.index_map;
+
+    if (_debug_index(ctx, hierarchy, obj, 0, i) <= i) {
+        RedisModule_ReplyWithNull(ctx);
+    }
+}
+
 static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     SelvaHierarchy *hierarchy;
 
@@ -1260,6 +1308,37 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     return RedisModule_ReplyWithLongLong(ctx, 1);
 }
 
+static int SelvaFindIndex_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    SelvaHierarchy *hierarchy;
+
+    if (argc != 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    const int ARGV_REDIS_KEY = 1;
+    const int ARGV_INDEX = 2; /* Numeric index. */
+
+    /*
+     * Open the Redis key.
+     */
+    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
+    if (!hierarchy) {
+        /* Do not send Redis replies here. */
+        return REDISMODULE_OK;
+    }
+
+    if (!is_indexing_active(hierarchy)) {
+        return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
+    }
+
+    long long i = -1;
+
+    RedisModule_StringToLongLong(argv[ARGV_INDEX], &i);
+    debug_index(ctx, hierarchy, (int)((i - 1) / 2));
+
+    return REDISMODULE_OK;
+}
+
 static void mod_info(RedisModuleInfoCtx *ctx) {
     (void)RedisModule_InfoAddFieldDouble(ctx, "lpf_a", lpf_a);
 }
@@ -1270,7 +1349,8 @@ static int FindIndex_OnLoad(RedisModuleCtx *ctx) {
 
     if (RedisModule_CreateCommand(ctx, "selva.index.list", SelvaFindIndex_ListCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
         RedisModule_CreateCommand(ctx, "selva.index.new", SelvaFindIndex_NewCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.index.del", SelvaFindIndex_DelCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+        RedisModule_CreateCommand(ctx, "selva.index.del", SelvaFindIndex_DelCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
+        RedisModule_CreateCommand(ctx, "selva.index.debug", SelvaFindIndex_DebugCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
