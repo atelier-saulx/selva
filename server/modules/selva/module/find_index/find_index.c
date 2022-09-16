@@ -36,7 +36,6 @@ static const enum SelvaTraversal allowed_dirs =
     SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS |
     SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION;
 
-
 /*
  * Trace handles.
  */
