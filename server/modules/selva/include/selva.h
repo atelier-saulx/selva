@@ -189,9 +189,9 @@ struct _selva_dyndebug_msg {
     const char * file; /*!< Source code file of this message. */
 };
 
-void selva_log(enum selva_log_level level, const char * restrict where, const char * restrict fmt, ...) __attribute__((format(printf, 3, 4)));
+void selva_log(enum selva_log_level level, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) __attribute__((format(printf, 4, 5)));
 
-#define _SELVA_LOG_WHERESTR (__FILE__ ":" S__LINE__ ": ")
+#define _SELVA_LOG_WHERESTR (__FILE__ ":" S__LINE__)
 #define _SELVA_LOG(level, where, fmt, ...) \
         selva_log(level, where, fmt, ##__VA_ARGS__)
 
@@ -204,10 +204,10 @@ void selva_log(enum selva_log_level level, const char * restrict where, const ch
     if (level == SELVA_LOGL_DEBUG) { \
         static struct _selva_dyndebug_msg _dbg_msg __section("dbg_msg") __used = { .flags = 0, .file = __FILE__, .line = __LINE__ }; \
         if (_dbg_msg.flags & 1) { \
-            _SELVA_LOG(SELVA_LOGL_DEBUG, _SELVA_LOG_WHERESTR, fmt, ##__VA_ARGS__); \
+            _SELVA_LOG(SELVA_LOGL_DEBUG, _SELVA_LOG_WHERESTR, __func__, fmt, ##__VA_ARGS__); \
         } \
     } else { \
-        _SELVA_LOG(level, _SELVA_LOG_WHERESTR, fmt, ##__VA_ARGS__); \
+        _SELVA_LOG(level, _SELVA_LOG_WHERESTR, __func__, fmt, ##__VA_ARGS__); \
     } \
 } while (0)
 
