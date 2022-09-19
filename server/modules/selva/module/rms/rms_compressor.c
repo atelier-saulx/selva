@@ -7,12 +7,10 @@
 #include "libdeflate.h"
 #include "redismodule.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "selva.h"
 #include "config.h"
 #include "selva_onload.h"
 #include "auto_free.h"
-#include "errors.h"
 #include "rms.h"
 
 static struct libdeflate_compressor *compressor;

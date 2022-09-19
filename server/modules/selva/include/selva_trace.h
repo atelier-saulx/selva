@@ -1,7 +1,6 @@
 #pragma once
 #ifndef _SELVA_TRACE_H_
 
-#include "cdefs.h"
 #include "linker_set.h"
 
 #ifdef SELVA_TRACE

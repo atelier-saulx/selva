@@ -8,13 +8,12 @@
 #include <strings.h>
 #include <tgmath.h>
 #include "redismodule.h"
+#include "selva.h"
 #include "auto_free.h"
 #include "arg_parser.h"
-#include "errors.h"
 #include "ptag.h"
 #include "hierarchy.h"
 #include "rpn.h"
-#include "selva.h"
 #include "config.h"
 #include "selva_lang.h"
 #include "selva_object.h"

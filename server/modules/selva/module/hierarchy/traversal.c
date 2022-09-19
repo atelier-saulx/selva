@@ -1,8 +1,6 @@
 #include "redismodule.h"
-#include "cdefs.h"
 #include "funmap.h"
 #include "selva.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "selva_lang.h"
 #include "selva_object.h"

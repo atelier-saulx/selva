@@ -1,6 +1,5 @@
 #include <string.h>
 #include "redismodule.h"
-#include "cdefs.h"
 #include "selva.h"
 #include "comparator.h"
 

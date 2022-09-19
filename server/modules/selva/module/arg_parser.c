@@ -4,8 +4,6 @@
 #include "redismodule.h"
 #include "jemalloc.h"
 #include "arg_parser.h"
-#include "cdefs.h"
-#include "errors.h"
 #include "subscriptions.h"
 #include "selva_object.h"
 

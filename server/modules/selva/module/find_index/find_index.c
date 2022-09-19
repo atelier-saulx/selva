@@ -13,7 +13,6 @@
 #include "bitmap.h"
 #include "lpf.h"
 #include "poptop.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "ida.h"
 #include "selva.h"

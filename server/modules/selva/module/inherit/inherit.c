@@ -4,11 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "selva.h"
 #include "redismodule.h"
+#include "selva.h"
 #include "cstrings.h"
 #include "svector.h"
-#include "errors.h"
 #include "arg_parser.h"
 #include "hierarchy.h"
 #include "modify.h"

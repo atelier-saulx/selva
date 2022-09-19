@@ -6,11 +6,10 @@
 #include <string.h>
 #include "redismodule.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "linker_set.h"
 #include "endian.h"
 #include "cstrings.h"
-#include "errors.h"
+#include "selva.h"
 #include "rms.h"
 #include "selva_set.h"
 #include "selva_trace.h"

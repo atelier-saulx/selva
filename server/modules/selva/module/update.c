@@ -2,11 +2,10 @@
 #include <string.h>
 #include <stdio.h>
 #include "redismodule.h"
+#include "selva.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "auto_free.h"
 #include "arg_parser.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "rms.h"
 #include "rpn.h"

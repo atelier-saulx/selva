@@ -3,7 +3,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include "selva.h"
-#include "errors.h"
 #include "selva_object.h"
 #include "hierarchy.h"
 

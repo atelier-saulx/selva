@@ -1,10 +1,8 @@
 #include "redismodule.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "libdeflate.h"
 #include "config.h"
 #include "selva.h"
-#include "errors.h"
 #include "selva_onload.h"
 
 SET_DECLARE(selva_onload, Selva_Onload);

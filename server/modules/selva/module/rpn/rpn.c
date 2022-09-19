@@ -8,12 +8,10 @@
 #include <string.h>
 #include <time.h>
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "selva.h"
 #include "../rmutil/sds.h"
 #include "redismodule.h"
 #include "cstrings.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"

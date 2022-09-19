@@ -9,13 +9,11 @@
 #include <sys/types.h>
 #include "redismodule.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "cstrings.h"
 #include "selva.h"
 #include "svector.h"
 #include "arg_parser.h"
 #include "async_task.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "resolve.h"
 #include "rpn.h"

@@ -6,9 +6,8 @@
 #include <unistd.h>
 #include "redismodule.h"
 #include "jemalloc.h"
-#include "cdefs.h"
-#include "errors.h"
 #include "ptag.h"
+#include "selva.h"
 #include "rms.h"
 #include "selva_object.h"
 #include "hierarchy.h"

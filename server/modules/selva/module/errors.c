@@ -2,7 +2,7 @@
 #include <string.h>
 #include "redismodule.h"
 #include "linker_set.h"
-#include "errors.h"
+#include "selva.h"
 
 const char * const selvaStrError[-SELVA_INVALID_ERROR + 1] = {
     [0]                                 = (const char *)"ERR_SELVA No Error",

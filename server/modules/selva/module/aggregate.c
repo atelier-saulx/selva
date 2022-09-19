@@ -5,14 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
-#include "cdefs.h"
 #include "funmap.h"
 #include "selva.h"
 #include "config.h"
 #include "redismodule.h"
 #include "auto_free.h"
 #include "arg_parser.h"
-#include "errors.h"
 #include "ptag.h"
 #include "hierarchy.h"
 #include "modify.h"

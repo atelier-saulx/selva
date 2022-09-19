@@ -3,9 +3,7 @@
 #include <stddef.h>
 #include "redismodule.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "selva.h"
-#include "errors.h"
 #include "alias.h"
 #include "selva_set.h"
 

@@ -1,10 +1,8 @@
 #include <math.h>
 #include "redismodule.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "funmap.h"
 #include "selva.h"
-#include "errors.h"
 #include "ptag.h"
 #include "hierarchy.h"
 #include "selva_lang.h"

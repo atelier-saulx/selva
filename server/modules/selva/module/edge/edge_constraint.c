@@ -5,7 +5,6 @@
 #include "jemalloc.h"
 #include "auto_free.h"
 #include "cstrings.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "edge.h"
 #include "selva_onload.h"
