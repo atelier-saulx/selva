@@ -226,10 +226,9 @@ static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
          */
         break;
      default:
-        fprintf(stderr, "%s:%d: Key clear failed: Unsupported array type %s (%d)\n",
-                __FILE__, __LINE__,
-                SelvaObject_Type2String(subtype, NULL),
-                (int)subtype);
+        SELVA_LOG(SELVA_LOGL_ERR, "Key clear failed: Unsupported array type %s (%d)",
+                  SelvaObject_Type2String(subtype, NULL),
+                  (int)subtype);
     }
 
     SVector_Destroy(array);
@@ -273,9 +272,8 @@ static int clear_key_value(struct SelvaObjectKey *key) {
          * In general default shouldn't be used because it may mask out missing
          * type handling but it's acceptable here.
          */
-        fprintf(stderr, "%s:%d: Unknown object value type (%d)\n",
-                __FILE__, __LINE__,
-                (int)key->type);
+        SELVA_LOG(SELVA_LOGL_ERR, "Unknown object value type (%d)",
+                  (int)key->type);
         return SELVA_EINTYPE;
     }
 
@@ -2198,9 +2196,7 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
         RedisModule_ReplySetArrayLength(ctx, n);
         break;
     default:
-        fprintf(stderr, "%s:%d: Unknown array type: %d\n",
-                __FILE__, __LINE__,
-                subtype);
+        SELVA_LOG(SELVA_LOGL_ERR, "Unknown array type: %d", subtype);
         RedisModule_ReplySetArrayLength(ctx, 0);
         break;
     }

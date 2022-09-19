@@ -261,9 +261,8 @@ static int update_edge(
 
             err = SelvaHierarchy_UpsertNode(ctx, hierarchy, dst_node_id, &dst_node);
             if ((err && err != SELVA_HIERARCHY_EEXIST) || !dst_node) {
-                fprintf(stderr, "%s:%d: Upserting a node failed: %s\n",
-                        __FILE__, __LINE__,
-                        getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "Upserting a node failed: %s",
+                          getSelvaErrorStr(err));
                 /*
                  * We could also ignore the error and try to insert the rest but
                  * perhaps it can be considered a fatal error if one of the
@@ -1626,7 +1625,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         } else {
 #if 0
             /* This is probably ok and it's a sign that there are no aliases in the DB yet. */
-            fprintf(stderr, "%s:%d: Unable open aliases key or its type is invalid\n",
+            fprintf(stderr, "%s:%d: Unable to open the aliases key or its type is invalid\n",
                     __FILE__, __LINE__);
 #endif
             new_alias = true;

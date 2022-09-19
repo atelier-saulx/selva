@@ -870,7 +870,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            SELVA_LOG(SELVA_LOGL_ERR, "Aggregate failed. err: %s dir: %s node_id: \"%.*s\"\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Aggregate failed. err: %s dir: %s node_id: \"%.*s\"",
                       getSelvaErrorStr(err),
                       SelvaTraversal_Dir2str(dir),
                       (int)SELVA_NODE_ID_SIZE, nodeId);
