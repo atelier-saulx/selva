@@ -891,7 +891,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
     }
 
     if (!constraint) {
-        RedisModule_LogIOError(io, "warning", "Constraint not found");
+        SELVA_LOG(SELVA_LOGL_CRIT, "Constraint not found");
         return NULL;
     }
 
@@ -922,9 +922,9 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
          */
         err = SelvaModify_AddHierarchy(ctx, hierarchy, dst_id_str, 0, NULL, 0, NULL);
         if (err < 0) {
-            RedisModule_LogIOError(io, "warning", "AddHierarchy(%.*s) failed: %s",
-                                   (int)SELVA_NODE_ID_SIZE, dst_id_str,
-                                   getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_CRIT, "AddHierarchy(%.*s) failed: %s",
+                      (int)SELVA_NODE_ID_SIZE, dst_id_str,
+                      getSelvaErrorStr(err));
             return NULL;
         }
 
@@ -949,7 +949,7 @@ int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy
     struct SelvaHierarchyMetadata *metadata;
 
     if (unlikely(!ctx)) {
-        RedisModule_LogIOError(io, "warning", "Redis ctx can't be NULL");
+        SELVA_LOG(SELVA_LOGL_CRIT, "Redis ctx can't be NULL");
         return SELVA_EINVAL;
     }
 

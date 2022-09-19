@@ -3079,7 +3079,7 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
      */
     err = load_metadata(io, encver, hierarchy, node);
     if (err) {
-        RedisModule_LogIOError(io, "warning", "Failed to load hierarchy metadata");
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load hierarchy metadata");
         return err;
     }
 
@@ -3098,8 +3098,8 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
 
             err = load_node_id(io, child_id);
             if (err) {
-                RedisModule_LogIOError(io, "warning", "Invalid child node_id: %s",
-                                       getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_CRIT, "Invalid child node_id: %s",
+                          getSelvaErrorStr(err));
                 return err;
             }
 
@@ -3109,8 +3109,8 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
 
             err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
             if (err < 0) {
-                RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
-                                       getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_CRIT, "Unable to rebuild the hierarchy: %s",
+                          getSelvaErrorStr(err));
                 return err;
             }
 
@@ -3123,8 +3123,8 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
      */
     err = SelvaModify_AddHierarchyP(NULL, hierarchy, node, 0, NULL, nr_children, children);
     if (err < 0) {
-        RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
-                               getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_CRIT, "Unable to rebuild the hierarchy: %s",
+                  getSelvaErrorStr(err));
         return err;
     }
 
@@ -3148,9 +3148,9 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
      */
     err = SelvaHierarchy_UpsertNode(RedisModule_GetContextFromIO(io), hierarchy, node_id, &node);
     if (err && err != SELVA_HIERARCHY_EEXIST) {
-        RedisModule_LogIOError(io, "warning", "Failed to upsert %.*s: %s",
-                               (int)SELVA_NODE_ID_SIZE, node_id,
-                               getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to upsert %.*s: %s",
+                  (int)SELVA_NODE_ID_SIZE, node_id,
+                  getSelvaErrorStr(err));
         return err;
     }
 
@@ -3187,8 +3187,8 @@ static int load_tree(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy) {
 
         err = load_node_id(io, node_id);
         if (err) {
-            RedisModule_LogIOError(io, "warning", "Failed to load the next nodeId: %s",
-                                   getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load the next nodeId: %s",
+                      getSelvaErrorStr(err));
             return SELVA_HIERARCHY_EINVAL;
         }
 
@@ -3226,26 +3226,27 @@ static void *Hierarchy_RDBLoad(RedisModuleIO *io, int encver) {
     int err;
 
     if (encver > HIERARCHY_ENCODING_VERSION) {
-        RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
+        SELVA_LOG(SELVA_LOGL_CRIT, "selva_hierarchy encoding version %d not supported", encver);
         return NULL;
     }
 
     hierarchy = SelvaModify_NewHierarchy(RedisModule_GetContextFromIO(io));
     if (!hierarchy) {
-        RedisModule_LogIOError(io, "warning", "Failed to create a new hierarchy");
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to create a new hierarchy");
         return NULL;
     }
 
     if (encver >= 5) {
         if (!SelvaObjectTypeRDBLoadTo(io, encver, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL)) {
-            RedisModule_LogIOError(io, "warning", "Failed to node types");
+            SELVA_LOG(SELVA_LOGL_CRIT, "Failed to node types");
             return NULL;
         }
     }
 
     err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
     if (err) {
-        RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints: %s", getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load the dynamic constraints: %s",
+                  getSelvaErrorStr(err));
         goto error;
     }
 
@@ -3277,7 +3278,8 @@ static void save_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, con
 
     err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed, &type);
     if (err) {
-        RedisModule_LogIOError(io, "warning", "Failed to save a compressed subtree: %s", getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to save a compressed subtree: %s",
+                  getSelvaErrorStr(err));
         return;
     }
 
@@ -3426,7 +3428,7 @@ static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
 
     encver = RedisModule_LoadSigned(io);
     if (encver > HIERARCHY_ENCODING_VERSION) {
-        RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
+        SELVA_LOG(SELVA_LOGL_CRIT, "selva_hierarchy encoding version %d not supported", encver);
         return NULL;
     }
 
