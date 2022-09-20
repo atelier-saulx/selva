@@ -2857,14 +2857,11 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
      */
     new_detached_node(ctx, hierarchy, node_id, parents, nr_parents);
 
-#if 0
     if (!err) {
-        fprintf(stderr, "%s:%d: Compressed and detached the subtree of %.*s (cratio: %.2f:1)\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node_id,
-                compression_ratio);
+        SELVA_LOG_DBG("Compressed and detached the subtree of %.*s (cratio: %.2f:1)",
+                      (int)SELVA_NODE_ID_SIZE, node_id,
+                      compression_ratio);
     }
-#endif
 
     return err;
 }
