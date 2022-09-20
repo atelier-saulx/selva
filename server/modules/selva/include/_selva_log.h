@@ -59,12 +59,12 @@ void selva_log(enum selva_log_level level, const char * restrict where, const ch
  * @param fmt is a standard printf format string.
  */
 #define SELVA_LOG(level, fmt, ...) do { \
-    if (level == SELVA_LOGL_DEBUG) { \
-        static struct _selva_dyndebug_msg _dbg_msg __section("dbg_msg") __used = { .flags = 0, .file = __FILE__, .line = __LINE__ }; \
-        if (_dbg_msg.flags & 1) { \
-            _SELVA_LOG(SELVA_LOGL_DEBUG, _SELVA_LOG_WHERESTR, __func__, fmt, ##__VA_ARGS__); \
-        } \
-    } else { \
-        _SELVA_LOG(level, _SELVA_LOG_WHERESTR, __func__, fmt, ##__VA_ARGS__); \
+    _SELVA_LOG(level, _SELVA_LOG_WHERESTR, __func__, fmt, ##__VA_ARGS__); \
+} while (0)
+
+#define SELVA_LOG_DBG(fmt, ...) do { \
+    static struct _selva_dyndebug_msg _dbg_msg __section("dbg_msg") __used = { .flags = 0, .file = __FILE__, .line = __LINE__ }; \
+    if (_dbg_msg.flags & 1) { \
+        _SELVA_LOG(SELVA_LOGL_DEBUG, _SELVA_LOG_WHERESTR, __func__, fmt, ##__VA_ARGS__); \
     } \
 } while (0)
