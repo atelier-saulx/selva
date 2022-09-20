@@ -1,7 +1,6 @@
 #include "redismodule.h"
-#include "errors.h"
-#include "rpn.h"
 #include "selva.h"
+#include "rpn.h"
 #include "selva_onload.h"
 #include "selva_set.h"
 #include "hierarchy.h"

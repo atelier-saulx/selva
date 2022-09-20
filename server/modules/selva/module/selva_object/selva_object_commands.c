@@ -1,9 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "redismodule.h"
-#include "cdefs.h"
 #include "typestr.h"
-#include "errors.h"
+#include "selva.h"
 #include "hierarchy.h"
 #include "selva_onload.h"
 #include "selva_set.h"

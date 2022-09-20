@@ -7,11 +7,10 @@
 #include "libdeflate.h"
 #include "redismodule.h"
 #include "jemalloc.h"
-#include "cdefs.h"
+#include "selva.h"
 #include "config.h"
 #include "selva_onload.h"
 #include "auto_free.h"
-#include "errors.h"
 #include "rms.h"
 
 static struct libdeflate_compressor *compressor;
@@ -130,11 +129,10 @@ static void print_read_error(FILE *fp) {
     const char *str_err = ferr ? strerror(errno) : "No error";
     const int eof = feof(fp);
 
-    fprintf(stderr, "%s:%d: Failed to read a compressed subtree file. path: \"%s\": err: \"%s\" eof: %d\n",
-            __FILE__, __LINE__,
-            get_filename(filename, fp),
-            str_err,
-            eof);
+    SELVA_LOG(SELVA_LOGL_ERR, "Failed to read a compressed subtree file. path: \"%s\": err: \"%s\" eof: %d",
+              get_filename(filename, fp),
+              str_err,
+              eof);
 }
 
 int rms_fread_compressed(struct compressed_rms *compressed, FILE *fp) {

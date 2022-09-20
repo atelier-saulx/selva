@@ -2,7 +2,6 @@
 #include "redismodule.h"
 #include "cstrings.h"
 #include "selva.h"
-#include "errors.h"
 #include "selva_object.h"
 #include "edge.h"
 #include "hierarchy.h"

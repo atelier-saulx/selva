@@ -1,6 +1,5 @@
 #include "cdefs.h"
 #include "selva.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "subscriptions.h"
 #include "selva_object.h"

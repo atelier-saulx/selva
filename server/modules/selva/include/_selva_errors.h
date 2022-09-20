@@ -1,6 +1,8 @@
-#pragma once
-#ifndef SELVA_ERRORS
-#define SELVA_ERRORS
+/*
+ * NOTE
+ * No guards needed because this file is intended to be included only by
+ * selva.h.
+ */
 
 /*
  * Error codes.
@@ -108,5 +110,3 @@ int replyWithSelvaError(struct RedisModuleCtx *ctx, int err);
 int replyWithSelvaErrorf(struct RedisModuleCtx *ctx, int err, const char *fmt, ...);
 
 extern const char * const selvaStrError[-SELVA_INVALID_ERROR + 1];
-
-#endif /* SELVA_ERRORS */

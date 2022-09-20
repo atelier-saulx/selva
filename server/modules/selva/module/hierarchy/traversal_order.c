@@ -1,10 +1,8 @@
 #include <math.h>
 #include "redismodule.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "funmap.h"
 #include "selva.h"
-#include "errors.h"
 #include "ptag.h"
 #include "hierarchy.h"
 #include "selva_lang.h"
@@ -74,10 +72,9 @@ int SelvaTraversal_ParseOrderArg(
     if (err) {
         TO_STR(ord);
 
-        fprintf(stderr, "%s:%d: Invalid order \"%.*s\": %s\n",
-                __FILE__, __LINE__,
-                (int)ord_len, ord_str,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid order \"%.*s\": %s",
+                  (int)ord_len, ord_str,
+                  getSelvaErrorStr(err));
         return SELVA_HIERARCHY_EINVAL;
     }
 

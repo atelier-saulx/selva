@@ -82,6 +82,8 @@ redis.add_command('selva.index.del')
 redis.add_command('selva.rpn.evalbool')
 redis.add_command('selva.rpn.evaldouble')
 redis.add_command('selva.rpn.evalstring')
+redis.add_command('selva.log.dbg')
+redis.add_command('selva.log.dbglist')
 const proto = redis.RedisClient.prototype
 for (const key in redis.RedisClient.prototype) {
   if (/[A-Z]/.test(key[0]) && typeof proto[key] === 'function') {

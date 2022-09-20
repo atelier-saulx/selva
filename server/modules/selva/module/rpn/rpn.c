@@ -8,11 +8,10 @@
 #include <string.h>
 #include <time.h>
 #include "jemalloc.h"
-#include "cdefs.h"
+#include "selva.h"
 #include "../rmutil/sds.h"
 #include "redismodule.h"
 #include "cstrings.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"
@@ -217,8 +216,9 @@ static int cpy2rm_str(RedisModuleString **rms_p, const char *str, size_t len) {
 
     rms = *rms_p;
     if (((struct redisObjectAccessor *)rms)->refcount > 1) {
-        fprintf(stderr, "%s:%d:, The given RMS (%p) is already in use and cannot be modified\n",
-                __FILE__, __LINE__, rms);
+        SELVA_LOG(SELVA_LOGL_ERR,
+                  "The given RMS (%p) is already in use and cannot be modified",
+                  rms);
         return RPN_ERR_NOTSUP;
     }
 
@@ -343,7 +343,7 @@ static struct rpn_operand *pop(struct rpn_ctx *ctx) {
 
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
     if (unlikely(ctx->depth >= RPN_MAX_D)) {
-        fprintf(stderr, "%s:%d: Stack overflow\n", __FILE__, __LINE__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Stack overflow");
         return RPN_ERR_BADSTK;
     }
 
@@ -721,11 +721,10 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
             } else {
                 const char *type_str = SelvaObject_Type2String(field_type, NULL);
 
-                fprintf(stderr, "%s:%d: Field value [%.*s].%.*s is not a number, actual type: \"%s\"\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, OPERAND_GET_S(ctx->reg[0]),
-                        (int)field->s_size, OPERAND_GET_S(field),
-                        type_str ? type_str : "INVALID");
+                SELVA_LOG(SELVA_LOGL_ERR, "Field value [%.*s].%.*s is not a number, actual type: \"%s\"",
+                          (int)SELVA_NODE_ID_SIZE, OPERAND_GET_S(ctx->reg[0]),
+                          (int)field->s_size, OPERAND_GET_S(field),
+                          type_str ? type_str : "INVALID");
 
                 return RPN_ERR_NAN;
             }
@@ -1658,8 +1657,7 @@ static enum rpn_error compile_num_literal(struct rpn_expression *expr, size_t i,
     d = strtod(s, &e);
 
     if (unlikely(e == s)) {
-        fprintf(stderr, "%s:%d: Operand is not a number: #%s\n",
-                __FILE__, __LINE__, s);
+        SELVA_LOG(SELVA_LOGL_ERR, "Operand is not a number: #%s", s);
         return RPN_ERR_NAN;
     }
 
@@ -1772,8 +1770,7 @@ struct rpn_expression *rpn_compile(const char *input) {
     expr->expression = selva_malloc(size);
 
     if (compile_find_labels(labels, input)) {
-        fprintf(stderr, "%s:%d:%s: Failed to parse labels\n",
-                __FILE__, __LINE__, __func__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse labels");
         goto fail;
     }
 
@@ -1796,8 +1793,7 @@ struct rpn_expression *rpn_compile(const char *input) {
         tok_len = compile_skip_label(&tok_str, tok_len);
 
         if (tok_len == 0) {
-            fprintf(stderr, "%s:%d:%s: Token length can't be zero\n",
-                    __FILE__, __LINE__, __func__);
+            SELVA_LOG(SELVA_LOGL_ERR, "Token length can't be zero");
             goto fail;
         }
 
@@ -1822,30 +1818,24 @@ struct rpn_expression *rpn_compile(const char *input) {
             goto next;
         case '>': /* Conditional jump forward */
             if (tok_len < 2 || tok_str[1] == '-') {
-                fprintf(stderr, "%s:%d:%s: Invalid conditional jump\n",
-                        __FILE__, __LINE__, __func__);
+                SELVA_LOG(SELVA_LOGL_ERR, "Invalid conditional jump");
                 goto fail;
             } else {
                 unsigned l = fast_atou(tok_str + 1);
                 int n;
 
                 if (l >= RPN_MAX_LABELS) {
-                    fprintf(stderr, "%s:%d:%s: Invalid label\n",
-                            __FILE__, __LINE__, __func__);
+                    SELVA_LOG(SELVA_LOGL_ERR, "Invalid label");
                     goto fail;
                 }
 
                 n = labels[l];
                 if (n == 0) {
-                    fprintf(stderr, "%s:%d:%s: Label not found: %d\n",
-                            __FILE__, __LINE__, __func__,
-                            n);
+                    SELVA_LOG(SELVA_LOGL_ERR, "Label not found: %d", n);
                     goto fail;
                 }
                 if (n <= (int)i - 1) {
-                    fprintf(stderr, "%s:%d:%s: Can't jump backwards to %d with `>`\n",
-                            __FILE__, __LINE__, __func__,
-                            n);
+                    SELVA_LOG(SELVA_LOGL_ERR, "Can't jump backwards to %d with `>`", n);
                     goto fail;
                 }
 
@@ -1854,16 +1844,12 @@ struct rpn_expression *rpn_compile(const char *input) {
             goto next;
         default:
             if (tok_len > RPN_MAX_TOKEN_SIZE - 1) {
-                fprintf(stderr, "%s:%d:%s: Invalid token length %llu\n",
-                        __FILE__, __LINE__, __func__,
-                        (unsigned long long)tok_len);
+                SELVA_LOG(SELVA_LOGL_ERR, "Invalid token length %llu", (unsigned long long)tok_len);
                 goto fail;
             }
 
             if (compile_operator(e, tok_str[0])) {
-                fprintf(stderr, "%s:%d:%s: Invalid operator: %c\n",
-                        __FILE__, __LINE__, __func__,
-                        tok_str[0]);
+                SELVA_LOG(SELVA_LOGL_ERR, "Invalid operator: %c", tok_str[0]);
                 goto fail;
             }
 
@@ -1871,9 +1857,8 @@ struct rpn_expression *rpn_compile(const char *input) {
         }
 
         if (err) {
-            fprintf(stderr, "%s:%d:%s: RPN compilation error: %s\n",
-                    __FILE__, __LINE__, __func__,
-                    err >= 0 && err < num_elem(rpn_str_error) ? rpn_str_error[err] : "Unknown");
+            SELVA_LOG(SELVA_LOGL_ERR, "RPN compilation error: %s",
+                      err >= 0 && err < num_elem(rpn_str_error) ? rpn_str_error[err] : "Unknown");
             goto fail;
         }
 
@@ -1893,8 +1878,7 @@ next:
 
     /* The returned length is only ever 0 if the grouping failed. */
     if (tok_len == 0) {
-        fprintf(stderr, "%s:%d:%s: Tokenization failed\n",
-                __FILE__, __LINE__, __func__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Tokenization failed");
         rpn_destroy_expression(expr);
         return NULL;
     }
@@ -1939,22 +1923,19 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *s, int type) 
 
     memcpy(&i, s + RPN_CODE_SIZE, sizeof(uint32_t));
     if (i >= (typeof(i))ctx->nr_reg) {
-        fprintf(stderr, "%s:%d: Register index out of bounds: %u\n",
-                __FILE__, __LINE__, (unsigned)i);
+        SELVA_LOG(SELVA_LOGL_ERR, "Register index out of bounds: %u", (unsigned)i);
         return RPN_ERR_BNDS;
     }
 
     r = ctx->reg[i];
     if (!r) {
-        fprintf(stderr, "%s:%d: Register value is a NULL pointer: %u\n",
-                __FILE__, __LINE__, (unsigned)i);
+        SELVA_LOG(SELVA_LOGL_ERR, "Register value is a NULL pointer: %u", (unsigned)i);
         return RPN_ERR_NPE;
     }
 
     if (type == RPN_LVTYPE_NUMBER) {
         if (isnan(r->d)) {
-            fprintf(stderr, "%s:%d: Register value is not a number: %u\n",
-                    __FILE__, __LINE__, (unsigned)i);
+            SELVA_LOG(SELVA_LOGL_ERR, "Register value is not a number: %u", (unsigned)i);
             return RPN_ERR_NAN;
         }
 
@@ -1969,8 +1950,7 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *s, int type) 
         return push(ctx, r);
     }
 
-    fprintf(stderr, "%s:%d: Unknown type code: %d\n",
-            __FILE__, __LINE__, type);
+    SELVA_LOG(SELVA_LOGL_ERR, "Unknown type code: %d", type);
 
     return RPN_ERR_TYPE;
 }

@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include "cdefs.h"
 
 #define SELVA_EXPORT __attribute__((__visibility__("default")))
 
@@ -145,5 +146,8 @@ static inline int Selva_CmpNodeIdType(const Selva_NodeId nodeId, const char type
 char *Selva_SubscriptionId2str(char dest[SELVA_SUBSCRIPTION_ID_STR_LEN + 1], const Selva_SubscriptionId sub_id);
 
 int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src);
+
+#include "_selva_log.h"
+#include "_selva_errors.h"
 
 #endif /* _SELVA_ */
