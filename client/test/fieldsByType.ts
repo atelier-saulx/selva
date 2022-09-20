@@ -12,7 +12,26 @@ test.before(async (t) => {
   srv = await start({
     port,
   })
+})
+
+test.beforeEach(async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  await client.redis.flushall()
+  await client.destroy()
+})
+
+test.after(async (t) => {
   const client = connect({ port })
+  await client.delete('root')
+  await client.destroy()
+  await srv.destroy()
+  await t.connectionsAreEmpty()
+})
+
+test.serial('$fieldsByType simple', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
   await client.updateSchema({
     languages: ['en'],
     types: {
@@ -37,19 +56,6 @@ test.before(async (t) => {
       },
     },
   })
-  await client.destroy()
-})
-
-test.after(async (t) => {
-  const client = connect({ port })
-  await client.delete('root')
-  await client.destroy()
-  await srv.destroy()
-  await t.connectionsAreEmpty()
-})
-
-test.serial('$fieldsByType simple', async (t) => {
-  const client = connect({ port }, { loglevel: 'info' })
 
   const car = await client.set({
     type: 'car',
@@ -131,6 +137,53 @@ test.serial('$fieldsByType simple', async (t) => {
       { type: 'tire', position: 'RR' },
     ]
   })
+
+  await client.destroy()
+})
+
+test.serial('$fieldsByType huge', async (t) => {
+  const client = connect({ port })
+
+  const types = [...Array(26).keys()].map((v) => String.fromCharCode(v + 97)).map((v) => ({
+    prefix: `a${v}`,
+    fields: [...Array(50).keys()].map((i) => [`${v}f${i}`, { type: 'string' }]).reduce((prev, cur: ['string', any]) => ({ ...prev, [cur[0]]: cur[1]}), {}),
+  })).reduce((prev, cur) => ({ ...prev, [cur.prefix]: cur }), {})
+
+  await client.updateSchema({
+    languages: ['en'],
+    types
+  })
+
+  await Promise.all(Object.keys(types).map((t) => client.set({
+    $id: `${t}1`,
+    ...Object.keys(types[t].fields).reduce((prev, cur) => ({ ...prev, [cur]: `hello ${t}` }), {}),
+  })))
+
+  const fieldsByType = Object.keys(types).reduce((prev, cur) => ({
+    ...prev,
+    [cur]: {
+      type: true,
+      parents: true,
+      [`${cur.substring(1)}f1`]: true,
+    }
+  }), {})
+  await t.notThrowsAsync(async () => client.get({
+    $id: 'root',
+    items: {
+      $fieldsByType: fieldsByType,
+      $list: {
+        $offset: 0,
+        $limit: 15,
+        $sort: {
+          $field: 'type',
+          $order: 'desc'
+        },
+        $find: {
+          $traverse: 'descendants'
+        }
+      }
+    }
+  }))
 
   await client.destroy()
 })
