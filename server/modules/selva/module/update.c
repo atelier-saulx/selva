@@ -2,11 +2,10 @@
 #include <string.h>
 #include <stdio.h>
 #include "redismodule.h"
+#include "selva.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "auto_free.h"
 #include "arg_parser.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "rms.h"
 #include "rpn.h"
@@ -292,10 +291,9 @@ static int update_node_cb(
          */
         err = rpn_bool(ctx, rpn_ctx, args->filter, &res);
         if (err) {
-            fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    rpn_str_error[err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed (node: \"%.*s\"): \"%s\"",
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      rpn_str_error[err]);
             return 1;
         }
 
@@ -550,11 +548,10 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            fprintf(stderr, "%s:%d: Update failed. err: %s dir: %s node_id: \"%.*s\"\n",
-                    __FILE__, __LINE__,
-                    getSelvaErrorStr(err),
-                    SelvaTraversal_Dir2str(dir),
-                    (int)SELVA_NODE_ID_SIZE, nodeId);
+            SELVA_LOG(SELVA_LOGL_ERR, "Update failed. err: %s dir: %s node_id: \"%.*s\"",
+                      getSelvaErrorStr(err),
+                      SelvaTraversal_Dir2str(dir),
+                      (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     }
 

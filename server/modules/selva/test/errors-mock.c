@@ -1,6 +1,6 @@
 #include "cdefs.h"
 #include "redismodule.h"
-#include "errors.h"
+#include "selva.h"
 
 const char * const __attribute__((weak)) selvaStrError[-SELVA_INVALID_ERROR + 1];
 

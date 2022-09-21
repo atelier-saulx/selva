@@ -9,13 +9,11 @@
 #include <sys/types.h>
 #include "redismodule.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "cstrings.h"
 #include "selva.h"
 #include "svector.h"
 #include "arg_parser.h"
 #include "async_task.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "resolve.h"
 #include "rpn.h"
@@ -227,10 +225,9 @@ int Selva_SubscriptionFilterMatch(
         rpn_set_obj(filter_ctx, SelvaHierarchy_GetNodeObject(node));
         err = rpn_bool(ctx, filter_ctx, marker->filter_expression, &res);
         if (err) {
-            fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node_id,
-                    rpn_str_error[err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed (node: \"%.*s\"): \"%s\"",
+                      (int)SELVA_NODE_ID_SIZE, node_id,
+                      rpn_str_error[err]);
             res = 0;
         }
     }
@@ -736,11 +733,11 @@ int Selva_AddSubscriptionAliasMarker(
         if (memcmp(old_marker->node_id, node_id, SELVA_NODE_ID_SIZE)) {
             TO_STR(alias_name);
 
-            fprintf(stderr, "%s:%d: Alias marker \"%.*s\" exists but it's associated with another node. No changed made. orig: %.*s new: %.*s\n:",
-                    __FILE__, __LINE__,
-                    (int)alias_name_len, alias_name_str,
-                    (int)SELVA_NODE_ID_SIZE, old_marker->node_id,
-                    (int)SELVA_NODE_ID_SIZE, node_id);
+            SELVA_LOG(SELVA_LOGL_WARN,
+                      "Alias marker \"%.*s\" exists but it's associated with another node. No changed made. orig: %.*s new: %.*s\n:",
+                      (int)alias_name_len, alias_name_str,
+                      (int)SELVA_NODE_ID_SIZE, old_marker->node_id,
+                      (int)SELVA_NODE_ID_SIZE, node_id);
         }
 
         /* Marker already created. */
@@ -753,9 +750,8 @@ int Selva_AddSubscriptionAliasMarker(
      */
     filter_expression = rpn_compile("$1 $2 a");
     if (!filter_expression) {
-        fprintf(stderr, "%s:%d: Failed to compile a filter for alias \"%s\"\n",
-                __FILE__, __LINE__,
-                RedisModule_StringPtrLen(alias_name, NULL));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to compile a filter for alias \"%s\"\n",
+                  RedisModule_StringPtrLen(alias_name, NULL));
         err = SELVA_RPN_ECOMP;
         goto fail;
     }
@@ -770,11 +766,11 @@ int Selva_AddSubscriptionAliasMarker(
         (rpn_err = rpn_set_reg(filter_ctx, 2, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD), 0))) {
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-        fprintf(stderr, "%s:%d: Fatal RPN error while adding an alias maker. sub_id: %s alias: %s rpn_error: %d\n",
-                __FILE__, __LINE__,
-                Selva_SubscriptionId2str(str, sub_id),
-                RedisModule_StringPtrLen(alias_name, NULL),
-                rpn_err);
+        SELVA_LOG(SELVA_LOGL_ERR,
+                  "Fatal RPN error while adding an alias maker. sub_id: %s alias: %s rpn_error: %d",
+                  Selva_SubscriptionId2str(str, sub_id),
+                  RedisModule_StringPtrLen(alias_name, NULL),
+                  rpn_err);
         if (rpn_err == RPN_ERR_ENOMEM) {
             err = SELVA_ENOMEM;
         } else {
@@ -1107,11 +1103,11 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy
         if (err && err != SELVA_HIERARCHY_ENOENT) {
             char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-            fprintf(stderr, "%s:%d: Failed to clear a subscription %s:%" PRImrkId ": %s\n",
-                    __FILE__, __LINE__,
-                    Selva_SubscriptionId2str(str, marker->sub->sub_id),
-                    marker->marker_id,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR,
+                      "Failed to clear a subscription %s:%" PRImrkId ": %s",
+                      Selva_SubscriptionId2str(str, marker->sub->sub_id),
+                      marker->marker_id,
+                      getSelvaErrorStr(err));
             abort(); /* It would be dangerous to not abort here. */
         }
     } else {
@@ -1161,7 +1157,7 @@ void SelvaSubscriptions_ClearAllMarkers(
 #endif
 
     if (unlikely(!SVector_Clone(&markers, &metadata->sub_markers.vec, NULL))) {
-        fprintf(stderr, "%s:%d: %s ENOMEM\n", __FILE__, __LINE__, __func__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to clone an SVector");
         return;
     }
 
@@ -1380,9 +1376,8 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaHierarchy *hierar
     /* Get the <id> object containing a number of subscription pointers for this id. */
     err = SelvaObject_GetObjectStr(hierarchy->subs.missing, id_str, id_len, &obj);
     if (err) {
-        fprintf(stderr, "%s:%d: Failed to get missing accessor marker: %s",
-                __FILE__, __LINE__,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to get missing accessor marker: %s",
+                  getSelvaErrorStr(err));
         return;
     }
 
@@ -1716,9 +1711,8 @@ void SelvaSubscriptions_DeferAliasChangeEvents(
 
     orig_metadata = SelvaHierarchy_GetNodeMetadata(hierarchy, orig_node_id);
     if (!orig_metadata) {
-        fprintf(stderr, "%s:%d: Failed to get metadata for node: \"%.*s\"\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, orig_node_id);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to get metadata for node: \"%.*s\"",
+                  (int)SELVA_NODE_ID_SIZE, orig_node_id);
         return;
     }
 
@@ -2384,9 +2378,8 @@ int SelvaSubscriptions_RefreshCommand(RedisModuleCtx *ctx, RedisModuleString **a
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n",
-                __FILE__, __LINE__,
-                RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%s\"",
+                  RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
         return replyWithSelvaError(ctx, err);
     }
 
@@ -2504,9 +2497,8 @@ int SelvaSubscriptions_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **arg
 
         err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_ID]);
         if (err) {
-            fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n",
-                    __FILE__, __LINE__,
-                    RedisModule_StringPtrLen(argv[ARGV_ID], NULL));
+            SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%s\"",
+                      RedisModule_StringPtrLen(argv[ARGV_ID], NULL));
             return replyWithSelvaError(ctx, err);
         }
 
@@ -2577,9 +2569,8 @@ int SelvaSubscriptions_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n",
-                __FILE__, __LINE__,
-                RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%s\"",
+                  RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
         return replyWithSelvaError(ctx, err);
     }
 
@@ -2625,9 +2616,8 @@ int SelvaSubscriptions_DelMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n",
-                __FILE__, __LINE__,
-                RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%s\"",
+                  RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
         return replyWithSelvaError(ctx, err);
     }
 

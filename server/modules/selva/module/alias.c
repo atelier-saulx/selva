@@ -1,6 +1,4 @@
-#include "cdefs.h"
 #include "redismodule.h"
-#include "errors.h"
 #include "selva.h"
 #include "selva_object.h"
 #include "selva_set.h"

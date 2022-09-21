@@ -1,7 +1,6 @@
 #include "redismodule.h"
 #include "selva_set.h"
 #include "jemalloc.h"
-#include "cdefs.h"
 #include "rms.h"
 
 #define SELVA_SHARED_KEY_STR "type"

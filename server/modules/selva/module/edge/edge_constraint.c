@@ -5,7 +5,6 @@
 #include "jemalloc.h"
 #include "auto_free.h"
 #include "cstrings.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "edge.h"
 #include "selva_onload.h"
@@ -147,11 +146,11 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(
         make_dyn_constraint_name(constraint_name_str, node_type, field_name_str, field_name_len);
         err = SelvaObject_GetPointerStr(get_dyn_constraints(efc), constraint_name_str, constraint_name_len, &p);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to get a dynamic constraint. type: \"%.*s\" field_name: \"%.*s\" err: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_TYPE_SIZE, node_type,
-                    (int)field_name_len, field_name_str,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR,
+                      "Failed to get a dynamic constraint. type: \"%.*s\" field_name: \"%.*s\" err: %s",
+                      (int)SELVA_NODE_TYPE_SIZE, node_type,
+                      (int)field_name_len, field_name_str,
+                      getSelvaErrorStr(err));
         }
 
         constraint = p;

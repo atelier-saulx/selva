@@ -3,7 +3,7 @@
 #include <string.h>
 #include "cdefs.h"
 #include "redismodule.h"
-#include "errors.h"
+#include "selva.h"
 #include "selva_object.h"
 #include "svector.h"
 

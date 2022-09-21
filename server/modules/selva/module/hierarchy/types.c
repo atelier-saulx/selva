@@ -5,7 +5,6 @@
 #include "selva_object.h"
 #include "rms.h"
 #include "hierarchy.h"
-#include "errors.h"
 
 /**
  * This function takes care of sharing/holding name.

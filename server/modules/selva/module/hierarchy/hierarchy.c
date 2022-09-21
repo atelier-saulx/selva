@@ -12,9 +12,7 @@
 #include "selva.h"
 #include "alias.h"
 #include "async_task.h"
-#include "cdefs.h"
 #include "rms.h"
-#include "errors.h"
 #include "edge.h"
 #include "modify.h"
 #include "rpn.h"
@@ -394,10 +392,9 @@ static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, struct SelvaHierarchy *h
 
         err = create_node_object(hierarchy, node);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to create a node object for \"%.*s\": %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, id,
-                    selvaStrError[-err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a node object for \"%.*s\": %s\n",
+                      (int)SELVA_NODE_ID_SIZE, id,
+                      selvaStrError[-err]);
         }
 
         /*
@@ -470,10 +467,9 @@ static void new_detached_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, co
     }
 
     if (unlikely(err < 0)) {
-        fprintf(stderr, "%s:%d: Fatal error while creating a detached node %.*s: %s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node_id,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_CRIT, "Fatal error while creating a detached node %.*s: %s\n",
+                  (int)SELVA_NODE_ID_SIZE, node_id,
+                  getSelvaErrorStr(err));
         abort();
     }
 }
@@ -488,9 +484,8 @@ static int repopulate_detached_head(struct SelvaHierarchy *hierarchy, SelvaHiera
 
     err = create_node_object(hierarchy, node);
     if (err) {
-        fprintf(stderr, "%s:%d: Failed to repopulate a detached dummy node %.*s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node->id);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to repopulate a detached dummy node %.*s\n",
+                  (int)SELVA_NODE_ID_SIZE, node->id);
         return err;
     }
 
@@ -550,10 +545,9 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
         SELVA_TRACE_END(find_detached);
         if (err) {
             if (err != SELVA_ENOENT && err != SELVA_HIERARCHY_ENOENT) {
-                fprintf(stderr, "%s:%d: Restoring a subtree containing %.*s failed: %s\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, id,
-                        getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "Restoring a subtree containing %.*s failed: %s\n",
+                          (int)SELVA_NODE_ID_SIZE, id,
+                          getSelvaErrorStr(err));
             }
 
             return NULL;
@@ -636,8 +630,7 @@ static void delete_node_aliases(RedisModuleCtx *ctx, struct SelvaObject *obj) {
             delete_aliases(aliases_key, node_aliases_set);
             RedisModule_CloseKey(aliases_key);
         } else {
-            fprintf(stderr, "%s:%d: Unable to open aliases\n",
-                    __FILE__, __LINE__);
+            SELVA_LOG(SELVA_LOGL_WARN, "Unable to open aliases\n");
         }
     }
 }
@@ -658,8 +651,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierar
     err = removeRelationships(ctx, hierarchy, node, RELATIONSHIP_PARENT);
     if (err < 0) {
         /* Presumably bad things could happen if we'd proceed now. */
-        fprintf(stderr, "%s:%d: Failed to remove node parent relationships\n",
-                __FILE__, __LINE__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to remove node parent relationships\n");
         return;
     }
     SelvaSubscriptions_DeferHierarchyDeletionEvents(ctx, hierarchy, node);
@@ -687,8 +679,7 @@ static void del_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, SelvaHierar
              * Well, this is embarassing. The caller won't be happy about
              * having a half-deleted node dangling there.
              */
-            fprintf(stderr, "%s:%d: Failed to remove node child relationships\n",
-                    __FILE__, __LINE__);
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to remove node child relationships\n");
             return;
         }
 
@@ -826,8 +817,7 @@ static int cross_insert_children(
 
     if (unlikely(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
         /* The subtree must be restored before adding nodes here. */
-        fprintf(stderr, "%s:%d: FATAL Cannot add children to a detached node\n",
-                __FILE__, __LINE__);
+        SELVA_LOG(SELVA_LOGL_ERR, "FATAL Cannot add children to a detached node\n");
         return SELVA_HIERARCHY_ENOTSUP;
     }
 
@@ -844,8 +834,7 @@ static int cross_insert_children(
                     0, NULL,
                     &child);
             if (err < 0) {
-                fprintf(stderr, "%s:%d: Failed to create a child \"%.*s\" for \"%.*s\": %s\n",
-                        __FILE__, __LINE__,
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a child \"%.*s\" for \"%.*s\": %s\n",
                         (int)SELVA_NODE_ID_SIZE, nodes[i],
                         (int)SELVA_NODE_ID_SIZE, node->id,
                         selvaStrError[-err]);
@@ -949,8 +938,7 @@ static int cross_insert_parents(
                     0, NULL,
                     &parent);
             if (err < 0) {
-                fprintf(stderr, "%s:%d: Failed to create a parent \"%.*s\" for \"%.*s\": %s\n",
-                        __FILE__, __LINE__,
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a parent \"%.*s\" for \"%.*s\": %s\n",
                         (int)SELVA_NODE_ID_SIZE, nodes[i],
                         (int)SELVA_NODE_ID_SIZE, node->id,
                         selvaStrError[-err]);
@@ -1173,7 +1161,7 @@ static int removeRelationships(
      */
 #ifndef PU_TEST_BUILD
     if (unlikely(!SVector_Clone(&sub_markers, &node->metadata.sub_markers.vec, NULL))) {
-        fprintf(stderr, "%s:%d: Cloning markers failed\n", __FILE__, __LINE__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Cloning markers failed\n");
         return SELVA_HIERARCHY_EINVAL;
     }
 #endif
@@ -1323,8 +1311,7 @@ static int remove_missing(
     int res = 0;
 
     if (unlikely(!SVector_Clone(&old_adjs, rel == RELATIONSHIP_CHILD ? &node->parents : &node->children, NULL))) {
-        fprintf(stderr, "%s:%d: ENOMEM\n", __FILE__, __LINE__);
-
+        SELVA_LOG(SELVA_LOGL_ERR, "SVector clone failed");
         return SELVA_HIERARCHY_ENOMEM;
     }
 
@@ -2113,10 +2100,9 @@ __attribute__((nonnull (5))) static int exec_edge_filter(
         /* Execute the filter with an empty object. */
         edge_metadata = SelvaObject_Init(tmp_obj);
     } else if (err) {
-        fprintf(stderr, "%s:%d: Failed to get edge metadata %.*s -> %.*s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, edge_field->src_node_id,
-                (int)SELVA_NODE_ID_SIZE, node->id);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to get edge metadata %.*s -> %.*s\n",
+                  (int)SELVA_NODE_ID_SIZE, edge_field->src_node_id,
+                  (int)SELVA_NODE_ID_SIZE, node->id);
         return 0;
     }
 
@@ -2216,10 +2202,9 @@ static int bfs_expression(
         rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
         rpn_err = rpn_selvaset(redis_ctx, rpn_ctx, rpn_expr, &fields);
         if (rpn_err) {
-            fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node->id,
-                    rpn_str_error[rpn_err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "RPN field selector expression failed for %.*s: %s\n",
+                      (int)SELVA_NODE_ID_SIZE, node->id,
+                      rpn_str_error[rpn_err]);
             continue;
         }
 
@@ -2450,9 +2435,7 @@ int SelvaHierarchy_Traverse(
         break;
      default:
         /* Should probably use some other traversal function. */
-        fprintf(stderr, "%s:%d: Invalid or unsupported traversal requested (%d)\n",
-                __FILE__, __LINE__,
-                (int)dir);
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid or unsupported traversal requested (%d)\n", (int)dir);
         err = SELVA_HIERARCHY_ENOTSUP;
     }
 
@@ -2486,9 +2469,7 @@ int SelvaHierarchy_TraverseField(
         return traverse_bfs_edge_field(ctx, hierarchy, id, field_name_str, field_name_len, cb);
      default:
         /* Should probably use some other traversal function. */
-        fprintf(stderr, "%s:%d: Invalid traversal requested (%d)\n",
-                __FILE__, __LINE__,
-                (int)dir);
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid traversal requested (%d)\n", (int)dir);
         return SELVA_HIERARCHY_ENOTSUP;
     }
 }
@@ -2525,10 +2506,9 @@ int SelvaHierarchy_TraverseExpression(
     rpn_err = rpn_selvaset(ctx, rpn_ctx, rpn_expr, &fields);
     if (rpn_err) {
         Trx_End(&hierarchy->trx_state, &trx_cur);
-        fprintf(stderr, "%s:%d: RPN field selector expression failed for %.*s: %s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, head->id,
-                rpn_str_error[rpn_err]);
+        SELVA_LOG(SELVA_LOGL_ERR, "RPN field selector expression failed for %.*s: %s\n",
+                  (int)SELVA_NODE_ID_SIZE, head->id,
+                  rpn_str_error[rpn_err]);
         return SELVA_HIERARCHY_EINVAL;
     }
 
@@ -2743,8 +2723,7 @@ static int verifyDetachableSubtree(RedisModuleCtx *ctx, struct SelvaHierarchy *h
     int err;
 
     if (!Trx_Fin(trx_state)) {
-        fprintf(stderr, "%s:%d: Cannot compress a subtree while another transaction is being executed\n",
-                __FILE__, __LINE__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Cannot compress a subtree while another transaction is being executed\n");
         return SELVA_HIERARCHY_ETRMAX;
     }
 
@@ -2821,10 +2800,9 @@ static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarc
     RedisModule_FreeString(ctx, raw);
     if (err) {
         rms_free_compressed(compressed);
-        fprintf(stderr, "%s:%d: Failed to compress the subtree of %.*s: %s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node->id,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to compress the subtree of %.*s: %s\n",
+                  (int)SELVA_NODE_ID_SIZE, node->id,
+                  getSelvaErrorStr(err));
 
         return NULL;
     }
@@ -2841,9 +2819,8 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
     int err;
 
     if (node->flags & SELVA_NODE_FLAGS_DETACHED) {
-        fprintf(stderr, "%s:%d: Node already detached: %.*s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node->id);
+        SELVA_LOG(SELVA_LOGL_ERR, "Node already detached: %.*s\n",
+                  (int)SELVA_NODE_ID_SIZE, node->id);
         return SELVA_HIERARCHY_EINVAL;
     }
 
@@ -2880,14 +2857,11 @@ static int detach_subtree(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct
      */
     new_detached_node(ctx, hierarchy, node_id, parents, nr_parents);
 
-#if 0
     if (!err) {
-        fprintf(stderr, "%s:%d: Compressed and detached the subtree of %.*s (cratio: %.2f:1)\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node_id,
-                compression_ratio);
+        SELVA_LOG_DBG("Compressed and detached the subtree of %.*s (cratio: %.2f:1)",
+                      (int)SELVA_NODE_ID_SIZE, node_id,
+                      compression_ratio);
     }
-#endif
 
     return err;
 }
@@ -3100,7 +3074,7 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
      */
     err = load_metadata(io, encver, hierarchy, node);
     if (err) {
-        RedisModule_LogIOError(io, "warning", "Failed to load hierarchy metadata");
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load hierarchy metadata");
         return err;
     }
 
@@ -3119,8 +3093,8 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
 
             err = load_node_id(io, child_id);
             if (err) {
-                RedisModule_LogIOError(io, "warning", "Invalid child node_id: %s",
-                                       getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_CRIT, "Invalid child node_id: %s",
+                          getSelvaErrorStr(err));
                 return err;
             }
 
@@ -3130,8 +3104,8 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
 
             err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
             if (err < 0) {
-                RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
-                                       getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_CRIT, "Unable to rebuild the hierarchy: %s",
+                          getSelvaErrorStr(err));
                 return err;
             }
 
@@ -3144,8 +3118,8 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
      */
     err = SelvaModify_AddHierarchyP(NULL, hierarchy, node, 0, NULL, nr_children, children);
     if (err < 0) {
-        RedisModule_LogIOError(io, "warning", "Unable to rebuild the hierarchy: %s",
-                               getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_CRIT, "Unable to rebuild the hierarchy: %s",
+                  getSelvaErrorStr(err));
         return err;
     }
 
@@ -3169,9 +3143,9 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
      */
     err = SelvaHierarchy_UpsertNode(RedisModule_GetContextFromIO(io), hierarchy, node_id, &node);
     if (err && err != SELVA_HIERARCHY_EEXIST) {
-        RedisModule_LogIOError(io, "warning", "Failed to upsert %.*s: %s",
-                               (int)SELVA_NODE_ID_SIZE, node_id,
-                               getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to upsert %.*s: %s",
+                  (int)SELVA_NODE_ID_SIZE, node_id,
+                  getSelvaErrorStr(err));
         return err;
     }
 
@@ -3208,8 +3182,8 @@ static int load_tree(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy) {
 
         err = load_node_id(io, node_id);
         if (err) {
-            RedisModule_LogIOError(io, "warning", "Failed to load the next nodeId: %s",
-                                   getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load the next nodeId: %s",
+                      getSelvaErrorStr(err));
             return SELVA_HIERARCHY_EINVAL;
         }
 
@@ -3247,26 +3221,27 @@ static void *Hierarchy_RDBLoad(RedisModuleIO *io, int encver) {
     int err;
 
     if (encver > HIERARCHY_ENCODING_VERSION) {
-        RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
+        SELVA_LOG(SELVA_LOGL_CRIT, "selva_hierarchy encoding version %d not supported", encver);
         return NULL;
     }
 
     hierarchy = SelvaModify_NewHierarchy(RedisModule_GetContextFromIO(io));
     if (!hierarchy) {
-        RedisModule_LogIOError(io, "warning", "Failed to create a new hierarchy");
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to create a new hierarchy");
         return NULL;
     }
 
     if (encver >= 5) {
         if (!SelvaObjectTypeRDBLoadTo(io, encver, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL)) {
-            RedisModule_LogIOError(io, "warning", "Failed to node types");
+            SELVA_LOG(SELVA_LOGL_CRIT, "Failed to node types");
             return NULL;
         }
     }
 
     err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
     if (err) {
-        RedisModule_LogIOError(io, "warning", "Failed to load the dynamic constraints: %s", getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load the dynamic constraints: %s",
+                  getSelvaErrorStr(err));
         goto error;
     }
 
@@ -3298,7 +3273,8 @@ static void save_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, con
 
     err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed, &type);
     if (err) {
-        RedisModule_LogIOError(io, "warning", "Failed to save a compressed subtree: %s", getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to save a compressed subtree: %s",
+                  getSelvaErrorStr(err));
         return;
     }
 
@@ -3447,7 +3423,7 @@ static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
 
     encver = RedisModule_LoadSigned(io);
     if (encver > HIERARCHY_ENCODING_VERSION) {
-        RedisModule_LogIOError(io, "warning", "selva_hierarchy encoding version %d not supported", encver);
+        SELVA_LOG(SELVA_LOGL_CRIT, "selva_hierarchy encoding version %d not supported", encver);
         return NULL;
     }
 
@@ -3556,10 +3532,9 @@ int SelvaHierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
             /* TODO How to handle the error correctly? */
             /* DEL_HIERARCHY_NODE_REPLY_IDS would allow us to send errors. */
             if (res != SELVA_HIERARCHY_ENOENT) {
-                fprintf(stderr, "%s:%d: Failed to delete the node %.*s: %s\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, nodeId,
-                        getSelvaErrorStr(res));
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to delete the node %.*s: %s\n",
+                          (int)SELVA_NODE_ID_SIZE, nodeId,
+                          getSelvaErrorStr(res));
             }
         }
     }
@@ -3986,9 +3961,10 @@ static int SelvaVersion_AuxLoad(RedisModuleIO *io, int encver __unused, int when
     selva_db_version_info.created_with = RedisModule_LoadString(io);
     selva_db_version_info.updated_with = RedisModule_LoadString(io);
 
-    fprintf(stderr, "Selva hierarchy version info created_with: %s updated_with: %s\n",
-            RedisModule_StringPtrLen(selva_db_version_info.created_with, NULL),
-            RedisModule_StringPtrLen(selva_db_version_info.updated_with, NULL));
+    SELVA_LOG(SELVA_LOGL_INFO,
+              "Selva hierarchy version info created_with: %s updated_with: %s",
+              RedisModule_StringPtrLen(selva_db_version_info.created_with, NULL),
+              RedisModule_StringPtrLen(selva_db_version_info.updated_with, NULL));
 
     return 0;
 }

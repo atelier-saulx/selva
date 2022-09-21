@@ -6,10 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
 #include <hiredis/hiredis.h>
-
-#include "cdefs.h"
 #include "async_task.h"
 #include "hierarchy.h"
 #include "subscriptions.h"

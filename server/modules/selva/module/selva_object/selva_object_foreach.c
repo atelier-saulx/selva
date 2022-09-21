@@ -4,7 +4,6 @@
 #include <sys/types.h>
 #include "svector.h"
 #include "selva.h"
-#include "errors.h"
 #include "selva_object.h"
 
 int SelvaObject_ArrayForeach(

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
@@ -35,6 +35,13 @@
     46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, \
     29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, \
     12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0
+
+#define _S__LINE__S(x) #x
+#define _S__LINE__S2(x) _S__LINE__S(x)
+/**
+ * Current line number as a string.
+ */
+#define S__LINE__ _S__LINE__S2(__LINE__)
 
 /**
  * Get the struct that contains `m`.

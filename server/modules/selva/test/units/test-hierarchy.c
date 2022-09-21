@@ -6,7 +6,6 @@
 #include "traversal.h"
 #include "hierarchy.h"
 #include "cdefs.h"
-#include "errors.h"
 #include "../hierarchy-utils.h"
 
 static void setup(void)

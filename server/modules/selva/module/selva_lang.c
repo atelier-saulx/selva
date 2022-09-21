@@ -3,10 +3,9 @@
 #include <string.h>
 #include <strings.h>
 #include "redismodule.h"
+#include "selva.h"
 #include "jemalloc.h"
 #include "selva_onload.h"
-#include "cdefs.h"
-#include "errors.h"
 #include "selva_lang.h"
 #include "selva_object.h"
 
@@ -150,10 +149,9 @@ locale_t SelvaLang_GetLocale(const char *lang_str, size_t lang_len) {
         void *p;
 
         if (lang_len > 0) {
-            fprintf(stderr, "%s:%d: Lang \"%.*s\" not found: %s\n",
-                    __FILE__, __LINE__,
-                    (int)lang_len, lang_str,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Lang \"%.*s\" not found: %s\n",
+                      (int)lang_len, lang_str,
+                      getSelvaErrorStr(err));
         }
 
         err = SelvaObject_GetPointerStr(langs, FALLBACK_LANG, sizeof(FALLBACK_LANG) - 1, &p);
@@ -171,7 +169,7 @@ static void load_lang(const char *lang, const char *locale_name) {
 
     err = add_lang(lang, locale_name);
     if (err) {
-        fprintf(stderr, "Loading locale %s for lang %s failed with error: %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Loading locale %s for lang %s failed with error: %s\n",
                 locale_name, lang,
                 getSelvaErrorStr(err));
     }
