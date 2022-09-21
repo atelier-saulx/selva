@@ -388,7 +388,7 @@ __attribute__((nonnull (2, 3))) static int destroy_icb(
     }
 
     err = SelvaFindIndexICB_Del(hierarchy, icb);
-    if (err) {
+    if (err && err != SELVA_ENOENT) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy an index for \"%.*s\": %s\n",
                   (int)icb->name_len, icb->name_str,
                   getSelvaErrorStr(err));
