@@ -686,7 +686,11 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
 
         err = set_marker_id(hierarchy, icb);
         if (err) {
-            if (err != SELVA_ENOBUFS) {
+            if (err == SELVA_ENOBUFS) {
+                SELVA_LOG_DBG("FIND_INDICES_MAX_HINTS reached. Destroying \"%.*s\": %s\n",
+                              (int)icb->name_len, icb->name_str,
+                              getSelvaErrorStr(err));
+            } else {
                 SELVA_LOG(SELVA_LOGL_ERR,
                           "Failed to get a new marker id for an index \"%.*s\": %s\n",
                           (int)icb->name_len, icb->name_str,
