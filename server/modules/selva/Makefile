@@ -110,14 +110,14 @@ module.so: $(OBJS) $(LIBS_A)
 check:
 ifeq ($(uname_S),Linux)
 	cppcheck --quiet --inline-suppr \
-		--language=c --std=c99 --platform=unix64 --enable=all \
+		--language=c --std=c99 --platform=unix64 --enable=all --max-configs=100 \
 		-addon=threadsafety.py --addon=cert.py \
 		--suppressions-list=cppcheck_suppressions.txt \
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
 		$(IDIR) module.c ./module ./lib/util
 else # Assume macOs
 	cppcheck --quiet --inline-suppr \
-		--language=c --std=c99 --platform=unix64 --enable=all \
+		--language=c --std=c99 --platform=unix64 --enable=all --max-configs=100 \
 		--suppressions-list=cppcheck_suppressions.txt \
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
 		-i test $(IDIR) -I./module -I./lib/util module.c ./module ./lib/util

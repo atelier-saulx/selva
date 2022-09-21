@@ -27,11 +27,11 @@ void selva_log(enum selva_log_level level, const char * restrict where, const ch
 }
 
 static void toggle_dbgmsg(const char * cfg) {
-    struct _selva_dyndebug_msg * msg_opt = &__start_dbg_msg;
-    struct _selva_dyndebug_msg * stop = &__stop_dbg_msg;
+    struct _selva_dyndebug_msg *msg_opt = &__start_dbg_msg;
+    struct _selva_dyndebug_msg *stop = &__stop_dbg_msg;
     char strbuf[80];
-    char * file = strbuf;
-    char * line;
+    char *file;
+    char *line;
 
     if (msg_opt == stop) {
         return;
