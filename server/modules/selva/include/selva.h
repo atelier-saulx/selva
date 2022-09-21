@@ -8,11 +8,26 @@
 #include <string.h>
 #include "cdefs.h"
 
+/**
+ * Export a function.
+ */
 #define SELVA_EXPORT __attribute__((__visibility__("default")))
 
+/**
+ * NodeId size including the type prefix.
+ */
 #define SELVA_NODE_ID_SIZE      10ul /* Must be at least sizeof(void *) */
+/**
+ * NodeId type prefix size.
+ */
 #define SELVA_NODE_TYPE_SIZE    2
+/**
+ * NodeId of the root node.
+ */
 #define ROOT_NODE_ID            "root\0\0\0\0\0\0"
+/**
+ * An empty nodeId.
+ */
 #define EMPTY_NODE_ID           "\0\0\0\0\0\0\0\0\0\0"
 
 #define SELVA_ALIASES_KEY       "___selva_aliases"
