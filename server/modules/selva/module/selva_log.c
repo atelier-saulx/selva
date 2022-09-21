@@ -6,8 +6,10 @@
 #include "selva_onload.h"
 
 static enum selva_log_level selva_log_level = SELVA_LOGL_INFO;
+#ifndef __APPLE__ && __MACH__
 extern struct _selva_dyndebug_msg __start_dbg_msg;
 extern struct _selva_dyndebug_msg __stop_dbg_msg;
+#endif
 
 void selva_log(enum selva_log_level level, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) {
     FILE *log_stream = stderr;
@@ -27,6 +29,7 @@ void selva_log(enum selva_log_level level, const char * restrict where, const ch
 }
 
 static void toggle_dbgmsg(const char * cfg) {
+#ifndef __APPLE__ && __MACH__
     struct _selva_dyndebug_msg *msg_opt = &__start_dbg_msg;
     struct _selva_dyndebug_msg *stop = &__stop_dbg_msg;
     char strbuf[80];
@@ -62,6 +65,7 @@ static void toggle_dbgmsg(const char * cfg) {
 next:
         msg_opt++;
     }
+#endif
 }
 
 int SelvaLog_LevelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -100,6 +104,9 @@ int SelvaLog_DbgCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
 int SelvaLog_DbgListCommand(RedisModuleCtx *ctx, RedisModuleString **argv __unused, int argc) {
     RedisModule_AutoMemory(ctx);
+#ifdef __APPLE__ && __MACH__
+    RedisModule_ReplyWithArray(ctx, 0);
+#else
     struct _selva_dyndebug_msg * msg_opt = &__start_dbg_msg;
     struct _selva_dyndebug_msg * stop = &__stop_dbg_msg;
 
@@ -107,15 +114,17 @@ int SelvaLog_DbgListCommand(RedisModuleCtx *ctx, RedisModuleString **argv __unus
         return RedisModule_WrongArity(ctx);
     }
 
+    RedisModule_ReplyWithArray(ctx, stop - msg_opt);
+
     if (msg_opt == stop) {
         return REDISMODULE_OK;
     }
 
-    RedisModule_ReplyWithArray(ctx, stop - msg_opt);
     while (msg_opt < stop) {
         RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "%s:%d: %d", msg_opt->file, msg_opt->line, msg_opt->flags));
         msg_opt++;
     }
+#endif
 
     return REDISMODULE_OK;
 }
