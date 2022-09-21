@@ -388,7 +388,7 @@ __attribute__((nonnull (2, 3))) static int destroy_icb(
     }
 
     err = SelvaFindIndexICB_Del(hierarchy, icb);
-    if (err) {
+    if (err && err != SELVA_ENOENT) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy an index for \"%.*s\": %s\n",
                   (int)icb->name_len, icb->name_str,
                   getSelvaErrorStr(err));
@@ -686,9 +686,16 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
 
         err = set_marker_id(hierarchy, icb);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a new marker id for an index \"%.*s\": %s\n",
-                      (int)icb->name_len, icb->name_str,
-                      getSelvaErrorStr(err));
+            if (err == SELVA_ENOBUFS) {
+                SELVA_LOG_DBG("FIND_INDICES_MAX_HINTS reached. Destroying \"%.*s\": %s\n",
+                              (int)icb->name_len, icb->name_str,
+                              getSelvaErrorStr(err));
+            } else {
+                SELVA_LOG(SELVA_LOGL_ERR,
+                          "Failed to get a new marker id for an index \"%.*s\": %s\n",
+                          (int)icb->name_len, icb->name_str,
+                          getSelvaErrorStr(err));
+            }
 
             destroy_icb(ctx, hierarchy, icb);
             return NULL;
