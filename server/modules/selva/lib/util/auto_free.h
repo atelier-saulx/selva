@@ -10,7 +10,7 @@
  * Wrap RedisModule_Free().
  */
 void _wrap_RM_Free(void *p);
-void _wrap_selva_free(void *);
+void _wrap_selva_free(void *p);
 
 /**
  * Pointer variable attribute to free the object pointed by the pointer.
