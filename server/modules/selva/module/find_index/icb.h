@@ -27,7 +27,7 @@ struct icb_descriptor {
     enum SelvaTraversal dir; /*!< Indexing traversal direction. */
     RedisModuleString *dir_expression; /*!< Indexing traversal expression. (optional) */
     RedisModuleString *filter; /*!< Indexing filter. */
-    struct index_order sort;
+    struct index_order sort; /*!< Sort order of the index. */
 };
 
 /**
@@ -125,14 +125,8 @@ struct SelvaFindIndexControlBlock {
     /*
      * Traversal.
      */
-    struct {
-        Selva_NodeId node_id; /*!< Starting node_id. */
-        enum SelvaTraversal dir; /*!< Traversal direction for the index. */
-        RedisModuleString *dir_expression; /*!< Traversal direction rpn expression. */
-        RedisModuleString *filter; /*!< Indexing rpn filter. */
-    } traversal;
-
-    struct index_order sort;
+    Selva_NodeId node_id; /*!< Starting node_id. */
+    struct icb_descriptor traversal;
 
     /**
      * Result set of the indexing clause.

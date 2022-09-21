@@ -1819,6 +1819,37 @@ void SelvaSubscriptions_SendDeferredEvents(struct SelvaHierarchy *hierarchy) {
     send_trigger_events(hierarchy);
 }
 
+void SelvaSubscriptions_ReplyWithMarker(RedisModuleCtx *ctx, struct Selva_SubscriptionMarker *marker) {
+    char sub_buf[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
+    const int is_trigger = isTriggerMarker(marker->marker_flags);
+    size_t marker_array_len = 4;
+
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "sub_id: %s", Selva_SubscriptionId2str(sub_buf, marker->sub->sub_id)));
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "marker_id: %" PRImrkId, marker->marker_id));
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "flags: 0x%04x", marker->marker_flags));
+    if (is_trigger) {
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "event_type: %s", trigger_event_types[marker->event_type].name));
+        marker_array_len++;
+    } else {
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "node_id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, marker->node_id));
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "dir: %s", SelvaTraversal_Dir2str(marker->dir)));
+        marker_array_len += 2;
+
+        if (marker->dir & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD | SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD)) {
+            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "field: %s", marker->ref_field));
+            marker_array_len++;
+        }
+    }
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "filter_expression: %s", (marker->filter_ctx) ? "set" : "unset"));
+    if (!is_trigger && (marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD)) {
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "fields: \"%s\"", marker->fields));
+        marker_array_len++;
+    }
+
+    RedisModule_ReplySetArrayLength(ctx, marker_array_len);
+}
+
 /*
  * Add a new marker to the subscription.
  * KEY SUB_ID MARKER_ID traversal_type [ref_field_name] NODE_ID [fields <fieldnames \n separated>] [filter expression] [filter args...]
@@ -2505,34 +2536,7 @@ int SelvaSubscriptions_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     SVector_ForeachBegin(&it, markers);
     while ((marker = SVector_Foreach(&it))) {
-        char sub_buf[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
-        const int is_trigger = isTriggerMarker(marker->marker_flags);
-        size_t marker_array_len = 4;
-
-        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "sub_id: %s", Selva_SubscriptionId2str(sub_buf, marker->sub->sub_id)));
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "marker_id: %" PRImrkId, marker->marker_id));
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "flags: 0x%04x", marker->marker_flags));
-        if (is_trigger) {
-            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "event_type: %s", trigger_event_types[marker->event_type].name));
-            marker_array_len++;
-        } else {
-            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "node_id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, marker->node_id));
-            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "dir: %s", SelvaTraversal_Dir2str(marker->dir)));
-            marker_array_len += 2;
-
-            if (marker->dir & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD | SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD)) {
-                RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "field: %s", marker->ref_field));
-                marker_array_len++;
-            }
-        }
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "filter_expression: %s", (marker->filter_ctx) ? "set" : "unset"));
-        if (!is_trigger && (marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD)) {
-            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "fields: \"%s\"", marker->fields));
-            marker_array_len++;
-        }
-
-        RedisModule_ReplySetArrayLength(ctx, marker_array_len);
+        SelvaSubscriptions_ReplyWithMarker(ctx, marker);
         array_len++;
     }
     RedisModule_ReplySetArrayLength(ctx, array_len);
