@@ -1611,15 +1611,17 @@ static int compile_find_labels(int labels[RPN_MAX_LABELS], const char *input) {
          tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
         int l = compile_parse_label(tok_str, tok_len);
 
-        if (l > 0) {
+        if (l == -1) {
+            /* Invalid label. */
+            SELVA_LOG(SELVA_LOGL_ERR, "Invalid label");
+            return RPN_ERR_ILLOPN;
+        } else if (l > 0) {
             if (labels[l] != 0) {
                 /* Disallow using the same label twice. */
+                SELVA_LOG(SELVA_LOGL_ERR, "Duplicate label: %d", l);
                 return RPN_ERR_BADSTK;
             }
             labels[l] = i;
-        } else if (l == -1) {
-            /* Invalid label. */
-            return RPN_ERR_ILLOPN;
         }
         i++;
     }
@@ -1770,7 +1772,6 @@ struct rpn_expression *rpn_compile(const char *input) {
     expr->expression = selva_malloc(size);
 
     if (compile_find_labels(labels, input)) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse labels");
         goto fail;
     }
 
