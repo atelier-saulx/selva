@@ -1,0 +1,29 @@
+From 6200b6082839ca94ea2a50bea1da88dea477fe56 Mon Sep 17 00:00:00 2001
+From: Olli Vanhoja <olli.vanhoja@gmail.com>
+Date: Wed, 21 Sep 2022 13:02:33 +0200
+Subject: [PATCH] Make RM_CreateTimer() to only operate on dbid=0
+
+It looks like sometimes the RedisModule API can return us a `ctx`
+with a valid `client` pointer that has no `db` associated with it.
+As we are never interested in the other DBs we can just hard-code
+the Timer API to use `dbid=0`.
+---
+ src/module.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/module.c b/src/module.c
+index b20dd1462..6e210a6dc 100644
+--- a/src/module.c
++++ b/src/module.c
+@@ -5496,7 +5496,7 @@ RedisModuleTimerID RM_CreateTimer(RedisModuleCtx *ctx, mstime_t period, RedisMod
+     timer->module = ctx->module;
+     timer->callback = callback;
+     timer->data = data;
+-    timer->dbid = ctx->client ? ctx->client->db->id : 0;
++    timer->dbid = 0;
+     uint64_t expiretime = ustime()+period*1000;
+     uint64_t key;
+ 
+-- 
+2.37.3
+
