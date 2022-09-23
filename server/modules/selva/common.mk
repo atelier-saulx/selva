@@ -11,5 +11,5 @@ ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
 endif
 ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
 	CFLAGS += -g -march=x86-64 -mtune=core-avx2 -mfpmath=sse -mavx -mavx2 \
-			  -Wno-zero-length-array -Wno-c11-extensions
+			  -Wno-zero-length-array -Wno-c11-extensions -Wno-unknown-attributes
 endif
