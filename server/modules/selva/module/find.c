@@ -1574,7 +1574,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     int ARGV_EDGE_FILTER_TXT = 4;
     int ARGV_EDGE_FILTER_VAL = 5;
     int ARGV_INDEX_TXT       = 4;
-    int ARGV_INDEX_VAL       = 5;
+    __unused int ARGV_INDEX_VAL = 5;
     int ARGV_ORDER_TXT       = 4;
     int ARGV_ORDER_FLD       = 5;
     int ARGV_ORDER_ORD       = 6;

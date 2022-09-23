@@ -346,7 +346,7 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     int ARGV_EDGE_FILTER_TXT = 3;
     int ARGV_EDGE_FILTER_VAL = 4;
     int ARGV_NR_UPDATE_OPS   = 3;
-    int ARGV_UPDATE_OPS      = 4;
+    __unused int ARGV_UPDATE_OPS = 4;
     int ARGV_NODE_IDS        = 3;
     int ARGV_FILTER_EXPR     = 4;
     int ARGV_FILTER_ARGS     = 5;
