@@ -9,6 +9,7 @@
 /**
  * Calculate the alpha coefficient for the lpf.
  */
+static inline float lpf_geta(float period, float sample_interval) __attribute__((const));
 static inline float lpf_geta(float period, float sample_interval) {
     return __builtin_expf(-(sample_interval / period));
 }
@@ -19,6 +20,7 @@ static inline float lpf_geta(float period, float sample_interval) {
  * @param a is the coefficient calculated by lpf_geta().
  * @param sample is the current sample.
  */
+static inline float lpf_calc_next(float a, float prev, float sample) __attribute__((const));
 static inline float lpf_calc_next(float a, float prev, float sample) {
     return a * prev + (1.0f - a) * sample;
 }
