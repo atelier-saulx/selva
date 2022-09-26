@@ -175,6 +175,7 @@ SVector *SVector_Clone(SVector *dest, const SVector *src, int (*compar)(const vo
     return dest;
 }
 
+__constfn static size_t calc_new_len(size_t old_len);
 static size_t calc_new_len(size_t old_len) {
     const size_t new_len = old_len + 1;
     return new_len + (new_len >> 1);

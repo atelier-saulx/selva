@@ -13,8 +13,24 @@
  * Using this attribute will help to get better warnings at compilation time.
  */
 #define __nonstring __attribute__((nonstring))
+/**
+ * Annotate a pure function.
+ * The function has no side effects and the value returned depends on the
+ * arguments and the state of global variables. Therefore it is safe for
+ * the optimizer to eliminate repeated calls with unchanged arguments.
+ */
+#define __purefn __attribute__((pure))
+/**
+ * Annotate a const function.
+ * The return value of the function is solely a function of its arguments,
+ * and if any of the arguments are pointers, then the pointers are not be
+ * dereferenced.
+ */
+#define __constfn __attribute__((const))
 #else
 #define __nonstring
+#define __purefn
+#define __constfn
 #endif
 
 #define CONCATENATE(arg1, arg2)   CONCATENATE1(arg1, arg2)

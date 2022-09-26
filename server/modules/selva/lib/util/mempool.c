@@ -49,6 +49,7 @@ static struct mempool_chunk *get_chunk(const struct mempool *mempool, void *obj)
 /**
  * Calculate slab_info for mempool.
  */
+__purefn static struct slab_info slab_info(const struct mempool * restrict mempool);
 static struct slab_info slab_info(const struct mempool * restrict mempool) {
     const size_t slab_size = mempool->slab_size_kb * 1024;
     const size_t chunk_size = ALIGNED_SIZE(

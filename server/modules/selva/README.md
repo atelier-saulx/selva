@@ -54,6 +54,10 @@ gcov "test-svector" -m -k -j -q -t
 | [TYPES.md](doc/redis/TYPES.md)         | Describes the API for creating new data structures inside Redis modules, copied from the Redis repo.                                      |
 | [BLOCK.md](doc/redis/BLOCK.md)         | Describes the API for blocking a client while performing asynchronous tasks on a separate thread.                                         |
 
-## Degugging
+### Selva Module
+
+See [README.md](doc/README.md)
+
+## Debugging
 
 See [debugging.md](doc/debugging.md)

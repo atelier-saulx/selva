@@ -497,7 +497,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     const int ARGV_DIRECTION = 4;
     const int ARGV_REF_FIELD = 5;
     int ARGV_INDEX_TXT       = 5;
-    int ARGV_INDEX_VAL       = 6;
+    __unused int ARGV_INDEX_VAL = 6;
     int ARGV_ORDER_TXT       = 5;
     int ARGV_ORDER_FLD       = 6;
     int ARGV_ORDER_ORD       = 7;

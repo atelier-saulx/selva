@@ -99,7 +99,7 @@ extern const char * const selva_version;
 /**
  * Get the length of nodeId ignoring nul bytes at the end of the string.
  */
-size_t Selva_NodeIdLen(const Selva_NodeId nodeId);
+__purefn size_t Selva_NodeIdLen(const Selva_NodeId nodeId);
 
 /**
  * Copy a node id of any length from src to a fixed length Selva_NodeId variable.
