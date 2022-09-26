@@ -158,7 +158,7 @@ struct SelvaFindIndexControlBlock {
 /**
  * Calculate the length of an index name.
  */
-size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct icb_descriptor *desc) __attribute__((pure));
+__purefn size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct icb_descriptor *desc);
 
 /**
  * Create a deterministic name for an index.
