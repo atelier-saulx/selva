@@ -139,5 +139,9 @@ test.serial('add new reference', async (t) => {
 
   t.deepEqual(res, { ongoing: [ { id: 'ma1' }, { id: 'ma2' }, { id: 'ma3' } ] })
 
+  await client.delete({ $id: 'ma2' })
+  await wait(100)
+  t.deepEqual(res, { ongoing: [ { id: 'ma1' }, { id: 'ma3' } ] })
+
   await client.destroy()
 })
