@@ -54,8 +54,8 @@
     apply(zh, zh_CN)
 
 struct SelvaLang {
-    char name[LANG_NAME_MAX] __attribute__((nonstring)); /* Not nul-terminated. */
-    char territory[LANG_NAME_MAX] __attribute__((nonstring)); /* Not nul-terminated. */
+    __nonstring char name[LANG_NAME_MAX];
+    __nonstring char territory[LANG_NAME_MAX];
     locale_t locale;
 };
 
