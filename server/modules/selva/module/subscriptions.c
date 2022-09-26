@@ -1292,37 +1292,54 @@ void SelvaSubscriptions_InheritEdge(
         struct SelvaHierarchyNode *dst_node,
         const char *field_str,
         size_t field_len) {
+    Selva_NodeId src_node_id;
+    Selva_NodeId dst_node_id;
     struct SelvaHierarchyMetadata *src_metadata = SelvaHierarchy_GetNodeMetadataByPtr(src_node);
     struct SelvaHierarchyMetadata *dst_metadata = SelvaHierarchy_GetNodeMetadataByPtr(dst_node);
     struct Selva_SubscriptionMarkers *src_markers = &src_metadata->sub_markers;
     struct Selva_SubscriptionMarkers *dst_markers = &dst_metadata->sub_markers;
     struct SVectorIterator it;
     struct Selva_SubscriptionMarker *marker;
-    Selva_NodeId dst_node_id;
-    int traversing = 0;
+    int defer_all_traversing = 0;
 
+    SelvaHierarchy_GetNodeId(src_node_id, src_node);
     SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
 
     SVector_ForeachBegin(&it, &src_markers->vec);
     while ((marker = SVector_Foreach(&it))) {
-        if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD) {
+        if ((marker->dir & SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD) ||
+            ((marker->dir & SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD) && !memcmp(src_node_id, marker->node_id, SELVA_NODE_ID_SIZE))) {
             const size_t ref_field_len = strlen(marker->ref_field);
 
             if (field_len == ref_field_len && !strncmp(field_str, marker->ref_field, ref_field_len)) {
                 set_marker(dst_markers, marker);
-                traversing = 1;
+
+                if (!defer_all_traversing &&
+                    (marker->dir & SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD) &&
+                    Edge_GetField(dst_node, field_str, field_len)) {
+                    /*
+                     * If there was a traversing marker and the destination has the field
+                     * too then we should send an event to make the client propagate the
+                     * subscription marker by issuing a refresh.
+                     * RFE Technically we could check whether the field is empty before
+                     * doing this.
+                     */
+                    defer_all_traversing = 1;
+                } else if ((marker->dir & SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD) &&
+                           Selva_SubscriptionFilterMatch(ctx, hierarchy, dst_node, marker)) {
+                    unsigned short flags = SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
+
+                    /*
+                     * In the case of a marker over single edge_field we should
+                     * just trigger the markers that match.
+                     */
+                    marker->marker_action(ctx, hierarchy, marker, flags, NULL, 0, dst_node);
+                }
             }
         }
     }
 
-    /*
-     * If there was a traversing marker and the destination has the field
-     * too then we should send an event to make the client propagate the
-     * subscription marker by issuing a refresh.
-     * RFE Technically we could check whether the field is empty before
-     * doing this.
-     */
-    if (traversing && Edge_GetField(dst_node, field_str, field_len)) {
+    if (defer_all_traversing) {
         defer_event_for_traversing_markers(ctx, hierarchy, dst_node);
     }
 }
