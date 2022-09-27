@@ -1,0 +1,30 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: selva
+Upstream-Contact:
+Source: https://github.com/atelier-saulx/selva
+
+Files: server/modules/selva/test/punit/*
+Copyright:
+    Copyright (c) 2013, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+    Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi>
+License: BSD-2-Clause
+
+Files: server/modules/selva/lib/deflate/*
+Copyright: Copyright 2016 Eric Biggers
+License: MIT
+
+Files: server/modules/jemalloc/*
+Copyright:
+    Copyright (C) 2002-present Jason Evans <jasone@canonware.com>.
+    All rights reserved.
+    Copyright (C) 2007-2012 Mozilla Foundation.  All rights reserved.
+    Copyright (C) 2009-present Facebook, Inc.  All rights reserved.
+License: BSD-2-Clause-FreeBSD
+
+Files: server/modules/locale/localedata/*
+Copyright: uncopyrightable
+License: CC0-1.0
+
+Files: server/modules/binaries/linux_x64/locale/*
+Copyright: uncopyrightable
+License: CC0-1.0
