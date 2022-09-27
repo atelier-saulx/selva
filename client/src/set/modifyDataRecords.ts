@@ -1,9 +1,9 @@
 import { compile } from 'data-record'
 import { NODE_ID_SIZE } from '../util'
 
-export const doubleDef = compile([{ name: 'd', type: 'double' }])
+export const doubleDef = compile([{ name: 'd', type: 'double_le' }])
 
-export const longLongDef = compile([{ name: 'd', type: 'int64' }])
+export const longLongDef = compile([{ name: 'd', type: 'int64_le' }])
 
 export const OPT_SET_TYPE = {
   char: 0,
@@ -15,7 +15,7 @@ export const OPT_SET_TYPE = {
 export const setRecordDefCstring = compile([
   { name: 'op_set_type', type: 'int8' },
   { name: 'delete_all', type: 'int8' },
-  { name: 'constraint_id', type: 'uint16' },
+  { name: 'constraint_id', type: 'uint16_le' },
   /* 32 zeroed bytes */
   { name: '$add', type: 'cstring_p' },
   { name: '$delete', type: 'cstring_p' },
@@ -26,18 +26,18 @@ export const setRecordDefDouble = compile([
   { name: 'op_set_type', type: 'int8' },
   { name: 'delete_all', type: 'int8' },
   /* 48 zeroed bytes */
-  { name: '$add', type: 'double_p' },
-  { name: '$delete', type: 'double_p' },
-  { name: '$value', type: 'double_p' },
+  { name: '$add', type: 'double_le_p' },
+  { name: '$delete', type: 'double_le_p' },
+  { name: '$value', type: 'double_le_p' },
 ])
 
 export const setRecordDefInt64 = compile([
   { name: 'op_set_type', type: 'int8' },
   { name: 'delete_all', type: 'int8' },
   /* 48 zeroed bytes */
-  { name: '$add', type: 'int64_p' },
-  { name: '$delete', type: 'int64_p' },
-  { name: '$value', type: 'int64_p' },
+  { name: '$add', type: 'int64_le_p' },
+  { name: '$delete', type: 'int64_le_p' },
+  { name: '$value', type: 'int64_le_p' },
 ])
 
 export const edgeMetaDef = compile([
@@ -49,11 +49,11 @@ export const edgeMetaDef = compile([
 ])
 
 export const incrementDef = compile([
-  { name: '$default', type: 'int64' },
-  { name: '$increment', type: 'int64' },
+  { name: '$default', type: 'int64_le' },
+  { name: '$increment', type: 'int64_le' },
 ])
 
 export const incrementDoubleDef = compile([
-  { name: '$default', type: 'double' },
-  { name: '$increment', type: 'double' },
+  { name: '$default', type: 'double_le' },
+  { name: '$increment', type: 'double_le' },
 ])
