@@ -327,7 +327,7 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateNodeOrderItem(
  * @returns Returns a TraversalOrderItem if succeed; Otherwise a NULL pointer is returned.
  */
 struct TraversalOrderItem *SelvaTraversalOrder_CreateAnyNodeOrderItem(
-        RedisModuleCtx *ctx,
+        struct RedisModuleCtx *ctx,
         struct SelvaHierarchyNode *node,
         struct SelvaObjectAny *any);
 
