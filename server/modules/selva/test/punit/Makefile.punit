@@ -52,11 +52,17 @@ PU_OBJ = $(patsubst %,./$(ODIR)/%,$(notdir $(PU_SRC:.c=.o)))
 include $(wildcard *.mk)
 ###############################################################################
 
+uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 CC ?= gcc
 CCFLAGS += --coverage -Wall -MMD -DPU_TEST_BUILD
 # Link math?
 ifeq ($(PU_LMATH),1)
+ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
 	CCFLAGS += -lm -DPU_LMATH
+endif
+ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
+	CCFLAGS += -DPU_LMATH
+endif
 endif
 # Report oriented?
 ifeq ($(PU_REPORT_ORIENTED),1)

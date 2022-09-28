@@ -14,6 +14,7 @@ SRC-hierarchy += ../../module/errors.c
 SRC-hierarchy += ../../module/hierarchy/hierarchy.c
 SRC-hierarchy += ../../module/hierarchy/types.c
 SRC-hierarchy += ../../module/rms/shared.c
+SRC-hierarchy += ../../module/selva_log.c
 SRC-hierarchy += ../../module/selva_object/selva_object.c
 SRC-hierarchy += ../../module/selva_object/selva_object_foreach.c
 SRC-hierarchy += ../../module/selva_set/selva_set.c

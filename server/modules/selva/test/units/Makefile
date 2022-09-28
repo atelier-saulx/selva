@@ -15,7 +15,20 @@ PU_UU := 1
 # test case descriptions. 0 = disabled; 1 = enabled.
 PU_REPORT_ORIENTED := 1
 
-CCFLAGS := $(CFLAGS) -Wextra -Wno-unused-value -Wno-unused-parameter -Wno-implicit-function-declaration -g -include ../tunables.h
+ifeq ($(uname_S),Linux)
+	LIBDIR += ../../../binaries/linux_x64
+endif
+ifeq ($(uname_S),Darwin) # macOS
+	LIBDIR += ../../../binaries/darwin_x64
+endif
+
+CCFLAGS := $(CFLAGS) \
+		   -Wextra -Wno-unused-value -Wno-unused-parameter -Wno-implicit-function-declaration \
+		   -g \
+		   -include ../tunables.h \
+		   $(addprefix  -L,$(LIBDIR)) -ljemalloc_selva
+
+export LD_LIBRARY_PATH=`echo $LD_LIBRARY_PATH`:$(LIBDIR)
 
 # Location of punit makefile
 # Do not touch
