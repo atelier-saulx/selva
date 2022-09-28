@@ -128,6 +128,11 @@ int SelvaLog_DbgListCommand(RedisModuleCtx *ctx, RedisModuleString **argv __unus
 
 static int SelvaLog_OnLoad(RedisModuleCtx *ctx) {
     /*
+     * This message is here just to initialize the section used for debug logs.
+     */
+    SELVA_LOG_DBG("Loading selva_log");
+
+    /*
      * Register commands.
      */
     if (RedisModule_CreateCommand(ctx, "selva.log.level", SelvaLog_LevelCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
