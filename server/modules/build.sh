@@ -6,7 +6,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     make clean
     make
     # We use Rosetta2 for now
-    a=$([ $(uname -p 2>/dev/null || echo not) == 'arm64' ] && echo "darwin_x64" || echo "darwin_x64")
+    a=$([ $(uname -m 2>/dev/null || echo not) == 'arm64' ] && echo "darwin_x64" || echo "darwin_x64")
     distpath=$(node -e "const p = require('path'); console.log(path.resolve(process.cwd(), '../binaries/$a'))")
     cp module.so $distpath/selva.so
     popd

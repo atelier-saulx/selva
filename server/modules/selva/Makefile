@@ -90,7 +90,7 @@ LIBS_A := $(foreach S,$(LIBS),lib/$(S)/lib$(S).a)
 all: module.so
 
 show:
-	@echo Arch: '$(uname_S) $(uname_P)'
+	@echo Arch: '$(uname_S) $(uname_P) $(uname_M)'
 	@echo CFLAGS: '$(CFLAGS)'
 
 version.c: FORCE
