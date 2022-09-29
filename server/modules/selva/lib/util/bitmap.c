@@ -33,7 +33,6 @@
  *******************************************************************************
  */
 
-#include <nmmintrin.h>
 #include <stddef.h>
 #include <string.h>
 #include "bitmap.h"
@@ -90,7 +89,7 @@ static inline long long popcnt_u128(__uint128_t n)
     const uint64_t n_hi = n >> 64;
     const uint64_t n_lo = (uint64_t)n;
 
-    return _mm_popcnt_u64(n_hi) + _mm_popcnt_u64(n_lo);
+    return __builtin_popcountll(n_hi) + __builtin_popcountll(n_lo);
 }
 
 long long bitmap_popcount(const struct bitmap *bitmap) {

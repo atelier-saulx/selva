@@ -89,6 +89,10 @@ LIBS_A := $(foreach S,$(LIBS),lib/$(S)/lib$(S).a)
 
 all: module.so
 
+show:
+	@echo Arch: '$(uname_S) $(uname_P)'
+	@echo CFLAGS: '$(CFLAGS)'
+
 version.c: FORCE
 ifeq ($(SELVA_IS_DOCKER),1)
 	@echo "Using existing version.c: $(cat version.c)"
