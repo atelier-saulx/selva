@@ -346,7 +346,7 @@ test.serial('root.children $delete: []', async (t) => {
   await client.destroy()
 })
 
-test.serial('basic', async (t) => {
+test.serial.only('basic', async (t) => {
   const client = connect(
     {
       port,
@@ -570,6 +570,18 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, match),
     [],
     'match has no children after $add: []'
+  )
+
+  // invalid child nodeId
+  await client.set({
+    $id: match,
+    children: { $add: ['', '\0\0\0\0\0\0\0\0\0\0'] },
+  })
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, match),
+    [],
+    'match has no children after $add: [\'\']'
   )
 
   // set null children
