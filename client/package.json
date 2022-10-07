@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "19.0.0",
+  "version": "19.1.2",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && node ../tools/script-sha.js && yarn buildTs",
@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "@types/pg": "^8.6.1",
-    "@saulx/selva-server": "19.0.0",
+    "@saulx/selva-server": "19.1.2",
     "before-exit": "1.0.0",
     "async-exec": "^1.1.0",
     "@sindresorhus/fnv1a": "^2.0.1",

@@ -372,8 +372,15 @@ static int create_node_object(struct SelvaHierarchy *hierarchy, SelvaHierarchyNo
  * Create a new node.
  */
 static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const Selva_NodeId id) {
-    SelvaHierarchyNode *node = mempool_get(&hierarchy->node_pool);
+    SelvaHierarchyNode *node;
 
+    if (!memcmp(id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE) ||
+        !memcmp(id, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE)) {
+        SELVA_LOG(SELVA_LOGL_WARN, "An attempt to create a node with a reserved id");
+        return NULL;
+    }
+
+    node = mempool_get(&hierarchy->node_pool);
     memset(node, 0, sizeof(*node));
 
 #if 0
