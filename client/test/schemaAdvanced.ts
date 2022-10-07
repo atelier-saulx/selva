@@ -1197,3 +1197,112 @@ test.serial('schemas - validate array', async (t) => {
 
   t.pass()
 })
+
+
+test.serial('schemas - $delete on array and record', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+
+  await client.updateSchema({
+    languages: ['en'],
+    types: {
+      thing: {
+        prefix: 'th',
+        fields: {
+          flappers: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                flap: { type: 'number' },
+              },
+            },
+          },
+          flippers: {
+            type: 'record',
+            values: {
+              type: 'object',
+              properties: {
+                flap: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const { schema: { types: { thing: { fields } } } } = await client.getSchema()
+
+  t.deepEqualIgnoreOrder(fields.flappers, {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        flap: { type: 'number' },
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(fields.flippers, {
+    type: 'record',
+    values: {
+      type: 'object',
+      properties: {
+        flap: { type: 'number' },
+      },
+    },
+  })
+
+  await client.updateSchema({
+    languages: ['en'],
+    types: {
+      thing: {
+        prefix: 'th',
+        fields: {
+          flappers: {
+            type: 'array',
+            items: {
+              $delete: true
+            },
+          },
+          flippers: {
+            type: 'record',
+            values: {
+              $delete: true
+            },
+          },
+        },
+      },
+    },
+  }, 'default', true)
+
+  const { schema: { types: { thing: { fields: fields2 } } } } = await client.getSchema()
+
+  t.deepEqualIgnoreOrder(fields2.flappers, {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {},
+    },
+  })
+
+  t.deepEqualIgnoreOrder(fields2.flippers, {
+    type: 'record',
+    values: {
+      type: 'object',
+      properties: {},
+    },
+  })
+
+  await wait(1000)
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})
