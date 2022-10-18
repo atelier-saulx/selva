@@ -198,6 +198,9 @@ export default async (
         false,
         oldSchema
       )
+
+      console.log(JSON.stringify(parsedFieldMutations, null, 2))
+
       const setQ = []
       const setQRemovals = []
       for (const node of r.nodes) {

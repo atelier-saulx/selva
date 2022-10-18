@@ -161,38 +161,39 @@ export function newSchemaDefinition(
         path: p,
       })
 
-      if (p.length === 1) {
-        delete schema.types[t].fields[p[0]]
-      } else {
-        let s = schema.types[t].fields[p[0]]
-        for (let i = 1; i < p.length - 1; i++) {
-          if (i === p.length - 1) {
-            // @ts-ignore
-            if (s.properties) {
-              // @ts-ignore
-              delete s.properties[p[i]]
-              // @ts-ignore
-            } else if (s.values) {
-              // @ts-ignore
-              delete s.values[p[i]]
-            } else {
-              break
-            }
-          } else {
-            // @ts-ignore
-            if (s.properties) {
-              // @ts-ignore
-              s = s.properties[p[i]]
-              // @ts-ignore
-            } else if (s.values) {
-              // @ts-ignore
-              s = s.values[p[i]]
-            } else {
-              break
-            }
-          }
-        }
-      }
+      // Youri: I think this whole thing is duplicate (already done in extractSchemaDelOpts)
+      // if (p.length === 1) {
+      //   delete schema.types[t].fields[p[0]]
+      // } else {
+      //   let s = schema.types[t].fields[p[0]]
+      //   for (let i = 1; i < p.length - 1; i++) {
+      //     if (i === p.length - 1) {
+      //       // @ts-ignore
+      //       if (s.properties) {
+      //         // @ts-ignore
+      //         delete s.properties[p[i]]
+      //         // @ts-ignore
+      //       } else if (s.values) {
+      //         // @ts-ignore
+      //         delete s.values[p[i]]
+      //       } else {
+      //         break
+      //       }
+      //     } else {
+      //       // @ts-ignore
+      //       if (s.properties) {
+      //         // @ts-ignore
+      //         s = s.properties[p[i]]
+      //         // @ts-ignore
+      //       } else if (s.values) {
+      //         // @ts-ignore
+      //         s = s.values[p[i]]
+      //       } else {
+      //         break
+      //       }
+      //     }
+      //   }
+      // }
     }
   }
 

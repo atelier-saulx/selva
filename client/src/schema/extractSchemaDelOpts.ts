@@ -15,18 +15,24 @@ export default (t: InputTypeSchema): string[][] => {
     ) => {
       if (isDeleteField(x)) {
         fields.push(arr)
-        delete prev[arr.length - 1]
-        return
+        delete prev[arr[arr.length - 1]]
+        console.log('DELETE', arr)
+        return true
       }
-      if (x.type === 'object') {
+
+      if ('properties' in x) {
         for (const f in x.properties) {
           walkFields(x.properties[f], x.properties, [...arr, f])
         }
-        return
-      }
-      if (x.type === 'array') {
-        for (const f in x.items) {
-          walkFields(x.items[f], x.items, [...arr, f])
+      } else if ('items' in x) {
+        if (walkFields(x.items, x.items, arr)) {
+          // @ts-ignore
+          x.items = {}
+        }
+      } else if ('values' in x) {
+        if (walkFields(x.values, x.values, arr)) {
+          // @ts-ignore
+          x.values = {}
         }
       }
     }

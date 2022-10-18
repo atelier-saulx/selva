@@ -1198,8 +1198,7 @@ test.serial('schemas - validate array', async (t) => {
   t.pass()
 })
 
-
-test.serial('schemas - $delete on array and record', async (t) => {
+test.serial.only('schemas - $delete on array and record', async (t) => {
   const port = await getPort()
   const server = await start({
     port,
@@ -1235,7 +1234,13 @@ test.serial('schemas - $delete on array and record', async (t) => {
     },
   })
 
-  const { schema: { types: { thing: { fields } } } } = await client.getSchema()
+  const {
+    schema: {
+      types: {
+        thing: { fields },
+      },
+    },
+  } = await client.getSchema()
 
   t.deepEqualIgnoreOrder(fields.flappers, {
     type: 'array',
@@ -1257,46 +1262,139 @@ test.serial('schemas - $delete on array and record', async (t) => {
     },
   })
 
-  await client.updateSchema({
-    languages: ['en'],
-    types: {
-      thing: {
-        prefix: 'th',
-        fields: {
-          flappers: {
-            type: 'array',
-            items: {
-              $delete: true
+  const myThing = await client.set({
+    type: 'thing',
+    flippers: {
+      randomo: { flap: 1 },
+    },
+    flappers: [
+      {
+        flap: 2,
+      },
+    ],
+  })
+
+  console.log('----------------------------------------------')
+
+  await client.updateSchema(
+    {
+      languages: ['en'],
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            flippo: {
+              type: 'number',
             },
-          },
-          flippers: {
-            type: 'record',
-            values: {
-              $delete: true
+            flappers: {
+              type: 'array',
+              // @ts-ignore
+              items: {
+                properties: {
+                  flap: {
+                    $delete: true,
+                  },
+                },
+              },
             },
           },
         },
       },
     },
-  }, 'default', true)
+    'default',
+    true //,
+    // (old) => {
+    //   console.log('???????????/', old.flappers[0].flap)
+    //   // delete is also a thing
+    //   return { flippo: old.flappers[0].flap }
+    // }
+  )
 
-  const { schema: { types: { thing: { fields: fields2 } } } } = await client.getSchema()
+  const {
+    schema: {
+      types: {
+        thing: { fields: fields1 },
+      },
+    },
+  } = await client.getSchema()
+
+  console.log('fields1', JSON.stringify(fields1, null, 2))
+
+  // t.deepEqualIgnoreOrder(fields1.flappers, {
+  //   type: 'array',
+  //   items: {
+  //     type: 'object',
+  //     properties: {},
+  //   },
+  // })
+
+  // const { flippo, flappers } = await client.get({
+  //   $id: myThing,
+  //   $all: true,
+  // })
+
+  // console.log(JSON.stringify({ flippo, flappers }, null, 2))
+
+  await client.updateSchema(
+    {
+      languages: ['en'],
+      types: {
+        thing: {
+          prefix: 'th',
+          fields: {
+            flap: {
+              type: 'number',
+            },
+            flappers: {
+              type: 'array',
+              items: {
+                $delete: true,
+              },
+            },
+            flippers: {
+              type: 'record',
+              values: {
+                $delete: true,
+              },
+            },
+          },
+        },
+      },
+    },
+    'default',
+    true,
+    (old) => {
+      // delete is also a thing
+      return { flap: old.flippers.randomo.flap }
+    }
+  )
+
+  const {
+    schema: {
+      types: {
+        thing: { fields: fields2 },
+      },
+    },
+  } = await client.getSchema()
 
   t.deepEqualIgnoreOrder(fields2.flappers, {
     type: 'array',
-    items: {
-      type: 'object',
-      properties: {},
-    },
+    items: {},
   })
 
   t.deepEqualIgnoreOrder(fields2.flippers, {
     type: 'record',
-    values: {
-      type: 'object',
-      properties: {},
-    },
+    values: {},
   })
+
+  const thingItem = await client.get({
+    $id: myThing,
+    $all: true,
+  })
+
+  t.false(!!thingItem.flappers)
+  t.false(!!thingItem.flippers)
+  t.is(thingItem.flap, 1)
 
   await wait(1000)
 
