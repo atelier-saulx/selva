@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"

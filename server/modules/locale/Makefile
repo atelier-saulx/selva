@@ -1,3 +1,6 @@
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
+
 SUPPORTED_LOCALES := \
     af_ZA \
     am_ET \

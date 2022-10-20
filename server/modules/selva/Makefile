@@ -1,3 +1,6 @@
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
+
 SHELL := /bin/bash
 
 include common.mk

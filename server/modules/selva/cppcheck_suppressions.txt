@@ -1,4 +1,6 @@
-// Supress some unwanted warnings completely
+// Suppress some unwanted warnings completely
+// Copyright (c) 2022 SAULX
+// SPDX-License-Identifier: MIT
 unusedFunction // This will be reported in the build anyway but without macro stuff
 unreachableCode // Lot of useless warnings
 varFuncNullUB // Can't find anything backing this claim and indeed passing NULL is often suggested in UNIX docs

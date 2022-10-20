@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef _SELVA_SET_OPS_H_
 #define _SELVA_SET_OPS_H_

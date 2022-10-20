@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef SELVA_TUNABLES
 #define SELVA_TUNABLES

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef SELVA_TRAVERSAL_H
 #define SELVA_TRAVERSAL_H
