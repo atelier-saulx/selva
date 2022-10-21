@@ -1,6 +1,7 @@
 {
   "name": "@saulx/selva-server",
   "version": "19.1.2",
+  "license" : "MIT",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",

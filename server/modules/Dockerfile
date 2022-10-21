@@ -1,3 +1,5 @@
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
 FROM ubuntu:20.04
 
 RUN apt-get update -y

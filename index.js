@@ -1,3 +1,6 @@
+// Copyright (c) 2022 SAULX
+// SPDX-License-Identifier: MIT
+
 const testAddon = require('./build/Release/testaddon.node')
 const perfhooks = require('perf_hooks')
 const fastjson = require('fast-json-patch')

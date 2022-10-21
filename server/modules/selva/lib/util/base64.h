@@ -1,4 +1,9 @@
-/* SPDX-License-Identifier: BSD-3-Clause */
+/*
+ * Base64 encoding/decoding (RFC1341)
+ * Copyright (c) 2021-2022 SAULX
+ * Copyright (c) 2005-2011, Jouni Malinen <j@w1.fi>
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 #pragma once
 #ifndef BASE64_H
 #define BASE64_H

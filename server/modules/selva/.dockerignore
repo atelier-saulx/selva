@@ -1,3 +1,5 @@
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
 ./module.so
 ./module.o
 *.o

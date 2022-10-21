@@ -1,3 +1,6 @@
+// Copyright (c) 2022 SAULX
+// SPDX-License-Identifier: MIT
+
 console.info(process.argv)
 
 const bump = process.argv[2] || 'patch'
