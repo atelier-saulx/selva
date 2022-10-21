@@ -3,7 +3,7 @@ Upstream-Name: selva
 Upstream-Contact:
 Source: https://github.com/atelier-saulx/selva
 
-Files: .github/* package.json yarn.lock README.md GET.md SUBSCRIPTION.md client/* docs/* tools/* query-ast-parser/* server/README.md server/package.json server/bin/index.js server/perftest/* server/examples/* server/src/* server/redis/* server/modules/selva/README.md server/modules/selva/test/* server/modules/selva/valgrind.sup server/modules/selva/selva_cppcheck.cfg server/modules/selva/redis_cppcheck.cfg server/modules/selva/gdb/* server/modules/selva/doc/*
+Files: .github/* package.json yarn.lock README.md GET.md SUBSCRIPTION.md client/* docs/* tools/* query-ast-parser/* server/README.md server/package.json server/perftest/* server/examples/* server/src/* server/redis/* server/modules/selva/README.md server/modules/selva/test/* server/modules/selva/valgrind.sup server/modules/selva/selva_cppcheck.cfg server/modules/selva/redis_cppcheck.cfg server/modules/selva/gdb/* server/modules/selva/doc/*
 Copyright:
     Copyright (c) 2022 SAULX
 License: MIT
