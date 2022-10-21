@@ -1,6 +1,7 @@
 {
   "name": "@saulx/selva",
   "version": "19.1.2",
+  "license" : "MIT",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "yarn clean && yarn buildLua && node ../tools/script-sha.js && yarn buildTs",

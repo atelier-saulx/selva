@@ -2,6 +2,7 @@
   "name": "tools",
   "private": true,
   "version": "19.1.2",
+  "license" : "MIT",
   "bin": {
     "watch": "index.js"
   },
