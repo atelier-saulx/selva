@@ -1,4 +1,10 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
+
+#include "_evl_export.h"
 
 /*
  * Error codes.
@@ -98,3 +104,5 @@
 #define SELVA_OBJECT_EOBIG              (-23)
 /* This must be the last error */
 #define SELVA_INVALID_ERROR             (-24)
+
+EVL_EXPORT(const char *, selva_strerror, int err);

@@ -9,6 +9,7 @@ OBJ := \
 	   src/main.o \
 	   src/module.o \
 	   src/promise.o \
+	   src/selva_error.o \
 	   src/timers.o
 ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
 OBJ += \
