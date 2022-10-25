@@ -7,6 +7,16 @@
 #include "event_loop.h"
 #include "timers.h"
 
+#if __MACH__ || __APPLE__
+#define TIME_SOURCE CLOCK_MONOTONIC
+#elif defined(CLOCK_MONOTONIC_COARSE)
+#define TIME_SOURCE CLOCK_MONOTONIC_COARSE
+#elif _POSIX_MONOTONIC_CLOCK > 0
+#define TIME_SOURCE CLOCK_MONOTONIC
+#else
+#define TIME_SOURCE CLOCK_REALTIME
+#endif
+
 static int timer_cmp(const void *data, heap_value_t a, heap_value_t b)
 {
     struct timer_reg *timers = (struct timer_reg *)data;
@@ -20,6 +30,11 @@ static int timer_cmp(const void *data, heap_value_t a, heap_value_t b)
     } else {
         return 0;
     }
+}
+
+static void get_monotime(struct timespec *spec)
+{
+    clock_gettime(TIME_SOURCE, spec);
 }
 
 void evl_timers_init(struct timers *timers)
@@ -77,8 +92,7 @@ int evl_timers_set_timeout(struct timers *timers, const struct timespec * restri
         return SELVA_ENOBUFS;
     }
 
-    /* TODO Monotonic timers */
-    clock_gettime(CLOCK_REALTIME, &spec);
+    get_monotime(&spec);
     timespec_add(&tim->timeout, &spec, timeout);
     tim->cb = cb;
     tim->arg = arg;
@@ -127,10 +141,7 @@ void evl_timers_tick(struct timers *timers)
     struct timespec spec;
     int tim_id;
 
-    /*
-     * TODO monotonic timers.
-     */
-    clock_gettime(CLOCK_REALTIME, &spec);
+    get_monotime(&spec);
 
     while ((tim_id = heap_peek_max(&timers->tim_queue)) != -1) {
         struct timer_reg *tim;
@@ -178,10 +189,7 @@ struct timespec *evl_timers_next_timeout(struct timers *timers, struct timespec 
 
     tim = &timers->tim[tim_id];
 
-    /*
-     * TODO monotonic timers.
-     */
-    clock_gettime(CLOCK_REALTIME, &cur);
+    get_monotime(&cur);
     timespec_sub(&res, &tim->timeout, &cur);
     memcpy(spec, timespec_cmp(&res, &ref, >) ? &res : &ref, sizeof(*spec));
 
