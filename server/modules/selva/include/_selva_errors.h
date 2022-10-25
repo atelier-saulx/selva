@@ -1,4 +1,8 @@
 /*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * NOTE
  * No guards needed because this file is intended to be included only by
  * selva.h.

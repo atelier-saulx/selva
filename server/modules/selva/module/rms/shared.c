@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include "redismodule.h"
 #include "selva_set.h"
 #include "jemalloc.h"

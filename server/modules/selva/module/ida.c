@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021-2022 SAULX
- * SPDX-License-Identifier: (MIT WITH selva-exception) OR AGPL-3.0-only
+ * SPDX-License-Identifier: MIT
  */
 #include "jemalloc.h"
 #include "bitmap.h"

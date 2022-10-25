@@ -1,0 +1,56 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: selva
+Upstream-Contact:
+Source: https://github.com/atelier-saulx/selva
+
+Files: .github/* package.json yarn.lock README.md GET.md SUBSCRIPTION.md client/* docs/* tools/* query-ast-parser/* server/README.md server/package.json server/perftest/* server/examples/* server/src/* server/redis/* server/modules/selva/README.md server/modules/selva/test/* server/modules/selva/valgrind.sup server/modules/selva/selva_cppcheck.cfg server/modules/selva/redis_cppcheck.cfg server/modules/selva/gdb/* server/modules/selva/doc/*
+Copyright:
+    Copyright (c) 2022 SAULX
+License: MIT
+
+Files: server/modules/selva/test/punit/*
+Copyright:
+    Copyright (c) 2013, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+    Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi>
+License: BSD-2-Clause
+
+Files: server/modules/selva/lib/deflate/*
+Copyright: Copyright 2016 Eric Biggers
+License: MIT
+
+Files: server/modules/jemalloc/* server/modules/selva/include/jemalloc_darwin_x64.h server/modules/selva/include/jemalloc_linux_x64.h
+Copyright:
+    Copyright (C) 2002-present Jason Evans <jasone@canonware.com>.
+    All rights reserved.
+    Copyright (C) 2007-2012 Mozilla Foundation.  All rights reserved.
+    Copyright (C) 2009-present Facebook, Inc.  All rights reserved.
+License: BSD-2-Clause
+
+Files: server/modules/selva/include/hiredis/*
+Copyright:
+    Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
+    Copyright (c) 2010-2011, Pieter Noordhuis <pcnoordhuis at gmail dot com>
+License: BSD-3-Clause
+
+Files: server/modules/selva/lib/rmutil/*
+Copyright:
+    Copyright (c) 2016 Redis Labs
+License: MIT
+
+Files: server/modules/locale/localedata/*
+Copyright: uncopyrightable
+License: CC0-1.0
+
+Files: server/modules/binaries/linux_x64/locale/*
+Copyright: uncopyrightable
+License: CC0-1.0
+
+Files: redis/client/*
+Copyright:
+    Copyright (c) 2016 by NodeRedis
+License: MIT
+
+Files: redis/parser/*
+Copyright:
+    Copyright (c) 2015 by NodeRedis
+License: MIT

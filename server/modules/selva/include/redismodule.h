@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2006-2020, Salvatore Sanfilippo
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 #ifndef REDISMODULE_H
 #define REDISMODULE_H
 
