@@ -53,13 +53,13 @@ EVL_EXPORT(int, evl_wait_fd, int fd, evl_event_cb rd_cb, evl_event_cb wr_cb, evl
 /**
  * Stop receiving events for fd.
  */
-EVL_EXPORT(int, evl_stop_fd, int fd);
+EVL_EXPORT(int, evl_end_fd, int fd);
 
 #define _evl_import_event_loop(apply) \
     apply(evl_set_timeout) \
     apply(evl_clear_timeout) \
     apply(evl_wait_fd) \
-    apply(evl_stop_fd)
+    apply(evl_end_fd)
 
 /**
  * Import all symbols from event_loop.h.

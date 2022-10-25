@@ -45,7 +45,7 @@ void on_data(struct event *event, void *arg __unused)
 
     r = read(fd, buf, sizeof(buf));
     if (r <= 0) {
-        evl_stop_fd(fd);
+        evl_end_fd(fd);
         return;
     } else if (r > 0) {
         printf("Received msg: \"%.*s\"\n", (int)r, buf);
@@ -53,11 +53,11 @@ void on_data(struct event *event, void *arg __unused)
 
     if (!strncmp(buf, "end", 3)) {
         /* Terminate this connection. */
-        evl_stop_fd(fd);
+        evl_end_fd(fd);
     } else if (!strncmp(buf, "quit", 4)) {
         /* Stop the server. */
-        evl_stop_fd(fd);
-        evl_stop_fd(server_sockfd);
+        evl_end_fd(fd);
+        evl_end_fd(server_sockfd);
     }
 }
 

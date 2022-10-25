@@ -126,7 +126,7 @@ int evl_wait_fd(int fd, evl_event_cb rd_cb, evl_event_cb wr_cb, evl_event_cb clo
     return 0;
 }
 
-int evl_stop_fd(int fd)
+int evl_end_fd(int fd)
 {
     struct fd_reg *fdr;
 
@@ -165,7 +165,7 @@ int evl_stop_fd(int fd)
 /**
  * Handle close event for an fd no longer monitored.
  * Call 'close' event for fd that we the user had stopped to listen with
- * evl_stop_fd() and free the fdr.
+ * evl_end_fd() and free the fdr.
  */
 static void handle_fd_close_event(struct event *ev)
 {
