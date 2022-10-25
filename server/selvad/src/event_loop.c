@@ -33,7 +33,6 @@ static void handle_pending_event(struct event *ev)
             fdr->wr_cb(ev, fdr->arg);
         }
     }
-    /* Otherwise the mask is either invalid or the event was cleared. */
 }
 
 void evl_init(void)
@@ -43,8 +42,6 @@ void evl_init(void)
     event_loop_state.state = EVENT_LOOP_RUN_STATE_RUN;
     evl_poll_init(&event_loop_state);
     evl_timers_init(&event_loop_state.timers);
-    // TODO
-    //int sfd = setup_sigfd();
     event_loop_init_promises();
 }
 
