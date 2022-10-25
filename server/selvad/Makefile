@@ -2,7 +2,6 @@ SHELL := /bin/bash
 
 include common.mk
 
-# TODO MacOs support
 OBJ := \
 	   src/ctime.o \
 	   src/event_loop.o \
