@@ -34,10 +34,6 @@ struct event {
 
 typedef void (*evl_event_cb)(struct event *event, void *arg);
 
-/* TODO Remove */
-#define handle_error(msg) \
-    do { perror(msg); exit(EXIT_FAILURE); } while (0)
-
 void evl_init(void);
 void evl_deinit(void);
 void evl_start(void);

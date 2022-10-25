@@ -26,7 +26,7 @@ static void handle_signal(struct event *ev, void *arg __unused)
     switch (signo) {
         case SIGINT:
         case SIGTERM:
-            exit(0);
+            exit(EXIT_SUCCESS);
     }
 }
 

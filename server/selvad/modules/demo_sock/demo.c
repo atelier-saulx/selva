@@ -8,6 +8,9 @@
 #include "event_loop.h"
 #include "module.h"
 
+#define handle_error(msg) \
+    do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
 static int server_sockfd;
 
 static int new_server(int port)

@@ -78,7 +78,7 @@ void sig_segv_handler(int sig, siginfo_t *info, void *_ucontext)
     sigemptyset(&act.sa_mask);
     act.sa_flags = SA_NODEFER | SA_ONSTACK | SA_RESETHAND;
     act.sa_handler = SIG_DFL;
-    sigaction (sig, &act, NULL);
+    sigaction(sig, &act, NULL);
     kill(getpid(), sig);
 }
 
