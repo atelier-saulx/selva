@@ -18,6 +18,11 @@
 #error "Unsupported target system"
 #endif
 
+#if __APPLE__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 /**
  * Breakup a 64-bit pointer into two 32-bit integers.
  * Note that MSB remains 0 so that the integer can be casted
@@ -288,3 +293,7 @@ void event_loop_handle_settled_promises(void)
         }
     }
 }
+
+#if __APPLE__
+#pragma clang diagnostic pop
+#endif
