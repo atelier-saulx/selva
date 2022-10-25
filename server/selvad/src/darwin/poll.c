@@ -21,13 +21,15 @@ void evl_poll_deinit(struct event_loop_state *state __unused)
 {
 }
 
-int evl_poll_add_fd(struct event_loop_state *state __unused, int fd __unused, enum event_type mask __unused)
+int evl_poll_add_fd(struct event_loop_state *state, int fd, enum event_type mask)
 {
+    state->fds[fd].mask |= mask;
     return 0;
 }
 
-void evl_poll_del_fd(struct event_loop_state *state __unused, int fd __unused, enum event_type mask __unused)
+void evl_poll_del_fd(struct event_loop_state *state, int fd, enum event_type mask)
 {
+    state->fds[fd].mask &= ~mask;
 }
 
 void print_events(const struct pollfd *pfd)

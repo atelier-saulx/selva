@@ -36,6 +36,7 @@ int evl_poll_add_fd(struct event_loop_state *state, int fd, enum event_type mask
 
     state->fds[fd].mask = mask;
 
+    /* TODO Better error codes. */
     return epoll_ctl(state->epfd, op, fd, &ee) == -1 ? SELVA_EGENERAL : 0;
 }
 

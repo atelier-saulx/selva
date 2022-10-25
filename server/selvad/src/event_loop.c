@@ -110,7 +110,6 @@ int evl_wait_fd(int fd, evl_event_cb rd_cb, evl_event_cb wr_cb, evl_event_cb clo
         event_loop_state.nr_fds++;
     }
 
-    fdr->mask |= mask;
     if (rd_cb) {
         fdr->rd_cb = rd_cb;
     }
@@ -143,9 +142,16 @@ int evl_stop_fd(int fd)
     evl_poll_del_fd(&event_loop_state, fd, fdr->mask);
 
     /*
+     * Stop handling of pending events for this fd immediately.
+     * Any pending events will be discarded.
+     */
+    fdr->rd_cb = NULL;
+    fdr->wr_cb = NULL;
+
+    /*
      * The fdr will be freed after the close event is handled.
-     * This ensures that all pending events have been handled
-     * before the fdr is cleared.
+     * This will ensure that we can properly discard any pending events for the
+     * file.
      */
     assert(event_loop_state.nr_pending_fd_close < EVENT_LOOP_MAX_FDS); /* TODO This could actually happen. */
     event_loop_state.pending_fd_close[event_loop_state.nr_pending_fd_close++] = (struct event){
