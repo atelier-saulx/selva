@@ -192,7 +192,7 @@ export type Schema = {
   sha?: string
   languages?: string[]
   types: Types
-  rootType: Pick<TypeSchema, 'fields' | 'prefix'>
+  rootType: Pick<TypeSchema, 'fields' | 'prefix' | 'meta'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>
 }
@@ -201,7 +201,7 @@ export type SchemaOptions = {
   sha?: string
   languages?: string[]
   types?: Types
-  rootType: Pick<TypeSchema, 'fields' | 'prefix'>
+  rootType: Pick<TypeSchema, 'fields' | 'prefix' | 'meta'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>
 }
