@@ -15,8 +15,7 @@ struct timespec;
  */
 enum event_type {
     EVENT_TYPE_NONE = 0x00,
-    EVENT_TYPE_SIGNAL = 0x01,
-    EVENT_TYPE_TIMER = 0x02,
+    EVENT_TYPE_TIMER = 0x01,
     EVENT_TYPE_FD_READABLE = 0x10,
     EVENT_TYPE_FD_WRITABLE = 0x20,
     EVENT_TYPE_FD_CLOSE = 0x40,

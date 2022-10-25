@@ -22,9 +22,7 @@ static void handle_pending_event(struct event *ev)
 {
     const enum event_type mask = ev->mask;
 
-    if (mask == EVENT_TYPE_SIGNAL) {
-        /* TODO */
-    } else if (mask & (EVENT_TYPE_FD_READABLE | EVENT_TYPE_FD_WRITABLE)) {
+    if (mask & (EVENT_TYPE_FD_READABLE | EVENT_TYPE_FD_WRITABLE)) {
         const int fd = ev->fd;
         struct fd_reg *fdr = &event_loop_state.fds[fd];
 

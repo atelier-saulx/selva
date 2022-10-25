@@ -148,7 +148,7 @@ void evl_timers_tick(struct timers *timers)
         /*
          * Prepare the event struct.
          */
-        event.mask = EVENT_TYPE_SIGNAL;
+        event.mask = EVENT_TYPE_TIMER;
         event.timer_id = tim_id;
 
         /*
