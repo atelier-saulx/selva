@@ -34,8 +34,6 @@
 
 #pragma once
 
-#include "cdefs.h"
-
 typedef short heap_value_t;
 typedef int (*heap_comp)(const void *data, heap_value_t a, heap_value_t b);
 

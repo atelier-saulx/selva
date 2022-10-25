@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "../../src/cdefs.h" /* TODO Remove */
 #include "event_loop.h"
 #include "evl_signal.h"
 #include "promise.h"

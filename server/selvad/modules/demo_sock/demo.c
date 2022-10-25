@@ -5,7 +5,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "../../src/cdefs.h" /* TODO Remove */
 #include "event_loop.h"
 #include "module.h"
 

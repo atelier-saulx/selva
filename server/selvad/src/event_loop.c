@@ -9,7 +9,6 @@
 #include <time.h>
 #include <unistd.h>
 #include "ctime.h"
-#include "cdefs.h"
 #include "selva_error.h"
 #include "event_loop_state.h"
 #include "poll.h"

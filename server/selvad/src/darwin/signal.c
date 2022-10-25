@@ -5,7 +5,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include "../cdefs.h"
 #include "selva_error.h"
 #include "evl_signal.h"
 

@@ -27,6 +27,7 @@ endif
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -fvisibility=hidden \
 		  -Iinclude \
+		  -include include/cdefs.h \
 		  -DEVL_MAIN
 
 #modules

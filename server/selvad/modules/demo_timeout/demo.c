@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <dlfcn.h>
-#include "../../src/cdefs.h" /* TODO Remove */
 #include "event_loop.h"
 #include "module.h"
 

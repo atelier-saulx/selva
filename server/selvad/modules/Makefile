@@ -1,5 +1,5 @@
 include ../common.mk
-CFLAGS += -fPIC -g -fvisibility=hidden -I../../include
+CFLAGS += -fPIC -g -fvisibility=hidden -I../../include -include ../include/cdefs.h
 export
 
 MODULES := \
