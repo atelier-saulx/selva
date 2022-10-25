@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include "event_loop.h"
 #include "module.h"
 

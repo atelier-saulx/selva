@@ -1,3 +1,6 @@
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
+
 ../libdemo_timeout.so: demo.o
 	$(CC) -o $@ -shared -fPIC -g $^
 

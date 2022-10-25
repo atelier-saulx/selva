@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <arpa/inet.h>
 #include <dlfcn.h>
 #include <stdio.h>

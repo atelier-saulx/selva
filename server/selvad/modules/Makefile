@@ -1,3 +1,6 @@
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
+
 include ../common.mk
 CFLAGS += -fPIC -g -fvisibility=hidden -I../../include -include ../include/cdefs.h
 export

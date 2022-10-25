@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <sys/signalfd.h>
 #include <signal.h>
 #include <unistd.h>

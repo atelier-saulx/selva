@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <stdio.h> /* TODO Remove */
 #include <errno.h>
 #include <fcntl.h>
