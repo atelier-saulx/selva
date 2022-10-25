@@ -36,13 +36,6 @@ const char * const selvaStrError[-SELVA_INVALID_ERROR + 1] = {
     [-SELVA_INVALID_ERROR]              = (const char *)"ERR_SELVA Invalid error code"
 };
 
-const char *getSelvaErrorStr(int err) {
-    if (err > 0 || -err >= (int)num_elem(selvaStrError)) {
-        return selvaStrError[-SELVA_EGENERAL];
-    }
-    return selvaStrError[-err];
-}
-
 /* declared as weak so the unit tests can override it. */
 __weak_sym int replyWithSelvaError(RedisModuleCtx *ctx, int err) {
     return RedisModule_ReplyWithError(ctx, getSelvaErrorStr(err));

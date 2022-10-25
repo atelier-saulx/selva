@@ -13,7 +13,6 @@ SRC-edge += ../../module/comparator.c
 SRC-edge += ../../module/config.c
 SRC-edge += ../../module/edge/edge.c
 SRC-edge += ../../module/edge/edge_constraint.c
-SRC-edge += ../../module/errors.c
 SRC-edge += ../../module/hierarchy/hierarchy.c
 SRC-edge += ../../module/hierarchy/types.c
 SRC-edge += ../../module/rms/shared.c

@@ -109,8 +109,15 @@
 
 struct RedisModuleCtx;
 
-const char *getSelvaErrorStr(int err);
 int replyWithSelvaError(struct RedisModuleCtx *ctx, int err);
 int replyWithSelvaErrorf(struct RedisModuleCtx *ctx, int err, const char *fmt, ...);
 
 extern const char * const selvaStrError[-SELVA_INVALID_ERROR + 1];
+
+static inline const char *getSelvaErrorStr(int err) {
+    int i = -err;
+
+    i = (i >= 0 && i < (int)num_elem(selvaStrError)) ? i : -SELVA_EGENERAL;
+
+    return selvaStrError[i];
+}

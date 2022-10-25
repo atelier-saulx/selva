@@ -4,7 +4,6 @@ SRC-rpn += ../../lib/util/cstrings.c
 SRC-rpn += ../../lib/util/mempool.c
 SRC-rpn += ../../lib/util/memrchr.c
 SRC-rpn += ../../lib/util/svector.c
-SRC-rpn += ../../module/errors.c
 SRC-rpn += ../../module/rms/shared.c
 SRC-rpn += ../../module/rpn/rpn.c
 SRC-rpn += ../../module/selva_log.c

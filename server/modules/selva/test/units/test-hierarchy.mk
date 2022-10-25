@@ -10,7 +10,6 @@ SRC-hierarchy += ../../lib/util/trx.c
 SRC-hierarchy += ../../module/alias.c
 SRC-hierarchy += ../../module/arg_parser.c
 SRC-hierarchy += ../../module/config.c
-SRC-hierarchy += ../../module/errors.c
 SRC-hierarchy += ../../module/hierarchy/hierarchy.c
 SRC-hierarchy += ../../module/hierarchy/types.c
 SRC-hierarchy += ../../module/rms/shared.c

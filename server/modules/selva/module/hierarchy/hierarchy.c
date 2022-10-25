@@ -405,7 +405,7 @@ static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, struct SelvaHierarchy *h
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a node object for \"%.*s\": %s\n",
                       (int)SELVA_NODE_ID_SIZE, id,
-                      selvaStrError[-err]);
+                      getSelvaErrorStr(err));
         }
 
         /*
@@ -848,7 +848,7 @@ static int cross_insert_children(
                 SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a child \"%.*s\" for \"%.*s\": %s\n",
                         (int)SELVA_NODE_ID_SIZE, nodes[i],
                         (int)SELVA_NODE_ID_SIZE, node->id,
-                        selvaStrError[-err]);
+                        getSelvaErrorStr(err));
                 continue;
             }
         }
@@ -952,7 +952,7 @@ static int cross_insert_parents(
                 SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a parent \"%.*s\" for \"%.*s\": %s\n",
                         (int)SELVA_NODE_ID_SIZE, nodes[i],
                         (int)SELVA_NODE_ID_SIZE, node->id,
-                        selvaStrError[-err]);
+                        getSelvaErrorStr(err));
                 continue;
             }
         }
