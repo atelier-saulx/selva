@@ -136,6 +136,10 @@ int evl_end_fd(int fd)
         return SELVA_EINVAL;
     }
 
+    if (event_loop_state.nr_pending_fd_close >= EVENT_LOOP_MAX_FDS) {
+        return SELVA_ENOBUFS;
+    }
+
     evl_poll_del_fd(&event_loop_state, fd, fdr->mask);
 
     /*
@@ -150,7 +154,6 @@ int evl_end_fd(int fd)
      * This will ensure that we can properly discard any pending events for the
      * file.
      */
-    assert(event_loop_state.nr_pending_fd_close < EVENT_LOOP_MAX_FDS); /* TODO This could actually happen. */
     event_loop_state.pending_fd_close[event_loop_state.nr_pending_fd_close++] = (struct event){
         .mask = EVENT_TYPE_FD_CLOSE,
         .fd = fd,

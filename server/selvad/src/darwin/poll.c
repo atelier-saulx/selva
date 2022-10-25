@@ -84,8 +84,9 @@ void evl_poll(struct event_loop_state *state, const struct timespec *timeout)
             struct fd_reg *fe = &state->fds[fd];
             enum event_type mask = EVENT_TYPE_NONE;
 
-            /* TODO Remove */
+#if 0
             print_events(pfd);
+#endif
 
             if (fe->mask == EVENT_TYPE_NONE) {
                 continue;
