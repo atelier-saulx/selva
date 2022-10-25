@@ -259,14 +259,11 @@ void evl_start(void)
         }
         event_loop_state.nr_pending_fd_close = 0;
 
-        printf("evl tick\n");
-#if 0
-        printf("%d %d %d %d\n",
+        printf("evl tick: %d %d %d %d\n",
                !!evl_timers_nr_waiting(&event_loop_state.timers),
                !!event_loop_state.nr_fds,
                !!event_loop_state.nr_pending,
                !!event_loop_state.async_nr_awaiting);
-#endif
         /* Stop if nothing is waiting or pending anymore. */
         if (evl_timers_nr_waiting(&event_loop_state.timers) == 0 &&
             event_loop_state.nr_fds == 0 &&
