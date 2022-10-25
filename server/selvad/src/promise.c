@@ -57,6 +57,11 @@ struct evl_async_ctx {
     LIST_ENTRY(evl_async_ctx) entries;
 };
 
+/**
+ * Promise flags.
+ * Flags are used for internal tracking of promises and they are diffrent from
+ * the promise status.
+ */
 enum evl_promise_flags {
     /**
      * Awaiting has started.
@@ -78,6 +83,9 @@ enum evl_promise_flags {
     EVL_PROMISE_FLAG_CANCELLED = 0x08,
 } __packed;
 
+/**
+ * A promise descriptor.
+ */
 struct evl_promise {
     enum evl_promise_status status;
     enum evl_promise_flags flags;
@@ -92,7 +100,10 @@ struct evl_promise {
     SLIST_ENTRY(evl_promise) entries;
 };
 
-static struct evl_async_ctx *get_async_ctx(void)
+/**
+ * Get a new async ctx from the free list.
+ */
+static struct evl_async_ctx *alloc_async_ctx(void)
 {
     struct evl_async_ctx *ctx;
 
@@ -107,6 +118,9 @@ static struct evl_async_ctx *get_async_ctx(void)
     return ctx;
 }
 
+/**
+ * Release an async ctx back to the free list.
+ */
 static void release_async_ctx(struct evl_async_ctx *ctx)
 {
     LIST_REMOVE(ctx, entries);
@@ -131,7 +145,7 @@ __used static void async_trampoline(int ctx_msw, int ctx_lsw)
 
 void evl_call_async(async_func afun, void *arg)
 {
-    struct evl_async_ctx *ctx = get_async_ctx();
+    struct evl_async_ctx *ctx = alloc_async_ctx();
 
     if (!ctx) {
         /* TODO Better error log */

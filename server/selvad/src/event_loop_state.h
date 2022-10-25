@@ -31,6 +31,9 @@ struct fd_reg {
 SLIST_HEAD(promise_list, evl_promise);
 LIST_HEAD(evl_async_ctx_list, evl_async_ctx);
 
+/**
+ * Internal state struct.
+ */
 struct event_loop_state {
     enum event_loop_run_state state;
 
@@ -79,10 +82,6 @@ struct event_loop_state {
  * The internal state of the event loop.
  */
 extern struct event_loop_state event_loop_state;
-
-static inline struct event *evl_new_event(struct event_loop_state *state) {
-    return (state->nr_pending == EVENT_LOOP_MAX_EVENTS) ? NULL : &state->pending[state->nr_pending++];
-}
 
 /*
  * in promise.c
