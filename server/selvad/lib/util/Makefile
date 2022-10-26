@@ -22,19 +22,14 @@ ifeq ($(uname_S),Darwin) # macOS
 	OBJ += memrchr.o
 endif
 
-ifeq ($(uname_S),Linux)
-	TARGET := libutil.so
+ifndef LIB_SUFFIX
+$(error LIB_SUFFIX is not set)
 endif
-ifeq ($(uname_S),Darwin)
-	TARGET := libutil.dylib
-endif
-ifndef TARGET
-$(error TARGET is not set)
-endif
+TARGET := ../llibutil$(LIB_SUFFIX)
 
 DEP := $(OBJ:%.o=%.d)
 
-../l$(TARGET): $(OBJ)
+$(TARGET): $(OBJ)
 	$(CC) -o $@ -shared -fPIC -g $^ $(LDFLAGS) $(LDLIBS)
 
 -include $(DEP)

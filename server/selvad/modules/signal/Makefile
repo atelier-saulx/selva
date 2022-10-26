@@ -7,7 +7,9 @@ OBJ := \
 
 DEP := $(OBJ:%.o=%.d)
 
-../libsignal.so: $(OBJ)
+TARGET := ../libsignal$(MOD_SUFFIX)
+
+$(TARGET): $(OBJ)
 	$(CC) -o $@ -shared -fPIC -g $^
 
 -include $(DEP)
