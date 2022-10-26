@@ -25,8 +25,8 @@ endif
 
 all: .make-prerequisites jemalloc-$(JEMALLOC_VER)/config.status
 	cd jemalloc-$(JEMALLOC_VER) && $(MAKE) CFLAGS="$(JEMALLOC_CFLAGS)" LDFLAGS="$(JEMALLOC_LDFLAGS)" LIBDIR="$(JEMALLOC_LIBDIR)" build_lib_shared
-	cp -P jemalloc-$(JEMALLOC_VER)/lib/* "../binaries/$(SELVA_ARCH)/"
-	cp jemalloc-$(JEMALLOC_VER)/include/jemalloc/jemalloc_selva.h "../selva/include/jemalloc_$(SELVA_ARCH).h"
+#	cp -P jemalloc-$(JEMALLOC_VER)/lib/* "../binaries/$(SELVA_ARCH)/"
+#	cp jemalloc-$(JEMALLOC_VER)/include/jemalloc/jemalloc_selva.h "../selva/include/jemalloc_$(SELVA_ARCH).h"
 
 jemalloc-$(JEMALLOC_VER)/config.status:
 	cd jemalloc-$(JEMALLOC_VER) && ./configure $(JEMALLOC_CONFIG) CFLAGS="$(JEMALLOC_CFLAGS)" LDFLAGS="$(JEMALLOC_LDFLAGS)" LIBDIR="$(JEMALLOC_LIBDIR)"

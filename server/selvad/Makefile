@@ -5,6 +5,10 @@ SHELL := /bin/bash
 
 include common.mk
 
+LIBS := \
+		lib/deflate \
+		lib/jemalloc \
+		lib/util
 OBJ := \
 	   src/ctime.o \
 	   src/event_loop.o \
@@ -34,16 +38,19 @@ CFLAGS += -fvisibility=hidden \
 		  -DEVL_MAIN
 
 #modules
-all: main modules
+all: main modules $(LIBS)
 
-main: $(OBJ) 
+main: $(OBJ)
 	#$(CC) -o $@ $^
 	$(CC) $(CFLAGS) -o $@ $^
 
 -include $(DEP)
 
-modules:
-	$(MAKE) -C modules
+# Build all libraries
+lib: $(LIBS)
+
+$(LIBS):
+	$(MAKE) -C $@
 
 clean:
 	$(RM) main
@@ -51,4 +58,4 @@ clean:
 	find . -type f -name "*.o" -exec rm -f {} \;
 	find . -type f -name "*.so" -exec rm -f {} \;
 
-.PHONY: clean modules
+.PHONY: clean modules lib $(LIBS)
