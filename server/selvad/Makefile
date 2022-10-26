@@ -55,6 +55,9 @@ lib: | $(LIBS)
 $(LIBS):
 	$(MAKE) -C $@
 
+modules:
+	$(MAKE) -C modules
+
 clean:
 	$(RM) main
 	find . -type f -name "*.d" -exec rm -f {} \;
