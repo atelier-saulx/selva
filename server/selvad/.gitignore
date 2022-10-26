@@ -3,3 +3,4 @@
 /main
 *.d
 *.so
+*.dylib

@@ -4,7 +4,7 @@
  * @author  Olli Vanhoja
  * @brief   Thread-safe queue.
  * @section LICENSE
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * Copyright (c) 2013 - 2015, 2017 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
  * Copyright (c) 2012, 2013 Ninjaware Oy
  *                          Olli Vanhoja <olli.vanhoja@ninjaware.fi>
@@ -37,7 +37,7 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "./queue_r.h"
+#include "util/queue_r.h"
 
 queue_cb_t queue_create(void * data_array, size_t block_size, size_t array_size)
 {

@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: MIT
 include ../../common.mk
 
-RM_INCLUDE_DIR := ../../include ../jemalloc
+CFLAGS += -fPIC -O2 -Wno-unused-function -fno-strict-aliasing -I../../include
+# To remove warnings about asserts
+CFLAGS += -Wno-unused-value
+LDFLAGS += -L../
+LDLIBS += -ljemalloc_selva
 
-CFLAGS += -fPIC -O2 -Wno-unused-function -fno-strict-aliasing
-CFLAGS += $(patsubst %,-I%,$(RM_INCLUDE_DIR))
-CC := gcc
-
-OBJS := \
+OBJ := \
 	auto_free.o \
 	base64.o \
 	bitmap.o \
@@ -19,10 +19,12 @@ OBJS := \
 	svector.o \
 	trx.o
 ifeq ($(uname_S),Darwin) # macOS
-	OBJS += memrchr.o
+	OBJ += memrchr.o
 endif
 
-all: libutil.a
+DEP := $(OBJ:%.o=%.d)
 
-libutil.a: $(OBJS)
-	ar rcs $@ $^
+../libutil.so: $(OBJ)
+	$(CC) -o $@ -shared -fPIC -g $^ $(LDFLAGS) $(LDLIBS)
+
+-include $(DEP)

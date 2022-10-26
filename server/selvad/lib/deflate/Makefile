@@ -1,4 +1,19 @@
-deflate:
-	$(MAKE) CFLAGS=-fPIC DISABLE_GZIP=1 DISABLE_ZLIB=1 -C deflate libdeflate.so;
+LIBDEFLATE_VER ?= 1.14
 
-.PHONY: deflate
+ifeq ($(uname_S),Linux)
+	TARGET := libdeflate.so
+endif
+ifeq ($(uname_S),Darwin)
+	TARGET := libdeflate.dylib
+endif
+ifndef TARGET
+$(error TARGET is not set)
+endif
+
+deflate:
+	$(MAKE) CFLAGS=-fPIC DISABLE_GZIP=1 DISABLE_ZLIB=1 -C ./libdeflate-$(LIBDEFLATE_VER) $(TARGET)
+
+clean: 
+	$(MAKE) -C ./libdeflate-$(LIBDEFLATE_VER) clean
+
+.PHONY: clean deflate

@@ -7,7 +7,7 @@
 #include <string.h>
 #include <tgmath.h>
 #include "jemalloc.h"
-#include "poptop.h"
+#include "util/poptop.h"
 
 /**
  * Struct used for the return value of poptop_find().

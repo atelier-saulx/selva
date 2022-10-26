@@ -10,8 +10,8 @@
 #include <string.h>
 #include "jemalloc.h"
 #include "../tunables.h"
-#include "mempool.h"
-#include "svector.h"
+#include "util/mempool.h"
+#include "util/svector.h"
 
 #define VEC_SIZE(_len) (sizeof(void *) * (_len))
 #define VEC_COMPAR(_fn) ((int (*)(const void *, const void *))(_fn))

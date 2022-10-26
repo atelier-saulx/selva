@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <stdint.h>
-#include "trx.h"
+#include "util/trx.h"
 
 int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx) {
     const trxid_t cl = (trxid_t)1 << __builtin_popcountl(state->cl);

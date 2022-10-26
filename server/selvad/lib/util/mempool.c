@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/mman.h>
-#include "mempool.h"
+#include "util/mempool.h"
 
 #define MOD_AL(x, y) ((x) & ((y) - 1)) /* x % bytes */
 #define PAD(size, al) MOD_AL(((al) - MOD_AL((size), (al))), (al))

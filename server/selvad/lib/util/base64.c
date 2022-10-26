@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "jemalloc.h"
-#include "base64.h"
+#include "util/base64.h"
 
 static const unsigned char base64_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 

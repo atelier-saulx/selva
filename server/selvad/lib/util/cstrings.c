@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include "jemalloc.h"
-#include "cstrings.h"
+#include "util/cstrings.h"
 
 char *selva_strndup(const char *s, size_t n) {
   const size_t len = strnlen(s, n);

@@ -4,11 +4,14 @@
 SHELL := /bin/bash
 
 include common.mk
+export uname_S
 
+# Ordered list of libraries
 LIBS := \
-		lib/deflate \
 		lib/jemalloc \
+		lib/deflate \
 		lib/util
+
 OBJ := \
 	   src/ctime.o \
 	   src/event_loop.o \
@@ -46,8 +49,8 @@ main: $(OBJ)
 
 -include $(DEP)
 
-# Build all libraries
-lib: $(LIBS)
+# Build all libraries (ordered)
+lib: | $(LIBS)
 
 $(LIBS):
 	$(MAKE) -C $@
@@ -57,5 +60,7 @@ clean:
 	find . -type f -name "*.d" -exec rm -f {} \;
 	find . -type f -name "*.o" -exec rm -f {} \;
 	find . -type f -name "*.so" -exec rm -f {} \;
+	find . -type f -name "*.dylib" -exec rm -f {} \;
+	find ./lib -type d -maxdepth 1 -exec $(MAKE) -C {} clean \;
 
 .PHONY: clean modules lib $(LIBS)
