@@ -10,6 +10,6 @@ DEP := $(OBJ:%.o=%.d)
 TARGET := ../libsignal$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)
-	$(CC) -o $@ -shared -fPIC -g $^
+	$(CC) -o $@ $(LDFLAGS) $^
 
 -include $(DEP)

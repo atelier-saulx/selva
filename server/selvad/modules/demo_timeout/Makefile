@@ -4,6 +4,6 @@
 TARGET := ../libdemo_timeout$(MOD_SUFFIX)
 
 $(TARGET): demo.o
-	$(CC) -o $@ -shared -fPIC -g $^
+	$(CC) -o $@ $(LDFLAGS) $^
 
 -include demo.d

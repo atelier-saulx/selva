@@ -3,6 +3,12 @@
 
 include ../common.mk
 CFLAGS += -fPIC -g -fvisibility=hidden -I../../include -include ../include/cdefs.h
+ifeq ($(uname_S),Linux)
+LDFLAGS += -g -shared -fPIC
+endif
+ifeq ($(uname_S),Darwin)
+LDFLAGS += -g -bundle
+endif
 export
 
 MODULES := \
