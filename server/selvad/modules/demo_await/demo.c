@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <dlfcn.h>
+#include "selva_log.h"
 #include "event_loop.h"
 #include "promise.h"
 #include "module.h"
@@ -14,7 +15,7 @@ static void resolve(struct event *e __unused, void *arg)
 {
     struct evl_promise *p = (struct evl_promise *)arg;
 
-    printf("%s: The task is ready\n", __func__);
+    SELVA_LOG(SELVA_LOGL_INFO, "The task is ready");
     evl_promise_resolve(p, NULL);
 }
 
@@ -26,9 +27,9 @@ static struct evl_promise *slow_fun(struct evl_async_ctx *ctx)
         .tv_nsec = 0,
     };
 
-    printf("%s: The following is going to take at least 1 sec\n", __func__);
+    SELVA_LOG(SELVA_LOGL_INFO, "The following is going to take at least 1 sec");
     evl_set_timeout(&t1, resolve, p);
-    printf("%s: But we continue immediately\n", __func__);
+    SELVA_LOG(SELVA_LOGL_INFO, "But we continue immediately");
 
     return p;
 }
@@ -39,11 +40,11 @@ static void async_fun(struct evl_async_ctx *ctx, void *arg __unused)
     struct evl_promise *p;
     enum evl_promise_status s;
 
-    printf("%s: In async function\n", __func__);
+    SELVA_LOG(SELVA_LOGL_INFO, "In async function");
     p = slow_fun(ctx);
-    printf("%s: Going to await p\n", __func__);
+    SELVA_LOG(SELVA_LOGL_INFO, "Going to await p");
     s = evl_promise_await(p, NULL);
-    printf("%s: Returned from await with status: %d\n", __func__, s);
+    SELVA_LOG(SELVA_LOGL_INFO, "Returned from await with status: %d", s);
 
     /* Using __auto_cleanup_ctx */
 #if 0
@@ -57,18 +58,21 @@ static void async_fun(struct evl_async_ctx *ctx, void *arg __unused)
  */
 static void async_example(struct event *e __unused, void *arg __unused)
 {
-    printf("AAA\n");
+    SELVA_LOG(SELVA_LOGL_INFO, "AAA");
     evl_call_async(async_fun, NULL);
-    printf("BBB\n");
+    SELVA_LOG(SELVA_LOGL_INFO, "BBB");
+}
+
+IMPORT() {
+    evl_import_main(selva_log);
+    evl_import_main(evl_set_timeout);
+    evl_import_main(evl_call_async);
+    evl_import_promise();
 }
 
 __constructor void init(void)
 {
-    printf("Init demo_await\n");
-
-    evl_import_main(evl_set_timeout);
-    evl_import_main(evl_call_async);
-    evl_import_promise();
+    SELVA_LOG(SELVA_LOGL_INFO, "Init demo_await\n");
 
     struct timespec t = {
         .tv_sec = 0,

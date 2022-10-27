@@ -2,11 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 OBJ := \
-	   main.o \
-	   trace.o
-
+	   server.o
 DEP := $(OBJ:%.o=%.d)
-TARGET := ../signal$(MOD_SUFFIX)
+TARGET := ../server$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^

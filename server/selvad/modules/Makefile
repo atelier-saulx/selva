@@ -15,6 +15,7 @@ MODULES := \
 		   demo_await \
 		   demo_sock \
 		   demo_timeout \
+		   server \
 		   signal
 
 all: $(MODULES)

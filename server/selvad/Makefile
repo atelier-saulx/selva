@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 SHELL := /bin/bash
+_MOD_PATH := "$(PWD)/modules"
 
 include common.mk
 export uname_S
@@ -12,42 +13,11 @@ LIBS := \
 		lib/deflate \
 		lib/util
 
-OBJ := \
-	   src/ctime.o \
-	   src/event_loop.o \
-	   src/heap.o \
-	   src/main.o \
-	   src/module.o \
-	   src/promise.o \
-	   src/selva_error.o \
-	   src/timers.o
-ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
-OBJ += \
-	   src/linux/poll.o \
-	   src/linux/signal.o
-CFLAGS += -rdynamic -ldl -Wl,-rpath,$(PWD)/modules -DUSE_EPOLL=1
-endif
-ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
-OBJ += \
-	   src/darwin/poll.o \
-	   src/darwin/signal.o
-CFLAGS += -DUSE_POLL=1
-endif
-
-DEP := $(OBJ:%.o=%.d)
-CFLAGS += -fvisibility=hidden \
-		  -Iinclude \
-		  -include include/cdefs.h \
-		  -DEVL_MAIN
-
-#modules
 all: selvad modules $(LIBS)
 
-selvad: $(OBJ)
-	#$(CC) -o $@ $^
-	$(CC) $(CFLAGS) -o $@ $^
-
--include $(DEP)
+selvad: export MOD_PATH = $(_MOD_PATH)
+selvad:
+	$(MAKE) -C src
 
 # Build all libraries (ordered)
 # TODO Doesn't work properly!?
@@ -56,6 +26,7 @@ lib: | $(LIBS)
 $(LIBS):
 	$(MAKE) -C $@
 
+modules: export MOD_PATH = $(_MOD_PATH)
 modules:
 	$(MAKE) -C modules
 
@@ -67,4 +38,4 @@ clean:
 	find . -type f -name "*.dylib" -exec rm -f {} \;
 	find ./lib -type d -maxdepth 1 -exec $(MAKE) -C {} clean \;
 
-.PHONY: clean modules lib $(LIBS)
+.PHONY: clean selvad modules lib $(LIBS)

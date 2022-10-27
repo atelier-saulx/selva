@@ -2,13 +2,13 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
-#include <stdio.h> /* TODO Remove */
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include "selva_log.h"
 #include "selva_error.h"
 #include "evl_signal.h"
 
@@ -82,12 +82,12 @@ static void sig_handler(int sig, siginfo_t *info, void *uap __unused)
         .esi_band = info->si_band,
     };
 
-    printf("Handling signal. signo: %d fd: %d\n", sig, wfd);
+    SELVA_LOG(SELVA_LOGL_INFO, "Handling signal. signo: %d fd: %d", sig, wfd);
 
     int err = write(wfd, &esig, sizeof(esig));
     if (err == -1) {
         /* TODO proper log. */
-        fprintf(stderr, "Failed to handle signo: %d fildes: %d err: %s\n", sig, wfd, strerror(errno));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle signo: %d fildes: %d err: %s", sig, wfd, strerror(errno));
     }
 
     errno = saved_errno;

@@ -6,21 +6,25 @@
 #include <stdlib.h>
 #include <time.h>
 #include <dlfcn.h>
+#include "selva_log.h"
 #include "event_loop.h"
 #include "module.h"
 
 static void my_hello()
 {
-    printf("Hello world from a module\n");
+    SELVA_LOG(SELVA_LOGL_INFO, "Hello world from a module");
+}
+
+IMPORT() {
+    evl_import_main(selva_log);
+    evl_import(evl_set_timeout, NULL);
+    evl_import_main(evl_clear_timeout);
+    // or evl_import_event_loop();
 }
 
 __constructor void init(void)
 {
-    printf("Init demo_timeout\n");
-
-    evl_import(evl_set_timeout, NULL);
-    evl_import_main(evl_clear_timeout);
-    // or evl_import_event_loop();
+    SELVA_LOG(SELVA_LOGL_INFO, "Init demo_timeout");
 
     /*
      * Random timeout.

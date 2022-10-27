@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include "ctime.h"
 #include "selva_error.h"
+#include "selva_log.h"
 #include "event_loop_state.h"
 #include "poll.h"
 
@@ -263,7 +264,7 @@ void evl_start(void)
         }
         event_loop_state.nr_pending_fd_close = 0;
 
-        printf("evl tick: %d %d %d %d\n",
+        SELVA_LOG(SELVA_LOGL_DBG, "evl tick: %d %d %d %d",
                !!evl_timers_nr_waiting(&event_loop_state.timers),
                !!event_loop_state.nr_fds,
                !!event_loop_state.nr_pending,
@@ -274,7 +275,7 @@ void evl_start(void)
             event_loop_state.nr_pending == 0 &&
             event_loop_state.async_nr_awaiting == 0) {
             event_loop_state.state = EVENT_LOOP_RUN_STATE_STOP;
-            printf("EVENT_LOOP_RUN_STATE_STOP\n");
+            SELVA_LOG(SELVA_LOGL_INFO, "EVENT_LOOP_RUN_STATE_STOP");
         }
     }
 

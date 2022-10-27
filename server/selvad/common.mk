@@ -13,8 +13,6 @@ export ZERO_AR_DATE := 1
 
 # CFLAGS shared with all compilation units.
 CFLAGS := -MMD -Wall -Wextra
-# See substitute-path in .gdbinit
-CFLAGS += -ffile-prefix-map=$(PWD)=/src
 
 ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
 	CFLAGS += -g -ggdb3 -march=x86-64 -mtune=intel -mfpmath=sse -mavx -mavx2 -mbmi -mbmi2 -mlzcnt -mmovbe -mprfchw -fno-math-errno -ftree-vectorize

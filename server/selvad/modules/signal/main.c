@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "selva_log.h"
 #include "event_loop.h"
 #include "evl_signal.h"
 #include "promise.h"
@@ -68,10 +69,13 @@ static void setup_async_signals(void)
     }
 }
 
-__constructor void init(void)
-{
+IMPORT() {
     evl_import_event_loop();
     evl_import_signal();
+}
+
+__constructor void init(void)
+{
 
     /*
      * SIGPIPE can be sync or async depending on the system.

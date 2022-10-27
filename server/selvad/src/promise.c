@@ -9,6 +9,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <time.h>
+#include "selva_log.h"
 #include "event_loop_state.h"
 #include "promise.h"
 
@@ -152,14 +153,12 @@ void evl_call_async(async_func afun, void *arg)
     struct evl_async_ctx *ctx = alloc_async_ctx();
 
     if (!ctx) {
-        /* TODO Better error log */
-        fprintf(stderr, "no more free contexts");
+        SELVA_LOG(SELVA_LOGL_CRIT, "no more free contexts");
         exit(EXIT_FAILURE);
     }
 
     if (getcontext(&ctx->async_uctx)) {
-        /* TODO Better error log */
-        fprintf(stderr, "getcontext failed");
+        SELVA_LOG(SELVA_LOGL_CRIT, "getcontext failed");
         exit(EXIT_FAILURE);
     }
 
@@ -180,8 +179,7 @@ void evl_call_async(async_func afun, void *arg)
 #endif
 
     if (swapcontext(&event_loop_state.async_uctx_main, &ctx->async_uctx)) {
-        /* TODO Better error log */
-        fprintf(stderr, "swapcontext failed");
+        SELVA_LOG(SELVA_LOGL_CRIT, "swapcontext failed");
         abort();
     }
 }
@@ -209,9 +207,8 @@ enum evl_promise_status evl_promise_await(struct evl_promise *p, void **res)
 
     if (p->flags & (EVL_PROMISE_FLAG_AWAITING | EVL_PROMISE_FLAG_AWAITED)) {
         /* A promise can be only awaited once. */
-        /* TODO Better error log */
-        fprintf(stderr, "double await");
-        abort(); /* Is abort() the right way? */
+        SELVA_LOG(SELVA_LOGL_CRIT, "double await");
+        abort(); /* RFE Is abort() the right way? */
     }
 
     p->flags |= EVL_PROMISE_FLAG_AWAITING;

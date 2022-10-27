@@ -9,6 +9,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
+#include "selva_log.h"
 #include "event_loop.h"
 #include "../event_loop_state.h"
 #include "poll.h"
@@ -36,22 +37,27 @@ void evl_poll_del_fd(struct event_loop_state *state, int fd, enum event_type mas
     state->fds[fd].mask &= ~mask;
 }
 
-void print_events(const struct pollfd *pfd)
+__unused static void print_events(const struct pollfd *pfd)
 {
     typeof(pfd->revents) f = pfd->revents;
+    const char *nfo[10];
+#define SET_NFO(i, v) nfo[i] = (f & (v)) ? " " #v : ""
+    SET_NFO(0, POLLERR);
+    SET_NFO(1, POLLHUP);
+    SET_NFO(2, POLLIN);
+    SET_NFO(3, POLLNVAL);
+    SET_NFO(4, POLLOUT);
+    SET_NFO(5, POLLPRI);
+    SET_NFO(6, POLLRDBAND);
+    SET_NFO(7, POLLRDNORM);
+    SET_NFO(8, POLLWRBAND);
+    SET_NFO(9, POLLWRNORM);
+#undef SET_NFO
 
-    printf("event for fd: %d revents:", pfd->fd);
-    if (f & POLLERR) printf(" POLLERR");
-    if (f & POLLHUP) printf(" POLLHUP");
-    if (f & POLLIN) printf(" POLLIN");
-    if (f & POLLNVAL) printf(" POLLNVAL");
-    if (f & POLLOUT) printf(" POLLOUT");
-    if (f & POLLPRI) printf(" POLLPRI");
-    if (f & POLLRDBAND) printf(" POLLRDBAND");
-    if (f & POLLRDNORM) printf(" POLLRDNORM");
-    if (f & POLLWRBAND) printf(" POLLWRBAND");
-    if (f & POLLWRNORM) printf(" POLLWRNORM");
-    printf("\n");
+    SELVA_LOG(SELVA_LOGL_INFO, "event for fd: %d revents:%s%s%s%s%s%s%s%s%s%s",
+              pfd->fd,
+              nfo[0], nfo[1], nfo[2], nfo[3], nfo[4],
+              nfo[5], nfo[6], nfo[7], nfo[8], nfo[9]);
 }
 
 void evl_poll(struct event_loop_state *state, const struct timespec *timeout)
@@ -80,7 +86,7 @@ void evl_poll(struct event_loop_state *state, const struct timespec *timeout)
     if (nfds_out > 0) {
         const int offset = state->nr_pending;
         int nr_events = 0;
-        printf("Hello fds\n");
+        SELVA_LOG(SELVA_LOGL_INFO, "Hello fds");
 
         for (int i = 0; i < nfds; i++) {
             const struct pollfd *pfd = &state->pfds[i];
