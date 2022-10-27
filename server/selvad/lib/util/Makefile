@@ -24,7 +24,7 @@ ifeq ($(uname_S),Linux)
 endif
 ifeq ($(uname_S),Darwin)
 	OBJ += memrchr.o
-	LDFLAGS += -shared
+	LDFLAGS += -shared -Wl,-install_name,@executable_path/lib/libutil$(LIB_SUFFIX)
 endif
 
 ifndef LIB_SUFFIX

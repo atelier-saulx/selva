@@ -33,6 +33,6 @@ CFLAGS += -fvisibility=hidden \
 		  -DEVL_MAIN
 
 ../selvad: $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^
 
 -include $(DEP)

@@ -15,7 +15,7 @@ ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
 endif
 ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
 	SELVA_ARCH := darwin_x64
-    JEMALLOC_LIBDIR := "@executable_path"
+    JEMALLOC_LIBDIR := "@executable_path/lib"
 endif
 ifndef SELVA_ARCH
 $(error SELVA_ARCH is not set)

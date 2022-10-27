@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 include ../common.mk
-CFLAGS += -fPIC -g -fvisibility=hidden -I../../include -include ../include/cdefs.h
+CFLAGS += -fPIC -g -fvisibility=hidden -I../../include -include ../../include/cdefs.h
+LDFLAGS += -L../../lib
 ifeq ($(uname_S),Linux)
 LDFLAGS += -g -shared -fPIC
 endif
