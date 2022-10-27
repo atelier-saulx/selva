@@ -5,8 +5,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "selva_log.h"
 
+static FILE *log_stream;
 static enum selva_log_level selva_log_level = SELVA_LOGL_INFO;
 
 /* FIXME debug log */
@@ -20,8 +22,16 @@ extern struct _selva_dyndebug_msg __stop_dbg_msg;
 #endif
 #endif
 
+static int use_colors;
+static char *colors[] = {
+    [SELVA_LOGL_CRIT] = "\033[0;31m", /* red */
+    [SELVA_LOGL_ERR] = "\033[0;31m", /* red */
+    [SELVA_LOGL_WARN] = "\033[0;33m", /* yellow */
+    [SELVA_LOGL_INFO] = "\033[0;32m", /* green */
+    [SELVA_LOGL_DBG] = "\033[0;34m", /* blue */
+};
+
 void selva_log(enum selva_log_level level, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) {
-    FILE *log_stream = stderr;
     va_list args;
 
     if (level > selva_log_level) {
@@ -29,7 +39,9 @@ void selva_log(enum selva_log_level level, const char * restrict where, const ch
     }
 
     va_start(args, fmt);
+    if (use_colors) fprintf(log_stream, "%s", colors[level]);
     fprintf(log_stream, "%s:%s: ", where, func);
+    if (use_colors) fprintf(log_stream, "\033[0m"); /* Reset color. */
     vfprintf(log_stream, fmt, args);
     if (fmt[strlen(fmt) - 1] != '\n') {
         fputc('\n', log_stream);
@@ -154,3 +166,9 @@ static int SelvaLog_OnLoad(RedisModuleCtx *ctx) {
 }
 SELVA_ONLOAD(SelvaLog_OnLoad);
 #endif
+
+__attribute__((constructor(101))) static void init_selva_log(void)
+{
+    log_stream = stderr;
+    use_colors = isatty(fileno(log_stream));
+}
