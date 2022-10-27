@@ -10,36 +10,37 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "event_loop.h"
+#include "util/eztrie.h"
 #include "module.h"
 #include "selva_log.h"
 
-#define handle_error(msg) \
-    do { perror(msg); exit(EXIT_FAILURE); } while (0)
-
+#define BACKLOG_SIZE 3
 static int server_sockfd;
+static struct eztrie commands;
 
 static int new_server(int port)
 {
-	int sockfd;
-	struct sockaddr_in server;
+    int sockfd;
+    struct sockaddr_in server;
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd == -1) {
-		handle_error("Could not create socket");
-	}
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "Could not create socket");
+        exit(EXIT_FAILURE);
+    }
 
     (void)setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
     (void)setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int));
 
-	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = INADDR_ANY;
-	server.sin_port = htons(port);
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_port = htons(port);
 
-	if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
-		handle_error("bind failed");
-	}
+    if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "bind failed");
+    }
 
-	listen(sockfd, 3);
+    listen(sockfd, BACKLOG_SIZE);
     SELVA_LOG(SELVA_LOGL_INFO, "Listening on port: %d", port);
 
     return sockfd;
@@ -97,6 +98,8 @@ IMPORT() {
 __constructor void init(void)
 {
     SELVA_LOG(SELVA_LOGL_INFO, "Init server");
+
+    eztrie_init(&commands);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(3000);

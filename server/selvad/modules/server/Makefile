@@ -4,6 +4,7 @@
 OBJ := \
 	   server.o
 DEP := $(OBJ:%.o=%.d)
+LDFLAGS += -lutil
 TARGET := ../server$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)
