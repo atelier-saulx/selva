@@ -13,9 +13,13 @@ Build Goals
 
 The project build uses `make`.
 
-- `all` - Builds all goals
+**Targets:**
+- `all` - Builds all targets
 - `selvad` - Builds the main executable `selvad`
 - `lib` - Builds all libraries
 - `lib/x` - Builds the library `x`
 - `modules` - Builds all loadable modules 
+
+**Phony targets:**
 - `clean` - Cleans the build results
+- `check` - Run `cppcheck`

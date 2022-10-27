@@ -30,6 +30,9 @@ modules: export MOD_PATH = $(_MOD_PATH)
 modules:
 	$(MAKE) -C modules
 
+check:
+	cppcheck src/ modules/
+
 clean:
 	$(RM) selvad
 	find . -type f -name "*.d" -exec rm -f {} \;
@@ -38,4 +41,4 @@ clean:
 	find . -type f -name "*.dylib" -exec rm -f {} \;
 	find ./lib -type d -maxdepth 1 -exec $(MAKE) -C {} clean \;
 
-.PHONY: clean selvad modules lib $(LIBS)
+.PHONY: clean check selvad modules lib $(LIBS)

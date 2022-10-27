@@ -12,9 +12,11 @@ int main(void)
 
     SELVA_LOG(SELVA_LOGL_INFO, "Selva %s", __DATE__);
     evl_load_module("modules/signal.so");
+#if 0
     evl_load_module("modules/demo_timeout.so");
     evl_load_module("modules/demo_async.so");
     evl_load_module("modules/demo_sock.so");
+#endif
     evl_load_module("modules/server.so");
 
     evl_start();
