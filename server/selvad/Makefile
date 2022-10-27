@@ -41,15 +41,16 @@ CFLAGS += -fvisibility=hidden \
 		  -DEVL_MAIN
 
 #modules
-all: main modules $(LIBS)
+all: selvad modules $(LIBS)
 
-main: $(OBJ)
+selvad: $(OBJ)
 	#$(CC) -o $@ $^
 	$(CC) $(CFLAGS) -o $@ $^
 
 -include $(DEP)
 
 # Build all libraries (ordered)
+# TODO Doesn't work properly!?
 lib: | $(LIBS)
 
 $(LIBS):
@@ -59,7 +60,7 @@ modules:
 	$(MAKE) -C modules
 
 clean:
-	$(RM) main
+	$(RM) selvad
 	find . -type f -name "*.d" -exec rm -f {} \;
 	find . -type f -name "*.o" -exec rm -f {} \;
 	find . -type f -name "*.so" -exec rm -f {} \;

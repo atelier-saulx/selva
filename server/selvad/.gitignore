@@ -1,6 +1,6 @@
 # Copyright (c) 2022 SAULX
 # SPDX-License-Identifier: MIT
-/main
+/selvad
 *.d
 *.so
 *.dylib
