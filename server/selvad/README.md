@@ -22,4 +22,5 @@ The project build uses `make`.
 
 **Phony targets:**
 - `clean` - Cleans the build results
+- `mostlyclean` - Refrain from deleting libraries
 - `check` - Run `cppcheck`

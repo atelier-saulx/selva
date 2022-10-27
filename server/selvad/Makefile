@@ -33,6 +33,14 @@ modules:
 check:
 	cppcheck src/ modules/
 
+mostlyclean:
+	$(RM) selvad
+	find ./src -type f -name "*.d" -exec rm -f {} \;
+	find ./src -type f -name "*.o" -exec rm -f {} \;
+	find ./modules -type f -name "*.d" -exec rm -f {} \;
+	find ./modules -type f -name "*.o" -exec rm -f {} \;
+	find ./modules -type f -name "*.so" -exec rm -f {} \;
+
 clean:
 	$(RM) selvad
 	find . -type f -name "*.d" -exec rm -f {} \;
@@ -41,4 +49,4 @@ clean:
 	find . -type f -name "*.dylib" -exec rm -f {} \;
 	find ./lib -type d -maxdepth 1 -exec $(MAKE) -C {} clean \;
 
-.PHONY: clean check selvad modules lib $(LIBS)
+.PHONY: all clean check mostlyclean selvad modules lib $(LIBS)
