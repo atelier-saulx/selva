@@ -13,6 +13,7 @@ OBJ := \
 	base64.o \
 	bitmap.o \
 	cstrings.o \
+	eztrie.o \
 	mempool.o \
 	poptop.o \
 	queue_r.o \
