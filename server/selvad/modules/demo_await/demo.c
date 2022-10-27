@@ -72,7 +72,7 @@ IMPORT() {
 
 __constructor void init(void)
 {
-    SELVA_LOG(SELVA_LOGL_INFO, "Init demo_await\n");
+    SELVA_LOG(SELVA_LOGL_INFO, "Init demo_await");
 
     struct timespec t = {
         .tv_sec = 0,

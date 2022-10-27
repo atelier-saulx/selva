@@ -10,7 +10,7 @@ int main(void)
 {
     evl_init();
 
-    SELVA_LOG(SELVA_LOGL_INFO, "Selva %s\n", __DATE__);
+    SELVA_LOG(SELVA_LOGL_INFO, "Selva %s", __DATE__);
     evl_load_module("modules/signal.so");
     evl_load_module("modules/demo_timeout.so");
     evl_load_module("modules/demo_async.so");

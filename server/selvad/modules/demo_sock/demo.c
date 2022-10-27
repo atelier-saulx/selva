@@ -95,7 +95,7 @@ IMPORT() {
 
 __constructor void init(void)
 {
-    SELVA_LOG(SELVA_LOGL_INFO, "Init demo_sock\n");
+    SELVA_LOG(SELVA_LOGL_INFO, "Init demo_sock");
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(3000);

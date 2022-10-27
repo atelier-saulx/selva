@@ -40,7 +40,7 @@ static int new_server(int port)
 	}
 
 	listen(sockfd, 3);
-    printf("Listening on port: %d\n", port);
+    SELVA_LOG(SELVA_LOGL_INFO, "Listening on port: %d", port);
 
     return sockfd;
 }
@@ -56,7 +56,7 @@ void on_data(struct event *event, void *arg __unused)
         evl_end_fd(fd);
         return;
     } else if (r > 0) {
-        printf("Received msg: \"%.*s\"\n", (int)r, buf);
+        SELVA_LOG(SELVA_LOGL_INFO, "Received msg: \"%.*s\"", (int)r, buf);
     }
 
     if (!strncmp(buf, "end", 3)) {
@@ -79,12 +79,12 @@ void on_connection(struct event *event, void *arg __unused)
 
     new_sockfd = accept(fd, (struct sockaddr *)&client, (socklen_t*)&c);
     if (new_sockfd < 0) {
-        printf("Accept failed\n");
+        SELVA_LOG(SELVA_LOGL_ERR, "Accept failed");
         return;
     }
 
     inet_ntop(AF_INET, &client.sin_addr, buf, sizeof(buf));
-    printf("Received a connection from %s\n", buf);
+    SELVA_LOG(SELVA_LOGL_INFO, "Received a connection from %s", buf);
 
     evl_wait_fd(new_sockfd, on_data, NULL, NULL, NULL);
 }
@@ -96,7 +96,7 @@ IMPORT() {
 
 __constructor void init(void)
 {
-    SELVA_LOG(SELVA_LOGL_INFO, "Init server\n");
+    SELVA_LOG(SELVA_LOGL_INFO, "Init server");
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(3000);
