@@ -82,7 +82,7 @@ struct eztrie_node_value * eztrie_remove_ithead(struct eztrie_iterator * it);
  * @param trie is a pointer to the trie.
  * @param key is the key as a c-string.
  * @param p is a pointer to the value to be inserted.
- * @returns Returns pointer p if it was sucessfully iserted to the trie;
+ * @returns Returns pointer p if it was successfully inserted to the trie;
  *          NULL if the insertion failed;
  *          A pointer to the offending value.
  */

@@ -40,6 +40,7 @@
 
 void eztrie_init(struct eztrie *root)
 {
+    memset(root, 0, sizeof(struct eztrie));
     root->_root.k = '\0';
     root->_root.child_count = 1;
     root->root = &root->_root;
@@ -273,7 +274,8 @@ void eztrie_destroy(struct eztrie * trie)
     it = eztrie_find(trie, "");
     STAILQ_FOREACH_SAFE(node, &it, _entry, node_tmp) {
         STAILQ_REMOVE(&it, node, eztrie_node, _entry);
-        eztrie_remove(trie, node->value->key);
+        /* TODO A callback to free the return value? */
+        (void)eztrie_remove(trie, node->value->key);
     }
 
     it = eztrie_levelorder(eztrie_find_root(trie->root, ""), 0);
