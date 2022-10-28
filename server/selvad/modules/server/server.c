@@ -46,7 +46,7 @@ static int new_server(int port)
     return sockfd;
 }
 
-void on_data(struct event *event, void *arg __unused)
+static void on_data(struct event *event, void *arg __unused)
 {
     const int fd = event->fd;
     char buf[128];
@@ -70,7 +70,7 @@ void on_data(struct event *event, void *arg __unused)
     }
 }
 
-void on_connection(struct event *event, void *arg __unused)
+static void on_connection(struct event *event, void *arg __unused)
 {
     const int fd = event->fd;
     int c = sizeof(struct sockaddr_in);
@@ -90,6 +90,11 @@ void on_connection(struct event *event, void *arg __unused)
     evl_wait_fd(new_sockfd, on_data, NULL, NULL, NULL);
 }
 
+static void add_command()
+{
+    //void * eztrie_insert(struct eztrie * trie, const char * key, const void * p);
+}
+
 IMPORT() {
     evl_import_main(selva_log);
     evl_import_event_loop();
@@ -100,6 +105,7 @@ __constructor void init(void)
     SELVA_LOG(SELVA_LOGL_INFO, "Init server");
 
     eztrie_init(&commands);
+    //eztrie_destroy(&commands);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(3000);
