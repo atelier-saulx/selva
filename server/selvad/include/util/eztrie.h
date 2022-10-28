@@ -34,7 +34,7 @@
  */
 
 #pragma once
-#include <sys/queue.h>
+#include "queue.h"
 
 struct eztrie_node {
     char k;
