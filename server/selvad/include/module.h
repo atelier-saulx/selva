@@ -23,10 +23,7 @@ static inline void *_evl_import(const char *what, const char *from) {
      * Note that dlopen() is refcounting the libary and if we want to unload the
      * loaded libary we should call dlclose() equal number of times to unload.
      */
-#if 0
     _ref = dlopen(from, RTLD_NOW | RTLD_LOCAL);
-#endif
-    _ref = dlopen(from, RTLD_NOW | RTLD_GLOBAL);
     if (!_ref) {
         fprintf(stderr, "Module \"%s\" not found\n", from ? from : "main");
     } else {
