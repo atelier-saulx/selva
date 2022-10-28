@@ -3,4 +3,5 @@
 /selvad
 *.d
 *.so
+*.so.*
 *.dylib

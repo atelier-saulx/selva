@@ -13,13 +13,21 @@ OBJ := \
 	   selva_error.o \
 	   selva_log.o \
 	   timers.o
-ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
+
+CFLAGS += -fvisibility=hidden \
+		  -I../include \
+		  -include ../include/cdefs.h \
+		  -DEVL_MAIN=1
+
+LDFLAGS += -ljemalloc_selva
+ifeq ($(uname_S),Linux)
 OBJ += \
 	   linux/poll.o \
 	   linux/signal.o
-CFLAGS += -rdynamic -ldl -Wl,-rpath,$(MOD_PATH) -DUSE_EPOLL=1
+CFLAGS += -DUSE_EPOLL=1
+LDFLAGS += -rdynamic -ldl -L ../lib -Wl,-rpath,'$$ORIGIN'/lib
 endif
-ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
+ifeq ($(uname_S),Darwin)
 OBJ += \
 	   darwin/poll.o \
 	   darwin/signal.o
@@ -27,10 +35,6 @@ CFLAGS += -DUSE_POLL=1
 endif
 
 DEP := $(OBJ:%.o=%.d)
-CFLAGS += -fvisibility=hidden \
-		  -I../include \
-		  -include ../include/cdefs.h \
-		  -DEVL_MAIN
 
 ../selvad: $(OBJ)
 	$(CC) $(LDFLAGS) -o $@ $^

@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: MIT
 
 SHELL := /bin/bash
-_MOD_PATH := "$(PWD)/modules"
 
 include common.mk
 export uname_S
@@ -15,7 +14,6 @@ LIBS := \
 
 all: selvad modules $(LIBS)
 
-selvad: export MOD_PATH = $(_MOD_PATH)
 selvad:
 	$(MAKE) -C src
 
@@ -26,7 +24,6 @@ lib: | $(LIBS)
 $(LIBS):
 	$(MAKE) -C $@
 
-modules: export MOD_PATH = $(_MOD_PATH)
 modules:
 	$(MAKE) -C modules
 

@@ -6,7 +6,6 @@ CFLAGS += -fPIC -O2 -Wno-unused-function -fno-strict-aliasing -I../../include
 # To remove warnings about asserts
 CFLAGS += -Wno-unused-value
 LDFLAGS += -g -L../
-LDLIBS += -ljemalloc_selva
 
 OBJ := \
 	auto_free.o \
@@ -36,6 +35,6 @@ TARGET := ../libutil$(LIB_SUFFIX)
 DEP := $(OBJ:%.o=%.d)
 
 $(TARGET): $(OBJ)
-	$(CC) -o $@ $(LDFLAGS) $(LDLIBS) $^
+	$(CC) -o $@ $(LDFLAGS) $^
 
 -include $(DEP)
