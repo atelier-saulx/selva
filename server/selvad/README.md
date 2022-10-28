@@ -28,6 +28,17 @@ The project build uses `make`.
 API
 ---
 
+### Globally available symbols
+
+Module symbols are never shared between the main program or the modules by
+default and the only way to access functions and global variables from modules
+and the `event_loop` API is by using the import macros from `module.h` (which
+in turn does the right tricks with `dlfcn.h`).
+
+For convenience and to be still compatible with standard C programming workflows
+the libc and jmalloc functions are always made available in the global namespace
+by the dynamic linker.
+
 ### Importing module API functions
 
 ```c
