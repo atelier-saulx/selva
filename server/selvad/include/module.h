@@ -23,14 +23,17 @@ static inline void *_evl_import(const char *what, const char *from) {
      * Note that dlopen() is refcounting the libary and if we want to unload the
      * loaded libary we should call dlclose() equal number of times to unload.
      */
-    _ref = dlopen(from, RTLD_NOW);
+#if 0
+    _ref = dlopen(from, RTLD_NOW | RTLD_LOCAL);
+#endif
+    _ref = dlopen(from, RTLD_NOW | RTLD_GLOBAL);
     if (!_ref) {
-        printf("Module \"%s\" not found\n", from ? from : "main");
+        fprintf(stderr, "Module \"%s\" not found\n", from ? from : "main");
     } else {
         dlerror();
         p = dlsym(_ref, what);
         if (!p) {
-            printf("Failed to load a symbol (\"%s\"): %s\n", what, dlerror());
+            fprintf(stderr, "Failed to load a symbol (\"%s\"): %s\n", what, dlerror());
         }
     }
 
@@ -41,8 +44,10 @@ static inline void *_evl_import(const char *what, const char *from) {
  * Import a symbol `what` from the `from` module.
  * @param from If NULL then the symbol is loaded from main.
  */
-#define evl_import(what, from) \
-    what = ((what) ? what : (typeof(what))_evl_import(#what, from))
+#define evl_import(what, from) do { \
+    what = ((what) ? what : (typeof(what))_evl_import(#what, from)); \
+    if (!what) __builtin_trap(); \
+} while (0)
 
 /**
  * Import a symbol from main.

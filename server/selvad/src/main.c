@@ -10,6 +10,7 @@ int main(void)
 {
     evl_init();
 
+    /* TODO Fail if mod load fails */
     SELVA_LOG(SELVA_LOGL_INFO, "Selva %s", __DATE__);
     evl_load_module("modules/signal.so");
 #if 0
