@@ -55,4 +55,4 @@ static inline void *_evl_import(const char *what, const char *from) {
  * Do all imports using this macro to ensure that all symbols are imported
  * before they are needed in a module.
  */
-#define IMPORT() __attribute__((constructor(101))) static void imports(void) \
+#define IMPORT() __attribute__((constructor(101))) static void _imports(void)
