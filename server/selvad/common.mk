@@ -8,7 +8,7 @@
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
 # Set _DATE__ and __TIME__ macros to a deterministic value
-export SOURCE_DATE_EPOCH := $(git log -1 --pretty=%ct)
+export SOURCE_DATE_EPOCH := $(shell sh -c 'git log -1 --pretty=%ct || date +%s')
 export ZERO_AR_DATE := 1
 
 # CFLAGS shared with all compilation units.
