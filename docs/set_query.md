@@ -269,7 +269,7 @@ Any and all field names can be set that exist in the schema of the provided type
 - [**references**](#references-type)
 - [**object**](#object-type)
 
-For more information, please refer to the [schema documentation](./schemas.md).
+For more information, please refer to the [schema documentation](https://github.com/atelier-saulx/selva/blob/master/docs/schemas.md).
 
 ### _type_ type
 
@@ -284,7 +284,7 @@ const result = await client.set({
 })
 ```
 
-If type is specified in other cases, it must always match the type of the existing record, as well as the schema [prefix](./schemas.md#properties-1) of that type. Type can never be overwritten for existing records.
+If type is specified in other cases, it must always match the type of the existing record, as well as the schema [prefix](https://github.com/atelier-saulx/selva/blob/master/docs/schemas.md#properties-1) of that type. Type can never be overwritten for existing records.
 
 ### _digest_ type
 
