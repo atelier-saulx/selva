@@ -465,7 +465,7 @@ Retrieves data from the database.
     <td valign="top">object</td>
     <td valign="top"></td>
     <td>
-      <a href="./get_query.md">Query</a> to be executed.
+      <a href="https://github.com/atelier-saulx/selva/blob/master/docs/get_query.md">Query</a> to be executed.
     </td>
   </tr>
 </table>
@@ -494,7 +494,7 @@ Executes the query and subscribes to future changes. The return value is an _Obs
     <td valign="top">object</td>
     <td valign="top"></td>
     <td>
-      <a href="./get_query.md">Query</a> to be executed.
+      <a href="https://github.com/atelier-saulx/selva/blob/master/docs/get_query.md">Query</a> to be executed.
     </td>
   </tr>
 </table>
@@ -589,11 +589,11 @@ Gets the database schema.
 
 #### Returns
 
-Promise resolving to the [schema](schemas.md) currently in use.
+Promise resolving to the [schema](https://github.com/atelier-saulx/selva/blob/master/docs/schemas.md) currently in use.
 
 ### _client_.updateSchema(_schema_)
 
-Updates the database [schema](schemas.md)
+Updates the database [schema](https://github.com/atelier-saulx/selva/blob/master/docs/schemas.md)
 
 #### Parameters
 
