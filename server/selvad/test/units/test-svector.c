@@ -1,7 +1,9 @@
 #include <punit.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "svector.h"
+#include "jemalloc.h"
+#include "util/svector.h"
 #include "cdefs.h"
 
 struct data {

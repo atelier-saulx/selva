@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <punit.h>
-#include "bitmap.h"
+#include "util/bitmap.h"
 
 static struct bitmap *bmap;
 

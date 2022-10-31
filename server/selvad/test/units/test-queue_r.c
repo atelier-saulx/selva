@@ -4,7 +4,7 @@
  */
 
 #include <punit.h>
-#include "queue_r.h"
+#include "util/queue_r.h"
 
 int tarr[5];
 queue_cb_t queue;

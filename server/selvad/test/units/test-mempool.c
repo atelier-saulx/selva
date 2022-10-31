@@ -1,7 +1,7 @@
 #include <punit.h>
 #include <stdalign.h>
 #include <stdint.h>
-#include "mempool.h"
+#include "util/mempool.h"
 
 static void setup(void)
 {

@@ -1,7 +1,7 @@
 #include <punit.h>
 #include <tgmath.h>
 #include "cdefs.h"
-#include "poptop.h"
+#include "util/poptop.h"
 
 struct my_data {
     int v;

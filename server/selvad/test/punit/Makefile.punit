@@ -2,6 +2,7 @@
 # PUnit, a portable unit testing framework for C.
 # Inspired by: http://www.jera.com/techinfo/jtns/jtn002.html
 #
+# Copyright (c) 2022 SAULX
 # Copyright (c) 2013, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
 # Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi>
 # All rights reserved.
@@ -54,19 +55,22 @@ include $(wildcard *.mk)
 
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 CC ?= gcc
-CCFLAGS += --coverage -Wall -MMD -DPU_TEST_BUILD
+CFLAGS += -fprofile-arcs -ftest-coverage -Wall -MMD -DPU_TEST_BUILD
+LDFLAGS += -lgcov --coverage
 # Link math?
 ifeq ($(PU_LMATH),1)
 ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
-	CCFLAGS += -lm -DPU_LMATH
+	CFLAGS += -lm -DPU_LMATH
+	LDFLAGS += -lm
 endif
 ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
-	CCFLAGS += -DPU_LMATH
+	CFLAGS += -DPU_LMATH
+	LDFLAGS += -lm
 endif
 endif
 # Report oriented?
 ifeq ($(PU_REPORT_ORIENTED),1)
-    CCFLAGS += -DPU_REPORT_ORIENTED
+    CFLAGS += -DPU_REPORT_ORIENTED
 endif
 
 # Clever way to get a space char
@@ -103,7 +107,7 @@ punit: $(DIRS) $(PU_SRC)
 $(PU_OBJ): $(PU_SRC)
 	$(eval CUR_SRC := $(notdir $(@:.o=.c)))
 	$(eval CUR_SRC := $(filter $(foreach file,$(CUR_SRC), %/$(file)), $(PU_SRC)))
-	$(CC) $(IDIR) $(CCFLAGS) -c $(CUR_SRC) -o ./$@
+	$(CC) $(IDIR) $(CFLAGS) -c $(CUR_SRC) -o ./$@
 
 # MUTs
 $(OBJ): $(SRC)
@@ -111,7 +115,7 @@ $(OBJ): $(SRC)
 	@echo "=================================================================="
 	$(eval CUR_SRC := $(notdir $(@:.o=.c)))
 	$(eval CUR_SRC := $(filter $(foreach file,$(CUR_SRC), %/$(file)), $(SRC)))
-	$(CC) $(IDIR) $(IDIR_TEST) $(CCFLAGS) -c $(CUR_SRC) -o $@
+	$(CC) $(IDIR) $(IDIR_TEST) $(CFLAGS) -c $(CUR_SRC) -o $@
 	@echo "=================================================================="
 
 # Tests
@@ -120,7 +124,7 @@ bin/%: %.c $(PU_OBJ)
 	@echo "Build test: $(TESTNAME)"
 	@echo "=================================================================="
 	$(eval DEPS := $(patsubst %,./$(ODIR)/%,$(notdir $(SRC-$(TESTNAME):.c=.o))))
-	$(CC) $(CCFLAGS) $(IDIR) $(IDIR_TEST) $^ $(DEPS) -o ./$@
+	$(CC) $(LDFLAGS) $(IDIR) $(IDIR_TEST) $^ $(DEPS) -o ./$@
 	@echo "=================================================================="
 
 # Run tests

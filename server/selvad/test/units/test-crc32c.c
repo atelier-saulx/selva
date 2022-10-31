@@ -1,6 +1,6 @@
 #include <punit.h>
 #include <stdint.h>
-#include "crc32c.h"
+#include "util/crc32c.h"
 
 static void setup(void)
 {
