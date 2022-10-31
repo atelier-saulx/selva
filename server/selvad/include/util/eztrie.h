@@ -45,7 +45,6 @@ struct eztrie_node {
 };
 
 struct eztrie {
-    struct eztrie_node _root;
     struct eztrie_node *root;
 };
 
@@ -101,4 +100,4 @@ void * eztrie_remove(struct eztrie * trie, const char * key);
  * Frees all memory allocated by a trie.
  * @param trie is a pointer to the trie.
  */
-void eztrie_destroy(struct eztrie * trie);
+void eztrie_destroy(struct eztrie * root, void (*cb_free)(void * p));

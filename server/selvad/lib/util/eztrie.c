@@ -38,12 +38,12 @@
 #include <string.h>
 #include "util/eztrie.h"
 
-void eztrie_init(struct eztrie *root)
+void eztrie_init(struct eztrie *trie)
 {
-    memset(root, 0, sizeof(struct eztrie));
-    root->_root.k = '\0';
-    root->_root.child_count = 1;
-    root->root = &root->_root;
+    memset(trie, 0, sizeof(struct eztrie));
+    trie->root = calloc(1, sizeof(struct eztrie_node));
+    trie->root->k = '\0';
+    trie->root->child_count = 0;
 }
 
 static int eztrie_node_compar(const void * ap, const void * bp)
@@ -265,7 +265,7 @@ void * eztrie_remove(struct eztrie * trie, const char * key)
     return (void *)p;
 }
 
-void eztrie_destroy(struct eztrie * trie)
+void eztrie_destroy(struct eztrie * trie, void (*cb_free)(void * p))
 {
     struct eztrie_iterator it;
     struct eztrie_node * node;
@@ -273,9 +273,13 @@ void eztrie_destroy(struct eztrie * trie)
 
     it = eztrie_find(trie, "");
     STAILQ_FOREACH_SAFE(node, &it, _entry, node_tmp) {
+        void * p;
+
         STAILQ_REMOVE(&it, node, eztrie_node, _entry);
-        /* TODO A callback to free the return value? */
-        (void)eztrie_remove(trie, node->value->key);
+        p = eztrie_remove(trie, node->value->key);
+        if (cb_free) {
+            cb_free(p);
+        }
     }
 
     it = eztrie_levelorder(eztrie_find_root(trie->root, ""), 0);
