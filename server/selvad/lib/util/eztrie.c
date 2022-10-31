@@ -265,7 +265,7 @@ void * eztrie_remove(struct eztrie * trie, const char * key)
     return (void *)p;
 }
 
-void eztrie_destroy(struct eztrie * trie, void (*cb_free)(void * p))
+void eztrie_destroy(struct eztrie * trie, void (*cb_free)(void * p, void * arg), void * arg)
 {
     struct eztrie_iterator it;
     struct eztrie_node * node;
@@ -278,7 +278,7 @@ void eztrie_destroy(struct eztrie * trie, void (*cb_free)(void * p))
         STAILQ_REMOVE(&it, node, eztrie_node, _entry);
         p = eztrie_remove(trie, node->value->key);
         if (cb_free) {
-            cb_free(p);
+            cb_free(p, arg);
         }
     }
 
