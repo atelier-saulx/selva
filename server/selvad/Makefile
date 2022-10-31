@@ -27,6 +27,16 @@ $(LIBS):
 modules:
 	$(MAKE) -C modules
 
+test:
+	$(MAKE) -C test
+
+test-valgrind: export WITH_VALGRIND = valgrind
+test-valgrind:
+	$(MAKE) -C test
+
+test-gcov: test
+	./coverage.sh
+
 check:
 	cppcheck src/ modules/
 
@@ -44,6 +54,7 @@ clean:
 	find . -type f -name "*.o" -exec rm -f {} \;
 	find . -type f -name "*.so" -exec rm -f {} \;
 	find . -type f -name "*.dylib" -exec rm -f {} \;
+	$(MAKE) -C test clean
 	find ./lib -type d -maxdepth 1 -exec $(MAKE) -C {} clean \;
 
-.PHONY: all clean check mostlyclean selvad modules lib $(LIBS)
+.PHONY: all clean check test mostlyclean selvad modules lib $(LIBS)
