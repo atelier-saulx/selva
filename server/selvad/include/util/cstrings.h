@@ -8,7 +8,10 @@
 
 #include <stddef.h>
 
+[[nodiscard]]
 char *selva_strndup(const char *s, size_t n) __attribute__((access(read_only, 1, 2), returns_nonnull));
+
+[[nodiscard]]
 char *selva_strdup(const char *s) __attribute__((access(read_only, 1), returns_nonnull));
 
 /**

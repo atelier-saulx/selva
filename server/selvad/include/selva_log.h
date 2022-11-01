@@ -54,7 +54,7 @@ void (*selva_log)(enum selva_log_level level, const char * restrict where, const
 
 #define _SELVA_LOG_WHERESTR (__FILE__ ":" S__LINE__)
 #define _SELVA_LOG(level, where, fmt, ...) \
-    selva_log(level, where, fmt, ##__VA_ARGS__)
+    selva_log(level, where, fmt __VA_OPT__(,) __VA_ARGS__)
 
 /**
  * Print to the server logs.
@@ -62,7 +62,7 @@ void (*selva_log)(enum selva_log_level level, const char * restrict where, const
  * @param fmt is a standard printf format string.
  */
 #define SELVA_LOG(level, fmt, ...) do { \
-    _SELVA_LOG(level, _SELVA_LOG_WHERESTR, __func__, fmt, ##__VA_ARGS__); \
+    _SELVA_LOG(level, _SELVA_LOG_WHERESTR, __func__, fmt __VA_OPT__(,) __VA_ARGS__); \
 } while (0)
 
 /* FIXME Debug log */

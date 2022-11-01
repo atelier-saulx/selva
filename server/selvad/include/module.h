@@ -15,6 +15,7 @@
  */
 EVL_EXPORT(void *, evl_load_module, const char *path);
 
+[[nodiscard]]
 static inline void *_evl_import(const char *what, const char *from) {
     void *_ref;
     void *p = (void *)0;

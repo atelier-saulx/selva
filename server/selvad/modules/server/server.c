@@ -32,7 +32,7 @@ static int new_server(int port)
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        SELVA_LOG(SELVA_LOGL_CRIT, "Could not create socket");
+        SELVA_LOG(SELVA_LOGL_CRIT, "Could not create a socket");
         exit(EXIT_FAILURE);
     }
 

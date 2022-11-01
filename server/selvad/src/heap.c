@@ -44,7 +44,7 @@ struct _heap_assert {
     HEAP_DEF(h, 2);
 };
 static struct _heap_assert _heap_assert;
-_Static_assert(_heap_assert.h.a == _heap_assert.h_arr, "Invalid heap struct alignment");
+static_assert(_heap_assert.h.a == _heap_assert.h_arr, "Invalid heap struct alignment");
 #endif
 
 /**

@@ -7,6 +7,11 @@
 #ifndef _UTIL_CDEFS_H_
 #define _UTIL_CDEFS_H_
 
+/* FIXME Not the actual C23 version. */
+#if __STDC_VERSION__ < 202300L
+#define static_assert _Static_assert
+#endif
+
 #if defined(__GNUC__) && !defined(__clang__)
 /**
  * The char array isn't a NUL terminated C-string.
