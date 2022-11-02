@@ -11,9 +11,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "event_loop.h"
-#include "util/eztrie.h"
 #include "module.h"
+#include "selva_error.h"
 #include "selva_log.h"
+#include "selva_proto.h"
 
 struct conn_ctx {
     int fd;
@@ -21,9 +22,33 @@ struct conn_ctx {
 
 typedef void (*cmd_function)(struct conn_ctx *ctx, const char *buf, size_t size);
 
+cmd_function commands[254];
+
 #define BACKLOG_SIZE 3
 static int server_sockfd;
-static struct eztrie commands;
+
+static int mk_command(int nr, cmd_function cmd)
+{
+    if (nr < 0 || nr >= (int)num_elem(commands)) {
+        return SELVA_EINVAL;
+    }
+
+    if (commands[nr]) {
+        return SELVA_EEXIST;
+    }
+
+    commands[nr] = cmd;
+    return 0;
+}
+
+static cmd_function get_command(int nr)
+{
+    return (nr >= 0 && nr < (int)num_elem(commands)) ? commands[nr] : NULL;
+}
+
+static void ping(struct conn_ctx *ctx, const char *buf, size_t size) {
+    send(ctx->fd, "pong\r\n", 6, 0);
+}
 
 static int new_server(int port)
 {
@@ -53,56 +78,40 @@ static int new_server(int port)
     return sockfd;
 }
 
-static void clear_crlf(char *buf)
-{
-    char *c = strpbrk(buf, "\r\n");
-
-    if (c) {
-        *c = '\0';
-    }
-}
-
 static void on_data(struct event *event, void *arg __unused)
 {
     const int fd = event->fd;
     char buf[128];
     ssize_t r;
 
-    memset(buf, '\0', sizeof(buf));
     r = read(fd, buf, sizeof(buf) - 1);
     if (r <= 0) {
         evl_end_fd(fd);
         return;
     }
 
-    clear_crlf(buf);
-    SELVA_LOG(SELVA_LOGL_INFO, "Received msg: \"%.*s\"", (int)r, buf);
+    SELVA_LOG(SELVA_LOGL_INFO, "Received %d bytes", (int)r);
 
-    if (!strcmp(buf, "end")) {
-        /* Terminate this connection. */
-        evl_end_fd(fd);
-    } else if (!strcmp(buf, "quit")) {
-        /* Stop the server. */
-        evl_end_fd(fd);
-        evl_end_fd(server_sockfd);
+    struct selva_proto_header hdr;
+
+    if (r < (ssize_t)sizeof(hdr)) {
+        /* TODO */
+        SELVA_LOG(SELVA_LOGL_ERR, "Header too small");
+        return;
+    }
+
+    memcpy(&hdr, buf, sizeof(hdr));
+    cmd_function cmd = get_command(hdr.cmd);
+    if (cmd) {
+        struct conn_ctx ctx = {
+            .fd = fd,
+        };
+
+        cmd(&ctx, buf + sizeof(struct selva_proto_header), r - sizeof(struct selva_proto_header));
     } else {
-        struct eztrie_iterator it;
-        struct eztrie_node_value *v;
-
-        it = eztrie_find(&commands, buf);
-        v = eztrie_remove_ithead(&it);
-
-        if (v && !strcmp(v->key, buf)) {
-            struct conn_ctx ctx = {
-                .fd = fd,
-            };
-
-            ((cmd_function)v->p)(&ctx, NULL, 0);
-        } else {
-            const char msg[] = "Unknown command\r\n";
-
-            write(fd, msg, sizeof(msg) - 1);
-        }
+        /* TODO with header */
+        send(fd, "Invalid\r\n", 9, 0);
+        return;
     }
 }
 
@@ -126,16 +135,6 @@ static void on_connection(struct event *event, void *arg __unused)
     evl_wait_fd(new_sockfd, on_data, NULL, NULL, NULL);
 }
 
-static void cmd_ping(struct conn_ctx *ctx, const char *buf, size_t size)
-{
-    write(ctx->fd, "pong\r\n", 6);
-}
-
-static void add_command(const char *name, cmd_function cmd)
-{
-    eztrie_insert(&commands, name, cmd);
-}
-
 IMPORT() {
     evl_import_main(selva_log);
     evl_import_event_loop();
@@ -145,8 +144,7 @@ __constructor void init(void)
 {
     SELVA_LOG(SELVA_LOGL_INFO, "Init server");
 
-    eztrie_init(&commands);
-    add_command("ping", cmd_ping);
+    mk_command(0, ping);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(3000);
