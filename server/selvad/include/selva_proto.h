@@ -100,9 +100,12 @@ struct selva_proto_array {
     enum selva_proto_data_type type;
     enum {
         SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH = 0x80, /*!< Start an array of unknown length and terminate it with a special token. */
+        SELVA_PROTO_ARRAY_FLONGLONG = 0x01, /*!< A fixed size long long array follows. No encapsulation is used. */
+        SELVA_PROTO_ARRAY_FDOUBLE = 0x02, /*!< A fixed size double array follows. No encapsulation is used. */
     } __attribute__((packed)) flags; /*! Array flags. */
     uint8_t _spare[2];
     uint32_t length; /*!< Length of this array; number of items. */
+    char data[0]; /*!< Data (if indicated by a flag). */
 };
 
 /**
