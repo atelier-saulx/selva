@@ -51,7 +51,7 @@ struct selva_proto_longlong {
 
 struct selva_proto_string {
     enum selva_proto_data_type type;
-    char str[];
+    char str[0];
 };
 
 struct selva_proto_array {
