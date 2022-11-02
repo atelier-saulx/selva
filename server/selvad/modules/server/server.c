@@ -15,12 +15,7 @@
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_proto.h"
-
-struct conn_ctx {
-    int fd;
-};
-
-typedef void (*cmd_function)(struct conn_ctx *ctx, const char *buf, size_t size);
+#include "server.h"
 
 cmd_function commands[254];
 

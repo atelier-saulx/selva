@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 OBJ := \
+	   selva_proto.o \
 	   server.o
 DEP := $(OBJ:%.o=%.d)
 LDFLAGS += -lutil
