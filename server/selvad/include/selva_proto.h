@@ -1,7 +1,10 @@
 #pragma once
 
+#define SELVA_PROTO_FRAME_SIZE_MAX 4096
+
 /**
  * Selva protocol frame header.
+ * Note that this struct should be always stored as LE.
  */
 struct selva_proto_header {
     int8_t cmd; /*!< Command identifier. */
@@ -10,15 +13,45 @@ struct selva_proto_header {
      */
     enum {
         SELVA_PROTO_HDR_FREQ_RES = 0x80, /*!< req = 0; res = 1 */
+        /**
+         * Segment fragmentation status.
+         * If both are set the frame is the only frame in a message.
+         * If neither is set the frame is in the middle of a message.
+         * @{
+         */
+        SELVA_PROTO_HDR_FFMASK   = 0x60, /*!< Mask to catch fragmentation status. */
+        SELVA_PROTO_HDR_FFIRST   = 0x20, /*!< This is the first frame of a sequence. */
+        SELVA_PROTO_HDR_FMID     = 0x00, /*!< This frame is in the middle of a segment. */
         SELVA_PROTO_HDR_FLAST    = 0x40, /*!< This is the last frame of the sequence. */
+        /**
+         * @}
+         */
         SELVA_PROTO_HDR_FDEFLATE = 0x01, /*!< Compressed with deflate. */
     } __attribute__((packed)) flags;
-    uint16_t seqno; /*!< Sequence number selected by the client. */
-    uint32_t bsize; /*!< Size of the frame (incl the header). */
+    /**
+     * Sequence number selected by the request sender (typically client).
+     * The sequence number doesn't change within a message (between frames) and
+     * also the response uses the same sequence number. This is fine as we know
+     * that frames will be delivered in the original order.
+     */
+    uint32_t seqno;
+    uint16_t frame_bsize; /*!< Size of the frame (incl the header). */
+    /**
+     * The full message size excluding headers if known; Otherwise 0.
+     * This can be used to help allocating sufficient buffer space for the
+     * incoming message.
+     */
+    uint32_t msg_bsize;
+    /**
+     * Checksum/CRC.
+     * The checksum is calculated over the whole frame with all header fields
+     * set to their final values and this field zeroed.
+     */
+    uint32_t chk;
 } __attribute__((packed,aligned(__alignof__(uint64_t))));
 
 /**
- * Selva protocol message types.
+ * Selva protocol data types.
  */
 enum selva_proto_data_type {
     SELVA_PROTO_NULL = 0, /*!< A null. */
@@ -35,7 +68,7 @@ enum selva_proto_data_type {
  */
 struct selva_proto_error {
     /**
-     * Message type.
+     * Type.
      * Type must be SELVA_PROTO_ERROR.
      */
     enum selva_proto_data_type type;
@@ -46,11 +79,11 @@ struct selva_proto_error {
 };
 
 /**
- * Selva protocol double message.
+ * Selva protocol double value.
  */
 struct selva_proto_double {
     /**
-     * Message type.
+     * Type.
      * Type must be SELVA_PROTO_DOUBLE.
      */
     enum selva_proto_data_type type;
@@ -59,11 +92,11 @@ struct selva_proto_double {
 };
 
 /**
- * Selva protocol long long message.
+ * Selva protocol long long.
  */
 struct selva_proto_longlong {
     /**
-     * Message type.
+     * Type.
      * Type must be SELVA_PROTO_LONGLONG.
      */
     enum selva_proto_data_type type;
@@ -72,11 +105,11 @@ struct selva_proto_longlong {
 };
 
 /**
- * Selva protocol string message.
+ * Selva protocol string.
  */
 struct selva_proto_string {
     /**
-     * Message type.
+     * Type.
      * Type must be SELVA_PROTO_STRING.
      */
     enum selva_proto_data_type type;
@@ -90,11 +123,11 @@ struct selva_proto_string {
 };
 
 /**
- * Selva protocol array message.
+ * Selva protocol array.
  */
 struct selva_proto_array {
     /**
-     * Message type.
+     * Type.
      * Type must be SELVA_PROTO_ARRAY.
      */
     enum selva_proto_data_type type;
@@ -109,20 +142,20 @@ struct selva_proto_array {
 };
 
 /**
- * Selva protocol control message.
+ * Selva protocol control.
+ * This struct can be used for either initial type detection or to
+ * send control information.
  */
 struct selva_proto_control {
     /**
-     * Message type.
-     * This struct can be used for either initial type detection or to
-     * send control messages.
-     * When sending a control message the type must be one of:
+     * Type.
+     * When sending a control values the type must be one of:
      * - SELVA_PROTO_ARRAY_END
      */
     enum selva_proto_data_type type;
 };
 
-static_assert(sizeof(struct selva_proto_header) == sizeof(uint64_t), "Header must be 64 bits");
+static_assert(sizeof(struct selva_proto_header) == (2 * sizeof(uint64_t)), "Header must be 64 bits");
 static_assert(__alignof__(struct selva_proto_header) == __alignof__(uint64_t), "Header must be aligned as a 64-bit integer");
 static_assert(sizeof(enum selva_proto_data_type) == 1, "data_type must be an 8-bit integer");
 static_assert(sizeof_field(struct selva_proto_string, flags) == 1, "string flags must be 8-bit wide");

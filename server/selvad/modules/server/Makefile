@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 OBJ := \
-	   selva_proto.o \
-	   server.o
+	   server.o \
+	   server_frame.o \
+	   server_send.o
 DEP := $(OBJ:%.o=%.d)
 LDFLAGS += -lutil
 TARGET := ../server$(MOD_SUFFIX)

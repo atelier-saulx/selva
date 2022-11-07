@@ -168,6 +168,11 @@
 /**
  * Size of struct field.
  */
+#define typeof_field(t, f) typeof(((t*)0)->f)
+
+/**
+ * Size of struct field.
+ */
 #define sizeof_field(t, f) (sizeof(((t*)0)->f))
 
 /**

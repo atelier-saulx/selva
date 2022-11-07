@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "cdefs.h"
+#include "endian.h"
 #include "util/eztrie.h"
 #include "selva_proto.h"
 
@@ -74,6 +75,7 @@ static int get_cmd(void)
 
 int main(int argc, char const* argv[])
 {
+    static int seqno = 0;
      int sock = connect_to_server();
 
      if (sock == -1) {
@@ -81,30 +83,54 @@ int main(int argc, char const* argv[])
      }
 
      for (int cmd = get_cmd(); cmd != -2; cmd = get_cmd()) {
-         char buf[sizeof(uint64_t)];
-         struct selva_proto_header hdr = {
-             .cmd = cmd,
-         };
+         _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header)];
+         struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
+
+         memset(hdr, 0, sizeof(*hdr));
+         hdr->cmd = cmd;
+         hdr->flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST;
+         hdr->seqno = htole32(seqno++);
+         hdr->frame_bsize = htole16(sizeof(buf));
+         hdr->msg_bsize = 0;
 
          if (cmd == -1) continue;
 
          printf("cmd_id: %d\n", cmd);
 
-         /* FIXME Endianness */
-         memcpy(buf, &hdr, sizeof(hdr));
          if (send(sock, buf, sizeof(buf), MSG_MORE) != sizeof(buf)) {
              fprintf(stderr, "Send failed\n");
              break;
          }
 
-         char buf1[1024];
+         _Alignas(struct selva_proto_header) char buf1[1024];
          ssize_t r;
 
-         memset(buf1, '\0', sizeof(buf1));
          r = recv(sock, buf1, sizeof(buf1) - 1, 0);
-         if (r > 0) {
-             clear_crlf(buf1);
-             printf("%s\n", buf1);
+         if (r >= (ssize_t)sizeof(struct selva_proto_header)) {
+             struct selva_proto_header *resp = (struct selva_proto_header *)buf1;
+
+             if (resp->flags & SELVA_PROTO_HDR_FREQ_RES) {
+                switch (resp->cmd) {
+                case 0: /* Ping */
+                    if (r >= (ssize_t)sizeof(struct selva_proto_control)) {
+                        struct selva_proto_control ctrl;
+
+                        memcpy(&ctrl, resp + sizeof(struct selva_proto_header), sizeof(ctrl));
+                        if (ctrl.type == SELVA_PROTO_STRING) {
+                            struct selva_proto_string *s = (struct selva_proto_string *)(resp + sizeof(struct selva_proto_header));
+
+                            printf("%.*s\n", (int)s->bsize, s->str);
+                        } /* TODO else */
+                    } /* TODO else */
+                    break;
+                default:
+                    fprintf(stderr, "Unsupported command response\n");
+                }
+             } else {
+                 fprintf(stderr, "Unexpected message received\n");
+             }
+         } else {
+            fprintf(stderr, "Received message is too small (%d bytes)\n", (int)r);
          }
      }
 

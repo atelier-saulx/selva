@@ -4,25 +4,26 @@
  */
 #include <arpa/inet.h>
 #include <dlfcn.h>
+#include <netinet/tcp.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <unistd.h>
 #include "event_loop.h"
 #include "module.h"
 #include "selva_error.h"
 #include "selva_log.h"
+#include "jemalloc.h"
 #include "selva_proto.h"
 #include "server.h"
 
-cmd_function commands[254];
+selva_cmd_function commands[254];
 
 #define BACKLOG_SIZE 3
 static int server_sockfd;
 
-static int mk_command(int nr, cmd_function cmd)
+static int mk_command(int nr, selva_cmd_function cmd)
 {
     if (nr < 0 || nr >= (int)num_elem(commands)) {
         return SELVA_EINVAL;
@@ -36,13 +37,17 @@ static int mk_command(int nr, cmd_function cmd)
     return 0;
 }
 
-static cmd_function get_command(int nr)
+static selva_cmd_function get_command(int nr)
 {
     return (nr >= 0 && nr < (int)num_elem(commands)) ? commands[nr] : NULL;
 }
 
-static void ping(struct conn_ctx *ctx, const char *buf, size_t size) {
-    send(ctx->fd, "pong\r\n", 6, 0);
+static void ping(struct selva_server_response_out *resp, const char *buf __unused, size_t size __unused) {
+    const char msg[] = "pong";
+
+    printf("pong\n"); /* TODO remove */
+    selva_send_str(resp, msg, sizeof(msg) - 1);
+    server_send_end(resp); /* TODO end flag. */
 }
 
 static int new_server(int port)
@@ -73,71 +78,134 @@ static int new_server(int port)
     return sockfd;
 }
 
-static void on_data(struct event *event, void *arg __unused)
+static void on_data(struct event *event, void *arg)
 {
     const int fd = event->fd;
-    char buf[128];
-    ssize_t r;
+    struct conn_ctx *ctx = (struct conn_ctx *)arg;
 
-    r = read(fd, buf, sizeof(buf) - 1);
-    if (r <= 0) {
+    /*
+     * TODO Currently we don't do frame reassembly and expect the client to only
+     *      send one message sequence at time.
+     */
+
+    ssize_t frame_bsize = recv_frame(ctx);
+    if (frame_bsize <= 0) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed (fd: %d): %s\n",
+                  fd, selva_strerror(frame_bsize));
         evl_end_fd(fd);
         return;
     }
+    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame: %d bytes", (int)frame_bsize);
 
-    SELVA_LOG(SELVA_LOGL_INFO, "Received %d bytes", (int)r);
+    struct selva_proto_header *hdr = &ctx->recv_frame_hdr_buf;
+    const uint32_t seqno = le32toh(hdr->seqno);
+    const unsigned frame_state = hdr->flags & SELVA_PROTO_HDR_FFMASK;
 
-    struct selva_proto_header hdr;
+    if (ctx->recv_state == CONN_CTX_RECV_STATE_NONE ||
+        ctx->recv_state == CONN_CTX_RECV_STATE_COMPLETE) {
+        ctx->cur_seqno = seqno;
+        size_t msg_bsize = le32toh(hdr->msg_bsize);
 
-    if (r < (ssize_t)sizeof(hdr)) {
-        /* TODO */
-        SELVA_LOG(SELVA_LOGL_ERR, "Header too small");
+        if (!(frame_state & SELVA_PROTO_HDR_FFIRST)) {
+            SELVA_LOG(SELVA_LOGL_WARN, "Sequence tracking error\n"); /* TODO Better log */
+        }
+
+        if (msg_bsize == 0) {
+            msg_bsize = le16toh(hdr->frame_bsize - sizeof(*hdr));
+        }
+
+        ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, msg_bsize);
+        ctx->recv_msg_buf_size = msg_bsize;
+        ctx->recv_msg_buf_i = 0;
+    } else if (ctx->recv_state == CONN_CTX_RECV_STATE_FRAGMENT) {
+        if (seqno != ctx->cur_seqno) {
+            SELVA_LOG(SELVA_LOGL_WARN, "Discarding an unexpected frame. seqno: %d\n", seqno);
+            return;
+        }
+        if (frame_state & SELVA_PROTO_HDR_FFIRST) {
+            SELVA_LOG(SELVA_LOGL_WARN, "Received invalid frame. seqno: %d\n", seqno);
+            ctx->recv_state = CONN_CTX_RECV_STATE_NONE;
+            return;
+        }
+    } else {
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid connection state\n");
         return;
     }
 
-    memcpy(&hdr, buf, sizeof(hdr));
-    cmd_function cmd = get_command(hdr.cmd);
-    if (cmd) {
-        struct conn_ctx ctx = {
-            .fd = fd,
+    if (frame_state & SELVA_PROTO_HDR_FLAST) {
+        selva_cmd_function cmd;
+        struct selva_server_response_out resp = {
+            .ctx = ctx,
+            .cmd = hdr->cmd,
+            .frame_flags = SELVA_PROTO_HDR_FFIRST,
+            .seqno = seqno,
+            .buf_i = 0,
         };
 
-        cmd(&ctx, buf + sizeof(struct selva_proto_header), r - sizeof(struct selva_proto_header));
-    } else {
-        /* TODO with header */
-        send(fd, "Invalid\r\n", 9, 0);
-        return;
+        ctx->recv_state = CONN_CTX_RECV_STATE_COMPLETE;
+
+        cmd = get_command(hdr->cmd);
+        if (cmd) {
+            cmd(&resp, ctx->recv_msg_buf, ctx->recv_msg_buf_i);
+        } else {
+            const char msg[] = "Invalid command";
+
+            SELVA_LOG(SELVA_LOGL_WARN, "%s: %d\n", msg, hdr->cmd);
+
+            (void)selva_send_error(&resp, SELVA_PROTO_EINVAL, msg, sizeof(msg) - 1);
+            server_send_end(&resp); /* TODO We want to add an end flag to selva_send.* */
+            return;
+        }
     }
 }
 
 static void on_connection(struct event *event, void *arg __unused)
 {
-    const int fd = event->fd;
     int c = sizeof(struct sockaddr_in);
     struct sockaddr_in client;
     int new_sockfd;
     char buf[INET_ADDRSTRLEN];
 
-    new_sockfd = accept(fd, (struct sockaddr *)&client, (socklen_t*)&c);
+    new_sockfd = accept(event->fd, (struct sockaddr *)&client, (socklen_t*)&c);
     if (new_sockfd < 0) {
         SELVA_LOG(SELVA_LOGL_ERR, "Accept failed");
         return;
     }
 
+    (void)setsockopt(new_sockfd, IPPROTO_TCP, TCP_NODELAY, &(int){1}, sizeof(int));
+
     inet_ntop(AF_INET, &client.sin_addr, buf, sizeof(buf));
     SELVA_LOG(SELVA_LOGL_INFO, "Received a connection from %s", buf);
 
-    evl_wait_fd(new_sockfd, on_data, NULL, NULL, NULL);
+    /*
+     * TODO We want to dealloc this somewhere.
+     * TODO Perhaps static allocs for all connections.
+     * TODO connection timeout support?
+     */
+    struct conn_ctx *conn_ctx = selva_calloc(1, sizeof(struct conn_ctx));
+
+    conn_ctx->fd = new_sockfd;
+    conn_ctx->recv_state = CONN_CTX_RECV_STATE_NONE;
+#if 0
+    server_assign_worker(conn_ctx);
+#endif
+
+    evl_wait_fd(new_sockfd, on_data, NULL, NULL, conn_ctx);
 }
 
 IMPORT() {
     evl_import_main(selva_log);
+    evl_import_main(selva_strerror);
     evl_import_event_loop();
 }
 
 __constructor void init(void)
 {
     SELVA_LOG(SELVA_LOGL_INFO, "Init server");
+
+#if 0
+    server_start_workers();
+#endif
 
     mk_command(0, ping);
 
