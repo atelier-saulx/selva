@@ -21,6 +21,7 @@
 selva_cmd_function commands[254];
 
 #define BACKLOG_SIZE 3
+static const int use_tcp_nodelay = 1;
 static int server_sockfd;
 
 static int mk_command(int nr, selva_cmd_function cmd)
@@ -95,7 +96,8 @@ static void on_data(struct event *event, void *arg)
         evl_end_fd(fd);
         return;
     }
-    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame: %d bytes", (int)frame_bsize);
+    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame of %d bytes from %d",
+              (int)frame_bsize, fd);
 
     struct selva_proto_header *hdr = &ctx->recv_frame_hdr_buf;
     const uint32_t seqno = le32toh(hdr->seqno);
@@ -172,7 +174,10 @@ static void on_connection(struct event *event, void *arg __unused)
         return;
     }
 
-    (void)setsockopt(new_sockfd, IPPROTO_TCP, TCP_NODELAY, &(int){1}, sizeof(int));
+    if (use_tcp_nodelay) {
+        (void)setsockopt(new_sockfd, IPPROTO_TCP, TCP_NODELAY, &(int){1}, sizeof(int));
+    }
+
 
     inet_ntop(AF_INET, &client.sin_addr, buf, sizeof(buf));
     SELVA_LOG(SELVA_LOGL_INFO, "Received a connection from %s", buf);

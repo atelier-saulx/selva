@@ -1,4 +1,7 @@
+#include <alloca.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +27,9 @@ static int connect_to_server(void)
         fprintf(stderr, "Could not create a socket\n");
         return -1;
     }
+
+    fprintf(stderr, "err %d\n", setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &(int){1}, sizeof(int)));
+    fprintf(stderr, "err %d\n", setsockopt(sock, SOL_SOCKET, TCP_NODELAY, &(int){1}, sizeof(int)));
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
@@ -73,6 +79,42 @@ static int get_cmd(void)
     return -1;
 }
 
+void *recv_message(int fd,int *cmd, size_t *msg_size)
+{
+    static _Alignas(uintptr_t) uint8_t msg_buf[4096];
+    struct selva_proto_header resp_hdr;
+    ssize_t r;
+    size_t i = 0;
+
+    do {
+        r = recv(fd, &resp_hdr, sizeof(resp_hdr), 0);
+        if (r != (ssize_t)sizeof(resp_hdr)) {
+            return NULL;
+        } else {
+            size_t frame_bsize = le16toh(resp_hdr.frame_bsize);
+            const size_t payload_size = frame_bsize - sizeof(resp_hdr);
+
+            if (!(resp_hdr.flags & SELVA_PROTO_HDR_FREQ_RES) ||
+                i + payload_size > sizeof(msg_buf)) {
+                return NULL;
+            }
+
+            if (payload_size > 0) {
+                r = recv(fd, msg_buf + i, payload_size, 0);
+                if (r != (ssize_t)payload_size) {
+                    return NULL;
+                }
+
+                i += payload_size;
+            }
+        }
+    } while (!(resp_hdr.flags & SELVA_PROTO_HDR_FLAST));
+
+    *cmd = resp_hdr.cmd;
+    *msg_size = i;
+    return msg_buf;
+}
+
 int main(int argc, char const* argv[])
 {
     static int seqno = 0;
@@ -86,6 +128,8 @@ int main(int argc, char const* argv[])
          _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header)];
          struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
 
+         if (cmd == -1) continue;
+
          memset(hdr, 0, sizeof(*hdr));
          hdr->cmd = cmd;
          hdr->flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST;
@@ -93,44 +137,45 @@ int main(int argc, char const* argv[])
          hdr->frame_bsize = htole16(sizeof(buf));
          hdr->msg_bsize = 0;
 
-         if (cmd == -1) continue;
-
+#if 0
          printf("cmd_id: %d\n", cmd);
+#endif
 
          if (send(sock, buf, sizeof(buf), MSG_MORE) != sizeof(buf)) {
              fprintf(stderr, "Send failed\n");
              break;
          }
 
-         _Alignas(struct selva_proto_header) char buf1[1024];
-         ssize_t r;
+         int resp_cmd;
+         size_t msg_size;
+         uint8_t *msg = recv_message(sock, &resp_cmd, &msg_size);
+         if (!msg) {
+             fprintf(stderr, "Reading response failed\n");
+             continue;
+         }
 
-         r = recv(sock, buf1, sizeof(buf1) - 1, 0);
-         if (r >= (ssize_t)sizeof(struct selva_proto_header)) {
-             struct selva_proto_header *resp = (struct selva_proto_header *)buf1;
+         switch (resp_cmd) {
+         case 0: /* Ping */
+             if (msg_size >= sizeof(struct selva_proto_control)) {
+                 struct selva_proto_control *ctrl = (struct selva_proto_control *)msg;
 
-             if (resp->flags & SELVA_PROTO_HDR_FREQ_RES) {
-                switch (resp->cmd) {
-                case 0: /* Ping */
-                    if (r >= (ssize_t)sizeof(struct selva_proto_control)) {
-                        struct selva_proto_control ctrl;
+                 if (ctrl->type == SELVA_PROTO_STRING && msg_size >= sizeof(struct selva_proto_string)) {
+                     struct selva_proto_string *s = (struct selva_proto_string *)msg;
 
-                        memcpy(&ctrl, resp + sizeof(struct selva_proto_header), sizeof(ctrl));
-                        if (ctrl.type == SELVA_PROTO_STRING) {
-                            struct selva_proto_string *s = (struct selva_proto_string *)(resp + sizeof(struct selva_proto_header));
-
-                            printf("%.*s\n", (int)s->bsize, s->str);
-                        } /* TODO else */
-                    } /* TODO else */
-                    break;
-                default:
-                    fprintf(stderr, "Unsupported command response\n");
-                }
+                     if (le32toh(s->bsize) <= msg_size - sizeof(struct selva_proto_string)) {
+                        printf("%.*s\n", (int)s->bsize, s->str);
+                     } else {
+                         fprintf(stderr, "Invalid string\n");
+                     }
+                 } else {
+                     fprintf(stderr, "Unexpected response to \"ping\": %d\n", ctrl->type);
+                 }
              } else {
-                 fprintf(stderr, "Unexpected message received\n");
+                 fprintf(stderr, "Response is shorter than expected\n");
              }
-         } else {
-            fprintf(stderr, "Received message is too small (%d bytes)\n", (int)r);
+             break;
+         default:
+             fprintf(stderr, "Unsupported command response\n");
          }
      }
 

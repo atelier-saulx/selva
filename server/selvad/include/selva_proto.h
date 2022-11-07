@@ -21,7 +21,6 @@ struct selva_proto_header {
          */
         SELVA_PROTO_HDR_FFMASK   = 0x60, /*!< Mask to catch fragmentation status. */
         SELVA_PROTO_HDR_FFIRST   = 0x20, /*!< This is the first frame of a sequence. */
-        SELVA_PROTO_HDR_FMID     = 0x00, /*!< This frame is in the middle of a segment. */
         SELVA_PROTO_HDR_FLAST    = 0x40, /*!< This is the last frame of the sequence. */
         /**
          * @}

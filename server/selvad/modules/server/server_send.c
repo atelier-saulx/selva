@@ -50,7 +50,7 @@ int selva_send_ll(struct selva_server_response_out *resp, long long value)
 
 int selva_send_str(struct selva_server_response_out *resp, const char *str, size_t len)
 {
-    const size_t bsize = sizeof(struct selva_proto_error) + len;
+    const size_t bsize = sizeof(struct selva_proto_string) + len;
     struct selva_proto_string *buf = alloca(bsize);
 
     *buf = (struct selva_proto_string){
@@ -59,7 +59,7 @@ int selva_send_str(struct selva_server_response_out *resp, const char *str, size
     };
     memcpy(buf->str, str, len);
 
-    return server_send_buf(resp, &buf, bsize);
+    return server_send_buf(resp, buf, bsize);
 }
 
 int selva_send_array(struct selva_server_response_out *resp, int len)

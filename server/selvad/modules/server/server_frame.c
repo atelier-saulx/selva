@@ -70,7 +70,7 @@ static void start_resp_frame_buf(struct selva_server_response_out *resp)
     hdr->flags = SELVA_PROTO_HDR_FREQ_RES | resp->frame_flags;
     hdr->seqno = htole32(resp->seqno);
 
-    resp->buf_i = sizeof(hdr);
+    resp->buf_i = sizeof(*hdr);
     resp->frame_flags &= ~SELVA_PROTO_HDR_FFMASK;
 }
 
@@ -124,7 +124,7 @@ ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const v
             start_resp_frame_buf(resp);
         }
 
-        size_t wr = min(sizeof(resp->buf) - resp->buf_i, len - i);
+        const size_t wr = min(sizeof(resp->buf) - resp->buf_i, len - i);
         memcpy(resp->buf + resp->buf_i, (uint8_t *)buf + i, wr);
         i += wr;
         resp->buf_i += wr;
