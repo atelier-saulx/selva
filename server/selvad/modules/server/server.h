@@ -18,9 +18,8 @@ struct conn_ctx {
     pthread_t worker_id;
 #endif
     enum {
-        CONN_CTX_RECV_STATE_NONE, /*!< Waiting for the next seq; No recv in progress. */
+        CONN_CTX_RECV_STATE_NEW, /*!< Waiting for the next seq; No recv in progress. */
         CONN_CTX_RECV_STATE_FRAGMENT, /*!< Waiting for the next frame of a sequence. */
-        CONN_CTX_RECV_STATE_COMPLETE, /*!< A full message was reassembled. */
     } recv_state;
     uint32_t cur_seqno; /*!< Currently incoming sequence. */
     struct selva_proto_header recv_frame_hdr_buf;

@@ -48,7 +48,6 @@ static selva_cmd_function get_command(int nr)
 static void ping(struct selva_server_response_out *resp, const char *buf __unused, size_t size __unused) {
     const char msg[] = "pong";
 
-    printf("pong\n"); /* TODO remove */
     selva_send_str(resp, msg, sizeof(msg) - 1);
     server_send_end(resp);
 }
@@ -57,8 +56,6 @@ static void echo(struct selva_server_response_out *resp, const char *buf, size_t
     struct selva_proto_string hdr;
     const char *p = buf;
     size_t left = size;
-
-    printf("echo\n"); /* TODO Remove */
 
     /* TODO Could also support receiving an array */
     while (left > sizeof(hdr)) {
@@ -153,10 +150,11 @@ static void on_data(struct event *event, void *arg)
      * TODO Currently we don't do frame reassembly for multiple simultaneous
      *      sequences and expect the client to only send one message sequence
      *      at time.
+     * TODO Some commands would possibly benefit from streaming support instead
+     *      of buffering the whole request.
      */
 
-    if (ctx->recv_state == CONN_CTX_RECV_STATE_NONE ||
-        ctx->recv_state == CONN_CTX_RECV_STATE_COMPLETE) {
+    if (ctx->recv_state == CONN_CTX_RECV_STATE_NEW) {
         ctx->recv_msg_buf_i = 0;
     }
 
@@ -174,18 +172,23 @@ static void on_data(struct event *event, void *arg)
     const uint32_t seqno = le32toh(hdr->seqno);
     const unsigned frame_state = hdr->flags & SELVA_PROTO_HDR_FFMASK;
 
-    if (ctx->recv_state == CONN_CTX_RECV_STATE_NONE ||
-        ctx->recv_state == CONN_CTX_RECV_STATE_COMPLETE) {
+    if (ctx->recv_state == CONN_CTX_RECV_STATE_NEW) {
         ctx->cur_seqno = seqno;
         size_t msg_bsize = le32toh(hdr->msg_bsize);
 
         if (!(frame_state & SELVA_PROTO_HDR_FFIRST)) {
+            /* TODO Send an error */
             /* TODO Better log */
             SELVA_LOG(SELVA_LOGL_WARN, "Sequence tracking error: %d\n",
                       seqno);
+            return;
         }
 
         /* TODO Cap msg_bsize */
+        if (msg_bsize > SELVA_PROTO_MSG_SIZE_MAX) {
+            /* TODO Send an error */
+            return;
+        }
         if (ctx->recv_msg_buf_size < msg_bsize) {
             ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, msg_bsize);
             ctx->recv_msg_buf_size = msg_bsize;
@@ -197,7 +200,8 @@ static void on_data(struct event *event, void *arg)
         }
         if (frame_state & SELVA_PROTO_HDR_FFIRST) {
             SELVA_LOG(SELVA_LOGL_WARN, "Received invalid frame. seqno: %d\n", seqno);
-            ctx->recv_state = CONN_CTX_RECV_STATE_NONE;
+            /* TODO Send an error? */
+            ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
             return;
         }
     } else {
@@ -215,8 +219,6 @@ static void on_data(struct event *event, void *arg)
             .buf_i = 0,
         };
 
-        ctx->recv_state = CONN_CTX_RECV_STATE_COMPLETE;
-
         cmd = get_command(hdr->cmd);
         if (cmd) {
             cmd(&resp, ctx->recv_msg_buf, ctx->recv_msg_buf_i);
@@ -229,6 +231,8 @@ static void on_data(struct event *event, void *arg)
             server_send_end(&resp);
             return;
         }
+
+        ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
     } else {
         ctx->recv_state = CONN_CTX_RECV_STATE_FRAGMENT;
     }
@@ -277,7 +281,7 @@ static void on_connection(struct event *event, void *arg __unused)
     SELVA_LOG(SELVA_LOGL_INFO, "Received a connection from %s", buf);
 
     conn_ctx->fd = new_sockfd;
-    conn_ctx->recv_state = CONN_CTX_RECV_STATE_NONE;
+    conn_ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
 #if 0
     server_assign_worker(conn_ctx);
 #endif

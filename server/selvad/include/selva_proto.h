@@ -1,6 +1,7 @@
 #pragma once
 
 #define SELVA_PROTO_FRAME_SIZE_MAX 4096
+#define SELVA_PROTO_MSG_SIZE_MAX   1073741824
 
 /**
  * Selva protocol frame header.
