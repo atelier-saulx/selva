@@ -186,7 +186,7 @@ ssize_t recv_frame(struct conn_ctx *ctx)
         if (frame_payload_size > ctx->recv_msg_buf_size - ctx->recv_msg_buf_i) {
             const size_t new_buf_size = ctx->recv_msg_buf_size + frame_payload_size;
 
-            selva_realloc(ctx->recv_msg_buf, new_buf_size);
+            ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, new_buf_size);
             ctx->recv_msg_buf_size = new_buf_size;
         }
 

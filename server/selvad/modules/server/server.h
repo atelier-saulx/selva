@@ -13,6 +13,7 @@
 
 struct conn_ctx {
     int fd;
+    int inuse; /*!< Set if the connection is active. */
 #if 0
     pthread_t worker_id;
 #endif

@@ -194,7 +194,7 @@ static void handle_fd_close_event(struct event *ev)
         if (S_ISSOCK(statbuf.st_mode)) {
             (void)shutdown(fd, SHUT_RDWR);
         }
-        close(ev->fd);
+        close(fd);
     }
 
     memset(fdr, 0, sizeof(*fdr));

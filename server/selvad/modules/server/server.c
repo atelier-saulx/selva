@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include "event_loop.h"
 #include "module.h"
 #include "selva_error.h"
@@ -18,11 +19,12 @@
 #include "selva_proto.h"
 #include "server.h"
 
-selva_cmd_function commands[254];
-
-#define BACKLOG_SIZE 3
+#define BACKLOG_SIZE 10
 static const int use_tcp_nodelay = 1;
+#define MAX_CLIENTS 100 /*!< Maximum number of client connections. */
 static int server_sockfd;
+static struct conn_ctx clients[MAX_CLIENTS];
+selva_cmd_function commands[254];
 
 static int mk_command(int nr, selva_cmd_function cmd)
 {
@@ -48,7 +50,46 @@ static void ping(struct selva_server_response_out *resp, const char *buf __unuse
 
     printf("pong\n"); /* TODO remove */
     selva_send_str(resp, msg, sizeof(msg) - 1);
-    server_send_end(resp); /* TODO end flag. */
+    server_send_end(resp);
+}
+
+static void echo(struct selva_server_response_out *resp, const char *buf, size_t size) {
+    struct selva_proto_string hdr;
+    const char *p = buf;
+    size_t left = size;
+
+    printf("echo\n"); /* TODO Remove */
+
+    /* TODO Could also support receiving an array */
+    while (left > sizeof(hdr)) {
+        size_t bsize;
+
+        memcpy(&hdr, p, sizeof(hdr));
+        left -= sizeof(hdr);
+        p += sizeof(hdr);
+
+        if (hdr.type != SELVA_PROTO_STRING) {
+            const char err_str[] = "Invalid payload type";
+
+            selva_send_error(resp, SELVA_EINVAL, err_str, sizeof(err_str) - 1);
+            break;
+        }
+
+
+        bsize = le32toh(hdr.bsize);
+        if (bsize > left) {
+            const char err_str[] = "Invalid payload size";
+
+            selva_send_error(resp, SELVA_EINVAL, err_str, sizeof(err_str) - 1);
+            break;
+        }
+
+        selva_send_str(resp, p, bsize);
+        left -= bsize;
+        p += bsize;
+    }
+
+    server_send_end(resp);
 }
 
 static int new_server(int port)
@@ -71,6 +112,7 @@ static int new_server(int port)
 
     if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
         SELVA_LOG(SELVA_LOGL_CRIT, "bind failed");
+        exit(EXIT_FAILURE);
     }
 
     listen(sockfd, BACKLOG_SIZE);
@@ -79,15 +121,44 @@ static int new_server(int port)
     return sockfd;
 }
 
+static struct conn_ctx *alloc_conn_ctx(void)
+{
+    struct conn_ctx *ctx = NULL;
+
+    /*
+     * TODO We want to have greater max conns and thus foreach isn't good enough alloc
+     */
+    for (size_t i = 0; i < num_elem(clients); i++) {
+        if (!clients[i].inuse) {
+            ctx = &clients[i];
+            ctx->inuse = 1;
+            break;
+        }
+    }
+
+    return ctx;
+}
+
+static void free_conn_ctx(struct conn_ctx *ctx)
+{
+    ctx->inuse = 0;
+}
+
 static void on_data(struct event *event, void *arg)
 {
     const int fd = event->fd;
     struct conn_ctx *ctx = (struct conn_ctx *)arg;
 
     /*
-     * TODO Currently we don't do frame reassembly and expect the client to only
-     *      send one message sequence at time.
+     * TODO Currently we don't do frame reassembly for multiple simultaneous
+     *      sequences and expect the client to only send one message sequence
+     *      at time.
      */
+
+    if (ctx->recv_state == CONN_CTX_RECV_STATE_NONE ||
+        ctx->recv_state == CONN_CTX_RECV_STATE_COMPLETE) {
+        ctx->recv_msg_buf_i = 0;
+    }
 
     ssize_t frame_bsize = recv_frame(ctx);
     if (frame_bsize <= 0) {
@@ -109,16 +180,16 @@ static void on_data(struct event *event, void *arg)
         size_t msg_bsize = le32toh(hdr->msg_bsize);
 
         if (!(frame_state & SELVA_PROTO_HDR_FFIRST)) {
-            SELVA_LOG(SELVA_LOGL_WARN, "Sequence tracking error\n"); /* TODO Better log */
+            /* TODO Better log */
+            SELVA_LOG(SELVA_LOGL_WARN, "Sequence tracking error: %d\n",
+                      seqno);
         }
 
-        if (msg_bsize == 0) {
-            msg_bsize = le16toh(hdr->frame_bsize - sizeof(*hdr));
+        /* TODO Cap msg_bsize */
+        if (ctx->recv_msg_buf_size < msg_bsize) {
+            ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, msg_bsize);
+            ctx->recv_msg_buf_size = msg_bsize;
         }
-
-        ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, msg_bsize);
-        ctx->recv_msg_buf_size = msg_bsize;
-        ctx->recv_msg_buf_i = 0;
     } else if (ctx->recv_state == CONN_CTX_RECV_STATE_FRAGMENT) {
         if (seqno != ctx->cur_seqno) {
             SELVA_LOG(SELVA_LOGL_WARN, "Discarding an unexpected frame. seqno: %d\n", seqno);
@@ -155,10 +226,22 @@ static void on_data(struct event *event, void *arg)
             SELVA_LOG(SELVA_LOGL_WARN, "%s: %d\n", msg, hdr->cmd);
 
             (void)selva_send_error(&resp, SELVA_PROTO_EINVAL, msg, sizeof(msg) - 1);
-            server_send_end(&resp); /* TODO We want to add an end flag to selva_send.* */
+            server_send_end(&resp);
             return;
         }
+    } else {
+        ctx->recv_state = CONN_CTX_RECV_STATE_FRAGMENT;
     }
+}
+
+static void on_close(struct event *event, void *arg)
+{
+    const int fd = event->fd;
+    struct conn_ctx *ctx = (struct conn_ctx *)arg;
+
+    (void)shutdown(fd, SHUT_RDWR);
+    close(fd);
+    free_conn_ctx(ctx);
 }
 
 static void on_connection(struct event *event, void *arg __unused)
@@ -167,10 +250,21 @@ static void on_connection(struct event *event, void *arg __unused)
     struct sockaddr_in client;
     int new_sockfd;
     char buf[INET_ADDRSTRLEN];
+    struct conn_ctx *conn_ctx = alloc_conn_ctx();
 
     new_sockfd = accept(event->fd, (struct sockaddr *)&client, (socklen_t*)&c);
     if (new_sockfd < 0) {
         SELVA_LOG(SELVA_LOGL_ERR, "Accept failed");
+        return;
+    }
+
+    /*
+     * TODO We want to dealloc this somewhere.
+     * TODO connection timeout support?
+     */
+    if (!conn_ctx) {
+        close(new_sockfd);
+        SELVA_LOG(SELVA_LOGL_WARN, "Maximum number of client connections reached\n");
         return;
     }
 
@@ -182,20 +276,13 @@ static void on_connection(struct event *event, void *arg __unused)
     inet_ntop(AF_INET, &client.sin_addr, buf, sizeof(buf));
     SELVA_LOG(SELVA_LOGL_INFO, "Received a connection from %s", buf);
 
-    /*
-     * TODO We want to dealloc this somewhere.
-     * TODO Perhaps static allocs for all connections.
-     * TODO connection timeout support?
-     */
-    struct conn_ctx *conn_ctx = selva_calloc(1, sizeof(struct conn_ctx));
-
     conn_ctx->fd = new_sockfd;
     conn_ctx->recv_state = CONN_CTX_RECV_STATE_NONE;
 #if 0
     server_assign_worker(conn_ctx);
 #endif
 
-    evl_wait_fd(new_sockfd, on_data, NULL, NULL, conn_ctx);
+    evl_wait_fd(new_sockfd, on_data, NULL, on_close, conn_ctx);
 }
 
 IMPORT() {
@@ -213,6 +300,7 @@ __constructor void init(void)
 #endif
 
     mk_command(0, ping);
+    mk_command(1, echo); /* TODO Remove */
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(3000);
