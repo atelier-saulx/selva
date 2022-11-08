@@ -46,6 +46,7 @@ struct selva_proto_header {
      * Checksum/CRC.
      * The checksum is calculated over the whole frame with all header fields
      * set to their final values and this field zeroed.
+     * TODO Not implemented.
      */
     uint32_t chk;
 } __attribute__((packed,aligned(__alignof__(uint64_t))));
