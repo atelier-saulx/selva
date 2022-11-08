@@ -12,7 +12,7 @@
 /* TODO Perhaps extracts types from selva_proto with macros */
 
 struct conn_ctx {
-    int fd;
+    int fd; /*<! The socket associated with this connection. */
     int inuse; /*!< Set if the connection is active. */
 #if 0
     pthread_t worker_id;
@@ -29,15 +29,6 @@ struct conn_ctx {
 };
 
 /**
- * Incoming request.
- */
-struct selva_server_request_in {
-    struct conn_ctx *ctx;
-    int8_t cmd;
-    uint32_t seqno;
-};
-
-/**
  * Outgoing response.
  */
 struct selva_server_response_out {
@@ -49,7 +40,13 @@ struct selva_server_response_out {
     _Alignas(struct selva_proto_header) char buf[SELVA_PROTO_FRAME_SIZE_MAX];
 };
 
-typedef void (*selva_cmd_function)(struct selva_server_response_out *resp, const char *buf, size_t size);
+/**
+ * Command function.
+ * @param resp contains information needed to build the response.
+ * @param buf is a pointer to the incoming message.
+ * @param len is the length of the incoming message in bytes.
+ */
+typedef void (*selva_cmd_function)(struct selva_server_response_out *resp, const char *buf, size_t len);
 
 #if 0
 void server_start_workers(void);

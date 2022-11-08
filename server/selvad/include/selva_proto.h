@@ -26,7 +26,7 @@ struct selva_proto_header {
         /**
          * @}
          */
-        SELVA_PROTO_HDR_FDEFLATE = 0x01, /*!< Compressed with deflate. */
+        SELVA_PROTO_HDR_FDEFLATE = 0x01, /*!< Compressed with deflate. TODO Not implemented. */
     } __attribute__((packed)) flags;
     /**
      * Sequence number selected by the request sender (typically client).
@@ -88,7 +88,7 @@ struct selva_proto_double {
      */
     enum selva_proto_data_type type;
     uint8_t _spare[7];
-    double v;
+    double v; /*!< Value. */
 };
 
 /**
@@ -101,7 +101,7 @@ struct selva_proto_longlong {
      */
     enum selva_proto_data_type type;
     uint8_t _spare[7];
-    uint64_t v;
+    uint64_t v; /*!< Value. */
 };
 
 /**
@@ -115,7 +115,7 @@ struct selva_proto_string {
     enum selva_proto_data_type type;
     enum {
         SELVA_PROTO_STRING_FBINARY = 0x01, /*!< Expect binary data. */
-        SElVA_PROTO_STRING_FDEFLATE = 0x02, /*!< Compressed with deflate. */
+        SElVA_PROTO_STRING_FDEFLATE = 0x02, /*!< Compressed with deflate. TODO Not implemented. */
     } __attribute__((packed)) flags; /*! String flags. */
     uint8_t _spare[2];
     uint32_t bsize; /*!< Size of str in bytes. */
