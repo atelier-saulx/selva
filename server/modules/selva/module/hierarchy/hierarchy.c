@@ -3085,7 +3085,9 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
      */
     err = load_metadata(io, encver, hierarchy, node);
     if (err) {
-        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load hierarchy metadata");
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load hierarchy node (%.*s) metadata: %s",
+                  (int)SELVA_NODE_ID_SIZE, node->id,
+                  getSelvaErrorStr(err));
         return err;
     }
 

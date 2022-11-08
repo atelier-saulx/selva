@@ -2737,8 +2737,16 @@ static int rdb_load_field(RedisModuleIO *io, struct SelvaObject *obj, int encver
      * Not the most efficient way to do this as we may need to look
      * multiple lookups.
      */
-    if (SelvaObject_SetUserMeta(obj, name, user_meta, NULL)) {
-        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to set user meta");
+    err = SelvaObject_SetUserMeta(obj, name, user_meta, NULL);
+    if (err) {
+        TO_STR(name);
+
+        /*
+         * This could be critical but sometimes we might just decide to not
+         * create something like an empty array at this point.
+         */
+        SELVA_LOG(SELVA_LOGL_WARN, "Failed to set user meta on \"%.*s\": %s",
+                  (int)name_len, name_str, getSelvaErrorStr(err));
     }
 
     RedisModule_FreeString(NULL, name);
