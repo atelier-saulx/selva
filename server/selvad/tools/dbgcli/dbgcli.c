@@ -28,8 +28,7 @@ static int connect_to_server(void)
         return -1;
     }
 
-    fprintf(stderr, "err %d\n", setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &(int){1}, sizeof(int)));
-    fprintf(stderr, "err %d\n", setsockopt(sock, SOL_SOCKET, TCP_NODELAY, &(int){1}, sizeof(int)));
+    (void)setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &(int){1}, sizeof(int));
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
