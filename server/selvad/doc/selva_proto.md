@@ -26,3 +26,16 @@ provided value header types `SELVA_PROTO_NULL`, `SELVA_PROTO_ERROR`,
 `SELVA_PROTO_DOUBLE`, `SELVA_PROTO_LONGLONG`, `SELVA_PROTO_STRING`, and
 `SELVA_PROTO_ARRAY`. This allows encoding pretty much any information in an
 easily parseable format.
+
+List of Commands
+----------------
+
+The message encoding is expected to use the provided `selva_proto` encapsulation
+headers unless otherwise specified.
+
+`-` means empty message payload.
+
+| Name | cmd  | Request payload     | Response payload   | Description                                                    |
+|------|-----:|---------------------|--------------------|----------------------------------------------------------------|
+| PING |    0 | `"ping"` or nothing | `pong`             | Traditional ping/pong.                                         |
+| ECHO |    1 | string(s)           | strings(s)         | Echoes back the same strings that were present in the request. |
