@@ -62,3 +62,10 @@ IMPORT() {
 - Timers: [demo\_timeout](modules/demo_timeout)
 - Promises (async-await): [demo\_await](modules/demo_await)
 - Async file IO: [demo\_sock](modules/demo_sock)
+
+Selva Protocol
+--------------
+
+The server implementation of `selva_proto` is located in the
+[server](modules/server) module. The protocol is documented in
+[doc/selva\_proto.md](doc/selva_proto.md).
