@@ -1,6 +1,6 @@
 {
   "name": "selva",
-  "license" : "MIT",
+  "license": "MIT",
   "private": true,
   "workspaces": [
     "client",
