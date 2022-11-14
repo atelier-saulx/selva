@@ -16,6 +16,7 @@ OBJ := \
 	mempool.o \
 	poptop.o \
 	queue_r.o \
+	selva_string.o \
 	svector.o \
 	trx.o
 

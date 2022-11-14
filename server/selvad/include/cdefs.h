@@ -225,4 +225,21 @@
 #define TO_STR(...) \
         CONCATENATE(TO_STR_, UTIL_NARG(__VA_ARGS__))(__VA_ARGS__)
 
+/**
+ * Check if pointer has a const qualifier.
+ */
+#define IS_POINTER_CONST(P) \
+    _Generic(1 ? (P) : (void *)(P), \
+            void const *: 1, \
+            default : 0)
+
+/**
+ * Static ternary if.
+ * Selects either T or E depending on P.
+ */
+#define STATIC_IF(P, T, E) \
+    _Generic (&(char [!!(P) + 1]) {0}, \
+            char (*) [2] : T, \
+            char (*) [1] : E)
+
 #endif /* _UTIL_CDEFS_H_ */
