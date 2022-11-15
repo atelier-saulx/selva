@@ -5,3 +5,4 @@
 *.gcov
 *.gcda
 *.gcno
+vgcore.*
