@@ -11,6 +11,7 @@ OBJ := \
 	auto_free.o \
 	base64.o \
 	bitmap.o \
+	crc32c/crc32c.o \
 	cstrings.o \
 	eztrie.o \
 	mempool.o \
