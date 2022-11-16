@@ -4,6 +4,7 @@
  * @author  Olli Vanhoja
  * @brief   Eztrie.
  * @section LICENSE
+ * Copyright (c) 2022 SAULX
  * Copyright (c) 2016 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
  * All rights reserved.
  *
@@ -36,12 +37,13 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include "jemalloc.h"
 #include "util/eztrie.h"
 
 void eztrie_init(struct eztrie *trie)
 {
     memset(trie, 0, sizeof(struct eztrie));
-    trie->root = calloc(1, sizeof(struct eztrie_node));
+    trie->root = selva_calloc(1, sizeof(struct eztrie_node));
     trie->root->k = '\0';
     trie->root->child_count = 0;
 }
@@ -98,8 +100,8 @@ static struct eztrie_node * ainsert(struct eztrie_node ** root, struct eztrie_no
         struct eztrie_node * tmp;
 
         n++;
-        tmp = realloc(*root, sizeof(struct eztrie_node) +
-                      n * sizeof(struct eztrie_node *));
+        tmp = selva_realloc(*root, sizeof(struct eztrie_node) +
+                            n * sizeof(struct eztrie_node *));
         if (!tmp) {
             return NULL;
         }
@@ -210,8 +212,8 @@ void * eztrie_insert(struct eztrie * trie, const char * key, const void * p)
         struct eztrie_node * node;
         void * p;
 
-        node = calloc(1, sizeof(struct eztrie_node) +
-                      sizeof(struct eztrie_node *));
+        node = selva_calloc(1, sizeof(struct eztrie_node) +
+                            sizeof(struct eztrie_node *));
         if (!node) {
             return NULL;
         }
@@ -254,11 +256,11 @@ void * eztrie_remove(struct eztrie * trie, const char * key)
 
     if (node->value) {
         p = node->value->p;
-        free(node->value);
+        selva_free(node->value);
         node->value = NULL;
     }
     if (node->child_count == 0) {
-        free(node);
+        selva_free(node);
         *npp = NULL;
     }
 
@@ -285,7 +287,7 @@ void eztrie_destroy(struct eztrie * trie, void (*cb_free)(void * p, void * arg),
     it = eztrie_levelorder(eztrie_find_root(trie->root, ""), 0);
     STAILQ_FOREACH_SAFE(node, &it, _entry, node_tmp) {
         STAILQ_REMOVE(&it, node, eztrie_node, _entry);
-        free(node);
+        selva_free(node);
     }
 
     trie->root = NULL;

@@ -9,6 +9,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <time.h>
+#include "jemalloc.h"
 #include "selva_log.h"
 #include "event_loop_state.h"
 #include "promise.h"
@@ -195,7 +196,7 @@ void evl_return_from_async(struct evl_async_ctx *ctx)
 
 struct evl_promise *evl_promise_new(struct evl_async_ctx *ctx)
 {
-    struct evl_promise *p = calloc(1, sizeof(struct evl_promise));
+    struct evl_promise *p = selva_calloc(1, sizeof(struct evl_promise));
     p->status = EVL_PROMISE_STATUS_PENDING;
     p->ctx = ctx;
     return p;
@@ -231,7 +232,7 @@ enum evl_promise_status evl_promise_await(struct evl_promise *p, void **res)
      */
     if (p->flags & EVL_PROMISE_FLAG_RESOLVED) {
         memset(p, 0, sizeof(*p));
-        free(p);
+        selva_free(p);
     }
 
     return s;
@@ -251,7 +252,7 @@ void evl_promise_resolve(struct evl_promise *p, void *res)
          * Free the promise if it was already awaited by the owner.
          */
         memset(p, 0, sizeof(*p));
-        free(p);
+        selva_free(p);
     }
 }
 
@@ -277,7 +278,7 @@ void event_loop_init_promises(void)
     for (int i = 0; i < EVENT_LOOP_MAX_ASYNC; i++) {
         struct evl_async_ctx *ctx;
 
-        ctx = calloc(1, sizeof(*ctx));
+        ctx = selva_calloc(1, sizeof(*ctx));
         ctx->stack = mmap(NULL, EVENT_LOOP_ASYNC_STACK_SIZE,
                           PROT_READ | PROT_WRITE,
                           ASYNC_STACK_MMAP_FLAGS,
