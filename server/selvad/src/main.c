@@ -19,6 +19,7 @@ int main(void)
     evl_load_module("modules/demo_sock.so");
 #endif
     evl_load_module("modules/server.so");
+    evl_load_module("modules/db.so");
 
     evl_start();
     evl_deinit();

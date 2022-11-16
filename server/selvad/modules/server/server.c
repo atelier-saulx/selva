@@ -17,6 +17,8 @@
 #include "selva_log.h"
 #include "jemalloc.h"
 #include "selva_proto.h"
+#define SELVA_SERVER_MAIN 1
+#include "selva_server.h"
 #include "server.h"
 
 #define BACKLOG_SIZE 10
@@ -26,7 +28,7 @@ static int server_sockfd;
 static struct conn_ctx clients[MAX_CLIENTS];
 selva_cmd_function commands[254];
 
-static int mk_command(int nr, selva_cmd_function cmd)
+int selva_mk_command(int nr, selva_cmd_function cmd)
 {
     if (nr < 0 || nr >= (int)num_elem(commands)) {
         return SELVA_EINVAL;
@@ -71,7 +73,6 @@ static void echo(struct selva_server_response_out *resp, const char *buf, size_t
             selva_send_error(resp, SELVA_EINVAL, err_str, sizeof(err_str) - 1);
             break;
         }
-
 
         bsize = le32toh(hdr.bsize);
         if (bsize > left) {
@@ -158,7 +159,7 @@ static void on_data(struct event *event, void *arg)
         ctx->recv_msg_buf_i = 0;
     }
 
-    ssize_t frame_bsize = recv_frame(ctx);
+    ssize_t frame_bsize = server_recv_frame(ctx);
     if (frame_bsize <= 0) {
         SELVA_LOG(SELVA_LOGL_ERR, "Connection failed (fd: %d): %s\n",
                   fd, selva_strerror(frame_bsize));
@@ -303,8 +304,8 @@ __constructor void init(void)
     server_start_workers();
 #endif
 
-    mk_command(0, ping);
-    mk_command(1, echo); /* TODO Remove */
+    selva_mk_command(0, ping);
+    selva_mk_command(1, echo);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(3000);

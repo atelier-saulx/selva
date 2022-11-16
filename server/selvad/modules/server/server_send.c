@@ -10,6 +10,8 @@
 #include "endian.h"
 #include "selva_error.h"
 #include "selva_proto.h"
+#define SELVA_SERVER_MAIN 1
+#include "selva_server.h"
 #include "server.h"
 
 int selva_send_error(struct selva_server_response_out *resp, int err, const char *msg_str, size_t msg_len)

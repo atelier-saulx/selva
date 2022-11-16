@@ -17,6 +17,7 @@ endif
 export
 
 MODULES := \
+		   db \
 		   demo_await \
 		   demo_sock \
 		   demo_timeout \

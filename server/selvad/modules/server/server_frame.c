@@ -15,6 +15,8 @@
 #include "jemalloc.h"
 #include "selva_error.h"
 #include "selva_proto.h"
+#define SELVA_SERVER_MAIN 1
+#include "selva_server.h"
 #include "server.h"
 
 #define MAX_RETRIES 3
@@ -158,7 +160,7 @@ int server_send_end(struct selva_server_response_out *restrict resp)
     return err;
 }
 
-ssize_t recv_frame(struct conn_ctx *ctx)
+ssize_t server_recv_frame(struct conn_ctx *ctx)
 {
     int fd = ctx->fd;
     ssize_t r;
