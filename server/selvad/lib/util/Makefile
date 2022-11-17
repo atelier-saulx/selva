@@ -14,11 +14,13 @@ OBJ := \
 	crc32c/crc32c.o \
 	cstrings.o \
 	eztrie.o \
+	ida.o \
 	mempool.o \
 	poptop.o \
 	queue_r.o \
 	selva_string.o \
 	svector.o \
+	timestamp.o \
 	trx.o
 
 ifeq ($(uname_S),Linux)
