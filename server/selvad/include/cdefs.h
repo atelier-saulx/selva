@@ -193,7 +193,7 @@
 
 #define TO_STR_1(_var) \
     size_t _var##_len; \
-    const char * _var##_str = RedisModule_StringPtrLen(_var, & _var##_len);
+    const char * _var##_str = selva_string_to_str(_var, & _var##_len);
 
 #define TO_STR_2(_var, ...) \
     TO_STR_1(_var) \

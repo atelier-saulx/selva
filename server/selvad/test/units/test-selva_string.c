@@ -21,7 +21,7 @@ static char * test_create(void)
     s = selva_string_create("hello world", 11, 0);
     pu_assert("a pointer is returned", s);
 
-    str = selva_string_get(s, &len);
+    str = selva_string_to_str(s, &len);
     pu_assert_str_equal("the string was set", str, "hello world");
     pu_assert_equal("length was returned correctly", len, 11);
 
@@ -38,7 +38,7 @@ static char * test_createf(void)
 
     s = selva_string_createf("hello %s: %d", "world", 10);
 
-    str = selva_string_get(s, &len);
+    str = selva_string_to_str(s, &len);
     pu_assert_str_equal("the string was set", str, "hello world: 10");
     pu_assert_equal("length was returned correctly", len, 15);
 
@@ -57,7 +57,7 @@ static char * test_dup(void)
     pu_assert("created", s1);
     s2 = selva_string_dup(s1, 0);
     pu_assert("cloned", s2);
-    str = selva_string_get(s2, NULL);
+    str = selva_string_to_str(s2, NULL);
     pu_assert_str_equal("cloned string equals the original", str, "hello world");
 
     selva_string_free(s1);
@@ -74,7 +74,7 @@ static char * test_truncate(void)
     s = selva_string_create("hello world", 11, SELVA_STRING_MUTABLE);
     pu_assert("a pointer is returned", s);
     selva_string_truncate(s, 5);
-    str = selva_string_get(s, NULL);
+    str = selva_string_to_str(s, NULL);
     pu_assert_str_equal("string was truncated", str, "hello");
 
     selva_string_free(s);
@@ -90,7 +90,7 @@ static char * test_append(void)
     s = selva_string_create("hello", 5, SELVA_STRING_MUTABLE);
     pu_assert("a pointer is returned", s);
     selva_string_append(s, " world", 6);
-    str = selva_string_get(s, NULL);
+    str = selva_string_to_str(s, NULL);
     pu_assert_str_equal("string was appended", str, "hello world");
 
     selva_string_free(s);
@@ -108,7 +108,7 @@ static char * test_crc(void)
     pu_assert_equal("CRC verifies", selva_string_verify_crc(s), 1);
     selva_string_append(s, " world", 6);
     pu_assert_equal("CRC verifies", selva_string_verify_crc(s), 1);
-    str = selva_string_get(s, NULL);
+    str = selva_string_to_str(s, NULL);
 
     ((char *)str)[1] = 'a';
     pu_assert_equal("CRC fails", selva_string_verify_crc(s), 0);

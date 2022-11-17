@@ -70,6 +70,27 @@ static int send_all_node_data_fields(
         size_t field_prefix_len,
         RedisModuleString *excluded_fields);
 
+/*
+ * Note that only the merge args supported by the query syntax needs to be
+ * listed here. Specifically MERGE_STRATEGY_NAMED is implicit and
+ * MERGE_STRATEGY_NONE is redundant.
+ */
+const struct SelvaArgParser_EnumType merge_types[] = {
+    {
+        .name = "merge",
+        .id = MERGE_STRATEGY_ALL,
+    },
+    {
+        .name = "deepMerge",
+        .id = MERGE_STRATEGY_DEEP,
+    },
+    /* Must be last. */
+    {
+        .name = NULL,
+        .id = 0,
+    }
+};
+
 static int send_hierarchy_field(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,

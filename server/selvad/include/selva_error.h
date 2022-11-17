@@ -23,143 +23,147 @@
  */
 #define SELVA_EINVAL                    (-3)
 /**
+ * Result too large.
+ */
+#define SELVA_ERANGE                    (-4)
+/**
  * Invalid type.
  */
-#define SELVA_EINTYPE                   (-4)
+#define SELVA_EINTYPE                   (-5)
 /**
  * Name too long.
  */
-#define SELVA_ENAMETOOLONG              (-5)
+#define SELVA_ENAMETOOLONG              (-6)
 /**
  * Out of memory.
  */
-#define SELVA_ENOMEM                    (-6)
+#define SELVA_ENOMEM                    (-7)
 /**
  * Node or entity not found.
  */
-#define SELVA_ENOENT                    (-7)
+#define SELVA_ENOENT                    (-8)
 /**
  * Node or entity already exist.
  */
-#define SELVA_EEXIST                    (-8)
+#define SELVA_EEXIST                    (-9)
 /**
  * No buffer or resource space available.
  */
-#define SELVA_ENOBUFS                   (-9)
+#define SELVA_ENOBUFS                   (-10)
 
 /**
  * Operation already in progress.
  */
-#define SELVA_PROTO_EALREADY            (-10)
+#define SELVA_PROTO_EALREADY            (-11)
 /**
  * Operation not supported.
  */
-#define SELVA_PROTO_ENOTSUP             (-11)
+#define SELVA_PROTO_ENOTSUP             (-12)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_PROTO_EINVAL              (-12)
+#define SELVA_PROTO_EINVAL              (-13)
 /**
  * Invalid type.
  */
-#define SELVA_PROTO_EINTYPE             (-13)
+#define SELVA_PROTO_EINTYPE             (-14)
 /**
  * Out of memory.
  */
-#define SELVA_PROTO_ENOMEM              (-14)
+#define SELVA_PROTO_ENOMEM              (-15)
 /**
  * Node or entity not found.
  */
-#define SELVA_PROTO_ENOENT              (-15)
+#define SELVA_PROTO_ENOENT              (-16)
 /**
  * Entity already exist.
  */
-#define SELVA_PROTO_EEXIST              (-16)
+#define SELVA_PROTO_EEXIST              (-17)
 /**
  * No buffer or resource space available.
  */
-#define SELVA_PROTO_ENOBUFS             (-17)
+#define SELVA_PROTO_ENOBUFS             (-18)
 /**
  * Bad message.
  */
-#define SELVA_PROTO_EBADMSG             (-18)
+#define SELVA_PROTO_EBADMSG             (-19)
 /**
  * Not a valid open file descriptor.
  */
-#define SELVA_PROTO_EBADF               (-19)
+#define SELVA_PROTO_EBADF               (-20)
 /**
  * Connection reset by peer.
  */
-#define SELVA_PROTO_ECONNRESET          (-20)
+#define SELVA_PROTO_ECONNRESET          (-21)
 /**
  * The socket is not connected.
  */
-#define SELVA_PROTO_ENOTCONN            (-21)
+#define SELVA_PROTO_ENOTCONN            (-22)
 /**
  * The local end has been shutdown.
  */
-#define SELVA_PROTO_EPIPE               (-22)
+#define SELVA_PROTO_EPIPE               (-23)
 
 /**
  * General error.
  */
-#define SELVA_HIERARCHY_EGENERAL        (-23)
+#define SELVA_HIERARCHY_EGENERAL        (-24)
 /**
  * Operation not supported.
  */
-#define SELVA_HIERARCHY_ENOTSUP         (-24)
+#define SELVA_HIERARCHY_ENOTSUP         (-25)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_HIERARCHY_EINVAL          (-25)
+#define SELVA_HIERARCHY_EINVAL          (-26)
 /**
  * Out of memory.
  */
-#define SELVA_HIERARCHY_ENOMEM          (-26)
+#define SELVA_HIERARCHY_ENOMEM          (-27)
 /**
  * Node or entity not found.
  */
-#define SELVA_HIERARCHY_ENOENT          (-27)
+#define SELVA_HIERARCHY_ENOENT          (-28)
 /**
  * Node or entity already exist.
  */
-#define SELVA_HIERARCHY_EEXIST          (-28)
+#define SELVA_HIERARCHY_EEXIST          (-29)
 /**
  * Maximum number of recursive traversal calls reached.
  */
-#define SELVA_HIERARCHY_ETRMAX          (-29)
+#define SELVA_HIERARCHY_ETRMAX          (-30)
 
 /**
  * General error.
  */
-#define SELVA_SUBSCRIPTIONS_EGENERAL    (-30)
+#define SELVA_SUBSCRIPTIONS_EGENERAL    (-31)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_SUBSCRIPTIONS_EINVAL      (-31)
+#define SELVA_SUBSCRIPTIONS_EINVAL      (-32)
 /**
  * Out of memory.
  */
-#define SELVA_SUBSCRIPTIONS_ENOMEM      (-32)
+#define SELVA_SUBSCRIPTIONS_ENOMEM      (-33)
 /**
  * Node or entity not found.
  */
-#define SELVA_SUBSCRIPTIONS_ENOENT      (-33)
+#define SELVA_SUBSCRIPTIONS_ENOENT      (-34)
 /**
  * Node or entity already exist.
  */
-#define SELVA_SUBSCRIPTIONS_EEXIST      (-34)
+#define SELVA_SUBSCRIPTIONS_EEXIST      (-35)
 
 /**
  * RPN compilation error.
  */
-#define SELVA_RPN_ECOMP                 (-35)
+#define SELVA_RPN_ECOMP                 (-36)
 
 /**
  * Selva object has reached the maximum size.
  */
-#define SELVA_OBJECT_EOBIG              (-36)
+#define SELVA_OBJECT_EOBIG              (-37)
 /* This must be the last error */
-#define SELVA_INVALID_ERROR             (-37)
+#define SELVA_INVALID_ERROR             (-38)
 
 EVL_EXPORT(const char *, selva_strerror, int err);

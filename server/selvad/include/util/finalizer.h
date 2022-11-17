@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#include "queue.h"
+
 struct finalizer_item {
     void *p;
     void (*dispose)(void *p);

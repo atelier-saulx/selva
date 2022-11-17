@@ -6,7 +6,7 @@
 #ifndef _SELVA_SET_H_
 #define _SELVA_SET_H_
 
-#include "selva.h"
+#include "selva_db.h"
 #include "tree.h"
 
 struct RedisModuleCtx;

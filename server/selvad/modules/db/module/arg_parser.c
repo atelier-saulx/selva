@@ -2,16 +2,19 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <tgmath.h>
-#include "redismodule.h"
 #include "jemalloc.h"
-#include "arg_parser.h"
-#include "subscriptions.h"
+#include "selva_error.h"
 #include "selva_object.h"
+#include "subscriptions.h"
+#include "util/finalizer.h"
+#include "util/selva_string.h"
+#include "arg_parser.h"
 
-int SelvaArgParser_IntOpt(ssize_t *value, const char *name, const RedisModuleString *txt, const RedisModuleString *num) {
+int SelvaArgParser_IntOpt(ssize_t *value, const char *name, const struct selva_string *txt, const struct selva_string *num) {
     TO_STR(txt, num);
     char *end = NULL;
 
@@ -27,7 +30,7 @@ int SelvaArgParser_IntOpt(ssize_t *value, const char *name, const RedisModuleStr
     return 0;
 }
 
-int SelvaArgParser_StrOpt(const char **value, const char *name, const RedisModuleString *arg_key, const RedisModuleString *arg_val) {
+int SelvaArgParser_StrOpt(const char **value, const char *name, const struct selva_string *arg_key, const struct selva_string *arg_val) {
     TO_STR(arg_key, arg_val);
 
     if (strcmp(name, arg_key_str)) {
@@ -42,13 +45,13 @@ int SelvaArgParser_StrOpt(const char **value, const char *name, const RedisModul
 }
 
 int SelvaArgsParser_StringList(
-        RedisModuleCtx *ctx,
-        RedisModuleStringList *out,
+        struct finalizer *finalizer,
+        selva_stringList *out,
         const char *name,
-        const RedisModuleString *arg_key,
-        const RedisModuleString *arg_val) {
+        const struct selva_string *arg_key,
+        const struct selva_string *arg_val) {
     const char *cur;
-    RedisModuleString **list = NULL;
+    struct selva_string **list = NULL;
     size_t n = 1;
     int err;
 
@@ -57,13 +60,13 @@ int SelvaArgsParser_StringList(
         return err;
     }
 
-    const size_t list_size = n * sizeof(RedisModuleString *);
+    const size_t list_size = n * sizeof(struct selva_string *);
     list = selva_realloc(list, list_size);
 
     list[n - 1] = NULL;
     if (cur[0] != '\0') {
         do {
-            RedisModuleString *el;
+            struct selva_string *el;
             const char *next;
             size_t len;
 
@@ -79,12 +82,13 @@ int SelvaArgsParser_StringList(
             /*
              * Create a string.
              */
-            el = RedisModule_CreateString(ctx, cur, len);
+            el = selva_string_create(cur, len, 0);
+            selva_string_auto_finalize(finalizer, el);
 
             /*
              * Set to the array.
              */
-            list = selva_realloc(list, ++n * sizeof(RedisModuleString *));
+            list = selva_realloc(list, ++n * sizeof(struct selva_string *));
             list[n - 2] = el;
             list[n - 1] = NULL;
 
@@ -100,18 +104,18 @@ int SelvaArgsParser_StringList(
 }
 
 int SelvaArgsParser_StringSetList(
-        RedisModuleCtx *ctx,
+        struct finalizer *finalizer,
         struct SelvaObject **list_out,
-        RedisModuleString **excluded_out,
+        struct selva_string **excluded_out,
         const char *name,
-        const RedisModuleString *arg_key,
-        const RedisModuleString *arg_val) {
+        const struct selva_string *arg_key,
+        const struct selva_string *arg_val) {
     const char excl_prefix = '!';
     const char set_separator = '\n';
     const char list_separator = '|';
     const char eos = '\0';
     struct SelvaObject *obj;
-    RedisModuleString *excl = NULL;
+    struct selva_string *excl = NULL;
     const char *cur;
     size_t n = 0;
     size_t nr_excl = 0;
@@ -125,7 +129,7 @@ int SelvaArgsParser_StringSetList(
     obj = SelvaObject_New();
 
     if (excluded_out) {
-        excl = RedisModule_CreateString(ctx, "", 0);
+        excl = selva_string_create("", 0, SELVA_STRING_MUTABLE);
     }
 
     if (cur[0] != eos) {
@@ -182,8 +186,8 @@ int SelvaArgsParser_StringSetList(
 
                             /* Ignore id field silently. */
                             if (!(name_len == (sizeof(SELVA_ID_FIELD) - 1) && !memcmp(SELVA_ID_FIELD, name_str, name_len))) {
-                                if (RedisModule_StringAppendBuffer(ctx, excl, name_str, name_len) ||
-                                    RedisModule_StringAppendBuffer(ctx, excl, sep, 1)) {
+                                if (selva_string_append(excl, name_str, name_len) ||
+                                    selva_string_append(excl, sep, 1)) {
                                     goto fail;
                                 }
                                 nr_excl++;
@@ -191,9 +195,9 @@ int SelvaArgsParser_StringSetList(
                         }
                         /* Otherwise we ignore the empty element. */
                     } else {
-                        RedisModuleString *el;
+                        struct selva_string *el;
 
-                        el = RedisModule_CreateString(NULL, cur_el, el_len);
+                        el = selva_string_create(cur_el, el_len, 0);
 
                         /*
                          * Add to the list.
@@ -227,9 +231,10 @@ int SelvaArgsParser_StringSetList(
     *list_out = obj;
     if (excluded_out && nr_excl > 0) {
         *excluded_out = excl;
+        selva_string_auto_finalize(finalizer, excl);
     } else if (excluded_out) {
         *excluded_out = NULL;
-        RedisModule_FreeString(ctx, excl);
+        selva_string_free(excl);
     }
     return 0;
 fail:
@@ -237,14 +242,14 @@ fail:
         SelvaObject_Destroy(obj);
     }
     if (excl) {
-        RedisModule_FreeString(ctx, excl);
+        selva_string_free(excl);
     }
     return SELVA_ENOMEM;
 }
 
 int SelvaArgParser_Enum(
         const struct SelvaArgParser_EnumType types[],
-        const RedisModuleString *arg) {
+        const struct selva_string *arg) {
     size_t i = 0;
     TO_STR(arg);
 
@@ -258,11 +263,9 @@ int SelvaArgParser_Enum(
     return SELVA_ENOENT;
 }
 
-int SelvaArgParser_NodeType(Selva_NodeType node_type, const RedisModuleString *arg) {
+int SelvaArgParser_NodeType(Selva_NodeType node_type, const struct selva_string *arg) {
     size_t len;
-    const char *str;
-
-    str = RedisModule_StringPtrLen(arg, &len);
+    const char *str = selva_string_to_str(arg, &len);
 
     if (len < SELVA_NODE_TYPE_SIZE) {
         return SELVA_EINVAL;
@@ -272,7 +275,7 @@ int SelvaArgParser_NodeType(Selva_NodeType node_type, const RedisModuleString *a
     return 0;
 }
 
-int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, const RedisModuleString *arg) {
+int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, const struct selva_string *arg) {
     TO_STR(arg);
 
     if (arg_len != SELVA_SUBSCRIPTION_ID_STR_LEN) {
@@ -282,10 +285,10 @@ int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, const RedisModuleStri
     return Selva_SubscriptionStr2id(id, arg_str);
 }
 
-int SelvaArgParser_MarkerId(Selva_SubscriptionMarkerId *marker_id, const RedisModuleString *arg) {
+int SelvaArgParser_MarkerId(Selva_SubscriptionMarkerId *marker_id, const struct selva_string *arg) {
     long long ll;
 
-    if (RedisModule_StringToLongLong(arg, &ll) != REDISMODULE_OK) {
+    if (!selva_string_to_ll(arg, &ll)) {
         return SELVA_SUBSCRIPTIONS_EINVAL;
     }
 
@@ -293,22 +296,22 @@ int SelvaArgParser_MarkerId(Selva_SubscriptionMarkerId *marker_id, const RedisMo
     return 0;
 }
 
-int SelvaArgParser_IndexHints(RedisModuleStringList *out, RedisModuleString **argv, int argc) {
-    RedisModuleString **list = NULL;
+int SelvaArgParser_IndexHints(selva_stringList *out, struct selva_string **argv, int argc) {
+    struct selva_string **list = NULL;
     int n = 0;
 
     for (int i = 0; i < argc; i += 2) {
-        RedisModuleString **new_list;
+        struct selva_string **new_list;
 
         if (n > FIND_INDICES_MAX_HINTS_FIND) {
             return SELVA_ENOBUFS;
         }
 
-        if (i + 1 >= argc || strcmp("index", RedisModule_StringPtrLen(argv[i], NULL))) {
+        if (i + 1 >= argc || strcmp("index", selva_string_to_str(argv[i], NULL))) {
             break;
         }
 
-        const size_t list_size = ++n * sizeof(RedisModuleString *);
+        const size_t list_size = ++n * sizeof(struct selva_string *);
         new_list = selva_realloc(list, list_size);
 
         list = new_list;

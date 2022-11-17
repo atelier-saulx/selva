@@ -2,8 +2,11 @@
 # SPDX-License-Identifier: MIT
 
 OBJ := \
-	   db.o
+	   db.o \
+	   module/arg_parser.o \
+	   module/ida.o
 DEP := $(OBJ:%.o=%.d)
+CFLAGS += -I./include -include ../../tunables.h
 LDFLAGS += -lutil
 TARGET := ../db$(MOD_SUFFIX)
 

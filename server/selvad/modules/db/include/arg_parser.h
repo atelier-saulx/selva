@@ -6,13 +6,12 @@
 #ifndef SELVA_ARG_PARSER
 #define SELVA_ARG_PARSER
 
-#include "selva.h"
+#include "selva_db.h"
 
-struct RedisModuleCtx;
-struct RedisModuleString;
+struct selva_string;
 struct SelvaObject;
 
-typedef struct RedisModuleString ** RedisModuleStringList;
+typedef struct selva_string ** selva_stringList;
 
 struct SelvaArgParser_EnumType {
     char *name;
@@ -29,20 +28,20 @@ struct SelvaArgParser_EnumType {
  */
 int SelvaArgParser_IntOpt(
         ssize_t *value, const char *name,
-        const struct RedisModuleString *txt,
-        const struct RedisModuleString *num);
+        const struct selva_string *txt,
+        const struct selva_string *num);
 
 int SelvaArgParser_StrOpt(
         const char **value,
         const char *name,
-        const struct RedisModuleString *arg_key,
-        const struct RedisModuleString *arg_val);
+        const struct selva_string *arg_key,
+        const struct selva_string *arg_val);
 int SelvaArgsParser_StringList(
-        struct RedisModuleCtx *ctx,
-        RedisModuleStringList *out,
+        struct finalizer *finalizer,
+        selva_stringList *out,
         const char *name,
-        const struct RedisModuleString *arg_key,
-        const struct RedisModuleString *arg_val);
+        const struct selva_string *arg_key,
+        const struct selva_string *arg_val);
 
 /**
  * Parse a set of lists containing strings.
@@ -57,33 +56,33 @@ int SelvaArgsParser_StringList(
  * }
  */
 int SelvaArgsParser_StringSetList(
-        struct RedisModuleCtx *ctx,
+        struct finalizer *finalizer,
         struct SelvaObject **list_out,
-        struct RedisModuleString **excluded_out,
+        struct selva_string **excluded_out,
         const char *name,
-        const struct RedisModuleString *arg_key,
-        const struct RedisModuleString *arg_val);
+        const struct selva_string *arg_key,
+        const struct selva_string *arg_val);
 
 int SelvaArgParser_Enum(
         const struct SelvaArgParser_EnumType types[],
-        const struct RedisModuleString *arg);
+        const struct selva_string *arg);
 int SelvaArgParser_NodeType(
         Selva_NodeType node_type,
-        const struct RedisModuleString *arg);
+        const struct selva_string *arg);
 int SelvaArgParser_SubscriptionId(
         Selva_SubscriptionId id,
-        const struct RedisModuleString *arg);
+        const struct selva_string *arg);
 int SelvaArgParser_MarkerId(
         Selva_SubscriptionMarkerId *marker_id,
-        const struct RedisModuleString *arg);
+        const struct selva_string *arg);
 /**
  * Parse index hints from Redis command args.
  * Parses index hints from argv until the first keyword mismatch.
  * @returns The number of index hints found.
  */
 int SelvaArgParser_IndexHints(
-        RedisModuleStringList *out,
-        struct RedisModuleString **argv,
+        selva_stringList *out,
+        struct selva_string **argv,
         int argc);
 
 #endif /* SELVA_ARG_PARSER */

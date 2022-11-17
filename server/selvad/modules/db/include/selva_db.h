@@ -166,7 +166,4 @@ char *Selva_SubscriptionId2str(char dest[SELVA_SUBSCRIPTION_ID_STR_LEN + 1], con
 
 int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src);
 
-#include "_selva_log.h"
-#include "_selva_errors.h"
-
 #endif /* _SELVA_ */

@@ -4,6 +4,8 @@
  */
 #pragma once
 
+struct finalizer;
+
 /**
  * Selva string flags.
  */
@@ -23,7 +25,7 @@ struct selva_string *selva_string_create(const char *str, size_t len, enum selva
 /**
  * Create a string using a printf format string.
  */
-struct selva_string *selva_string_createf(const char *fmt, ...);
+struct selva_string *selva_string_createf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 /**
  * Duplicate a string.
@@ -53,17 +55,49 @@ int selva_string_append(struct selva_string *s, const char *str, size_t len);
 void selva_string_free(struct selva_string *s);
 
 /**
- * Get a pointer to the contained string.
+ * Add a selva_string to the given finalizer.
+ * @param finalizer is a pointer to a finalizer.
  * @param s is a pointer to a selva_string.
- * @param[out] len is a pointer to a variable to store the length of s.
  */
-const char *selva_string_get(struct selva_string *s, size_t *len);
+void selva_string_auto_finalize(struct finalizer *finalizer, struct selva_string *s);
 
 /**
  * Get the currently set flags of the string s.
  * @param s is a pointer to a selva_string.
  */
-enum selva_string_flags selva_string_get_flags(struct selva_string *s);
+enum selva_string_flags selva_string_get_flags(const struct selva_string *s);
+
+/**
+ * Get a pointer to the contained string.
+ * @param s is a pointer to a selva_string.
+ * @param[out] len is a pointer to a variable to store the length of s.
+ */
+const char *selva_string_to_str(const struct selva_string *s, size_t *len);
+
+/**
+ * Convert a string into a long long integer.
+ */
+int selva_string_to_ll(const struct selva_string *s, long long *ll);
+
+/**
+ * Convert a string into an unsigned long long integer.
+ */
+int selva_string_to_ull(const struct selva_string *s, unsigned long long *ull);
+
+/**
+ * Convert a string into a float.
+ */
+int selva_string_to_float(const struct selva_string *s, float *f);
+
+/**
+ * Convert a string into a double.
+ */
+int selva_string_to_double(const struct selva_string *s, double *d);
+
+/**
+ * Convert a string into a long double.
+ */
+int selva_string_to_ldouble(const struct selva_string *s, long double *ld);
 
 /**
  * Freeze the string s in memory.

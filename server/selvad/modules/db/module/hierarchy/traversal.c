@@ -10,27 +10,6 @@
 #include "selva_object.h"
 #include "traversal.h"
 
-/*
- * Note that only the merge args supported by the query syntax needs to be
- * listed here. Specifically MERGE_STRATEGY_NAMED is implicit and
- * MERGE_STRATEGY_NONE is redundant.
- */
-const struct SelvaArgParser_EnumType merge_types[] = {
-    {
-        .name = "merge",
-        .id = MERGE_STRATEGY_ALL,
-    },
-    {
-        .name = "deepMerge",
-        .id = MERGE_STRATEGY_DEEP,
-    },
-    /* Must be last. */
-    {
-        .name = NULL,
-        .id = 0,
-    }
-};
-
 int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const RedisModuleString *arg) {
     TO_STR(arg);
 

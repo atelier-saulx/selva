@@ -8,9 +8,7 @@
 
 #include "linker_set.h"
 
-struct RedisModuleCtx;
-
-typedef int Selva_Onload(struct RedisModuleCtx *ctx); /*!< Onload function. */
+typedef int Selva_Onload(void); /*!< Onload function. */
 typedef void Selva_Onunload(void); /*!< Onunload function. */
 
 /**

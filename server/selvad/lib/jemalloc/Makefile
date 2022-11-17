@@ -29,7 +29,7 @@ all: .make-prerequisites jemalloc-$(JEMALLOC_VER)/config.status
 #	cp -P jemalloc-$(JEMALLOC_VER)/lib/* "../binaries/$(SELVA_ARCH)/"
 	cp -P jemalloc-$(JEMALLOC_VER)/lib/* "../"
 #	cp jemalloc-$(JEMALLOC_VER)/include/jemalloc/jemalloc_selva.h "../../include/jemalloc_$(SELVA_ARCH).h"
-	rsync --checksum jemalloc-$(JEMALLOC_VER)/include/jemalloc/jemalloc_selva.h "../../include/jemalloc_$(SELVA_ARCH).h"
+	rsync --checksum "jemalloc-$(JEMALLOC_VER)/include/jemalloc/jemalloc_selva.h" "../../include/jemalloc_$(SELVA_ARCH).h"
 
 jemalloc-$(JEMALLOC_VER)/config.status:
 	cd jemalloc-$(JEMALLOC_VER) && ./configure $(JEMALLOC_CONFIG) CFLAGS="$(JEMALLOC_CFLAGS)" LDFLAGS="$(JEMALLOC_LDFLAGS)" LIBDIR="$(JEMALLOC_LIBDIR)"

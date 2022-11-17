@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: MIT
  */
 #include "jemalloc.h"
-#include "bitmap.h"
-#include "selva.h"
+#include "util/bitmap.h"
+#include "selva_error.h"
 #include "ida.h"
 
 struct ida {

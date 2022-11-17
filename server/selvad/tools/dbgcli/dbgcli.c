@@ -210,7 +210,7 @@ int main(int argc, char const* argv[])
          size_t msg_size;
          uint8_t *msg;
 
-         if (cmd == 0) { /* ping */
+         if (cmd == 0 || cmd == 2) { /* ping */
              if (ping(sock) == -1) {
                  continue;
              }
@@ -265,4 +265,5 @@ __constructor static void init(void)
     eztrie_init(&commands);
     eztrie_insert(&commands, "ping", (void *)0);
     eztrie_insert(&commands, "echo", (void *)1);
+    eztrie_insert(&commands, "test", (void *)2);
 }

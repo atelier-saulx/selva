@@ -6,9 +6,9 @@
 #ifndef SELVA_MODIFY_SUBSCRIPTIONS
 #define SELVA_MODIFY_SUBSCRIPTIONS
 
-#include "selva.h"
+#include "selva_db.h"
 #include "traversal.h"
-#include "svector.h"
+#include "util/svector.h"
 #include "rpn.h"
 
 struct RedisModuleCtx;

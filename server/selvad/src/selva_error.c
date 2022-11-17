@@ -10,6 +10,7 @@ static const char * const err2str[-SELVA_INVALID_ERROR + 1] = {
     [-SELVA_EGENERAL]                   = (const char *)"ERR_SELVA EGENERAL Unknown error",
     [-SELVA_ENOTSUP]                    = (const char *)"ERR_SELVA ENOTSUP Operation not supported",
     [-SELVA_EINVAL]                     = (const char *)"ERR_SELVA EINVAL Invalid argument or input value",
+    [-SELVA_ERANGE]                     = (const char *)"ERR_SELVA ERANGE Result too large",
     [-SELVA_EINTYPE]                    = (const char *)"ERR_SELVA EINTYPE Invalid type",
     [-SELVA_ENAMETOOLONG]               = (const char *)"ERR_SELVA ENAMETOOLONG Name too long",
     [-SELVA_ENOMEM]                     = (const char *)"ERR_SELVA ENOMEM Out of memory",

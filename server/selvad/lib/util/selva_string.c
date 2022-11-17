@@ -2,15 +2,18 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <errno.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "jemalloc.h"
 #include "cdefs.h"
 #include "selva_error.h"
 #include "util/crc32c.h"
+#include "util/finalizer.h"
 #include "util/selva_string.h"
 
 #define SELVA_STRING_QP(T, F, S, ...) \
@@ -186,7 +189,16 @@ void selva_string_free(struct selva_string *s)
     selva_free(s);
 }
 
-const char *selva_string_get(struct selva_string *s, size_t *len)
+void selva_string_auto_finalize(struct finalizer *finalizer, struct selva_string *s) {
+    finalizer_add(finalizer, s, (void (*)(void *))selva_string_free);
+}
+
+enum selva_string_flags selva_string_get_flags(const struct selva_string *s)
+{
+    return s->flags;
+}
+
+const char *selva_string_to_str(const struct selva_string *s, size_t *len)
 {
     if (len) {
         *len = s->len;
@@ -195,9 +207,89 @@ const char *selva_string_get(struct selva_string *s, size_t *len)
     return get_buf(s);
 }
 
-enum selva_string_flags selva_string_get_flags(struct selva_string *s)
+int selva_string_to_ll(const struct selva_string *s, long long *ll)
 {
-    return s->flags;
+    const char *str = get_buf(s);
+    int e;
+
+    errno = 0;
+    *ll = strtoll(str, NULL, 10);
+    e = errno;
+    if (e == ERANGE) {
+        return SELVA_ERANGE;
+    } else if (e == EINVAL) {
+        return SELVA_EINVAL;
+    }
+
+    return 0;
+}
+
+int selva_string_to_ull(const struct selva_string *s, unsigned long long *ull)
+{
+    const char *str = get_buf(s);
+    int e;
+
+    errno = 0;
+    *ull = strtoull(str, NULL, 10);
+    e = errno;
+    if (e == ERANGE) {
+        return SELVA_ERANGE;
+    } else if (e == EINVAL) {
+        return SELVA_EINVAL;
+    }
+
+    return 0;
+}
+
+int selva_string_to_float(const struct selva_string *s, float *f)
+{
+    const char *str = get_buf(s);
+    int e;
+
+    errno = 0;
+    *f = strtof(str, NULL);
+    e = errno;
+    if (e == ERANGE) {
+        return SELVA_ERANGE;
+    } else if (e == EINVAL) {
+        return SELVA_EINVAL;
+    }
+
+    return 0;
+}
+
+int selva_string_to_double(const struct selva_string *s, double *d)
+{
+    const char *str = get_buf(s);
+    int e;
+
+    errno = 0;
+    *d = strtod(str, NULL);
+    e = errno;
+    if (e == ERANGE) {
+        return SELVA_ERANGE;
+    } else if (e == EINVAL) {
+        return SELVA_EINVAL;
+    }
+
+    return 0;
+}
+
+int selva_string_to_ldouble(const struct selva_string *s, long double *ld)
+{
+    const char *str = get_buf(s);
+    int e;
+
+    errno = 0;
+    *ld = strtold(str, NULL);
+    e = errno;
+    if (e == ERANGE) {
+        return SELVA_ERANGE;
+    } else if (e == EINVAL) {
+        return SELVA_EINVAL;
+    }
+
+    return 0;
 }
 
 void selva_string_freeze(struct selva_string *s)

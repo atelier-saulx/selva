@@ -12,6 +12,7 @@ endif
 
 deflate:
 	$(MAKE) CFLAGS=-fPIC DISABLE_GZIP=1 DISABLE_ZLIB=1 -C ./libdeflate-$(LIBDEFLATE_VER) $(TARGET)
+	rsync --checksum "./libdeflate-$(LIBDEFLATE_VER)/libdeflate.h" "../../include/libdeflate.h"
 
 clean: 
 	$(MAKE) -C ./libdeflate-$(LIBDEFLATE_VER) clean

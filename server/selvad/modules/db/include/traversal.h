@@ -6,8 +6,7 @@
 #ifndef SELVA_TRAVERSAL_H
 #define SELVA_TRAVERSAL_H
 
-#include "svector.h"
-#include "arg_parser.h"
+#include "util/svector.h"
 
 struct FindCommand_Args;
 struct RedisModuleCtx;
@@ -45,8 +44,6 @@ enum SelvaMergeStrategy {
     MERGE_STRATEGY_NAMED,
     MERGE_STRATEGY_DEEP,
 };
-
-extern const struct SelvaArgParser_EnumType merge_types[3];
 
 /**
  * Traversal result order.
