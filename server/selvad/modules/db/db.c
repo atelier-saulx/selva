@@ -20,15 +20,6 @@
 SET_DECLARE(selva_onload, Selva_Onload);
 SET_DECLARE(selva_onunld, Selva_Onunload);
 
-#if 0
-static void test(struct selva_server_response_out *resp, const char *buf __unused, size_t size __unused) {
-    const char msg[] = "test";
-
-    selva_send_str(resp, msg, sizeof(msg) - 1);
-    server_send_end(resp);
-}
-#endif
-
 IMPORT() {
     evl_import_main(selva_log);
     evl_import_event_loop();
@@ -41,10 +32,6 @@ __constructor void init(void)
     Selva_Onload **onload_p;
 
     SELVA_LOG(SELVA_LOGL_INFO, "Init db");
-
-#if 0
-    selva_mk_command(2, test);
-#endif
 
     /* FIXME Selva version */
 #if 0
