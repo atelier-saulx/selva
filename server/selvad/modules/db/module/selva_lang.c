@@ -9,9 +9,10 @@
 #include "jemalloc.h"
 #include "selva_db.h"
 #include "selva_error.h"
+#include "selva_log.h"
+#include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_lang.h"
-#include "selva_object.h"
 
 #define FALLBACK_LANG "en"
 
@@ -148,7 +149,7 @@ locale_t SelvaLang_GetLocale(const char *lang_str, size_t lang_len) {
         if (lang_len > 0) {
             SELVA_LOG(SELVA_LOGL_ERR, "Lang \"%.*s\" not found: %s\n",
                       (int)lang_len, lang_str,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
         }
 
         err = SelvaObject_GetPointerStr(langs, FALLBACK_LANG, sizeof(FALLBACK_LANG) - 1, &p);
@@ -168,13 +169,15 @@ static void load_lang(const char *lang, const char *locale_name) {
     if (err) {
         SELVA_LOG(SELVA_LOGL_ERR, "Loading locale %s for lang %s failed with error: %s\n",
                 locale_name, lang,
-                getSelvaErrorStr(err));
+                selva_strerror(err));
     }
 }
 
 #define LOAD_LANG(lang, loc_lang) \
     load_lang(#lang, #loc_lang ".UTF-8");
 
+/* FIXME lang list command */
+#if 0
 int SelvaLang_ListCommand(RedisModuleCtx *ctx, RedisModuleString **argv __unused, int argc __unused) {
     RedisModule_AutoMemory(ctx);
 
@@ -192,19 +195,23 @@ static void SelvaLang_Reply(struct RedisModuleCtx *ctx, void *p) {
     RedisModule_ReplyWithStringBuffer(ctx, slang->name, strnlen(slang->name, LANG_NAME_MAX));
     RedisModule_ReplyWithStringBuffer(ctx, slang->territory, strnlen(slang->territory, LANG_TERRITORY_MAX));
 }
+#endif
 
-static int SelvaLang_OnLoad(RedisModuleCtx *ctx __unused) {
+static int SelvaLang_OnLoad(void) {
     langs = SelvaObject_New();
 
     FORALL_LANGS(LOAD_LANG)
 
+#if 0
     if (RedisModule_CreateCommand(ctx, "selva.lang.list", SelvaLang_ListCommand, "readonly allow-loading", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
+#endif
 
     return 0;
 }
 SELVA_ONLOAD(SelvaLang_OnLoad);
+
 
 static void SelvaLang_OnUnload(void) {
     /*
