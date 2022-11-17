@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "jemalloc.h"
+#include "tree.h"
 #include "cdefs.h"
 #include "selva_error.h"
 #include "util/crc32c.h"
@@ -24,12 +25,20 @@
 struct selva_string {
     enum selva_string_flags flags;
     uint32_t crc;
+    RB_ENTRY(selva_string) intern_entry;
     size_t len;
     union {
         char *p;
         char emb[sizeof(char *)];
     };
 };
+
+RB_HEAD(selva_string_rbtree, selva_string);
+RB_PROTOTYPE_STATIC(selva_string_rbtree ,selva_string, intern_entry, selva_string_cmp)
+
+static struct selva_string_rbtree intern_head;
+
+RB_GENERATE_STATIC(selva_string_rbtree, selva_string, intern_entry, selva_string_cmp)
 
 /**
  * Get a pointer to the string buffer.
@@ -62,27 +71,30 @@ static void update_crc(struct selva_string *s)
     }
 }
 
-struct selva_string *selva_string_create(const char *str, size_t len, enum selva_string_flags flags)
+static struct selva_string *alloc_mutable(size_t len)
 {
     struct selva_string *s;
-    enum selva_string_flags xor_mask = SELVA_STRING_FREEZE | SELVA_STRING_MUTABLE;
 
-    if ((flags & ~(SELVA_STRING_CRC | SELVA_STRING_FREEZE | SELVA_STRING_MUTABLE)) ||
-        __builtin_popcount(flags & xor_mask) > 1) {
-        return NULL; /* Invalid flags */
-    }
+    s = selva_calloc(1, sizeof(struct selva_string));
+    s->p = selva_malloc(len + 1);
 
-    if (flags & SELVA_STRING_MUTABLE) {
-        s = selva_calloc(1, sizeof(struct selva_string));
-        s->p = selva_malloc(len + 1);
-    } else {
-        const size_t emb_size = sizeof_field(struct selva_string, emb);
-        const size_t add = len + 1 <= emb_size ? 0 : len + 1 - emb_size;
+    return s;
+}
 
-        s = selva_malloc(sizeof(struct selva_string) + add);
-        memset(s, 0, sizeof(struct selva_string)); /* We only want to clear the header. */
-    }
+static struct selva_string *alloc_immutable(size_t len)
+{
+    const size_t emb_size = sizeof_field(struct selva_string, emb);
+    const size_t add = len + 1 <= emb_size ? 0 : len + 1 - emb_size;
+    struct selva_string *s;
 
+    s = selva_malloc(sizeof(struct selva_string) + add);
+    memset(s, 0, sizeof(struct selva_string)); /* We only want to clear the header. */
+
+    return s;
+}
+
+static void set_string(struct selva_string *s, const char *str, size_t len, enum selva_string_flags flags)
+{
     s->flags = flags;
     s->len = len;
 
@@ -96,6 +108,52 @@ struct selva_string *selva_string_create(const char *str, size_t len, enum selva
     }
 
     update_crc(s);
+}
+
+static struct selva_string *find_intern(const char *str, size_t len)
+{
+    struct selva_string n = {
+        .flags = SELVA_STRING_MUTABLE,
+        .len = len,
+        .p = (char *)str,
+    };
+
+    return RB_FIND(selva_string_rbtree, &intern_head, &n);
+}
+
+static void intern(struct selva_string *s)
+{
+    (void)RB_INSERT(selva_string_rbtree, &intern_head, s);
+}
+
+struct selva_string *selva_string_create(const char *str, size_t len, enum selva_string_flags flags)
+{
+    struct selva_string *s;
+    enum selva_string_flags xor_mask = SELVA_STRING_FREEZE | SELVA_STRING_MUTABLE;
+
+    if (flags & SELVA_STRING_INTERN) {
+        flags |= SELVA_STRING_FREEZE;
+    }
+
+    if ((flags & ~((_SELVA_STRING_LAST_FLAG - 1) | _SELVA_STRING_LAST_FLAG)) ||
+        __builtin_popcount(flags & xor_mask) > 1) {
+        return NULL; /* Invalid flags */
+    }
+
+    if (flags & SELVA_STRING_MUTABLE) {
+        s = alloc_mutable(len);
+        set_string(s, str, len, flags);
+    } else if (flags & SELVA_STRING_INTERN) {
+        s = find_intern(str, len);
+        if (!s) {
+            s = alloc_immutable(len);
+            set_string(s, str, len, flags);
+            intern(s);
+        }
+    } else {
+        s = alloc_immutable(len);
+        set_string(s, str, len, flags);
+    }
 
     return s;
 }

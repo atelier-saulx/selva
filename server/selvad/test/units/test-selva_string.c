@@ -142,6 +142,21 @@ static char * test_cmp(void)
     return NULL;
 }
 
+static char * test_intern(void)
+{
+    struct selva_string *s1;
+    struct selva_string *s2;
+
+    s1 = selva_string_create("abraham", 7, SELVA_STRING_INTERN);
+    s2 = selva_string_create("abraham", 7, SELVA_STRING_INTERN);
+
+    pu_assert_ptr_equal("interned", s1, s2);
+
+    selva_string_free(s1);
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_create, PU_RUN);
@@ -151,4 +166,5 @@ void all_tests(void)
     pu_def_test(test_append, PU_RUN);
     pu_def_test(test_crc, PU_RUN);
     pu_def_test(test_cmp, PU_RUN);
+    pu_def_test(test_intern, PU_RUN);
 }

@@ -10,9 +10,25 @@ struct finalizer;
  * Selva string flags.
  */
 enum selva_string_flags {
-    SELVA_STRING_CRC = 0x01, /*!< CRC enabled. */
-    SELVA_STRING_FREEZE = 0x02, /*!< Permanently shared string; Shouldn't be freed. */
-    SELVA_STRING_MUTABLE = 0x04, /*!< A mutable string. */
+    /**
+     * CRC enabled.
+     */
+    SELVA_STRING_CRC = 0x01,
+    /**
+     * Permanently shared string; Shouldn't be freed.
+     */
+    SELVA_STRING_FREEZE = 0x02,
+    /**
+     * A mutable string.
+     */
+    SELVA_STRING_MUTABLE = 0x04,
+    /**
+     * Intern the string.
+     * Similar to SELVA_STRING_FREEZE but tracked and shared internally.
+     * Implies SELVA_STRING_FREEZE.
+     */
+    SELVA_STRING_INTERN = 0x08,
+    _SELVA_STRING_LAST_FLAG = 0x10,
 };
 
 struct selva_string;
