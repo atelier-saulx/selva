@@ -265,7 +265,7 @@ static int AggregateCommand_NodeCb(
             if (err) {
                 SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                           (int)SELVA_NODE_ID_SIZE, nodeId,
-                          getSelvaErrorStr(err));
+                          selva_strerror(err));
             }
 
             *nr_nodes = *nr_nodes + 1;
@@ -412,7 +412,7 @@ static size_t AggregateCommand_AggregateOrderResult(
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                       (int)SELVA_NODE_ID_SIZE, item->node_id,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
             continue;
         }
 
@@ -463,7 +463,7 @@ static size_t AggregateCommand_AggregateOrderArrayResult(
             RedisModule_ReplyWithNull(ctx);
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
                       (int)SELVA_NODE_ID_SIZE, item->node_id,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
         }
 
     }
@@ -872,7 +872,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
              * it and ignore the error.
              */
             SELVA_LOG(SELVA_LOGL_ERR, "Aggregate failed. err: %s dir: %s node_id: \"%.*s\"",
-                      getSelvaErrorStr(err),
+                      selva_strerror(err),
                       SelvaTraversal_Dir2str(dir),
                       (int)SELVA_NODE_ID_SIZE, nodeId);
         }

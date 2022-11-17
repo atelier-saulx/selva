@@ -404,7 +404,7 @@ static SelvaHierarchyNode *newNode(RedisModuleCtx *ctx, struct SelvaHierarchy *h
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a node object for \"%.*s\": %s\n",
                       (int)SELVA_NODE_ID_SIZE, id,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
         }
 
         /*
@@ -479,7 +479,7 @@ static void new_detached_node(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, co
     if (unlikely(err < 0)) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Fatal error while creating a detached node %.*s: %s\n",
                   (int)SELVA_NODE_ID_SIZE, node_id,
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         abort();
     }
 }
@@ -557,7 +557,7 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
             if (err != SELVA_ENOENT && err != SELVA_HIERARCHY_ENOENT) {
                 SELVA_LOG(SELVA_LOGL_ERR, "Restoring a subtree containing %.*s failed: %s\n",
                           (int)SELVA_NODE_ID_SIZE, id,
-                          getSelvaErrorStr(err));
+                          selva_strerror(err));
             }
 
             return NULL;
@@ -847,7 +847,7 @@ static int cross_insert_children(
                 SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a child \"%.*s\" for \"%.*s\": %s\n",
                         (int)SELVA_NODE_ID_SIZE, nodes[i],
                         (int)SELVA_NODE_ID_SIZE, node->id,
-                        getSelvaErrorStr(err));
+                        selva_strerror(err));
                 continue;
             }
         }
@@ -951,7 +951,7 @@ static int cross_insert_parents(
                 SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a parent \"%.*s\" for \"%.*s\": %s\n",
                         (int)SELVA_NODE_ID_SIZE, nodes[i],
                         (int)SELVA_NODE_ID_SIZE, node->id,
-                        getSelvaErrorStr(err));
+                        selva_strerror(err));
                 continue;
             }
         }
@@ -2789,7 +2789,7 @@ static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarc
         fprintf(stderr, "%s:%d: %.*s is not a valid subtree for compression: %s\n",
                 __FILE__, __LINE__,
                 (int)SELVA_NODE_ID_SIZE, node->id,
-                getSelvaErrorStr(err));
+                selva_strerror(err));
 #endif
         return NULL;
     }
@@ -2812,7 +2812,7 @@ static struct compressed_rms *compress_subtree(RedisModuleCtx *ctx, SelvaHierarc
         rms_free_compressed(compressed);
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to compress the subtree of %.*s: %s\n",
                   (int)SELVA_NODE_ID_SIZE, node->id,
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
 
         return NULL;
     }
@@ -3086,7 +3086,7 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load hierarchy node (%.*s) metadata: %s",
                   (int)SELVA_NODE_ID_SIZE, node->id,
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         return err;
     }
 
@@ -3106,7 +3106,7 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
             err = load_node_id(io, child_id);
             if (err) {
                 SELVA_LOG(SELVA_LOGL_CRIT, "Invalid child node_id: %s",
-                          getSelvaErrorStr(err));
+                          selva_strerror(err));
                 return err;
             }
 
@@ -3117,7 +3117,7 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
             err = SelvaModify_AddHierarchy(NULL, hierarchy, child_id, 0, NULL, 0, NULL);
             if (err < 0) {
                 SELVA_LOG(SELVA_LOGL_CRIT, "Unable to rebuild the hierarchy: %s",
-                          getSelvaErrorStr(err));
+                          selva_strerror(err));
                 return err;
             }
 
@@ -3131,7 +3131,7 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
     err = SelvaModify_AddHierarchyP(NULL, hierarchy, node, 0, NULL, nr_children, children);
     if (err < 0) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Unable to rebuild the hierarchy: %s",
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         return err;
     }
 
@@ -3157,7 +3157,7 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
     if (err && err != SELVA_HIERARCHY_EEXIST) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to upsert %.*s: %s",
                   (int)SELVA_NODE_ID_SIZE, node_id,
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         return err;
     }
 
@@ -3195,7 +3195,7 @@ static int load_tree(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy) {
         err = load_node_id(io, node_id);
         if (err) {
             SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load the next nodeId: %s",
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
             return SELVA_HIERARCHY_EINVAL;
         }
 
@@ -3253,7 +3253,7 @@ static void *Hierarchy_RDBLoad(RedisModuleIO *io, int encver) {
     err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load the dynamic constraints: %s",
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         goto error;
     }
 
@@ -3286,7 +3286,7 @@ static void save_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, con
     err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed, &type);
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to save a compressed subtree: %s",
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         return;
     }
 
@@ -3546,7 +3546,7 @@ int SelvaHierarchy_DelNodeCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
             if (res != SELVA_HIERARCHY_ENOENT) {
                 SELVA_LOG(SELVA_LOGL_ERR, "Failed to delete the node %.*s: %s\n",
                           (int)SELVA_NODE_ID_SIZE, nodeId,
-                          getSelvaErrorStr(res));
+                          selva_strerror(res));
             }
         }
     }

@@ -2661,7 +2661,7 @@ static int rdb_load_pointer(RedisModuleIO *io, int encver, struct SelvaObject *o
         err = SelvaObject_SetPointer(obj, name, p, opts);
         if (err) {
             SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load a SELVA_OBJECT_POINTER: %s",
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
             return SELVA_EGENERAL;
         }
     } else {
@@ -2728,7 +2728,7 @@ static int rdb_load_field(RedisModuleIO *io, struct SelvaObject *obj, int encver
     if (err) {
             SELVA_LOG(SELVA_LOGL_CRIT, "Error while loading a %s: %s",
                       SelvaObject_Type2String(type, NULL),
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
         return err;
     }
 
@@ -2745,7 +2745,7 @@ static int rdb_load_field(RedisModuleIO *io, struct SelvaObject *obj, int encver
          * create something like an empty array at this point.
          */
         SELVA_LOG(SELVA_LOGL_WARN, "Failed to set user meta on \"%.*s\": %s",
-                  (int)name_len, name_str, getSelvaErrorStr(err));
+                  (int)name_len, name_str, selva_strerror(err));
     }
 
     RedisModule_FreeString(NULL, name);

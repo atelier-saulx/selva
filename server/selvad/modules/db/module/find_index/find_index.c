@@ -382,7 +382,7 @@ __attribute__((nonnull (2, 3))) static int destroy_icb(
     if (err) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to discard an index for \"%.*s\": %s\n",
                   (int)icb->name_len, icb->name_str,
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         return err;
     }
 
@@ -390,7 +390,7 @@ __attribute__((nonnull (2, 3))) static int destroy_icb(
     if (err && err != SELVA_ENOENT) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy an index for \"%.*s\": %s\n",
                   (int)icb->name_len, icb->name_str,
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         return err;
     }
 
@@ -476,7 +476,7 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
                 if (err) {
                     SELVA_LOG(SELVA_LOGL_ERR, "Failed to discard the index for \"%.*s\": %s\n",
                               (int)icb->name_len, icb->name_str,
-                              getSelvaErrorStr(err));
+                              selva_strerror(err));
                 }
             } else {
                 /*
@@ -493,7 +493,7 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
                 if (err) {
                     SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy the index for \"%.*s\": %s\n",
                               (int)icb->name_len, icb->name_str,
-                              getSelvaErrorStr(err));
+                              selva_strerror(err));
                 }
             }
         }
@@ -534,7 +534,7 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
             if (err) {
                 SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an index for \"%.*s\": %s\n",
                           (int)icb->name_len, icb->name_str,
-                          getSelvaErrorStr(err));
+                          selva_strerror(err));
             } else {
                 SELVA_LOG(SELVA_LOGL_INFO, "Created an index for \"%.*s\"\n",
                           (int)icb->name_len, icb->name_str);
@@ -550,7 +550,7 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to refresh the index for \"%.*s\": %s\n",
                       (int)icb->name_len, icb->name_str,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
 
             /*
              * Destroy the ICB because it's likely that creating this index would
@@ -562,7 +562,7 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
             if (err) {
                 SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy the index for \"%.*s\": %s\n",
                           (int)icb->name_len, icb->name_str,
-                          getSelvaErrorStr(err));
+                          selva_strerror(err));
             }
         }
     }
@@ -688,12 +688,12 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
             if (err == SELVA_ENOBUFS) {
                 SELVA_LOG_DBG("FIND_INDICES_MAX_HINTS reached. Destroying \"%.*s\": %s\n",
                               (int)icb->name_len, icb->name_str,
-                              getSelvaErrorStr(err));
+                              selva_strerror(err));
             } else {
                 SELVA_LOG(SELVA_LOGL_ERR,
                           "Failed to get a new marker id for an index \"%.*s\": %s\n",
                           (int)icb->name_len, icb->name_str,
-                          getSelvaErrorStr(err));
+                          selva_strerror(err));
             }
 
             destroy_icb(ctx, hierarchy, icb);
@@ -734,7 +734,7 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to insert a new ICB at \"%.*s\": %s\n",
                       (int)name_len, name_str,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
 
             destroy_icb(ctx, hierarchy, icb);
             return NULL;
@@ -745,7 +745,7 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
     } else if (err) {
         SELVA_LOG(SELVA_LOGL_ERR, "Get ICB for \"%.*s\" failed: %s\n",
                   (int)name_len, name_str,
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
 
         icb = NULL;
     }
@@ -906,7 +906,7 @@ int SelvaFindIndex_AutoMulti(
             }
         } else if (err != SELVA_ENOENT && err != SELVA_ENOTSUP) {
             SELVA_LOG(SELVA_LOGL_ERR, "AutoIndex returned an error: %s\n",
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
         }
     }
 

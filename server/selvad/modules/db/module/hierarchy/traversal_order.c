@@ -77,7 +77,7 @@ int SelvaTraversal_ParseOrderArg(
 
         SELVA_LOG(SELVA_LOGL_ERR, "Invalid order \"%.*s\": %s",
                   (int)ord_len, ord_str,
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         return SELVA_HIERARCHY_EINVAL;
     }
 

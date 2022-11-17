@@ -959,7 +959,7 @@ static int SelvaSubscriptions_TraverseMarker(
         fprintf(stderr, "%s:%d: Could not fully apply a subscription marker: %s:%" PRImrkId " err: %s\n",
                 __FILE__, __LINE__,
                 Selva_SubscriptionId2str(str, marker->sub->sub_id), marker->marker_id,
-                getSelvaErrorStr(err));
+                selva_strerror(err));
 #endif
 
         /*
@@ -1109,7 +1109,7 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy
                       "Failed to clear a subscription %s:%" PRImrkId ": %s",
                       Selva_SubscriptionId2str(str, marker->sub->sub_id),
                       marker->marker_id,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
             abort(); /* It would be dangerous to not abort here. */
         }
     } else {
@@ -1396,7 +1396,7 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaHierarchy *hierar
     err = SelvaObject_GetObjectStr(hierarchy->subs.missing, id_str, id_len, &obj);
     if (err) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to get missing accessor marker: %s",
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         return;
     }
 

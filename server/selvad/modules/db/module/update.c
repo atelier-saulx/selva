@@ -552,7 +552,7 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
              * it and ignore the error.
              */
             SELVA_LOG(SELVA_LOGL_ERR, "Update failed. err: %s dir: %s node_id: \"%.*s\"",
-                      getSelvaErrorStr(err),
+                      selva_strerror(err),
                       SelvaTraversal_Dir2str(dir),
                       (int)SELVA_NODE_ID_SIZE, nodeId);
         }

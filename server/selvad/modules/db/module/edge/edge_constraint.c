@@ -153,7 +153,7 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(
                       "Failed to get a dynamic constraint. type: \"%.*s\" field_name: \"%.*s\" err: %s",
                       (int)SELVA_NODE_TYPE_SIZE, node_type,
                       (int)field_name_len, field_name_str,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
         }
 
         constraint = p;

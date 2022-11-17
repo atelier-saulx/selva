@@ -259,7 +259,7 @@ static int update_edge(
             err = SelvaHierarchy_UpsertNode(ctx, hierarchy, dst_node_id, &dst_node);
             if ((err && err != SELVA_HIERARCHY_EEXIST) || !dst_node) {
                 SELVA_LOG(SELVA_LOGL_ERR, "Upserting a node failed: %s",
-                          getSelvaErrorStr(err));
+                          selva_strerror(err));
                 /*
                  * We could also ignore the error and try to insert the rest but
                  * perhaps it can be considered a fatal error if one of the
@@ -282,7 +282,7 @@ static int update_edge(
                         (int)SELVA_NODE_ID_SIZE, node_id,
                         (int)field_len, field_str,
                         (int)SELVA_NODE_ID_SIZE, dst_node_id,
-                        getSelvaErrorStr(err));
+                        selva_strerror(err));
 #endif
                 return err;
             }
@@ -306,7 +306,7 @@ static int update_edge(
                 if ((err && err != SELVA_HIERARCHY_EEXIST) || !dst_node) {
                     /* See similar case with $value */
                     SELVA_LOG(SELVA_LOGL_ERR, "Upserting a node failed: %s\n",
-                              getSelvaErrorStr(err));
+                              selva_strerror(err));
                     return err;
                 }
 
@@ -324,7 +324,7 @@ static int update_edge(
                             (int)SELVA_NODE_ID_SIZE, node_id,
                             (int)field_len, field_str,
                             (int)SELVA_NODE_ID_SIZE, dst_node_id,
-                            getSelvaErrorStr(err));
+                            selva_strerror(err));
 #endif
                     return err;
                 }
@@ -517,7 +517,7 @@ string_err:
             } else if (err != SELVA_EEXIST) {
                 SELVA_LOG(SELVA_LOGL_ERR, "Set (%s) field update failed: %s\n",
                           (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE) ? "double" : "long long",
-                          getSelvaErrorStr(err));
+                          selva_strerror(err));
                 return err;
             }
 
@@ -1835,7 +1835,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                  * errors received here.
                  */
                 SELVA_LOG(SELVA_LOGL_ERR, "An error occurred while setting an alias \"%s\" -> %s: %s\n",
-                          alias, id_str, getSelvaErrorStr(err));
+                          alias, id_str, selva_strerror(err));
             }
         }
     }

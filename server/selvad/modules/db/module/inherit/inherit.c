@@ -95,7 +95,7 @@ static int Inherit_FieldValue_NodeCb(
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%.*s\" error: %s\n",
                   (int)SELVA_NODE_ID_SIZE, nodeId,
                   (int)args->field_name_len, args->field_name_str,
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
     }
 
     return 0;
@@ -175,7 +175,7 @@ static int Inherit_SendFields_NodeCb(
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
                       (int)SELVA_NODE_ID_SIZE, nodeId,
                       RedisModule_StringPtrLen(field_name, NULL),
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
         }
     }
 
@@ -205,7 +205,7 @@ int Inherit_SendFields(
     err = SelvaHierarchy_Traverse(ctx, hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
     if (err) {
         /* TODO Better error handling? */
-        SELVA_LOG(SELVA_LOGL_ERR, "Inherit failed: %s", getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Inherit failed: %s", selva_strerror(err));
     }
 
     return args.nr_results;
@@ -281,7 +281,7 @@ static int InheritCommand_NodeCb(
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s",
                     (int)SELVA_NODE_ID_SIZE, nodeId,
                     RedisModule_StringPtrLen(field_name, NULL),
-                    getSelvaErrorStr(err));
+                    selva_strerror(err));
         }
     }
 
@@ -343,7 +343,7 @@ size_t inheritHierarchyFields(
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s",
                       (int)SELVA_NODE_ID_SIZE, node_id,
                       field_name_str,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
         }
     }
 
@@ -441,7 +441,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         /*
          * We can't reply with an error anymore, so we just log it.
          */
-        SELVA_LOG(SELVA_LOGL_ERR, "Inherit failed: %s", getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Inherit failed: %s", selva_strerror(err));
     }
 
     return REDISMODULE_OK;

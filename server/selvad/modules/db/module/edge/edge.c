@@ -257,7 +257,7 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaHierarchyN
                                   SELVA_OBJECT_POINTER, src_edge_field);
     if (err) {
         SELVA_LOG(SELVA_LOGL_ERR, "Edge origin update failed: %s",
-                  getSelvaErrorStr(err));
+                  selva_strerror(err));
         abort();
     }
 }
@@ -417,7 +417,7 @@ int Edge_Add(
              */
             SELVA_LOG(SELVA_LOGL_ERR,
                       "An error occurred while creating a bidirectional edge: %s",
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
 
             /*
              * In case of an error we can't actually rollback anymore but we can
@@ -430,7 +430,7 @@ int Edge_Add(
             if (err1 && err1 != SELVA_ENOENT) {
                 SELVA_LOG(SELVA_LOGL_ERR,
                           "Failed to remove the broken edge: %s",
-                          getSelvaErrorStr(err1));
+                          selva_strerror(err1));
             }
         } else {
             /* We don't want to leak the SELVA_EEXIST. */
@@ -663,7 +663,7 @@ static int clear_field(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, st
                       (int)SELVA_NODE_ID_SIZE, src_node_id,
                       edge_field,
                       (int)SELVA_NODE_ID_SIZE, dst_node_id,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
         }
     }
 
@@ -927,7 +927,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
         if (err < 0) {
             SELVA_LOG(SELVA_LOGL_CRIT, "AddHierarchy(%.*s) failed: %s",
                       (int)SELVA_NODE_ID_SIZE, dst_id_str,
-                      getSelvaErrorStr(err));
+                      selva_strerror(err));
             return NULL;
         }
 
