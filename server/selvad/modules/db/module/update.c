@@ -185,7 +185,6 @@ static enum selva_op_repl_state update_op(
         size_t value_len;
         const char *value_str = RedisModule_StringPtrLen(value, &value_len);
         RedisModuleString *old_value;
-        RedisModuleString *shared;
 
         if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
             return SELVA_OP_REPL_STATE_UNCHANGED;
@@ -199,10 +198,11 @@ static enum selva_op_repl_state update_op(
             }
         }
 
-        shared = Share_RMS(field_str, field_len, value);
-        if (shared) {
+        if (SELVA_IS_TYPE_FIELD(field_str, field_len)) {
+            struct selva_string *shared;
             int err;
 
+            shared = selva_string_create(value_str, value_len, SELVA_STRING_INTERN);
             err = SelvaObject_SetString(obj, field, shared);
             if (err) {
                 RedisModule_FreeString(NULL, shared);

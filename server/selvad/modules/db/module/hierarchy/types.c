@@ -12,24 +12,10 @@
 /**
  * This function takes care of sharing/holding name.
  */
-static int SelvaHierarchyTypes_Add(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const Selva_NodeType type, RedisModuleString *name) {
+static int SelvaHierarchyTypes_Add(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const Selva_NodeType type, const char *name_str, size_t name_len) {
     struct SelvaObject *obj = SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy);
-    RedisModuleString *shared;
+    struct selva_string *name = selva_string_create(name_str, name_len, SELVA_STRING_INTERN);
 
-        shared = Share_RMS(SELVA_TYPE_FIELD, sizeof(SELVA_TYPE_FIELD) - 1, name);
-        if (shared) {
-            return SelvaObject_SetStringStr(obj, type, SELVA_NODE_TYPE_SIZE, shared);
-        } else {
-            int err;
-
-            err = SelvaObject_SetStringStr(obj, type, SELVA_NODE_TYPE_SIZE, name);
-            if (err) {
-                return err;
-            }
-            RedisModule_RetainString(ctx, name);
-        }
-
-    /* TODO Should we disallow overwrite? */
     return SelvaObject_SetStringStr(obj, type, SELVA_NODE_TYPE_SIZE, name);
 }
 
@@ -78,13 +64,13 @@ int SelvaHierarchyTypes_AddCommand(RedisModuleCtx *ctx, RedisModuleString **argv
 
     type = argv[ARGV_TYPE];
     name = argv[ARGV_NAME];
-    TO_STR(type);
+    TO_STR(type, name);
 
     if (type_len != 2) {
         return replyWithSelvaError(ctx, SELVA_EINTYPE);
     }
 
-    err = SelvaHierarchyTypes_Add(ctx, hierarchy, type_str, name);
+    err = SelvaHierarchyTypes_Add(ctx, hierarchy, type_str, name_str, name_len);
     if (err) {
         return replyWithSelvaError(ctx, err);
     }

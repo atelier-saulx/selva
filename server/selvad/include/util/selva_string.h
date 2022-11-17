@@ -34,6 +34,11 @@ enum selva_string_flags {
 struct selva_string;
 
 /**
+ * Find already interned string.
+ */
+struct selva_string *selva_string_find_intern(const char *str, size_t len);
+
+/**
  * Create a new string.
  */
 struct selva_string *selva_string_create(const char *str, size_t len, enum selva_string_flags flags);

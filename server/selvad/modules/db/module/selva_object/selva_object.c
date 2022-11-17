@@ -2541,17 +2541,16 @@ static int rdb_load_object_long_long(RedisModuleIO *io, struct SelvaObject *obj,
     return 0;
 }
 
-static int rdb_load_object_string(RedisModuleIO *io, int level, struct SelvaObject *obj, const RedisModuleString *name) {
+static int rdb_load_object_string(RedisModuleIO *io, int level, struct SelvaObject *obj, const struct selva_string *name) {
     TO_STR(name);
-    RedisModuleString *value = RedisModule_LoadString(io);
-    RedisModuleString *shared = NULL;
+    struct selva_string *value = RedisModule_LoadString(io);
+    struct selva_string *shared = NULL;
 
-    if (level == 0) {
-        shared = Share_RMS(name_str, name_len, value);
-    }
-
-    if (shared) {
+    if (level == 0 && SELVA_IS_TYPE_FIELD(name_str, name_len)) {
+        struct selva_string *shared;
         int err;
+
+        shared = selva_string_create(value_str, value_len, SELVA_STRING_INTERN);
 
         RedisModule_FreeString(NULL, value);
 

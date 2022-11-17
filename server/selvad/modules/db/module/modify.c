@@ -13,8 +13,9 @@
 #include <time.h>
 #include <unistd.h>
 #include "jemalloc.h"
+#include "util/selva_string.h"
 #include "bitmap.h"
-#include "selva.h"
+#include "selva_db.h"
 #include "async_task.h"
 #include "comparator.h"
 #include "config.h"
@@ -1206,7 +1207,6 @@ static enum selva_op_repl_state modify_op(
                type_code == SELVA_MODIFY_ARG_STRING) {
         const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
         RedisModuleString *old_value;
-        RedisModuleString *shared;
         int err;
 
         if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
@@ -1232,8 +1232,10 @@ static enum selva_op_repl_state modify_op(
             }
         }
 
-        shared = Share_RMS(field_str, field_len, value);
-        if (shared) {
+        if (SELVA_IS_TYPE_FIELD(field_str, field_len)) {
+            RedisModuleString *shared;
+
+            shared = selva_string_create(value_str, value_len, SELVA_STRING_INTERN);
             err = SelvaObject_SetString(obj, field, shared);
             if (err) {
                 RedisModule_FreeString(NULL, shared);

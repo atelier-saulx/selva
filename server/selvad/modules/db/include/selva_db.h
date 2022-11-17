@@ -59,6 +59,9 @@
  * @}
  */
 
+#define SELVA_IS_TYPE_FIELD(_s, _len) \
+    ((_len) == (sizeof(SELVA_TYPE_FIELD) - 1) && __builtin_memcmp((_s), SELVA_TYPE_FIELD, sizeof(SELVA_TYPE_FIELD) - 1))
+
 /*
  * Defines for SelvaObject user meta
  */

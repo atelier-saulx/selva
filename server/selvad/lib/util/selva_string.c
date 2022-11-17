@@ -110,7 +110,7 @@ static void set_string(struct selva_string *s, const char *str, size_t len, enum
     update_crc(s);
 }
 
-static struct selva_string *find_intern(const char *str, size_t len)
+struct selva_string *selva_string_find_intern(const char *str, size_t len)
 {
     struct selva_string n = {
         .flags = SELVA_STRING_MUTABLE,
@@ -144,7 +144,7 @@ struct selva_string *selva_string_create(const char *str, size_t len, enum selva
         s = alloc_mutable(len);
         set_string(s, str, len, flags);
     } else if (flags & SELVA_STRING_INTERN) {
-        s = find_intern(str, len);
+        s = selva_string_find_intern(str, len);
         if (!s) {
             s = alloc_immutable(len);
             set_string(s, str, len, flags);
