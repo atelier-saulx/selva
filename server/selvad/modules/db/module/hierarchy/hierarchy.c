@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "redismodule.h"
 #include "jemalloc.h"
 #include "auto_free.h"
 #include "selva.h"

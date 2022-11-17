@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 #include <string.h>
-#include "redismodule.h"
 #include "cstrings.h"
 #include "selva.h"
 #include "selva_object.h"

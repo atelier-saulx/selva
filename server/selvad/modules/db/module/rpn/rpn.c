@@ -14,7 +14,6 @@
 #include "jemalloc.h"
 #include "selva.h"
 #include "../rmutil/sds.h"
-#include "redismodule.h"
 #include "cstrings.h"
 #include "hierarchy.h"
 #include "selva_object.h"

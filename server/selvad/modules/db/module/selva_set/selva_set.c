@@ -5,7 +5,6 @@
 #include <math.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include "redismodule.h"
 #include "jemalloc.h"
 #include "selva.h"
 #include "alias.h"

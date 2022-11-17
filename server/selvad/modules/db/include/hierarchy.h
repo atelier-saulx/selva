@@ -6,7 +6,6 @@
 #ifndef _SELVA_HIERARCHY_H_
 #define _SELVA_HIERARCHY_H_
 
-#include "redismodule.h"
 #include "linker_set.h"
 #include "selva.h"
 #include "svector.h"

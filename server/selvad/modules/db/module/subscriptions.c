@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include "redismodule.h"
 #include "jemalloc.h"
 #include "cstrings.h"
 #include "selva.h"

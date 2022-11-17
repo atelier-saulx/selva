@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 #include <math.h>
-#include "redismodule.h"
 #include "jemalloc.h"
 #include "funmap.h"
 #include "selva.h"

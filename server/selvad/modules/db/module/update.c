@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-#include "redismodule.h"
 #include "selva.h"
 #include "jemalloc.h"
 #include "auto_free.h"

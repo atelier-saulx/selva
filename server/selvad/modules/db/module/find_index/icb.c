@@ -4,7 +4,6 @@
  */
 #include <stddef.h>
 #include "base64.h"
-#include "redismodule.h"
 #include "svector.h"
 #include "selva.h"
 #include "selva_set.h"

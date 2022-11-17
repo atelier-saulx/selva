@@ -8,7 +8,6 @@
 #include <stdalign.h>
 #include <stdlib.h>
 #include <string.h>
-#include "redismodule.h"
 #include "jemalloc.h"
 #include "linker_set.h"
 #include "endian.h"

@@ -9,7 +9,6 @@
 #include <string.h>
 #include <unistd.h>
 #include "libdeflate.h"
-#include "redismodule.h"
 #include "jemalloc.h"
 #include "selva.h"
 #include "config.h"

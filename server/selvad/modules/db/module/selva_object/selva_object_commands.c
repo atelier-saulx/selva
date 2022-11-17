@@ -4,7 +4,6 @@
  */
 #include <stdlib.h>
 #include <string.h>
-#include "redismodule.h"
 #include "typestr.h"
 #include "selva.h"
 #include "hierarchy.h"

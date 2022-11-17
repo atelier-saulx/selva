@@ -11,7 +11,6 @@
 #include <string.h>
 #include <strings.h>
 #include <tgmath.h>
-#include "redismodule.h"
 #include "selva.h"
 #include "auto_free.h"
 #include "arg_parser.h"

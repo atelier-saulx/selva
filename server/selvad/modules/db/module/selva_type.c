@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "redismodule.h"
 #include "selva.h"
 
 /*

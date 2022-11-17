@@ -12,7 +12,6 @@
 #include "funmap.h"
 #include "selva.h"
 #include "config.h"
-#include "redismodule.h"
 #include "auto_free.h"
 #include "arg_parser.h"
 #include "ptag.h"

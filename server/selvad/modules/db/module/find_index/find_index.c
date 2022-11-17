@@ -7,7 +7,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <tgmath.h>
-#include "redismodule.h"
 #include "jemalloc.h"
 #include "config.h"
 #include "bitmap.h"

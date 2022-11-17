@@ -6,9 +6,9 @@
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
-#include "redismodule.h"
-#include "selva.h"
 #include "jemalloc.h"
+#include "selva_db.h"
+#include "selva_error.h"
 #include "selva_onload.h"
 #include "selva_lang.h"
 #include "selva_object.h"

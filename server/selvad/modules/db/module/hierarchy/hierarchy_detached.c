@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
-#include "redismodule.h"
 #include "jemalloc.h"
 #include "ptag.h"
 #include "selva.h"

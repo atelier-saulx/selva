@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 #include "selva.h"
-#include "redismodule.h"
 #include "hierarchy.h"
 
 struct send_hierarchy_field_data {

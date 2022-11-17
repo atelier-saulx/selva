@@ -12,7 +12,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include "redismodule.h"
 #include "jemalloc.h"
 #include "bitmap.h"
 #include "selva.h"

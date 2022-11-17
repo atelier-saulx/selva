@@ -2,7 +2,6 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
-#include "redismodule.h"
 #include "selva.h"
 #include "rpn.h"
 #include "selva_onload.h"

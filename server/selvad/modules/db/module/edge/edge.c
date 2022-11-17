@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include "redismodule.h"
 #include "jemalloc.h"
 #include "auto_free.h"
 #include "svector.h"

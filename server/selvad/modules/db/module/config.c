@@ -4,7 +4,6 @@
  */
 #include <string.h>
 #include <stddef.h>
-#include <redismodule.h>
 #include "selva.h"
 #include "modinfo.h"
 #include "config.h"
