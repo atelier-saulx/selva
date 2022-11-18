@@ -30,4 +30,4 @@ SELVA_IO_EXPORT(float, selva_io_load_float, struct selva_io *io);
 SELVA_IO_EXPORT(double, selva_io_load_double, struct selva_io *io);
 SELVA_IO_EXPORT(long double, selva_io_load_long_double, struct selva_io *io);
 SELVA_IO_EXPORT(const char*, selva_io_load_str, struct selva_io *io, size_t *len);
-SELVA_IO_EXPORT(const struct selva_string *, selva_io_load_string, struct selva_io *io);
+SELVA_IO_EXPORT(struct selva_string *, selva_io_load_string, struct selva_io *io);

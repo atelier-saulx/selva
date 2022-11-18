@@ -68,7 +68,7 @@ const char *selva_io_load_str(struct selva_io *io, size_t *len)
     return NULL;
 }
 
-const struct selva_string *selva_io_load_string(struct selva_io *io)
+struct selva_string *selva_io_load_string(struct selva_io *io)
 {
     return NULL;
 }
