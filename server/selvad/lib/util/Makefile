@@ -14,6 +14,7 @@ OBJ := \
 	crc32c/crc32c.o \
 	cstrings.o \
 	eztrie.o \
+	finalizer.o \
 	ida.o \
 	mempool.o \
 	poptop.o \
