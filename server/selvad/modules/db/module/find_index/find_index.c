@@ -8,12 +8,12 @@
 #include <stdio.h>
 #include <tgmath.h>
 #include "jemalloc.h"
+#include "util/ida.h"
 #include "config.h"
 #include "bitmap.h"
 #include "lpf.h"
 #include "poptop.h"
 #include "hierarchy.h"
-#include "ida.h"
 #include "selva.h"
 #include "modinfo.h"
 #include "selva_object.h"
