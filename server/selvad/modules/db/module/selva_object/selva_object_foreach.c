@@ -6,8 +6,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
-#include "svector.h"
-#include "selva.h"
+#include "util/svector.h"
+#include "selva_db.h"
+#include "selva_error.h"
 #include "selva_object.h"
 
 int SelvaObject_ArrayForeach(

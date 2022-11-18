@@ -5,15 +5,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include "typestr.h"
-#include "selva.h"
+#include "selva_db.h"
 #include "hierarchy.h"
 #include "selva_onload.h"
 #include "selva_set.h"
-#include "svector.h"
+#include "selva_error.h"
+#include "util/svector.h"
 #include "selva_object.h"
 
-static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleString *key_name, int mode) {
-    RedisModuleString *hkey_name;
+static struct SelvaObject *SelvaObject_Open(struct selva_server_response_out *resp, struct selva_string *key_name, int mode) {
+    struct selva_string *hkey_name;
     struct SelvaHierarchy *hierarchy;
     Selva_NodeId nodeId;
     const struct SelvaHierarchyNode *node;
@@ -43,7 +44,7 @@ static struct SelvaObject *SelvaObject_Open(RedisModuleCtx *ctx, RedisModuleStri
     return SelvaHierarchy_GetNodeObject(node);
 }
 
-int SelvaObject_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaObject_DelCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
     int err;
@@ -57,7 +58,7 @@ int SelvaObject_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
     if (!obj) {
-        return REDISMODULE_OK;
+        return 0;
     }
 
     err = SelvaObject_DelKey(obj, argv[ARGV_OKEY]);
@@ -72,7 +73,7 @@ int SelvaObject_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     return RedisModule_ReplicateVerbatim(ctx);
 }
 
-int SelvaObject_ExistsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaObject_ExistsCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
     int err;
@@ -86,7 +87,7 @@ int SelvaObject_ExistsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
     if (!obj) {
-        return REDISMODULE_OK;
+        return 0;
     }
 
     err = SelvaObject_Exists(obj, argv[ARGV_OKEY]);
@@ -99,7 +100,7 @@ int SelvaObject_ExistsCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 }
 
 
-int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaObject_GetCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
 
@@ -111,19 +112,19 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         return RedisModule_WrongArity(ctx);
     }
 
-    RedisModuleString *lang = argv[ARGV_LANG];
+    struct selva_string *lang = argv[ARGV_LANG];
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
     if (!obj) {
-        return REDISMODULE_OK;
+        return 0;
     }
 
     if (argc == 3) {
         (void)SelvaObject_ReplyWithObjectStr(ctx, lang, obj, NULL, 0, SELVA_OBJECT_REPLY_BINUMF_FLAG);
-        return REDISMODULE_OK;
+        return 0;
     }
 
     for (int i = ARGV_OKEY; i < argc; i++) {
-        const RedisModuleString *okey = argv[i];
+        const struct selva_string *okey = argv[i];
         TO_STR(okey);
 
         int err = 0;
@@ -143,7 +144,7 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
                 replyWithSelvaErrorf(ctx, err, "Wildcard failed");
                 RedisModule_ReplySetArrayLength(ctx, resp_count + 1);
 
-                return REDISMODULE_OK;
+                return 0;
             }
 
             RedisModule_ReplySetArrayLength(ctx, resp_count);
@@ -157,13 +158,13 @@ int SelvaObject_GetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             }
         }
 
-        return REDISMODULE_OK;
+        return 0;
     }
 
     return RedisModule_ReplyWithNull(ctx);
 }
 
-int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaObject_SetCommand(struct selva_server_response_out *resp, struct selva_string  **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
     size_t values_set = 0;
@@ -191,7 +192,7 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
     if (!obj) {
-        return REDISMODULE_OK;
+        return 0;
     }
 
     switch (type) {
@@ -236,7 +237,7 @@ int SelvaObject_SetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     return RedisModule_ReplicateVerbatim(ctx);
 }
 
-int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaObject_TypeCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
 
@@ -249,10 +250,10 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
 
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
     if (!obj) {
-        return REDISMODULE_OK;
+        return 0;
     }
 
-    const RedisModuleString *okey = argv[ARGV_OKEY];
+    const struct selva_string *okey = argv[ARGV_OKEY];
     enum SelvaObjectType type;
     const char *type_str;
     size_t type_len;
@@ -320,10 +321,10 @@ int SelvaObject_TypeCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         RedisModule_ReplySetArrayLength(ctx, 1);
     }
 
-    return REDISMODULE_OK;
+    return 0;
 }
 
-int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaObject_LenCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
 
@@ -336,7 +337,7 @@ int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
     if (!obj) {
-        return REDISMODULE_OK;
+        return 0;
     }
 
     const ssize_t len = SelvaObject_Len(obj, argc == 2 ? NULL : argv[ARGV_OKEY]);
@@ -353,7 +354,7 @@ int SelvaObject_LenCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     return RedisModule_ReplyWithLongLong(ctx, len);
 }
 
-int SelvaObject_GetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaObject_GetMetaCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
     int err;
@@ -367,7 +368,7 @@ int SelvaObject_GetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
     if (!obj) {
-        return REDISMODULE_OK;
+        return 0;
     }
 
     SelvaObjectMeta_t user_meta;
@@ -379,7 +380,7 @@ int SelvaObject_GetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     return RedisModule_ReplyWithLongLong(ctx, user_meta);
 }
 
-int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaObject *obj;
     SelvaObjectMeta_t user_meta;
@@ -393,7 +394,7 @@ int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return RedisModule_WrongArity(ctx);
     }
 
-    const RedisModuleString *mval = argv[ARGV_MVAL];
+    const struct selva_string *mval = argv[ARGV_MVAL];
     TO_STR(mval);
 
     if (mval_len < sizeof(SelvaObjectMeta_t)) {
@@ -402,7 +403,7 @@ int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
     obj = SelvaObject_Open(ctx, argv[ARGV_KEY], REDISMODULE_READ);
     if (!obj) {
-        return REDISMODULE_OK;
+        return 0;
     }
 
     memcpy(&user_meta, mval_str, sizeof(SelvaObjectMeta_t));
@@ -414,7 +415,9 @@ int SelvaObject_SetMetaCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     return RedisModule_ReplyWithLongLong(ctx, 1);
 }
 
-static int SelvaObject_OnLoad(RedisModuleCtx *ctx) {
+static int SelvaObject_OnLoad(void) {
+    /* FIXME SelvaObject commands */
+#if 0
     /*
      * Register commands.
      */
@@ -445,6 +448,7 @@ static int SelvaObject_OnLoad(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
 
-    return REDISMODULE_OK;
+#endif
+    return 0;
 }
 SELVA_ONLOAD(SelvaObject_OnLoad);

@@ -6,18 +6,22 @@
 #include <assert.h>
 #include <limits.h>
 #include <stdalign.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "endian.h"
 #include "jemalloc.h"
 #include "linker_set.h"
-#include "endian.h"
-#include "cstrings.h"
-#include "selva.h"
-#include "rms.h"
+#include "tree.h"
+#include "util/cstrings.h"
+#include "util/selva_string.h"
+#include "util/svector.h"
+#include "selva_db.h"
+#include "selva_error.h"
+#include "selva_log.h"
+#include "selva_server.h"
 #include "selva_set.h"
 #include "selva_trace.h"
-#include "svector.h"
-#include "tree.h"
 #include "selva_object.h"
 
 #define MOD_AL(x, y) ((x) & (y - 1)) /* x % bytes */
@@ -100,9 +104,9 @@ SELVA_OBJECT_POINTER_OPTS(default_ptr_opts);
 
 RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare)
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
-static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key, unsigned flags);
-static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, unsigned flags, const char *excluded);
-static struct SelvaObject *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data);
+static void replyWithKeyValue(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObjectKey *key);
+static void replyWithObject(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObject *obj, const char *excluded);
+static struct SelvaObject *rdb_load_object(struct RedisModuleIO *io, int encver, int level, void *ptr_load_data);
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
     /*
@@ -195,11 +199,11 @@ static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
     case SELVA_OBJECT_STRING:
         {
             struct SVectorIterator it;
-            RedisModuleString *str;
+            struct selva_string *str;
 
             SVector_ForeachBegin(&it, array);
             while ((str = SVector_Foreach(&it))) {
-                RedisModule_FreeString(NULL, str);
+                selva_string_free(str);
             }
         }
         break;
@@ -246,7 +250,7 @@ static int clear_key_value(struct SelvaObjectKey *key) {
         break;
     case SELVA_OBJECT_STRING:
         if (key->value) {
-            RedisModule_FreeString(NULL, key->value);
+            selva_string_free(key->value);
         }
         break;
     case SELVA_OBJECT_OBJECT:
@@ -387,7 +391,7 @@ size_t SelvaObject_MemUsage(const void *value) {
             if (key->value) {
                 size_t len;
 
-                (void)RedisModule_StringPtrLen(key->value, &len);
+                (void)selva_string_to_str(key->value, &len);
                 size += len + 1;
             }
             break;
@@ -750,7 +754,7 @@ int SelvaObject_DelKeyStr(struct SelvaObject *obj, const char *key_name_str, siz
     return get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_DELETE, &key);
 }
 
-int SelvaObject_DelKey(struct SelvaObject *obj, const RedisModuleString *key_name) {
+int SelvaObject_DelKey(struct SelvaObject *obj, const struct selva_string *key_name) {
     TO_STR(key_name);
 
     return SelvaObject_DelKeyStr(obj, key_name_str, key_name_len);
@@ -764,7 +768,7 @@ int SelvaObject_ExistsStr(struct SelvaObject *obj, const char *key_name_str, siz
     return get_key(obj, key_name_str, key_name_len, 0, &key);
 }
 
-int SelvaObject_Exists(struct SelvaObject *obj, const RedisModuleString *key_name) {
+int SelvaObject_Exists(struct SelvaObject *obj, const struct selva_string *key_name) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
 
@@ -773,7 +777,7 @@ int SelvaObject_Exists(struct SelvaObject *obj, const RedisModuleString *key_nam
     return get_key(obj, key_name_str, key_name_len, 0, &key);
 }
 
-int SelvaObject_ExistsTopLevel(struct SelvaObject *obj, const RedisModuleString *key_name) {
+int SelvaObject_ExistsTopLevel(struct SelvaObject *obj, const struct selva_string *key_name) {
     struct SelvaObjectKey *key;
     TO_STR(key_name);
 
@@ -800,7 +804,7 @@ int SelvaObject_GetDoubleStr(struct SelvaObject *obj, const char *key_name_str, 
     return 0;
 }
 
-int SelvaObject_GetDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double *out) {
+int SelvaObject_GetDouble(struct SelvaObject *obj, const struct selva_string *key_name, double *out) {
     TO_STR(key_name);
 
     return SelvaObject_GetDoubleStr(obj, key_name_str, key_name_len, out);
@@ -824,13 +828,13 @@ int SelvaObject_GetLongLongStr(struct SelvaObject *obj, const char *key_name_str
     return 0;
 }
 
-int SelvaObject_GetLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long *out) {
+int SelvaObject_GetLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long *out) {
     TO_STR(key_name);
 
     return SelvaObject_GetLongLongStr(obj, key_name_str, key_name_len, out);
 }
 
-int SelvaObject_GetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, RedisModuleString **out) {
+int SelvaObject_GetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct selva_string **out) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -849,7 +853,7 @@ int SelvaObject_GetStringStr(struct SelvaObject *obj, const char *key_name_str, 
     return 0;
 }
 
-int SelvaObject_GetString(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString **out) {
+int SelvaObject_GetString(struct SelvaObject *obj, const struct selva_string *key_name, struct selva_string **out) {
     TO_STR(key_name);
 
     return SelvaObject_GetStringStr(obj, key_name_str, key_name_len, out);
@@ -877,7 +881,7 @@ int SelvaObject_SetDoubleStr(struct SelvaObject *obj, const char *key_name_str, 
     return 0;
 }
 
-int SelvaObject_SetDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+int SelvaObject_SetDouble(struct SelvaObject *obj, const struct selva_string *key_name, double value) {
     TO_STR(key_name);
 
     return SelvaObject_SetDoubleStr(obj, key_name_str, key_name_len, value);
@@ -915,7 +919,7 @@ int SelvaObject_SetDoubleDefaultStr(struct SelvaObject *obj, const char *key_nam
     return 0;
 }
 
-int SelvaObject_SetDoubleDefault(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+int SelvaObject_SetDoubleDefault(struct SelvaObject *obj, const struct selva_string *key_name, double value) {
     TO_STR(key_name);
 
     return SelvaObject_SetDoubleDefaultStr(obj, key_name_str, key_name_len, value);
@@ -947,7 +951,7 @@ int SelvaObject_UpdateDoubleStr(struct SelvaObject *obj, const char *key_name_st
     return 0;
 }
 
-int SelvaObject_UpdateDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+int SelvaObject_UpdateDouble(struct SelvaObject *obj, const struct selva_string *key_name, double value) {
     TO_STR(key_name);
 
     return SelvaObject_UpdateDoubleStr(obj, key_name_str, key_name_len, value);
@@ -975,7 +979,7 @@ int SelvaObject_SetLongLongStr(struct SelvaObject *obj, const char *key_name_str
     return 0;
 }
 
-int SelvaObject_SetLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+int SelvaObject_SetLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long value) {
     TO_STR(key_name);
 
     return SelvaObject_SetLongLongStr(obj, key_name_str, key_name_len, value);
@@ -1013,7 +1017,7 @@ int SelvaObject_SetLongLongDefaultStr(struct SelvaObject *obj, const char *key_n
     return 0;
 }
 
-int SelvaObject_SetLongLongDefault(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+int SelvaObject_SetLongLongDefault(struct SelvaObject *obj, const struct selva_string *key_name, long long value) {
     TO_STR(key_name);
 
     return SelvaObject_SetLongLongDefaultStr(obj, key_name_str, key_name_len, value);
@@ -1045,13 +1049,13 @@ int SelvaObject_UpdateLongLongStr(struct SelvaObject *obj, const char *key_name_
     return 0;
 }
 
-int SelvaObject_UpdateLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+int SelvaObject_UpdateLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long value) {
     TO_STR(key_name);
 
     return SelvaObject_UpdateLongLongStr(obj, key_name_str, key_name_len, value);
 }
 
-int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, RedisModuleString *value) {
+int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct selva_string *value) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -1073,7 +1077,7 @@ int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, 
     return 0;
 }
 
-int SelvaObject_SetString(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+int SelvaObject_SetString(struct SelvaObject *obj, const struct selva_string *key_name, struct selva_string *value) {
     TO_STR(key_name);
 
     return SelvaObject_SetStringStr(obj, key_name_str, key_name_len, value);
@@ -1102,7 +1106,7 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
     return 0;
 }
 
-int SelvaObject_IncrementDouble(struct SelvaObject *obj, const RedisModuleString *key_name, double default_value, double incr) {
+int SelvaObject_IncrementDouble(struct SelvaObject *obj, const struct selva_string *key_name, double default_value, double incr) {
     TO_STR(key_name);
 
     return SelvaObject_IncrementDoubleStr(obj, key_name_str, key_name_len, default_value, incr);
@@ -1131,7 +1135,7 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
     return 0;
 }
 
-int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long default_value, long long incr) {
+int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long default_value, long long incr) {
     TO_STR(key_name);
 
     return SelvaObject_IncrementLongLongStr(obj, key_name_str, key_name_len, default_value, incr);
@@ -1156,7 +1160,7 @@ int SelvaObject_GetObjectStr(struct SelvaObject *obj, const char *key_name_str, 
     return 0;
 }
 
-int SelvaObject_GetObject(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObject **out) {
+int SelvaObject_GetObject(struct SelvaObject *obj, const struct selva_string *key_name, struct SelvaObject **out) {
     TO_STR(key_name);
 
     return SelvaObject_GetObjectStr(obj, key_name_str, key_name_len, out);
@@ -1184,13 +1188,13 @@ int SelvaObject_SetObjectStr(struct SelvaObject *obj, const char *key_name_str, 
     return 0;
 }
 
-int SelvaObject_SetObject(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObject *value) {
+int SelvaObject_SetObject(struct SelvaObject *obj, const struct selva_string *key_name, struct SelvaObject *value) {
     TO_STR(key_name);
 
     return SelvaObject_SetObjectStr(obj, key_name_str, key_name_len, value);
 }
 
-static int get_selva_set_modify(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
+static int get_selva_set_modify(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
     TO_STR(key_name);
     struct SelvaObjectKey *key;
     int err;
@@ -1222,7 +1226,7 @@ static int get_selva_set_modify(struct SelvaObject *obj, const RedisModuleString
     return 0;
 }
 
-int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const struct selva_string *key_name, double value) {
     struct SelvaSet *selva_set;
     int err;
 
@@ -1234,7 +1238,7 @@ int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const RedisModuleString *k
     return SelvaSet_Add(selva_set, value);
 }
 
-int SelvaObject_AddLongLongSet(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+int SelvaObject_AddLongLongSet(struct SelvaObject *obj, const struct selva_string *key_name, long long value) {
     struct SelvaSet *selva_set;
     int err;
 
@@ -1246,7 +1250,7 @@ int SelvaObject_AddLongLongSet(struct SelvaObject *obj, const RedisModuleString 
     return SelvaSet_Add(selva_set, value);
 }
 
-int SelvaObject_AddStringSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+int SelvaObject_AddStringSet(struct SelvaObject *obj, const struct selva_string *key_name, struct selva_string *value) {
     struct SelvaSet *selva_set;
     int err;
 
@@ -1300,7 +1304,7 @@ int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_st
     return 0;
 }
 
-int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const RedisModuleString *key_name, double value) {
+int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const struct selva_string *key_name, double value) {
     TO_STR(key_name);
 
     return SelvaObject_RemDoubleSetStr(obj, key_name_str, key_name_len, value);
@@ -1325,13 +1329,13 @@ int SelvaObject_RemLongLongSetStr(struct SelvaObject *obj, const char *key_name_
     return 0;
 }
 
-int SelvaObject_RemLongLongSet(struct SelvaObject *obj, const RedisModuleString *key_name, long long value) {
+int SelvaObject_RemLongLongSet(struct SelvaObject *obj, const struct selva_string *key_name, long long value) {
     TO_STR(key_name);
 
     return SelvaObject_RemLongLongSetStr(obj, key_name_str, key_name_len, value);
 }
 
-int SelvaObject_RemStringSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, RedisModuleString *value) {
+int SelvaObject_RemStringSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct selva_string *value) {
     struct SelvaSet *selva_set;
     struct SelvaSetElement *el;
     int err;
@@ -1345,13 +1349,13 @@ int SelvaObject_RemStringSetStr(struct SelvaObject *obj, const char *key_name_st
     if (!el) {
         return SELVA_EINVAL;
     }
-    RedisModule_FreeString(NULL, el->value_rms);
+    selva_string_free(el->value_rms);
     SelvaSet_DestroyElement(el);
 
     return 0;
 }
 
-int SelvaObject_RemStringSet(struct SelvaObject *obj, const RedisModuleString *key_name, RedisModuleString *value) {
+int SelvaObject_RemStringSet(struct SelvaObject *obj, const struct selva_string *key_name, struct selva_string *value) {
     TO_STR(key_name);
 
     return SelvaObject_RemStringSetStr(obj, key_name_str, key_name_len, value);
@@ -1371,7 +1375,7 @@ struct SelvaSet *SelvaObject_GetSetStr(struct SelvaObject *obj, const char *key_
     return &key->selva_set;
 }
 
-struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const RedisModuleString *key_name) {
+struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const struct selva_string *key_name) {
     TO_STR(key_name);
 
     return SelvaObject_GetSetStr(obj, key_name_str, key_name_len);
@@ -1407,7 +1411,7 @@ static int SelvaObject_GetArrayIndex(
     return 0;
 }
 
-int SelvaObject_GetArrayIndexAsRmsStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, RedisModuleString **out) {
+int SelvaObject_GetArrayIndexAsRmsStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, struct selva_string **out) {
     return SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_STRING, (void **)out);
 }
 
@@ -1474,7 +1478,7 @@ int SelvaObject_AddArrayStr(struct SelvaObject *obj, const char *key_name_str, s
     return 0;
 }
 
-int SelvaObject_AddArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, void *p) {
+int SelvaObject_AddArray(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, void *p) {
     TO_STR(key_name);
 
     return SelvaObject_AddArrayStr(obj, key_name_str, key_name_len, subtype, p);
@@ -1505,7 +1509,7 @@ int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str
     return 0;
 }
 
-int SelvaObject_InsertArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, void *p) {
+int SelvaObject_InsertArray(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, void *p) {
     TO_STR(key_name);
 
     return SelvaObject_InsertArrayStr(obj, key_name_str, key_name_len, subtype, p);
@@ -1535,7 +1539,7 @@ int SelvaObject_AssignArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     return 0;
 }
 
-int SelvaObject_AssignArrayIndex(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, size_t idx, void *p) {
+int SelvaObject_AssignArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, size_t idx, void *p) {
     TO_STR(key_name);
 
     return SelvaObject_AssignArrayIndexStr(obj, key_name_str, key_name_len, subtype, idx, p);
@@ -1565,7 +1569,7 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     return 0;
 }
 
-int SelvaObject_InsertArrayIndex(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType subtype, size_t idx, void *p) {
+int SelvaObject_InsertArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, size_t idx, void *p) {
     TO_STR(key_name);
 
     return SelvaObject_InsertArrayIndexStr(obj, key_name_str, key_name_len, subtype, idx, p);
@@ -1595,7 +1599,7 @@ int SelvaObject_RemoveArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     return 0;
 }
 
-int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const RedisModuleString *key_name, size_t idx) {
+int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, size_t idx) {
     TO_STR(key_name);
 
     return SelvaObject_RemoveArrayIndexStr(obj, key_name_str, key_name_len, idx);
@@ -1626,7 +1630,7 @@ int SelvaObject_GetArrayStr(struct SelvaObject *obj, const char *key_name_str, s
     return 0;
 }
 
-int SelvaObject_GetArray(struct SelvaObject *obj, const RedisModuleString *key_name, enum SelvaObjectType *out_subtype, SVector **out_p) {
+int SelvaObject_GetArray(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType *out_subtype, SVector **out_p) {
     TO_STR(key_name);
 
     return SelvaObject_GetArrayStr(obj, key_name_str, key_name_len, out_subtype, out_p);
@@ -1642,7 +1646,7 @@ size_t SelvaObject_GetArrayLenStr(struct SelvaObject *obj, const char *key_name_
     return SVector_Size(vec);
 }
 
-size_t SelvaObject_GetArrayLen(struct SelvaObject *obj, const RedisModuleString *key_name) {
+size_t SelvaObject_GetArrayLen(struct SelvaObject *obj, const struct selva_string *key_name) {
     TO_STR(key_name);
 
     return SelvaObject_GetArrayLenStr(obj, key_name_str, key_name_len);
@@ -1676,7 +1680,7 @@ int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str,
     return 0;
 }
 
-int SelvaObject_SetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void *p, const struct SelvaObjectPointerOpts *opts) {
+int SelvaObject_SetPointer(struct SelvaObject *obj, const struct selva_string *key_name, void *p, const struct SelvaObjectPointerOpts *opts) {
     TO_STR(key_name);
 
     return SelvaObject_SetPointerStr(obj, key_name_str, key_name_len, p, opts);
@@ -1704,7 +1708,7 @@ int SelvaObject_GetPointerStr(struct SelvaObject *obj, const char *key_name_str,
     return 0;
 }
 
-int SelvaObject_GetPointer(struct SelvaObject *obj, const struct RedisModuleString *key_name, void **out_p) {
+int SelvaObject_GetPointer(struct SelvaObject *obj, const struct selva_string *key_name, void **out_p) {
     TO_STR(key_name);
 
     return SelvaObject_GetPointerStr(obj, key_name_str, key_name_len, out_p);
@@ -1734,7 +1738,7 @@ int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *k
     return off;
 }
 
-static void get_any_string(struct SelvaObjectKey *key, RedisModuleString *lang, struct SelvaObjectAny *res) {
+static void get_any_string(struct SelvaObjectKey *key, struct selva_string *lang, struct SelvaObjectAny *res) {
     TO_STR(lang);
 
     if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT && lang_len > 0) {
@@ -1765,7 +1769,7 @@ static void get_any_string(struct SelvaObjectKey *key, RedisModuleString *lang, 
     }
 }
 
-int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, RedisModuleString *lang, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) {
+int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, struct selva_string *lang, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) {
     struct SelvaObjectKey *key;
     enum SelvaObjectType type;
     int err;
@@ -1819,7 +1823,7 @@ int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, RedisModuleString *lang, 
     return 0;
 }
 
-int SelvaObject_GetAnyLang(struct SelvaObject *obj, RedisModuleString *lang, const RedisModuleString *key_name, struct SelvaObjectAny *res) {
+int SelvaObject_GetAnyLang(struct SelvaObject *obj, struct selva_string *lang, const struct selva_string *key_name, struct SelvaObjectAny *res) {
     TO_STR(key_name);
 
     return SelvaObject_GetAnyLangStr(obj, lang, key_name_str, key_name_len, res);
@@ -1829,7 +1833,7 @@ int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, siz
     return SelvaObject_GetAnyLangStr(obj, NULL, key_name_str, key_name_len, res);
 }
 
-int SelvaObject_GetAny(struct SelvaObject *obj, const RedisModuleString *key_name, struct SelvaObjectAny *res) {
+int SelvaObject_GetAny(struct SelvaObject *obj, const struct selva_string *key_name, struct SelvaObjectAny *res) {
     TO_STR(key_name);
 
     return SelvaObject_GetAnyLangStr(obj, NULL, key_name_str, key_name_len, res);
@@ -1848,7 +1852,7 @@ enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char 
     return type;
 }
 
-enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const RedisModuleString *key_name) {
+enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct selva_string *key_name) {
     TO_STR(key_name);
 
     if (unlikely(!key_name_str)) {
@@ -1886,7 +1890,7 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
              * Now we don't exactly know if the value is some utf8 text string
              * or a binary buffer, so we just return the byte size.
              */
-            (void)RedisModule_StringPtrLen(key->value, &len);
+            (void)selva_string_to_str(key->value, &len);
             return len;
         } else {
             return 0;
@@ -1910,7 +1914,7 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
     return SELVA_EINTYPE;
 }
 
-ssize_t SelvaObject_Len(struct SelvaObject *obj, const RedisModuleString *key_name) {
+ssize_t SelvaObject_Len(struct SelvaObject *obj, const struct selva_string *key_name) {
     if (!key_name) {
         return obj->obj_size;
     }
@@ -1933,7 +1937,7 @@ int SelvaObject_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str
     return 0;
 }
 
-int SelvaObject_GetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t *meta) {
+int SelvaObject_GetUserMeta(struct SelvaObject *obj, const struct selva_string *key_name, SelvaObjectMeta_t *meta) {
     TO_STR(key_name);
 
     return SelvaObject_GetUserMetaStr(obj, key_name_str, key_name_len, meta);
@@ -1955,7 +1959,7 @@ int SelvaObject_SetUserMetaStr(struct SelvaObject *obj, const char *key_name_str
     return 0;
 }
 
-int SelvaObject_SetUserMeta(struct SelvaObject *obj, const RedisModuleString *key_name, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta) {
+int SelvaObject_SetUserMeta(struct SelvaObject *obj, const struct selva_string *key_name, SelvaObjectMeta_t meta, SelvaObjectMeta_t *old_meta) {
     TO_STR(key_name);
 
     return SelvaObject_SetUserMetaStr(obj, key_name_str, key_name_len, meta, old_meta);
@@ -2068,59 +2072,37 @@ const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len) {
     return NULL;
 }
 
-static void replyWithDouble(RedisModuleCtx *ctx, double value, unsigned flags) {
-    if (flags & SELVA_OBJECT_REPLY_BINUMF_FLAG) {
-        char buf[sizeof(value)];
-
-        htoledouble(buf, value);
-        RedisModule_ReplyWithBinaryBuffer(ctx, buf, sizeof(buf));
-    } else {
-        RedisModule_ReplyWithDouble(ctx, value);
-    }
-}
-
-static void replyWithLongLong(RedisModuleCtx *ctx, long long value, unsigned flags) {
-    if (flags & SELVA_OBJECT_REPLY_BINUMF_FLAG) {
-        uint64_t tmp = htole64(value);
-        char buf[sizeof(tmp)];
-
-        memcpy(buf, &tmp, sizeof(tmp));
-        RedisModule_ReplyWithBinaryBuffer(ctx, buf, sizeof(buf));
-    } else {
-        RedisModule_ReplyWithLongLong(ctx, value);
-    }
-}
-
-static void replyWithSelvaSet(RedisModuleCtx *ctx, struct SelvaSet *set, unsigned flags) {
+static void replyWithSelvaSet(struct selva_server_response_out *resp, struct SelvaSet *set) {
     struct SelvaSetElement *el;
     size_t n = 0;
 
-    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    selva_send_array(resp, -1);
 
     if (set->type == SELVA_SET_TYPE_RMSTRING) {
         SELVA_SET_RMS_FOREACH(el, set) {
-            RedisModule_ReplyWithString(ctx, el->value_rms);
+            selva_send_string(resp, el->value_rms);
             n++;
         }
     } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
         SELVA_SET_DOUBLE_FOREACH(el, set) {
-            replyWithDouble(ctx, el->value_d, flags);
+            selva_send_double(resp, el->value_d);
             n++;
         }
     } else if (set->type == SELVA_SET_TYPE_LONGLONG) {
         SELVA_SET_LONGLONG_FOREACH(el, set) {
-            replyWithLongLong(ctx, el->value_ll, flags);
+            selva_send_ll(resp, el->value_ll);
             n++;
         }
     }
 
-    RedisModule_ReplySetArrayLength(ctx, n);
+    selva_send_array_end(resp);
 }
 
-static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum SelvaObjectType subtype, const SVector *array, unsigned flags) {
-    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+static void replyWithArray(struct selva_server_response_out *resp, struct selva_string *lang, enum SelvaObjectType subtype, const SVector *array) {
     struct SVectorIterator it;
     size_t n = 0;
+
+    selva_send_array(resp, -1);
 
     switch (subtype) {
     case SELVA_OBJECT_DOUBLE:
@@ -2132,17 +2114,16 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
             pd = SVector_Foreach(&it);
 
             if (!pd) {
-                replyWithDouble(ctx, 0.0, flags);
+                selva_send_double(resp, 0.0);
             } else {
                 double d;
 
                 memcpy(&d, &pd, sizeof(double));
-                replyWithDouble(ctx, d, flags);
+                selva_send_double(resp, d);
             }
 
             n++;
         } while (!SVector_Done(&it));
-        RedisModule_ReplySetArrayLength(ctx, n);
         break;
     case SELVA_OBJECT_LONGLONG:
         SVector_ForeachBegin(&it, array);
@@ -2155,28 +2136,25 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
 
             n++;
             ll = (long long)p;
-            replyWithLongLong(ctx, ll, flags);
+            selva_send_ll(resp, ll);
         } while (!SVector_Done(&it));
-        RedisModule_ReplySetArrayLength(ctx, n);
         break;
     case SELVA_OBJECT_STRING:
         SVector_ForeachBegin(&it, array);
 
         do {
-            RedisModuleString *str;
+            struct selva_string *s;
 
-            str = SVector_Foreach(&it);
+            s = SVector_Foreach(&it);
 
             n++;
-            if (!str) {
-                RedisModule_ReplyWithNull(ctx);
+            if (!s) {
+                selva_send_null(resp);
                 continue;
             }
 
-            RedisModule_ReplyWithString(ctx, str);
+            selva_send_string(resp, s);
         } while (!SVector_Done(&it));
-
-        RedisModule_ReplySetArrayLength(ctx, n);
         break;
     case SELVA_OBJECT_OBJECT:
         SVector_ForeachBegin(&it, array);
@@ -2188,39 +2166,37 @@ static void replyWithArray(RedisModuleCtx *ctx, RedisModuleString *lang, enum Se
 
             n++;
             if (!o) {
-                RedisModule_ReplyWithNull(ctx);
+                selva_send_null(resp);
                 continue;
             }
 
-            replyWithObject(ctx, lang, o, flags, NULL);
+            replyWithObject(resp, lang, o, NULL);
         } while (!SVector_Done(&it));
-
-        RedisModule_ReplySetArrayLength(ctx, n);
         break;
     default:
         SELVA_LOG(SELVA_LOGL_ERR, "Unknown array type: %d", subtype);
-        RedisModule_ReplySetArrayLength(ctx, 0);
         break;
     }
 
+    selva_send_array_end(resp);
 }
 
-static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObjectKey *key, unsigned flags) {
+static void replyWithKeyValue(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObjectKey *key) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
-        RedisModule_ReplyWithNull(ctx);
+        selva_send_null(resp);
         break;
     case SELVA_OBJECT_DOUBLE:
-        replyWithDouble(ctx, key->emb_double_value, flags);
+        selva_send_double(resp, key->emb_double_value);
         break;
     case SELVA_OBJECT_LONGLONG:
-        replyWithLongLong(ctx, key->emb_ll_value, flags);
+        selva_send_ll(resp, key->emb_ll_value);
         break;
     case SELVA_OBJECT_STRING:
         if (key->value) {
-            RedisModule_ReplyWithString(ctx, key->value);
+            selva_send_string(resp, key->value);
         } else {
-            RedisModule_ReplyWithNull(ctx);
+            selva_send_null(resp);
         }
         break;
     case SELVA_OBJECT_OBJECT:
@@ -2242,46 +2218,46 @@ static void replyWithKeyValue(RedisModuleCtx *ctx, RedisModuleString *lang, stru
 
                     /* Ignore errors on purpose. */
                     if (!err && text_key->type == SELVA_OBJECT_STRING) {
-                        RedisModule_ReplyWithString(ctx, text_key->value);
+                        selva_send_string(resp, text_key->value);
                         return;
                     }
                 }
 
-                RedisModule_ReplyWithNull(ctx);
+                selva_send_null(resp);
             } else {
-                replyWithObject(ctx, lang, key->value, flags, NULL);
+                replyWithObject(resp, lang, key->value, NULL);
             }
         } else {
-            RedisModule_ReplyWithNull(ctx);
+            selva_send_null(resp);
         }
         break;
     case SELVA_OBJECT_SET:
-        replyWithSelvaSet(ctx, &key->selva_set, flags);
+        replyWithSelvaSet(resp, &key->selva_set);
         break;
     case SELVA_OBJECT_ARRAY:
-        replyWithArray(ctx, lang, key->subtype, key->array, flags);
+        replyWithArray(resp, lang, key->subtype, key->array);
         break;
     case SELVA_OBJECT_POINTER:
         if (key->value) {
             if (key->ptr_opts && key->ptr_opts->ptr_reply) {
-                key->ptr_opts->ptr_reply(ctx, key->value);
+                key->ptr_opts->ptr_reply(resp, key->value);
             } else {
-                RedisModule_ReplyWithStringBuffer(ctx, "(pointer)", 9);
+                selva_send_str(resp, "(pointer)", 9);
             }
         } else {
-            RedisModule_ReplyWithStringBuffer(ctx, "(null pointer)", 14);
+            selva_send_str(resp, "(null pointer)", 14);
         }
         break;
     default:
-        (void)replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Type not supported %d", (int)key->type);
+        selva_send_errorf(resp, SELVA_EINTYPE, "Type not supported %d", (int)key->type);
     }
 }
 
-static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct SelvaObject *obj, unsigned flags, const char *excluded) {
+static void replyWithObject(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObject *obj, const char *excluded) {
     struct SelvaObjectKey *key;
     size_t n = 0;
 
-    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    selva_send_array(resp, -1);
 
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
         const char *name_str = key->name;
@@ -2291,18 +2267,18 @@ static void replyWithObject(RedisModuleCtx *ctx, RedisModuleString *lang, struct
             continue;
         }
 
-        RedisModule_ReplyWithStringBuffer(ctx, key->name, key->name_len);
-        replyWithKeyValue(ctx, lang, key, flags);
+        selva_send_str(resp, key->name, key->name_len);
+        replyWithKeyValue(resp, lang, key);
 
         n += 2;
     }
 
-    RedisModule_ReplySetArrayLength(ctx, n);
+    selva_send_array_end(resp);
 }
 
 int SelvaObject_ReplyWithObjectStr(
-        RedisModuleCtx *ctx,
-        RedisModuleString *lang,
+        struct selva_server_response_out *resp,
+        struct selva_string *lang,
         struct SelvaObject *obj,
         const char *key_name_str,
         size_t key_name_len,
@@ -2312,7 +2288,7 @@ int SelvaObject_ReplyWithObjectStr(
     int err;
 
     if (!key_name_str) {
-        replyWithObject(ctx, lang, obj, flags, NULL);
+        replyWithObject(resp, lang, obj, NULL);
         return 0;
     }
 
@@ -2359,7 +2335,7 @@ int SelvaObject_ReplyWithObjectStr(
                 break;
             }
 
-            replyWithKeyValue(ctx, lang, &k, flags);
+            replyWithKeyValue(resp, lang, &k);
         } else {
             return SELVA_ENOTSUP; /* How? */
         }
@@ -2369,30 +2345,30 @@ int SelvaObject_ReplyWithObjectStr(
             return err;
         }
 
-        replyWithKeyValue(ctx, lang, key, flags);
+        replyWithKeyValue(resp, lang, key);
     }
 
     return 0;
 }
 
 int SelvaObject_ReplyWithObject(
-        RedisModuleCtx *ctx,
-        RedisModuleString *lang,
+        struct selva_server_response_out *resp,
+        struct selva_string *lang,
         struct SelvaObject *obj,
-        const RedisModuleString *key_name,
+        const struct selva_string *key_name,
         unsigned flags) {
     if (key_name) {
         TO_STR(key_name);
-        return SelvaObject_ReplyWithObjectStr(ctx, lang, obj, key_name_str, key_name_len, flags);
+        return SelvaObject_ReplyWithObjectStr(resp, lang, obj, key_name_str, key_name_len, 0);
     } else {
-        replyWithObject(ctx, lang, obj, flags, NULL);
+        replyWithObject(resp, lang, obj, NULL);
         return 0;
     }
 }
 
 int SelvaObject_ReplyWithWildcardStr(
-        RedisModuleCtx *ctx,
-        RedisModuleString *lang,
+        struct selva_server_response_out *resp,
+        struct selva_string *lang,
         struct SelvaObject *obj,
         const char *okey_str,
         size_t okey_len,
@@ -2447,7 +2423,7 @@ int SelvaObject_ReplyWithWildcardStr(
 
             if (memmem(new_field, new_field_len, ".*.", 3)) {
                 /* Recurse for nested wildcards while keeping the resolved path. */
-                SelvaObject_ReplyWithWildcardStr(ctx, lang, obj, new_field, new_field_len,
+                SelvaObject_ReplyWithWildcardStr(resp, lang, obj, new_field, new_field_len,
                                                  resp_count,
                                                  resp_path_start_idx == -1 ? idx : resp_path_start_idx,
                                                  flags);
@@ -2487,7 +2463,7 @@ int SelvaObject_ReplyWithWildcardStr(
                         (int)after_len, after);
                 }
 
-                RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
+                selva_send_str(resp, reply_path, reply_path_len);
             } else {
                 /* if the whole resolved path should be returned */
                 const size_t reply_path_len = before_len + 1 + obj_key_len + 1 + key->name_len;
@@ -2497,10 +2473,10 @@ int SelvaObject_ReplyWithWildcardStr(
                         (int)before_len, before,
                         (int)obj_key_len, obj_key_name_str,
                         (int)key->name_len, key->name);
-                RedisModule_ReplyWithStringBuffer(ctx, reply_path, reply_path_len);
+                selva_send_str(resp, reply_path, reply_path_len);
             }
 
-            replyWithKeyValue(ctx, lang, key, flags);
+            replyWithKeyValue(resp, lang, key);
             *resp_count += 2;
         }
     }
@@ -2513,7 +2489,7 @@ int SelvaObject_ReplyWithWildcardStr(
     return 0;
 }
 
-static int rdb_load_object_double(RedisModuleIO *io, struct SelvaObject *obj, const RedisModuleString *name) {
+static int rdb_load_object_double(struct RedisModuleIO *io, struct SelvaObject *obj, const struct selva_string *name) {
     double value;
     int err;
 
@@ -2527,7 +2503,7 @@ static int rdb_load_object_double(RedisModuleIO *io, struct SelvaObject *obj, co
     return 0;
 }
 
-static int rdb_load_object_long_long(RedisModuleIO *io, struct SelvaObject *obj, const RedisModuleString *name) {
+static int rdb_load_object_long_long(struct RedisModuleIO *io, struct SelvaObject *obj, const struct selva_string *name) {
     long long value;
     int err;
 
@@ -2541,18 +2517,18 @@ static int rdb_load_object_long_long(RedisModuleIO *io, struct SelvaObject *obj,
     return 0;
 }
 
-static int rdb_load_object_string(RedisModuleIO *io, int level, struct SelvaObject *obj, const struct selva_string *name) {
+static int rdb_load_object_string(struct RedisModuleIO *io, int level, struct SelvaObject *obj, const struct selva_string *name) {
     TO_STR(name);
     struct selva_string *value = RedisModule_LoadString(io);
-    struct selva_string *shared = NULL;
 
     if (level == 0 && SELVA_IS_TYPE_FIELD(name_str, name_len)) {
+        TO_STR(value);
         struct selva_string *shared;
         int err;
 
         shared = selva_string_create(value_str, value_len, SELVA_STRING_INTERN);
 
-        RedisModule_FreeString(NULL, value);
+        selva_string_free(value);
 
         err = SelvaObject_SetStringStr(obj, name_str, name_len, shared);
         if (err) {
@@ -2572,13 +2548,13 @@ static int rdb_load_object_string(RedisModuleIO *io, int level, struct SelvaObje
     return 0;
 }
 
-static int rdb_load_object_set(RedisModuleIO *io, struct SelvaObject *obj, const RedisModuleString *name) {
+static int rdb_load_object_set(struct RedisModuleIO *io, struct SelvaObject *obj, const struct selva_string *name) {
     enum SelvaSetType setType = RedisModule_LoadUnsigned(io);
     const size_t n = RedisModule_LoadUnsigned(io);
 
     if (setType == SELVA_SET_TYPE_RMSTRING) {
         for (size_t j = 0; j < n; j++) {
-            RedisModuleString *value = RedisModule_LoadString(io);
+            struct selva_string *value = RedisModule_LoadString(io);
 
             SelvaObject_AddStringSet(obj, name, value);
         }
@@ -2602,7 +2578,7 @@ static int rdb_load_object_set(RedisModuleIO *io, struct SelvaObject *obj, const
     return 0;
 }
 
-static int rdb_load_object_array(RedisModuleIO *io, struct SelvaObject *obj, const RedisModuleString *name, int encver, void *ptr_load_data) {
+static int rdb_load_object_array(struct RedisModuleIO *io, struct SelvaObject *obj, const struct selva_string *name, int encver, void *ptr_load_data) {
     enum SelvaObjectType arrayType = RedisModule_LoadUnsigned(io);
     const size_t n = RedisModule_LoadUnsigned(io);
 
@@ -2620,7 +2596,7 @@ static int rdb_load_object_array(RedisModuleIO *io, struct SelvaObject *obj, con
         }
     } else if (arrayType == SELVA_OBJECT_STRING) {
         for (size_t i = 0; i < n; i++) {
-            RedisModuleString *value = RedisModule_LoadString(io);
+            struct selva_string *value = RedisModule_LoadString(io);
             SelvaObject_AddArray(obj, name, arrayType, value);
         }
     } else if (arrayType == SELVA_OBJECT_OBJECT) {
@@ -2636,7 +2612,7 @@ static int rdb_load_object_array(RedisModuleIO *io, struct SelvaObject *obj, con
     return 0;
 }
 
-static int rdb_load_pointer(RedisModuleIO *io, int encver, struct SelvaObject *obj, const RedisModuleString *name, void *ptr_load_data) {
+static int rdb_load_pointer(struct RedisModuleIO *io, int encver, struct SelvaObject *obj, const struct selva_string *name, void *ptr_load_data) {
     unsigned ptr_type_id;
 
     ptr_type_id = RedisModule_LoadUnsigned(io);
@@ -2670,8 +2646,8 @@ static int rdb_load_pointer(RedisModuleIO *io, int encver, struct SelvaObject *o
     return 0;
 }
 
-static int rdb_load_field(RedisModuleIO *io, struct SelvaObject *obj, int encver, int level, void *ptr_load_data) {
-    RedisModuleString *name = RedisModule_LoadString(io);
+static int rdb_load_field(struct RedisModuleIO *io, struct SelvaObject *obj, int encver, int level, void *ptr_load_data) {
+    struct selva_string *name = RedisModule_LoadString(io);
     const enum SelvaObjectType type = RedisModule_LoadUnsigned(io);
     const SelvaObjectMeta_t user_meta = RedisModule_LoadUnsigned(io);
     int err = 0;
@@ -2747,11 +2723,11 @@ static int rdb_load_field(RedisModuleIO *io, struct SelvaObject *obj, int encver
                   (int)name_len, name_str, selva_strerror(err));
     }
 
-    RedisModule_FreeString(NULL, name);
+    selva_string_free(name);
     return 0;
 }
 
-static struct SelvaObject *rdb_load_object_to(RedisModuleIO *io, int encver, struct SelvaObject *obj, int level, void *ptr_load_data) {
+static struct SelvaObject *rdb_load_object_to(struct RedisModuleIO *io, int encver, struct SelvaObject *obj, int level, void *ptr_load_data) {
     const size_t obj_size = RedisModule_LoadUnsigned(io);
     for (size_t i = 0; i < obj_size; i++) {
         int err;
@@ -2766,15 +2742,15 @@ static struct SelvaObject *rdb_load_object_to(RedisModuleIO *io, int encver, str
     return obj;
 }
 
-static struct SelvaObject *rdb_load_object(RedisModuleIO *io, int encver, int level, void *ptr_load_data) {
+static struct SelvaObject *rdb_load_object(struct RedisModuleIO *io, int encver, int level, void *ptr_load_data) {
     return rdb_load_object_to(io, encver, SelvaObject_New(), level, ptr_load_data);
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoadTo(RedisModuleIO *io, int encver, struct SelvaObject *obj, void *ptr_load_data) {
+struct SelvaObject *SelvaObjectTypeRDBLoadTo(struct RedisModuleIO *io, int encver, struct SelvaObject *obj, void *ptr_load_data) {
     return rdb_load_object_to(io, encver, obj, 0, ptr_load_data);
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver, void *ptr_load_data) {
+struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data) {
     struct SelvaObject *obj;
 
     obj = rdb_load_object(io, encver, 0, ptr_load_data);
@@ -2782,7 +2758,7 @@ struct SelvaObject *SelvaObjectTypeRDBLoad(RedisModuleIO *io, int encver, void *
     return obj;
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoad2(RedisModuleIO *io, int encver, void *ptr_load_data) {
+struct SelvaObject *SelvaObjectTypeRDBLoad2(struct RedisModuleIO *io, int encver, void *ptr_load_data) {
     const size_t obj_size = RedisModule_LoadUnsigned(io);
     struct SelvaObject *obj;
 
@@ -2805,7 +2781,7 @@ struct SelvaObject *SelvaObjectTypeRDBLoad2(RedisModuleIO *io, int encver, void 
     return obj;
 }
 
-static void rdb_save_object_string(RedisModuleIO *io, struct SelvaObjectKey *key) {
+static void rdb_save_object_string(struct RedisModuleIO *io, struct SelvaObjectKey *key) {
     if (!key->value) {
         SELVA_LOG(SELVA_LOGL_CRIT, "STRING value missing");
         return;
@@ -2813,7 +2789,7 @@ static void rdb_save_object_string(RedisModuleIO *io, struct SelvaObjectKey *key
     RedisModule_SaveString(io, key->value);
 }
 
-static void rdb_save_object_set(RedisModuleIO *io, struct SelvaObjectKey *key) {
+static void rdb_save_object_set(struct RedisModuleIO *io, struct SelvaObjectKey *key) {
     const struct SelvaSet *selva_set = &key->selva_set;
 
     RedisModule_SaveUnsigned(io, selva_set->type);
@@ -2842,7 +2818,7 @@ static void rdb_save_object_set(RedisModuleIO *io, struct SelvaObjectKey *key) {
     }
 }
 
-static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key, void *ptr_save_data) {
+static void rdb_save_object_array(struct RedisModuleIO *io, struct SelvaObjectKey *key, void *ptr_save_data) {
     const struct SVector *array = key->array;
     const size_t array_size = SVector_Size(array);
 
@@ -2866,8 +2842,9 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
             RedisModule_SaveDouble(io, num);
         }
     } else if (key->subtype == SELVA_OBJECT_STRING) {
-        RedisModuleString *str;
+        struct selva_string *str;
         struct SVectorIterator it;
+
         SVector_ForeachBegin(&it, key->array);
         while ((str = SVector_Foreach(&it))) {
             RedisModule_SaveString(io, str);
@@ -2884,7 +2861,7 @@ static void rdb_save_object_array(RedisModuleIO *io, struct SelvaObjectKey *key,
     }
 }
 
-void SelvaObjectTypeRDBSave(RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data) {
+void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data) {
     struct SelvaObjectKey *key;
 
     if (unlikely(!obj)) {
@@ -2939,7 +2916,7 @@ void SelvaObjectTypeRDBSave(RedisModuleIO *io, struct SelvaObject *obj, void *pt
     }
 }
 
-void SelvaObjectTypeRDBSave2(RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data) {
+void SelvaObjectTypeRDBSave2(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data) {
     if (!obj) {
         RedisModule_SaveUnsigned(io, 0);
     } else {
