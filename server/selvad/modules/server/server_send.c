@@ -3,16 +3,28 @@
  * SPDX-License-Identifier: MIT
  */
 #include <alloca.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include "endian.h"
 #include "selva_error.h"
 #include "selva_proto.h"
+#include "util/selva_string.h"
 #define SELVA_SERVER_MAIN 1
 #include "selva_server.h"
 #include "server.h"
+
+int selva_send_null(struct selva_server_response_out *resp)
+{
+    struct selva_proto_null buf = {
+        .type = SELVA_PROTO_NULL,
+    };
+
+    return server_send_buf(resp, &buf, sizeof(buf));
+}
 
 int selva_send_error(struct selva_server_response_out *resp, int err, const char *msg_str, size_t msg_len)
 {
@@ -25,6 +37,34 @@ int selva_send_error(struct selva_server_response_out *resp, int err, const char
         .bsize = htole16(msg_len),
     };
     memcpy(buf->msg, msg_str, msg_len);
+
+    return server_send_buf(resp, buf, bsize);
+}
+
+int selva_send_errorf(struct selva_server_response_out *resp, int err, const char *fmt, ...)
+{
+    va_list args;
+    int len;
+
+    va_start(args, fmt);
+    len = vsnprintf(NULL, 0, fmt, args);
+    va_end(args);
+
+    if (len < 0) {
+        return SELVA_EINVAL;
+    }
+
+    size_t bsize = sizeof(struct selva_proto_error) + len;
+    struct selva_proto_error *buf = alloca(bsize);
+    *buf = (struct selva_proto_error){
+        .type = SELVA_PROTO_ERROR,
+        .err_code = htole16(err),
+        .bsize = htole16(len),
+    };
+
+    va_start(args, fmt);
+    (void)vsnprintf(buf->msg, len, fmt, args);
+    va_end(args);
 
     return server_send_buf(resp, buf, bsize);
 }
@@ -59,7 +99,29 @@ int selva_send_str(struct selva_server_response_out *resp, const char *str, size
         .type = SELVA_PROTO_STRING,
         .bsize = htole32(len),
     };
-    memcpy(buf->str, str, len);
+    memcpy(buf->data, str, len);
+
+    return server_send_buf(resp, buf, bsize);
+}
+
+int selva_send_string(struct selva_server_response_out *resp, const struct selva_string *s)
+{
+    TO_STR(s);
+
+    return selva_send_str(resp, s_str, s_len);
+}
+
+int selva_send_bin(struct selva_server_response_out *resp, const char *b, size_t len)
+{
+    const size_t bsize = sizeof(struct selva_proto_string) + len;
+    struct selva_proto_string *buf = alloca(bsize);
+
+    *buf = (struct selva_proto_string){
+        .type = SELVA_PROTO_STRING,
+        .flags = SELVA_PROTO_STRING_FBINARY,
+        .bsize = htole32(len),
+    };
+    memcpy(buf->data, b, len);
 
     return server_send_buf(resp, buf, bsize);
 }

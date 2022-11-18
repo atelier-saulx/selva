@@ -13,6 +13,7 @@
 #endif
 
 struct selva_server_response_out;
+struct selva_string;
 
 /**
  * Command function.
@@ -46,14 +47,22 @@ SELVA_SERVER_EXPORT(int, server_send_flush, struct selva_server_response_out *re
 SELVA_SERVER_EXPORT(int, server_send_end, struct selva_server_response_out *restrict res);
 
 /**
+ * Send a null value.
+ */
+int selva_send_null(struct selva_server_response_out *resp);
+
+/**
  * Send an error.
  * @param msg_str can be NULL.
  */
 SELVA_SERVER_EXPORT(int, selva_send_error, struct selva_server_response_out *resp, int err, const char *msg_str, size_t msg_len);
+SELVA_SERVER_EXPORT(int, selva_send_errorf, struct selva_server_response_out *resp, int err, const char *fmt, ...);
 
 SELVA_SERVER_EXPORT(int, selva_send_double, struct selva_server_response_out *resp, double value);
 SELVA_SERVER_EXPORT(int, selva_send_ll, struct selva_server_response_out *resp, long long value);
 SELVA_SERVER_EXPORT(int, selva_send_str, struct selva_server_response_out *resp, const char *str, size_t len);
+SELVA_SERVER_EXPORT(int, selva_send_string, struct selva_server_response_out *resp, const struct selva_string *s);
+SELVA_SERVER_EXPORT(int, selva_send_bin, struct selva_server_response_out *resp, const char *b, size_t len);
 
 /**
  * If `len` is set negative then selva_proto_send_array_end() should be used to
