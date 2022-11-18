@@ -80,3 +80,5 @@ void (*selva_log)(enum selva_log_level level, const char * restrict where, const
     } \
 } while (0)
 #endif
+#define SELVA_LOG_DBG(fmt, ...) \
+    SELVA_LOG(SELVA_LOGL_DBG, fmt __VA_OPT__(,) __VA_ARGS__)
