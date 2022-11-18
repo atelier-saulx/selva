@@ -11,7 +11,6 @@
 #include "util/svector.h"
 #include "rpn.h"
 
-struct RedisModuleCtx;
 struct SelvaHierarchy;
 struct SelvaHierarchyCallback;
 struct SelvaHierarchyMetadata;
@@ -119,7 +118,6 @@ enum Selva_SubscriptionTriggerType {
  * @param field_str is set if SELVA_SUBSCRIPTION_FLAG_CH_FIELD is set in event_flags.
  */
 typedef void Selva_SubscriptionMarkerAction(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct Selva_SubscriptionMarker *marker,
         unsigned short event_flags,
@@ -234,7 +232,7 @@ void SelvaSubscriptions_InitHierarchy(struct SelvaHierarchy *hierarchy);
 /**
  * Destroy all data structures of the subscriptions subsystem and cancel all deferred events.
  */
-void SelvaSubscriptions_DestroyAll(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy);
+void SelvaSubscriptions_DestroyAll(struct SelvaHierarchy *hierarchy);
 
 /**
  * Refresh a marker by id.
@@ -242,7 +240,6 @@ void SelvaSubscriptions_DestroyAll(struct RedisModuleCtx *ctx, struct SelvaHiera
  * and refresh a single marker of the given subscription.
  */
 int SelvaSubscriptions_RefreshByMarkerId(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id);
@@ -251,7 +248,6 @@ int SelvaSubscriptions_RefreshByMarkerId(
  * Refresh all subscription markers of a given subscription id.
  */
 int SelvaSubscriptions_Refresh(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_SubscriptionId sub_id);
 
@@ -259,7 +255,6 @@ int SelvaSubscriptions_Refresh(
  * Refresh all subscriptions found in markers SVector.
  */
 void SelvaSubscriptions_RefreshByMarker(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const struct SVector *markers);
 
@@ -267,7 +262,6 @@ void SelvaSubscriptions_RefreshByMarker(
  * Delete a subsscription and all of its markers by subscription id.
  */
 void SelvaSubscriptions_Delete(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_SubscriptionId sub_id);
 
@@ -275,7 +269,6 @@ void SelvaSubscriptions_Delete(
  * Delete a single marker from a subscription.
  */
 int SelvaSubscriptions_DeleteMarker(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id);
@@ -284,7 +277,6 @@ int SelvaSubscriptions_DeleteMarker(
  * Delete a single marker from a subscription by a pointer to the marker.
  */
 int SelvaSubscriptions_DeleteMarkerByPtr(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct Selva_SubscriptionMarker *marker);
 
@@ -333,7 +325,6 @@ struct Selva_SubscriptionMarker *SelvaSubscriptions_GetMarker(
  * marker removed from a node.
  */
 void SelvaSubscriptions_ClearAllMarkers(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node);
 
@@ -342,12 +333,10 @@ void SelvaSubscriptions_ClearAllMarkers(
  * This function is particularly useful for the callback function of a callback
  * marker (added with SelvaSubscriptions_AddCallbackMarker()) as in that case
  * the filter is not executed by the subscriptions system.
- * @param ctx is a pointer to the redis context.
  * @param node is a pointer to the node the filter should be executed against.
  * @param marker is a pointer to the subscription marker.
  */
 int Selva_SubscriptionFilterMatch(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         struct Selva_SubscriptionMarker *marker);
@@ -361,7 +350,6 @@ void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaHierarchy *hierarchy);
  * Inherit subscription markers from a parent to child nodes.
  */
 void SelvaSubscriptions_InheritParent(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId node_id,
         struct SelvaHierarchyMetadata *node_metadata,
@@ -373,7 +361,6 @@ void SelvaSubscriptions_InheritParent(
  * This function makes sense if there are markers traversing upwards.
  */
 void SelvaSubscriptions_InheritChild(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId node_id,
         struct SelvaHierarchyMetadata *node_metadata,
@@ -385,7 +372,6 @@ void SelvaSubscriptions_InheritChild(
  * @param field_str is a pointer to the name of the source field.
  */
 void SelvaSubscriptions_InheritEdge(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *src_node,
         struct SelvaHierarchyNode *dst_node,
@@ -398,33 +384,27 @@ void SelvaSubscriptions_InheritEdge(
 void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaHierarchy *hierarchy, const char *id_str, size_t id_len);
 
 void SelvaSubscriptions_DeferHierarchyEvents(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node);
 void SelvaSubscriptions_DeferHierarchyDeletionEvents(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node);
 void SelvaSubscriptions_FieldChangePrecheck(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node);
 void SelvaSubscriptions_DeferFieldChangeEvents(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
         size_t field_len);
 void SelvaSubscriptions_DeferAliasChangeEvents(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct RedisModuleString *alias_name);
 void SelvaSubscriptions_DeferTriggerEvents(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         enum Selva_SubscriptionTriggerType event_type);
 void SelvaSubscriptions_SendDeferredEvents(struct SelvaHierarchy *hierarchy);
-void SelvaSubscriptions_ReplyWithMarker(struct RedisModuleCtx *ctx, struct Selva_SubscriptionMarker *marker);
+void SelvaSubscriptions_ReplyWithMarker(struct selva_server_response_out *resp, struct Selva_SubscriptionMarker *marker);
 
 #endif /* SELVA_MODIFY_SUBSCRIPTIONS */

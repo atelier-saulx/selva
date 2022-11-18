@@ -48,7 +48,6 @@ typedef void SelvaHierarchyMetadataConstructorHook(
         const Selva_NodeId id,
         struct SelvaHierarchyMetadata *metadata);
 typedef void SelvaHierarchyMetadataDestructorHook(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         struct SelvaHierarchyMetadata *metadata);
@@ -149,7 +148,7 @@ struct SelvaHierarchy {
     struct {
         int nr_indices; /*!< Total number of active indices. */
         int proc_timer_active; /*!< The indexing decission proc timer is active. */
-        RedisModuleTimerID proc_timer_id; /*!< The indexing decission proc timer id. */
+        int proc_timer_id; /*!< The indexing decission proc timer id. */
         struct ida *ida; /*!< Id allocator for subscription marker ids. */
         struct poptop top_indices; /*!< A list of top requested indices. */
         struct SelvaObject *index_map;
@@ -176,7 +175,7 @@ struct SelvaHierarchy {
         /**
          * A timer used by auto compression.
          */
-        RedisModuleTimerID auto_compress_timer;
+        int auto_compress_timer;
     } inactive;
 
     /**
@@ -254,7 +253,7 @@ SelvaHierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct Red
  * It's the caller's responsibility to call RedisModule_FreeString() for the
  * returned string.
  */
-RedisModuleString *SelvaHierarchyTypes_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeType type);
+struct RedisModuleString *SelvaHierarchyTypes_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeType type);
 
 /**
  * Copy nodeId to a buffer.
@@ -323,14 +322,12 @@ void SelvaHierarchy_ClearNodeFields(struct SelvaObject *obj);
  * Delete all child edges of a node.
  */
 int SelvaHierarchy_DelChildren(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node);
 /**
  * Delete all parent edges of a node.
  */
 int SelvaHierarchy_DelParents(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node);
 
@@ -342,7 +339,6 @@ int SelvaHierarchy_DelParents(
  * @param children  Sets these nodes and only these nodes as children of this node.
  */
 int SelvaModify_SetHierarchy(
-        struct RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
@@ -356,7 +352,6 @@ int SelvaModify_SetHierarchy(
  * @param parents   Sets these nodes and only these nodes as parents of this node.
  */
 int SelvaModify_SetHierarchyParents(
-        struct RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
@@ -367,14 +362,12 @@ int SelvaModify_SetHierarchyParents(
  * @param children  Sets these nodes and only these nodes as children of this node.
  */
 int SelvaModify_SetHierarchyChildren(
-        struct RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_children,
         const Selva_NodeId *children);
 
 int SelvaHierarchy_UpsertNode(
-        struct RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         struct SelvaHierarchyNode **out);
@@ -383,14 +376,12 @@ int SelvaHierarchy_UpsertNode(
  * Add new relationships relative to other existing nodes.
  * The function is nondestructive; previously existing edges to and from other
  * nodes and metadata are be preserved.
- * @param ctx If NULL then no events are sent.
  * @param parents   Sets these nodes as parents to this node,
  *                  while keeping the existing parents.
  * @param children  Sets these nodes as children to this node,
  *                  while keeping the existing children.
  */
 int SelvaModify_AddHierarchyP(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         size_t nr_parents,
@@ -403,14 +394,12 @@ int SelvaModify_AddHierarchyP(
  * The function is nondestructive; previously existing edges to and from other
  * nodes and metadata are be preserved.
  * If a node with id doesn't exist it will be created.
- * @param ctx If NULL then no events are sent.
  * @param parents   Sets these nodes as parents to this node,
  *                  while keeping the existing parents.
  * @param children  Sets these nodes as children to this node,
  *                  while keeping the existing children.
  */
 int SelvaModify_AddHierarchy(
-        struct RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
@@ -426,7 +415,6 @@ int SelvaModify_AddHierarchy(
  *                  the listed children.
  */
 int SelvaModify_DelHierarchy(
-        struct RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         size_t nr_parents,
@@ -441,7 +429,7 @@ int SelvaModify_DelHierarchy(
  * @returns The total number of nodes deleted; Otherwise an error code is returned.
  */
 int SelvaModify_DelHierarchyNode(
-        struct RedisModuleCtx *ctx,
+        struct selva_server_response_out *resp,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaModify_DelHierarchyNodeFlag flags);

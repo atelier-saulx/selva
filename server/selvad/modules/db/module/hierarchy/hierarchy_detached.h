@@ -68,7 +68,6 @@ int SelvaHierarchyDetached_Get(
  * done by the caller.
  */
 void SelvaHierarchyDetached_RemoveNode(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId node_id);
 

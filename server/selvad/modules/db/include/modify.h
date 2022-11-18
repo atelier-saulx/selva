@@ -136,7 +136,7 @@ int SelvaModify_ModifyDel(
     struct SelvaHierarchy *hierarchy,
     struct SelvaHierarchyNode *node,
     struct SelvaObject *obj,
-    const RedisModuleString *field
+    const struct RedisModuleString *field
 );
 
 #endif /* SELVA_MODIFY_H */

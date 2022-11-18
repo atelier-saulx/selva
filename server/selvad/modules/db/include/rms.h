@@ -49,7 +49,7 @@ static inline void rms_free_compressed(struct compressed_rms *compressed_rms) {
  * Compress RedisModuleString `in` to `out`.
  * @returns a Selva error code is returned.
  */
-int rms_compress(struct compressed_rms *out, RedisModuleString *in, double *cratio);
+int rms_compress(struct compressed_rms *out, struct RedisModuleString *in, double *cratio);
 
 /**
  * Decompress `in` and return it as `out`.
