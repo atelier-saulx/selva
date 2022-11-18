@@ -11,7 +11,7 @@
 
 struct RedisModuleCtx;
 struct RedisModuleKey;
-struct RedisModuleString;
+struct selva_string;
 
 /**
  * Type of SelvaSet.
@@ -28,7 +28,7 @@ struct SelvaObject;
 
 struct SelvaSetElement {
     union {
-        struct RedisModuleString *value_rms;
+        struct selva_string *value_rms;
         double value_d;
         long long value_ll;
         Selva_NodeId value_nodeId;
@@ -108,12 +108,12 @@ static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
     }
 }
 
-int SelvaSet_AddRms(struct SelvaSet *set, struct RedisModuleString *s);
+int SelvaSet_AddRms(struct SelvaSet *set, struct selva_string *s);
 int SelvaSet_AddDouble(struct SelvaSet *set, double d);
 int SelvaSet_AddLongLong(struct SelvaSet *set, long long l);
 int SelvaSet_AddNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
 #define SelvaSet_Add(set, x) _Generic((x), \
-        struct RedisModuleString *: SelvaSet_AddRms, \
+        struct selva_string *: SelvaSet_AddRms, \
         double: SelvaSet_AddDouble, \
         long long: SelvaSet_AddLongLong, \
         char *: SelvaSet_AddNodeId, \
@@ -122,29 +122,29 @@ int SelvaSet_AddNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
 
 /**
  * Look for a string equal to s in the SelvaSet set.
- * @returns Returns a pointer to a RedisModuleString stored in set if found;
+ * @returns Returns a pointer to a selva_string stored in set if found;
  *          Otherwise a NULL pointer is returned.
  */
-struct RedisModuleString *SelvaSet_FindRms(struct SelvaSet *set, struct RedisModuleString *s);
+struct selva_string *SelvaSet_FindRms(struct SelvaSet *set, struct selva_string *s);
 
-int SelvaSet_HasRms(struct SelvaSet *set, struct RedisModuleString *s);
+int SelvaSet_HasRms(struct SelvaSet *set, struct selva_string *s);
 int SelvaSet_HasDouble(struct SelvaSet *set, double d);
 int SelvaSet_HasLongLong(struct SelvaSet *set, long long ll);
 int SelvaSet_HasNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
 #define SelvaSet_Has(set, x) _Generic((x), \
-        struct RedisModuleString *: SelvaSet_HasRms, \
+        struct selva_string *: SelvaSet_HasRms, \
         double: SelvaSet_HasDouble, \
         long long: SelvaSet_HasLongLong, \
         char *: SelvaSet_HasNodeId, \
         const char *: SelvaSet_HasNodeId \
         )((set), (x))
 
-struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, struct RedisModuleString *s);
+struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, struct selva_string *s);
 struct SelvaSetElement *SelvaSet_RemoveDouble(struct SelvaSet *set, double d);
 struct SelvaSetElement *SelvaSet_RemoveLongLong(struct SelvaSet *set, long long ll);
 struct SelvaSetElement *SelvaSet_RemoveNodeId(struct SelvaSet *set, const Selva_NodeId node_id);
 #define SelvaSet_Remove(set, x) _Generic((x), \
-        struct RedisModuleString *: SelvaSet_RemoveRms, \
+        struct selva_string *: SelvaSet_RemoveRms, \
         double: SelvaSet_RemoveDouble, \
         long long: SelvaSet_RemoveLongLong, \
         char *: SelvaSet_RemoveNodeId, \
@@ -184,7 +184,7 @@ int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src);
 
 /**
  * Take an union of the given sets.
- * The elements are cloned and RedisModuleStrings are refcounted by calling
+ * The elements are cloned and selva_strings are refcounted by calling
  * RedisModule_HoldString().
  * The last argument of this function must be NULL.
  * @param res should be an empty set initialized with the right type.

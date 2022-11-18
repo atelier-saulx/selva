@@ -6,13 +6,15 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include "jemalloc.h"
-#include "selva.h"
+#include "selva_error.h"
+#include "util/selva_string.h"
+#include "selva_db.h"
 #include "alias.h"
 #include "selva_set.h"
 
 int SelvaSet_CompareRms(struct SelvaSetElement *a, struct SelvaSetElement *b) {
-    RedisModuleString *ra = a->value_rms;
-    RedisModuleString *rb = b->value_rms;
+    struct selva_string *ra = a->value_rms;
+    struct selva_string *rb = b->value_rms;
     TO_STR(ra, rb);
 
     if (ra_len < rb_len) {
@@ -47,7 +49,7 @@ RB_GENERATE(SelvaSetDouble, SelvaSetElement, _entry, SelvaSet_CompareDouble)
 RB_GENERATE(SelvaSetLongLong, SelvaSetElement, _entry, SelvaSet_CompareLongLong)
 RB_GENERATE(SelvaSetNodeId, SelvaSetElement, _entry, SelvaSet_CompareNodeId)
 
-int SelvaSet_AddRms(struct SelvaSet *set, struct RedisModuleString *s) {
+int SelvaSet_AddRms(struct SelvaSet *set, struct selva_string *s) {
     struct SelvaSetElement *el;
 
     if (set->type != SELVA_SET_TYPE_RMSTRING) {
@@ -148,7 +150,7 @@ static void SelvaSet_DestroyRms(struct SelvaSet *set) {
         next = RB_NEXT(SelvaSetRms, head, el);
         RB_REMOVE(SelvaSetRms, head, el);
 
-        RedisModule_FreeString(NULL, el->value_rms);
+        selva_string_free(el->value_rms);
         SelvaSet_DestroyElement(el);
     }
     set->size = 0;
@@ -211,11 +213,11 @@ void SelvaSet_Destroy(struct SelvaSet *set) {
     }
 }
 
-RedisModuleString *SelvaSet_FindRms(struct SelvaSet *set, RedisModuleString *s) {
+struct selva_string *SelvaSet_FindRms(struct SelvaSet *set, struct selva_string *s) {
     struct SelvaSetElement find = {
         .value_rms = s,
     };
-    RedisModuleString *res = NULL;
+    struct selva_string *res = NULL;
 
     if (likely(set->type == SELVA_SET_TYPE_RMSTRING)) {
         struct SelvaSetElement *el;
@@ -229,7 +231,7 @@ RedisModuleString *SelvaSet_FindRms(struct SelvaSet *set, RedisModuleString *s) 
     return res;
 }
 
-int SelvaSet_HasRms(struct SelvaSet *set, RedisModuleString *s) {
+int SelvaSet_HasRms(struct SelvaSet *set, struct selva_string *s) {
     struct SelvaSetElement find = {
         .value_rms = s,
     };
@@ -281,7 +283,7 @@ int SelvaSet_HasNodeId(struct SelvaSet *set, const Selva_NodeId node_id) {
     return !!RB_FIND(SelvaSetNodeId, &set->head_nodeId, &find);
 }
 
-struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, RedisModuleString *s) {
+struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, struct selva_string *s) {
     struct SelvaSetElement find = {
         .value_rms = s,
     };
@@ -421,17 +423,12 @@ int SelvaSet_Union(struct SelvaSet *res, ...) {
             }
 
             SELVA_SET_RMS_FOREACH(el, set) {
-                RedisModuleString *rms;
+                struct selva_string *rms;
 
-                rms = RedisModule_HoldString(NULL, el->value_rms);
-                if (!rms) {
-                    err = SELVA_ENOMEM;
-                    goto out;
-                }
-
+                rms = selva_string_dup(el->value_rms, selva_string_get_flags(el->value_rms));
                 err = SelvaSet_Add(res, rms);
                 if (err) {
-                    RedisModule_FreeString(NULL, rms);
+                    selva_string_free(rms);
                     goto out;
                 }
             }
