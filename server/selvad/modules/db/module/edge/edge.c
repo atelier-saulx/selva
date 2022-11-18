@@ -19,8 +19,8 @@ static void clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarc
 static void EdgeField_Reply(struct RedisModuleCtx *ctx, void *p);
 static void EdgeField_Free(void *p);
 static size_t EdgeField_Len(void *p);
-static void *EdgeField_RdbLoad(struct RedisModuleIO *io, int encver, void *data);
-static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, void *data);
+static void *EdgeField_RdbLoad(struct selva_io *io, int encver, void *data);
+static void EdgeField_RdbSave(struct selva_io *io, void *value, void *data);
 
 static const struct SelvaObjectPointerOpts obj_opts = {
     .ptr_type_id = SELVA_OBJECT_POINTER_EDGE,
@@ -867,7 +867,7 @@ struct EdgeField_load_data {
  *   dst_id...
  * ]
  */
-static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __unused, void *p) {
+static void *EdgeField_RdbLoad(struct selva_io *io, __unused int encver __unused, void *p) {
     RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
     struct EdgeField_load_data *load_data = (struct EdgeField_load_data *)p;
     struct SelvaHierarchy *hierarchy = load_data->hierarchy;
@@ -880,14 +880,14 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
     /*
      * Constraint.
      */
-    constraint_id = RedisModule_LoadUnsigned(io);
+    constraint_id = selva_io_load_unsigned(io);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
         __rm_autofree char *node_type = NULL;
         __rm_autofree char *field_name_str = NULL;
         size_t field_name_len;
 
-        node_type = RedisModule_LoadStringBuffer(io, NULL);
-        field_name_str = RedisModule_LoadStringBuffer(io, &field_name_len);
+        node_type = selva_io_load_str(io, NULL);
+        field_name_str = selva_io_load_str(io, &field_name_len);
         constraint = Edge_GetConstraint(&hierarchy->edge_field_constraints, constraint_id, node_type, field_name_str, field_name_len);
     } else {
         constraint = Edge_GetConstraint(&hierarchy->edge_field_constraints, constraint_id, "NA", "", 0);
@@ -898,7 +898,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
         return NULL;
     }
 
-    nr_edges = RedisModule_LoadUnsigned(io);
+    nr_edges = selva_io_load_unsigned(io);
 
     SelvaHierarchy_GetNodeId(src_node_id, load_data->src_node);
     edge_field = alloc_EdgeField(src_node_id, constraint, nr_edges);
@@ -915,7 +915,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
         struct SelvaHierarchyNode *dst_node;
         int err;
 
-        dst_id_str = RedisModule_LoadStringBuffer(io, &dst_id_len);
+        dst_id_str = selva_io_load_str(io, &dst_id_len);
         if (dst_id_len != SELVA_NODE_ID_SIZE) {
             return NULL;
         }
@@ -947,7 +947,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
     return edge_field;
 }
 
-int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
+int Edge_RdbLoad(struct selva_io *io, int encver, SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
     RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
     struct SelvaHierarchyMetadata *metadata;
 
@@ -974,7 +974,7 @@ int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy
 /**
  * Custom RDB save function for saving EdgeFields.
  */
-static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused void *save_data) {
+static void EdgeField_RdbSave(struct selva_io *io, void *value, __unused void *save_data) {
     const struct EdgeField *edge_field = (struct EdgeField *)value;
     const struct EdgeFieldConstraint *constraint = edge_field->constraint;
     unsigned constraint_id = constraint->constraint_id;
@@ -984,22 +984,22 @@ static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused vo
     /*
      * Constraint.
      */
-    RedisModule_SaveUnsigned(io, constraint_id);
+    selva_io_save_unsigned(io, constraint_id);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
-        RedisModule_SaveStringBuffer(io, constraint->src_node_type, SELVA_NODE_TYPE_SIZE);
-        RedisModule_SaveStringBuffer(io, constraint->field_name_str, constraint->field_name_len);
+        selva_io_save_str(io, constraint->src_node_type, SELVA_NODE_TYPE_SIZE);
+        selva_io_save_str(io, constraint->field_name_str, constraint->field_name_len);
     }
 
     /*
      * Edges/arcs.
      */
-    RedisModule_SaveUnsigned(io, SVector_Size(&edge_field->arcs)); /* nr_edges */
+    selva_io_save_unsigned(io, SVector_Size(&edge_field->arcs)); /* nr_edges */
     SVector_ForeachBegin(&vec_it, &edge_field->arcs);
     while ((dst_node = SVector_Foreach(&vec_it))) {
         Selva_NodeId dst_node_id;
 
         SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
-        RedisModule_SaveStringBuffer(io, dst_node_id, SELVA_NODE_ID_SIZE);
+        selva_io_save_str(io, dst_node_id, SELVA_NODE_ID_SIZE);
     }
 
     /*
@@ -1008,7 +1008,7 @@ static void EdgeField_RdbSave(struct RedisModuleIO *io, void *value, __unused vo
     SelvaObjectTypeRDBSave2(io, edge_field->metadata, NULL);
 }
 
-void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaHierarchyNode *node) {
+void Edge_RdbSave(struct selva_io *io, struct SelvaHierarchyNode *node) {
     struct SelvaHierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 
     SelvaObjectTypeRDBSave2(io, metadata->edge_fields.edges, NULL);

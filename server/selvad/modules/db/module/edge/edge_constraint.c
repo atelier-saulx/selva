@@ -14,8 +14,8 @@
 #include "selva_object.h"
 
 static void EdgeConstraint_Reply(struct RedisModuleCtx *ctx, void *p);
-static void *so_rdb_load(struct RedisModuleIO *io, int encver, void *load_data);
-static void so_rdb_save(struct RedisModuleIO *io, void *value, void *load_data);
+static void *so_rdb_load(struct selva_io *io, int encver, void *load_data);
+static void so_rdb_save(struct selva_io *io, void *value, void *load_data);
 
 #define DYN_CONSTRAINT_NAME_LEN(field_name_len) \
     (SELVA_NODE_TYPE_SIZE + 1 + field_name_len)
@@ -179,11 +179,11 @@ static void EdgeConstraint_Reply(struct RedisModuleCtx *ctx, void *p) {
     RedisModule_ReplyWithStringBuffer(ctx, constraint->bck_field_name_str, constraint->bck_field_name_len);
 }
 
-static void rdb_load_src_node_type(struct RedisModuleIO *io, Selva_NodeType type) {
+static void rdb_load_src_node_type(struct selva_io *io, Selva_NodeType type) {
     __rm_autofree char *s;
     size_t len;
 
-    s = RedisModule_LoadStringBuffer(io, &len);
+    s = selva_io_load_str(io, &len);
     if (len == SELVA_NODE_TYPE_SIZE) {
         memcpy(type, s, SELVA_NODE_TYPE_SIZE);
     } else {
@@ -191,24 +191,24 @@ static void rdb_load_src_node_type(struct RedisModuleIO *io, Selva_NodeType type
     }
 }
 
-static void rdb_save_src_node_type(struct RedisModuleIO *io, const Selva_NodeType type) {
-    RedisModule_SaveStringBuffer(io, type, SELVA_NODE_TYPE_SIZE);
+static void rdb_save_src_node_type(struct selva_io *io, const Selva_NodeType type) {
+    selva_io_save_str(io, type, SELVA_NODE_TYPE_SIZE);
 }
 
 /**
  * Deserializer for SelvaObject ptr value.
  */
-static void *so_rdb_load(struct RedisModuleIO *io, int encver __unused, void *load_data __unused) {
+static void *so_rdb_load(struct selva_io *io, int encver __unused, void *load_data __unused) {
     RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
     struct EdgeFieldDynConstraintParams params = { 0 };
     struct EdgeFieldConstraint *constraint;
 
-    params.flags = RedisModule_LoadUnsigned(io);
+    params.flags = selva_io_load_unsigned(io);
     rdb_load_src_node_type(io, params.src_node_type);
-    RedisModule_FreeString(ctx, RedisModule_LoadString(io)); /* Legacy. */
-    params.fwd_field_name = RedisModule_LoadString(io);
+    RedisModule_FreeString(ctx, selva_io_load_string(io)); /* Legacy. */
+    params.fwd_field_name = selva_io_load_string(io);
     if (params.flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
-        params.bck_field_name = RedisModule_LoadString(io);
+        params.bck_field_name = selva_io_load_string(io);
     }
 
     constraint = create_constraint(&params);
@@ -222,19 +222,19 @@ static void *so_rdb_load(struct RedisModuleIO *io, int encver __unused, void *lo
 /**
  * Serializer for SelvaObject ptr value.
  */
-static void so_rdb_save(struct RedisModuleIO *io, void *value, void *save_data __unused) {
+static void so_rdb_save(struct selva_io *io, void *value, void *save_data __unused) {
     const struct EdgeFieldConstraint *constraint = (struct EdgeFieldConstraint *)value;
 
-    RedisModule_SaveUnsigned(io, constraint->flags);
+    selva_io_save_unsigned(io, constraint->flags);
     rdb_save_src_node_type(io, constraint->src_node_type);
-    RedisModule_SaveStringBuffer(io, "", 0); /* Legacy. */
-    RedisModule_SaveStringBuffer(io, constraint->field_name_str, constraint->field_name_len);
+    selva_io_save_str(io, "", 0); /* Legacy. */
+    selva_io_save_str(io, constraint->field_name_str, constraint->field_name_len);
     if (constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
-        RedisModule_SaveStringBuffer(io, constraint->bck_field_name_str, constraint->bck_field_name_len);
+        selva_io_save_str(io, constraint->bck_field_name_str, constraint->bck_field_name_len);
     }
 }
 
-int EdgeConstraint_RdbLoad(struct RedisModuleIO *io, int encver, struct EdgeFieldConstraints *data) {
+int EdgeConstraint_RdbLoad(struct selva_io *io, int encver, struct EdgeFieldConstraints *data) {
     if (encver < 2) { /* hierarchy encver */
         return 0; /* Only the latest version supports loading metadata. */
     }
@@ -246,7 +246,7 @@ int EdgeConstraint_RdbLoad(struct RedisModuleIO *io, int encver, struct EdgeFiel
     return 0;
 }
 
-void EdgeConstraint_RdbSave(struct RedisModuleIO *io, struct EdgeFieldConstraints *data) {
+void EdgeConstraint_RdbSave(struct selva_io *io, struct EdgeFieldConstraints *data) {
     SelvaObjectTypeRDBSave(io, get_dyn_constraints(data), NULL);
 }
 

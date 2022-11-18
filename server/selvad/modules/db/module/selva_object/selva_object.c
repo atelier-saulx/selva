@@ -17,6 +17,7 @@
 #include "util/selva_string.h"
 #include "util/svector.h"
 #include "selva_db.h"
+#include "selva_io.h"
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_server.h"
@@ -106,7 +107,7 @@ RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
 static void replyWithKeyValue(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObjectKey *key);
 static void replyWithObject(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObject *obj, const char *excluded);
-static struct SelvaObject *rdb_load_object(struct RedisModuleIO *io, int encver, int level, void *ptr_load_data);
+static struct SelvaObject *rdb_load_object(struct selva_io *io, int encver, int level, void *ptr_load_data);
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
     /*
@@ -2489,11 +2490,11 @@ int SelvaObject_ReplyWithWildcardStr(
     return 0;
 }
 
-static int rdb_load_object_double(struct RedisModuleIO *io, struct SelvaObject *obj, const struct selva_string *name) {
+static int rdb_load_object_double(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name) {
     double value;
     int err;
 
-    value = RedisModule_LoadDouble(io);
+    value = selva_io_load_double(io);
     err = SelvaObject_SetDouble(obj, name, value);
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Error while loading a double");
@@ -2503,11 +2504,11 @@ static int rdb_load_object_double(struct RedisModuleIO *io, struct SelvaObject *
     return 0;
 }
 
-static int rdb_load_object_long_long(struct RedisModuleIO *io, struct SelvaObject *obj, const struct selva_string *name) {
+static int rdb_load_object_long_long(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name) {
     long long value;
     int err;
 
-    value = RedisModule_LoadSigned(io);
+    value = selva_io_load_signed(io);
     err = SelvaObject_SetLongLong(obj, name, value);
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Error while loading a long long");
@@ -2517,9 +2518,9 @@ static int rdb_load_object_long_long(struct RedisModuleIO *io, struct SelvaObjec
     return 0;
 }
 
-static int rdb_load_object_string(struct RedisModuleIO *io, int level, struct SelvaObject *obj, const struct selva_string *name) {
+static int rdb_load_object_string(struct selva_io *io, int level, struct SelvaObject *obj, const struct selva_string *name) {
     TO_STR(name);
-    struct selva_string *value = RedisModule_LoadString(io);
+    struct selva_string *value = selva_io_load_string(io);
 
     if (level == 0 && SELVA_IS_TYPE_FIELD(name_str, name_len)) {
         TO_STR(value);
@@ -2548,25 +2549,25 @@ static int rdb_load_object_string(struct RedisModuleIO *io, int level, struct Se
     return 0;
 }
 
-static int rdb_load_object_set(struct RedisModuleIO *io, struct SelvaObject *obj, const struct selva_string *name) {
-    enum SelvaSetType setType = RedisModule_LoadUnsigned(io);
-    const size_t n = RedisModule_LoadUnsigned(io);
+static int rdb_load_object_set(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name) {
+    enum SelvaSetType setType = selva_io_load_unsigned(io);
+    const size_t n = selva_io_load_unsigned(io);
 
     if (setType == SELVA_SET_TYPE_RMSTRING) {
         for (size_t j = 0; j < n; j++) {
-            struct selva_string *value = RedisModule_LoadString(io);
+            struct selva_string *value = selva_io_load_string(io);
 
             SelvaObject_AddStringSet(obj, name, value);
         }
     } else if (setType == SELVA_SET_TYPE_DOUBLE) {
         for (size_t j = 0; j < n; j++) {
-            double value = RedisModule_LoadDouble(io);
+            double value = selva_io_load_double(io);
 
             SelvaObject_AddDoubleSet(obj, name, value);
         }
     } else if (setType == SELVA_SET_TYPE_LONGLONG) {
         for (size_t j = 0; j < n; j++) {
-            long long value = RedisModule_LoadSigned(io);
+            long long value = selva_io_load_signed(io);
 
             SelvaObject_AddLongLongSet(obj, name, value);
         }
@@ -2578,25 +2579,25 @@ static int rdb_load_object_set(struct RedisModuleIO *io, struct SelvaObject *obj
     return 0;
 }
 
-static int rdb_load_object_array(struct RedisModuleIO *io, struct SelvaObject *obj, const struct selva_string *name, int encver, void *ptr_load_data) {
-    enum SelvaObjectType arrayType = RedisModule_LoadUnsigned(io);
-    const size_t n = RedisModule_LoadUnsigned(io);
+static int rdb_load_object_array(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name, int encver, void *ptr_load_data) {
+    enum SelvaObjectType arrayType = selva_io_load_unsigned(io);
+    const size_t n = selva_io_load_unsigned(io);
 
     if (arrayType == SELVA_OBJECT_LONGLONG) {
         for (size_t i = 0; i < n; i++) {
-            long long value = RedisModule_LoadSigned(io);
+            long long value = selva_io_load_signed(io);
             SelvaObject_AddArray(obj, name, arrayType, (void *)value);
         }
     } else if (arrayType == SELVA_OBJECT_DOUBLE) {
         for (size_t i = 0; i < n; i++) {
-            double value = RedisModule_LoadDouble(io);
+            double value = selva_io_load_double(io);
             void *wrapper;
             memcpy(&wrapper, &value, sizeof(value));
             SelvaObject_AddArray(obj, name, arrayType, wrapper);
         }
     } else if (arrayType == SELVA_OBJECT_STRING) {
         for (size_t i = 0; i < n; i++) {
-            struct selva_string *value = RedisModule_LoadString(io);
+            struct selva_string *value = selva_io_load_string(io);
             SelvaObject_AddArray(obj, name, arrayType, value);
         }
     } else if (arrayType == SELVA_OBJECT_OBJECT) {
@@ -2612,10 +2613,10 @@ static int rdb_load_object_array(struct RedisModuleIO *io, struct SelvaObject *o
     return 0;
 }
 
-static int rdb_load_pointer(struct RedisModuleIO *io, int encver, struct SelvaObject *obj, const struct selva_string *name, void *ptr_load_data) {
+static int rdb_load_pointer(struct selva_io *io, int encver, struct SelvaObject *obj, const struct selva_string *name, void *ptr_load_data) {
     unsigned ptr_type_id;
 
-    ptr_type_id = RedisModule_LoadUnsigned(io);
+    ptr_type_id = selva_io_load_unsigned(io);
     if (ptr_type_id > 0) {
         const struct SelvaObjectPointerOpts *opts;
         int err;
@@ -2646,10 +2647,10 @@ static int rdb_load_pointer(struct RedisModuleIO *io, int encver, struct SelvaOb
     return 0;
 }
 
-static int rdb_load_field(struct RedisModuleIO *io, struct SelvaObject *obj, int encver, int level, void *ptr_load_data) {
-    struct selva_string *name = RedisModule_LoadString(io);
-    const enum SelvaObjectType type = RedisModule_LoadUnsigned(io);
-    const SelvaObjectMeta_t user_meta = RedisModule_LoadUnsigned(io);
+static int rdb_load_field(struct selva_io *io, struct SelvaObject *obj, int encver, int level, void *ptr_load_data) {
+    struct selva_string *name = selva_io_load_string(io);
+    const enum SelvaObjectType type = selva_io_load_unsigned(io);
+    const SelvaObjectMeta_t user_meta = selva_io_load_unsigned(io);
     int err = 0;
 
     if (unlikely(!name)) {
@@ -2727,8 +2728,8 @@ static int rdb_load_field(struct RedisModuleIO *io, struct SelvaObject *obj, int
     return 0;
 }
 
-static struct SelvaObject *rdb_load_object_to(struct RedisModuleIO *io, int encver, struct SelvaObject *obj, int level, void *ptr_load_data) {
-    const size_t obj_size = RedisModule_LoadUnsigned(io);
+static struct SelvaObject *rdb_load_object_to(struct selva_io *io, int encver, struct SelvaObject *obj, int level, void *ptr_load_data) {
+    const size_t obj_size = selva_io_load_unsigned(io);
     for (size_t i = 0; i < obj_size; i++) {
         int err;
 
@@ -2742,15 +2743,15 @@ static struct SelvaObject *rdb_load_object_to(struct RedisModuleIO *io, int encv
     return obj;
 }
 
-static struct SelvaObject *rdb_load_object(struct RedisModuleIO *io, int encver, int level, void *ptr_load_data) {
+static struct SelvaObject *rdb_load_object(struct selva_io *io, int encver, int level, void *ptr_load_data) {
     return rdb_load_object_to(io, encver, SelvaObject_New(), level, ptr_load_data);
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoadTo(struct RedisModuleIO *io, int encver, struct SelvaObject *obj, void *ptr_load_data) {
+struct SelvaObject *SelvaObjectTypeRDBLoadTo(struct selva_io *io, int encver, struct SelvaObject *obj, void *ptr_load_data) {
     return rdb_load_object_to(io, encver, obj, 0, ptr_load_data);
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data) {
+struct SelvaObject *SelvaObjectTypeRDBLoad(struct selva_io *io, int encver, void *ptr_load_data) {
     struct SelvaObject *obj;
 
     obj = rdb_load_object(io, encver, 0, ptr_load_data);
@@ -2758,8 +2759,8 @@ struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver,
     return obj;
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoad2(struct RedisModuleIO *io, int encver, void *ptr_load_data) {
-    const size_t obj_size = RedisModule_LoadUnsigned(io);
+struct SelvaObject *SelvaObjectTypeRDBLoad2(struct selva_io *io, int encver, void *ptr_load_data) {
+    const size_t obj_size = selva_io_load_unsigned(io);
     struct SelvaObject *obj;
 
     if (obj_size == 0) {
@@ -2781,56 +2782,56 @@ struct SelvaObject *SelvaObjectTypeRDBLoad2(struct RedisModuleIO *io, int encver
     return obj;
 }
 
-static void rdb_save_object_string(struct RedisModuleIO *io, struct SelvaObjectKey *key) {
+static void rdb_save_object_string(struct selva_io *io, struct SelvaObjectKey *key) {
     if (!key->value) {
         SELVA_LOG(SELVA_LOGL_CRIT, "STRING value missing");
         return;
     }
-    RedisModule_SaveString(io, key->value);
+    selva_io_save_string(io, key->value);
 }
 
-static void rdb_save_object_set(struct RedisModuleIO *io, struct SelvaObjectKey *key) {
+static void rdb_save_object_set(struct selva_io *io, struct SelvaObjectKey *key) {
     const struct SelvaSet *selva_set = &key->selva_set;
 
-    RedisModule_SaveUnsigned(io, selva_set->type);
-    RedisModule_SaveUnsigned(io, selva_set->size);
+    selva_io_save_unsigned(io, selva_set->type);
+    selva_io_save_unsigned(io, selva_set->size);
 
     if (selva_set->type == SELVA_SET_TYPE_RMSTRING) {
         struct SelvaSetElement *el;
 
         SELVA_SET_RMS_FOREACH(el, &key->selva_set) {
-            RedisModule_SaveString(io, el->value_rms);
+            selva_io_save_string(io, el->value_rms);
         }
     } else if (selva_set->type == SELVA_SET_TYPE_DOUBLE) {
         struct SelvaSetElement *el;
 
         SELVA_SET_DOUBLE_FOREACH(el, &key->selva_set) {
-            RedisModule_SaveDouble(io, el->value_d);
+            selva_io_save_double(io, el->value_d);
         }
     } else if (selva_set->type == SELVA_SET_TYPE_LONGLONG) {
         struct SelvaSetElement *el;
 
         SELVA_SET_LONGLONG_FOREACH(el, &key->selva_set) {
-            RedisModule_SaveSigned(io, el->value_ll);
+            selva_io_save_signed(io, el->value_ll);
         }
     } else {
         SELVA_LOG(SELVA_LOGL_CRIT, "Unknown set type");
     }
 }
 
-static void rdb_save_object_array(struct RedisModuleIO *io, struct SelvaObjectKey *key, void *ptr_save_data) {
+static void rdb_save_object_array(struct selva_io *io, struct SelvaObjectKey *key, void *ptr_save_data) {
     const struct SVector *array = key->array;
     const size_t array_size = SVector_Size(array);
 
-    RedisModule_SaveUnsigned(io, key->subtype);
-    RedisModule_SaveUnsigned(io, array_size);
+    selva_io_save_unsigned(io, key->subtype);
+    selva_io_save_unsigned(io, array_size);
 
     if (key->subtype == SELVA_OBJECT_LONGLONG) {
         for (size_t i = 0; i < array_size; i++) {
             void *num;
 
             num = SVector_GetIndex(array, i);
-            RedisModule_SaveSigned(io, (long long)num);
+            selva_io_save_signed(io, (long long)num);
         }
     } else if (key->subtype == SELVA_OBJECT_DOUBLE) {
         for (size_t i = 0; i < array_size; i++) {
@@ -2839,7 +2840,7 @@ static void rdb_save_object_array(struct RedisModuleIO *io, struct SelvaObjectKe
 
             num_ptr = SVector_GetIndex(array, i);
             memcpy(&num, &num_ptr, sizeof(double));
-            RedisModule_SaveDouble(io, num);
+            selva_io_save_double(io, num);
         }
     } else if (key->subtype == SELVA_OBJECT_STRING) {
         struct selva_string *str;
@@ -2847,7 +2848,7 @@ static void rdb_save_object_array(struct RedisModuleIO *io, struct SelvaObjectKe
 
         SVector_ForeachBegin(&it, key->array);
         while ((str = SVector_Foreach(&it))) {
-            RedisModule_SaveString(io, str);
+            selva_io_save_string(io, str);
         }
     } else if (key->subtype == SELVA_OBJECT_OBJECT) {
         for (size_t i = 0; i < array_size; i++) {
@@ -2861,7 +2862,7 @@ static void rdb_save_object_array(struct RedisModuleIO *io, struct SelvaObjectKe
     }
 }
 
-void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data) {
+void SelvaObjectTypeRDBSave(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data) {
     struct SelvaObjectKey *key;
 
     if (unlikely(!obj)) {
@@ -2869,21 +2870,21 @@ void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, v
         return;
     }
 
-    RedisModule_SaveUnsigned(io, obj->obj_size);
+    selva_io_save_unsigned(io, obj->obj_size);
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
-        RedisModule_SaveStringBuffer(io, key->name, key->name_len);
-        RedisModule_SaveUnsigned(io, key->type);
-        RedisModule_SaveUnsigned(io, key->user_meta);
+        selva_io_save_stringBuffer(io, key->name, key->name_len);
+        selva_io_save_unsigned(io, key->type);
+        selva_io_save_unsigned(io, key->user_meta);
 
         switch (key->type) {
         case SELVA_OBJECT_NULL:
             /* null is implicit value and doesn't need to be persisted. */
             break;
         case SELVA_OBJECT_DOUBLE:
-            RedisModule_SaveDouble(io, key->emb_double_value);
+            selva_io_save_double(io, key->emb_double_value);
             break;
         case SELVA_OBJECT_LONGLONG:
-            RedisModule_SaveSigned(io, key->emb_ll_value);
+            selva_io_save_signed(io, key->emb_ll_value);
             break;
         case SELVA_OBJECT_STRING:
             rdb_save_object_string(io, key);
@@ -2903,7 +2904,7 @@ void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, v
             break;
         case SELVA_OBJECT_POINTER:
             if (key->ptr_opts && key->ptr_opts->ptr_save) {
-                RedisModule_SaveUnsigned(io, key->ptr_opts->ptr_type_id); /* This is used to locate the loader on RDB load. */
+                selva_io_save_unsigned(io, key->ptr_opts->ptr_type_id); /* This is used to locate the loader on RDB load. */
                 key->ptr_opts->ptr_save(io, key->value, ptr_save_data);
             } else {
                 SELVA_LOG(SELVA_LOGL_CRIT, "ptr_save() not given");
@@ -2916,9 +2917,9 @@ void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, v
     }
 }
 
-void SelvaObjectTypeRDBSave2(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data) {
+void SelvaObjectTypeRDBSave2(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data) {
     if (!obj) {
-        RedisModule_SaveUnsigned(io, 0);
+        selva_io_save_unsigned(io, 0);
     } else {
         SelvaObjectTypeRDBSave(io, obj, ptr_save_data);
     }

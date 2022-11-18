@@ -165,14 +165,14 @@ fail:
     return err;
 }
 
-void rms_RDBSaveCompressed(RedisModuleIO *io, struct compressed_rms *compressed) {
-    RedisModule_SaveSigned(io, compressed->uncompressed_size);
-    RedisModule_SaveString(io, compressed->rms);
+void rms_RDBSaveCompressed(selva_io *io, struct compressed_rms *compressed) {
+    selva_io_save_signed(io, compressed->uncompressed_size);
+    selva_io_save_string(io, compressed->rms);
 }
 
-void rms_RDBLoadCompressed(RedisModuleIO *io, struct compressed_rms *compressed) {
-    compressed->uncompressed_size = RedisModule_LoadSigned(io);
-    compressed->rms = RedisModule_LoadString(io);
+void rms_RDBLoadCompressed(selva_io *io, struct compressed_rms *compressed) {
+    compressed->uncompressed_size = selva_io_load_signed(io);
+    compressed->rms = selva_io_load_string(io);
 }
 
 static int init_compressor(void) {

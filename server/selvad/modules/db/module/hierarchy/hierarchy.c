@@ -12,7 +12,8 @@
 #include <time.h>
 #include "jemalloc.h"
 #include "auto_free.h"
-#include "selva.h"
+#include "selva_db.h"
+#include "selva_io.h"
 #include "alias.h"
 #include "async_task.h"
 #include "rms.h"
@@ -121,7 +122,7 @@ struct SelvaHierarchySubtree {
  * HierarchyRDBSaveNode() args struct.
  */
 struct HierarchyRDBSaveNode {
-    RedisModuleIO *io;
+    selva_io *io;
 };
 
 static void SelvaModify_DestroyNode(
@@ -2995,7 +2996,7 @@ static void auto_compress_proc(RedisModuleCtx *ctx, void *data) {
     hierarchy->inactive.auto_compress_timer = RedisModule_CreateTimer(ctx, timer_period, auto_compress_proc, hierarchy);
 }
 
-static int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
+static int load_metadata(selva_io *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     int err;
 
     if (unlikely(!node)) {
@@ -3026,11 +3027,11 @@ static int load_metadata(RedisModuleIO *io, int encver, SelvaHierarchy *hierarch
  * RDB load a node_id.
  * Should be only called by load_node().
  */
-static int load_node_id(RedisModuleIO *io, Selva_NodeId node_id_out) {
+static int load_node_id(selva_io *io, Selva_NodeId node_id_out) {
     __rm_autofree const char *node_id = NULL;
     size_t len = 0;
 
-    node_id = RedisModule_LoadStringBuffer(io, &len);
+    node_id = selva_io_load_str(io, &len);
     if (!node_id || len != SELVA_NODE_ID_SIZE) {
         return SELVA_HIERARCHY_EINVAL;
     }
@@ -3039,14 +3040,14 @@ static int load_node_id(RedisModuleIO *io, Selva_NodeId node_id_out) {
     return 0;
 }
 
-static int load_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
+static int load_detached_node(selva_io *io, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
     enum SelvaHierarchyDetachedType type;
     struct compressed_rms *compressed;
     SelvaHierarchyNode *node;
     int err;
 
     compressed = rms_alloc_compressed();
-    type = RedisModule_LoadSigned(io);
+    type = selva_io_load_signed(io);
     rms_RDBLoadCompressed(io, compressed);
 
     /*
@@ -3076,7 +3077,7 @@ out:
     return err;
 }
 
-static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
+static int load_hierarchy_node(selva_io *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     int err;
 
     /*
@@ -3093,7 +3094,7 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
     /*
      * Load the ids of child nodes.
      */
-    uint64_t nr_children = RedisModule_LoadUnsigned(io);
+    uint64_t nr_children = selva_io_load_unsigned(io);
     Selva_NodeId *children __selva_autofree = NULL;
 
     if (nr_children > 0) {
@@ -3142,7 +3143,7 @@ static int load_hierarchy_node(RedisModuleIO *io, int encver, SelvaHierarchy *hi
  * RDB load a node and its children.
  * Should be only called by load_tree().
  */
-static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
+static int load_node(selva_io *io, int encver, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
     SelvaHierarchyNode *node;
     int err;
 
@@ -3162,7 +3163,7 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
     }
 
     if (encver > 3) {
-        node->flags = RedisModule_LoadUnsigned(io);
+        node->flags = selva_io_load_unsigned(io);
     }
 
     if (node->flags & SELVA_NODE_FLAGS_DETACHED && !isDecompressingSubtree) {
@@ -3187,7 +3188,7 @@ static int load_node(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy, S
  * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
  * HIERARCHY_RDB_EOF
  */
-static int load_tree(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy) {
+static int load_tree(selva_io *io, int encver, SelvaHierarchy *hierarchy) {
     while (1) {
         Selva_NodeId node_id;
         int err;
@@ -3228,7 +3229,7 @@ static int load_tree(RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy) {
     return 0;
 }
 
-static void *Hierarchy_RDBLoad(RedisModuleIO *io, int encver) {
+static void *Hierarchy_RDBLoad(selva_io *io, int encver) {
     SelvaHierarchy *hierarchy;
     int err;
 
@@ -3269,7 +3270,7 @@ error:
     return NULL;
 }
 
-static void save_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, const Selva_NodeId id) {
+static void save_detached_node(selva_io *io, SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     struct compressed_rms *compressed;
     enum SelvaHierarchyDetachedType type;
     int err;
@@ -3290,11 +3291,11 @@ static void save_detached_node(RedisModuleIO *io, SelvaHierarchy *hierarchy, con
         return;
     }
 
-    RedisModule_SaveSigned(io, type);
+    selva_io_save_signed(io, type);
     rms_RDBSaveCompressed(io, compressed);
 }
 
-static void save_metadata(RedisModuleIO *io, SelvaHierarchyNode *node) {
+static void save_metadata(selva_io *io, SelvaHierarchyNode *node) {
     /*
      * Note that the metadata must be loaded and saved in a predefined order.
      */
@@ -3313,16 +3314,16 @@ static int HierarchyRDBSaveNode(
         struct SelvaHierarchyNode *node,
         void *arg) {
     struct HierarchyRDBSaveNode *args = (struct HierarchyRDBSaveNode *)arg;
-    RedisModuleIO *io = args->io;
+    selva_io *io = args->io;
 
-    RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
-    RedisModule_SaveUnsigned(io, node->flags);
+    selva_io_save_str(io, node->id, SELVA_NODE_ID_SIZE);
+    selva_io_save_unsigned(io, node->flags);
 
     if (node->flags & SELVA_NODE_FLAGS_DETACHED) {
         save_detached_node(io, hierarchy, node->id);
     } else {
         save_metadata(io, node);
-        RedisModule_SaveUnsigned(io, SVector_Size(&node->children));
+        selva_io_save_unsigned(io, SVector_Size(&node->children));
     }
 
     return 0;
@@ -3339,12 +3340,12 @@ static int HierarchyRDBSaveSubtreeNode(
         struct SelvaHierarchy *hierarchy __unused,
         struct SelvaHierarchyNode *node,
         void *arg) {
-    RedisModuleIO *io = (RedisModuleIO *)arg;
+    selva_io *io = (selva_io *)arg;
 
-    RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
-    RedisModule_SaveUnsigned(io, node->flags & ~SELVA_NODE_FLAGS_DETACHED);
+    selva_io_save_str(io, node->id, SELVA_NODE_ID_SIZE);
+    selva_io_save_unsigned(io, node->flags & ~SELVA_NODE_FLAGS_DETACHED);
     save_metadata(io, node);
-    RedisModule_SaveUnsigned(io, SVector_Size(&node->children));
+    selva_io_save_unsigned(io, SVector_Size(&node->children));
 
     return 0;
 }
@@ -3356,7 +3357,7 @@ static void HierarchyRDBSaveChild(
         struct SelvaHierarchyNode *child,
         void *arg) {
     REDISMODULE_NOT_USED(metadata);
-    RedisModuleIO *io = (RedisModuleIO *)arg;
+    selva_io *io = (selva_io *)arg;
 
     /*
      * We don't need to care here whether the node is detached because the
@@ -3364,10 +3365,10 @@ static void HierarchyRDBSaveChild(
      * are only interested in saving the child ids.
      */
 
-    RedisModule_SaveStringBuffer(io, child->id, SELVA_NODE_ID_SIZE);
+    selva_io_save_str(io, child->id, SELVA_NODE_ID_SIZE);
 }
 
-static void save_hierarchy(RedisModuleIO *io, SelvaHierarchy *hierarchy) {
+static void save_hierarchy(selva_io *io, SelvaHierarchy *hierarchy) {
     RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
     struct HierarchyRDBSaveNode args = {
         .io = io,
@@ -3383,10 +3384,10 @@ static void save_hierarchy(RedisModuleIO *io, SelvaHierarchy *hierarchy) {
     };
 
     (void)full_dfs(ctx, hierarchy, &cb);
-    RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
+    selva_io_save_str(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
 
-static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
+static void Hierarchy_RDBSave(selva_io *io, void *value) {
     SelvaHierarchy *hierarchy = (SelvaHierarchy *)value;
 
     /*
@@ -3404,11 +3405,11 @@ static void Hierarchy_RDBSave(RedisModuleIO *io, void *value) {
     isRdbSaving = 0;
 }
 
-static int load_nodeId(RedisModuleIO *io, Selva_NodeId nodeId) {
+static int load_nodeId(selva_io *io, Selva_NodeId nodeId) {
     __rm_autofree const char *buf = NULL;
     size_t len;
 
-    buf = RedisModule_LoadStringBuffer(io, &len);
+    buf = selva_io_load_str(io, &len);
     if (!buf || len != SELVA_NODE_ID_SIZE) {
         return SELVA_HIERARCHY_EINVAL;
     }
@@ -3422,7 +3423,7 @@ static int load_nodeId(RedisModuleIO *io, Selva_NodeId nodeId) {
  * Load a subtree from the RDB serialization format back into the hierarchy.
  * This function should never be called directly.
  */
-static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
+static void *Hierarchy_SubtreeRDBLoad(selva_io *io, int encver) {
     SelvaHierarchy *hierarchy = subtree_hierarchy;
     Selva_NodeId nodeId;
     int err;
@@ -3433,7 +3434,7 @@ static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
      * 3. Load the children normally
      */
 
-    encver = RedisModule_LoadSigned(io);
+    encver = selva_io_load_signed(io);
     if (encver > HIERARCHY_ENCODING_VERSION) {
         SELVA_LOG(SELVA_LOGL_CRIT, "selva_hierarchy encoding version %d not supported", encver);
         return NULL;
@@ -3461,7 +3462,7 @@ static void *Hierarchy_SubtreeRDBLoad(RedisModuleIO *io, int encver) {
  * Serialize a subtree of a hierarchy.
  * This function should never be called directly.
  */
-static void Hierarchy_SubtreeRDBSave(RedisModuleIO *io, void *value) {
+static void Hierarchy_SubtreeRDBSave(selva_io *io, void *value) {
     RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
     struct SelvaHierarchySubtree *subtree = (struct SelvaHierarchySubtree *)value;
     SelvaHierarchy *hierarchy = subtree->hierarchy;
@@ -3481,16 +3482,16 @@ static void Hierarchy_SubtreeRDBSave(RedisModuleIO *io, void *value) {
      * compressed subtrees from the disk and those files don't contain the
      * encoding version and Redis gives us version 0 on read.
      */
-    RedisModule_SaveSigned(io, HIERARCHY_ENCODING_VERSION);
+    selva_io_save_signed(io, HIERARCHY_ENCODING_VERSION);
 
     /* Save nodeId. */
-    RedisModule_SaveStringBuffer(io, node->id, SELVA_NODE_ID_SIZE);
+    selva_io_save_str(io, node->id, SELVA_NODE_ID_SIZE);
 
     /*
      * Save the children.
      */
     (void)dfs(ctx, hierarchy, node, RELATIONSHIP_CHILD, &cb);
-    RedisModule_SaveStringBuffer(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
+    selva_io_save_str(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
 
 void HierarchyTypeFree(void *value) {
@@ -3969,9 +3970,9 @@ int SelvaHierarchy_VerCommand(RedisModuleCtx *ctx, RedisModuleString **argv __un
     return REDISMODULE_OK;
 }
 
-static int SelvaVersion_AuxLoad(RedisModuleIO *io, int encver __unused, int when __unused) {
-    selva_db_version_info.created_with = RedisModule_LoadString(io);
-    selva_db_version_info.updated_with = RedisModule_LoadString(io);
+static int SelvaVersion_AuxLoad(selva_io *io, int encver __unused, int when __unused) {
+    selva_db_version_info.created_with = selva_io_load_string(io);
+    selva_db_version_info.updated_with = selva_io_load_string(io);
 
     SELVA_LOG(SELVA_LOGL_INFO,
               "Selva hierarchy version info created_with: %s updated_with: %s",
@@ -3981,15 +3982,15 @@ static int SelvaVersion_AuxLoad(RedisModuleIO *io, int encver __unused, int when
     return 0;
 }
 
-static void SelvaVersion_AuxSave(RedisModuleIO *io, int when __unused) {
+static void SelvaVersion_AuxSave(selva_io *io, int when __unused) {
     const size_t len = strlen(selva_version);
 
     if (selva_db_version_info.created_with) {
-        RedisModule_SaveString(io, selva_db_version_info.created_with);
+        selva_io_save_string(io, selva_db_version_info.created_with);
     } else {
-        RedisModule_SaveStringBuffer(io, selva_version, len);
+        selva_io_save_str(io, selva_version, len);
     }
-    RedisModule_SaveStringBuffer(io, selva_version, len);
+    selva_io_save_str(io, selva_version, len);
 }
 
 static int Hierarchy_OnLoad(RedisModuleCtx *ctx) {

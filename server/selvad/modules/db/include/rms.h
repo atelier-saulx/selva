@@ -6,7 +6,7 @@
 #ifndef _SELVA_RMS_H_
 #define _SELVA_RMS_H_
 
-struct RedisModuleIO;
+struct selva_io;
 struct RedisModuleString;
 
 /**
@@ -74,12 +74,12 @@ int rms_fread_compressed(struct compressed_rms *compressed, FILE *fp);
 /**
  * RDB save a compressed string.
  */
-void rms_RDBSaveCompressed(struct RedisModuleIO *io, struct compressed_rms *compressed);
+void rms_RDBSaveCompressed(struct selva_io *io, struct compressed_rms *compressed);
 
 /**
  * RDB load a compressed string.
  */
-void rms_RDBLoadCompressed(struct RedisModuleIO *io, struct compressed_rms *compressed);
+void rms_RDBLoadCompressed(struct selva_io *io, struct compressed_rms *compressed);
 
 /**
  * @}

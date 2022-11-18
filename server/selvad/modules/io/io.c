@@ -48,17 +48,17 @@ int64_t selva_io_load_signed(struct selva_io *io)
     return 0;
 }
 
-float selva_io_save_load_float(struct selva_io *io)
+float selva_io_load_float(struct selva_io *io)
 {
     return 0.0f;
 }
 
-double selva_io_save_load_double(struct selva_io *io)
+double selva_io_load_double(struct selva_io *io)
 {
     return 0.0;
 }
 
-long double selva_io_save_load_long_double(struct selva_io *io)
+long double selva_io_load_long_double(struct selva_io *io)
 {
     return (long double)0.0;
 }

@@ -15,8 +15,8 @@
 #include "selva_object.h"
 
 struct RedisModuleCtx;
-struct RedisModuleIO;
-struct RedisModuleString;
+struct selva_io;
+struct selva_string;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct SelvaObject;
@@ -45,8 +45,8 @@ enum EdgeFieldConstraintFlag {
 struct EdgeFieldDynConstraintParams {
     enum EdgeFieldConstraintFlag flags;
     Selva_NodeType src_node_type;
-    struct RedisModuleString *fwd_field_name;
-    struct RedisModuleString *bck_field_name;
+    struct selva_string *fwd_field_name;
+    struct selva_string *bck_field_name;
 };
 
 /**
@@ -268,9 +268,9 @@ size_t Edge_Refcount(struct SelvaHierarchyNode *node);
 
 void replyWithEdgeField(struct RedisModuleCtx *ctx, struct EdgeField *edge_field);
 
-int Edge_RdbLoad(struct RedisModuleIO *io, int encver, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node);
-void Edge_RdbSave(struct RedisModuleIO *io, struct SelvaHierarchyNode *node);
-int EdgeConstraint_RdbLoad(struct RedisModuleIO *io, int encver, struct EdgeFieldConstraints *data);
-void EdgeConstraint_RdbSave(struct RedisModuleIO *io, struct EdgeFieldConstraints *data);
+int Edge_RdbLoad(struct selva_io *io, int encver, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node);
+void Edge_RdbSave(struct selva_io *io, struct SelvaHierarchyNode *node);
+int EdgeConstraint_RdbLoad(struct selva_io *io, int encver, struct EdgeFieldConstraints *data);
+void EdgeConstraint_RdbSave(struct selva_io *io, struct EdgeFieldConstraints *data);
 
 #endif /* _EDGE_H_ */

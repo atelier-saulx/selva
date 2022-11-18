@@ -42,7 +42,7 @@ enum SelvaObjectType {
  */
 #define STATIC_SELVA_OBJECT(name) _Alignas(void *) char name[SELVA_OBJECT_BSIZE]
 
-struct RedisModuleIO;
+struct selva_io;
 struct RedisModuleKey;
 struct SVector;
 struct SelvaObject;
@@ -52,8 +52,8 @@ struct selva_string;
 
 typedef uint32_t SelvaObjectMeta_t; /*!< SelvaObject key metadata. */
 typedef void SelvaObject_Iterator; /* Opaque type. */
-typedef void *(*SelvaObject_PtrLoad)(struct RedisModuleIO *io, int encver, void *data);
-typedef void (*SelvaObject_PtrSave)(struct RedisModuleIO *io, void *value, void *data);
+typedef void *(*SelvaObject_PtrLoad)(struct selva_io *io, int encver, void *data);
+typedef void (*SelvaObject_PtrSave)(struct selva_io *io, void *value, void *data);
 
 struct SelvaObjectPointerOpts {
     /**
@@ -414,28 +414,28 @@ int SelvaObject_ReplyWithObject(
  * Load a SelvaObject from RDB.
  * @returns a SelvaObject.
  */
-struct SelvaObject *SelvaObjectTypeRDBLoad(struct RedisModuleIO *io, int encver, void *ptr_load_data);
+struct SelvaObject *SelvaObjectTypeRDBLoad(struct selva_io *io, int encver, void *ptr_load_data);
 
-struct SelvaObject *SelvaObjectTypeRDBLoadTo(struct RedisModuleIO *io, int encver, struct SelvaObject *obj, void *ptr_load_data);
+struct SelvaObject *SelvaObjectTypeRDBLoadTo(struct selva_io *io, int encver, struct SelvaObject *obj, void *ptr_load_data);
 
 /**
  * Load a SelvaObject or NULL from RDB.
  * @returns NULL if the object length is zero.
  */
-struct SelvaObject *SelvaObjectTypeRDBLoad2(struct RedisModuleIO *io, int encver, void *ptr_load_data);
+struct SelvaObject *SelvaObjectTypeRDBLoad2(struct selva_io *io, int encver, void *ptr_load_data);
 
 /**
  * Serialize a SelvaObject in RDB.
  * @param obj is a pointer to the SelvaObject to be serialized.
  * @param ptr_save_data is an optional pointer to additional data that can be used by a registered pointer type.
  */
-void SelvaObjectTypeRDBSave(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data);
+void SelvaObjectTypeRDBSave(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data);
 
 /**
  * Serialize a SelvaObject or NULL.
  * @param obj is a pointer to the SelvaObject to be serialized. Can be NULL.
  * @param ptr_save_data is an optional pointer to additional data that can be used by a registered pointer type.
  */
-void SelvaObjectTypeRDBSave2(struct RedisModuleIO *io, struct SelvaObject *obj, void *ptr_save_data);
+void SelvaObjectTypeRDBSave2(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data);
 
 #endif /* SELVA_OBJECT */
