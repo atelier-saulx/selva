@@ -27,15 +27,24 @@ int selva_send_null(struct selva_server_response_out *resp)
 
 int selva_send_error(struct selva_server_response_out *resp, int err, const char *msg_str, size_t msg_len)
 {
-    const size_t bsize = sizeof(struct selva_proto_error) + msg_len;
-    struct selva_proto_error *buf = alloca(bsize);
+    size_t bsize;
+    struct selva_proto_error *buf;
 
+    if (!msg_str) {
+        msg_len = 0;
+    }
+
+    bsize = sizeof(struct selva_proto_error) + msg_len;
+    buf = alloca(bsize);
     *buf = (struct selva_proto_error){
         .type = SELVA_PROTO_ERROR,
         .err_code = htole16(err),
         .bsize = htole16(msg_len),
     };
-    memcpy(buf->msg, msg_str, msg_len);
+
+    if (msg_len > 0) {
+        memcpy(buf->msg, msg_str, msg_len);
+    }
 
     return server_send_buf(resp, buf, bsize);
 }
@@ -66,6 +75,11 @@ int selva_send_errorf(struct selva_server_response_out *resp, int err, const cha
     va_end(args);
 
     return server_send_buf(resp, buf, bsize);
+}
+
+int selva_send_error_arity(struct selva_server_response_out *resp)
+{
+    return selva_send_error(resp, SELVA_EINVAL, "Wrong arity", 11);
 }
 
 int selva_send_double(struct selva_server_response_out *resp, double value)

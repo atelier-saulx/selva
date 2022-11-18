@@ -57,6 +57,7 @@ int selva_send_null(struct selva_server_response_out *resp);
  */
 SELVA_SERVER_EXPORT(int, selva_send_error, struct selva_server_response_out *resp, int err, const char *msg_str, size_t msg_len);
 SELVA_SERVER_EXPORT(int, selva_send_errorf, struct selva_server_response_out *resp, int err, const char *fmt, ...);
+SELVA_SERVER_EXPORT(int, selva_send_error_arity, struct selva_server_response_out *resp);
 
 SELVA_SERVER_EXPORT(int, selva_send_double, struct selva_server_response_out *resp, double value);
 SELVA_SERVER_EXPORT(int, selva_send_ll, struct selva_server_response_out *resp, long long value);

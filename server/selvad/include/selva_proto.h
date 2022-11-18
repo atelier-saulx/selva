@@ -65,6 +65,17 @@ enum selva_proto_data_type {
 } __attribute__((packed));
 
 /**
+ * Selva protocol null value.
+ */
+struct selva_proto_null {
+    /**
+     * Type.
+     * Type must be SELVA_PROTO_NULL.
+     */
+    enum selva_proto_data_type type;
+} __attribute__((packed));
+
+/**
  * Selva protocol error message.
  */
 struct selva_proto_error {
@@ -77,7 +88,7 @@ struct selva_proto_error {
     int16_t err_code; /*!< Error code. Typically from selva_error.h. */
     uint16_t bsize; /*!< Size of msg in bytes. */
     char msg[0]; /*!< Free form error message. Typically a human-readable string. */
-};
+} __attribute__((packed));
 
 /**
  * Selva protocol double value.
@@ -90,7 +101,7 @@ struct selva_proto_double {
     enum selva_proto_data_type type;
     uint8_t _spare[7];
     double v; /*!< Value. */
-};
+} __attribute__((packed));
 
 /**
  * Selva protocol long long.
@@ -103,7 +114,7 @@ struct selva_proto_longlong {
     enum selva_proto_data_type type;
     uint8_t _spare[7];
     uint64_t v; /*!< Value. */
-};
+} __attribute__((packed));
 
 /**
  * Selva protocol string.
@@ -120,8 +131,8 @@ struct selva_proto_string {
     } __attribute__((packed)) flags; /*! String flags. */
     uint8_t _spare[2];
     uint32_t bsize; /*!< Size of str in bytes. */
-    char str[0]; /*!< A string of bytes. It's not expected to be terminated with anything. */
-};
+    char data[0]; /*!< A string of bytes. It's not expected to be terminated with anything. */
+} __attribute__((packed));
 
 /**
  * Selva protocol array.
@@ -140,7 +151,7 @@ struct selva_proto_array {
     uint8_t _spare[2];
     uint32_t length; /*!< Length of this array; number of items. */
     char data[0]; /*!< Data (if indicated by a flag). */
-};
+} __attribute__((packed));
 
 /**
  * Selva protocol control.
@@ -154,7 +165,7 @@ struct selva_proto_control {
      * - SELVA_PROTO_ARRAY_END
      */
     enum selva_proto_data_type type;
-};
+} __attribute__((packed));
 
 static_assert(sizeof(struct selva_proto_header) == (2 * sizeof(uint64_t)), "Header must be 64 bits");
 static_assert(__alignof__(struct selva_proto_header) == __alignof__(uint64_t), "Header must be aligned as a 64-bit integer");
