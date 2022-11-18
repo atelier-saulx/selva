@@ -2872,7 +2872,7 @@ void SelvaObjectTypeRDBSave(struct selva_io *io, struct SelvaObject *obj, void *
 
     selva_io_save_unsigned(io, obj->obj_size);
     RB_FOREACH(key, SelvaObjectKeys, &obj->keys_head) {
-        selva_io_save_stringBuffer(io, key->name, key->name_len);
+        selva_io_save_str(io, key->name, key->name_len);
         selva_io_save_unsigned(io, key->type);
         selva_io_save_unsigned(io, key->user_meta);
 
