@@ -4,7 +4,10 @@
  */
 #include <string.h>
 #include <stddef.h>
-#include "selva.h"
+#include "util/selva_string.h"
+#include "selva_error.h"
+#include "selva_log.h"
+#include "selva_db.h"
 #include "modinfo.h"
 #include "config.h"
 
@@ -22,12 +25,15 @@ struct selva_glob_config selva_glob_config = {
     .find_indexing_popularity_ave_period = FIND_INDEXING_POPULARITY_AVE_PERIOD,
 };
 
-static int parse_size_t(void *dst, const RedisModuleString *src) {
+static int parse_size_t(void *dst, const struct selva_string *src) {
     long long v;
     size_t *d = (size_t *)dst;
+    int err;
 
-    if (RedisModule_StringToLongLong(src, &v) == REDISMODULE_ERR) {
-        return SELVA_EINVAL;
+    /* TODO or ull? */
+    err = selva_string_to_ll(src, &v);
+    if (err) {
+        return err;
     }
 
     *d = (size_t)v;
@@ -35,12 +41,14 @@ static int parse_size_t(void *dst, const RedisModuleString *src) {
     return 0;
 }
 
-static int parse_int(void *dst, const RedisModuleString *src) {
+static int parse_int(void *dst, const struct selva_string *src) {
     long long v;
     int *d = (int *)dst;
+    int err;
 
-    if (RedisModule_StringToLongLong(src, &v) == REDISMODULE_ERR) {
-        return SELVA_EINVAL;
+    err = selva_string_to_ll(src, &v);
+    if (err) {
+        return err;
     }
 
     *d = (int)v;
@@ -50,7 +58,7 @@ static int parse_int(void *dst, const RedisModuleString *src) {
 
 struct cfg {
     const char * const name;
-    int (*const parse)(void *dst, const RedisModuleString *sp);
+    int (*const parse)(void *dst, const struct selva_string *sp);
     void * const dp;
 } const cfg_map[] = {
     { "DEBUG_MODIFY_REPLICATION_DELAY_NS", parse_int, &selva_glob_config.debug_modify_replication_delay_ns },
@@ -66,14 +74,14 @@ struct cfg {
     { "FIND_INDEXING_POPULARITY_AVE_PERIOD", parse_int, &selva_glob_config.find_indexing_popularity_ave_period },
 };
 
-int parse_config_args(RedisModuleString **argv, int argc) {
+int parse_config_args(struct selva_string **argv, int argc) {
     if (argc % 2 != 0) {
         return SELVA_EINVAL;
     }
 
     for (int j = 0; j < argc; j += 2) {
-        const char * const cfg_name = RedisModule_StringPtrLen(argv[j], NULL);
-        const RedisModuleString *cfg_value = argv[j + 1];
+        const char * const cfg_name = selva_string_to_str(argv[j], NULL);
+        const struct selva_string *cfg_value = argv[j + 1];
         int found = 0;
 
         for (size_t i = 0; i < num_elem(cfg_map); i++) {
@@ -86,9 +94,7 @@ int parse_config_args(RedisModuleString **argv, int argc) {
                     return err;
                 }
 
-#if 0
-                fprintf(stderr, "Selva tunable changed: %s\n", cfg->name);
-#endif
+                SELVA_LOG_DBG("Selva tunable changed: %s\n", cfg->name);
 
                 found = 1;
                 break;
@@ -103,6 +109,8 @@ int parse_config_args(RedisModuleString **argv, int argc) {
     return 0;
 }
 
+/* FIXME Implement SELVA_MODINFO */
+#if 0
 static void mod_info(RedisModuleInfoCtx *ctx) {
     for (size_t i = 0; i < num_elem(cfg_map); i++) {
         struct cfg const * const cfg = &cfg_map[i];
@@ -118,3 +126,4 @@ static void mod_info(RedisModuleInfoCtx *ctx) {
     }
 }
 SELVA_MODINFO("config", mod_info);
+#endif

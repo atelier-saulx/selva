@@ -6,7 +6,7 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
-struct RedisModuleString;
+struct selva_string;
 
 /**
  * A structure type of global config params that can be changed at startup.
@@ -28,6 +28,6 @@ struct selva_glob_config {
 
 extern struct selva_glob_config selva_glob_config;
 
-int parse_config_args(struct RedisModuleString **argv, int argc);
+int parse_config_args(struct selva_string **argv, int argc);
 
 #endif /* _CONFIG_H_ */
