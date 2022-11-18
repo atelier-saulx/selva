@@ -356,6 +356,17 @@ static int create_node_object(struct SelvaHierarchy *hierarchy, SelvaHierarchyNo
     return 0;
 }
 
+/*
+ * This function is not really necessary but we have it to make sure that
+ * the metadata constructor linker set is always created.
+ */
+static void node_metadata_init(
+        const Selva_NodeId id __unused,
+        struct SelvaHierarchyMetadata *metadata) {
+    /* NOP */
+}
+SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(node_metadata_init);
+
 /**
  * Create a new node.
  */
