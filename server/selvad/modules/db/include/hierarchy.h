@@ -7,13 +7,13 @@
 #define _SELVA_HIERARCHY_H_
 
 #include "linker_set.h"
-#include "selva.h"
-#include "svector.h"
-#include "mempool.h"
+#include "selva_db.h"
+#include "util/svector.h"
+#include "util/mempool.h"
+#include "util/trx.h"
+#include "util/poptop.h"
 #include "tree.h"
-#include "trx.h"
 #include "edge.h"
-#include "poptop.h"
 #include "selva_object.h"
 #include "selva_set.h"
 #include "subscriptions.h"

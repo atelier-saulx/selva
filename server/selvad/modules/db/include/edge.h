@@ -10,8 +10,8 @@
  * Custom edge field management.
  */
 
-#include "svector.h"
-#include "selva.h"
+#include "util/svector.h"
+#include "selva_db.h"
 #include "selva_object.h"
 
 struct RedisModuleCtx;
