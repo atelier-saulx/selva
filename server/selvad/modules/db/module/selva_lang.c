@@ -12,6 +12,7 @@
 #include "selva_log.h"
 #include "selva_object.h"
 #include "selva_onload.h"
+#include "selva_server.h"
 #include "selva_lang.h"
 
 #define FALLBACK_LANG "en"
@@ -64,7 +65,7 @@ struct SelvaLang {
     locale_t locale;
 };
 
-static void SelvaLang_Reply(struct RedisModuleCtx *ctx, void *p);
+static void SelvaLang_Reply(struct selva_server_response_out *resp, void *p);
 static void SelvaLang_Free(void *p);
 
 static const struct SelvaObjectPointerOpts obj_opts = {
@@ -176,48 +177,36 @@ static void load_lang(const char *lang, const char *locale_name) {
 #define LOAD_LANG(lang, loc_lang) \
     load_lang(#lang, #loc_lang ".UTF-8");
 
-/* FIXME lang list command */
-#if 0
-int SelvaLang_ListCommand(RedisModuleCtx *ctx, RedisModuleString **argv __unused, int argc __unused) {
-    RedisModule_AutoMemory(ctx);
-
-    if (argc != 1) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    return SelvaObject_ReplyWithObject(ctx, NULL, langs, NULL, 0);
-}
-
-static void SelvaLang_Reply(struct RedisModuleCtx *ctx, void *p) {
+static void SelvaLang_Reply(struct selva_server_response_out *resp, void *p) {
     const struct SelvaLang *slang = (struct SelvaLang *)p;
 
-    RedisModule_ReplyWithArray(ctx, 2);
-    RedisModule_ReplyWithStringBuffer(ctx, slang->name, strnlen(slang->name, LANG_NAME_MAX));
-    RedisModule_ReplyWithStringBuffer(ctx, slang->territory, strnlen(slang->territory, LANG_TERRITORY_MAX));
+    selva_send_array(resp, 2);
+    selva_send_str(resp, slang->name, strnlen(slang->name, LANG_NAME_MAX));
+    selva_send_str(resp, slang->territory, strnlen(slang->territory, LANG_TERRITORY_MAX));
 }
-#endif
+
+static void lslang(struct selva_server_response_out *resp, const char *buf __unused, size_t size __unused) {
+    const char msg[] = "test";
+
+    selva_send_str(resp, msg, sizeof(msg) - 1);
+    server_send_end(resp);
+}
 
 static int SelvaLang_OnLoad(void) {
     langs = SelvaObject_New();
 
     FORALL_LANGS(LOAD_LANG)
 
-#if 0
-    if (RedisModule_CreateCommand(ctx, "selva.lang.list", SelvaLang_ListCommand, "readonly allow-loading", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-#endif
+    selva_mk_command(2, lslang);
 
     return 0;
 }
 SELVA_ONLOAD(SelvaLang_OnLoad);
 
-
 static void SelvaLang_OnUnload(void) {
     /*
      * We could free the langs here but the glibc locale system seems to leak
-     * memory anyway, so why bother. All memory will get eventually freed when
-     * Redis finally exits.
+     * memory anyway, so why bother.
      */
 #if 0
     SelvaObject_Destroy(langs);
