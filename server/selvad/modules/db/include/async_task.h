@@ -6,8 +6,6 @@
 #ifndef SELVA_ASYNC_TASK_H
 #define SELVA_ASYNC_TASK_H
 
-#include "selva.h"
-
 /**
  * Publish a subscription update.
  */

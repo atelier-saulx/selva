@@ -6,8 +6,6 @@
 #ifndef _SELVA_HIERARCHY_DETACHED_H_
 #define _SELVA_HIERARCHY_DETACHED_H_
 
-#include "selva.h"
-
 /**
  * Storage backend type of the detached subtree node.
  */

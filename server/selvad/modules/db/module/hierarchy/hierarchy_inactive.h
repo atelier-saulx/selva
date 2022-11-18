@@ -6,8 +6,6 @@
 #ifndef _SELVA_HIERARCHY_INACTIVE_H_
 #define _SELVA_HIERARCHY_INACTIVE_H_
 
-#include "selva.h"
-
 struct SelvaHierarchy;
 
 /**
