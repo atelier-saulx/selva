@@ -13,7 +13,6 @@
 #include "selva_error.h"
 #include "selva_proto.h"
 #include "util/selva_string.h"
-#define SELVA_SERVER_MAIN 1
 #include "selva_server.h"
 #include "server.h"
 

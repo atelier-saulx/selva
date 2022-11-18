@@ -6,6 +6,7 @@ OBJ := \
 	   server_frame.o \
 	   server_send.o
 DEP := $(OBJ:%.o=%.d)
+CFLAGS += -DSELVA_SERVER_MAIN=1
 LDFLAGS += -lutil
 TARGET := ../server$(MOD_SUFFIX)
 
