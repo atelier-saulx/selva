@@ -35,7 +35,9 @@ headers unless otherwise specified.
 
 `-` means empty message payload.
 
-| Name | cmd  | Request payload     | Response payload   | Description                                                    |
-|------|-----:|---------------------|--------------------|----------------------------------------------------------------|
-| PING |    0 | `"ping"` or nothing | `pong`             | Traditional ping/pong.                                         |
-| ECHO |    1 | string(s)           | strings(s)         | Echoes back the same strings that were present in the request. |
+| Name   | cmd  | Request payload     | Response payload        | Module | Description                                                      |
+|--------|-----:|---------------------|-------------------------|-|-------------------------------------------------------------------------|
+| PING   |    0 | `"ping"` or nothing | `pong`                  | server | Traditional ping/pong.                                           |
+| ECHO   |    1 | string(s)           | strings(s)              | server | Echoes back the same strings that were present in the request.   |
+| LSCMD  |    2 | -                   | an array of strings     | server | List all currently registered commands.                          |
+| LSLANG |    3 | -                   | an array of strings     |        | List supported languages.                                        |

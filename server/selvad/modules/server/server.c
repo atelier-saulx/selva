@@ -26,25 +26,30 @@ static const int use_tcp_nodelay = 1;
 #define MAX_CLIENTS 100 /*!< Maximum number of client connections. */
 static int server_sockfd;
 static struct conn_ctx clients[MAX_CLIENTS];
-selva_cmd_function commands[254];
+struct {
+    selva_cmd_function cmd_fn;
+    const char *cmd_name;
+} commands[254];
 
-int selva_mk_command(int nr, selva_cmd_function cmd)
+int selva_mk_command(int nr, const char *name, selva_cmd_function cmd)
 {
     if (nr < 0 || nr >= (int)num_elem(commands)) {
         return SELVA_EINVAL;
     }
 
-    if (commands[nr]) {
+    if (commands[nr].cmd_fn) {
         return SELVA_EEXIST;
     }
 
-    commands[nr] = cmd;
+    commands[nr].cmd_fn = cmd;
+    commands[nr].cmd_name = name;
+
     return 0;
 }
 
 static selva_cmd_function get_command(int nr)
 {
-    return (nr >= 0 && nr < (int)num_elem(commands)) ? commands[nr] : NULL;
+    return (nr >= 0 && nr < (int)num_elem(commands)) ? commands[nr].cmd_fn : NULL;
 }
 
 static void ping(struct selva_server_response_out *resp, const char *buf __unused, size_t size __unused) {
@@ -86,6 +91,20 @@ static void echo(struct selva_server_response_out *resp, const char *buf, size_t
         left -= bsize;
         p += bsize;
     }
+
+    server_send_end(resp);
+}
+
+static void cmdlist(struct selva_server_response_out *resp, const char *buf __unused, size_t size __unused) {
+    selva_send_array(resp, -1);
+    for (size_t i = 0; i < num_elem(commands); i++) {
+        if (commands[i].cmd_fn) {
+            selva_send_array(resp, 2);
+            selva_send_ll(resp, i);
+            selva_send_str(resp, commands[i].cmd_name, strlen(commands[i].cmd_name));
+        }
+    }
+    selva_send_array_end(resp);
 
     server_send_end(resp);
 }
@@ -304,8 +323,9 @@ __constructor void init(void)
     server_start_workers();
 #endif
 
-    selva_mk_command(0, ping);
-    selva_mk_command(1, echo);
+    SELVA_MK_COMMAND(0, ping);
+    SELVA_MK_COMMAND(1, echo);
+    SELVA_MK_COMMAND(2, cmdlist);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(3000);

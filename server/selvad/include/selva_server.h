@@ -23,7 +23,9 @@ struct selva_string;
  */
 typedef void (*selva_cmd_function)(struct selva_server_response_out *resp, const char *buf, size_t len);
 
-SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, selva_cmd_function cmd);
+SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, const char *name, selva_cmd_function cmd);
+#define SELVA_MK_COMMAND(nr, cmd) \
+    selva_mk_command(nr, #cmd, cmd)
 
 /**
  * Send buffer as a part of the response resp.
