@@ -2,18 +2,20 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <stddef.h>
+#include <sys/types.h>
 #include "selva_set.h"
 #include "selva_set_ops.h"
 
 /**
- * Test if the RMS set a is a subset of the set b.
+ * Test if the selva_String set a is a subset of the set b.
  */
-static int issub_rms(struct SelvaSet *a, struct SelvaSet *b) {
+static int issub_string(struct SelvaSet *a, struct SelvaSet *b) {
     struct SelvaSetElement *el;
     size_t found = 0;
 
-    SELVA_SET_RMS_FOREACH(el, a) {
-        found += SelvaSet_Has(b, el->value_rms);
+    SELVA_SET_STRING_FOREACH(el, a) {
+        found += SelvaSet_Has(b, el->value_string);
     }
 
     return found == SelvaSet_Size(a);
@@ -68,8 +70,8 @@ int SelvaSet_seta_in_setb(struct SelvaSet *a, struct SelvaSet *b) {
     }
 
     switch (a->type) {
-    case SELVA_SET_TYPE_RMSTRING:
-        return issub_rms(a, b);
+    case SELVA_SET_TYPE_STRING:
+        return issub_string(a, b);
     case SELVA_SET_TYPE_DOUBLE:
         return issub_double(a, b);
     case SELVA_SET_TYPE_LONGLONG:

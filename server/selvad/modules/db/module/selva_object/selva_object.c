@@ -1255,7 +1255,7 @@ int SelvaObject_AddStringSet(struct SelvaObject *obj, const struct selva_string 
     struct SelvaSet *selva_set;
     int err;
 
-    err = get_selva_set_modify(obj, key_name, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    err = get_selva_set_modify(obj, key_name, SELVA_SET_TYPE_STRING, &selva_set);
     if (err) {
         return err;
     }
@@ -1341,7 +1341,7 @@ int SelvaObject_RemStringSetStr(struct SelvaObject *obj, const char *key_name_st
     struct SelvaSetElement *el;
     int err;
 
-    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_RMSTRING, &selva_set);
+    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_STRING, &selva_set);
     if (err) {
         return err;
     }
@@ -1350,7 +1350,7 @@ int SelvaObject_RemStringSetStr(struct SelvaObject *obj, const char *key_name_st
     if (!el) {
         return SELVA_EINVAL;
     }
-    selva_string_free(el->value_rms);
+    selva_string_free(el->value_string);
     SelvaSet_DestroyElement(el);
 
     return 0;
@@ -2079,9 +2079,9 @@ static void replyWithSelvaSet(struct selva_server_response_out *resp, struct Sel
 
     selva_send_array(resp, -1);
 
-    if (set->type == SELVA_SET_TYPE_RMSTRING) {
-        SELVA_SET_RMS_FOREACH(el, set) {
-            selva_send_string(resp, el->value_rms);
+    if (set->type == SELVA_SET_TYPE_STRING) {
+        SELVA_SET_STRING_FOREACH(el, set) {
+            selva_send_string(resp, el->value_string);
             n++;
         }
     } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
@@ -2553,7 +2553,7 @@ static int rdb_load_object_set(struct selva_io *io, struct SelvaObject *obj, con
     enum SelvaSetType setType = selva_io_load_unsigned(io);
     const size_t n = selva_io_load_unsigned(io);
 
-    if (setType == SELVA_SET_TYPE_RMSTRING) {
+    if (setType == SELVA_SET_TYPE_STRING) {
         for (size_t j = 0; j < n; j++) {
             struct selva_string *value = selva_io_load_string(io);
 
@@ -2796,11 +2796,11 @@ static void rdb_save_object_set(struct selva_io *io, struct SelvaObjectKey *key)
     selva_io_save_unsigned(io, selva_set->type);
     selva_io_save_unsigned(io, selva_set->size);
 
-    if (selva_set->type == SELVA_SET_TYPE_RMSTRING) {
+    if (selva_set->type == SELVA_SET_TYPE_STRING) {
         struct SelvaSetElement *el;
 
-        SELVA_SET_RMS_FOREACH(el, &key->selva_set) {
-            selva_io_save_string(io, el->value_rms);
+        SELVA_SET_STRING_FOREACH(el, &key->selva_set) {
+            selva_io_save_string(io, el->value_string);
         }
     } else if (selva_set->type == SELVA_SET_TYPE_DOUBLE) {
         struct SelvaSetElement *el;

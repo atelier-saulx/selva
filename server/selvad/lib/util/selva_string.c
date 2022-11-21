@@ -233,6 +233,22 @@ int selva_string_append(struct selva_string *s, const char *str, size_t len)
     return 0;
 }
 
+int selva_string_replace(struct selva_string *s, const char *str, size_t len)
+{
+    const enum selva_string_flags flags = s->flags;
+
+    if (!(flags & SELVA_STRING_MUTABLE)) {
+        return SELVA_ENOTSUP;
+    }
+
+    /* TODO Optimize to avoid reallocs */
+    s->len = len;
+    s->p = selva_realloc(s->p, len + 1);
+    memcpy(s->p, str, len);
+
+    return 0;
+}
+
 void selva_string_free(struct selva_string *s)
 {
     const enum selva_string_flags flags = s->flags;

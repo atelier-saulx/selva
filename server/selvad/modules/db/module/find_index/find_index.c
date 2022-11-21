@@ -43,7 +43,7 @@ SELVA_TRACE_HANDLE(FindIndex_make_indexing_decission_proc);
 SELVA_TRACE_HANDLE(FindIndex_refresh);
 
 static void create_icb_timer(RedisModuleCtx *ctx, struct SelvaFindIndexControlBlock *icb);
-static void create_indexing_timer(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy);
+static void create_indexing_timer(struct SelvaHierarchy *hierarchy);
 
 static int is_indexing_active(const struct SelvaHierarchy *hierarchy) {
     return !!hierarchy->dyn_index.index_map;
@@ -444,7 +444,7 @@ static void make_indexing_decission_proc(RedisModuleCtx *ctx, void *data) {
 #endif
 
     hierarchy->dyn_index.proc_timer_active = 0;
-    create_indexing_timer(ctx, hierarchy);
+    create_indexing_timer(hierarchy);
 
     /*
      * First run the maintenance to determine the new cutoff limit and
@@ -769,7 +769,7 @@ static void create_icb_timer(RedisModuleCtx *ctx, struct SelvaFindIndexControlBl
  * Create a timer for indexing the hierarchy.
  * Only one timer per hierarchy should be created.
  */
-static void create_indexing_timer(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy) {
+static void create_indexing_timer(struct SelvaHierarchy *hierarchy) {
     const mstime_t period = selva_glob_config.find_indexing_interval;
 
     assert(hierarchy->dyn_index.proc_timer_active == 0);
@@ -777,7 +777,7 @@ static void create_indexing_timer(RedisModuleCtx *ctx, struct SelvaHierarchy *hi
     hierarchy->dyn_index.proc_timer_active = 1;
 }
 
-void SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
+void SelvaFindIndex_Init(SelvaHierarchy *hierarchy) {
     if (selva_glob_config.find_indices_max == 0) {
         return; /* Indexing disabled. */
     }
@@ -793,7 +793,7 @@ void SelvaFindIndex_Init(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy) {
      */
     poptop_init(&hierarchy->dyn_index.top_indices, 2 * selva_glob_config.find_indices_max, 0.0f);
 
-    create_indexing_timer(ctx, hierarchy);
+    create_indexing_timer(hierarchy);
 }
 
 static void deinit_index_obj(struct SelvaHierarchy *hierarchy, struct SelvaObject *obj) {

@@ -17,6 +17,7 @@ struct SelvaHierarchyMetadata;
 struct Selva_Subscription;
 struct Selva_SubscriptionMarker;
 struct hierarchy_subscriptions_tree;
+struct selva_string;
 
 /**
  * Subscription Marker Flags.
@@ -289,7 +290,7 @@ int Selva_AddSubscriptionAliasMarker(
         struct SelvaHierarchy *hierarchy,
         const Selva_SubscriptionId sub_id,
         Selva_SubscriptionMarkerId marker_id,
-        struct RedisModuleString *alias_name,
+        struct selva_string *alias_name,
         Selva_NodeId node_id);
 
 /**
@@ -399,7 +400,7 @@ void SelvaSubscriptions_DeferFieldChangeEvents(
         size_t field_len);
 void SelvaSubscriptions_DeferAliasChangeEvents(
         struct SelvaHierarchy *hierarchy,
-        struct RedisModuleString *alias_name);
+        struct selva_string *alias_name);
 void SelvaSubscriptions_DeferTriggerEvents(
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,

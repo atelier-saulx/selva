@@ -10,10 +10,17 @@ OBJ := \
 	   module/hierarchy/traversal.o \
 	   module/hierarchy/traversal_order.o \
 	   module/hierarchy/types.o \
+	   module/rpn/rpn.o \
+	   module/rpn/rpn_eval.o \
 	   module/selva_lang.o \
 	   module/selva_object/selva_object.o \
 	   module/selva_object/selva_object_foreach.o \
+	   module/selva_set/field_has.o \
+	   module/selva_set/fielda_in_fieldb.o \
+	   module/selva_set/fielda_in_setb.o \
 	   module/selva_set/selva_set.o \
+	   module/selva_set/seta_in_fieldb.o \
+	   module/selva_set/seta_in_setb.o \
 	   module/selva_type.o \
 	   module/shared_strings.o
 #	   module/selva_object/selva_object_commands.o

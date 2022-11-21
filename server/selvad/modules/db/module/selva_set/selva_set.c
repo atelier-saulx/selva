@@ -12,9 +12,9 @@
 #include "alias.h"
 #include "selva_set.h"
 
-int SelvaSet_CompareRms(struct SelvaSetElement *a, struct SelvaSetElement *b) {
-    struct selva_string *ra = a->value_rms;
-    struct selva_string *rb = b->value_rms;
+int SelvaSet_CompareString(struct SelvaSetElement *a, struct SelvaSetElement *b) {
+    struct selva_string *ra = a->value_string;
+    struct selva_string *rb = b->value_string;
     TO_STR(ra, rb);
 
     if (ra_len < rb_len) {
@@ -44,26 +44,26 @@ int SelvaSet_CompareNodeId(struct SelvaSetElement *a, struct SelvaSetElement *b)
     return memcmp(a->value_nodeId, b->value_nodeId, SELVA_NODE_ID_SIZE);
 }
 
-RB_GENERATE(SelvaSetRms, SelvaSetElement, _entry, SelvaSet_CompareRms)
+RB_GENERATE(SelvaSetString, SelvaSetElement, _entry, SelvaSet_CompareString)
 RB_GENERATE(SelvaSetDouble, SelvaSetElement, _entry, SelvaSet_CompareDouble)
 RB_GENERATE(SelvaSetLongLong, SelvaSetElement, _entry, SelvaSet_CompareLongLong)
 RB_GENERATE(SelvaSetNodeId, SelvaSetElement, _entry, SelvaSet_CompareNodeId)
 
-int SelvaSet_AddRms(struct SelvaSet *set, struct selva_string *s) {
+int SelvaSet_AddString(struct SelvaSet *set, struct selva_string *s) {
     struct SelvaSetElement *el;
 
-    if (set->type != SELVA_SET_TYPE_RMSTRING) {
+    if (set->type != SELVA_SET_TYPE_STRING) {
         return SELVA_EINTYPE;
     }
 
-    if (SelvaSet_HasRms(set, s)) {
+    if (SelvaSet_HasString(set, s)) {
         return SELVA_EEXIST;
     }
 
     el = selva_calloc(1, sizeof(struct SelvaSetElement));
-    el->value_rms = s;
+    el->value_string = s;
 
-    (void)RB_INSERT(SelvaSetRms, &set->head_rms, el);
+    (void)RB_INSERT(SelvaSetString, &set->head_string, el);
     set->size++;
 
     return 0;
@@ -141,16 +141,16 @@ void SelvaSet_DestroyElement(struct SelvaSetElement *el) {
     selva_free(el);
 }
 
-static void SelvaSet_DestroyRms(struct SelvaSet *set) {
-    struct SelvaSetRms *head = &set->head_rms;
+static void SelvaSet_DestroyString(struct SelvaSet *set) {
+    struct SelvaSetString *head = &set->head_string;
     struct SelvaSetElement *el;
     struct SelvaSetElement *next;
 
-    for (el = RB_MIN(SelvaSetRms, head); el != NULL; el = next) {
-        next = RB_NEXT(SelvaSetRms, head, el);
-        RB_REMOVE(SelvaSetRms, head, el);
+    for (el = RB_MIN(SelvaSetString, head); el != NULL; el = next) {
+        next = RB_NEXT(SelvaSetString, head, el);
+        RB_REMOVE(SelvaSetString, head, el);
 
-        selva_string_free(el->value_rms);
+        selva_string_free(el->value_string);
         SelvaSet_DestroyElement(el);
     }
     set->size = 0;
@@ -199,7 +199,7 @@ static void SelvaSet_DestroyNodeId(struct SelvaSet *set) {
 }
 
 static void (*const SelvaSet_Destructors[])(struct SelvaSet *set) = {
-    [SELVA_SET_TYPE_RMSTRING] = SelvaSet_DestroyRms,
+    [SELVA_SET_TYPE_STRING] = SelvaSet_DestroyString,
     [SELVA_SET_TYPE_DOUBLE] = SelvaSet_DestroyDouble,
     [SELVA_SET_TYPE_LONGLONG] = SelvaSet_DestroyLongLong,
     [SELVA_SET_TYPE_NODEID] = SelvaSet_DestroyNodeId,
@@ -213,34 +213,34 @@ void SelvaSet_Destroy(struct SelvaSet *set) {
     }
 }
 
-struct selva_string *SelvaSet_FindRms(struct SelvaSet *set, struct selva_string *s) {
+struct selva_string *SelvaSet_FindString(struct SelvaSet *set, struct selva_string *s) {
     struct SelvaSetElement find = {
-        .value_rms = s,
+        .value_string = s,
     };
     struct selva_string *res = NULL;
 
-    if (likely(set->type == SELVA_SET_TYPE_RMSTRING)) {
+    if (likely(set->type == SELVA_SET_TYPE_STRING)) {
         struct SelvaSetElement *el;
 
-        el = RB_FIND(SelvaSetRms, &set->head_rms, &find);
+        el = RB_FIND(SelvaSetString, &set->head_string, &find);
         if (el) {
-            res = el->value_rms;
+            res = el->value_string;
         }
     }
 
     return res;
 }
 
-int SelvaSet_HasRms(struct SelvaSet *set, struct selva_string *s) {
+int SelvaSet_HasString(struct SelvaSet *set, struct selva_string *s) {
     struct SelvaSetElement find = {
-        .value_rms = s,
+        .value_string = s,
     };
 
-    if (unlikely(set->type != SELVA_SET_TYPE_RMSTRING)) {
+    if (unlikely(set->type != SELVA_SET_TYPE_STRING)) {
         return 0;
     }
 
-    return !!RB_FIND(SelvaSetRms, &set->head_rms, &find);
+    return !!RB_FIND(SelvaSetString, &set->head_string, &find);
 }
 
 int SelvaSet_HasDouble(struct SelvaSet *set, double d) {
@@ -283,15 +283,15 @@ int SelvaSet_HasNodeId(struct SelvaSet *set, const Selva_NodeId node_id) {
     return !!RB_FIND(SelvaSetNodeId, &set->head_nodeId, &find);
 }
 
-struct SelvaSetElement *SelvaSet_RemoveRms(struct SelvaSet *set, struct selva_string *s) {
+struct SelvaSetElement *SelvaSet_RemoveString(struct SelvaSet *set, struct selva_string *s) {
     struct SelvaSetElement find = {
-        .value_rms = s,
+        .value_string = s,
     };
     struct SelvaSetElement *el = NULL;
 
-    if (likely(set->type == SELVA_SET_TYPE_RMSTRING)) {
-        el = RB_FIND(SelvaSetRms, &set->head_rms, &find);
-        if (el && RB_REMOVE(SelvaSetRms, &set->head_rms, el)) {
+    if (likely(set->type == SELVA_SET_TYPE_STRING)) {
+        el = RB_FIND(SelvaSetString, &set->head_string, &find);
+        if (el && RB_REMOVE(SelvaSetString, &set->head_string, el)) {
             set->size--;
         }
     }
@@ -356,12 +356,12 @@ int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src) {
         return SELVA_EINTYPE;
     }
 
-    if (type == SELVA_SET_TYPE_RMSTRING) {
-        SELVA_SET_RMS_FOREACH_SAFE(el, src, tmp) {
-            if (!SelvaSet_Has(dst, el->value_rms)) {
-                RB_REMOVE(SelvaSetRms, &src->head_rms, el);
+    if (type == SELVA_SET_TYPE_STRING) {
+        SELVA_SET_STRING_FOREACH_SAFE(el, src, tmp) {
+            if (!SelvaSet_Has(dst, el->value_string)) {
+                RB_REMOVE(SelvaSetString, &src->head_string, el);
                 src->size--;
-                RB_INSERT(SelvaSetRms, &dst->head_rms, el);
+                RB_INSERT(SelvaSetString, &dst->head_string, el);
                 dst->size++;
             }
         }
@@ -412,7 +412,7 @@ int SelvaSet_Union(struct SelvaSet *res, ...) {
         goto out;
     }
 
-    if (type == SELVA_SET_TYPE_RMSTRING) {
+    if (type == SELVA_SET_TYPE_STRING) {
         struct SelvaSet *set;
 
         while ((set = va_arg(argp, struct SelvaSet *))) {
@@ -422,13 +422,13 @@ int SelvaSet_Union(struct SelvaSet *res, ...) {
                 continue;
             }
 
-            SELVA_SET_RMS_FOREACH(el, set) {
-                struct selva_string *rms;
+            SELVA_SET_STRING_FOREACH(el, set) {
+                struct selva_string *string;
 
-                rms = selva_string_dup(el->value_rms, selva_string_get_flags(el->value_rms));
-                err = SelvaSet_Add(res, rms);
+                string = selva_string_dup(el->value_string, selva_string_get_flags(el->value_string));
+                err = SelvaSet_Add(res, string);
                 if (err) {
-                    selva_string_free(rms);
+                    selva_string_free(string);
                     goto out;
                 }
             }

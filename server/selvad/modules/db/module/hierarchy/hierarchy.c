@@ -239,7 +239,7 @@ static int SelvaHierarchyNode_Compare(const SelvaHierarchyNode *a, const SelvaHi
 
 RB_GENERATE_STATIC(hierarchy_index_tree, SelvaHierarchyNode, _index_entry, SelvaHierarchyNode_Compare)
 
-SelvaHierarchy *SelvaModify_NewHierarchy(struct RedisModuleCtx *ctx) {
+SelvaHierarchy *SelvaModify_NewHierarchy(void) {
     SelvaHierarchy *hierarchy = selva_calloc(1, sizeof(*hierarchy));
 
     mempool_init(&hierarchy->node_pool, HIERARCHY_SLAB_SIZE, sizeof(SelvaHierarchyNode), _Alignof(SelvaHierarchyNode));
@@ -248,7 +248,7 @@ SelvaHierarchy *SelvaModify_NewHierarchy(struct RedisModuleCtx *ctx) {
     SelvaObject_Init(hierarchy->types._obj_data);
     Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
     SelvaSubscriptions_InitHierarchy(hierarchy);
-    SelvaFindIndex_Init(ctx, hierarchy);
+    SelvaFindIndex_Init(hierarchy);
 
     if (SelvaModify_SetHierarchy(hierarchy, ROOT_NODE_ID, 0, NULL, 0, NULL, NULL) < 0) {
         SelvaModify_DestroyHierarchy(hierarchy);
@@ -2184,7 +2184,7 @@ static int bfs_expression(
         struct SelvaSet fields;
         struct SelvaSetElement *field_el;
 
-        SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
+        SelvaSet_Init(&fields, SELVA_SET_TYPE_STRING);
 
         rpn_set_reg(rpn_ctx, 0, node->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
         rpn_set_hierarchy_node(rpn_ctx, hierarchy, node);
@@ -2199,9 +2199,9 @@ static int bfs_expression(
 
         BFS_VISIT_NODE(redis_ctx, hierarchy);
 
-        SELVA_SET_RMS_FOREACH(field_el, &fields) {
+        SELVA_SET_STRING_FOREACH(field_el, &fields) {
             size_t field_len;
-            const char *field_str = selva_string_to_str(field_el->value_rms, &field_len);
+            const char *field_str = selva_string_to_str(field_el->value_string, &field_len);
             enum SelvaTraversal field_type;
             const SVector *adj_vec;
             struct SVectorIterator it;
@@ -2294,16 +2294,16 @@ static int traverse_ref(
     if (!ref_set) {
         return SELVA_HIERARCHY_ENOENT;
     }
-    if (ref_set->type != SELVA_SET_TYPE_RMSTRING) {
+    if (ref_set->type != SELVA_SET_TYPE_STRING) {
         return SELVA_EINTYPE;
     }
 
     struct SelvaSetElement *el;
-    SELVA_SET_RMS_FOREACH(el, ref_set) {
+    SELVA_SET_STRING_FOREACH(el, ref_set) {
         Selva_NodeId nodeId;
         SelvaHierarchyNode *node;
 
-        selva_string2node_id(nodeId, el->value_rms);
+        selva_string2node_id(nodeId, el->value_string);
         node = SelvaHierarchy_FindNode(hierarchy, nodeId);
         if (node) {
             if (cb->node_cb(hierarchy, node, cb->node_arg)) {
@@ -2476,7 +2476,7 @@ int SelvaHierarchy_TraverseExpression(
         return SELVA_HIERARCHY_ETRMAX;
     }
 
-    SelvaSet_Init(&fields, SELVA_SET_TYPE_RMSTRING);
+    SelvaSet_Init(&fields, SELVA_SET_TYPE_STRING);
 
     rpn_set_reg(rpn_ctx, 0, head->id, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
     rpn_set_hierarchy_node(rpn_ctx, hierarchy, head);
@@ -2491,9 +2491,9 @@ int SelvaHierarchy_TraverseExpression(
     }
 
     /* For each field in the set. */
-    SELVA_SET_RMS_FOREACH(field_el, &fields) {
+    SELVA_SET_STRING_FOREACH(field_el, &fields) {
         size_t field_len;
-        const char *field_str = selva_string_to_str(field_el->value_rms, &field_len);
+        const char *field_str = selva_string_to_str(field_el->value_string, &field_len);
         enum SelvaTraversal field_type;
         const SVector *adj_vec;
         struct SVectorIterator it;
@@ -3205,7 +3205,10 @@ static void *Hierarchy_RDBLoad(struct selva_io *io, int encver) {
         return NULL;
     }
 
-    hierarchy = SelvaModify_NewHierarchy(RedisModule_GetContextFromIO(io));
+    /*
+     * TODO This should probably replace the main_hierarchy.
+     */
+    hierarchy = SelvaModify_NewHierarchy();
     if (!hierarchy) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to create a new hierarchy");
         return NULL;
@@ -3940,7 +3943,7 @@ static int Hierarchy_OnLoad(struct RedisModuleCtx *ctx) {
     }
 #endif
 
-    main_hierarchy = SelvaModify_NewHierarchy(NULL); /* FIXME arg */
+    main_hierarchy = SelvaModify_NewHierarchy();
     if (!main_hierarchy) { /* TODO Can this even fail? */
         return SELVA_HIERARCHY_ENOMEM;
     }

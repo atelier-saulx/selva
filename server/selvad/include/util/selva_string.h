@@ -56,6 +56,7 @@ struct selva_string *selva_string_dup(struct selva_string *s, enum selva_string_
 
 /**
  * Truncate the string s to a new length of newlen.
+ * s must be mutable.
  * @param s is a pointer to a selva_string.
  * @param newlen is the new length of the string.
  * @returns 0 if succeeded; Otherwise an error code.
@@ -64,10 +65,18 @@ int selva_string_truncate(struct selva_string *s, size_t newlen);
 
 /**
  * Append str of length len to the string s.
+ * s must be mutable.
  * @param s is a pointer to a selva_string.
  * @returns 0 if succeeded; Otherwise an error code.
  */
 int selva_string_append(struct selva_string *s, const char *str, size_t len);
+
+/**
+ * Replace current value of the string s with str.
+ * s must be mutable.
+ * @returns 0 if succeeded; Otherwise an error code.
+ */
+int selva_string_replace(struct selva_string *s, const char *str, size_t len);
 
 /**
  * Free the strings s.

@@ -10,16 +10,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <time.h>
 #include "jemalloc.h"
-#include "selva.h"
-#include "../rmutil/sds.h"
-#include "cstrings.h"
+#include "selva_error.h"
+#include "selva_log.h"
+#include "util/cstrings.h"
+#include "util/selva_string.h"
+#include "util/timestamp.h"
+#include "selva_db.h"
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"
 #include "selva_set_ops.h"
-#include "timestamp.h"
 #include "rpn.h"
 
 #define RPN_ASSERTS         0
@@ -55,15 +58,6 @@ struct redisObjectAccessor {
     int refcount;
     void *ptr;
 };
-
-/**
- * RedisModuleString template.
- * This string can be used to ensure that RedisModule_CreateString() will create
- * a createRawStringObject instead of using an embedded string. This must be
- * longer than OBJ_ENCODING_EMBSTR_SIZE_LIMIT and preferrably large enough to
- * fit most of the strings we'll ever see to avoid reallocs.
- */
-#define RMSTRING_TEMPLATE "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 #define OPERAND(ctx, x) \
     struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = pop(ctx); \
@@ -177,8 +171,8 @@ void rpn_destroy(struct rpn_ctx *ctx) {
             free_rpn_operand(&v);
         }
 
-        if (ctx->rms) {
-            RedisModule_FreeString(NULL, ctx->rms);
+        if (ctx->string) {
+            selva_string_free(ctx->string);
         }
         selva_free(ctx);
     }
@@ -206,60 +200,17 @@ __used static int isnan_undefined(double x) {
     return i & 1;
 }
 
-/**
- * Copy C string to RedisModuleString.
- * Be careful to not change something that is already referenced somewhere.
- */
-static int cpy2rm_str(RedisModuleString **rms_p, const char *str, size_t len) {
-    RedisModuleString *rms;
-
-    if (!*rms_p) {
-        *rms_p = RedisModule_CreateString(NULL, RMSTRING_TEMPLATE, sizeof(RMSTRING_TEMPLATE));
-    }
-
-    rms = *rms_p;
-    if (((struct redisObjectAccessor *)rms)->refcount > 1) {
-        SELVA_LOG(SELVA_LOGL_ERR,
-                  "The given RMS (%p) is already in use and cannot be modified",
-                  rms);
-        return RPN_ERR_NOTSUP;
-    }
-
-    /*
-     * The sds string pointer might change so we need to update the
-     * redis object every time. This is not how the RM API nor robj
-     * was meant to be used but we know enough about the internals
-     * to be confident with this.
-     *
-     * There is a huge performance benefit in doing all this mangling
-     * as we avoid doing dozens of mallocs and frees.
-     */
-    sds old = (sds)RedisModule_StringPtrLen(rms, NULL);
-    sds new = sdscpylen(old, str, len);
-    ((struct redisObjectAccessor *)rms)->ptr = new;
-
-    if (unlikely(!new)) {
-        /*
-         * Unfortunately we'll leak the robj in this case. There is no safe way
-         * to recover because we are already messing with the internals of the
-         * redis object. We could try to allocate a smaller buffer at this point
-         * and attempt to do a partial recovery but doing such a trickery
-         * doesn't seem too wise to be implemented here, given that we are
-         * already hoping to never end up inside this clause.
-         */
-        *rms_p = NULL;
-
-        return RPN_ERR_ENOMEM;
-    }
-
-    return 0;
-}
-
-static int rpn_operand2rms(RedisModuleString **rms, const struct rpn_operand *o) {
+static int rpn_operand2string(struct rpn_ctx *ctx, const struct rpn_operand *o) {
     const char *str = OPERAND_GET_S(o);
     const size_t len = OPERAND_GET_S_LEN(o);
 
-    return cpy2rm_str(rms, str, len);
+    if (!ctx->string) {
+        ctx->string = selva_string_create(str, len, SELVA_STRING_MUTABLE);
+    } else {
+        (void)selva_string_replace(ctx->string, str, len);
+    }
+
+    return RPN_ERR_OK;
 }
 
 static struct rpn_operand *alloc_rpn_operand(size_t s_size) {
@@ -416,16 +367,16 @@ static enum rpn_error push_empty_value(struct rpn_ctx *ctx) {
  * Push a RedisModuleString to the stack.
  * Note that the string must not be freed while it's still in use by rpn.
  */
-static enum rpn_error push_rm_string_result(struct rpn_ctx *ctx, const RedisModuleString *rms) {
+static enum rpn_error push_selva_string_result(struct rpn_ctx *ctx, const struct selva_string *s) {
     size_t slen;
-    struct rpn_operand *v = alloc_rpn_operand(sizeof(RedisModuleString *));
+    struct rpn_operand *v = alloc_rpn_operand(sizeof(struct selva_string *));
 
     if (unlikely(!v)) {
         return RPN_ERR_ENOMEM;
     }
 
     v->flags.spused = 1;
-    v->sp = RedisModule_StringPtrLen(rms, &slen);
+    v->sp = selva_string_to_str(s, &slen);
     v->s_size = slen + 1;
     v->d = nan_undefined();
 
@@ -532,13 +483,13 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
     return RPN_ERR_OK;
 }
 
-enum rpn_error rpn_set_reg_rms(struct rpn_ctx *ctx, size_t i, RedisModuleString *rms) {
-    TO_STR(rms);
-    const size_t size = rms_len + 1;
+enum rpn_error rpn_set_reg_string(struct rpn_ctx *ctx, size_t i, struct selva_string *s) {
+    TO_STR(s);
+    const size_t size = s_len + 1;
     char *arg;
 
     arg = selva_malloc(size);
-    memcpy(arg, rms_str, size);
+    memcpy(arg, s_str, size);
     return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_SELVA_FREE);
 }
 
@@ -634,13 +585,13 @@ static enum rpn_error SelvaSet_Union_err2rpn_error(int err) {
 }
 
 static enum rpn_error add2slvset_res(struct rpn_operand *res, const char *str, size_t len) {
-    RedisModuleString *s;
+    struct selva_string *s;
     int err;
 
-    s = RedisModule_CreateString(NULL, str, len);
+    s = selva_string_create(str, len, 0);
     err = SelvaSet_Add(res->set, s);
     if (err) {
-        RedisModule_FreeString(NULL, s);
+        selva_string_free(s);
 
         if (err != SELVA_EEXIST) {
             return SelvaSet_Add_err2rpn_error(err);
@@ -733,7 +684,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
             }
         } else { /* Assume RPN_LVTYPE_STRING */
             if (field_type == SELVA_OBJECT_STRING && any.str) {
-                return push_rm_string_result(ctx, any.str);
+                return push_selva_string_result(ctx, any.str);
             } else {
 #if 0
                 fprintf(stderr, "%s:%d: Field \"%s\" not found in node: \"%.*s\"\n",
@@ -747,111 +698,111 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
     }
 }
 
-static enum rpn_error rpn_op_add(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_add(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, a->d + b->d);
 }
 
-static enum rpn_error rpn_op_sub(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_sub(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, a->d - b->d);
 }
 
-static enum rpn_error rpn_op_div(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_div(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, a->d / b->d);
 }
 
-static enum rpn_error rpn_op_mul(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_mul(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, a->d * b->d);
 }
 
-static enum rpn_error rpn_op_rem(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_rem(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, js_fmod(a->d, b->d));
 }
 
-static enum rpn_error rpn_op_eq(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_eq(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, a->d == b->d);
 }
 
-static enum rpn_error rpn_op_ne(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_ne(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, a->d != b->d);
 }
 
-static enum rpn_error rpn_op_lt(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_lt(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, a->d < b->d);
 }
 
-static enum rpn_error rpn_op_gt(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_gt(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, a->d > b->d);
 }
 
-static enum rpn_error rpn_op_le(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_le(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, a->d <= b->d);
 }
 
-static enum rpn_error rpn_op_ge(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_ge(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_double_result(ctx, a->d >= b->d);
 }
 
-static enum rpn_error rpn_op_not(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_not(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
 
     return push_int_result(ctx, !to_bool(a));
 }
 
-static enum rpn_error rpn_op_and(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_and(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_int_result(ctx, to_bool(a) && to_bool(b));
 }
 
-static enum rpn_error rpn_op_or(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_or(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_int_result(ctx, to_bool(a) || to_bool(b));
 }
 
-static enum rpn_error rpn_op_xor(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_xor(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_int_result(ctx, to_bool(a) ^ to_bool(b));
 }
 
-static enum rpn_error rpn_op_necess(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_necess(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
 
     if (to_bool(a)) {
@@ -865,7 +816,7 @@ static enum rpn_error rpn_op_necess(struct RedisModuleCtx *redis_ctx __unused, s
     }
 }
 
-static enum rpn_error rpn_op_possib(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_possib(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
 
     if (to_bool(a)) {
@@ -879,7 +830,7 @@ static enum rpn_error rpn_op_possib(struct RedisModuleCtx *redis_ctx __unused, s
     }
 }
 
-static enum rpn_error rpn_op_dup(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_dup(struct rpn_ctx *ctx) {
     enum rpn_error err;
     OPERAND(ctx, a);
 
@@ -887,7 +838,7 @@ static enum rpn_error rpn_op_dup(struct RedisModuleCtx *redis_crx __unused, stru
     return err ? err : push(ctx, a);
 }
 
-static enum rpn_error rpn_op_swap(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_swap(struct rpn_ctx *ctx) {
     enum rpn_error err;
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -896,7 +847,7 @@ static enum rpn_error rpn_op_swap(struct RedisModuleCtx *redis_crx __unused, str
     return err ? err : push(ctx, b);
 }
 
-static enum rpn_error rpn_op_ternary(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_ternary(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     OPERAND(ctx, c);
@@ -908,13 +859,13 @@ static enum rpn_error rpn_op_ternary(struct RedisModuleCtx *redis_ctx __unused, 
     }
 }
 
-static enum rpn_error rpn_op_drop(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_drop(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
 
     return RPN_ERR_OK;
 }
 
-static enum rpn_error rpn_op_rot(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_rot(struct rpn_ctx *ctx) {
     enum rpn_error err;
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -931,7 +882,7 @@ static enum rpn_error rpn_op_rot(struct RedisModuleCtx *redis_crx __unused, stru
     return push(ctx, a);
 }
 
-static enum rpn_error rpn_op_over(struct RedisModuleCtx *redis_crx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_over(struct rpn_ctx *ctx) {
     enum rpn_error err;
     OPERAND(ctx, a);
     OPERAND(ctx, b);
@@ -947,7 +898,7 @@ static enum rpn_error rpn_op_over(struct RedisModuleCtx *redis_crx __unused, str
     return push(ctx, b);
 }
 
-static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_exists(struct rpn_ctx *ctx) {
     int exists;
     OPERAND(ctx, field);
     const char *field_str = OPERAND_GET_S(field);
@@ -973,7 +924,7 @@ static enum rpn_error rpn_op_exists(struct RedisModuleCtx *redis_ctx __unused, s
     return push_int_result(ctx, exists);
 }
 
-static enum rpn_error rpn_op_range(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_range(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     OPERAND(ctx, c);
@@ -981,7 +932,7 @@ static enum rpn_error rpn_op_range(struct RedisModuleCtx *redis_ctx __unused, st
     return push_int_result(ctx, a->d <= b->d && b->d <= c->d);
 }
 
-static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_has(struct rpn_ctx *ctx) {
     struct SelvaSet *set;
     OPERAND(ctx, s); /* set */
     OPERAND(ctx, v); /* value */
@@ -1004,12 +955,12 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ct
     }
 
     if (set) {
-        if (set->type == SELVA_SET_TYPE_RMSTRING) {
-            if(rpn_operand2rms(&ctx->rms, v)) {
+        if (set->type == SELVA_SET_TYPE_STRING) {
+            if(rpn_operand2string(ctx, v)) {
                 return RPN_ERR_ENOMEM;
             }
 
-            return push_int_result(ctx, SelvaSet_Has(set, ctx->rms));
+            return push_int_result(ctx, SelvaSet_Has(set, ctx->string));
         } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
             return push_int_result(ctx, SelvaSet_Has(set, v->d));
         } else if (set->type == SELVA_SET_TYPE_LONGLONG) {
@@ -1031,16 +982,16 @@ static enum rpn_error rpn_op_has(struct RedisModuleCtx *redis_ctx, struct rpn_ct
             const char *value_str = OPERAND_GET_S(v);
             const size_t value_len = OPERAND_GET_S_LEN(v);
 
-            res = SelvaSet_field_has_string(redis_ctx,ctx->hierarchy, ctx->node, field_name_str, field_name_len, value_str, value_len);
+            res = SelvaSet_field_has_string(ctx->hierarchy, ctx->node, field_name_str, field_name_len, value_str, value_len);
         } else { /* Assume number */
-            res = SelvaSet_field_has_double(redis_ctx, ctx->hierarchy, ctx->node, field_name_str, field_name_len, v->d);
+            res = SelvaSet_field_has_double(ctx->hierarchy, ctx->node, field_name_str, field_name_len, v->d);
         }
 
         return push_int_result(ctx, !!res);
     }
 }
 
-static enum rpn_error rpn_op_typeof(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_typeof(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     char t[SELVA_NODE_TYPE_SIZE];
     const char *s = OPERAND_GET_S(a);
@@ -1054,7 +1005,7 @@ static enum rpn_error rpn_op_typeof(struct RedisModuleCtx *redis_ctx __unused, s
     return push_string_result(ctx, t, sizeof(t));
 }
 
-static enum rpn_error rpn_op_strcmp(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_strcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     const size_t a_size = a->s_size;
@@ -1067,7 +1018,7 @@ static enum rpn_error rpn_op_strcmp(struct RedisModuleCtx *redis_ctx __unused, s
                                     a_size));
 }
 
-static enum rpn_error rpn_op_idcmp(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_idcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     const int size_ok = a->s_size >= SELVA_NODE_ID_SIZE && b->s_size >= SELVA_NODE_ID_SIZE;
@@ -1076,7 +1027,7 @@ static enum rpn_error rpn_op_idcmp(struct RedisModuleCtx *redis_ctx __unused, st
                            !memcmp(OPERAND_GET_S(a), OPERAND_GET_S(b), SELVA_NODE_ID_SIZE));
 }
 
-static enum rpn_error rpn_op_cidcmp(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
 
 #if RPN_ASSERTS
@@ -1091,19 +1042,19 @@ static enum rpn_error rpn_op_cidcmp(struct RedisModuleCtx *redis_ctx __unused, s
     return push_int_result(ctx, !Selva_CmpNodeType(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0])));
 }
 
-static enum rpn_error rpn_op_getsfld(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_getsfld(struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
 
     return rpn_getfld(ctx, field, RPN_LVTYPE_STRING);
 }
 
-static enum rpn_error rpn_op_getdfld(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_getdfld(struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
 
     return rpn_getfld(ctx, field, RPN_LVTYPE_NUMBER);
 }
 
-static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_ffirst(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     struct SelvaSet *set_a;
     RESULT_OPERAND(result);
@@ -1115,18 +1066,18 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
     }
 
     set_a = OPERAND_GET_SET(a);
-    if (!set_a || set_a->type != SELVA_SET_TYPE_RMSTRING) {
+    if (!set_a || set_a->type != SELVA_SET_TYPE_STRING) {
         return RPN_ERR_TYPE;
     }
 
-    result = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
+    result = alloc_rpn_set_operand(SELVA_SET_TYPE_STRING);
     if (!result) {
         return RPN_ERR_ENOMEM;
     }
 
-    SELVA_SET_RMS_FOREACH(el, set_a) {
+    SELVA_SET_STRING_FOREACH(el, set_a) {
         size_t field_len;
-        const char *field_str = RedisModule_StringPtrLen(el->value_rms, &field_len);
+        const char *field_str = selva_string_to_str(el->value_string, &field_len);
 
         if (SelvaHierarchy_IsNonEmptyField(node, field_str, field_len)) {
             enum rpn_error err;
@@ -1149,7 +1100,7 @@ static enum rpn_error rpn_op_ffirst(struct RedisModuleCtx *redis_ctx __unused, s
     return RPN_ERR_OK;
 }
 
-static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_aon(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     struct SelvaSet *set_a;
     struct SelvaSetElement *el;
@@ -1160,18 +1111,18 @@ static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, stru
     }
 
     set_a = OPERAND_GET_SET(a);
-    if (!set_a || set_a->type != SELVA_SET_TYPE_RMSTRING) {
+    if (!set_a || set_a->type != SELVA_SET_TYPE_STRING) {
         return RPN_ERR_TYPE;
     }
 
-    SELVA_SET_RMS_FOREACH(el, set_a) {
+    SELVA_SET_STRING_FOREACH(el, set_a) {
         size_t field_len;
-        const char *field_str = RedisModule_StringPtrLen(el->value_rms, &field_len);
+        const char *field_str = selva_string_to_str(el->value_string, &field_len);
 
         if (!SelvaHierarchy_IsNonEmptyField(node, field_str, field_len)) {
             RESULT_OPERAND(result);
 
-            result = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
+            result = alloc_rpn_set_operand(SELVA_SET_TYPE_STRING);
             if (!result) {
                 return RPN_ERR_ENOMEM;
             }
@@ -1187,7 +1138,7 @@ static enum rpn_error rpn_op_aon(struct RedisModuleCtx *redis_ctx __unused, stru
     return RPN_ERR_OK;
 }
 
-static enum rpn_error rpn_op_in(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
     struct SelvaSet *set_a;
     struct SelvaSet *set_b;
     OPERAND(ctx, a); /* set A */
@@ -1203,36 +1154,36 @@ static enum rpn_error rpn_op_in(struct RedisModuleCtx *redis_ctx, struct rpn_ctx
         const char *field_str = OPERAND_GET_S(b);
         const size_t field_len = OPERAND_GET_S_LEN(b);
 
-        res = SelvaSet_seta_in_fieldb(redis_ctx, set_a, ctx->hierarchy, ctx->node, field_str, field_len);
+        res = SelvaSet_seta_in_fieldb(set_a, ctx->hierarchy, ctx->node, field_str, field_len);
     } else if (!set_a && set_b) {
         const char *field_str = OPERAND_GET_S(a);
         const size_t field_len = OPERAND_GET_S_LEN(a);
 
-        res = SelvaSet_fielda_in_setb(redis_ctx, ctx->hierarchy, ctx->node, field_str, field_len, set_b);
+        res = SelvaSet_fielda_in_setb(ctx->hierarchy, ctx->node, field_str, field_len, set_b);
     } else if (!set_a && !set_b) {
         const char *field_a_str = OPERAND_GET_S(a);
         const size_t field_a_len = OPERAND_GET_S_LEN(a);
         const char *field_b_str = OPERAND_GET_S(b);
         const size_t field_b_len = OPERAND_GET_S_LEN(b);
 
-        res = SelvaSet_fielda_in_fieldb(redis_ctx, ctx->hierarchy, ctx->node, field_a_str, field_a_len, field_b_str, field_b_len);
+        res = SelvaSet_fielda_in_fieldb(ctx->hierarchy, ctx->node, field_a_str, field_a_len, field_b_str, field_b_len);
     }
 
     return push_int_result(ctx, res);
 }
 
-static enum rpn_error rpn_op_str_includes(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_str_includes(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
 
     return push_int_result(ctx, !!memmem(OPERAND_GET_S(a), OPERAND_GET_S_LEN(a), OPERAND_GET_S(b), OPERAND_GET_S_LEN(b)));
 }
 
-static enum rpn_error rpn_op_get_clock_realtime(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_get_clock_realtime(struct rpn_ctx *ctx) {
     return push_int_result(ctx, ts_now());
 }
 
-static enum rpn_error rpn_op_rec_filter(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_rec_filter(struct rpn_ctx *ctx) {
     OPERAND(ctx, a); /* field */
     OPERAND(ctx, b); /* operator */
     OPERAND(ctx, c); /* value */
@@ -1283,7 +1234,7 @@ static enum rpn_error rpn_op_rec_filter(struct RedisModuleCtx *redis_ctx __unuse
         return push_empty_value(ctx);
     }
 
-    res = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
+    res = alloc_rpn_set_operand(SELVA_SET_TYPE_STRING);
     if (!res) {
         return RPN_ERR_ENOMEM;
     }
@@ -1354,7 +1305,7 @@ static enum rpn_error rpn_op_rec_filter(struct RedisModuleCtx *redis_ctx __unuse
     return push(ctx, res);
 }
 
-static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx) {
+static enum rpn_error rpn_op_union(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     RESULT_OPERAND(res);
@@ -1381,19 +1332,19 @@ static enum rpn_error rpn_op_union(struct RedisModuleCtx *redis_ctx __unused, st
     return push(ctx, res);
 }
 
-static enum rpn_error rpn_op_abo(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx __unused) {
+static enum rpn_error rpn_op_abo(struct rpn_ctx *ctx __unused) {
     return RPN_ERR_ILLOPC;
 }
 
-static enum rpn_error rpn_op_nop(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx __unused) {
+static enum rpn_error rpn_op_nop(struct rpn_ctx *ctx __unused) {
     return RPN_ERR_OK;
 }
 
-static enum rpn_error rpn_op_ret(struct RedisModuleCtx *redis_ctx __unused, struct rpn_ctx *ctx __unused) {
+static enum rpn_error rpn_op_ret(struct rpn_ctx *ctx __unused) {
     return RPN_ERR_BREAK;
 }
 
-typedef enum rpn_error (*rpn_fp)(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx);
+typedef enum rpn_error (*rpn_fp)(struct rpn_ctx *ctx);
 
 static rpn_fp funcs[] = {
     rpn_op_add,     /* A */
@@ -1704,7 +1655,7 @@ static enum rpn_error compile_selvaset_literal(struct rpn_expression *expr, size
         return RPN_ERR_TYPE;
     }
 
-    v = alloc_rpn_set_operand(SELVA_SET_TYPE_RMSTRING);
+    v = alloc_rpn_set_operand(SELVA_SET_TYPE_STRING);
 
     if (type != '}') {
         char tmp[len + 1];
@@ -1995,7 +1946,7 @@ static enum rpn_error cond_jump(struct rpn_ctx *ctx, const char *s, const rpn_to
     return RPN_ERR_OK;
 }
 
-static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr) {
+static enum rpn_error rpn(struct rpn_ctx *ctx, const struct rpn_expression *expr) {
     const rpn_token *it = expr->expression;
     const char *s;
 
@@ -2021,7 +1972,7 @@ static enum rpn_error rpn(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
 rpn_code_stop: /* Must be first. */
 rpn_code_call:
         memcpy(&fp, s + RPN_CODE_SIZE, sizeof(void *));
-        err = fp(redis_ctx, ctx);
+        err = fp(ctx);
         goto end;
 rpn_code_get_reg_number:
         err = rpn_get_reg(ctx, s, RPN_LVTYPE_NUMBER);
@@ -2066,11 +2017,11 @@ end:
     return RPN_ERR_OK;
 }
 
-enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, int *out) {
+enum rpn_error rpn_bool(struct rpn_ctx *ctx, const struct rpn_expression *expr, int *out) {
     struct rpn_operand *res;
     enum rpn_error err;
 
-    err = rpn(redis_ctx, ctx, expr);
+    err = rpn(ctx, expr);
     if (err) {
         return err;
     }
@@ -2086,11 +2037,11 @@ enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, c
     return RPN_ERR_OK;
 }
 
-enum rpn_error rpn_double(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, double *out) {
+enum rpn_error rpn_double(struct rpn_ctx *ctx, const struct rpn_expression *expr, double *out) {
     struct rpn_operand *res;
     enum rpn_error err;
 
-    err = rpn(redis_ctx, ctx, expr);
+    err = rpn(ctx, expr);
     if (err) {
         return err;
     }
@@ -2106,11 +2057,11 @@ enum rpn_error rpn_double(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx,
     return RPN_ERR_OK;
 }
 
-enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, long long *out) {
+enum rpn_error rpn_integer(struct rpn_ctx *ctx, const struct rpn_expression *expr, long long *out) {
     struct rpn_operand *res;
     enum rpn_error err;
 
-    err = rpn(redis_ctx, ctx, expr);
+    err = rpn(ctx, expr);
     if (err) {
         return err;
     }
@@ -2126,11 +2077,11 @@ enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx
     return RPN_ERR_OK;
 }
 
-enum rpn_error rpn_rms(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, RedisModuleString **out) {
+enum rpn_error rpn_string(struct rpn_ctx *ctx, const struct rpn_expression *expr, struct selva_string **out) {
     struct rpn_operand *res;
     enum rpn_error err;
 
-    err = rpn(redis_ctx, ctx, expr);
+    err = rpn(ctx, expr);
     if (err) {
         return err;
     }
@@ -2140,17 +2091,17 @@ enum rpn_error rpn_rms(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, co
         return RPN_ERR_BADSTK;
     }
 
-    *out = RedisModule_CreateString(redis_ctx, OPERAND_GET_S(res), OPERAND_GET_S_LEN(res));
+    *out = selva_string_create(OPERAND_GET_S(res), OPERAND_GET_S_LEN(res), 0);
     free_rpn_operand(&res);
 
     return *out ? RPN_ERR_OK : RPN_ERR_ENOMEM;
 }
 
-enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out) {
+enum rpn_error rpn_selvaset(struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out) {
     struct rpn_operand *res;
     enum rpn_error err;
 
-    err = rpn(redis_ctx, ctx, expr);
+    err = rpn(ctx, expr);
     if (err) {
         return err;
     }

@@ -358,7 +358,7 @@ int SelvaObject_ArrayForeach(
         const struct SelvaObjectArrayForeachCallback *cb);
 
 union SelvaObjectSetForeachValue {
-    struct selva_string *rms;
+    struct selva_string *s;
     double d;
     long long ll;
     Selva_NodeId node_id;

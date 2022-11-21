@@ -2,6 +2,9 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <stddef.h>
+#include <sys/types.h>
+#include "util/selva_string.h"
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"
@@ -18,7 +21,7 @@ struct set_has_cb {
         struct {
             const char *buf;
             size_t len;
-        } str; /*!< SELVA_SET_TYPE_RMSTRING and SELVA_SET_TYPE_NODEID. */
+        } str; /*!< SELVA_SET_TYPE_STRING and SELVA_SET_TYPE_NODEID. */
         double d; /*!< SELVA_SET_TYPE_LONGLONG and SELVA_SET_TYPE_DOUBLE. */
     };
 };
@@ -26,11 +29,11 @@ struct set_has_cb {
 int set_has_cb(union SelvaObjectSetForeachValue value, enum SelvaSetType type, void *arg) {
     struct set_has_cb *data = (struct set_has_cb *)arg;
 
-    if (type == SELVA_SET_TYPE_RMSTRING) {
+    if (type == SELVA_SET_TYPE_STRING) {
         size_t len;
-        const char *str = RedisModule_StringPtrLen(value.rms, &len);
+        const char *str = selva_string_to_str(value.s, &len);
 
-        if (data->type != SELVA_SET_TYPE_RMSTRING && data->type != SELVA_SET_TYPE_NODEID) {
+        if (data->type != SELVA_SET_TYPE_STRING && data->type != SELVA_SET_TYPE_NODEID) {
             return 1; /* Type mismatch. */
         }
 
@@ -56,7 +59,7 @@ int set_has_cb(union SelvaObjectSetForeachValue value, enum SelvaSetType type, v
     } else if (type == SELVA_SET_TYPE_NODEID) {
         Selva_NodeId node_id;
 
-        if ((data->type != SELVA_SET_TYPE_RMSTRING && data->type != SELVA_SET_TYPE_NODEID) ||
+        if ((data->type != SELVA_SET_TYPE_STRING && data->type != SELVA_SET_TYPE_NODEID) ||
             data->str.len > SELVA_NODE_ID_SIZE) {
             return 1; /* Type mismatch. */
         }
@@ -73,7 +76,6 @@ int set_has_cb(union SelvaObjectSetForeachValue value, enum SelvaSetType type, v
 }
 
 int SelvaSet_field_has_string(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -81,7 +83,7 @@ int SelvaSet_field_has_string(
         const char *value_str,
         size_t value_len) {
     struct set_has_cb data = {
-        .type = SELVA_SET_TYPE_RMSTRING,
+        .type = SELVA_SET_TYPE_STRING,
         .found = 0,
         .str.buf = value_str,
         .str.len = value_len,
@@ -92,13 +94,12 @@ int SelvaSet_field_has_string(
     };
     int err;
 
-    err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_str, field_len, &cb);
+    err = SelvaHierarchy_ForeachInField(hierarchy, node, field_str, field_len, &cb);
 
     return err ? 0 : !!data.found;
 }
 
 int SelvaSet_field_has_double(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -115,13 +116,12 @@ int SelvaSet_field_has_double(
     };
     int err;
 
-    err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_str, field_len, &cb);
+    err = SelvaHierarchy_ForeachInField(hierarchy, node, field_str, field_len, &cb);
 
     return err ? 0 : !!data.found;
 }
 
 int SelvaSet_field_has_longlong(
-        RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -138,7 +138,7 @@ int SelvaSet_field_has_longlong(
     };
     int err;
 
-    err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_str, field_len, &cb);
+    err = SelvaHierarchy_ForeachInField(hierarchy, node, field_str, field_len, &cb);
 
     return err ? 0 : !!data.found;
 }

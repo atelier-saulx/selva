@@ -2,6 +2,8 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <stddef.h>
+#include <sys/types.h>
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"
@@ -21,8 +23,8 @@ static int sosfv_in_set(union SelvaObjectSetForeachValue value, enum SelvaSetTyp
      * of setb.
      */
     switch (type) {
-    case SELVA_SET_TYPE_RMSTRING:
-        has = SelvaSet_Has(data->set, value.rms);
+    case SELVA_SET_TYPE_STRING:
+        has = SelvaSet_Has(data->set, value.s);
         break;
     case SELVA_SET_TYPE_DOUBLE:
         has = SelvaSet_Has(data->set, value.d);
@@ -42,7 +44,6 @@ static int sosfv_in_set(union SelvaObjectSetForeachValue value, enum SelvaSetTyp
 }
 
 int SelvaSet_fielda_in_setb(
-        RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_a_str,
@@ -58,7 +59,7 @@ int SelvaSet_fielda_in_setb(
     };
     int err;
 
-    err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_a_str, field_a_len, &cb);
+    err = SelvaHierarchy_ForeachInField(hierarchy, node, field_a_str, field_a_len, &cb);
 
     return err ? 0 : data.valid;
 }

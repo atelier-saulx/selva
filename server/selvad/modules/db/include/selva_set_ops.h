@@ -11,7 +11,6 @@
  * data structures and Selva node fields.
  */
 
-struct RedisModuleCtx;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct SelvaSet;
@@ -27,7 +26,6 @@ struct SelvaSet;
  * @returns Boolean.
  */
 int SelvaSet_field_has_string(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -40,7 +38,6 @@ int SelvaSet_field_has_string(
  * @returns Boolean.
  */
 int SelvaSet_field_has_double(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -52,7 +49,6 @@ int SelvaSet_field_has_double(
  * @returns Boolean.
  */
 int SelvaSet_field_has_longlong(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -80,7 +76,6 @@ int SelvaSet_seta_in_setb(struct SelvaSet *a, struct SelvaSet *b);
  * @returns Boolean.
  */
 int SelvaSet_seta_in_fieldb(
-        struct RedisModuleCtx *ctx,
         struct SelvaSet *a,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
@@ -92,7 +87,6 @@ int SelvaSet_seta_in_fieldb(
  * @returns Boolean.
  */
 int SelvaSet_fielda_in_setb(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_a_str,
@@ -104,7 +98,6 @@ int SelvaSet_fielda_in_setb(
  * @returns Boolean.
  */
 int SelvaSet_fielda_in_fieldb(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_a_str,

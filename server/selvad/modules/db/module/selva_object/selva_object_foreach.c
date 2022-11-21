@@ -107,11 +107,11 @@ int SelvaObject_SetForeach(
     }
 
     type = set->type;
-    if (type == SELVA_SET_TYPE_RMSTRING) {
+    if (type == SELVA_SET_TYPE_STRING) {
         struct SelvaSetElement *el;
 
-        SELVA_SET_RMS_FOREACH(el, set) {
-            union SelvaObjectSetForeachValue value = { .rms = el->value_rms };
+        SELVA_SET_STRING_FOREACH(el, set) {
+            union SelvaObjectSetForeachValue value = { .s = el->value_string };
 
             if (cb->cb(value, type, cb->cb_arg)) {
                 break;

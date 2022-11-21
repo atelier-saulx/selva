@@ -2,13 +2,15 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <stddef.h>
+#include <sys/types.h>
+#include "util/selva_string.h"
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"
 #include "selva_set_ops.h"
 
 struct sosfv_in_field {
-    RedisModuleCtx *ctx;
     struct SelvaHierarchy *hierarchy;
     struct SelvaHierarchyNode *node;
     const char *field_b_str; /*!< Name of the set-like field. */
@@ -21,22 +23,22 @@ static int sosfv_in_field(union SelvaObjectSetForeachValue value, enum SelvaSetT
     int has = 0;
 
     switch(type) {
-    case SELVA_SET_TYPE_RMSTRING:
+    case SELVA_SET_TYPE_STRING:
         {
             size_t value_len;
-            const char *value_str = RedisModule_StringPtrLen(value.rms, &value_len);
+            const char *value_str = selva_string_to_str(value.s, &value_len);
 
-            has = SelvaSet_field_has_string(data->ctx, data->hierarchy, data->node, data->field_b_str, data->field_b_len, value_str, value_len);
+            has = SelvaSet_field_has_string(data->hierarchy, data->node, data->field_b_str, data->field_b_len, value_str, value_len);
         }
         break;
     case SELVA_SET_TYPE_DOUBLE:
-        has = SelvaSet_field_has_double(data->ctx, data->hierarchy, data->node, data->field_b_str, data->field_b_len, value.d);
+        has = SelvaSet_field_has_double(data->hierarchy, data->node, data->field_b_str, data->field_b_len, value.d);
         break;
     case SELVA_SET_TYPE_LONGLONG:
-        has = SelvaSet_field_has_longlong(data->ctx, data->hierarchy, data->node, data->field_b_str, data->field_b_len, value.ll);
+        has = SelvaSet_field_has_longlong(data->hierarchy, data->node, data->field_b_str, data->field_b_len, value.ll);
         break;
     case SELVA_SET_TYPE_NODEID:
-        has = SelvaSet_field_has_string(data->ctx, data->hierarchy, data->node, data->field_b_str, data->field_b_len, value.node_id, SELVA_NODE_ID_SIZE);
+        has = SelvaSet_field_has_string(data->hierarchy, data->node, data->field_b_str, data->field_b_len, value.node_id, SELVA_NODE_ID_SIZE);
         break;
     case SELVA_SET_NR_TYPES:
         /* Invalid type? */
@@ -47,7 +49,6 @@ static int sosfv_in_field(union SelvaObjectSetForeachValue value, enum SelvaSetT
 }
 
 int SelvaSet_fielda_in_fieldb(
-        RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_a_str,
@@ -55,7 +56,6 @@ int SelvaSet_fielda_in_fieldb(
         const char *field_b_str,
         size_t field_b_len) {
     struct sosfv_in_field data = {
-        .ctx = ctx,
         .hierarchy = hierarchy,
         .node = node,
         .field_b_str = field_b_str,
@@ -68,7 +68,7 @@ int SelvaSet_fielda_in_fieldb(
     };
     int err;
 
-    err = SelvaHierarchy_ForeachInField(ctx, hierarchy, node, field_a_str, field_a_len, &cb);
+    err = SelvaHierarchy_ForeachInField(hierarchy, node, field_a_str, field_a_len, &cb);
 
     return err ? 0 : data.valid;
 }

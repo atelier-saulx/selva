@@ -98,6 +98,22 @@ static char * test_append(void)
     return NULL;
 }
 
+static char * test_replace(void)
+{
+    struct selva_string *s;
+    const char *str;
+
+    s = selva_string_create("uvw", 3, SELVA_STRING_MUTABLE);
+    pu_assert("a pointer is returned", s);
+    selva_string_replace(s, "xyz", 3);
+    str = selva_string_to_str(s, NULL);
+    pu_assert_str_equal("string was replaced", str, "xyz");
+
+    selva_string_free(s);
+
+    return NULL;
+}
+
 static char * test_crc(void)
 {
     struct selva_string *s;
@@ -164,6 +180,7 @@ void all_tests(void)
     pu_def_test(test_dup, PU_RUN);
     pu_def_test(test_truncate, PU_RUN);
     pu_def_test(test_append, PU_RUN);
+    pu_def_test(test_replace, PU_RUN);
     pu_def_test(test_crc, PU_RUN);
     pu_def_test(test_cmp, PU_RUN);
     pu_def_test(test_intern, PU_RUN);

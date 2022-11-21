@@ -35,11 +35,11 @@ enum rpn_error {
 };
 
 struct RedisModuleKey;
-struct RedisModuleString;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct SelvaSet;
 struct rpn_operand;
+struct selva_string;
 
 /**
  * RPN Context.
@@ -51,7 +51,7 @@ struct rpn_ctx {
     struct SelvaHierarchy *hierarchy; /*!< A pointer to the associated hierarchy. */
     struct SelvaHierarchyNode *node; /*!< A pointer to the current hierarchy node set with rpn_set_hierarchy_node(). */
     struct SelvaObject *obj; /*!< Selva object of the current node. */
-    struct RedisModuleString *rms;  /*!< This is a specially crafted rms that can be modified within RPN. */
+    struct selva_string *string;
     struct rpn_operand *stack[RPN_MAX_D]; /*!< Execution stack. */
     struct rpn_operand *reg[0]; /*!< RPN registers. */
 };
@@ -104,10 +104,10 @@ static inline void rpn_set_obj(struct rpn_ctx *ctx, struct SelvaObject *obj) {
 enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t size, unsigned flags);
 
 /**
- * Set a register value from a RedisModuleString.
- * The value is copied and no pointer to rms is held.
+ * Set a register value from a selva_string.
+ * The value is copied and no pointer to s is held.
  */
-enum rpn_error rpn_set_reg_rms(struct rpn_ctx *ctx, size_t i, struct RedisModuleString *rms);
+enum rpn_error rpn_set_reg_string(struct rpn_ctx *ctx, size_t i, struct selva_string *s);
 
 /**
  * Set a register value as a pointer to a SelvaObject.
@@ -135,7 +135,7 @@ void rpn_destroy_expression(struct rpn_expression *expr);
 enum rpn_error rpn_bool(struct rpn_ctx *ctx, const struct rpn_expression *expr, int *out);
 enum rpn_error rpn_double(struct rpn_ctx *ctx, const struct rpn_expression *expr, double *out);
 enum rpn_error rpn_integer(struct rpn_ctx *ctx, const struct rpn_expression *expr, long long *out);
-enum rpn_error rpn_rms(struct rpn_ctx *ctx, const struct rpn_expression *expr, struct RedisModuleString **out);
+enum rpn_error rpn_string(struct rpn_ctx *ctx, const struct rpn_expression *expr, struct selva_string **out);
 enum rpn_error rpn_selvaset(struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out);
 
 void _rpn_auto_free_ctx(void *p);

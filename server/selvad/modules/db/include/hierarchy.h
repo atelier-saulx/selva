@@ -238,17 +238,12 @@ enum SelvaModify_DelHierarchyNodeFlag {
 /**
  * Create a new hierarchy.
  */
-SelvaHierarchy *SelvaModify_NewHierarchy(struct RedisModuleCtx *ctx);
+SelvaHierarchy *SelvaModify_NewHierarchy(void);
 
 /**
  * Free a hierarchy.
  */
 void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy);
-
-/**
- * Open a hierarchy key.
- */
-SelvaHierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct RedisModuleString *key_name, int mode);
 
 /**
  * Get the type name for a type prefix.
@@ -552,5 +547,7 @@ int HierarchyReply_WithTraversal(
         size_t nr_types,
         const Selva_NodeType *types,
         enum SelvaTraversal dir);
+
+extern SelvaHierarchy *main_hierarchy;
 
 #endif /* _SELVA_HIERARCHY_H_ */
