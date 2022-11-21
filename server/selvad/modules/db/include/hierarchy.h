@@ -27,6 +27,7 @@ struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct Selva_Subscription;
 struct ida;
+struct selva_string;
 /* End of forward declarations */
 
 typedef struct SelvaHierarchy SelvaHierarchy;
@@ -253,7 +254,7 @@ SelvaHierarchy *SelvaModify_OpenHierarchy(struct RedisModuleCtx *ctx, struct Red
  * It's the caller's responsibility to call RedisModule_FreeString() for the
  * returned string.
  */
-struct RedisModuleString *SelvaHierarchyTypes_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeType type);
+struct selva_string *SelvaHierarchyTypes_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeType type);
 
 /**
  * Copy nodeId to a buffer.

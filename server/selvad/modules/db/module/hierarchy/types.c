@@ -2,17 +2,17 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
-#include "jemalloc.h"
-#include "selva.h"
+#include <stddef.h>
+#include "util/selva_string.h"
+#include "selva_db.h"
 #include "selva_onload.h"
 #include "selva_object.h"
-#include "rms.h"
 #include "hierarchy.h"
 
 /**
  * This function takes care of sharing/holding name.
  */
-static int SelvaHierarchyTypes_Add(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, const Selva_NodeType type, const char *name_str, size_t name_len) {
+static int SelvaHierarchyTypes_Add(struct SelvaHierarchy *hierarchy, const Selva_NodeType type, const char *name_str, size_t name_len) {
     struct SelvaObject *obj = SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy);
     struct selva_string *name = selva_string_create(name_str, name_len, SELVA_STRING_INTERN);
 
@@ -25,19 +25,17 @@ static void SelvaHierarchyTypes_Clear(struct SelvaHierarchy *hierarchy) {
     SelvaObject_Clear(obj, NULL);
 }
 
-RedisModuleString *SelvaHierarchyTypes_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeType type) {
+struct selva_string *SelvaHierarchyTypes_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeType type) {
     struct SelvaObject *obj = SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy);
-    RedisModuleString *out = NULL;
+    struct selva_string *out = NULL;
 
     (void)SelvaObject_GetStringStr(obj, type, SELVA_NODE_TYPE_SIZE, &out);
-
-    if (out) {
-        RedisModule_RetainString(NULL, out);
-    }
 
     return out;
 }
 
+/* FIXME Commands */
+#if 0
 int SelvaHierarchyTypes_AddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     struct SelvaHierarchy *hierarchy;
@@ -70,7 +68,7 @@ int SelvaHierarchyTypes_AddCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         return replyWithSelvaError(ctx, SELVA_EINTYPE);
     }
 
-    err = SelvaHierarchyTypes_Add(ctx, hierarchy, type_str, name_str, name_len);
+    err = SelvaHierarchyTypes_Add(hierarchy, type_str, name_str, name_len);
     if (err) {
         return replyWithSelvaError(ctx, err);
     }
@@ -136,3 +134,4 @@ static int SelvaHierarchyTypes_OnLoad(RedisModuleCtx *ctx) {
     return REDISMODULE_OK;
 }
 SELVA_ONLOAD(SelvaHierarchyTypes_OnLoad);
+#endif

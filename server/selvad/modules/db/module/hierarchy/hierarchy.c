@@ -344,7 +344,6 @@ static int create_node_object(struct SelvaHierarchy *hierarchy, SelvaHierarchyNo
         if (type) {
             err = SelvaObject_SetStringStr(obj, SELVA_TYPE_FIELD, sizeof(SELVA_TYPE_FIELD) - 1, type);
             if (err) {
-                selva_string_free(type);
                 return err;
             }
         }
