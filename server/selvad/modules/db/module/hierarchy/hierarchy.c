@@ -361,7 +361,7 @@ static int create_node_object(struct SelvaHierarchy *hierarchy, SelvaHierarchyNo
  */
 static void node_metadata_init(
         const Selva_NodeId id __unused,
-        struct SelvaHierarchyMetadata *metadata) {
+        struct SelvaHierarchyMetadata *metadata __unused) {
     /* NOP */
 }
 SELVA_MODIFY_HIERARCHY_METADATA_CONSTRUCTOR(node_metadata_init);
@@ -450,7 +450,7 @@ static void SelvaModify_DestroyNode(SelvaHierarchy *hierarchy, SelvaHierarchyNod
 /**
  * Create a new detached node with given parents.
  */
-static void new_detached_node(struct RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, const Selva_NodeId node_id, Selva_NodeId *parents, size_t nr_parents) {
+static void new_detached_node(SelvaHierarchy *hierarchy, const Selva_NodeId node_id, Selva_NodeId *parents, size_t nr_parents) {
     const int prevIsDecompressingSubtree = isDecompressingSubtree;
     struct SelvaHierarchyNode *node;
     int err;
@@ -1153,7 +1153,8 @@ static int removeRelationships(
         offset_b = offsetof(SelvaHierarchyNode, children);
         break;
     default:
-        assert(("rel is invalid", 0));
+        /* rel is invalid */
+        assert(0);
         return 0;
     }
 
@@ -2854,7 +2855,7 @@ static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *
     /*
      * Create a new dummy node with the detached flag set.
      */
-    new_detached_node(ctx, hierarchy, node_id, parents, nr_parents);
+    new_detached_node(hierarchy, node_id, parents, nr_parents);
 
     if (!err) {
         SELVA_LOG_DBG("Compressed and detached the subtree of %.*s (cratio: %.2f:1)",
