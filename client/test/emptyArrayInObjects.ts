@@ -49,34 +49,34 @@ test.serial('put an empty object in array', async (t) => {
   const id = await client.set({
     $language: 'en',
     type: 'thing',
-    formFields: [],
+    formFields: [{}],
   })
 
-  await client.set({
-    // Using lang here would leave an empty title object.
-    //  $language: 'en',
-    $id: id,
-    // type: 'thing',
+  //   await client.set({
+  //     // Using lang here would leave an empty title object.
+  //     //  $language: 'en',
+  //     $id: id,
+  //     // type: 'thing',
 
-    formFields: {
-      $assign: {
-        $idx: 0,
-        $value: [{}],
-      },
-    },
-  })
+  //     formFields: {
+  //       $assign: {
+  //         $idx: 0,
+  //         $value: {},
+  //       },
+  //     },
+  //   })
 
   const result = await client.get({
     $id: id,
-    $all: true,
-    createdAt: false,
-    updatedAt: false,
+    formFields: true,
   })
-  t.deepEqual(result, {
-    id: id,
-    type: 'thing',
-    formFields: [{}],
-  })
+
+  t.deepEqual(
+    {
+      formFields: [{}],
+    },
+    result
+  )
 
   await client.destroy()
 })
