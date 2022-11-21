@@ -7,24 +7,24 @@
 #include "jemalloc.h"
 #include "util/finalizer.h"
 
-void finalizer_init(struct finalizer *f)
+void finalizer_init(struct finalizer *fin)
 {
-    SLIST_INIT(&f->head);
+    SLIST_INIT(&fin->head);
 }
 
-void finalizer_add(struct finalizer *f, void *p, void (*dispose)(void *p))
+void finalizer_add(struct finalizer *fin, void *p, void (*dispose)(void *p))
 {
     struct finalizer_item *item = selva_malloc(sizeof(struct finalizer_item));
 
     item->dispose = dispose;
     item->p = p;
 
-    SLIST_INSERT_HEAD(&f->head, item, entries);
+    SLIST_INSERT_HEAD(&fin->head, item, entries);
 }
 
-void finalizer_run(struct finalizer *f)
+void finalizer_run(struct finalizer *fin)
 {
-    struct finalizer_stack *head = &f->head;
+    struct finalizer_stack *head = &fin->head;
 
     while (!SLIST_EMPTY(head)) {
         struct finalizer_item *item = SLIST_FIRST(head);

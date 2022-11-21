@@ -4,9 +4,14 @@
  */
 #include <math.h>
 #include "jemalloc.h"
-#include "funmap.h"
-#include "selva.h"
-#include "ptag.h"
+#include "util/finalizer.h"
+#include "util/funmap.h"
+#include "util/ptag.h"
+#include "util/selva_string.h"
+#include "selva_error.h"
+#include "selva_log.h"
+#include "arg_parser.h"
+#include "selva_db.h"
 #include "hierarchy.h"
 #include "selva_lang.h"
 #include "selva_object.h"
@@ -45,7 +50,7 @@ static const struct SelvaArgParser_EnumType order_types[] = {
     }
 };
 
-int SelvaTraversal_ParseOrder(enum SelvaResultOrder *order, struct RedisModuleString *ord) {
+int SelvaTraversal_ParseOrder(enum SelvaResultOrder *order, struct selva_string *ord) {
     int res;
 
     res = SelvaArgParser_Enum(order_types, ord);
@@ -59,11 +64,11 @@ int SelvaTraversal_ParseOrder(enum SelvaResultOrder *order, struct RedisModuleSt
 }
 
 int SelvaTraversal_ParseOrderArg(
-        RedisModuleString **order_by_field,
+        struct selva_string **order_by_field,
         enum SelvaResultOrder *order,
-        const RedisModuleString *txt,
-        RedisModuleString *fld,
-        RedisModuleString *ord) {
+        const struct selva_string *txt,
+        struct selva_string *fld,
+        struct selva_string *ord) {
     TO_STR(txt, fld);
     int err;
 
@@ -142,7 +147,7 @@ void SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResult
     SVector_Init(order_result, initial_len, SelvaTraversal_GetOrderFunc(order));
 }
 
-void SelvaTraversalOrder_DestroyOrderResult(RedisModuleCtx *ctx, SVector *order_result) {
+void SelvaTraversalOrder_DestroyOrderResult(struct RedisModuleCtx *ctx, SVector *order_result) {
     struct SVectorIterator it;
     struct TraversalOrderItem *item;
 
@@ -162,10 +167,10 @@ void SelvaTraversalOrder_DestroyOrderResult(RedisModuleCtx *ctx, SVector *order_
 static void obj_any2order_data(struct SelvaObjectAny *any, struct order_data *tmp) {
 
     if (any->type == SELVA_OBJECT_STRING) {
-        RedisModuleString *value = any->str;
+        struct selva_string *value = any->str;
 
         if (value) {
-            tmp->data = RedisModule_StringPtrLen(value, &tmp->data_len);
+            tmp->data = selva_string_to_str(value, &tmp->data_len);
             tmp->type = ORDER_ITEM_TYPE_TEXT;
 
             if (any->user_meta == SELVA_OBJECT_META_SUBTYPE_TEXT) {
@@ -195,17 +200,20 @@ static size_t calc_final_data_len(const char *data_lang, const char *data, size_
     return final_data_len;
 }
 
-static struct TraversalOrderItem *alloc_item(RedisModuleCtx *ctx, size_t data_size) {
+static struct TraversalOrderItem *alloc_item(struct finalizer *fin, size_t data_size) {
     const size_t item_size = sizeof(struct TraversalOrderItem) + data_size;
+    struct TraversalOrderItem *item;
 
-    if (ctx) {
-        return RedisModule_PoolAlloc(ctx, item_size);
-    } else {
-        return selva_calloc(1, item_size);
+    item = selva_calloc(1, item_size);
+
+    if (fin) {
+        finalizer_add(fin, item, selva_free);
     }
+
+    return item;
 }
 
-static struct TraversalOrderItem *create_item(RedisModuleCtx *ctx, const struct order_data * restrict tmp, enum TraversalOrderItemPtype order_ptype, void *p) {
+static struct TraversalOrderItem *create_item(struct finalizer *fin, const struct order_data * restrict tmp, enum TraversalOrderItemPtype order_ptype, void *p) {
     locale_t locale = 0;
     size_t data_size = 0;
     struct TraversalOrderItem *item;
@@ -214,7 +222,7 @@ static struct TraversalOrderItem *create_item(RedisModuleCtx *ctx, const struct 
         data_size = calc_final_data_len(tmp->data_lang, tmp->data, tmp->data_len, &locale) + 1;
     }
 
-    item = alloc_item(ctx, data_size);
+    item = alloc_item(fin, data_size);
     item->type = tmp->type;
 
     if (tmp->type == ORDER_ITEM_TYPE_TEXT) {
@@ -244,10 +252,10 @@ static struct TraversalOrderItem *create_item(RedisModuleCtx *ctx, const struct 
 }
 
 struct TraversalOrderItem *SelvaTraversalOrder_CreateNodeOrderItem(
-        RedisModuleCtx *ctx,
-        RedisModuleString *lang,
+        struct finalizer *fin,
+        struct selva_string *lang,
         struct SelvaHierarchyNode *node,
-        const RedisModuleString *order_field) {
+        const struct selva_string *order_field) {
     int err;
     struct SelvaObjectAny any;
     struct order_data tmp = {
@@ -261,11 +269,11 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateNodeOrderItem(
         return NULL;
     }
 
-    return create_item(ctx, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_NODE, node);
+    return create_item(fin, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_NODE, node);
 }
 
 struct TraversalOrderItem *SelvaTraversalOrder_CreateAnyNodeOrderItem(
-        RedisModuleCtx *ctx,
+        struct finalizer *fin,
         struct SelvaHierarchyNode *node,
         struct SelvaObjectAny *any) {
     struct order_data tmp = {
@@ -273,14 +281,14 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateAnyNodeOrderItem(
     };
 
     obj_any2order_data(any, &tmp);
-    return create_item(ctx, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_NODE, node);
+    return create_item(fin, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_NODE, node);
 }
 
 struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectOrderItem(
-        RedisModuleCtx *ctx,
-        RedisModuleString *lang,
+        struct finalizer *fin,
+        struct selva_string *lang,
         struct SelvaObject *obj,
-        const RedisModuleString *order_field) {
+        const struct selva_string *order_field) {
     int err;
     struct SelvaObjectAny any;
     struct order_data tmp = {
@@ -294,10 +302,10 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectOrderItem(
         return NULL;
     }
 
-    return create_item(ctx, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_OBJ, obj);
+    return create_item(fin, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_OBJ, obj);
 }
 
-void SelvaTraversalOrder_DestroyOrderItem(RedisModuleCtx *ctx, struct TraversalOrderItem *item) {
+void SelvaTraversalOrder_DestroyOrderItem(struct RedisModuleCtx *ctx, struct TraversalOrderItem *item) {
     if (!ctx) {
         selva_free(item);
     }

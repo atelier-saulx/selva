@@ -2,11 +2,14 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
-#include "selva.h"
+#include <stddef.h>
+#include <sys/types.h>
+#include "selva_server.h"
+#include "selva_db.h"
 #include "hierarchy.h"
 
 struct send_hierarchy_field_data {
-    RedisModuleCtx *ctx;
+    struct selva_server_response_out *resp;
 
     size_t skip;
     size_t nr_types;
@@ -18,7 +21,6 @@ struct send_hierarchy_field_data {
  * Used for ancestors, children, descendants, parents
  */
 static int send_hierarchy_field_NodeCb(
-        RedisModuleCtx *ctx __unused,
         struct SelvaHierarchy *hierarchy __unused,
         struct SelvaHierarchyNode *node,
         void *arg) {
@@ -46,14 +48,14 @@ static int send_hierarchy_field_NodeCb(
         return 0;
     }
 
-    RedisModule_ReplyWithStringBuffer(args->ctx, nodeId, Selva_NodeIdLen(nodeId));
+    selva_send_str(args->resp, nodeId, Selva_NodeIdLen(nodeId));
     args->len++;
 
     return 0;
 }
 
 int HierarchyReply_WithTraversal(
-        RedisModuleCtx *ctx,
+        struct selva_server_response_out *resp,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId nodeId,
         size_t nr_types,
@@ -61,7 +63,7 @@ int HierarchyReply_WithTraversal(
         enum SelvaTraversal dir) {
     const size_t skip = !!(dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS | SELVA_HIERARCHY_TRAVERSAL_BFS_DESCENDANTS));
     struct send_hierarchy_field_data args = {
-        .ctx = ctx,
+        .resp = resp,
         .skip = skip,
         .nr_types = nr_types,
         .types = types,
@@ -77,9 +79,9 @@ int HierarchyReply_WithTraversal(
      * Start a new array reply:
      * [nodeId1, nodeId2,.. nodeIdn]
      */
-    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-    err = SelvaHierarchy_Traverse(ctx, hierarchy, nodeId, dir, &cb);
-    RedisModule_ReplySetArrayLength(ctx, args.len);
+    selva_send_array(resp, -1);
+    err = SelvaHierarchy_Traverse(hierarchy, nodeId, dir, &cb);
+    selva_send_array_end(resp);
 
     return err;
 }

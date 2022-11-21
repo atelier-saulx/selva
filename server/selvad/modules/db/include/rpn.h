@@ -34,7 +34,6 @@ enum rpn_error {
     RPN_ERR_LAST,
 };
 
-struct RedisModuleCtx;
 struct RedisModuleKey;
 struct RedisModuleString;
 struct SelvaHierarchy;
@@ -133,11 +132,11 @@ struct rpn_expression *rpn_compile(const char *input);
  */
 void rpn_destroy_expression(struct rpn_expression *expr);
 
-enum rpn_error rpn_bool(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, int *out);
-enum rpn_error rpn_double(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, double *out);
-enum rpn_error rpn_integer(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, long long *out);
-enum rpn_error rpn_rms(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, struct RedisModuleString **out);
-enum rpn_error rpn_selvaset(struct RedisModuleCtx *redis_ctx, struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out);
+enum rpn_error rpn_bool(struct rpn_ctx *ctx, const struct rpn_expression *expr, int *out);
+enum rpn_error rpn_double(struct rpn_ctx *ctx, const struct rpn_expression *expr, double *out);
+enum rpn_error rpn_integer(struct rpn_ctx *ctx, const struct rpn_expression *expr, long long *out);
+enum rpn_error rpn_rms(struct rpn_ctx *ctx, const struct rpn_expression *expr, struct RedisModuleString **out);
+enum rpn_error rpn_selvaset(struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out);
 
 void _rpn_auto_free_ctx(void *p);
 #define __auto_free_rpn_ctx __attribute__((cleanup(_rpn_auto_free_ctx)))

@@ -2,14 +2,19 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
-#include "funmap.h"
-#include "selva.h"
+#include <stddef.h>
+#include <sys/types.h>
+#include "util/funmap.h"
+#include "util/selva_string.h"
+#include "selva_error.h"
+#include "selva_db.h"
 #include "hierarchy.h"
 #include "selva_lang.h"
 #include "selva_object.h"
 #include "traversal.h"
 
-int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const RedisModuleString *arg) {
+int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct selva_string *arg)
+{
     TO_STR(arg);
 
     if (!strcmp("none", arg_str)) {
@@ -47,14 +52,15 @@ int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const RedisModuleString *
     return 0;
 }
 
-int SelvaTraversal_FieldsContains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len) {
+int SelvaTraversal_FieldsContains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len)
+{
     void *iterator;
     const SVector *vec;
 
     iterator = SelvaObject_ForeachBegin(fields);
     while ((vec = SelvaObject_ForeachValue(fields, &iterator, NULL, SELVA_OBJECT_ARRAY))) {
         struct SVectorIterator it;
-        const RedisModuleString *s;
+        const struct selva_string *s;
 
         SVector_ForeachBegin(&it, vec);
         while ((s = SVector_Foreach(&it))) {
@@ -69,7 +75,8 @@ int SelvaTraversal_FieldsContains(struct SelvaObject *fields, const char *field_
     return 0;
 }
 
-int SelvaTraversal_GetSkip(enum SelvaTraversal dir) {
+int SelvaTraversal_GetSkip(enum SelvaTraversal dir)
+{
     switch (dir) {
      /*
       * Find needs to skip the head node of the traverse for some types as we
@@ -86,7 +93,8 @@ int SelvaTraversal_GetSkip(enum SelvaTraversal dir) {
     }
 }
 
-const char *SelvaTraversal_Dir2str(enum SelvaTraversal dir) {
+const char *SelvaTraversal_Dir2str(enum SelvaTraversal dir)
+{
     switch (dir) {
     case SELVA_HIERARCHY_TRAVERSAL_NONE:
         return (const char *)"none";

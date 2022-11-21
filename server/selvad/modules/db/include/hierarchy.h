@@ -27,6 +27,7 @@ struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct Selva_Subscription;
 struct ida;
+struct selva_server_response_out;
 struct selva_string;
 /* End of forward declarations */
 
@@ -455,33 +456,27 @@ static inline int SelvaHierarchy_NodeExists(SelvaHierarchy *hierarchy, const Sel
 ssize_t SelvaModify_GetHierarchyHeads(SelvaHierarchy *hierarchy, Selva_NodeId **res);
 
 void SelvaHierarchy_TraverseChildren(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const struct SelvaHierarchyCallback *cb);
 void SelvaHierarchy_TraverseParents(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const struct SelvaHierarchyCallback *cb);
 int SelvaHierarchy_TraverseBFSAncestors(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const struct SelvaHierarchyCallback *cb);
 int SelvaHierarchy_TraverseBFSDescendants(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const struct SelvaHierarchyCallback *cb);
 int SelvaHierarchy_Traverse(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaTraversal dir,
         const struct SelvaHierarchyCallback *cb);
 int SelvaHierarchy_TraverseField(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         enum SelvaTraversal dir,
@@ -489,7 +484,6 @@ int SelvaHierarchy_TraverseField(
         size_t field_name_len,
         const struct SelvaHierarchyCallback *cb);
 int SelvaHierarchy_TraverseExpression(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         struct rpn_ctx *rpn_ctx,
@@ -498,7 +492,6 @@ int SelvaHierarchy_TraverseExpression(
         const struct rpn_expression *edge_filter,
         const struct SelvaHierarchyCallback *cb);
 int SelvaHierarchy_TraverseExpressionBfs(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         struct rpn_ctx *rpn_ctx,
@@ -510,7 +503,6 @@ int SelvaHierarchy_TraverseExpressionBfs(
  * Foreach value in an array field.
  */
 int SelvaHierarchy_TraverseArray(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         const char *field_str,
@@ -520,7 +512,6 @@ int SelvaHierarchy_TraverseArray(
  * Foreach value in a set field.
  */
 int SelvaHierarchy_TraverseSet(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId id,
         const char *field_str,
@@ -538,7 +529,6 @@ int SelvaHierarchy_TraverseSet(
  * - string and numeric set fields
  */
 int SelvaHierarchy_ForeachInField(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -556,7 +546,7 @@ int SelvaHierarchy_IsNonEmptyField(const struct SelvaHierarchyNode *node, const 
  * [nodeId1, nodeId2,.. nodeIdn]
  */
 int HierarchyReply_WithTraversal(
-        struct RedisModuleCtx *ctx,
+        struct selva_server_response_out *resp,
         SelvaHierarchy *hierarchy,
         const Selva_NodeId nodeId,
         size_t nr_types,

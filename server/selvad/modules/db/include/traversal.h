@@ -10,10 +10,11 @@
 
 struct FindCommand_Args;
 struct RedisModuleCtx;
-struct RedisModuleString;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct SelvaObjectAny;
+struct finalizer;
+struct selva_string;
 
 /**
  * Hierarchy traversal order.
@@ -124,14 +125,14 @@ struct SelvaNodeSendParam {
      * sorted.
      */
     enum SelvaResultOrder order; /*!< Result order. */
-    const struct RedisModuleString *order_field; /*!< Order by field name; Otherwise NULL. */
+    const struct selva_string *order_field; /*!< Order by field name; Otherwise NULL. */
 
     /**
      * Merge strategy.
      * A merge is executed if this field is set to other than MERGE_STRATEGY_NONE.
      */
     enum SelvaMergeStrategy merge_strategy;
-    struct RedisModuleString *merge_path;
+    struct selva_string *merge_path;
 
     /**
      * Field names.
@@ -172,7 +173,7 @@ struct SelvaNodeSendParam {
      * Optional, can be set to NULL.
      * The last element shall be NULL.
      */
-    struct RedisModuleString **inherit_fields;
+    struct selva_string **inherit_fields;
 
     /**
      * Fields that should be excluded when `fields` contains a wildcard.
@@ -181,7 +182,7 @@ struct SelvaNodeSendParam {
      * \0field1\0field2\0
      * ```
      */
-    struct RedisModuleString *excluded_fields;
+    struct selva_string *excluded_fields;
 };
 
 typedef int (*SelvaFind_ProcessNode)(
@@ -197,14 +198,14 @@ typedef int (*SelvaFind_ProcessObject)(
 typedef void (*SelvaFind_Postprocess)(
         struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        struct RedisModuleString *lang,
+        struct selva_string *lang,
         ssize_t offset,
         ssize_t limit,
         struct SelvaNodeSendParam *args,
         SVector *result);
 
 struct FindCommand_Args {
-    struct RedisModuleString *lang;
+    struct selva_string *lang;
 
     ssize_t *nr_nodes; /*!< Number of nodes in the result. */
     ssize_t offset; /*!< Start from nth node. */
@@ -240,7 +241,6 @@ struct FindCommand_Args {
  * @param arg a pointer to head_arg give in SelvaHierarchyCallback structure.
  */
 typedef int (*SelvaHierarchyHeadCallback)(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         void *arg);
@@ -252,7 +252,6 @@ typedef int (*SelvaHierarchyHeadCallback)(
  * @returns 0 to continue the traversal; 1 to interrupt the traversal.
  */
 typedef int (*SelvaHierarchyNodeCallback)(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         void *arg);
@@ -272,24 +271,23 @@ struct SelvaHierarchyTraversalMetadata {
  * @param arg a pointer to child_arg give in SelvaHierarchyCallback structure.
  */
 typedef void (*SelvaHierarchyChildCallback)(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         const struct SelvaHierarchyTraversalMetadata *metadata,
         struct SelvaHierarchyNode *child,
         void *arg);
 
-int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct RedisModuleString *arg);
-int SelvaTraversal_ParseOrder(enum SelvaResultOrder *order, struct RedisModuleString *ord);
+int SelvaTraversal_ParseDir2(enum SelvaTraversal *dir, const struct selva_string *arg);
+int SelvaTraversal_ParseOrder(enum SelvaResultOrder *order, struct selva_string *ord);
 
 /**
  * Parse an `order` argument in a command call.
  */
 int SelvaTraversal_ParseOrderArg(
-        struct RedisModuleString **order_by_field,
+        struct selva_string **order_by_field,
         enum SelvaResultOrder *order,
-        const struct RedisModuleString *txt,
-        struct RedisModuleString *fld,
-        struct RedisModuleString *ord);
+        const struct selva_string *txt,
+        struct selva_string *fld,
+        struct selva_string *ord);
 
 int SelvaTraversal_FieldsContains(struct SelvaObject *fields, const char *field_name_str, size_t field_name_len);
 int SelvaTraversal_GetSkip(enum SelvaTraversal dir);
@@ -313,37 +311,38 @@ void SelvaTraversalOrder_DestroyOrderResult(struct RedisModuleCtx *ctx, SVector 
 
 /**
  * Create a new node based TraversalOrderItem that can be sorted.
- * @param[in] ctx if given the item will be freed when the context exits; if NULL the caller must free the item returned.
+ * @param[in] fin if given the item will be freed when the finalizer is executed; if NULL the caller must free the item returned.
  * @returns Returns a TraversalOrderItem if succeed; Otherwise a NULL pointer is returned.
  */
 struct TraversalOrderItem *SelvaTraversalOrder_CreateNodeOrderItem(
-        struct RedisModuleCtx *ctx,
-        struct RedisModuleString *lang,
+        struct finalizer *fin,
+        struct selva_string *lang,
         struct SelvaHierarchyNode *node,
-        const struct RedisModuleString *order_field);
+        const struct selva_string *order_field);
 
 /**
  * Create a new node based TraversalOrderItem that can be sorted with user defined value.
- * @param[in] ctx if given the item will be freed when the context exits; if NULL the caller must free the item returned.
+ * @param[in] fin if given the item will be freed when the finalizer is executed; if NULL the caller must free the item returned.
  * @returns Returns a TraversalOrderItem if succeed; Otherwise a NULL pointer is returned.
  */
 struct TraversalOrderItem *SelvaTraversalOrder_CreateAnyNodeOrderItem(
-        struct RedisModuleCtx *ctx,
+        struct finalizer *fin,
         struct SelvaHierarchyNode *node,
         struct SelvaObjectAny *any);
 
 /**
  * Create a new SelvaObject based TraversalOrderItem that can be sorted.
  * This function can be used to determine an order for several SelvaObjects.
+ * @param[in] fin if given the item will be freed when the finalizer is executed; if NULL the caller must free the item returned.
  * @param lang is the language for text fields.
  * @param order_field is a field on obj.
  * @returns Returns a TraversalOrderItem if succeed; Otherwise a NULL pointer is returned.
  */
 struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectOrderItem(
-        struct RedisModuleCtx *ctx,
-        struct RedisModuleString *lang,
+        struct finalizer *fin,
+        struct selva_string *lang,
         struct SelvaObject *obj,
-        const struct RedisModuleString *order_field);
+        const struct selva_string *order_field);
 
 /**
  * Destroy TraversalOrderItem created by SelvaTraversalOrder_Create*OrderItem().

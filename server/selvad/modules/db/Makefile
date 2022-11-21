@@ -6,6 +6,9 @@ OBJ := \
 	   module/arg_parser.o \
 	   module/config.o \
 	   module/hierarchy/hierarchy.o \
+	   module/hierarchy/hierarchy_reply.o \
+	   module/hierarchy/traversal.o \
+	   module/hierarchy/traversal_order.o \
 	   module/hierarchy/types.o \
 	   module/selva_lang.o \
 	   module/selva_object/selva_object.o \

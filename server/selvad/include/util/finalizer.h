@@ -18,6 +18,6 @@ struct finalizer {
     struct finalizer_stack head;
 };
 
-void finalizer_init(struct finalizer *f);
-void finalizer_add(struct finalizer *f, void *p, void (*dispose)(void *p));
-void finalizer_run(struct finalizer *f);
+void finalizer_init(struct finalizer *fin);
+void finalizer_add(struct finalizer *fin, void *p, void (*dispose)(void *p));
+void finalizer_run(struct finalizer *fin);
