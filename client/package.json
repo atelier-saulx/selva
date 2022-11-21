@@ -38,7 +38,8 @@
   },
   "ava": {
     "files": [
-      "test/**/*.ts",
+      "test/emptyArrayInObjects.ts",
+   
       "!test/assertions"
     ],
     "concurrency": 1,
