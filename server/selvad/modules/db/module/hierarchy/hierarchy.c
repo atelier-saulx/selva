@@ -2314,7 +2314,7 @@ static int traverse_ref(
         Selva_NodeId nodeId;
         SelvaHierarchyNode *node;
 
-        Selva_RMString2NodeId(nodeId, el->value_rms);
+        selva_string2node_id(nodeId, el->value_rms);
         node = SelvaHierarchy_FindNode(hierarchy, nodeId);
         if (node) {
             if (cb->node_cb(ctx, hierarchy, node, cb->node_arg)) {
@@ -3516,7 +3516,7 @@ int SelvaHierarchy_DelNodeCommand(struct selva_server_response_out *resp, struct
         Selva_NodeId nodeId;
         int res;
 
-        Selva_RMString2NodeId(nodeId, argv[i]);
+        selva_string2node_id(nodeId, argv[i]);
         res = SelvaModify_DelHierarchyNode(resp, hierarchy, nodeId, flags);
         if (res >= 0) {
             nr_deleted += res;
@@ -3575,7 +3575,7 @@ int SelvaHierarchy_ParentsCommand(struct selva_server_response_out *resp, struct
     /*
      * Find the node.
      */
-    Selva_RMString2NodeId(nodeId, argv[2]);
+    selva_string2node_id(nodeId, argv[2]);
     const SelvaHierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
@@ -3618,7 +3618,7 @@ int SelvaHierarchy_ChildrenCommand(struct selva_server_response_out *resp, struc
     /*
      * Find the node.
      */
-    Selva_RMString2NodeId(nodeId, argv[2]);
+    selva_string2node_id(nodeId, argv[2]);
     const SelvaHierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
@@ -3648,7 +3648,7 @@ int SelvaHierarchy_EdgeListCommand(struct selva_server_response_out *resp, struc
     /*
      * Find the node.
      */
-    Selva_RMString2NodeId(nodeId, argv[2]);
+    selva_string2node_id(nodeId, argv[2]);
     SelvaHierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
@@ -3701,7 +3701,7 @@ int SelvaHierarchy_EdgeGetCommand(struct selva_server_response_out *resp, struct
     /*
      * Find the node.
      */
-    Selva_RMString2NodeId(nodeId, argv[2]);
+    selva_string2node_id(nodeId, argv[2]);
     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
@@ -3747,9 +3747,9 @@ int SelvaHierarchy_EdgeGetMetadataCommand(struct selva_server_response_out *resp
         return selva_send_error_arity(resp);
     }
 
-    Selva_RMString2NodeId(src_node_id, argv[2]);
+    selva_string2node_id(src_node_id, argv[2]);
     field_name = argv[3];
-    Selva_RMString2NodeId(dst_node_id, argv[4]);
+    selva_string2node_id(dst_node_id, argv[4]);
     TO_STR(field_name);
 
     SelvaHierarchy *hierarchy = main_hierarchy;
@@ -3818,7 +3818,7 @@ int SelvaHierarchy_CompressCommand(struct selva_server_response_out *resp, struc
     /*
      * Find the node.
      */
-    Selva_RMString2NodeId(nodeId, argv[2]);
+    selva_string2node_id(nodeId, argv[2]);
     SelvaHierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         return selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);

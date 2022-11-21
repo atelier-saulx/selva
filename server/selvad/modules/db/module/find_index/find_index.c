@@ -1189,7 +1189,7 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     }
 
     Selva_NodeId node_id;
-    err = Selva_RMString2NodeId(node_id, argv[ARGV_NODE_ID]);
+    err = selva_string2node_id(node_id, argv[ARGV_NODE_ID]);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "node_id");
     }

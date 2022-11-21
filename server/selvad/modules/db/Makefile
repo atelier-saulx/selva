@@ -11,6 +11,7 @@ OBJ := \
 	   module/selva_object/selva_object.o \
 	   module/selva_object/selva_object_foreach.o \
 	   module/selva_set/selva_set.o \
+	   module/selva_type.o \
 	   module/shared_strings.o
 #	   module/selva_object/selva_object_commands.o
 DEP := $(OBJ:%.o=%.d)

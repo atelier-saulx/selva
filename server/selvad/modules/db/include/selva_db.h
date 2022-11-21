@@ -70,7 +70,7 @@
 #define SELVA_OBJECT_META_SUBTYPE_TEXT 2
 #define SELVA_OBJECT_META_SUBTYPE_TIMESERIES 3
 
-struct RedisModuleString;
+struct selva_string;
 
 /**
  * Type for Selva NodeId.
@@ -124,9 +124,9 @@ static inline void Selva_NodeIdCpy(Selva_NodeId dest, const char *src) {
 }
 
 /**
- * Copy RedisModuleString into a nodeId buffer.
+ * Copy selva_string into a nodeId buffer.
  */
-int Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *rms);
+int selva_string2node_id(Selva_NodeId nodeId, const struct selva_string *s);
 
 
 /**

@@ -33,7 +33,7 @@ static int sosfv_in_set(union SelvaObjectSetForeachValue value, enum SelvaSetTyp
                 Selva_NodeId node_id;
                 int err;
 
-                err = Selva_RMString2NodeId(node_id, value.rms);
+                err = selva_string2node_id(node_id, value.rms);
                 if (!err && !memcmp(node_id, el->value_nodeId, SELVA_NODE_ID_SIZE)) {
                     data->found++;
                     break;
@@ -57,7 +57,7 @@ static int sosfv_in_set(union SelvaObjectSetForeachValue value, enum SelvaSetTyp
                 Selva_NodeId node_id;
                 int err;
 
-                err = Selva_RMString2NodeId(node_id, el->value_rms);
+                err = selva_string2node_id(node_id, el->value_rms);
                 if (!err && !memcmp(node_id, value.node_id, SELVA_NODE_ID_SIZE)) {
                     data->found++;
                     break;

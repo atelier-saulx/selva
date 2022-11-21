@@ -1601,7 +1601,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_CFIELDS, str, &tmp_id, NULL)) {
                     Selva_NodeId nodeId;
 
-                    err = Selva_RMString2NodeId(nodeId, tmp_id);
+                    err = selva_string2node_id(nodeId, tmp_id);
                     if (err) {
                         /* TODO Should it fail? */
                         continue;
@@ -1637,7 +1637,7 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     struct SelvaHierarchyNode *node;
     const unsigned flags = parse_flags(argv[2]);
 
-    err = Selva_RMString2NodeId(nodeId, id);
+    err = selva_string2node_id(nodeId, id);
     if (err) {
         return replyWithSelvaErrorf(ctx, err, "Invalid nodeId");
     }

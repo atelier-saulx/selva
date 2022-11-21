@@ -29,7 +29,7 @@ static struct SelvaObject *SelvaObject_Open(struct selva_server_response_out *re
         return NULL;
     }
 
-    err = Selva_RMString2NodeId(nodeId, key_name);
+    err = selva_string2node_id(nodeId, key_name);
     if (err) {
         replyWithSelvaError(ctx, err);
         return NULL;

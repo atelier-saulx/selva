@@ -5,7 +5,9 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "selva.h"
+#include "util/selva_string.h"
+#include "selva_error.h"
+#include "selva_db.h"
 
 /*
  * Technically a nodeId is always 10 bytes but sometimes a printable
@@ -21,14 +23,15 @@ size_t Selva_NodeIdLen(const Selva_NodeId nodeId) {
     return len;
 }
 
-int Selva_RMString2NodeId(Selva_NodeId nodeId, const struct RedisModuleString *rms) {
-    TO_STR(rms);
+int selva_string2node_id(Selva_NodeId nodeId, const struct selva_string *s)
+{
+    TO_STR(s);
 
-    if (rms_len < SELVA_NODE_TYPE_SIZE + 1 || rms_len > SELVA_NODE_ID_SIZE) {
+    if (s_len < SELVA_NODE_TYPE_SIZE + 1 || s_len > SELVA_NODE_ID_SIZE) {
         return SELVA_EINVAL;
     }
 
-    Selva_NodeIdCpy(nodeId, rms_str);
+    Selva_NodeIdCpy(nodeId, s_str);
 
     return 0;
 }
