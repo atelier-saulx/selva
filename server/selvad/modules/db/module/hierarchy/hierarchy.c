@@ -3338,7 +3338,6 @@ static void HierarchyRDBSaveChild(
 }
 
 static void save_hierarchy(struct selva_io *io, SelvaHierarchy *hierarchy) {
-    struct RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
     struct HierarchyRDBSaveNode args = {
         .io = io,
     };
@@ -3432,7 +3431,6 @@ static void *Hierarchy_SubtreeRDBLoad(struct selva_io *io, int encver) {
  * This function should never be called directly.
  */
 static void Hierarchy_SubtreeRDBSave(struct selva_io *io, void *value) {
-    struct RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
     struct SelvaHierarchySubtree *subtree = (struct SelvaHierarchySubtree *)value;
     SelvaHierarchy *hierarchy = subtree->hierarchy;
     struct SelvaHierarchyNode *node = subtree->node;
