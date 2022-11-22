@@ -189,7 +189,7 @@ static void EdgeConstraint_Reply(struct selva_server_response_out *resp, void *p
 }
 
 static void rdb_load_src_node_type(struct selva_io *io, Selva_NodeType type) {
-    __rm_autofree const char *s;
+    __selva_autofree const char *s;
     size_t len;
 
     s = selva_io_load_str(io, &len);

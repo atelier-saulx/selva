@@ -2995,7 +2995,7 @@ static int load_metadata(struct selva_io *io, int encver, SelvaHierarchy *hierar
  * Should be only called by load_node().
  */
 static int load_node_id(struct selva_io *io, Selva_NodeId node_id_out) {
-    __rm_autofree const char *node_id = NULL;
+    __selva_autofree const char *node_id = NULL;
     size_t len = 0;
 
     node_id = selva_io_load_str(io, &len);
@@ -3375,7 +3375,7 @@ static void Hierarchy_RDBSave(struct selva_io *io, void *value) {
 }
 
 static int load_nodeId(struct selva_io *io, Selva_NodeId nodeId) {
-    __rm_autofree const char *buf = NULL;
+    __selva_autofree const char *buf = NULL;
     size_t len;
 
     buf = selva_io_load_str(io, &len);

@@ -883,8 +883,8 @@ static void *EdgeField_RdbLoad(struct selva_io *io, __unused int encver __unused
      */
     constraint_id = selva_io_load_unsigned(io);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
-        __rm_autofree const char *node_type = NULL;
-        __rm_autofree const char *field_name_str = NULL;
+        __selva_autofree const char *node_type = NULL;
+        __selva_autofree const char *field_name_str = NULL;
         size_t field_name_len;
 
         node_type = selva_io_load_str(io, NULL);
@@ -911,7 +911,7 @@ static void *EdgeField_RdbLoad(struct selva_io *io, __unused int encver __unused
      * Edges/arcs.
      */
     for (size_t i = 0; i < nr_edges; i++) {
-        __rm_autofree const char *dst_id_str = NULL;
+        __selva_autofree const char *dst_id_str = NULL;
         size_t dst_id_len;
         struct SelvaHierarchyNode *dst_node;
         int err;
