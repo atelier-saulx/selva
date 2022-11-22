@@ -30,6 +30,7 @@ OBJ := \
 	   module/selva_set/seta_in_setb.o \
 	   module/selva_type.o \
 	   module/shared_strings.o \
+	   module/subscriptions.o \
 	   module/update.o \
 	   version.o
 #	   module/selva_object/selva_object_commands.o
