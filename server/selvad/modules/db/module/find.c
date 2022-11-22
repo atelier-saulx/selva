@@ -1677,7 +1677,7 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
         return selva_send_error_arity(resp);
     }
 
-    struct finalizer fin;
+    __auto_finalizer struct finalizer fin;
     struct selva_string *lang = argv[ARGV_LANG];
     SVECTOR_AUTOFREE(traverse_result); /*!< for postprocessing the result. */
     __auto_free_rpn_ctx struct rpn_ctx *traversal_rpn_ctx = NULL;
@@ -2182,8 +2182,6 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
         /* Sent get_nr_out(merge_strategy, nr_nodes, merge_nr_fields) */
         selva_send_array_end(resp);
     }
-
-    finalizer_run(&fin);
 
     return 0;
 #undef SHIFT_ARGS

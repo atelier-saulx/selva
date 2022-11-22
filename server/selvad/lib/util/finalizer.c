@@ -22,6 +22,20 @@ void finalizer_add(struct finalizer *fin, void *p, void (*dispose)(void *p))
     SLIST_INSERT_HEAD(&fin->head, item, entries);
 }
 
+void finalizer_del(struct finalizer *fin, void *p) {
+    struct finalizer_stack *head = &fin->head;
+    struct finalizer_item *item;
+    struct finalizer_item *item_tmp;
+
+    SLIST_FOREACH_SAFE(item, &head, entries, item_tmp) {
+        if (item->p == p) {
+            SLIST_REMOVE(&head, item, finalizer_item, entries);
+            selva_free(item);
+            break;
+        }
+    }
+}
+
 void finalizer_run(struct finalizer *fin)
 {
     struct finalizer_stack *head = &fin->head;
@@ -34,4 +48,9 @@ void finalizer_run(struct finalizer *fin)
         SLIST_REMOVE_HEAD(head, entries);
         selva_free(item);
     }
+}
+
+void _wrap_finalizer_run(void *p)
+{
+    finalizer_run((struct finalizer *)p);
 }

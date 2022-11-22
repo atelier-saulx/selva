@@ -4,6 +4,7 @@
 OBJ := \
 	   db.o \
 	   module/arg_parser.o \
+	   module/comparator.o \
 	   module/config.o \
 	   module/edge/edge.o \
 	   module/edge/edge_constraint.o \
@@ -13,6 +14,8 @@ OBJ := \
 	   module/hierarchy/traversal.o \
 	   module/hierarchy/traversal_order.o \
 	   module/hierarchy/types.o \
+	   module/modify.o \
+	   module/resolve.o \
 	   module/rpn/rpn.o \
 	   module/rpn/rpn_eval.o \
 	   module/selva_lang.o \

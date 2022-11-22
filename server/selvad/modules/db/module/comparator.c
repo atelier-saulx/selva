@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: MIT
  */
 #include <string.h>
-#include "selva.h"
+#include "util/selva_string.h"
+#include "selva_db.h"
 #include "comparator.h"
 
 int SelvaSVectorComparator_Cstring(const void ** restrict ap, const void ** restrict bp) {
@@ -20,17 +21,11 @@ int SelvaSVectorComparator_NodeId(const void ** restrict ap, const void ** restr
     return memcmp(a, b, SELVA_NODE_ID_SIZE);
 }
 
-int SelvaSVectorComparator_RMS(const void ** restrict ap, const void ** restrict bp) {
-    const RedisModuleString *a = *(const RedisModuleString **)ap;
-    const RedisModuleString *b = *(const RedisModuleString **)bp;
-    TO_STR(a, b);
+int SelvaSVectorComparator_String(const void ** restrict ap, const void ** restrict bp) {
+    const struct selva_string *a = *(const struct selva_string **)ap;
+    const struct selva_string *b = *(const struct selva_string **)bp;
 
-    const ssize_t len_diff = a_len - b_len;
-    if (len_diff != 0) {
-        return len_diff < 0 ? -1 : 1;
-    }
-
-    return memcmp(a_str, b_str, a_len);
+    return selva_string_cmp(a, b);
 }
 
 int SelvaSVectorComparator_Node(const void ** restrict a, const void ** restrict b) {

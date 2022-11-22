@@ -43,6 +43,7 @@ struct update_op {
 };
 
 struct update_node_cb {
+    struct selva_server_response_out *resp;
     struct rpn_ctx *rpn_ctx;
     const struct rpn_expression *filter;
     int nr_update_ops;
@@ -79,7 +80,7 @@ static int parse_update_ops(struct finalizer *fin, struct selva_string **argv, i
         };
 
         if (op.type_code == SELVA_MODIFY_ARG_OP_SET) {
-            op.set_opts = SelvaModify_OpSet_align(op.value);
+            op.set_opts = SelvaModify_OpSet_align(fin, op.value);
             if (!op.set_opts) {
                 return SELVA_EINVAL;
             }
@@ -145,6 +146,7 @@ static int parse_update_ops(struct finalizer *fin, struct selva_string **argv, i
 }
 
 static enum selva_op_repl_state update_op(
+        struct selva_server_response_out *resp,
         SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const struct update_op *op) {
@@ -257,7 +259,7 @@ static enum selva_op_repl_state update_op(
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-        return SelvaModify_ModifyMetadata(obj, field, op->value);
+        return SelvaModify_ModifyMetadata(resp, obj, field, op->value);
     } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
         int err;
 
@@ -324,7 +326,7 @@ static int update_node_cb(
         const struct update_op *op = &update_ops[i];
         enum selva_op_repl_state repl_state;
 
-        repl_state = update_op(hierarchy, node, op);
+        repl_state = update_op(args->resp, hierarchy, node, op);
         if (repl_state == SELVA_OP_REPL_STATE_UPDATED) {
             size_t field_len;
             const char *field_str = selva_string_to_str(op->field, &field_len);
@@ -498,6 +500,7 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
 
         /* TODO */
         struct update_node_cb args = {
+            .resp = resp,
             .nr_update_ops = nr_update_ops,
             .update_ops = update_ops,
             .rpn_ctx = rpn_ctx,

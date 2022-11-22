@@ -8,7 +8,7 @@
 
 int SelvaSVectorComparator_Cstring(const void ** restrict ap, const void ** restrict bp);
 int SelvaSVectorComparator_NodeId(const void ** restrict ap, const void ** restrict bp);
-int SelvaSVectorComparator_RMS(const void ** restrict ap, const void ** restrict bp);
+int SelvaSVectorComparator_String(const void ** restrict ap, const void ** restrict bp);
 
 /**
  * Compare two Selva Hierarchy nodes.

@@ -6,12 +6,10 @@
 #ifndef SELVA_RESOLVE
 #define SELVA_RESOLVE
 
-#include <stddef.h>
-#include "selva.h"
+#include "selva_db.h"
 
 struct RedisModuleCtx;
 struct RedisModuleKey;
-struct RedisModuleString;
 struct SelvaHierarchy;
 
 #define SELVA_RESOLVE_NODE_ID   0x40000000
@@ -25,9 +23,8 @@ struct SelvaHierarchy;
  *          otherwise a Selva error is returned.
  */
 int SelvaResolve_NodeId(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        RedisModuleString **ids,
+        struct selva_string **ids,
         size_t nr_ids,
         Selva_NodeId node_id);
 

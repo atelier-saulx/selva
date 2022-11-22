@@ -3,21 +3,27 @@
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
-#include "selva.h"
+#include <string.h>
+#include <sys/types.h>
+#include "util/selva_string.h"
+#include "selva_error.h"
+#include "selva_server.h"
 #include "alias.h"
 #include "arg_parser.h"
 #include "hierarchy.h"
+#include "selva_db.h"
 #include "selva_onload.h"
 #include "subscriptions.h"
 #include "resolve.h"
 
 int SelvaResolve_NodeId(
-        RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
-        RedisModuleString **ids,
+        struct selva_string **ids,
         size_t nr_ids,
         Selva_NodeId node_id) {
+#if 0
     RedisModuleKey *aliases_key;
+#endif
     int res = SELVA_ENOENT;
 
     if (nr_ids == 0) {
@@ -26,13 +32,16 @@ int SelvaResolve_NodeId(
         return 0;
     }
 
-    aliases_key = open_aliases_key(ctx);
+    /* FIXME Aliases */
+#if 0
+    aliases_key = open_aliases_key();
     if (!aliases_key) {
         return SELVA_EGENERAL;
     }
+#endif
 
     for (size_t i = 0; i < nr_ids; i++) {
-        const RedisModuleString *id = ids[i];
+        const struct selva_string *id = ids[i];
         TO_STR(id);
 
         /* First check if it's a nodeId. */
@@ -52,7 +61,9 @@ int SelvaResolve_NodeId(
         }
 
         /* Then check if there is an alias with this string. */
-        RedisModuleString *orig = NULL;
+        struct selva_string *orig = NULL;
+        /* FIXME Aliases */
+#if 0
         if (!RedisModule_HashGet(aliases_key, REDISMODULE_HASH_NONE, id, &orig, NULL)) {
             if (orig) {
                 TO_STR(orig);
@@ -64,64 +75,68 @@ int SelvaResolve_NodeId(
                 }
             }
         }
+#endif
     }
 
+    /* FIXME Aliases */
+#if 0
     RedisModule_CloseKey(aliases_key);
+#endif
     return res;
 }
 
 /*
  * HIERARCHY_KEY SUB_ID IDS...
  */
-int SelvaResolve_NodeIdCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-
+int SelvaResolve_NodeIdCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     const size_t ARGV_SUB_ID = 2;
     const size_t ARGV_IDS = 3;
 
     if (argc < (int)ARGV_IDS + 1) {
-        return RedisModule_WrongArity(ctx);
+        return selva_send_error_arity(resp);
     }
 
     SelvaHierarchy *hierarchy = main_hierarchy;
 
     Selva_NodeId node_id;
-    const int resolved = SelvaResolve_NodeId(ctx, hierarchy, argv + ARGV_IDS, argc - ARGV_IDS, node_id);
+    const int resolved = SelvaResolve_NodeId(hierarchy, argv + ARGV_IDS, argc - ARGV_IDS, node_id);
     if (resolved == SELVA_ENOENT) {
-        return RedisModule_ReplyWithNull(ctx);
+        return selva_send_null(resp);
     } else if (resolved < 0) {
-        return replyWithSelvaErrorf(ctx, resolved, "Resolve failed");
+        return selva_send_errorf(resp, resolved, "Resolve failed");
     }
 
-    const RedisModuleString *argv_sub_id = argv[ARGV_SUB_ID];
+    const struct selva_string *argv_sub_id = argv[ARGV_SUB_ID];
     TO_STR(argv_sub_id);
 
     if ((resolved & SELVA_RESOLVE_ALIAS) && argv_sub_id_len > 0) {
-        RedisModuleString *alias_name = argv[ARGV_IDS + (resolved & ~SELVA_RESOLVE_FLAGS)];
+        struct selva_string *alias_name = argv[ARGV_IDS + (resolved & ~SELVA_RESOLVE_FLAGS)];
         Selva_SubscriptionId sub_id;
-        const Selva_SubscriptionMarkerId marker_id = Selva_GenSubscriptionMarkerId(0, RedisModule_StringPtrLen(alias_name, NULL));
+        const Selva_SubscriptionMarkerId marker_id = Selva_GenSubscriptionMarkerId(0, selva_string_to_str(alias_name, NULL));
         int err;
 
         err = SelvaArgParser_SubscriptionId(sub_id, argv_sub_id);
         if (err) {
-            return replyWithSelvaErrorf(ctx, err, "Invalid sub_id \"%s\"\n", argv_sub_id_str);
+            return selva_send_errorf(resp, err, "Invalid sub_id \"%s\"\n", argv_sub_id_str);
         }
 
         err = Selva_AddSubscriptionAliasMarker(hierarchy, sub_id, marker_id, alias_name, node_id);
         if (err && err != SELVA_SUBSCRIPTIONS_EEXIST) {
-            return replyWithSelvaErrorf(ctx, err, "Failed to subscribe sub_id: \"%s.%d\" alias_name: %s node_id: %.*s\n",
-                    argv_sub_id_str,
-                    (int)marker_id,
-                    RedisModule_StringPtrLen(alias_name, NULL),
-                    (int)SELVA_NODE_ID_SIZE, node_id);
+            return selva_send_errorf(resp, err, "Failed to subscribe sub_id: \"%s.%d\" alias_name: %s node_id: %.*s\n",
+                                     argv_sub_id_str,
+                                     (int)marker_id,
+                                     selva_string_to_str(alias_name, NULL),
+                                     (int)SELVA_NODE_ID_SIZE, node_id);
         }
     }
 
-    RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
-
-    return REDISMODULE_OK;
+    return selva_send_str(resp, node_id, Selva_NodeIdLen(node_id));
 }
 
+/*
+ * FIXME Register command
+ */
+#if 0
 static int SelvaResolve_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
@@ -133,3 +148,4 @@ static int SelvaResolve_OnLoad(RedisModuleCtx *ctx) {
     return REDISMODULE_OK;
 }
 SELVA_ONLOAD(SelvaResolve_OnLoad);
+#endif

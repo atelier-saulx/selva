@@ -6,7 +6,8 @@
 #ifndef SELVA_ALIAS_H
 #define SELVA_ALIAS_H
 
-struct RedisModuleCtx;
+#include "selva_db.h"
+
 struct RedisModuleKey;
 struct RedisModuleString;
 struct SelvaHierarchy;
@@ -15,7 +16,7 @@ struct SelvaSet;
 /**
  * Open the aliases key.
  */
-struct RedisModuleKey *open_aliases_key(struct RedisModuleCtx *ctx);
+struct RedisModuleKey *open_aliases_key(void);
 
 /**
  * Remove aliases listed in set.
@@ -28,7 +29,6 @@ int delete_aliases(struct RedisModuleKey *aliases_key, struct SelvaSet *set);
  * Caller must set the alias to the new node.
  */
 void update_alias(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct RedisModuleKey *alias_key,
         const Selva_NodeId node_id,

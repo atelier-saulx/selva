@@ -35,7 +35,7 @@ int delete_aliases(RedisModuleKey *aliases_key, struct SelvaSet *set) {
     return 0;
 }
 
-void update_alias(struct RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, RedisModuleKey *alias_key, const Selva_NodeId node_id, RedisModuleString *ref) {
+void update_alias(SelvaHierarchy *hierarchy, RedisModuleKey *alias_key, const Selva_NodeId node_id, RedisModuleString *ref) {
     RedisModuleString *old = NULL;
 
     /*

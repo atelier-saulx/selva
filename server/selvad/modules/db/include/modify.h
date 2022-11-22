@@ -12,6 +12,8 @@
 
 struct SelvaHierarchy;
 struct SelvaObject;
+struct finalizer;
+struct selva_server_response_out;
 struct selva_string;
 
 enum SelvaModify_ArgType {
@@ -106,11 +108,13 @@ enum selva_op_repl_state {
 };
 
 enum selva_op_repl_state SelvaModify_ModifyMetadata(
+        struct selva_server_response_out *resp,
         struct SelvaObject *obj,
         const struct selva_string *field,
         const struct selva_string *value);
 
 struct SelvaModify_OpSet *SelvaModify_OpSet_align(
+        struct finalizer *fin,
         const struct selva_string *data);
 
 /**

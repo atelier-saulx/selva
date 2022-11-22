@@ -38,7 +38,17 @@ void finalizer_init(struct finalizer *fin);
 void finalizer_add(struct finalizer *fin, void *p, void (*dispose)(void *p));
 
 /**
+ * Delete a pointer from the finalizer.
+ * Cancels the finalization.
+ */
+void finalizer_del(struct finalizer *fin, void *p);
+
+/**
  * Runt he finalizer for the items currently in the finalization list.
  * Runs LIFO.
  */
 void finalizer_run(struct finalizer *fin);
+
+void _wrap_finalizer_run(void *p);
+
+#define __auto_finalizer __attribute__((cleanup(_wrap_finalizer_run)))
