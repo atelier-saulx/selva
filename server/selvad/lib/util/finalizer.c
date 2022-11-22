@@ -27,9 +27,9 @@ void finalizer_del(struct finalizer *fin, void *p) {
     struct finalizer_item *item;
     struct finalizer_item *item_tmp;
 
-    SLIST_FOREACH_SAFE(item, &head, entries, item_tmp) {
+    SLIST_FOREACH_SAFE(item, head, entries, item_tmp) {
         if (item->p == p) {
-            SLIST_REMOVE(&head, item, finalizer_item, entries);
+            SLIST_REMOVE(head, item, finalizer_item, entries);
             selva_free(item);
             break;
         }
