@@ -2,9 +2,13 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <sys/types.h>
 #include <string.h>
-#include "cstrings.h"
-#include "selva.h"
+#include "util/cstrings.h"
+#include "util/selva_string.h"
+#include "selva_server.h"
+#include "selva_error.h"
+#include "selva_db.h"
 #include "selva_object.h"
 #include "edge.h"
 #include "hierarchy.h"
@@ -16,20 +20,25 @@
  */
 
 static int send_field_value(
-        RedisModuleCtx *ctx,
+        struct selva_server_response_out *resp,
         SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
+        struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        RedisModuleString *full_field,
+        struct selva_string *full_field,
         const char *field_str,
         size_t field_len);
 
-static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id, RedisModuleString *full_field, struct EdgeField *edge_field) {
-    RedisModule_ReplyWithString(ctx, full_field);
-    RedisModule_ReplyWithArray(ctx, 2);
-    RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
-    replyWithEdgeField(ctx, edge_field);
+static int send_edge_field_value(
+        struct selva_server_response_out *resp,
+        const Selva_NodeId node_id,
+        struct selva_string *full_field,
+        struct EdgeField *edge_field) {
+    selva_send_string(resp, full_field);
+
+    selva_send_array(resp, 2);
+    selva_send_str(resp, node_id, Selva_NodeIdLen(node_id));
+    replyWithEdgeField(resp, edge_field);
 
     return 0;
 }
@@ -52,10 +61,10 @@ static int deref_single_ref(
 }
 
 static int send_edge_field_deref_value(
-        RedisModuleCtx *ctx,
+        struct selva_server_response_out *resp,
         SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
-        RedisModuleString *full_field,
+        struct selva_string *lang,
+        struct selva_string *full_field,
         const struct EdgeField *edge_field,
         const char *field_str,
         size_t field_len) {
@@ -75,10 +84,10 @@ static int send_edge_field_deref_value(
          */
         TO_STR(full_field);
 
-        RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
-        RedisModule_ReplyWithArray(ctx, 2);
-        RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId)); /* The actual node_id. */
-        SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        selva_send_str(resp, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
+        selva_send_array(resp, 2);
+        selva_send_str(resp, nodeId, Selva_NodeIdLen(nodeId)); /* The actual node_id. */
+        SelvaObject_ReplyWithObject(resp, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
     } else {
         const struct SelvaHierarchyNode *node;
 
@@ -87,18 +96,18 @@ static int send_edge_field_deref_value(
             return SELVA_ENOENT; /* RFE Should we return SELVA_HIERARCHY_ENOENT? */
         }
 
-        return send_field_value(ctx, hierarchy, lang, node, obj, full_field, field_str, field_len);
+        return send_field_value(resp, hierarchy, lang, node, obj, full_field, field_str, field_len);
     }
 
     return 0;
 }
 
 static int send_object_field_value(
-        RedisModuleCtx *ctx,
-        RedisModuleString *lang,
+        struct selva_server_response_out *resp,
+        struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        RedisModuleString *full_field,
+        struct selva_string *full_field,
         const char *field_str,
         size_t field_len) {
     int err = SELVA_ENOENT;
@@ -108,13 +117,14 @@ static int send_object_field_value(
 
         SelvaHierarchy_GetNodeId(node_id, node);
 
-        RedisModule_ReplyWithString(ctx, full_field);
-        RedisModule_ReplyWithArray(ctx, 2);
-        RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
+        selva_send_string(resp, full_field);
+        selva_send_array(resp, 2);
+        selva_send_str(resp, node_id, Selva_NodeIdLen(node_id));
 
-        err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
-            (void)replyWithSelvaErrorf(ctx, err, "failed to inherit field: \"%.*s\"", (int)field_len, field_str);
+            (void)selva_send_errorf(resp, err, "failed to inherit field: \"%.*s\"",
+                                    (int)field_len, field_str);
         }
     }
 
@@ -122,12 +132,12 @@ static int send_object_field_value(
 }
 
 static int send_field_value(
-        RedisModuleCtx *ctx,
+        struct selva_server_response_out *resp,
         SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
+        struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        RedisModuleString *full_field,
+        struct selva_string *full_field,
         const char *field_str,
         size_t field_len) {
     struct EdgeField *edge_field;
@@ -142,7 +152,7 @@ static int send_field_value(
 
         SelvaHierarchy_GetNodeId(node_id, node);
 
-        return send_edge_field_value(ctx, node_id, full_field, edge_field);
+        return send_edge_field_value(resp, node_id, full_field, edge_field);
     } else {
         /*
          * If field was not an edge field perhaps a substring of field is an edge field.
@@ -155,23 +165,23 @@ static int send_field_value(
                 const char *rest_str = field_str + n + 1;
                 const size_t rest_len = field_len - n - 1;
 
-                return send_edge_field_deref_value(ctx, hierarchy, lang, full_field, edge_field, rest_str, rest_len);
+                return send_edge_field_deref_value(resp, hierarchy, lang, full_field, edge_field, rest_str, rest_len);
             }
         }
     }
 
     /* Finally try from a node object field. */
-    return send_object_field_value(ctx, lang, node, obj, full_field, field_str, field_len);
+    return send_object_field_value(resp, lang, node, obj, full_field, field_str, field_len);
 }
 
 int Inherit_SendFieldFind(
-        RedisModuleCtx *ctx,
+        struct selva_server_response_out *resp,
         SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
+        struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        RedisModuleString *full_field,
+        struct selva_string *full_field,
         const char *field_str,
         size_t field_len) {
-    return send_field_value(ctx, hierarchy, lang, node, obj, full_field, field_str, field_len);
+    return send_field_value(resp, hierarchy, lang, node, obj, full_field, field_str, field_len);
 }

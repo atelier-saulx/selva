@@ -6,17 +6,17 @@
 #ifndef _SELVA_INHERIT_FIELDS_H_
 #define _SELVA_INHERIT_FIELDS_H_
 
-struct RedisModuleCtx;
-struct RedisModuleString;
 struct SelvaHierarchy;
 struct SelvaObjectAny;
+struct selva_server_response_out;
+struct selva_string;
 
 /**
  * Get a plain field value.
  */
 int Inherit_GetField(
         SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
+        struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
         const char *field_str,
@@ -29,12 +29,12 @@ int Inherit_GetField(
  * the format expected by the client.
  */
 int Inherit_SendField(
-        struct RedisModuleCtx *ctx,
+        struct selva_server_response_out *resp,
         struct SelvaHierarchy *hierarchy,
-        struct RedisModuleString *lang,
+        struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        struct RedisModuleString *full_field,
+        struct selva_string *full_field,
         const char *field_str,
         size_t field_len);
 
@@ -42,12 +42,12 @@ int Inherit_SendField(
  * Send a field value to the client in the find command format.
  */
 int Inherit_SendFieldFind(
-        RedisModuleCtx *ctx,
+        struct selva_server_response_out *resp,
         SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
+        struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        RedisModuleString *full_field,
+        struct selva_string *full_field,
         const char *field_str,
         size_t field_len);
 

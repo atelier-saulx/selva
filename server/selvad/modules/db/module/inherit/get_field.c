@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 #include <string.h>
-#include "cstrings.h"
-#include "selva.h"
+#include <sys/types.h>
+#include "util/cstrings.h"
+#include "selva_error.h"
+#include "selva_db.h"
 #include "selva_object.h"
 #include "edge.h"
 #include "hierarchy.h"
@@ -12,7 +14,7 @@
 
 static int get_field_value(
         SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
+        struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
         const char *field_str,
@@ -51,7 +53,7 @@ static int deref_single_ref(
 
 static int get_edge_field_deref_value(
         SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
+        struct selva_string *lang,
         const struct EdgeField *edge_field,
         const char *field_str,
         size_t field_len,
@@ -85,7 +87,7 @@ static int get_edge_field_deref_value(
 
 static int get_field_value(
         SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
+        struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
         const char *field_str,
@@ -127,7 +129,7 @@ static int get_field_value(
 
 int Inherit_GetField(
         SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
+        struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
         const char *field_str,
