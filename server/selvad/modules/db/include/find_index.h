@@ -9,11 +9,11 @@
 #include "traversal.h"
 
 struct RedisModuleCtx;
-struct RedisModuleString;
+struct SelvaFindIndexControlBlock;
 struct SelvaHierarchy;
 struct SelvaSet;
-struct SelvaFindIndexControlBlock;
 struct indexing_timer_args;
+struct selva_string;
 
 /**
  * Initialize a new indexing subsystem instance for hierarchy.
@@ -34,22 +34,20 @@ size_t SelvaFindIndex_IcbCard(const struct SelvaFindIndexControlBlock *icb);
  * @param out is a SelvaSet of node_ids indexed for given clause.
  */
 int SelvaFindIndex_Auto(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        enum SelvaTraversal dir, struct RedisModuleString *dir_expression_str,
+        enum SelvaTraversal dir, struct selva_string *dir_expression_str,
         const Selva_NodeId node_id,
         enum SelvaResultOrder order,
-        struct RedisModuleString *order_field,
-        struct RedisModuleString *filter,
+        struct selva_string *order_field,
+        struct selva_string *filter,
         struct SelvaFindIndexControlBlock **icb_out);
 int SelvaFindIndex_AutoMulti(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        enum SelvaTraversal dir, struct RedisModuleString *dir_expression,
+        enum SelvaTraversal dir, struct selva_string *dir_expression,
         const Selva_NodeId node_id,
         enum SelvaResultOrder order,
-        struct RedisModuleString *order_field,
-        struct RedisModuleString *index_hints[],
+        struct selva_string *order_field,
+        struct selva_string *index_hints[],
         size_t nr_index_hints,
         struct SelvaFindIndexControlBlock *ind_icb_out[]);
 
@@ -60,7 +58,7 @@ int SelvaFindIndex_AutoMulti(
 int SelvaFindIndex_IsOrdered(
         struct SelvaFindIndexControlBlock *icb,
         enum SelvaResultOrder order,
-        struct RedisModuleString *order_field);
+        struct selva_string *order_field);
 
 int SelvaFindIndex_Traverse(
         struct RedisModuleCtx *ctx,

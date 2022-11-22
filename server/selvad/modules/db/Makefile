@@ -5,6 +5,7 @@ OBJ := \
 	   db.o \
 	   module/arg_parser.o \
 	   module/config.o \
+	   module/find.o \
 	   module/hierarchy/hierarchy.o \
 	   module/hierarchy/hierarchy_reply.o \
 	   module/hierarchy/traversal.o \

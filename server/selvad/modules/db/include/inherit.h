@@ -7,9 +7,9 @@
 #define _SELVA_INHERIT_H_
 
 struct RedisModuleCtx;
-struct RedisModuleString;
 struct SelvaHierarchy;
 struct SelvaObjectAny;
+struct selva_string;
 
 /**
  * Inherit a field value for given node_id.
@@ -24,9 +24,8 @@ struct SelvaObjectAny;
  * @param[out] res is used to return the field value.
  */
 int Inherit_FieldValue(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
-        struct RedisModuleString *lang,
+        struct selva_string *lang,
         const Selva_NodeId node_id,
         const Selva_NodeType *types,
         size_t nr_types,
@@ -44,11 +43,11 @@ int Inherit_FieldValue(
  * @param Returns the number of fields sent.
  */
 size_t Inherit_SendFields(
-        RedisModuleCtx *ctx,
+        struct selva_server_response_out *resp,
         struct SelvaHierarchy *hierarchy,
-        RedisModuleString *lang,
+        struct selva_string *lang,
         const Selva_NodeId node_id,
-        RedisModuleString **field_names,
+        struct selva_string **field_names,
         size_t nr_field_names);
 
 #endif /* _SELVA_INHERIT_H_ */

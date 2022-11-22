@@ -186,17 +186,15 @@ struct SelvaNodeSendParam {
 };
 
 typedef int (*SelvaFind_ProcessNode)(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct FindCommand_Args *args,
         struct SelvaHierarchyNode *node);
 typedef int (*SelvaFind_ProcessObject)(
-        struct RedisModuleCtx *ctx,
         struct FindCommand_Args *args,
         struct SelvaObject *obj);
-
 typedef void (*SelvaFind_Postprocess)(
-        struct RedisModuleCtx *ctx,
+        struct finalizer *fin,
+        struct selva_server_response_out *resp,
         struct SelvaHierarchy *hierarchy,
         struct selva_string *lang,
         ssize_t offset,
@@ -205,6 +203,8 @@ typedef void (*SelvaFind_Postprocess)(
         SVector *result);
 
 struct FindCommand_Args {
+    struct finalizer *fin;
+    struct selva_server_response_out *resp;
     struct selva_string *lang;
 
     ssize_t *nr_nodes; /*!< Number of nodes in the result. */

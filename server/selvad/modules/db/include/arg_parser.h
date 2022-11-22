@@ -8,8 +8,9 @@
 
 #include "selva_db.h"
 
-struct selva_string;
 struct SelvaObject;
+struct finalizer;
+struct selva_string;
 
 typedef struct selva_string ** selva_stringList;
 
