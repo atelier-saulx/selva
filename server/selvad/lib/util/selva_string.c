@@ -249,8 +249,9 @@ int selva_string_replace(struct selva_string *s, const char *str, size_t len)
     return 0;
 }
 
-void selva_string_free(struct selva_string *s)
+void selva_string_free(_selva_string_ptr_t _s)
 {
+    struct selva_string *s = _s.__s;
     const enum selva_string_flags flags = s->flags;
 
     if (flags & SELVA_STRING_FREEZE) {
@@ -264,7 +265,7 @@ void selva_string_free(struct selva_string *s)
 }
 
 void selva_string_auto_finalize(struct finalizer *finalizer, struct selva_string *s) {
-    finalizer_add(finalizer, s, (void (*)(void *))selva_string_free);
+    finalizer_add(finalizer, s, selva_string_free);
 }
 
 enum selva_string_flags selva_string_get_flags(const struct selva_string *s)

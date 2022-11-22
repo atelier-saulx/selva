@@ -79,10 +79,20 @@ int selva_string_append(struct selva_string *s, const char *str, size_t len);
 int selva_string_replace(struct selva_string *s, const char *str, size_t len);
 
 /**
+ * Allows selva_string_free() to be passed to finalizer_add() and other similar
+ * functions accepting void functions.
+ */
+typedef union {
+    struct selva_string *__s;
+    void *__p;
+} _selva_string_ptr_t __attribute__((__transparent_union__));
+
+
+/**
  * Free the strings s.
  * @param s is a pointer to a selva_string.
  */
-void selva_string_free(struct selva_string *s);
+void selva_string_free(_selva_string_ptr_t s);
 
 /**
  * Add a selva_string to the given finalizer.
