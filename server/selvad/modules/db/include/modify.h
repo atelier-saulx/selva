@@ -6,15 +6,13 @@
 #ifndef SELVA_MODIFY_H
 #define SELVA_MODIFY_H
 
-#include <stdbool.h>
-#include <stdint.h>
 #include "alias.h"
 #include "async_task.h"
 #include "selva_object.h"
 
-struct RedisModuleCtx;
 struct SelvaHierarchy;
 struct SelvaObject;
+struct selva_string;
 
 enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_INVALID = '\0',
@@ -108,35 +106,31 @@ enum selva_op_repl_state {
 };
 
 enum selva_op_repl_state SelvaModify_ModifyMetadata(
-        struct RedisModuleCtx *ctx,
         struct SelvaObject *obj,
-        const struct RedisModuleString *field,
-        const struct RedisModuleString *value);
+        const struct selva_string *field,
+        const struct selva_string *value);
 
 struct SelvaModify_OpSet *SelvaModify_OpSet_align(
-        struct RedisModuleCtx *ctx,
-        const struct RedisModuleString *data);
+        const struct selva_string *data);
 
 /**
  * Modify a set.
  * @returns >= 0 number of changes; or < 0 Selva error
  */
 int SelvaModify_ModifySet(
-    struct RedisModuleCtx *ctx,
     struct SelvaHierarchy *hierarchy,
     const Selva_NodeId node_id,
     struct SelvaHierarchyNode *node,
     struct SelvaObject *obj,
-    const struct RedisModuleString *field,
+    const struct selva_string *field,
     struct SelvaModify_OpSet *setOpts
 );
 
 int SelvaModify_ModifyDel(
-    struct RedisModuleCtx *ctx,
     struct SelvaHierarchy *hierarchy,
     struct SelvaHierarchyNode *node,
     struct SelvaObject *obj,
-    const struct RedisModuleString *field
+    const struct selva_string *field
 );
 
 #endif /* SELVA_MODIFY_H */

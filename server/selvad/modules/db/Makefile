@@ -5,6 +5,8 @@ OBJ := \
 	   db.o \
 	   module/arg_parser.o \
 	   module/config.o \
+	   module/edge/edge.o \
+	   module/edge/edge_constraint.o \
 	   module/find.o \
 	   module/hierarchy/hierarchy.o \
 	   module/hierarchy/hierarchy_reply.o \
@@ -23,7 +25,8 @@ OBJ := \
 	   module/selva_set/seta_in_fieldb.o \
 	   module/selva_set/seta_in_setb.o \
 	   module/selva_type.o \
-	   module/shared_strings.o
+	   module/shared_strings.o \
+	   module/update.o
 #	   module/selva_object/selva_object_commands.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -I./include -include ../../tunables.h

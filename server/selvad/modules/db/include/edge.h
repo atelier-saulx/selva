@@ -14,12 +14,12 @@
 #include "selva_db.h"
 #include "selva_object.h"
 
-struct RedisModuleCtx;
-struct selva_io;
-struct selva_string;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct SelvaObject;
+struct selva_io;
+struct selva_server_response_out;
+struct selva_string;
 
 /*
  * Constraint ids.
@@ -146,7 +146,7 @@ int Edge_NewDynConstraint(struct EdgeFieldConstraints *efc, const struct EdgeFie
 const struct EdgeFieldConstraint *Edge_GetConstraint(
         const struct EdgeFieldConstraints *efc,
         unsigned constraint_id,
-        Selva_NodeType node_type,
+        const Selva_NodeType node_type,
         const char *field_name_str,
         size_t field_name_len);
 
@@ -225,15 +225,13 @@ static inline struct SelvaHierarchyNode *Edge_Foreach(struct SVectorIterator *it
  * constraint then the function will return SELVA_EINVAL.
  */
 int Edge_Add(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         unsigned constraint_id,
         const char *field_name_str,
         size_t field_name_len,
         struct SelvaHierarchyNode *src_node,
-        struct SelvaHierarchyNode *dst_node) __attribute__((nonnull (1, 2)));
+        struct SelvaHierarchyNode *dst_node);
 int Edge_Delete(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct EdgeField *edge_field,
         struct SelvaHierarchyNode *src_node,
@@ -244,13 +242,11 @@ int Edge_Delete(
  * @returns The number of deleted edges; Otherwise a selva error is returned.
  */
 int Edge_ClearField(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *src_node,
         const char *field_name_str,
         size_t field_name_len);
 int Edge_DeleteField(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *src_node,
         const char *field_name_str,
@@ -266,7 +262,7 @@ int Edge_DeleteField(
  */
 size_t Edge_Refcount(struct SelvaHierarchyNode *node);
 
-void replyWithEdgeField(struct RedisModuleCtx *ctx, struct EdgeField *edge_field);
+void replyWithEdgeField(struct selva_server_response_out *resp, struct EdgeField *edge_field);
 
 int Edge_RdbLoad(struct selva_io *io, int encver, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node);
 void Edge_RdbSave(struct selva_io *io, struct SelvaHierarchyNode *node);

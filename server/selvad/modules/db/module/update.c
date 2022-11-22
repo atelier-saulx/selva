@@ -2,15 +2,21 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdio.h>
-#include "selva.h"
+#include <string.h>
+#include <sys/types.h>
+#include "util/auto_free.h"
+#include "util/finalizer.h"
+#include "util/selva_string.h"
+#include "selva_error.h"
+#include "selva_log.h"
+#include "selva_server.h"
+#include "selva_db.h"
 #include "jemalloc.h"
-#include "auto_free.h"
 #include "arg_parser.h"
 #include "hierarchy.h"
-#include "rms.h"
 #include "rpn.h"
 #include "selva_object.h"
 #include "selva_onload.h"
@@ -24,9 +30,9 @@
  */
 struct update_op {
     char type_code;
-    RedisModuleString *field;
+    struct selva_string *field;
     union {
-        RedisModuleString *value;
+        struct selva_string *value;
         struct SelvaModify_OpSet *set_opts;
         struct SelvaModify_OpIncrement increment_opts_int64;
         struct SelvaModify_OpIncrementDouble increment_opts_double;
@@ -48,29 +54,32 @@ SELVA_TRACE_HANDLE(cmd_update_refs);
 SELVA_TRACE_HANDLE(cmd_update_rest);
 SELVA_TRACE_HANDLE(cmd_update_traversal_expression);
 
-static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, struct update_op **update_ops) {
+static int parse_update_ops(struct finalizer *fin, struct selva_string **argv, int argc, struct update_op **update_ops) {
     long long nr_update_ops;
+    int err;
 
-    if (RedisModule_StringToLongLong(argv[0], &nr_update_ops) == REDISMODULE_ERR) {
-        return SELVA_EINVAL;
+    err = selva_string_to_ll(argv[0], &nr_update_ops);
+    if (err) {
+        return err;
     }
 
     if (nr_update_ops == 0 || (nr_update_ops * 3) > (argc - 1) || nr_update_ops > SELVA_CMD_UPDATE_MAX) {
         return SELVA_EINVAL;
     }
 
-    *update_ops = RedisModule_PoolAlloc(ctx, nr_update_ops * sizeof(struct update_op));
+    *update_ops = selva_malloc(nr_update_ops * sizeof(struct update_op));
+    finalizer_add(fin, *update_ops, selva_free);
 
     argv++;
     for (long long i = 0; i < nr_update_ops * 3; i += 3) {
         struct update_op op = {
-            .type_code = RedisModule_StringPtrLen(argv[i], NULL)[0],
+            .type_code = selva_string_to_str(argv[i], NULL)[0],
             .field = argv[i + 1],
             .value = argv[i + 2],
         };
 
         if (op.type_code == SELVA_MODIFY_ARG_OP_SET) {
-            op.set_opts = SelvaModify_OpSet_align(ctx, op.value);
+            op.set_opts = SelvaModify_OpSet_align(op.value);
             if (!op.set_opts) {
                 return SELVA_EINVAL;
             }
@@ -80,7 +89,7 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
             }
         } else if (op.type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
             size_t len;
-            const char *str = RedisModule_StringPtrLen(op.value, &len);
+            const char *str = selva_string_to_str(op.value, &len);
 
             if (len != sizeof(struct SelvaModify_OpIncrement)) {
                 return SELVA_EINVAL;
@@ -89,7 +98,7 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
             memcpy(&op.increment_opts_int64, (const struct SelvaModify_OpIncrement *)str, len);
         } else if (op.type_code == SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE) {
             size_t len;
-            const char *str = RedisModule_StringPtrLen(op.value, &len);
+            const char *str = selva_string_to_str(op.value, &len);
 
             if (len != sizeof(struct SelvaModify_OpIncrementDouble)) {
                 return SELVA_EINVAL;
@@ -99,7 +108,7 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         } else if (op.type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG ||
                    op.type_code == SELVA_MODIFY_ARG_LONGLONG) {
             size_t value_len;
-            const char *value_str = RedisModule_StringPtrLen(op.value, &value_len);
+            const char *value_str = selva_string_to_str(op.value, &value_len);
             long long ll;
 
             if (value_len != sizeof(ll)) {
@@ -110,7 +119,7 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         } else if (op.type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE ||
                    op.type_code == SELVA_MODIFY_ARG_DOUBLE) {
             size_t value_len;
-            const char *value_str = RedisModule_StringPtrLen(op.value, &value_len);
+            const char *value_str = selva_string_to_str(op.value, &value_len);
             double d;
 
             if (value_len != sizeof(d)) {
@@ -120,7 +129,7 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
             memcpy(&op.d, value_str, sizeof(d));
         } else if (op.type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
             size_t value_len;
-            const char *value_str = RedisModule_StringPtrLen(op.value, &value_len);
+            const char *value_str = selva_string_to_str(op.value, &value_len);
 
             if (value_len != sizeof(uint32_t)) {
                 return SELVA_EINVAL;
@@ -136,13 +145,12 @@ static int parse_update_ops(RedisModuleCtx *ctx, RedisModuleString **argv, int a
 }
 
 static enum selva_op_repl_state update_op(
-        RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const struct update_op *op) {
     const char type_code = op->type_code;
     struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
-    RedisModuleString *field = op->field;
+    struct selva_string *field = op->field;
     TO_STR(field);
 
     if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
@@ -167,24 +175,24 @@ static enum selva_op_repl_state update_op(
 
         SelvaHierarchy_GetNodeId(node_id, node);
 
-        err = SelvaModify_ModifySet(ctx, hierarchy, node_id, node, obj, field, op->set_opts);
+        err = SelvaModify_ModifySet(hierarchy, node_id, node, obj, field, op->set_opts);
         if (err <= 0) {
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
         int err;
 
-        err = SelvaModify_ModifyDel(ctx, hierarchy, node, obj, field);
+        err = SelvaModify_ModifyDel(hierarchy, node, obj, field);
         if (err) {
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING ||
                type_code == SELVA_MODIFY_ARG_STRING) {
         const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
-        RedisModuleString *value = op->value;
+        struct selva_string *value = op->value;
         size_t value_len;
-        const char *value_str = RedisModule_StringPtrLen(value, &value_len);
-        RedisModuleString *old_value;
+        const char *value_str = selva_string_to_str(value, &value_len);
+        struct selva_string *old_value;
 
         if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
             return SELVA_OP_REPL_STATE_UNCHANGED;
@@ -205,18 +213,16 @@ static enum selva_op_repl_state update_op(
             shared = selva_string_create(value_str, value_len, SELVA_STRING_INTERN);
             err = SelvaObject_SetString(obj, field, shared);
             if (err) {
-                RedisModule_FreeString(NULL, shared);
                 return SELVA_OP_REPL_STATE_UNCHANGED;
             }
         } else {
             int err;
 
-            err = SelvaObject_SetString(obj, field, value);
+            /* FIXME Do we really need to dup here? */
+            err = SelvaObject_SetString(obj, field, selva_string_dup(value, 0));
             if (err) {
                 return SELVA_OP_REPL_STATE_UNCHANGED;
             }
-
-            RedisModule_RetainString(ctx, value);
         }
     } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
         long long ll = op->ll;
@@ -251,7 +257,7 @@ static enum selva_op_repl_state update_op(
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-        return SelvaModify_ModifyMetadata(ctx, obj, field, op->value);
+        return SelvaModify_ModifyMetadata(obj, field, op->value);
     } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
         int err;
 
@@ -268,7 +274,6 @@ static enum selva_op_repl_state update_op(
 }
 
 static int update_node_cb(
-        RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         void *arg) {
@@ -292,7 +297,7 @@ static int update_node_cb(
         /*
          * Resolve the expression and get the result.
          */
-        err = rpn_bool(ctx, rpn_ctx, args->filter, &res);
+        err = rpn_bool(rpn_ctx, args->filter, &res);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Expression failed (node: \"%.*s\"): \"%s\"",
                       (int)SELVA_NODE_ID_SIZE, nodeId,
@@ -305,7 +310,7 @@ static int update_node_cb(
         }
     }
 
-    SelvaSubscriptions_FieldChangePrecheck(ctx, hierarchy, node);
+    SelvaSubscriptions_FieldChangePrecheck(hierarchy, node);
 
     /*
      * TODO Some modify op codes are not supported:
@@ -319,13 +324,13 @@ static int update_node_cb(
         const struct update_op *op = &update_ops[i];
         enum selva_op_repl_state repl_state;
 
-        repl_state = update_op(ctx, hierarchy, node, op);
+        repl_state = update_op(hierarchy, node, op);
         if (repl_state == SELVA_OP_REPL_STATE_UPDATED) {
             size_t field_len;
-            const char *field_str = RedisModule_StringPtrLen(op->field, &field_len);
+            const char *field_str = selva_string_to_str(op->field, &field_len);
 
             if (strcmp(field_str, SELVA_PARENTS_FIELD) && strcmp(field_str, SELVA_CHILDREN_FIELD)) {
-                SelvaSubscriptions_DeferFieldChangeEvents(ctx, hierarchy, node, field_str, field_len);
+                SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, node, field_str, field_len);
             }
         }
     }
@@ -339,8 +344,7 @@ static int update_node_cb(
     return 0;
 }
 
-int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
+int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     int err;
 
     const int ARGV_REDIS_KEY = 1;
@@ -363,31 +367,30 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     ARGV_FILTER_ARGS += i
 
     if (argc < 6) {
-        return RedisModule_WrongArity(ctx);
+        return selva_send_error_arity(resp);
     }
 
+    struct finalizer fin;
     __auto_free_rpn_ctx struct rpn_ctx *traversal_rpn_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *traversal_expression = NULL;
     __auto_free_rpn_ctx struct rpn_ctx *edge_filter_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *edge_filter = NULL;
 
+    finalizer_init(&fin);
+
     /*
-     * Open the Redis key.
+     * TODO Handle NULL.
      */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*
      * Parse the traversal arguments.
      */
     enum SelvaTraversal dir;
-    const RedisModuleString *ref_field = NULL;
+    const struct selva_string *ref_field = NULL;
     err = SelvaTraversal_ParseDir2(&dir, argv[ARGV_DIRECTION]);
     if (err) {
-        replyWithSelvaErrorf(ctx, err, "Traversal argument");
-        return REDISMODULE_OK;
+        return selva_send_errorf(resp, err, "Traversal argument");
     }
     if (argc <= ARGV_REF_FIELD &&
         (dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
@@ -395,8 +398,8 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
                 SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
                 SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
                 SELVA_HIERARCHY_TRAVERSAL_EXPRESSION))) {
-        RedisModule_WrongArity(ctx);
-        return REDISMODULE_OK;
+        return selva_send_error_arity(resp);
+        return 0;
     }
     if (dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
                SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
@@ -405,13 +408,13 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         SHIFT_ARGS(1);
     } else if (dir & (SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
                       SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
-        const RedisModuleString *input = argv[ARGV_REF_FIELD];
+        const struct selva_string *input = argv[ARGV_REF_FIELD];
         TO_STR(input);
 
         traversal_rpn_ctx = rpn_init(1);
         traversal_expression = rpn_compile(input_str);
         if (!traversal_expression) {
-            return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the traversal expression");
+            return selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the traversal expression");
         }
         SHIFT_ARGS(1);
     }
@@ -425,16 +428,16 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
             if (!(dir & (SELVA_HIERARCHY_TRAVERSAL_EXPRESSION |
                          SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION))) {
-                return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "edge_filter can be only used with expression traversals");
+                return selva_send_errorf(resp, SELVA_EINVAL, "edge_filter can be only used with expression traversals");
             }
 
             edge_filter_ctx = rpn_init(1);
             edge_filter = rpn_compile(expr_str);
             if (!edge_filter) {
-                return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "edge_filter");
+                return selva_send_errorf(resp, SELVA_RPN_ECOMP, "edge_filter");
             }
         } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "edge_filter");
+            return selva_send_errorf(resp, err, "edge_filter");
         }
     }
 
@@ -442,16 +445,16 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
      * Parse the update ops.
      */
     struct update_op *update_ops;
-    const int nr_update_ops = parse_update_ops(ctx, argv + ARGV_NR_UPDATE_OPS, argc - ARGV_NR_UPDATE_OPS, &update_ops);
+    const int nr_update_ops = parse_update_ops(&fin, argv + ARGV_NR_UPDATE_OPS, argc - ARGV_NR_UPDATE_OPS, &update_ops);
     if (nr_update_ops < 0 || !update_ops) {
-        return replyWithSelvaErrorf(ctx, nr_update_ops, "update_ops");
+        return selva_send_errorf(resp, nr_update_ops, "update_ops");
     }
     SHIFT_ARGS(1 + nr_update_ops * 3);
 
     /*
      * Prepare the filter expression if given.
      */
-    RedisModuleString *argv_filter_expr = NULL;
+    struct selva_string *argv_filter_expr = NULL;
     __auto_free_rpn_ctx struct rpn_ctx *rpn_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *filter_expression = NULL;
     if (argc >= ARGV_FILTER_EXPR + 1) {
@@ -459,9 +462,9 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const int nr_reg = argc - ARGV_FILTER_ARGS + 2;
 
         rpn_ctx = rpn_init(nr_reg);
-        filter_expression = rpn_compile(RedisModule_StringPtrLen(argv_filter_expr, NULL));
+        filter_expression = rpn_compile(selva_string_to_str(argv_filter_expr, NULL));
         if (!filter_expression) {
-            return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+            return selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
         }
 
         /*
@@ -471,17 +474,17 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             /* reg[0] is reserved for the current nodeId */
             const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
             size_t str_len;
-            const char *str = RedisModule_StringPtrLen(argv[i], &str_len);
+            const char *str = selva_string_to_str(argv[i], &str_len);
 
             rpn_set_reg(rpn_ctx, reg_i, str, str_len + 1, 0);
         }
     }
 
     if (argc <= ARGV_NODE_IDS) {
-        return replyWithSelvaError(ctx, SELVA_HIERARCHY_EINVAL);
+        return selva_send_errorf(resp, SELVA_HIERARCHY_EINVAL, "node_ids missing");
     }
 
-    const RedisModuleString *ids = argv[ARGV_NODE_IDS];
+    const struct selva_string *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
     /*
@@ -516,7 +519,7 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             TO_STR(ref_field);
 
             SELVA_TRACE_BEGIN(cmd_update_refs);
-            err = SelvaHierarchy_TraverseField(ctx, hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
+            err = SelvaHierarchy_TraverseField(hierarchy, nodeId, dir, ref_field_str, ref_field_len, &cb);
             SELVA_TRACE_END(cmd_update_refs);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
             const struct SelvaHierarchyCallback cb = {
@@ -525,7 +528,7 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             };
 
             SELVA_TRACE_BEGIN(cmd_update_bfs_expression);
-            err = SelvaHierarchy_TraverseExpressionBfs(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, edge_filter_ctx, edge_filter, &cb);
+            err = SelvaHierarchy_TraverseExpressionBfs(hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, edge_filter_ctx, edge_filter, &cb);
             SELVA_TRACE_END(cmd_update_bfs_expression);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_EXPRESSION) {
             const struct SelvaHierarchyCallback cb = {
@@ -534,7 +537,7 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             };
 
             SELVA_TRACE_BEGIN(cmd_update_traversal_expression);
-            err = SelvaHierarchy_TraverseExpression(ctx, hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, edge_filter_ctx, edge_filter, &cb);
+            err = SelvaHierarchy_TraverseExpression(hierarchy, nodeId, traversal_rpn_ctx, traversal_expression, edge_filter_ctx, edge_filter, &cb);
             SELVA_TRACE_END(cmd_update_traversal_expression);
         } else {
             const struct SelvaHierarchyCallback cb = {
@@ -543,7 +546,7 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             };
 
             SELVA_TRACE_BEGIN(cmd_update_rest);
-            err = SelvaHierarchy_Traverse(ctx, hierarchy, nodeId, dir, &cb);
+            err = SelvaHierarchy_Traverse(hierarchy, nodeId, dir, &cb);
             SELVA_TRACE_END(cmd_update_rest);
         }
         if (err != 0) {
@@ -558,13 +561,20 @@ int SelvaCommand_Update(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
     }
 
-    RedisModule_ReplyWithLongLong(ctx, nr_nodes);
+    selva_send_ll(resp, nr_nodes);
+    /* TODO Replicate */
+#if 0
     RedisModule_ReplicateVerbatim(ctx);
+#endif
 
-    return REDISMODULE_OK;
+    return 0;
 #undef SHIFT_ARGS
 }
 
+/*
+ * FIXME Register the command
+ */
+#if 0
 static int Update_OnLoad(RedisModuleCtx *ctx) {
     /*
      * Register commands.
@@ -573,6 +583,7 @@ static int Update_OnLoad(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
 
-    return REDISMODULE_OK;
+    return 0;
 }
 SELVA_ONLOAD(Update_OnLoad);
+#endif
