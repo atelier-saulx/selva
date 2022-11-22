@@ -5,7 +5,9 @@
  * Inspired by: http://www.jera.com/techinfo/jtns/jtn002.html
  */
 
-/* Copyright (c) 2913, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+/*
+ * Copyright (c) 2022 SAULX
+ * Copyright (c) 2913, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
  * Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi>
  * All rights reserved.
  *
@@ -28,6 +30,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-2-Clause
  */
 
 /** @addtogroup PUnit
@@ -38,7 +41,7 @@
 #include "cdefs.h"
 #include "punit.h"
 
-const char * const selva_version = "unittest";
+const char * const selva_db_version = "unittest";
 
 /* Variables below are documented in punit.h */
 int pu_tests_passed = 0;

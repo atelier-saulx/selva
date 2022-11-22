@@ -3850,7 +3850,7 @@ int SelvaHierarchy_VerCommand(struct selva_server_response_out *resp, struct sel
     selva_send_array(resp, 6);
 
     selva_send_str(resp, "running", 7);
-    selva_send_str(resp, selva_version, strlen(selva_version));
+    selva_send_str(resp, selva_db_version, strlen(selva_db_version));
 
     selva_send_str(resp, "created", 7);
     if (selva_db_version_info.created_with) {
@@ -3882,14 +3882,14 @@ static int SelvaVersion_AuxLoad(struct selva_io *io, int encver __unused, int wh
 }
 
 static void SelvaVersion_AuxSave(struct selva_io *io, int when __unused) {
-    const size_t len = strlen(selva_version);
+    const size_t len = strlen(selva_db_version);
 
     if (selva_db_version_info.created_with) {
         selva_io_save_string(io, selva_db_version_info.created_with);
     } else {
-        selva_io_save_str(io, selva_version, len);
+        selva_io_save_str(io, selva_db_version, len);
     }
-    selva_io_save_str(io, selva_version, len);
+    selva_io_save_str(io, selva_db_version, len);
 }
 
 static int Hierarchy_OnLoad(struct RedisModuleCtx *ctx) {

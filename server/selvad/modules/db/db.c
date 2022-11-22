@@ -16,6 +16,7 @@
 #include "selva_onload.h"
 #include "selva_server.h"
 #include "config.h"
+#include "selva_db.h"
 
 SET_DECLARE(selva_onload, Selva_Onload);
 SET_DECLARE(selva_onunld, Selva_Onunload);
@@ -32,11 +33,7 @@ __constructor void init(void)
     Selva_Onload **onload_p;
 
     SELVA_LOG(SELVA_LOGL_INFO, "Init db");
-
-    /* FIXME Selva version */
-#if 0
-    SELVA_LOG(SELVA_LOGL_INFO, "Selva version: %s", selva_version);
-#endif
+    SELVA_LOG(SELVA_LOGL_INFO, "Selva db version: %s", selva_db_version);
 
     libdeflate_set_memory_allocator(selva_malloc, selva_free);
 
