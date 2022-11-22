@@ -64,6 +64,7 @@ SELVA_SERVER_EXPORT(int, selva_send_error_arity, struct selva_server_response_ou
 SELVA_SERVER_EXPORT(int, selva_send_double, struct selva_server_response_out *resp, double value);
 SELVA_SERVER_EXPORT(int, selva_send_ll, struct selva_server_response_out *resp, long long value);
 SELVA_SERVER_EXPORT(int, selva_send_str, struct selva_server_response_out *resp, const char *str, size_t len);
+SELVA_SERVER_EXPORT(int, selva_send_strf, struct selva_server_response_out *resp, const char *fmt, ...);
 SELVA_SERVER_EXPORT(int, selva_send_string, struct selva_server_response_out *resp, const struct selva_string *s);
 SELVA_SERVER_EXPORT(int, selva_send_bin, struct selva_server_response_out *resp, const char *b, size_t len);
 

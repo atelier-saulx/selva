@@ -117,6 +117,34 @@ int selva_send_str(struct selva_server_response_out *resp, const char *str, size
     return server_send_buf(resp, buf, bsize);
 }
 
+int selva_send_strf(struct selva_server_response_out *resp, const char *fmt, ...)
+{
+    va_list args;
+    int len;
+
+    va_start(args, fmt);
+    len = vsnprintf(NULL, 0, fmt, args);
+    va_end(args);
+
+    if (len < 0) {
+        return SELVA_EINVAL;
+    }
+
+    const size_t bsize = sizeof(struct selva_proto_string) + len;
+    struct selva_proto_string *buf = alloca(bsize);
+
+    *buf = (struct selva_proto_string){
+        .type = SELVA_PROTO_STRING,
+        .bsize = htole32(len),
+    };
+
+    va_start(args, fmt);
+    (void)vsnprintf(buf->data, len, fmt, args);
+    va_end(args);
+
+    return server_send_buf(resp, buf, bsize);
+}
+
 int selva_send_string(struct selva_server_response_out *resp, const struct selva_string *s)
 {
     TO_STR(s);
