@@ -1117,16 +1117,7 @@ static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return RedisModule_WrongArity(ctx);
     }
 
-    const int ARGV_REDIS_KEY = 1;
-
-    /*
-     * Open the Redis key.
-     */
-    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        /* Do not send Redis replies here. */
-        return REDISMODULE_OK;
-    }
+    hierarchy = main_hierarchy;
 
     if (!is_indexing_active(hierarchy)) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
@@ -1141,7 +1132,6 @@ static int SelvaFindIndex_ListCommand(RedisModuleCtx *ctx, RedisModuleString **a
 static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int err;
 
-    const int ARGV_REDIS_KEY = 1;
     const int ARGV_DIRECTION = 2;
     const int ARGV_REF_FIELD = 3;
     const int ARGV_ORDER_ORD = 4;
@@ -1153,15 +1143,7 @@ static int SelvaFindIndex_NewCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         return RedisModule_WrongArity(ctx);
     }
 
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy;
-    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        /* Do not send Redis replies here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     if (!is_indexing_active(hierarchy)) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
@@ -1244,7 +1226,6 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     int discard = 0;
     int err;
 
-    const int ARGV_REDIS_KEY = 1;
     const int ARGV_INDEX = 2;
     const int ARGV_OP = 3;
 
@@ -1263,14 +1244,7 @@ static int SelvaFindIndex_DelCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         return RedisModule_WrongArity(ctx);
     }
 
-    /*
-     * Open the Redis key.
-     */
-    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        /* Do not send Redis replies here. */
-        return REDISMODULE_OK;
-    }
+    hierarchy = main_hierarchy;
 
     if (!is_indexing_active(hierarchy)) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
@@ -1304,17 +1278,9 @@ static int SelvaFindIndex_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **
         return RedisModule_WrongArity(ctx);
     }
 
-    const int ARGV_REDIS_KEY = 1;
     const int ARGV_INDEX = 2; /* Numeric index. */
 
-    /*
-     * Open the Redis key.
-     */
-    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        /* Do not send Redis replies here. */
-        return REDISMODULE_OK;
-    }
+    hierarchy = main_hierarchy;
 
     if (!is_indexing_active(hierarchy)) {
         return replyWithSelvaErrorf(ctx, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);

@@ -362,7 +362,6 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     int err;
 
     const int ARGV_LANG          = 1;
-    const int ARGV_REDIS_KEY     = 2;
     const int ARGV_NODE_ID       = 3;
     const int ARGV_TYPES         = 4;
     const int ARGV_FIELD_NAMES   = 5;
@@ -373,13 +372,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     RedisModuleString *lang = argv[ARGV_LANG];
 
-    /*
-     * Open the Redis key.
-     */
-    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        return REDISMODULE_OK;
-    }
+    hierarchy = main_hierarchy;
 
     /*
      * Get the node_id.

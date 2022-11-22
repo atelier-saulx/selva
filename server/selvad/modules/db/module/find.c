@@ -1629,7 +1629,6 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
     int err;
 
     const int ARGV_LANG      = 1;
-    const int ARGV_REDIS_KEY = 2;
     const int ARGV_DIRECTION = 3;
     const int ARGV_REF_FIELD = 4;
     int ARGV_EDGE_FILTER_TXT = 4;
@@ -1690,9 +1689,6 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
 
     finalizer_init(&fin);
 
-    /*
-     * TODO Handle error if NULL
-     */
     SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*

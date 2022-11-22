@@ -259,7 +259,6 @@ void EdgeConstraint_RdbSave(struct selva_io *io, struct EdgeFieldConstraints *da
 }
 
 int Edge_AddConstraintCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    const int ARGV_REDIS_KEY = 1;
     const int ARGV_SRC_NODE_TYPE = 2;
     const int ARGV_CONSTRAINT_FLAGS = 3;
     const int ARGV_FWD_FIELD = 4;
@@ -270,9 +269,6 @@ int Edge_AddConstraintCommand(struct selva_server_response_out *resp, struct sel
         selva_send_error_arity(resp);
     }
 
-    /*
-     * FIXME Handle NULL?
-     */
     SelvaHierarchy *hierarchy = main_hierarchy;
 
     Selva_NodeType src_type;
@@ -323,16 +319,12 @@ int Edge_AddConstraintCommand(struct selva_server_response_out *resp, struct sel
 }
 
 int Edge_ListConstraintsCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    const int ARGV_REDIS_KEY = 1;
     int err;
 
     if (argc != 2) {
         return selva_send_error_arity(resp);
     }
 
-    /*
-     * FIXME Handle NULL?
-     */
     SelvaHierarchy *hierarchy = main_hierarchy;
 
     err = SelvaObject_ReplyWithObject(resp, NULL, get_dyn_constraints(&hierarchy->edge_field_constraints), NULL, 0);

@@ -347,7 +347,6 @@ static int update_node_cb(
 int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     int err;
 
-    const int ARGV_REDIS_KEY = 1;
     const int ARGV_DIRECTION = 2;
     const int ARGV_REF_FIELD = 3;
     int ARGV_EDGE_FILTER_TXT = 3;
@@ -378,9 +377,6 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
 
     finalizer_init(&fin);
 
-    /*
-     * TODO Handle NULL.
-     */
     SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*

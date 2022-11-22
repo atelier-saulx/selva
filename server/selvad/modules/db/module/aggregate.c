@@ -495,7 +495,6 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     int err;
 
     const int ARGV_LANG      = 1;
-    const int ARGV_REDIS_KEY = 2;
     const int ARGV_AGG_FN    = 3;
     const int ARGV_DIRECTION = 4;
     const int ARGV_REF_FIELD = 5;
@@ -544,13 +543,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     __selva_autofree RedisModuleStringList index_hints = NULL;
     int nr_index_hints = 0;
 
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*
      * Parse the traversal arguments.
@@ -937,7 +930,6 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     int err;
 
     const int ARGV_LANG      = 1;
-    const int ARGV_REDIS_KEY = 2;
     const int ARGV_AGG_FN    = 3;
     const int ARGV_ORDER_TXT = 4;
     const int ARGV_ORDER_FLD = 5;
@@ -967,14 +959,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
     }
 
     RedisModuleString *lang = argv[ARGV_LANG];
-
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     const enum SelvaHierarchy_AggregateType agg_fn_type = RedisModule_StringPtrLen(argv[ARGV_AGG_FN], NULL)[0];
     double initial_double_val = 0;

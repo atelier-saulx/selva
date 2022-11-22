@@ -1877,7 +1877,6 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_REDIS_KEY     = 1;
     const int ARGV_SUB_ID        = 2;
     const int ARGV_MARKER_ID     = 3;
     const int ARGV_MARKER_DIR    = 4;
@@ -1898,14 +1897,7 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
         return RedisModule_WrongArity(ctx);
     }
 
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*
      * Get the subscription id.
@@ -2104,7 +2096,6 @@ int SelvaSubscriptions_AddAliasCommand(RedisModuleCtx *ctx, RedisModuleString **
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_REDIS_KEY     = 1;
     const int ARGV_SUB_ID        = 2;
     const int ARGV_MARKER_ID     = 3;
     const int ARGV_ALIAS_NAME    = 4;
@@ -2113,14 +2104,7 @@ int SelvaSubscriptions_AddAliasCommand(RedisModuleCtx *ctx, RedisModuleString **
         return RedisModule_WrongArity(ctx);
     }
 
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*
      * Get the subscription id.
@@ -2179,7 +2163,6 @@ int SelvaSubscriptions_AddMissingCommand(RedisModuleCtx *ctx, RedisModuleString 
         return RedisModule_WrongArity(ctx);
     }
 
-    const int ARGV_REDIS_KEY = 1;
     const int ARGV_SUB_ID    = 2;
     const int ARGV_IDS       = 3;
 
@@ -2189,14 +2172,7 @@ int SelvaSubscriptions_AddMissingCommand(RedisModuleCtx *ctx, RedisModuleString 
         return replyWithSelvaErrorf(ctx, err, "Invalid Subscription ID");
     }
 
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*
      * Open the subscription.
@@ -2238,7 +2214,6 @@ int SelvaSubscriptions_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString 
     RedisModule_AutoMemory(ctx);
     int err;
 
-    const int ARGV_REDIS_KEY     = 1;
     const int ARGV_SUB_ID        = 2;
     const int ARGV_MARKER_ID     = 3;
     const int ARGV_EVENT_TYPE    = 4;
@@ -2249,14 +2224,7 @@ int SelvaSubscriptions_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString 
         return RedisModule_WrongArity(ctx);
     }
 
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*
      * Get the subscription id.
@@ -2382,17 +2350,9 @@ int SelvaSubscriptions_RefreshCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return RedisModule_WrongArity(ctx);
     }
 
-    const size_t ARGV_REDIS_KEY = 1;
     const size_t ARGV_SUB_ID    = 2;
 
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
@@ -2428,16 +2388,7 @@ int SelvaSubscriptions_ListCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         return RedisModule_WrongArity(ctx);
     }
 
-    const int ARGV_REDIS_KEY = 1;
-
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     struct Selva_Subscription *sub;
     size_t array_len = 0;
@@ -2463,16 +2414,7 @@ int SelvaSubscriptions_ListMissingCommand(RedisModuleCtx *ctx, RedisModuleString
         return RedisModule_WrongArity(ctx);
     }
 
-    const int ARGV_REDIS_KEY = 1;
-
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     err = SelvaObject_ReplyWithObject(ctx, NULL, hierarchy->subs.missing, NULL, 0);
     if (err) {
@@ -2486,21 +2428,13 @@ int SelvaSubscriptions_ListMissingCommand(RedisModuleCtx *ctx, RedisModuleString
  * KEY SUB_ID
  */
 int SelvaSubscriptions_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    const int ARGV_REDIS_KEY = 1;
     const int ARGV_ID        = 2;
 
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
     }
 
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     size_t id_len = 0;
     const char *id_str = RedisModule_StringPtrLen(argv[ARGV_ID], &id_len);
@@ -2573,17 +2507,9 @@ int SelvaSubscriptions_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_WrongArity(ctx);
     }
 
-    const int ARGV_REDIS_KEY = 1;
     const int ARGV_SUB_ID    = 2;
 
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
@@ -2616,18 +2542,10 @@ int SelvaSubscriptions_DelMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
         return RedisModule_WrongArity(ctx);
     }
 
-    const int ARGV_REDIS_KEY = 1;
     const int ARGV_SUB_ID    = 2;
     const int ARGV_MARKER_ID = 3;
 
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+    SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*
      * Get the subscription id.
