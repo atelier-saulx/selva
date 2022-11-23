@@ -13,9 +13,10 @@
 #include <time.h>
 #include "jemalloc.h"
 #include "util/auto_free.h"
+#include "util/ctime.h"
+#include "util/selva_string.h"
 #include "util/svector.h"
 #include "util/timestamp.h"
-#include "util/selva_string.h"
 #include "selva_error.h"
 #include "selva_server.h"
 #include "selva_db.h"
@@ -2909,7 +2910,7 @@ static int _auto_compress_proc_rnd(void) {
 static void auto_compress_proc(struct RedisModuleCtx *ctx, void *data) {
     SELVA_TRACE_BEGIN_AUTO(auto_compress_proc);
     SelvaHierarchy *hierarchy = (struct SelvaHierarchy *)data;
-    mstime_t timer_period = selva_glob_config.hierarchy_auto_compress_period_ms;
+    struct timespec timer_period = MSEC2TIMESPEC(selva_glob_config.hierarchy_auto_compress_period_ms);
 
     if (!isRdbChildRunning()) {
         const size_t n = hierarchy->inactive.nr_nodes;

@@ -1625,7 +1625,7 @@ static void postprocess_inherit(
  * The traversed field is typically either ancestors or descendants but it can
  * be any hierarchy or edge field.
  */
-static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, struct RedisModuleCtx *ctx, struct selva_string **argv, int argc) {
+static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
     int err;
 
     const int ARGV_LANG      = 1;
@@ -2089,7 +2089,7 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
             }
 
             SELVA_TRACE_BEGIN(cmd_find_index);
-            err = SelvaFindIndex_Traverse(ctx, hierarchy, ind_icb[ind_select], FindCommand_NodeCb, &args);
+            err = SelvaFindIndex_Traverse(hierarchy, ind_icb[ind_select], FindCommand_NodeCb, &args);
             SELVA_TRACE_END(cmd_find_index);
         } else if (dir == SELVA_HIERARCHY_TRAVERSAL_ARRAY && ref_field) {
             struct FindCommand_ArrayObjectCb array_args = {

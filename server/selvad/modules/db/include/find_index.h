@@ -8,7 +8,6 @@
 
 #include "traversal.h"
 
-struct RedisModuleCtx;
 struct SelvaFindIndexControlBlock;
 struct SelvaHierarchy;
 struct SelvaSet;
@@ -29,6 +28,7 @@ size_t SelvaFindIndex_IcbCard(const struct SelvaFindIndexControlBlock *icb);
 
 /**
  * Check if an index exists for this query, update it, and get the indexing result set.
+ * Any selva_strings passed as arguments can be freed after the call.
  * @param order Set to other than SELVA_RESULT_ORDER_NONE if the index should be sorted.
  * @param order_field Should be non-NULL only if the index should be sorted.
  * @param out is a SelvaSet of node_ids indexed for given clause.
@@ -61,7 +61,6 @@ int SelvaFindIndex_IsOrdered(
         struct selva_string *order_field);
 
 int SelvaFindIndex_Traverse(
-        struct RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaFindIndexControlBlock *icb,
         SelvaHierarchyNodeCallback node_cb,

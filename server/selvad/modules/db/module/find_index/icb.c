@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
-#include "base64.h"
-#include "svector.h"
-#include "selva.h"
+#include <sys/types.h>
+#include "util/base64.h"
+#include "util/svector.h"
+#include "selva_db.h"
 #include "selva_set.h"
 #include "traversal.h"
 #include "hierarchy.h"

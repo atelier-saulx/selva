@@ -4,7 +4,6 @@
 include ../common.mk
 
 OBJ := \
-	   ctime.o \
 	   event_loop.o \
 	   heap.o \
 	   main.o \
@@ -19,7 +18,7 @@ CFLAGS += -fvisibility=hidden \
 		  -include ../include/cdefs.h \
 		  -DEVL_MAIN=1
 
-LDFLAGS += -ljemalloc_selva
+LDFLAGS += -ljemalloc_selva -lutil
 ifeq ($(uname_S),Linux)
 OBJ += \
 	   linux/poll.o \

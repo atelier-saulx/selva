@@ -10,6 +10,9 @@ OBJ := \
 	   module/edge/edge.o \
 	   module/edge/edge_constraint.o \
 	   module/find.o \
+	   module/find_index/find_index.o \
+	   module/find_index/icb.o \
+	   module/find_index/pick_icb.o \
 	   module/hierarchy/hierarchy.o \
 	   module/hierarchy/hierarchy_reply.o \
 	   module/hierarchy/traversal.o \
@@ -19,6 +22,7 @@ OBJ := \
 	   module/inherit/inherit.o \
 	   module/inherit/send_field.o \
 	   module/inherit/send_field_find.o \
+	   module/aggregate.o \
 	   module/modify.o \
 	   module/resolve.o \
 	   module/rpn/rpn.o \
@@ -38,6 +42,7 @@ OBJ := \
 	   module/update.o \
 	   version.o
 #	   module/selva_object/selva_object_commands.o
+#	   module/modinfo.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -I./include -include ../../tunables.h
 LDFLAGS += -lutil

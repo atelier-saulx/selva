@@ -36,19 +36,24 @@
 #pragma once
 
 /**
- * Get timespec from broken-down tm struct.
- * @note Ignores wday, yday and dst.
- * @param[out]  ts      is a pointer to the destination.
- * @param[in]   tm      is a pointer to a tm struct.
+ * Conver an msec value to a timespec struct.
+ * @param[out]  ts      is a pointer to the destination struct.
+ * @param[in]   nsec    is the value in milliseconds.
  */
-void mktimespec(struct timespec * ts, const struct tm * tm);
+void msec2timespec(struct timespec * ts, int64_t msec);
+
+#define MSEC2TIMESPEC(msec) \
+    ({ struct timespec _ts; msec2timespec(&_ts, msec); _ts; })
 
 /**
  * Convert a nsec value to a timespec struct.
  * @param[out]  ts      is a pointer to the destination struct.
- * @param[in]   nsec    is the value in nano seconds.
+ * @param[in]   nsec    is the value in nanoseconds.
  */
 void nsec2timespec(struct timespec * ts, int64_t nsec);
+
+#define NSEC2TIMESPEC(nsec) \
+    ({ struct timespec _ts; NSEC2TIMESPEC(&_ts, nsec); _ts; })
 
 /**
  * Compare two timespec structs.

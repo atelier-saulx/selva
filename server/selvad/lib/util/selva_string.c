@@ -251,6 +251,10 @@ int selva_string_replace(struct selva_string *s, const char *str, size_t len)
 
 void selva_string_free(_selva_string_ptr_t _s)
 {
+    if (!_s.__s) {
+        return; /* Traditional. */
+    }
+
     struct selva_string *s = _s.__s;
     const enum selva_string_flags flags = s->flags;
 
@@ -275,6 +279,14 @@ enum selva_string_flags selva_string_get_flags(const struct selva_string *s)
 
 const char *selva_string_to_str(const struct selva_string *s, size_t *len)
 {
+    /* Compat with legacy. */
+    if (!s) {
+        if (len) {
+            *len = 0;
+        }
+        return NULL;
+    }
+
     if (len) {
         *len = s->len;
     }

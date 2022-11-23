@@ -13,6 +13,7 @@ OBJ := \
 	bitmap.o \
 	crc32c/crc32c.o \
 	cstrings.o \
+	ctime.o \
 	eztrie.o \
 	finalizer.o \
 	ida.o \
@@ -21,7 +22,6 @@ OBJ := \
 	queue_r.o \
 	selva_string.o \
 	svector.o \
-	timestamp.o \
 	trx.o
 
 ifeq ($(uname_S),Linux)

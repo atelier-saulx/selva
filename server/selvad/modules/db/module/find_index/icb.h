@@ -11,13 +11,14 @@
  */
 
 struct SelvaHierarchy;
+struct selva_string;
 
 /**
  * Sorting descriptor for ordered index.
  */
 struct index_order {
     enum SelvaResultOrder order; /*!< Index order if applicable. */
-    RedisModuleString *order_field; /*!< Index order by field. */
+    struct selva_string *order_field; /*!< Index order by field. */
 };
 
 /**
@@ -25,8 +26,8 @@ struct index_order {
  */
 struct icb_descriptor {
     enum SelvaTraversal dir; /*!< Indexing traversal direction. */
-    RedisModuleString *dir_expression; /*!< Indexing traversal expression. (optional) */
-    RedisModuleString *filter; /*!< Indexing filter. */
+    struct selva_string *dir_expression; /*!< Indexing traversal expression. (optional) */
+    struct selva_string *filter; /*!< Indexing filter. */
     struct index_order sort; /*!< Sort order of the index. */
 };
 
@@ -79,7 +80,7 @@ struct SelvaFindIndexControlBlock {
     /**
      * Timer refreshing this index control block.
      */
-    RedisModuleTimerID timer_id;
+    int timer_id;
 
     /**
      * Find result set size accounting.

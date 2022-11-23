@@ -7,7 +7,18 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <time.h>
-#include "ctime.h"
+#include "util/ctime.h"
+
+void msec2timespec(struct timespec * ts, int64_t msec)
+{
+    const int64_t sec_msec = (int64_t)1000;
+    const int64_t nsec_msec = (int64_t)1000000;
+    int mod;
+
+    mod = msec % sec_msec;
+    ts->tv_sec = (msec - mod) / sec_msec;
+    ts->tv_nsec = mod * nsec_msec;
+}
 
 void nsec2timespec(struct timespec * ts, int64_t nsec)
 {

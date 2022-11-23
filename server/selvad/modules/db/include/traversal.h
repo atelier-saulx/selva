@@ -307,7 +307,7 @@ void SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResult
  * function should be called with a ctx too. Alternatively the order_result
  * SVector can be declared with SVECTOR_AUTOFREE().
  */
-void SelvaTraversalOrder_DestroyOrderResult(struct RedisModuleCtx *ctx, SVector *order_result);
+void SelvaTraversalOrder_DestroyOrderResult(struct finalizer *fin, SVector *order_result);
 
 /**
  * Create a new node based TraversalOrderItem that can be sorted.
@@ -346,7 +346,8 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectOrderItem(
 
 /**
  * Destroy TraversalOrderItem created by SelvaTraversalOrder_Create*OrderItem().
+ * This function should be only used if finalizer was not used when creating the item.
  */
-void SelvaTraversalOrder_DestroyOrderItem(struct RedisModuleCtx *ctx, struct TraversalOrderItem *item);
+void SelvaTraversalOrder_DestroyOrderItem(struct TraversalOrderItem *item);
 
 #endif /* SELVA_TRAVERSAL_H */

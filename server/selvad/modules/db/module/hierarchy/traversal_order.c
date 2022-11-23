@@ -147,13 +147,16 @@ void SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResult
     SVector_Init(order_result, initial_len, SelvaTraversal_GetOrderFunc(order));
 }
 
-void SelvaTraversalOrder_DestroyOrderResult(struct RedisModuleCtx *ctx, SVector *order_result) {
+void SelvaTraversalOrder_DestroyOrderResult(struct finalizer *fin, SVector *order_result) {
     struct SVectorIterator it;
     struct TraversalOrderItem *item;
 
     SVector_ForeachBegin(&it, order_result);
     while ((item = SVector_Foreach(&it))) {
-        SelvaTraversalOrder_DestroyOrderItem(ctx, item);
+        if (fin) {
+            finalizer_del(fin, item);
+        }
+        SelvaTraversalOrder_DestroyOrderItem(item);
     }
 
     SVector_Destroy(order_result);
@@ -244,7 +247,10 @@ static struct TraversalOrderItem *create_item(struct finalizer *fin, const struc
         memcpy(item->node_id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
         break;
     default:
-        SelvaTraversalOrder_DestroyOrderItem(NULL, item);
+        if (fin) {
+            finalizer_del(fin, item);
+        }
+        SelvaTraversalOrder_DestroyOrderItem(item);
         return NULL;
     }
 
@@ -305,9 +311,6 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectOrderItem(
     return create_item(fin, &tmp, TRAVERSAL_ORDER_ITEM_PTYPE_OBJ, obj);
 }
 
-void SelvaTraversalOrder_DestroyOrderItem(struct RedisModuleCtx *ctx, struct TraversalOrderItem *item) {
-    if (!ctx) {
-        selva_free(item);
-    }
-    /* Otherwise it's allocated from the pool. */
+void SelvaTraversalOrder_DestroyOrderItem(struct TraversalOrderItem *item) {
+    selva_free(item);
 }
