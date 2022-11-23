@@ -17,7 +17,7 @@ size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct ic
     size_t n;
 
     if (desc->filter) {
-        (void)RedisModule_StringPtrLen(desc->filter, &filter_len);
+        (void)selva_string_to_str(desc->filter, &filter_len);
     } else {
         filter_len = 0;
     }
@@ -27,7 +27,7 @@ size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct ic
     if (desc->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
         size_t dir_expression_len;
 
-        (void)RedisModule_StringPtrLen(desc->dir_expression, &dir_expression_len);
+        (void)selva_string_to_str(desc->dir_expression, &dir_expression_len);
 
         /*
          * Currently only expressions are supported in addition to fixed
@@ -39,7 +39,7 @@ size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct ic
     if (desc->sort.order != SELVA_RESULT_ORDER_NONE) {
         size_t order_field_len;
 
-        (void)RedisModule_StringPtrLen(desc->sort.order_field, &order_field_len);
+        (void)selva_string_to_str(desc->sort.order_field, &order_field_len);
 
         n += base64_out_len(order_field_len, 0) + 3;
     }
@@ -49,7 +49,7 @@ size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct ic
 
 void SelvaFindIndexICB_BuildName(char *buf, const Selva_NodeId node_id, const struct icb_descriptor *desc) {
     size_t filter_len = 0;
-    const char *filter_str = desc->filter ? RedisModule_StringPtrLen(desc->filter, &filter_len) : NULL;
+    const char *filter_str = desc->filter ? selva_string_to_str(desc->filter, &filter_len) : NULL;
     char *s = buf;
 
     /* node_id */
@@ -62,7 +62,7 @@ void SelvaFindIndexICB_BuildName(char *buf, const Selva_NodeId node_id, const st
 
     if (desc->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
         size_t dir_expression_len;
-        const char *dir_expression_str = RedisModule_StringPtrLen(desc->dir_expression, &dir_expression_len);
+        const char *dir_expression_str = selva_string_to_str(desc->dir_expression, &dir_expression_len);
 
         if (dir_expression_len > 0) {
             *s++ = '.';
@@ -73,7 +73,7 @@ void SelvaFindIndexICB_BuildName(char *buf, const Selva_NodeId node_id, const st
     /* order */
     if (desc->sort.order != SELVA_RESULT_ORDER_NONE) {
         size_t order_field_len;
-        const char *order_field_str = RedisModule_StringPtrLen(desc->sort.order_field, &order_field_len);
+        const char *order_field_str = selva_string_to_str(desc->sort.order_field, &order_field_len);
 
         *s++ = '.';
         *s++ = 'A' + (char)desc->sort.order;

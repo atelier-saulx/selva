@@ -2,6 +2,7 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <alloca.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -37,6 +38,7 @@ struct InheritFieldValue_Args {
 };
 
 struct InheritSendFields_Args {
+    struct selva_server_response_out *resp;
     size_t nr_fields;
     struct selva_string *lang;
     struct selva_string **field_names;
@@ -133,7 +135,6 @@ int Inherit_FieldValue(
 }
 
 static int Inherit_SendFields_NodeCb(
-        struct selva_server_response_out *resp,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         void *arg) {
@@ -155,7 +156,7 @@ static int Inherit_SendFields_NodeCb(
          * but we don't send the header yet.
          */
         TO_STR(field_name);
-        err = Inherit_SendFieldFind(resp, hierarchy, args->lang,
+        err = Inherit_SendFieldFind(args->resp, hierarchy, args->lang,
                                     node, obj,
                                     field_name, /* Initially full_field is the same as field_name. */
                                     field_name_str, field_name_len);
@@ -194,8 +195,9 @@ int Inherit_SendFields(
         struct selva_string **field_names,
         size_t nr_field_names) {
     struct InheritSendFields_Args args = {
+        .resp = resp,
         .lang = lang,
-        .field_names = RedisModule_PoolAlloc(NULL, nr_field_names * sizeof(struct selva_string *)),
+        .field_names = alloca(nr_field_names * sizeof(struct selva_string *)),
         .nr_fields = nr_field_names,
         .nr_results = 0,
     };
@@ -399,7 +401,7 @@ int SelvaInheritCommand(struct selva_server_response_out *resp, struct selva_str
      * Get field names.
      */
     const size_t nr_field_names = argc - ARGV_FIELD_NAMES;
-    struct selva_string **field_names = RedisModule_PoolAlloc(NULL, nr_field_names * sizeof(struct selva_string *));
+    struct selva_string **field_names = alloca(nr_field_names * sizeof(struct selva_string *));
 
     memcpy(field_names, argv + ARGV_FIELD_NAMES, nr_field_names * sizeof(struct selva_string *));
 

@@ -14,6 +14,7 @@ struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct SelvaObjectAny;
 struct finalizer;
+struct selva_server_response_out;
 struct selva_string;
 
 /**
