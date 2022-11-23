@@ -9,7 +9,6 @@
 #include "selva_error.h"
 #include "util/selva_string.h"
 #include "selva_db.h"
-#include "alias.h"
 #include "selva_set.h"
 
 int SelvaSet_CompareString(struct SelvaSetElement *a, struct SelvaSetElement *b) {

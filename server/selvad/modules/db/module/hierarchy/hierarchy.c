@@ -22,7 +22,6 @@
 #include "selva_db.h"
 #include "selva_io.h"
 #include "selva_log.h"
-#include "alias.h"
 #include "arg_parser.h"
 #include "async_task.h"
 #include "rms.h"
@@ -247,6 +246,7 @@ SelvaHierarchy *SelvaModify_NewHierarchy(void) {
     RB_INIT(&hierarchy->index_head);
     SVector_Init(&hierarchy->heads, 1, SVector_HierarchyNode_id_compare);
     SelvaObject_Init(hierarchy->types._obj_data);
+    SelvaObject_Init(hierarchy->aliases._obj_data);
     Edge_InitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
     SelvaSubscriptions_InitHierarchy(hierarchy);
     SelvaFindIndex_Init(hierarchy);
@@ -621,23 +621,12 @@ static inline void rmHead(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
  * Delete all aliases from the aliases key.
  * Note that this function doesn't delete the aliases from the node object.
  */
-static void delete_node_aliases(struct SelvaObject *obj) {
+static void delete_node_aliases(SelvaHierarchy *hierarchy, struct SelvaObject *obj) {
     struct SelvaSet *node_aliases_set;
 
     node_aliases_set = SelvaObject_GetSetStr(obj, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD) - 1);
     if (node_aliases_set) {
-        /* FIXME Implement aliases */
-#if 0
-        struct RedisModuleKey *aliases_key;
-
-        aliases_key = open_aliases_key(ctx);
-        if (aliases_key) {
-            delete_aliases(aliases_key, node_aliases_set);
-            RedisModule_CloseKey(aliases_key);
-        } else {
-            SELVA_LOG(SELVA_LOGL_WARN, "Unable to open aliases\n");
-        }
-#endif
+        delete_aliases(hierarchy, node_aliases_set);
     }
 }
 
@@ -665,7 +654,7 @@ static void del_node(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
         SelvaSubscriptions_DeferHierarchyDeletionEvents(hierarchy, node);
     }
 
-    delete_node_aliases(obj);
+    delete_node_aliases(hierarchy, obj);
 
     /*
      * Never delete the root node.

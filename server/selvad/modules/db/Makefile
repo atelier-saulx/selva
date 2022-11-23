@@ -4,6 +4,7 @@
 SELVA_DB_VERSION := $(shell sh -c 'git rev-parse --verify HEAD')
 OBJ := \
 	   db.o \
+	   module/alias.o \
 	   module/arg_parser.o \
 	   module/comparator.o \
 	   module/config.o \

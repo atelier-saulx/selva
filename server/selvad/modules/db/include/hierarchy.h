@@ -98,6 +98,13 @@ struct SelvaHierarchy {
     } types;
 
     /**
+     * Aliases.
+     */
+    struct {
+        STATIC_SELVA_OBJECT(_obj_data);
+    } aliases;
+
+    /**
      * Edge field constraints.
      */
     struct EdgeFieldConstraints edge_field_constraints;
@@ -224,7 +231,7 @@ struct SelvaHierarchyCallback {
 };
 
 #define SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy) \
-    ((struct SelvaObject *)((hierarchy)->types._obj_data))
+    GET_STATIC_SELVA_OBJECT(&((hierarchy)->types))
 
 /**
  * Flags for SelvaModify_DelHierarchyNode().
@@ -444,6 +451,34 @@ struct SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, co
 static inline int SelvaHierarchy_NodeExists(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     return SelvaHierarchy_FindNode(hierarchy, id) != NULL;
 }
+
+/**
+ * Alias to node_id.
+ */
+int get_alias_str(struct SelvaHierarchy *hierarchy, const char *ref_str, size_t ref_len, Selva_NodeId node_id);
+
+/**
+ * Alias to node_id.
+ */
+int get_alias(struct SelvaHierarchy *hierarchy, struct selva_string *ref, Selva_NodeId node_id);
+
+/**
+ * Remove an alias.
+ * Caller must update the node aliases if necessary.
+ */
+int delete_alias(struct SelvaHierarchy *hierarchy, struct selva_string *ref);
+
+/**
+ * Remove aliases listed in set.
+ * Caller must update the node aliases if necessary.
+ */
+int delete_aliases(struct SelvaHierarchy *hierarchy, struct SelvaSet *set);
+
+/**
+ * Update alias into the aliases key and remove the previous alias.
+ * Caller must set the alias to the new node.
+ */
+void update_alias(SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct selva_string *ref);
 
 /**
  * Get orphan head nodes of the given hierarchy.

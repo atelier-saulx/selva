@@ -8,7 +8,6 @@
 #include "util/selva_string.h"
 #include "selva_error.h"
 #include "selva_server.h"
-#include "alias.h"
 #include "arg_parser.h"
 #include "hierarchy.h"
 #include "selva_db.h"
@@ -21,9 +20,6 @@ int SelvaResolve_NodeId(
         struct selva_string **ids,
         size_t nr_ids,
         Selva_NodeId node_id) {
-#if 0
-    RedisModuleKey *aliases_key;
-#endif
     int res = SELVA_ENOENT;
 
     if (nr_ids == 0) {
@@ -31,14 +27,6 @@ int SelvaResolve_NodeId(
 
         return 0;
     }
-
-    /* FIXME Aliases */
-#if 0
-    aliases_key = open_aliases_key();
-    if (!aliases_key) {
-        return SELVA_EGENERAL;
-    }
-#endif
 
     for (size_t i = 0; i < nr_ids; i++) {
         const struct selva_string *id = ids[i];
@@ -61,27 +49,16 @@ int SelvaResolve_NodeId(
         }
 
         /* Then check if there is an alias with this string. */
-        struct selva_string *orig = NULL;
-        /* FIXME Aliases */
-#if 0
-        if (!RedisModule_HashGet(aliases_key, REDISMODULE_HASH_NONE, id, &orig, NULL)) {
-            if (orig) {
-                TO_STR(orig);
-
-                Selva_NodeIdCpy(node_id, orig_str);
-                if (SelvaHierarchy_NodeExists(hierarchy, node_id)) {
-                    res = SELVA_RESOLVE_ALIAS;
-                    break;
-                }
+        Selva_NodeId tmp_id;
+        if (!get_alias(hierarchy, id, tmp_id)) {
+            if (SelvaHierarchy_NodeExists(hierarchy, tmp_id)) {
+                memcpy(node_id, tmp_id, SELVA_NODE_ID_SIZE);
+                res = SELVA_RESOLVE_ALIAS;
+                break;
             }
         }
-#endif
     }
 
-    /* FIXME Aliases */
-#if 0
-    RedisModule_CloseKey(aliases_key);
-#endif
     return res;
 }
 

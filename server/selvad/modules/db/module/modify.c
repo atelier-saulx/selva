@@ -378,7 +378,6 @@ static void selva_set_defer_alias_change_events(
  */
 static int add_set_values(
     SelvaHierarchy *hierarchy,
-    struct RedisModuleKey *alias_key,
     struct SelvaObject *obj,
     const Selva_NodeId node_id,
     const struct selva_string *field,
@@ -387,6 +386,8 @@ static int add_set_values(
     int8_t type,
     int remove_diff
 ) {
+    TO_STR(field);
+    const int is_aliases = !strcmp(field_str, SELVA_ALIASES_FIELD);
     const char *ptr = value_ptr;
     int res = 0;
 
@@ -434,15 +435,15 @@ static int add_set_values(
                 finalizer_del(&fin, ref);
 
                 /* Add to the global aliases hash. */
-                if (alias_key) {
+                if (is_aliases) {
                     SelvaSubscriptions_DeferAliasChangeEvents(hierarchy, ref);
 
-                    update_alias(hierarchy, alias_key, node_id, ref);
+                    update_alias(hierarchy, node_id, ref);
                 }
 
                 res++;
             } else if (err != SELVA_EEXIST) {
-                if (alias_key) {
+                if (is_aliases) {
                     SELVA_LOG(SELVA_LOGL_ERR, "Alias update failed");
                 } else {
                     SELVA_LOG(SELVA_LOGL_ERR, "String set field update failed");
@@ -479,12 +480,9 @@ static int add_set_values(
                     /* el doesn't exist in new_set, therefore it should be removed. */
                     SelvaSet_DestroyElement(SelvaSet_Remove(objSet, el));
 
-                    if (alias_key) {
+                    if (is_aliases) {
                         SelvaSubscriptions_DeferAliasChangeEvents(hierarchy, el);
-                        /* FIXME Aliases */
-#if 0
-                        RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, el, REDISMODULE_HASH_DELETE, NULL);
-#endif
+                        delete_alias(hierarchy, el);
                     }
 
                     selva_string_free(el);
@@ -613,13 +611,15 @@ string_err:
 }
 
 static int del_set_values(
-    struct RedisModuleKey *alias_key,
-    struct SelvaObject *obj,
-    const struct selva_string *field,
-    const char *value_ptr,
-    size_t value_len,
-    int8_t type
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaObject *obj,
+        const struct selva_string *field,
+        const char *value_ptr,
+        size_t value_len,
+        int8_t type
 ) {
+    TO_STR(field);
+    const int is_aliases = !strcmp(field_str, SELVA_ALIASES_FIELD);
     const char *ptr = value_ptr;
     int res = 0;
 
@@ -649,13 +649,10 @@ static int del_set_values(
 
             /*
              * Remove from the global aliases hash.
-             * FIXME Aliases
              */
-#if 0
-            if (alias_key) {
-                RedisModule_HashSet(alias_key, REDISMODULE_HASH_NONE, ref, REDISMODULE_HASH_DELETE, NULL);
+            if (is_aliases) {
+                delete_alias(hierarchy, ref);
             }
-#endif
 
             /* +1 to skip the NUL if cstring */
             const size_t skip_off = type == SELVA_MODIFY_OP_SET_TYPE_REFERENCE ? SELVA_NODE_ID_SIZE : (size_t)part_len + (type == SELVA_MODIFY_OP_SET_TYPE_CHAR);
@@ -723,16 +720,7 @@ static int update_set(
     const struct SelvaModify_OpSet *setOpts
 ) {
     TO_STR(field);
-    struct RedisModuleKey *alias_key = NULL;
     int res = 0;
-
-    if (!strcmp(field_str, SELVA_ALIASES_FIELD)) {
-        alias_key = open_aliases_key();
-        if (!alias_key) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Unable to open aliases");
-            return SELVA_ENOENT;
-        }
-    }
 
     if (setOpts->$value_len > 0) {
         int err;
@@ -740,7 +728,7 @@ static int update_set(
         /*
          * Set new values.
          */
-        err = add_set_values(hierarchy, alias_key, obj, node_id, field, setOpts->$value, setOpts->$value_len, setOpts->op_set_type, 1);
+        err = add_set_values(hierarchy, obj, node_id, field, setOpts->$value, setOpts->$value_len, setOpts->op_set_type, 1);
         if (err < 0) {
             return err;
         } else {
@@ -750,7 +738,7 @@ static int update_set(
         if (setOpts->$add_len > 0) {
             int err;
 
-            err = add_set_values(hierarchy, alias_key, obj, node_id, field, setOpts->$add, setOpts->$add_len, setOpts->op_set_type, 0);
+            err = add_set_values(hierarchy, obj, node_id, field, setOpts->$add, setOpts->$add_len, setOpts->op_set_type, 0);
             if (err < 0) {
                 return err;
             } else {
@@ -761,7 +749,7 @@ static int update_set(
         if (setOpts->$delete_len > 0) {
             int err;
 
-            err = del_set_values(alias_key, obj, field, setOpts->$delete, setOpts->$delete_len, setOpts->op_set_type);
+            err = del_set_values(hierarchy, obj, field, setOpts->$delete, setOpts->$delete_len, setOpts->op_set_type);
             if (err < 0) {
                 return err;
             }
@@ -823,19 +811,12 @@ int SelvaModify_ModifySet(
              * ___selva_aliases hash.
              */
             if (!strcmp(field_str, SELVA_ALIASES_FIELD)) {
-                struct RedisModuleKey *alias_key;
                 struct SelvaSet *node_aliases;
-
-                alias_key = open_aliases_key();
-                if (!alias_key) {
-                    SELVA_LOG(SELVA_LOGL_ERR, "Unable to open aliases");
-                    return SELVA_ENOENT;
-                }
 
                 node_aliases = SelvaObject_GetSet(obj, field);
                 if (node_aliases) {
                     selva_set_defer_alias_change_events(hierarchy, node_aliases);
-                    (void)delete_aliases(alias_key, node_aliases);
+                    (void)delete_aliases(hierarchy, node_aliases);
                 }
             }
 
@@ -1587,7 +1568,6 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
     SELVA_TRACE_BEGIN_AUTO(cmd_modify);
     __auto_finalizer struct finalizer fin;
     SelvaHierarchy *hierarchy = main_hierarchy;
-    struct selva_string *id = NULL;
     SVECTOR_AUTOFREE(alias_query);
     bool created = false; /* Will be set if the node was created during this command. */
     bool updated = false;
@@ -1613,72 +1593,49 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
      * We use the ID generated by the client as the nodeId by default but later
      * on if an $alias entry is found then the following value will be discarded.
      */
-    id = argv[1];
-
-    /*
-     * Look for $alias that would replace id.
-     * FIXME Aliases
-     */
-#if 0
-    parse_alias_query(argv + 3, argc - 3, &alias_query);
-    if (SVector_Size(&alias_query) > 0) {
-        struct RedisModuleKey *alias_key = open_aliases_key();
-
-        if (alias_key && RedisModule_KeyType(alias_key) == REDISMODULE_KEYTYPE_HASH) {
-            struct SVectorIterator it;
-            char *str;
-
-            /*
-             * Replace id with the first match from alias_query.
-             */
-            SVector_ForeachBegin(&it, &alias_query);
-            while ((str = SVector_Foreach(&it))) {
-                struct selva_string *tmp_id;
-
-                if (!RedisModule_HashGet(alias_key, REDISMODULE_HASH_CFIELDS, str, &tmp_id, NULL)) {
-                    Selva_NodeId nodeId;
-
-                    err = selva_string2node_id(nodeId, tmp_id);
-                    if (err) {
-                        /* TODO Should it fail? */
-                        continue;
-                    }
-
-                    if (SelvaHierarchy_NodeExists(hierarchy, nodeId)) {
-                        id = tmp_id;
-
-                        /*
-                         * If no match was found all the aliases should be assigned.
-                         * If a match was found the query vector can be cleared now
-                         * to prevent any aliases from being created.
-                         */
-                        SVector_Clear(&alias_query);
-
-                        break;
-                    }
-                }
-            }
-        } else {
-#if 0
-            /* This is probably ok and it's a sign that there are no aliases in the DB yet. */
-            fprintf(stderr, "%s:%d: Unable to open the aliases key or its type is invalid\n",
-                    __FILE__, __LINE__);
-#endif
-            new_alias = true;
-        }
-
-        RedisModule_CloseKey(alias_key);
-    }
-#endif
-
     Selva_NodeId nodeId;
-    struct SelvaHierarchyNode *node;
-    const unsigned flags = parse_flags(argv[2]);
-
-    err = selva_string2node_id(nodeId, id);
+    err = selva_string2node_id(nodeId, argv[1]);
     if (err) {
         return selva_send_errorf(resp, err, "Invalid nodeId");
     }
+
+    /*
+     * Look for $alias that would replace id.
+     */
+    parse_alias_query(argv + 3, argc - 3, &alias_query);
+    if (SVector_Size(&alias_query) > 0) {
+        struct SVectorIterator it;
+        char *str;
+
+        /*
+         * Replace id with the first match from alias_query.
+         */
+        SVector_ForeachBegin(&it, &alias_query);
+        while ((str = SVector_Foreach(&it))) {
+            Selva_NodeId tmp_id;
+
+            if (!get_alias_str(hierarchy, str, strlen(str), tmp_id)) {
+                if (SelvaHierarchy_NodeExists(hierarchy, tmp_id)) {
+                    memcpy(nodeId, tmp_id, SELVA_NODE_ID_SIZE);
+
+                    /*
+                     * If no match was found all the aliases should be assigned.
+                     * If a match was found the query vector can be cleared now
+                     * to prevent any new aliases from being created.
+                     */
+                    SVector_Clear(&alias_query);
+
+                    break;
+                }
+            }
+        }
+    }
+    if (SVector_Size(&alias_query) > 0) {
+            new_alias = true;
+    }
+
+    struct SelvaHierarchyNode *node;
+    const unsigned flags = parse_flags(argv[2]);
 
     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
@@ -1692,7 +1649,7 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
 
         err = SelvaModify_SetHierarchy(hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL, &node);
         if (err < 0) {
-            return selva_send_errorf(resp, err,"ERR Failed to initialize the node hierarchy for id: \"%s\"", selva_string_to_str(id, NULL));
+            return selva_send_errorf(resp, err,"ERR Failed to initialize the node hierarchy for id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     } else if (FISSET_CREATE(flags)) {
         /* if the specified id exists but $operation: 'insert' specified. */
@@ -1731,7 +1688,7 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
      * Each part is also replicated separately.
      */
     selva_send_array(resp, 1 + nr_triplets);
-    selva_send_string(resp, id);
+    selva_send_str(resp, nodeId, SELVA_NODE_ID_SIZE);
 
     for (int i = 3; i < argc; i += 3) {
         struct selva_string *type = argv[i];
@@ -1868,15 +1825,15 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
 
             err = SelvaModify_ModifySet(hierarchy, nodeId, node, obj, aliases_field, &opSet);
             if (err < 0) {
-                TO_STR(id);
-
                 /*
                  * Since we are already at the end of the command, it's next to
                  * impossible to rollback the command, so we'll just log any
                  * errors received here.
                  */
-                SELVA_LOG(SELVA_LOGL_ERR, "An error occurred while setting an alias \"%s\" -> %s: %s\n",
-                          alias, id_str, selva_strerror(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "An error occurred while setting an alias \"%s\" -> %.*s: %s\n",
+                          alias,
+                          (int)SELVA_NODE_ID_SIZE, nodeId,
+                          selva_strerror(err));
             }
         }
 

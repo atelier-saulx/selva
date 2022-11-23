@@ -42,6 +42,9 @@ enum SelvaObjectType {
  */
 #define STATIC_SELVA_OBJECT(name) _Alignas(void *) char name[SELVA_OBJECT_BSIZE]
 
+#define GET_STATIC_SELVA_OBJECT(container) \
+    ((struct SelvaObject *)((container)->_obj_data))
+
 struct selva_io;
 struct RedisModuleKey;
 struct SVector;
