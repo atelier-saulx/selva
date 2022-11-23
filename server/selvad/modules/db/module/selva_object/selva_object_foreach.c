@@ -64,7 +64,7 @@ int SelvaObject_ArrayForeach(
         do {
             union SelvaObjectArrayForeachValue v;
 
-            v.rms = SVector_Foreach(&it);
+            v.s = SVector_Foreach(&it);
 
             if (cb->cb(v, subtype, cb->cb_arg)) {
                 break;

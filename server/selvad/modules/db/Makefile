@@ -14,6 +14,7 @@ OBJ := \
 	   module/find_index/find_index.o \
 	   module/find_index/icb.o \
 	   module/find_index/pick_icb.o \
+	   module/hierarchy/field_set.o \
 	   module/hierarchy/hierarchy.o \
 	   module/hierarchy/hierarchy_reply.o \
 	   module/hierarchy/traversal.o \
@@ -46,7 +47,7 @@ OBJ := \
 #	   module/modinfo.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -I./include -include ../../tunables.h
-LDFLAGS += -lutil
+LDFLAGS += -ldeflate -lutil
 TARGET := ../db$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)

@@ -404,7 +404,10 @@ __attribute__((nonnull (1, 2))) static int destroy_icb(
     }
 
     if (icb->flags.valid_timer_id) {
+        /* FIXME Index timer */
+#if 0
         RedisModule_StopTimerUnsafe(icb->timer_id, NULL);
+#endif
     }
 
     memset(icb, 0, sizeof(*icb));
@@ -750,7 +753,10 @@ static void create_icb_timer(struct SelvaFindIndexControlBlock *icb) {
     const struct timespec period = MSEC2TIMESPEC(selva_glob_config.find_indexing_icb_update_interval);
 
     assert(icb->flags.valid_timer_id == 0);
+    /* FIXME Index timer */
+#if 0
     icb->timer_id = RedisModule_CreateTimer(period, icb_proc, icb);
+#endif
     icb->flags.valid_timer_id = 1;
 }
 
@@ -762,7 +768,10 @@ static void create_indexing_timer(struct SelvaHierarchy *hierarchy) {
     const struct timespec period = MSEC2TIMESPEC(selva_glob_config.find_indexing_interval);
 
     assert(hierarchy->dyn_index.proc_timer_active == 0);
+    /* FIXME Index timer */
+#if 0
     hierarchy->dyn_index.proc_timer_id = RedisModule_CreateTimer(period, make_indexing_decission_proc, hierarchy);
+#endif
     hierarchy->dyn_index.proc_timer_active = 1;
 }
 
@@ -814,7 +823,10 @@ void SelvaFindIndex_Deinit(struct SelvaHierarchy *hierarchy) {
     ida_destroy(hierarchy->dyn_index.ida);
 
     if (hierarchy->dyn_index.proc_timer_active) {
+    /* FIXME Index timer */
+#if 0
         RedisModule_StopTimerUnsafe(hierarchy->dyn_index.proc_timer_id, NULL);
+#endif
     }
 
     memset(&hierarchy->dyn_index, 0, sizeof(hierarchy->dyn_index));

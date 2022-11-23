@@ -24,7 +24,6 @@
 #include "selva_log.h"
 #include "arg_parser.h"
 #include "async_task.h"
-#include "rms.h"
 #include "edge.h"
 #include "modify.h"
 #include "rpn.h"
@@ -139,12 +138,10 @@ static int removeRelationships(
         SelvaHierarchyNode *node,
         enum SelvaHierarchyNode_Relationship rel);
 RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaHierarchyNode, _index_entry, SelvaHierarchyNode_Compare)
-/* FIXME subtree compression */
-#if 0
+/* FIXME Implement subtree compression and detaching */
 static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, enum SelvaHierarchyDetachedType type);
 static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 static void auto_compress_proc(struct RedisModuleCtx *ctx, void *data);
-#endif
 
 /* Node metadata constructors. */
 SET_DECLARE(selva_HMCtor, SelvaHierarchyMetadataConstructorHook);
@@ -257,6 +254,8 @@ SelvaHierarchy *SelvaModify_NewHierarchy(void) {
         goto fail;
     }
 
+    /* FIXME auto compress */
+#if 0
     if (selva_glob_config.hierarchy_auto_compress_period_ms > 0) {
         if (SelvaHierarchy_InitInactiveNodes(hierarchy, HIERARCHY_AUTO_COMPRESS_INACT_NODES_LEN)) {
             SelvaModify_DestroyHierarchy(hierarchy);
@@ -264,11 +263,9 @@ SelvaHierarchy *SelvaModify_NewHierarchy(void) {
             goto fail;
         }
 
-        /* FIXME auto compress */
-#if 0
         hierarchy->inactive.auto_compress_timer = RedisModule_CreateTimer(ctx, selva_glob_config.hierarchy_auto_compress_period_ms, auto_compress_proc, hierarchy);
-#endif
     }
+#endif
 
 fail:
     return hierarchy;
@@ -297,9 +294,15 @@ void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy) {
     SVector_Destroy(&hierarchy->heads);
 
     if (hierarchy->inactive.nr_nodes) {
+        /* FIXME inact timer auto compress */
+#if 0
         (void)RedisModule_StopTimerUnsafe(hierarchy->inactive.auto_compress_timer, NULL);
+#endif
     }
+    /* FIXME Implement inact nodes */
+#if 0
     SelvaHierarchy_DeinitInactiveNodes(hierarchy);
+#endif
     mempool_destroy(&hierarchy->node_pool);
 
 #if MEM_DEBUG
@@ -1626,7 +1629,10 @@ static int SelvaModify_DelHierarchyNodeP(
         }
 
         /* Add to the detached nodes. */
+        /* FIXME Implement node detaching */
+#if 0
         SelvaHierarchyDetached_AddNode(hierarchy, node->id, opt_arg);
+#endif
     } else if (node->flags & SELVA_NODE_FLAGS_DETACHED) {
         /*
          * This should only happen if we have failed to restore the
@@ -1935,11 +1941,14 @@ static int full_dfs(
                  * Reset the compressionCandidate tracking and save the current candidate.
                  * No need to test enAutoCompression as compressionCandidate
                  * would be NULL on false case.
+                 * FIXME Fix inact nodes
                  */
+#if 0
                 if (compressionCandidate && SVector_Size(&node->children) == 0) {
                     SelvaHierarchy_AddInactiveNodeId(hierarchy, compressionCandidate->id);
                     compressionCandidate = NULL;
                 }
+#endif
 
                 SVector_ForeachBegin(&it2, &node->children);
                 while ((adj = SVector_Foreach(&it2))) {
@@ -2603,13 +2612,10 @@ int SelvaHierarchy_IsNonEmptyField(const struct SelvaHierarchyNode *node, const 
 #undef IS_FIELD
 }
 
-/* FIXME Restore subtree compression */
-#if 0
 /**
  * DO NOT CALL DIRECTLY. USE verifyDetachableSubtree().
  */
 static int verifyDetachableSubtreeNodeCb(
-        struct RedisModuleCtx *ctx __unused,
         struct SelvaHierarchy *hierarchy __unused,
         struct SelvaHierarchyNode *node,
         void *arg) {
@@ -2673,7 +2679,7 @@ static int verifyDetachableSubtreeNodeCb(
  * @return 0 is returned if the subtree is detachable;
  *         Otherwise a SelvaError is returned.
  */
-static int verifyDetachableSubtree(struct RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
+static int verifyDetachableSubtree(struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
     struct trx_state * restrict trx_state = &hierarchy->trx_state;
     struct verifyDetachableSubtree data = {
         .err = NULL,
@@ -2699,7 +2705,7 @@ static int verifyDetachableSubtree(struct RedisModuleCtx *ctx, struct SelvaHiera
     }
     SelvaSet_Init(&data.edge_origin_node_ids, SELVA_SET_TYPE_NODEID);
 
-    err = bfs(ctx, hierarchy, node, RELATIONSHIP_CHILD, &cb);
+    err = bfs(hierarchy, node, RELATIONSHIP_CHILD, &cb);
     if (!err && data.err) {
         err = SELVA_HIERARCHY_ENOTSUP;
     }
@@ -2735,6 +2741,8 @@ static int verifyDetachableSubtree(struct RedisModuleCtx *ctx, struct SelvaHiera
  * @returns The compressed tree is returned as a compressed_rms structure.
  */
 static struct compressed_rms *compress_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, double *cratio) {
+    /* FIXME Fix compressing subtrees */
+#if 0
     struct selva_string *raw;
     struct compressed_rms *compressed;
     int err;
@@ -2775,9 +2783,12 @@ static struct compressed_rms *compress_subtree(SelvaHierarchy *hierarchy, struct
     }
 
     return compressed;
+#endif
 }
 
 static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, enum SelvaHierarchyDetachedType type) {
+    /* FIXME Fix detaching subtree */
+#if 0
     Selva_NodeId node_id;
     Selva_NodeId *parents = NULL;
     const size_t nr_parents = SVector_Size(&node->parents);
@@ -2831,9 +2842,12 @@ static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *
     }
 
     return err;
+#endif
 }
 
 static int restore_compressed_subtree(SelvaHierarchy *hierarchy, struct compressed_rms *compressed) {
+    /* FIXME Fix restoring compressed subtree */
+#if 0
     struct selva_string *uncompressed;
     const void *load_res;
     int err;
@@ -2854,6 +2868,7 @@ static int restore_compressed_subtree(SelvaHierarchy *hierarchy, struct compress
     }
 
     return 0;
+#endif
 }
 
 /**
@@ -2862,6 +2877,8 @@ static int restore_compressed_subtree(SelvaHierarchy *hierarchy, struct compress
  * @returns SELVA_ENOENT if id is not a member of any detached subtree.
  */
 static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
+    /* FIXME fix hierarchy detaching */
+#if 0
     struct compressed_rms *compressed;
     int err;
 
@@ -2884,6 +2901,8 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
 #endif
 
     return err;
+#endif
+    return 0;
 }
 
 static int _auto_compress_proc_rnd(void) {
@@ -2897,6 +2916,8 @@ static int _auto_compress_proc_rnd(void) {
 }
 
 static void auto_compress_proc(struct RedisModuleCtx *ctx, void *data) {
+    /* FIXME auto compress */
+#if 0
     SELVA_TRACE_BEGIN_AUTO(auto_compress_proc);
     SelvaHierarchy *hierarchy = (struct SelvaHierarchy *)data;
     struct timespec timer_period = MSEC2TIMESPEC(selva_glob_config.hierarchy_auto_compress_period_ms);
@@ -2950,8 +2971,8 @@ static void auto_compress_proc(struct RedisModuleCtx *ctx, void *data) {
     }
 
     hierarchy->inactive.auto_compress_timer = RedisModule_CreateTimer(ctx, timer_period, auto_compress_proc, hierarchy);
-}
 #endif
+}
 
 static int load_metadata(struct selva_io *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     int err;
@@ -3003,9 +3024,12 @@ static int load_detached_node(struct selva_io *io, SelvaHierarchy *hierarchy, Se
     SelvaHierarchyNode *node;
     int err;
 
+    /* FIXME fix compressed strings */
+#if 0
     compressed = rms_alloc_compressed();
     type = selva_io_load_signed(io);
     rms_RDBLoadCompressed(io, compressed);
+#endif
 
     /*
      * It would be cleaner and faster to just attach this node as detached and
@@ -3016,10 +3040,14 @@ static int load_detached_node(struct selva_io *io, SelvaHierarchy *hierarchy, Se
      * subtree first and detach it again.
      */
 
+
+    /* FIXME fix compressed subtree */
+#if 0
     err = restore_compressed_subtree(hierarchy, compressed);
     if (err) {
         goto out;
     }
+#endif
 
     node = SelvaHierarchy_FindNode(hierarchy, node_id);
     if (!node) {
@@ -3030,7 +3058,10 @@ static int load_detached_node(struct selva_io *io, SelvaHierarchy *hierarchy, Se
     err = detach_subtree(hierarchy, node, type);
 
 out:
+    /* FIXME fix compressed subtree */
+#if 0
     rms_free_compressed(compressed);
+#endif
     return err;
 }
 
@@ -3069,7 +3100,10 @@ static int load_hierarchy_node(struct selva_io *io, int encver, SelvaHierarchy *
             }
 
             if (isDecompressingSubtree) {
+                /* FIXME Implement decompressing hierarchy */
+#if 0
                 SelvaHierarchyDetached_RemoveNode(hierarchy, child_id);
+#endif
             }
 
             err = SelvaModify_AddHierarchy(hierarchy, child_id, 0, NULL, 0, NULL);
@@ -3105,7 +3139,10 @@ static int load_node(struct selva_io *io, int encver, SelvaHierarchy *hierarchy,
     int err;
 
     if (isDecompressingSubtree) {
+        /* FIXME Implement decompressing hierarchy */
+#if 0
         SelvaHierarchyDetached_RemoveNode(hierarchy, node_id);
+#endif
     }
 
     /*
@@ -3244,6 +3281,8 @@ static void save_detached_node(struct selva_io *io, SelvaHierarchy *hierarchy, c
      * subtrees temporarily.
      */
 
+    /* FIXME fix hiereachy detaching */
+#if 0
     err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed, &type);
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to save a compressed subtree: %s",
@@ -3253,6 +3292,7 @@ static void save_detached_node(struct selva_io *io, SelvaHierarchy *hierarchy, c
 
     selva_io_save_signed(io, type);
     rms_RDBSaveCompressed(io, compressed);
+#endif
 }
 
 static void save_metadata(struct selva_io *io, SelvaHierarchyNode *node) {
@@ -3405,7 +3445,10 @@ static void *Hierarchy_SubtreeRDBLoad(struct selva_io *io, int encver) {
         return NULL;
     }
 
+    /* FIXME Implement decompressing hierarchy */
+#if 0
     SelvaHierarchyDetached_RemoveNode(hierarchy, nodeId);
+#endif
 
     err = load_tree(io, encver, hierarchy);
     if (err) {

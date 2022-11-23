@@ -100,7 +100,7 @@ static struct SelvaFindIndexControlBlock *pick_any_order(
     }
 
     size_t filter_len;
-    const char *filter_str = RedisModule_StringPtrLen(desc->filter, &filter_len);
+    const char *filter_str = selva_string_to_str(desc->filter, &filter_len);
     const size_t base64_filter_len = base64_out_len(filter_len, 0);
     char base64_filter_str[base64_filter_len];
     struct SelvaFindIndexControlBlock *out = NULL;

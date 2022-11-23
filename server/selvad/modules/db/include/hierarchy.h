@@ -254,7 +254,7 @@ void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy);
 
 /**
  * Get the type name for a type prefix.
- * It's the caller's responsibility to call RedisModule_FreeString() for the
+ * It's the caller's responsibility to call selva_string_free() for the
  * returned string.
  */
 struct selva_string *SelvaHierarchyTypes_Get(struct SelvaHierarchy *hierarchy, const Selva_NodeType type);

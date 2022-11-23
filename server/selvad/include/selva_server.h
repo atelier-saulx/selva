@@ -51,7 +51,7 @@ SELVA_SERVER_EXPORT(int, server_send_end, struct selva_server_response_out *rest
 /**
  * Send a null value.
  */
-int selva_send_null(struct selva_server_response_out *resp);
+SELVA_SERVER_EXPORT(int, selva_send_null, struct selva_server_response_out *resp);
 
 /**
  * Send an error.

@@ -6,7 +6,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
-#include "selva.h"
+#include "selva_error.h"
+#include "selva_db.h"
 #include "selva_object.h"
 #include "hierarchy.h"
 
@@ -40,7 +41,6 @@ static int is_edge_field(const struct SelvaHierarchyNode *node, const char *fiel
 }
 
 static int hierarchy_foreach_cb(
-        RedisModuleCtx *ctx __unused,
         struct SelvaHierarchy *hierarchy __unused,
         struct SelvaHierarchyNode *node,
         void *arg) {
@@ -65,8 +65,8 @@ static int array_foreach_cb_wrapper(union SelvaObjectArrayForeachValue value, en
         cb->cb(svalue, SELVA_SET_TYPE_LONGLONG, cb->cb_arg);
         break;
     case SELVA_OBJECT_STRING:
-        svalue.rms = value.rms;
-        cb->cb(svalue, SELVA_SET_TYPE_RMSTRING, cb->cb_arg);
+        svalue.s = value.s;
+        cb->cb(svalue, SELVA_SET_TYPE_STRING, cb->cb_arg);
         break;
     case SELVA_OBJECT_NULL:
     case SELVA_OBJECT_OBJECT:
@@ -96,7 +96,6 @@ static int array_foreach(
 }
 
 int SelvaHierarchy_ForeachInField(
-        RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         const char *field_str,
@@ -111,7 +110,7 @@ int SelvaHierarchy_ForeachInField(
             .node_arg = (void *)cb,
         };
 
-        SelvaHierarchy_TraverseParents(ctx, hierarchy, node, &hcb);
+        SelvaHierarchy_TraverseParents(hierarchy, node, &hcb);
         return 0;
 
     } else if (IS_FIELD(SELVA_CHILDREN_FIELD)) {
@@ -120,7 +119,7 @@ int SelvaHierarchy_ForeachInField(
             .node_arg = (void *)cb,
         };
 
-        SelvaHierarchy_TraverseChildren(ctx, hierarchy, node, &hcb);
+        SelvaHierarchy_TraverseChildren(hierarchy, node, &hcb);
         return 0;
     } else if (IS_FIELD(SELVA_ANCESTORS_FIELD)) {
         const struct SelvaHierarchyCallback hcb = {
@@ -128,14 +127,14 @@ int SelvaHierarchy_ForeachInField(
             .node_arg = (void *)cb,
         };
 
-        return SelvaHierarchy_TraverseBFSAncestors(ctx, hierarchy, node, &hcb);
+        return SelvaHierarchy_TraverseBFSAncestors(hierarchy, node, &hcb);
     } else if (IS_FIELD(SELVA_DESCENDANTS_FIELD)) {
         const struct SelvaHierarchyCallback hcb = {
             .node_cb = hierarchy_foreach_cb,
             .node_arg = (void *)cb,
         };
 
-        return SelvaHierarchy_TraverseBFSDescendants(ctx, hierarchy, node, &hcb);
+        return SelvaHierarchy_TraverseBFSDescendants(hierarchy, node, &hcb);
     } else if (is_unsupported_field(field_str, field_len)) {
         /* NOP */
     } else if (is_edge_field(node, field_str, field_len)) {
@@ -148,7 +147,7 @@ int SelvaHierarchy_ForeachInField(
         SelvaHierarchy_GetNodeId(id, node);
 
         return SelvaHierarchy_TraverseField(
-                ctx, hierarchy,
+                hierarchy,
                 id,
                 SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD,
                 field_str, field_len,

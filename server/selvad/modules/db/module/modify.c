@@ -1378,10 +1378,10 @@ static enum selva_op_repl_state modify_edge_meta_op(
             }
         }
 
-        meta_field_value = RedisModule_CreateString(NULL, op->meta_field_value_str, op->meta_field_value_len);
+        meta_field_value = selva_string_create(NULL, op->meta_field_value_str, op->meta_field_value_len);
         err = SelvaObject_SetStringStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, meta_field_value);
         if (err) {
-            RedisModule_FreeString(NULL, meta_field_value);
+            selva_string_free(meta_field_value);
             selva_send_errorf(resp, err, "Failed to set a string value");
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
@@ -1816,7 +1816,7 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
             struct SelvaModify_OpSet opSet = {
                 .op_set_type = SELVA_MODIFY_OP_SET_TYPE_CHAR,
                 .$add = alias,
-                .$add_len = strlen(alias) + 1, /* This is safe because the ultimate source is a RedisModuleString. */
+                .$add_len = strlen(alias) + 1, /* This is safe because the ultimate source is a selva_string. */
                 .$delete = NULL,
                 .$delete_len = 0,
                 .$value = NULL,

@@ -340,7 +340,7 @@ void *SelvaObject_ForeachValueType(
 union SelvaObjectArrayForeachValue {
     double d;
     long long ll;
-    struct selva_string *rms;
+    struct selva_string *s;
     struct SelvaObject *obj;
 };
 
