@@ -22,6 +22,7 @@ OBJ := \
 	queue_r.o \
 	selva_string.o \
 	svector.o \
+	timestamp.o \
 	trx.o
 
 ifeq ($(uname_S),Linux)
