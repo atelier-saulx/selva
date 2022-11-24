@@ -1880,19 +1880,9 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
     return 0;
 }
 
-/*
- * FIXME Register the command.
- */
-#if 0
-static int Modify_OnLoad(RedisModuleCtx *ctx) {
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.modify", SelvaCommand_Modify, "write deny-oom no-monitor no-slowlog", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
+static int Modify_OnLoad(void) {
+    selva_mk_command(40, "modify", SelvaCommand_Modify);
 
     return 0;
 }
 SELVA_ONLOAD(Modify_OnLoad);
-#endif

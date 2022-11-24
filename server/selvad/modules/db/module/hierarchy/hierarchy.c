@@ -3955,24 +3955,19 @@ static int Hierarchy_OnLoad(struct RedisModuleCtx *ctx) {
     }
 #endif
 
-    /* FIXME Register commands */
-#if 0
     /*
      * Register commands.
      */
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.del", SelvaHierarchy_DelNodeCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.heads", SelvaHierarchy_HeadsCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.parents", SelvaHierarchy_ParentsCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.children", SelvaHierarchy_ChildrenCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.edgelist", SelvaHierarchy_EdgeListCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.edgeget", SelvaHierarchy_EdgeGetCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.edgegetmetadata", SelvaHierarchy_EdgeGetMetadataCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.compress", SelvaHierarchy_CompressCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.listcompressed", SelvaHierarchy_ListCompressedCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.ver", SelvaHierarchy_VerCommand, "readonly allow-stale fast", 0, 0, 0) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-#endif
+    selva_mk_command(23, "hierarchy.del", SelvaHierarchy_DelNodeCommand);
+    selva_mk_command(24, "hierarchy.heads", SelvaHierarchy_HeadsCommand);
+    selva_mk_command(25, "hierarchy.parents", SelvaHierarchy_ParentsCommand);
+    selva_mk_command(26, "hierarchy.children", SelvaHierarchy_ChildrenCommand);
+    selva_mk_command(27, "hierarchy.edgeList", SelvaHierarchy_EdgeListCommand);
+    selva_mk_command(28, "hierarchy.edgeGet", SelvaHierarchy_EdgeGetCommand);
+    selva_mk_command(29, "hierarchy.edgeGetMetadata", SelvaHierarchy_EdgeGetMetadataCommand);
+    selva_mk_command(30, "hierarchy.compress", SelvaHierarchy_CompressCommand);
+    selva_mk_command(31, "hierarchy.listCompressed", SelvaHierarchy_ListCompressedCommand);
+    selva_mk_command(32, "hierarchy.ver", SelvaHierarchy_VerCommand);
 
     main_hierarchy = SelvaModify_NewHierarchy();
     if (!main_hierarchy) { /* TODO Can this even fail? */

@@ -335,20 +335,10 @@ int Edge_ListConstraintsCommand(struct selva_server_response_out *resp, struct s
     return 0;
 }
 
-/*
- * FIXME Register commands
- */
-#if 0
-static int EdgeConstraints_OnLoad(RedisModuleCtx *ctx) {
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.addconstraint", Edge_AddConstraintCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.listconstraints", Edge_ListConstraintsCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
+static int EdgeConstraints_OnLoad(void) {
+    selva_mk_command(21, "hierarchy.addConstraint", Edge_AddConstraintCommand);
+    selva_mk_command(22, "hierarchy.listConstraints", Edge_ListConstraintsCommand);
 
     return 0;
 }
 SELVA_ONLOAD(EdgeConstraints_OnLoad);
-#endif

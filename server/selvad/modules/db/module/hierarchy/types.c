@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
+#include <sys/types.h>
 #include "util/selva_string.h"
+#include "selva_error.h"
+#include "selva_server.h"
 #include "selva_db.h"
 #include "selva_onload.h"
 #include "selva_object.h"
@@ -34,30 +37,17 @@ struct selva_string *SelvaHierarchyTypes_Get(struct SelvaHierarchy *hierarchy, c
     return out;
 }
 
-/* FIXME Commands */
-#if 0
-int SelvaHierarchyTypes_AddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaHierarchy *hierarchy;
-    RedisModuleString *type;
-    RedisModuleString *name;
+int SelvaHierarchyTypes_AddCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+    struct SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string *type;
+    struct selva_string *name;
     int err;
 
-    const int ARGV_KEY = 1;
     const int ARGV_TYPE = 2;
     const int ARGV_NAME = 3;
 
     if (argc != 4) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    /*
-     * Open the Redis key.
-     */
-    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
+        return selva_send_error_arity(resp);
     }
 
     type = argv[ARGV_TYPE];
@@ -65,73 +55,35 @@ int SelvaHierarchyTypes_AddCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     TO_STR(type, name);
 
     if (type_len != 2) {
-        return replyWithSelvaError(ctx, SELVA_EINTYPE);
+        return selva_send_error(resp, SELVA_EINTYPE, NULL, 0);
     }
 
     err = SelvaHierarchyTypes_Add(hierarchy, type_str, name_str, name_len);
     if (err) {
-        return replyWithSelvaError(ctx, err);
+        return selva_send_error(resp, err, NULL, 0);
     }
 
-    return RedisModule_ReplyWithLongLong(ctx, 1);
+    return selva_send_ll(resp, 1);
 }
 
-int SelvaHierarchyTypes_ClearCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaHierarchy *hierarchy;
-
-    const int ARGV_KEY = 1;
-
-    if (argc != SELVA_NODE_TYPE_SIZE) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    /*
-     * Open the Redis key.
-     */
-    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_KEY], REDISMODULE_READ | REDISMODULE_WRITE);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
+int SelvaHierarchyTypes_ClearCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+    struct SelvaHierarchy *hierarchy = main_hierarchy;
 
     SelvaHierarchyTypes_Clear(hierarchy);
-    return RedisModule_ReplyWithLongLong(ctx, 1);
+    return selva_send_ll(resp, 1);
 }
 
-int SelvaHierarchyTypes_ListCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct SelvaHierarchy *hierarchy;
+int SelvaHierarchyTypes_ListCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+    struct SelvaHierarchy *hierarchy = main_hierarchy;
 
-    const int ARGV_KEY = 1;
-
-    if (argc != 2) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    /*
-     * Open the Redis key.
-     */
-    hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        /* Do not send redis messages here. */
-        return REDISMODULE_OK;
-    }
-
-    return SelvaObject_ReplyWithObject(ctx, NULL, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL, 0);
+    return SelvaObject_ReplyWithObject(resp, NULL, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL, 0);
 }
 
-static int SelvaHierarchyTypes_OnLoad(RedisModuleCtx *ctx) {
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.types.add", SelvaHierarchyTypes_AddCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.types.clear", SelvaHierarchyTypes_ClearCommand, "write", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.types.list", SelvaHierarchyTypes_ListCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
+static int SelvaHierarchyTypes_OnLoad(void) {
+    selva_mk_command(33, "hierarchy.types.add", SelvaHierarchyTypes_AddCommand);
+    selva_mk_command(34, "hierarchy.types.clear", SelvaHierarchyTypes_ClearCommand);
+    selva_mk_command(35, "hierarchy.types.list", SelvaHierarchyTypes_ListCommand);
 
-    return REDISMODULE_OK;
+    return 0;
 }
 SELVA_ONLOAD(SelvaHierarchyTypes_OnLoad);
-#endif

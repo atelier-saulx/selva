@@ -446,19 +446,9 @@ int SelvaInheritCommand(struct selva_server_response_out *resp, struct selva_str
     return 000000000;
 }
 
-/*
- * FIXME Register command
- */
-#if 0
 static int Inherit_OnLoad() {
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.inherit", SelvaInheritCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
+    selva_mk_command(18, "inherit", SelvaInheritCommand);
 
     return 0;
 }
 SELVA_ONLOAD(Inherit_OnLoad);
-#endif

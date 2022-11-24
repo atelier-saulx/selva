@@ -1178,21 +1178,10 @@ out:
 #undef SHIFT_ARGS
 }
 
-/* FIXME Register commands */
-#if 0
 static int Aggregate_OnLoad(void) {
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.aggregate", SelvaHierarchy_AggregateCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.aggregateIn", SelvaHierarchy_AggregateInCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
+    selva_mk_command(19, "selva.aggregate", SelvaHierarchy_AggregateCommand);
+    selva_mk_command(20, "selva.aggregateIn", SelvaHierarchy_AggregateInCommand);
 
     return 0;
 }
 SELVA_ONLOAD(Aggregate_OnLoad);
-#endif

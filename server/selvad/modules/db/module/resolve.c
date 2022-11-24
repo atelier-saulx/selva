@@ -110,19 +110,9 @@ int SelvaResolve_NodeIdCommand(struct selva_server_response_out *resp, struct se
     return selva_send_str(resp, node_id, Selva_NodeIdLen(node_id));
 }
 
-/*
- * FIXME Register command
- */
-#if 0
-static int SelvaResolve_OnLoad(RedisModuleCtx *ctx) {
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.resolve.nodeid", SelvaResolve_NodeIdCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
+static int SelvaResolve_OnLoad(void) {
+    selva_mk_command(16, "resolve.nodeid", SelvaResolve_NodeIdCommand);
 
-    return REDISMODULE_OK;
+    return 0;
 }
 SELVA_ONLOAD(SelvaResolve_OnLoad);
-#endif

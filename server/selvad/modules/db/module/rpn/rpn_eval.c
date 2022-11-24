@@ -147,36 +147,28 @@ fail:
     return 0;
 }
 
-/* FIXME RPN Commands */
-#if 0
-int SelvaRpn_EvalBoolCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    return SelvaRpn_Eval(EVAL_TYPE_BOOL, ctx, argv, argc);
+int SelvaRpn_EvalBoolCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+    return SelvaRpn_Eval(EVAL_TYPE_BOOL, resp, argv, argc);
 }
 
-int SelvaRpn_EvalDoubleCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    return SelvaRpn_Eval(EVAL_TYPE_DOUBLE, ctx, argv, argc);
+int SelvaRpn_EvalDoubleCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+    return SelvaRpn_Eval(EVAL_TYPE_DOUBLE, resp, argv, argc);
 }
 
-int SelvaRpn_EvalStringCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    return SelvaRpn_Eval(EVAL_TYPE_STRING, ctx, argv, argc);
+int SelvaRpn_EvalStringCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+    return SelvaRpn_Eval(EVAL_TYPE_STRING, resp, argv, argc);
 }
 
-int SelvaRpn_EvalSetCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    return SelvaRpn_Eval(EVAL_TYPE_SET, ctx, argv, argc);
+int SelvaRpn_EvalSetCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+    return SelvaRpn_Eval(EVAL_TYPE_SET, resp, argv, argc);
 }
 
-static int RpnEval_OnLoad(RedisModuleCtx *ctx) {
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.rpn.evalbool", SelvaRpn_EvalBoolCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.rpn.evaldouble", SelvaRpn_EvalDoubleCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.rpn.evalstring", SelvaRpn_EvalStringCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.rpn.evalset", SelvaRpn_EvalSetCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
+static int RpnEval_OnLoad(void) {
+    selva_mk_command(41, "rpn.evalBool", SelvaRpn_EvalBoolCommand);
+    selva_mk_command(42, "rpn.evalDouble", SelvaRpn_EvalDoubleCommand);
+    selva_mk_command(43, "rpn.evalString", SelvaRpn_EvalStringCommand);
+    selva_mk_command(44, "rpn.evalSet", SelvaRpn_EvalSetCommand);
 
     return 0;
 }
 SELVA_ONLOAD(RpnEval_OnLoad);
-#endif

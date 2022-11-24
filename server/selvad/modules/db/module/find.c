@@ -2187,12 +2187,9 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
 #undef SHIFT_ARGS
 }
 
-/*
- * FIXME Register find command
- */
-#if 0
 static int Find_OnLoad(struct RedisModuleCtx *ctx) {
-    return RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaHierarchy_FindCommand, "readonly", 2, 2, 1);
+    selva_mk_command(17, "hierarchy.find", SelvaHierarchy_FindCommand);
+
+    return 0;
 }
 SELVA_ONLOAD(Find_OnLoad);
-#endif

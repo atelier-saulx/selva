@@ -1321,19 +1321,14 @@ static void mod_info(RedisModuleInfoCtx *ctx) {
 SELVA_MODINFO("find_index", mod_info);
 #endif
 
-/* FIXME Register commands */
-#if 0
 static int FindIndex_OnLoad(void) {
     lpf_a = lpf_geta((float)selva_glob_config.find_indexing_popularity_ave_period, (float)selva_glob_config.find_indexing_icb_update_interval / 1000.0f);
 
-    if (RedisModule_CreateCommand(ctx, "selva.index.list", SelvaFindIndex_ListCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.index.new", SelvaFindIndex_NewCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.index.del", SelvaFindIndex_DelCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.index.debug", SelvaFindIndex_DebugCommand, "readonly", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
+    selva_mk_command(36, "index.list", SelvaFindIndex_ListCommand);
+    selva_mk_command(37, "index.new", SelvaFindIndex_NewCommand);
+    selva_mk_command(38, "index.del", SelvaFindIndex_DelCommand);
+    selva_mk_command(39, "index.debug", SelvaFindIndex_DebugCommand);
 
     return 0;
 }
 SELVA_ONLOAD(FindIndex_OnLoad);
-#endif
