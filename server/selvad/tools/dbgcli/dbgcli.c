@@ -15,6 +15,14 @@
 
 #define PORT 3000
 
+enum selva_command_num {
+    SELVA_CMD_PING = 0,
+    SELVA_CMD_ECHO = 1,
+    SELVA_CMD_LSCMD = 2,
+    SELVA_CMD_LSLANG = 3,
+    SELVA_CMD_RESOLVE_NODEID = 16,
+};
+
 struct eztrie commands;
 static int seqno = 0;
 
@@ -126,7 +134,7 @@ static int ping(int sock)
     struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
 
     memset(hdr, 0, sizeof(*hdr));
-    hdr->cmd = 0;
+    hdr->cmd = SELVA_CMD_PING;
     hdr->flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST;
     hdr->seqno = htole32(seqno++);
     hdr->frame_bsize = htole16(sizeof(buf));
@@ -157,7 +165,7 @@ static int echo(int sock)
 
     for (int i = 0; i < n; i++) {
         memset(hdr, 0, sizeof(*hdr));
-        hdr->cmd = 1;
+        hdr->cmd = SELVA_CMD_ECHO;
         hdr->flags = (i == 0) ? SELVA_PROTO_HDR_FFIRST : (i == n - 1) ? SELVA_PROTO_HDR_FLAST : 0;
         hdr->seqno = seq;
         hdr->frame_bsize = htole16(sizeof(buf));
@@ -166,6 +174,53 @@ static int echo(int sock)
         if (send(sock, buf, sizeof(buf), i < n - 1 ? MSG_MORE: 0) != sizeof(buf)) {
             fprintf(stderr, "Send %d/%d failed\n", i, n);
         }
+    }
+
+    return 0;
+}
+
+static int selva_resolve(int sock)
+{
+    struct selva_proto_header *hdr;
+    struct selva_proto_string str_hdr = {
+        .type = SELVA_PROTO_STRING,
+        .flags = 0,
+        .bsize = htole32(0),
+    };
+    const char alias[] = "myalias";
+    _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header) + 2 * sizeof(struct selva_proto_string) + (sizeof(alias) - 1)];
+    char *p = buf;
+
+    memset(buf, 0, sizeof(buf));
+
+    hdr = (struct selva_proto_header *)buf;
+    hdr->cmd = SELVA_CMD_RESOLVE_NODEID;
+    hdr->flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST;
+    hdr->seqno = htole32(seqno++);
+    hdr->frame_bsize = htole16(sizeof(buf));
+    hdr->msg_bsize = 0; /* TODO Can we actually ever utilize this nicely? */
+    memcpy(p, &hdr, sizeof(hdr));
+    p += sizeof(hdr);
+
+    /*
+     * 0: subId
+     */
+    str_hdr.bsize = htole32(0);
+    memcpy(p, &str_hdr, sizeof(str_hdr));
+    p += sizeof(str_hdr);
+
+    /*
+     * 1: ref
+     */
+    str_hdr.bsize = htole32(sizeof(alias) - 1);
+    memcpy(p, &str_hdr, sizeof(str_hdr));
+    p += sizeof(str_hdr);
+    memcpy(p, alias, sizeof(alias) - 1);
+    p += sizeof(alias) - 1;
+
+    if (send(sock, buf, sizeof(buf), 0) != sizeof(buf)) {
+        fprintf(stderr, "Send failed\n");
+        return -1;
     }
 
     return 0;
@@ -197,6 +252,12 @@ static void print_echo(const uint8_t *msg, size_t msg_size)
     printf("\n");
 }
 
+static void print_selva_resolve(const uint8_t *msg, size_t msg_size)
+{
+    /* TODO */
+    print_echo(msg, msg_size);
+}
+
 int main(int argc, char const* argv[])
 {
      int sock = connect_to_server();
@@ -214,8 +275,12 @@ int main(int argc, char const* argv[])
              if (ping(sock) == -1) {
                  continue;
              }
-         } else if (cmd == 1) {
+         } else if (cmd == 1) { /* echo */
              if (echo(sock) == -1) {
+                 continue;
+             }
+         } else if (cmd == 16) { /* resolve.nodeId */
+             if (selva_resolve(sock) == -1) {
                  continue;
              }
          } else {
@@ -237,7 +302,7 @@ int main(int argc, char const* argv[])
                      struct selva_proto_string *s = (struct selva_proto_string *)msg;
 
                      if (le32toh(s->bsize) <= msg_size - sizeof(struct selva_proto_string)) {
-                        printf("%.*s\n", (int)s->bsize, s->str);
+                        printf("%.*s\n", (int)s->bsize, s->data);
                      } else {
                          fprintf(stderr, "Invalid string\n");
                      }
@@ -251,6 +316,9 @@ int main(int argc, char const* argv[])
          case 1: /* Echo */
              print_echo(msg, msg_size);
              break;
+         case 16: /* resolve.nodeId */
+             print_selva_resolve(msg, msg_size);
+             break;
          default:
              fprintf(stderr, "Unsupported command response\n");
          }
@@ -263,7 +331,7 @@ int main(int argc, char const* argv[])
 __constructor static void init(void)
 {
     eztrie_init(&commands);
-    eztrie_insert(&commands, "ping", (void *)0);
-    eztrie_insert(&commands, "echo", (void *)1);
-    eztrie_insert(&commands, "test", (void *)2);
+    eztrie_insert(&commands, "ping", (void *)SELVA_CMD_PING);
+    eztrie_insert(&commands, "echo", (void *)SELVA_CMD_ECHO);
+    eztrie_insert(&commands, "resolve.nodeid", (void *)SELVA_CMD_RESOLVE_NODEID);
 }

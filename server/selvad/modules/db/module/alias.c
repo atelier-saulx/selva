@@ -25,7 +25,7 @@ int get_alias_str(struct SelvaHierarchy *hierarchy, const char *ref_str, size_t 
     return selva_string2node_id(node_id, value);
 }
 
-int get_alias(struct SelvaHierarchy *hierarchy, struct selva_string *ref, Selva_NodeId node_id)
+int get_alias(struct SelvaHierarchy *hierarchy, const struct selva_string *ref, Selva_NodeId node_id)
 {
     TO_STR(ref);
 

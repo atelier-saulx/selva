@@ -443,11 +443,11 @@ int SelvaInheritCommand(struct selva_server_response_out *resp, struct selva_str
         SELVA_LOG(SELVA_LOGL_ERR, "Inherit failed: %s", selva_strerror(err));
     }
 
-    return 000000000;
+    return 0;
 }
 
 static int Inherit_OnLoad() {
-    selva_mk_command(18, "inherit", SelvaInheritCommand);
+    selva_mk_command(18, "hierarchy.inherit", SelvaInheritCommand);
 
     return 0;
 }

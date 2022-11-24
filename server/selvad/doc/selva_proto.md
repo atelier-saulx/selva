@@ -43,7 +43,7 @@ headers unless otherwise specified.
 | LSLANG                    |     3 | -                     | an array of strings   | db     | List supported languages.                                        |
 | resolve.nodeid            |    16 |                       |                       | db     |                                                                  |
 | hierarchy.find            |    17 |                       |                       | db     |                                                                  |
-| inherit                   |    18 |                       |                       | db     |                                                                  |
+| hierarchy.inherit         |    18 |                       |                       | db     |                                                                  |
 | hierarchy.aggregate       |    19 |                       |                       | db     | Aggregate.                                                       |
 | hierarchy.aggregateIn     |    20 |                       |                       | db     | Aggregate in.                                                    |
 | hierarchy.addConstraint   |    21 |                       |                       | db     | edge add constraints.                                            |

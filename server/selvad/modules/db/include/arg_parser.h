@@ -20,6 +20,19 @@ struct SelvaArgParser_EnumType {
 };
 
 /**
+ * Parse a selva proto buffer into selva_strings.
+ * Parse and flatten a message buffer `buf` containing only strings and string
+ * arrays into an array of selva_string pointers.
+ * Returned strings may be removed from the finalizer `fin` individually.
+ * Also the output list `out` is added to the finalizer.
+ * @param buf is a message buffer supposed to contain selva proto values.
+ * @param bsize is the size of buf in bytes.
+ * @param[out] out is pointer to the variable that will store the array of selva_string pointers.
+ * @returns If successful, returns the number of strings in out; Otherwise an error code is returned.
+ */
+int SelvaArgParser_buf2strings(struct finalizer *fin, const char *buf, size_t bsize, selva_stringList *out);
+
+/**
  * Parse an option with key string.
  * TXT INT_VALUE
  * @param value[out] pointer to a storage for the parser ssize_t value.

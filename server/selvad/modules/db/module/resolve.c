@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "util/selva_string.h"
+#include "util/finalizer.h"
 #include "selva_error.h"
 #include "selva_server.h"
 #include "arg_parser.h"
@@ -65,22 +66,34 @@ int SelvaResolve_NodeId(
 /*
  * HIERARCHY_KEY SUB_ID IDS...
  */
-int SelvaResolve_NodeIdCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    const size_t ARGV_SUB_ID = 2;
-    const size_t ARGV_IDS = 3;
-
-    if (argc < (int)ARGV_IDS + 1) {
-        return selva_send_error_arity(resp);
-    }
-
+void SelvaResolve_NodeIdCommand(struct selva_server_response_out *resp, const char *buf, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
+    __auto_finalizer struct finalizer fin;
+    struct selva_string **argv = NULL;
+    int argc;
+
+    finalizer_init(&fin);
+
+    const size_t ARGV_SUB_ID = 0;
+    const size_t ARGV_IDS = 1;
+
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc < (int)ARGV_IDS + 1) {
+        selva_send_error_arity(resp);
+        return;
+    }
 
     Selva_NodeId node_id;
     const int resolved = SelvaResolve_NodeId(hierarchy, argv + ARGV_IDS, argc - ARGV_IDS, node_id);
     if (resolved == SELVA_ENOENT) {
-        return selva_send_null(resp);
+        selva_send_null(resp);
+        return;
     } else if (resolved < 0) {
-        return selva_send_errorf(resp, resolved, "Resolve failed");
+        selva_send_errorf(resp, resolved, "Resolve failed");
+        return;
     }
 
     const struct selva_string *argv_sub_id = argv[ARGV_SUB_ID];
@@ -94,20 +107,22 @@ int SelvaResolve_NodeIdCommand(struct selva_server_response_out *resp, struct se
 
         err = SelvaArgParser_SubscriptionId(sub_id, argv_sub_id);
         if (err) {
-            return selva_send_errorf(resp, err, "Invalid sub_id \"%s\"\n", argv_sub_id_str);
+            selva_send_errorf(resp, err, "Invalid sub_id \"%s\"\n", argv_sub_id_str);
+            return;
         }
 
         err = Selva_AddSubscriptionAliasMarker(hierarchy, sub_id, marker_id, alias_name, node_id);
         if (err && err != SELVA_SUBSCRIPTIONS_EEXIST) {
-            return selva_send_errorf(resp, err, "Failed to subscribe sub_id: \"%s.%d\" alias_name: %s node_id: %.*s\n",
-                                     argv_sub_id_str,
-                                     (int)marker_id,
-                                     selva_string_to_str(alias_name, NULL),
-                                     (int)SELVA_NODE_ID_SIZE, node_id);
+            selva_send_errorf(resp, err, "Failed to subscribe sub_id: \"%s.%d\" alias_name: %s node_id: %.*s\n",
+                              argv_sub_id_str,
+                              (int)marker_id,
+                              selva_string_to_str(alias_name, NULL),
+                              (int)SELVA_NODE_ID_SIZE, node_id);
+            return;
         }
     }
 
-    return selva_send_str(resp, node_id, Selva_NodeIdLen(node_id));
+    selva_send_str(resp, node_id, Selva_NodeIdLen(node_id));
 }
 
 static int SelvaResolve_OnLoad(void) {

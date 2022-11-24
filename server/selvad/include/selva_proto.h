@@ -61,7 +61,7 @@ enum selva_proto_data_type {
     SELVA_PROTO_LONGLONG = 3, /*!< A 64-bit integer value. */
     SELVA_PROTO_STRING = 4, /*!< A string or binary blob. */
     SELVA_PROTO_ARRAY = 5, /*!< Begin an array. */
-    SELVA_PROTO_ARRAY_END = 5, /*!< Terminates an array of unknown length. */
+    SELVA_PROTO_ARRAY_END = 6, /*!< Terminates an array of unknown length. */
 } __attribute__((packed));
 
 /**

@@ -12,6 +12,7 @@
 #define SELVA_SERVER_EXPORT(_ret_, _fun_name_, ...) _ret_ (*_fun_name_)(__VA_ARGS__) EVL_COMMON
 #endif
 
+enum selva_proto_data_type;
 struct selva_server_response_out;
 struct selva_string;
 
@@ -75,19 +76,31 @@ SELVA_SERVER_EXPORT(int, selva_send_bin, struct selva_server_response_out *resp,
  */
 SELVA_SERVER_EXPORT(int, selva_send_array, struct selva_server_response_out *resp, int len);
 
+/**
+ * Terminate a variable length array.
+ * Call this only if len was set -1.
+ */
 SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out *res);
+
+SELVA_SERVER_EXPORT(int, selva_parse_vtype, const char *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out);
 
 #define _import_selva_server(apply) \
     apply(selva_mk_command) \
     apply(server_send_buf) \
     apply(server_send_flush) \
     apply(server_send_end) \
+    apply(selva_send_null) \
     apply(selva_send_error) \
+    apply(selva_send_errorf) \
     apply(selva_send_double) \
     apply(selva_send_ll) \
     apply(selva_send_str) \
+    apply(selva_send_strf) \
+    apply(selva_send_string) \
+    apply(selva_send_bin) \
     apply(selva_send_array) \
-    apply(selva_send_array_end)
+    apply(selva_send_array_end) \
+    apply(selva_parse_vtype)
 
 #define _import_selva_server1(f) \
     evl_import(f, "modules/server.so");
