@@ -309,7 +309,6 @@ static void on_connection(struct event *event, void *arg __unused)
 
 IMPORT() {
     evl_import_main(selva_log);
-    evl_import_main(selva_strerror);
     evl_import_event_loop();
 }
 

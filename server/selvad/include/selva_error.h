@@ -166,4 +166,8 @@
 /* This must be the last error */
 #define SELVA_INVALID_ERROR             (-38)
 
-EVL_EXPORT(const char *, selva_strerror, int err);
+/**
+ * Selva error code to string.
+ * Implemented in libutil.
+ */
+const char *selva_strerror(int err);

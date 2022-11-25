@@ -9,7 +9,6 @@ OBJ := \
 	   main.o \
 	   module.o \
 	   promise.o \
-	   selva_error.o \
 	   selva_log.o \
 	   timers.o
 
