@@ -46,15 +46,13 @@ int SelvaArgParser_buf2strings(struct finalizer *fin, const char *buf, size_t bs
         if (type == SELVA_PROTO_STRING) {
             struct selva_string *s;
 
-            s = selva_string_create(buf + i, data_len, 0);
+            s = selva_string_create(buf + i - data_len, data_len, 0);
             selva_string_auto_finalize(fin, s);
 
             list_len++;
             list = selva_realloc(list, list_len * sizeof(struct selva_string *));
             list[list_len - 1] = s;
             *out = list;
-
-            i += data_len;
         } else if (type == SELVA_PROTO_ARRAY || type == SELVA_PROTO_ARRAY_END) {
             /* NOP */
         } else {
@@ -63,7 +61,11 @@ int SelvaArgParser_buf2strings(struct finalizer *fin, const char *buf, size_t bs
         }
     }
 
-    finalizer_add(fin, out, selva_free);
+    if (!out) {
+        return SELVA_EINVAL;
+    }
+
+    finalizer_add(fin, list, selva_free);
     *out = list;
     return list_len;
 }
