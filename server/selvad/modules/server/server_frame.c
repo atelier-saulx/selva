@@ -164,7 +164,6 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
 {
     int fd = ctx->fd;
     ssize_t r;
-    ssize_t frame_bsize;
 
     /* TODO We might want to do this in a single read and add more buffering to reduce syscall overhead. */
     r = read(fd, &ctx->recv_frame_hdr_buf, sizeof(ctx->recv_frame_hdr_buf));
@@ -175,34 +174,32 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
         return SELVA_PROTO_EBADMSG;
     }
 
-    frame_bsize = le16toh(ctx->recv_frame_hdr_buf.frame_bsize); /* We know it's aligned. */
-    if (frame_bsize > SELVA_PROTO_FRAME_SIZE_MAX) {
+    const ssize_t frame_bsize = le16toh(ctx->recv_frame_hdr_buf.frame_bsize); /* We know it's aligned. */
+    const size_t frame_payload_size = frame_bsize - sizeof(struct selva_proto_header);
+    if (frame_payload_size == 0 || frame_payload_size > SELVA_PROTO_FRAME_SIZE_MAX) {
         return SELVA_PROTO_EBADMSG;
     }
 
-    const size_t frame_payload_size = frame_bsize - sizeof(struct selva_proto_header);
-    if (frame_payload_size > 0) {
-        /*
-         * Enlarge the message buffer if necessary.
-         */
-        if (frame_payload_size > ctx->recv_msg_buf_size - ctx->recv_msg_buf_i) {
-            const size_t new_buf_size = ctx->recv_msg_buf_size + frame_payload_size;
+    /*
+     * Enlarge the message buffer if necessary.
+     */
+    if (frame_payload_size > ctx->recv_msg_buf_size - ctx->recv_msg_buf_i) {
+        const size_t new_buf_size = ctx->recv_msg_buf_size + frame_payload_size;
 
-            ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, new_buf_size);
-            ctx->recv_msg_buf_size = new_buf_size;
-        }
-
-        r = read(fd, ctx->recv_msg_buf + ctx->recv_msg_buf_i, frame_payload_size);
-        if (r <= 0) {
-            /* TODO Check if we want better error handling. */
-            return SELVA_PROTO_ECONNRESET;
-        } else if (r != (ssize_t)frame_payload_size) {
-            return SELVA_PROTO_EBADMSG;
-        }
-
-        ctx->recv_msg_buf_i += frame_payload_size;
-        /* TODO Check chk */
+        ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, new_buf_size);
+        ctx->recv_msg_buf_size = new_buf_size;
     }
+
+    r = read(fd, ctx->recv_msg_buf + ctx->recv_msg_buf_i, frame_payload_size);
+    if (r <= 0) {
+        /* TODO Check if we want better error handling. */
+        return SELVA_PROTO_ECONNRESET;
+    } else if (r != (ssize_t)frame_payload_size) {
+        return SELVA_PROTO_EBADMSG;
+    }
+
+    ctx->recv_msg_buf_i += frame_payload_size;
+    /* TODO Check chk */
 
     return frame_bsize;
 }
