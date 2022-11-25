@@ -10,8 +10,9 @@
 #include <unistd.h>
 #include "cdefs.h"
 #include "endian.h"
-#include "util/eztrie.h"
+#include "selva_error.h"
 #include "selva_proto.h"
+#include "util/eztrie.h"
 
 #define PORT 3000
 
@@ -192,11 +193,10 @@ static int selva_resolve(int sock)
     struct selva_proto_string str_hdr = {
         .type = SELVA_PROTO_STRING,
         .flags = 0,
-        .bsize = htole32(0),
     };
     const char alias[] = "myalias";
     _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header) + 2 * sizeof(struct selva_proto_string) + (sizeof(alias) - 1)];
-    char *p = buf;
+    char *p = buf + sizeof(*hdr);
 
     memset(buf, 0, sizeof(buf));
 
@@ -206,23 +206,19 @@ static int selva_resolve(int sock)
     hdr->seqno = htole32(seqno++);
     hdr->frame_bsize = htole16(sizeof(buf));
     hdr->msg_bsize = 0; /* TODO Can we actually ever utilize this nicely? */
-    p += sizeof(hdr);
 
     /*
      * 0: subId
      */
     str_hdr.bsize = htole32(0);
-    memcpy(p, &str_hdr, sizeof(str_hdr));
-    p += sizeof(str_hdr);
+    p = memcpy(p, &str_hdr, sizeof(str_hdr)) + sizeof(str_hdr);
 
     /*
      * 1: ref
      */
     str_hdr.bsize = htole32(sizeof(alias) - 1);
-    memcpy(p, &str_hdr, sizeof(str_hdr));
-    p += sizeof(str_hdr);
-    memcpy(p, alias, sizeof(alias) - 1);
-    p += sizeof(alias) - 1;
+    p = memcpy(p, &str_hdr, sizeof(str_hdr)) + sizeof(str_hdr);
+    p = memcpy(p, alias, sizeof(alias) - 1) + (sizeof(alias) - 1);
 
     if (send(sock, buf, sizeof(buf), 0) != sizeof(buf)) {
         fprintf(stderr, "Send failed\n");
@@ -232,7 +228,7 @@ static int selva_resolve(int sock)
     return 0;
 }
 
-static void print_echo(const uint8_t *msg, size_t msg_size)
+static void print_echo(const void *msg, size_t msg_size)
 {
     const char *p = (const char *)msg;
     ssize_t left = msg_size;
@@ -260,9 +256,8 @@ static void print_echo(const uint8_t *msg, size_t msg_size)
     printf("\n");
 }
 
-static void print_selva_resolve(const uint8_t *msg, size_t msg_size)
+static void print_selva_resolve(const void *msg, size_t msg_size)
 {
-    size_t list_len = 0;
     size_t i = 0;
 
     while (i < msg_size) {
@@ -279,13 +274,26 @@ static void print_selva_resolve(const uint8_t *msg, size_t msg_size)
         i += off;
 
         if (type == SELVA_PROTO_ERROR) {
-            fprintf(stderr, "%.*s\n", (int)data_len, msg + i - data_len);
+            const char *err_msg_str;
+            size_t err_msg_len;
+            int err, err1;
+
+            err = selva_proto_parse_error(msg, msg_size, i - off, &err1, &err_msg_str, &err_msg_len);
+            if (err) {
+                fprintf(stderr, "Failed to parse an error received: %s\n", selva_strerror(err));
+            } else {
+                fprintf(stderr, "%.*s: %s\n",
+                        (int)err_msg_len, err_msg_str,
+                        selva_strerror(err1));
+            }
         } else if (type == SELVA_PROTO_STRING) {
-            printf("%.*s", (int)data_len, msg + i - data_len);
+            printf("%.*s", (int)data_len, (char *)msg + i - data_len);
         } else if (type == SELVA_PROTO_ARRAY || type == SELVA_PROTO_ARRAY_END) {
             /* NOP */
+        } else if (type == SELVA_PROTO_NULL) {
+            printf("ENOENT\n");
         } else {
-            fprintf(stderr, "Unexpected response\n");
+            fprintf(stderr, "Unexpected response value type: %d\n", (int)type);
             return;
         }
     }
@@ -303,7 +311,7 @@ int main(int argc, char const* argv[])
      for (cmd_fn cmd = get_cmd(); cmd != quit; cmd = get_cmd()) {
          int resp_cmd;
          size_t msg_size;
-         uint8_t *msg;
+         void *msg;
 
          if (!cmd) {
              continue;
