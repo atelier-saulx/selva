@@ -189,7 +189,6 @@ static void lslang(struct selva_server_response_out *resp, const char *buf __unu
     const char msg[] = "test";
 
     selva_send_str(resp, msg, sizeof(msg) - 1);
-    server_send_end(resp);
 }
 
 static int SelvaLang_OnLoad(void) {

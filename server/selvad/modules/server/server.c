@@ -246,12 +246,10 @@ static void on_data(struct event *event, void *arg)
             const char msg[] = "Invalid command";
 
             SELVA_LOG(SELVA_LOGL_WARN, "%s: %d\n", msg, hdr->cmd);
-
             (void)selva_send_error(&resp, SELVA_PROTO_EINVAL, msg, sizeof(msg) - 1);
-            server_send_end(&resp);
-            return;
         }
 
+        server_send_end(&resp);
         ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
     } else {
         ctx->recv_state = CONN_CTX_RECV_STATE_FRAGMENT;

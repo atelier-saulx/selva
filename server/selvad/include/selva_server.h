@@ -36,18 +36,18 @@ SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, const char *name, selva_cmd_f
  * data within a sequence will be always delivered in the sending order.
  * @returns Return bytes sent; Otherwise an error.
  */
-SELVA_SERVER_EXPORT(ssize_t, server_send_buf, struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len);
+ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len);
 
 /**
  * Flush the response buffer.
  */
-SELVA_SERVER_EXPORT(int, server_send_flush, struct selva_server_response_out *restrict res);
+int server_send_flush(struct selva_server_response_out *restrict res);
 
 /**
  * End sending a response.
  * Finalizes the response sequence.
  */
-SELVA_SERVER_EXPORT(int, server_send_end, struct selva_server_response_out *restrict res);
+int server_send_end(struct selva_server_response_out *restrict res);
 
 /**
  * Send a null value.
@@ -86,9 +86,6 @@ SELVA_SERVER_EXPORT(int, selva_parse_vtype, const char *buf, size_t bsize, size_
 
 #define _import_selva_server(apply) \
     apply(selva_mk_command) \
-    apply(server_send_buf) \
-    apply(server_send_flush) \
-    apply(server_send_end) \
     apply(selva_send_null) \
     apply(selva_send_error) \
     apply(selva_send_errorf) \
