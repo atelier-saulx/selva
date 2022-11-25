@@ -63,7 +63,7 @@ int selva_send_errorf(struct selva_server_response_out *resp, int err, const cha
     }
 
     size_t bsize = sizeof(struct selva_proto_error) + len;
-    struct selva_proto_error *buf = alloca(bsize);
+    struct selva_proto_error *buf = alloca(bsize + 1);
     *buf = (struct selva_proto_error){
         .type = SELVA_PROTO_ERROR,
         .err_code = htole16(err),
@@ -71,7 +71,7 @@ int selva_send_errorf(struct selva_server_response_out *resp, int err, const cha
     };
 
     va_start(args, fmt);
-    (void)vsnprintf(buf->msg, len, fmt, args);
+    (void)vsnprintf(buf->msg, len + 1, fmt, args);
     va_end(args);
 
     return server_send_buf(resp, buf, bsize);
@@ -131,7 +131,7 @@ int selva_send_strf(struct selva_server_response_out *resp, const char *fmt, ...
     }
 
     const size_t bsize = sizeof(struct selva_proto_string) + len;
-    struct selva_proto_string *buf = alloca(bsize);
+    struct selva_proto_string *buf = alloca(bsize + 1);
 
     *buf = (struct selva_proto_string){
         .type = SELVA_PROTO_STRING,
@@ -139,7 +139,7 @@ int selva_send_strf(struct selva_server_response_out *resp, const char *fmt, ...
     };
 
     va_start(args, fmt);
-    (void)vsnprintf(buf->data, len, fmt, args);
+    (void)vsnprintf(buf->data, len + 1, fmt, args);
     va_end(args);
 
     return server_send_buf(resp, buf, bsize);
