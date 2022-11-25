@@ -170,7 +170,7 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
     if (r <= 0) {
         /* TODO Check if we want better error handling. */
         return SELVA_PROTO_ECONNRESET;
-    } else if (r < (ssize_t)sizeof(struct selva_proto_header)) {
+    } else if (r != (ssize_t)sizeof(struct selva_proto_header)) {
         return SELVA_PROTO_EBADMSG;
     }
 
@@ -181,7 +181,7 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
     }
 
     /*
-     * Enlarge the message buffer if necessary.
+     * Resize the message buffer if necessary.
      */
     if (frame_payload_size > ctx->recv_msg_buf_size - ctx->recv_msg_buf_i) {
         const size_t new_buf_size = ctx->recv_msg_buf_size + frame_payload_size;

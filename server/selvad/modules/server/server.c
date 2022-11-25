@@ -180,7 +180,7 @@ static void on_data(struct event *event, void *arg)
 
     ssize_t frame_bsize = server_recv_frame(ctx);
     if (frame_bsize <= 0) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed (fd: %d): %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed (fd: %d): %s",
                   fd, selva_strerror(frame_bsize));
         evl_end_fd(fd);
         return;
@@ -199,33 +199,35 @@ static void on_data(struct event *event, void *arg)
         if (!(frame_state & SELVA_PROTO_HDR_FFIRST)) {
             /* TODO Send an error */
             /* TODO Better log */
-            SELVA_LOG(SELVA_LOGL_WARN, "Sequence tracking error: %d\n",
+            SELVA_LOG(SELVA_LOGL_WARN, "Sequence tracking error: %d",
                       seqno);
             return;
         }
 
-        /* TODO Cap msg_bsize */
+        /*
+         * msg_bsize isn't necessarily set but if it is then we can alloc a
+         * big enough buffer right away.
+         */
         if (msg_bsize > SELVA_PROTO_MSG_SIZE_MAX) {
             /* TODO Send an error */
             return;
-        }
-        if (ctx->recv_msg_buf_size < msg_bsize) {
+        } else if (ctx->recv_msg_buf_size < msg_bsize) {
             ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, msg_bsize);
             ctx->recv_msg_buf_size = msg_bsize;
         }
     } else if (ctx->recv_state == CONN_CTX_RECV_STATE_FRAGMENT) {
         if (seqno != ctx->cur_seqno) {
-            SELVA_LOG(SELVA_LOGL_WARN, "Discarding an unexpected frame. seqno: %d\n", seqno);
+            SELVA_LOG(SELVA_LOGL_WARN, "Discarding an unexpected frame. seqno: %d", seqno);
             return;
         }
         if (frame_state & SELVA_PROTO_HDR_FFIRST) {
-            SELVA_LOG(SELVA_LOGL_WARN, "Received invalid frame. seqno: %d\n", seqno);
+            SELVA_LOG(SELVA_LOGL_WARN, "Received invalid frame. seqno: %d", seqno);
             /* TODO Send an error? */
             ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
             return;
         }
     } else {
-        SELVA_LOG(SELVA_LOGL_ERR, "Invalid connection state\n");
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid connection state");
         return;
     }
 
@@ -245,7 +247,7 @@ static void on_data(struct event *event, void *arg)
         } else {
             const char msg[] = "Invalid command";
 
-            SELVA_LOG(SELVA_LOGL_WARN, "%s: %d\n", msg, hdr->cmd);
+            SELVA_LOG(SELVA_LOGL_WARN, "%s: %d", msg, hdr->cmd);
             (void)selva_send_error(&resp, SELVA_PROTO_EINVAL, msg, sizeof(msg) - 1);
         }
 
@@ -286,7 +288,7 @@ static void on_connection(struct event *event, void *arg __unused)
      */
     if (!conn_ctx) {
         close(new_sockfd);
-        SELVA_LOG(SELVA_LOGL_WARN, "Maximum number of client connections reached\n");
+        SELVA_LOG(SELVA_LOGL_WARN, "Maximum number of client connections reached");
         return;
     }
 
