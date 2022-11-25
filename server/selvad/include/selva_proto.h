@@ -171,3 +171,9 @@ static_assert(sizeof(struct selva_proto_header) == (2 * sizeof(uint64_t)), "Head
 static_assert(__alignof__(struct selva_proto_header) == __alignof__(uint64_t), "Header must be aligned as a 64-bit integer");
 static_assert(sizeof(enum selva_proto_data_type) == 1, "data_type must be an 8-bit integer");
 static_assert(sizeof_field(struct selva_proto_string, flags) == 1, "string flags must be 8-bit wide");
+
+/**
+ * Parse type from a selva_ptoto value.
+ * Implemented in libutil.
+ */
+int selva_proto_parse_vtype(const char *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out);

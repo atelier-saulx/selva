@@ -7,12 +7,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#include "cdefs.h"
 #include "endian.h"
 #include "selva_error.h"
 #include "selva_proto.h"
 #include "util/selva_string.h"
-#include "selva_server.h"
-#include "server.h"
 
 /* FIXME check bsize before copying from buf */
 
@@ -96,7 +95,7 @@ static int (*const parse_hdr[])(const char *buf, size_t bsize, enum selva_proto_
     parse_hdr_array_end,
 };
 
-int selva_parse_vtype(const char *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out)
+int selva_proto_parse_vtype(const char *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out)
 {
     size_t msg_size = bsize - i; /* max guess */
     struct selva_proto_control ctrl;

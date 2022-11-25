@@ -35,7 +35,7 @@ int SelvaArgParser_buf2strings(struct finalizer *fin, const char *buf, size_t bs
         size_t data_len;
         int off;
 
-        off = selva_parse_vtype(buf, bsize, i, &type, &data_len);
+        off = selva_proto_parse_vtype(buf, bsize, i, &type, &data_len);
         if (off <= 0) {
             buf2strings_cleanup(fin, list, list_len);
             return off;

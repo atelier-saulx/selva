@@ -82,8 +82,6 @@ SELVA_SERVER_EXPORT(int, selva_send_array, struct selva_server_response_out *res
  */
 SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out *res);
 
-SELVA_SERVER_EXPORT(int, selva_parse_vtype, const char *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out);
-
 #define _import_selva_server(apply) \
     apply(selva_mk_command) \
     apply(selva_send_null) \
@@ -96,8 +94,7 @@ SELVA_SERVER_EXPORT(int, selva_parse_vtype, const char *buf, size_t bsize, size_
     apply(selva_send_string) \
     apply(selva_send_bin) \
     apply(selva_send_array) \
-    apply(selva_send_array_end) \
-    apply(selva_parse_vtype)
+    apply(selva_send_array_end)
 
 #define _import_selva_server1(f) \
     evl_import(f, "modules/server.so");

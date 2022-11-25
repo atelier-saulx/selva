@@ -4,7 +4,6 @@
 OBJ := \
 	   server.o \
 	   server_frame.o \
-	   server_parse.o \
 	   server_send.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -DSELVA_SERVER_MAIN=1
