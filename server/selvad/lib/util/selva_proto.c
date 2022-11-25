@@ -97,7 +97,7 @@ static int (*const parse_hdr[])(const char *buf, size_t bsize, enum selva_proto_
 
 int selva_proto_parse_vtype(const char *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out)
 {
-    size_t val_size = bsize - i; /* max guess */
+    size_t val_size = bsize - i; /* max size guess */
     struct selva_proto_control ctrl;
 
     if (val_size < sizeof(ctrl)) {
@@ -105,7 +105,7 @@ int selva_proto_parse_vtype(const char *buf, size_t bsize, size_t i, enum selva_
     }
 
     memcpy(&ctrl, buf + i, sizeof(ctrl));
-    if (ctrl.type >= 0 && ctrl.type <= SELVA_PROTO_ARRAY_END) {
+    if ((unsigned)ctrl.type <= num_elem(parse_hdr)) {
         return parse_hdr[ctrl.type](buf + i, val_size, type_out, len_out);
     }
 
