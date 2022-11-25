@@ -15,6 +15,8 @@
 
 #define PORT 3000
 
+typedef int (*cmd_fn)(int);
+
 enum selva_command_num {
     SELVA_CMD_PING = 0,
     SELVA_CMD_ECHO = 1,
@@ -64,7 +66,7 @@ static void clear_crlf(char *buf)
     }
 }
 
-static int get_cmd(void)
+static cmd_fn get_cmd(void)
 {
     char buf[80];
     struct eztrie_iterator it;
@@ -78,13 +80,13 @@ static int get_cmd(void)
         v = eztrie_remove_ithead(&it);
 
         if (v && !strcmp(v->key, buf)) {
-            return (int)v->p;
+            return v->p;
         } else {
             fprintf(stderr, "Unknown command\n");
         }
     }
 
-    return -1;
+    return NULL;
 }
 
 void *recv_message(int fd,int *cmd, size_t *msg_size)
@@ -126,6 +128,11 @@ void *recv_message(int fd,int *cmd, size_t *msg_size)
     *cmd = resp_hdr.cmd;
     *msg_size = i;
     return msg_buf;
+}
+
+static int quit(int sock __unused)
+{
+    return 0;
 }
 
 static int ping(int sock)
@@ -199,7 +206,6 @@ static int selva_resolve(int sock)
     hdr->seqno = htole32(seqno++);
     hdr->frame_bsize = htole16(sizeof(buf));
     hdr->msg_bsize = 0; /* TODO Can we actually ever utilize this nicely? */
-    memcpy(p, &hdr, sizeof(hdr));
     p += sizeof(hdr);
 
     /*
@@ -229,11 +235,11 @@ static int selva_resolve(int sock)
 static void print_echo(const uint8_t *msg, size_t msg_size)
 {
     const char *p = (const char *)msg;
-    size_t left = msg_size;
+    ssize_t left = msg_size;
 
     while (left > sizeof(struct selva_proto_string)) {
         struct selva_proto_string hdr;
-        size_t bsize;
+        ssize_t bsize;
 
         memcpy(&hdr, p, sizeof(hdr));
         left -= sizeof(hdr);
@@ -242,7 +248,9 @@ static void print_echo(const uint8_t *msg, size_t msg_size)
         bsize = le32toh(hdr.bsize);
         if (hdr.type != SELVA_PROTO_STRING ||
             bsize > left) {
-            fprintf(stderr, "Invalid string\n");
+            fprintf(stderr, "Invalid string (type: %d bsize: %zd buf_size: %zd)\n",
+                    hdr.type, bsize, left);
+            return;
         }
 
         printf("%.*s", (int)bsize, p);
@@ -254,8 +262,34 @@ static void print_echo(const uint8_t *msg, size_t msg_size)
 
 static void print_selva_resolve(const uint8_t *msg, size_t msg_size)
 {
-    /* TODO */
-    print_echo(msg, msg_size);
+    size_t list_len = 0;
+    size_t i = 0;
+
+    while (i < msg_size) {
+        enum selva_proto_data_type type;
+        size_t data_len;
+        int off;
+
+        off = selva_proto_parse_vtype(msg, msg_size, i, &type, &data_len);
+        if (off <= 0) {
+            fprintf(stderr, "Err\n");
+            return;
+        }
+
+        i += off;
+
+        if (type == SELVA_PROTO_ERROR) {
+            fprintf(stderr, "%.*s\n", (int)data_len, msg + i - data_len);
+        } else if (type == SELVA_PROTO_STRING) {
+            printf("%.*s", (int)data_len, msg + i - data_len);
+        } else if (type == SELVA_PROTO_ARRAY || type == SELVA_PROTO_ARRAY_END) {
+            /* NOP */
+        } else {
+            fprintf(stderr, "Unexpected response\n");
+            return;
+        }
+    }
+
 }
 
 int main(int argc, char const* argv[])
@@ -266,35 +300,25 @@ int main(int argc, char const* argv[])
          exit(EXIT_FAILURE);
      }
 
-     for (int cmd = get_cmd(); cmd != -2; cmd = get_cmd()) {
+     for (cmd_fn cmd = get_cmd(); cmd != quit; cmd = get_cmd()) {
          int resp_cmd;
          size_t msg_size;
          uint8_t *msg;
 
-         if (cmd == 0 || cmd == 2) { /* ping */
-             if (ping(sock) == -1) {
-                 continue;
-             }
-         } else if (cmd == 1) { /* echo */
-             if (echo(sock) == -1) {
-                 continue;
-             }
-         } else if (cmd == 16) { /* resolve.nodeId */
-             if (selva_resolve(sock) == -1) {
-                 continue;
-             }
-         } else {
+         if (!cmd) {
+             continue;
+         } else if (cmd(sock) == -1) {
              continue;
          }
 
          msg = recv_message(sock, &resp_cmd, &msg_size);
          if (!msg) {
-             fprintf(stderr, "Reading response failed");
+             fprintf(stderr, "Reading response failed\n");
              continue;
          }
 
          switch (resp_cmd) {
-         case 0: /* Ping */
+         case SELVA_CMD_PING:
              if (msg_size >= sizeof(struct selva_proto_control)) {
                  struct selva_proto_control *ctrl = (struct selva_proto_control *)msg;
 
@@ -313,10 +337,10 @@ int main(int argc, char const* argv[])
                  fprintf(stderr, "Response is shorter than expected\n");
              }
              break;
-         case 1: /* Echo */
+         case SELVA_CMD_ECHO:
              print_echo(msg, msg_size);
              break;
-         case 16: /* resolve.nodeId */
+         case SELVA_CMD_RESOLVE_NODEID:
              print_selva_resolve(msg, msg_size);
              break;
          default:
@@ -331,7 +355,8 @@ int main(int argc, char const* argv[])
 __constructor static void init(void)
 {
     eztrie_init(&commands);
-    eztrie_insert(&commands, "ping", (void *)SELVA_CMD_PING);
-    eztrie_insert(&commands, "echo", (void *)SELVA_CMD_ECHO);
-    eztrie_insert(&commands, "resolve.nodeid", (void *)SELVA_CMD_RESOLVE_NODEID);
+    eztrie_insert(&commands, "quit", quit);
+    eztrie_insert(&commands, "ping", ping);
+    eztrie_insert(&commands, "echo", echo);
+    eztrie_insert(&commands, "resolve.nodeid", selva_resolve);
 }
