@@ -13,21 +13,22 @@
 #include <time.h>
 #include <unistd.h>
 #include "jemalloc.h"
+#include "libdeflate.h"
+#include "selva_error.h"
+#include "selva_log.h"
+#include "selva_server.h"
 #include "util/bitmap.h"
 #include "util/cstrings.h"
 #include "util/finalizer.h"
 #include "util/selva_string.h"
 #include "util/svector.h"
 #include "util/timestamp.h"
-#include "selva_error.h"
-#include "selva_log.h"
-#include "selva_server.h"
-#include "selva_db.h"
+#include "arg_parser.h"
 #include "async_task.h"
 #include "comparator.h"
 #include "config.h"
-#include "libdeflate.h"
 #include "hierarchy.h"
+#include "selva_db.h"
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"
@@ -719,7 +720,6 @@ static int update_set(
     const struct selva_string *field,
     const struct SelvaModify_OpSet *setOpts
 ) {
-    TO_STR(field);
     int res = 0;
 
     if (setOpts->$value_len > 0) {
@@ -1378,7 +1378,7 @@ static enum selva_op_repl_state modify_edge_meta_op(
             }
         }
 
-        meta_field_value = selva_string_create(NULL, op->meta_field_value_str, op->meta_field_value_len);
+        meta_field_value = selva_string_create(op->meta_field_value_str, op->meta_field_value_len, 0);
         err = SelvaObject_SetStringStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, meta_field_value);
         if (err) {
             selva_string_free(meta_field_value);

@@ -11,7 +11,7 @@
  * @param v is a variable.
  * @returns a C string.
  */
-#define typeof_str(v) _Generic((0, v), \
+#define typeof_str(v) _Generic((v), \
     char: "char", \
     signed char: "signed char", \
     short: "short", \
