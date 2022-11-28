@@ -1445,9 +1445,14 @@ static size_t FindCommand_SendOrderedResult(
     return len;
 }
 
+/*
+ * RFE Delete this function.
+ */
+#if 0
 static size_t get_nr_out(enum SelvaMergeStrategy merge_strategy, size_t nr_nodes, size_t merge_nr_fields) {
     return (merge_strategy == MERGE_STRATEGY_NONE) ? nr_nodes : merge_nr_fields;
 }
+#endif
 
 static void postprocess_array(
         struct finalizer *fin,
@@ -1508,10 +1513,10 @@ static void postprocess_sort(
         ssize_t limit,
         struct SelvaNodeSendParam *args,
         SVector *result) {
-    size_t nr_nodes;
     size_t merge_nr_fields = 0;
 
-    nr_nodes = FindCommand_SendOrderedResult(fin, resp, hierarchy, lang, offset, limit, args, result, &merge_nr_fields);
+    /* returns nr_nodes */
+    (void)FindCommand_SendOrderedResult(fin, resp, hierarchy, lang, offset, limit, args, result, &merge_nr_fields);
     /* Sent  get_nr_out(args->merge_strategy, nr_nodes, merge_nr_fields) */
     selva_send_array_end(resp);
 }
@@ -1625,8 +1630,14 @@ static void postprocess_inherit(
  * The traversed field is typically either ancestors or descendants but it can
  * be any hierarchy or edge field.
  */
-static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    __auto_finalizer struct finalizer fin;
+    struct selva_string **argv;
+    int argc;
     int err;
+
+    finalizer_init(&fin);
 
     const int ARGV_LANG      = 1;
     const int ARGV_DIRECTION = 3;
@@ -1673,11 +1684,15 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    if (argc < 5) {
-        return selva_send_error_arity(resp);
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc < 5) {
+        selva_send_error_arity(resp);
+        return;
     }
 
-    __auto_finalizer struct finalizer fin;
     struct selva_string *lang = argv[ARGV_LANG];
     SVECTOR_AUTOFREE(traverse_result); /*!< for postprocessing the result. */
     __auto_free_rpn_ctx struct rpn_ctx *traversal_rpn_ctx = NULL;
@@ -1687,10 +1702,6 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
     __selva_autofree selva_stringList index_hints = NULL;
     int nr_index_hints = 0;
 
-    finalizer_init(&fin);
-
-    SelvaHierarchy *hierarchy = main_hierarchy;
-
     /*
      * Parse the traversal arguments.
      */
@@ -1699,7 +1710,7 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
     err = SelvaTraversal_ParseDir2(&dir, argv[ARGV_DIRECTION]);
     if (err) {
         selva_send_errorf(resp, err, "Traversal argument");
-        return 0;
+        return;
     }
     if (argc <= ARGV_REF_FIELD &&
         (dir & (SELVA_HIERARCHY_TRAVERSAL_ARRAY |
@@ -1709,7 +1720,7 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
                 SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
                 SELVA_HIERARCHY_TRAVERSAL_EXPRESSION))) {
         selva_send_error_arity(resp);
-        return 0;
+        return;
     }
     if (dir & (SELVA_HIERARCHY_TRAVERSAL_ARRAY |
                SELVA_HIERARCHY_TRAVERSAL_REF |
@@ -1725,7 +1736,8 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
         traversal_rpn_ctx = rpn_init(1);
         traversal_expression = rpn_compile(input_str);
         if (!traversal_expression) {
-            return selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the traversal expression");
+            selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the traversal expression");
+            return;
         }
         SHIFT_ARGS(1);
     }
@@ -1739,16 +1751,19 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
 
             if (!(dir & (SELVA_HIERARCHY_TRAVERSAL_EXPRESSION |
                          SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION))) {
-                return selva_send_errorf(resp, SELVA_EINVAL, "edge_filter can be only used with expression traversals");
+                selva_send_errorf(resp, SELVA_EINVAL, "edge_filter can be only used with expression traversals");
+                return;
             }
 
             edge_filter_ctx = rpn_init(1);
             edge_filter = rpn_compile(expr_str);
             if (!edge_filter) {
-                return selva_send_errorf(resp, SELVA_RPN_ECOMP, "edge_filter");
+                selva_send_errorf(resp, SELVA_RPN_ECOMP, "edge_filter");
+                return;
             }
         } else if (err != SELVA_ENOENT) {
-            return selva_send_errorf(resp, err, "edge_filter");
+            selva_send_errorf(resp, err, "edge_filter");
+            return;
         }
     }
 
@@ -1757,7 +1772,8 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
      */
     nr_index_hints = SelvaArgParser_IndexHints(&index_hints, argv + ARGV_INDEX_TXT, argc - ARGV_INDEX_TXT);
     if (nr_index_hints < 0) {
-        return selva_send_errorf(resp, nr_index_hints, "nr_index_hints");
+        selva_send_errorf(resp, nr_index_hints, "nr_index_hints");
+        return;
     } else if (nr_index_hints > 0) {
         SHIFT_ARGS(2 * nr_index_hints);
     }
@@ -1775,7 +1791,8 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
         if (err == 0) {
             SHIFT_ARGS(3);
         } else if (err != SELVA_HIERARCHY_ENOENT) {
-            return selva_send_errorf(resp, err, "order");
+            selva_send_errorf(resp, err, "order");
+            return;
         }
     }
 
@@ -1788,10 +1805,12 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return selva_send_errorf(resp, err, "offset");
+            selva_send_errorf(resp, err, "offset");
+            return;
         }
         if (offset < -1) {
-            return selva_send_errorf(resp, err, "offset < -1");
+            selva_send_errorf(resp, err, "offset < -1");
+            return;
         }
     }
 
@@ -1804,7 +1823,8 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return selva_send_errorf(resp, err, "limit");
+            selva_send_errorf(resp, err, "limit");
+            return;
         }
     }
 
@@ -1817,11 +1837,13 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
         err = SelvaArgParser_Enum(merge_types, argv[ARGV_MERGE_TXT]);
         if (err != SELVA_ENOENT) {
             if (err < 0) {
-                return selva_send_errorf(resp, err, "invalid merge argument");
+                selva_send_errorf(resp, err, "invalid merge argument");
+                return;
             }
 
             if (limit != -1) {
-                return selva_send_errorf(resp, err, "merge is not supported with limit");
+                selva_send_errorf(resp, err, "merge is not supported with limit");
+                return;
             }
 
             merge_strategy = err;
@@ -1851,7 +1873,8 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
                 fields_rpn_ctx = rpn_init(1);
                 fields_expression = rpn_compile(expr_str);
                 if (!fields_expression) {
-                    return selva_send_errorf(resp, SELVA_RPN_ECOMP, "fields_rpn");
+                    selva_send_errorf(resp, SELVA_RPN_ECOMP, "fields_rpn");
+                    return;
                 }
             }
         }
@@ -1864,11 +1887,13 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
                 /* Having fields set turns a regular merge into a named merge. */
                 merge_strategy = MERGE_STRATEGY_NAMED;
             } else if (merge_strategy != MERGE_STRATEGY_NONE) {
-                return selva_send_errorf(resp, err, "Only the regular merge can be used with fields");
+                selva_send_errorf(resp, err, "Only the regular merge can be used with fields");
+                return;
             }
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return selva_send_errorf(resp, err, "Parsing fields argument failed");
+            selva_send_errorf(resp, err, "Parsing fields argument failed");
+            return;
         }
     }
     if (merge_strategy != MERGE_STRATEGY_NONE && (!fields || SelvaTraversal_FieldsContains(fields, "*", 1))) {
@@ -1885,12 +1910,14 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
         err = SelvaArgsParser_StringList(&fin, &inherit_fields, "inherit", argv[ARGV_INHERIT_TXT], argv[ARGV_INHERIT_VAL]);
         if (err == 0) {
             if (merge_strategy != MERGE_STRATEGY_NONE) {
-                return selva_send_errorf(resp, SELVA_EINVAL, "inherit with merge not supported");
+                selva_send_errorf(resp, SELVA_EINVAL, "inherit with merge not supported");
+                return;
             }
 
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return selva_send_errorf(resp, err, "inherit");
+            selva_send_errorf(resp, err, "inherit");
+            return;
         } else {
             inherit_fields = NULL;
         }
@@ -1909,7 +1936,8 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
         rpn_ctx = rpn_init(nr_reg);
         filter_expression = rpn_compile(selva_string_to_str(argv_filter_expr, NULL));
         if (!filter_expression) {
-            return selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+            selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+            return;
         }
 
         /*
@@ -1926,7 +1954,8 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
     }
 
     if (argc <= ARGV_NODE_IDS) {
-        return selva_send_errorf(resp, SELVA_HIERARCHY_EINVAL, "node_ids");
+        selva_send_errorf(resp, SELVA_HIERARCHY_EINVAL, "node_ids");
+        return;
     }
 
     const struct selva_string *ids = argv[ARGV_NODE_IDS];
@@ -2182,12 +2211,10 @@ static int SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, st
         /* Sent get_nr_out(merge_strategy, nr_nodes, merge_nr_fields) */
         selva_send_array_end(resp);
     }
-
-    return 0;
 #undef SHIFT_ARGS
 }
 
-static int Find_OnLoad(struct RedisModuleCtx *ctx) {
+static int Find_OnLoad(void) {
     selva_mk_command(17, "hierarchy.find", SelvaHierarchy_FindCommand);
 
     return 0;
