@@ -9,6 +9,7 @@
 #include "jemalloc.h"
 #include "util/auto_free.h"
 #include "util/cstrings.h"
+#include "util/finalizer.h"
 #include "util/selva_string.h"
 #include "selva_error.h"
 #include "selva_io.h"
@@ -258,23 +259,33 @@ void EdgeConstraint_RdbSave(struct selva_io *io, struct EdgeFieldConstraints *da
     SelvaObjectTypeRDBSave(io, get_dyn_constraints(data), NULL);
 }
 
-int Edge_AddConstraintCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+void Edge_AddConstraintCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    __auto_finalizer struct finalizer fin;
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string **argv;
+    int argc;
+    int err;
+
+    finalizer_init(&fin);
+
     const int ARGV_SRC_NODE_TYPE = 2;
     const int ARGV_CONSTRAINT_FLAGS = 3;
     const int ARGV_FWD_FIELD = 4;
     const int ARGV_BCK_FIELD = 5;
-    int err;
 
-    if (argc != 6 && argc != 7) {
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc != 6 && argc != 7) {
         selva_send_error_arity(resp);
     }
-
-    SelvaHierarchy *hierarchy = main_hierarchy;
 
     Selva_NodeType src_type;
     err = SelvaArgParser_NodeType(src_type, argv[ARGV_SRC_NODE_TYPE]);
     if (err) {
-        return selva_send_errorf(resp, err, "source node type");
+        selva_send_errorf(resp, err, "source node type");
+        return;
     }
 
     size_t flags_len;
@@ -292,7 +303,8 @@ int Edge_AddConstraintCommand(struct selva_server_response_out *resp, struct sel
          EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL |
          EDGE_FIELD_CONSTRAINT_FLAG_DYNAMIC
         )) != 0) {
-        return selva_send_errorf(resp, SELVA_EINVAL, "constraint flags");
+        selva_send_errorf(resp, SELVA_EINVAL, "constraint flags");
+        return;
     }
 
     struct EdgeFieldDynConstraintParams params = {
@@ -304,35 +316,44 @@ int Edge_AddConstraintCommand(struct selva_server_response_out *resp, struct sel
 
     err = Edge_NewDynConstraint(&hierarchy->edge_field_constraints, &params);
     if (err == SELVA_EEXIST) {
-        return selva_send_ll(resp, 0);
+        selva_send_ll(resp, 0);
+        return;
     } else if (err) {
-        return selva_send_error(resp, err, NULL, 0);
+        selva_send_error(resp, err, NULL, 0);
+        return;
     } else {
         selva_send_ll(resp, 1);
 
         /* TODO replicate */
 #if 0
-        return RedisModule_ReplicateVerbatim(ctx);
+        RedisModule_ReplicateVerbatim(ctx);
 #endif
-        return 0;
     }
 }
 
-int Edge_ListConstraintsCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+void Edge_ListConstraintsCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    __auto_finalizer struct finalizer fin;
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string **argv;
+    int argc;
     int err;
 
-    if (argc != 2) {
-        return selva_send_error_arity(resp);
-    }
+    finalizer_init(&fin);
 
-    SelvaHierarchy *hierarchy = main_hierarchy;
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc != 2) {
+        selva_send_error_arity(resp);
+        return;
+    }
 
     err = SelvaObject_ReplyWithObject(resp, NULL, get_dyn_constraints(&hierarchy->edge_field_constraints), NULL, 0);
     if (err) {
-        return selva_send_error(resp, err, NULL, 0);
+        selva_send_error(resp, err, NULL, 0);
+        return;
     }
-
-    return 0;
 }
 
 static int EdgeConstraints_OnLoad(void) {
