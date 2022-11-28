@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include "util/base64.h"
+#include "util/selva_string.h"
 #include "util/svector.h"
 #include "selva_db.h"
 #include "traversal.h"
