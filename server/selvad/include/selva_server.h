@@ -22,7 +22,7 @@ struct selva_string;
  * @param buf is a pointer to the incoming message.
  * @param len is the length of the incoming message in bytes.
  */
-typedef void (*selva_cmd_function)(struct selva_server_response_out *resp, const char *buf, size_t len);
+typedef void (*selva_cmd_function)(struct selva_server_response_out *resp, const void *buf, size_t len);
 
 SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, const char *name, selva_cmd_function cmd);
 #define SELVA_MK_COMMAND(nr, cmd) \
@@ -67,7 +67,7 @@ SELVA_SERVER_EXPORT(int, selva_send_ll, struct selva_server_response_out *resp, 
 SELVA_SERVER_EXPORT(int, selva_send_str, struct selva_server_response_out *resp, const char *str, size_t len);
 SELVA_SERVER_EXPORT(int, selva_send_strf, struct selva_server_response_out *resp, const char *fmt, ...);
 SELVA_SERVER_EXPORT(int, selva_send_string, struct selva_server_response_out *resp, const struct selva_string *s);
-SELVA_SERVER_EXPORT(int, selva_send_bin, struct selva_server_response_out *resp, const char *b, size_t len);
+SELVA_SERVER_EXPORT(int, selva_send_bin, struct selva_server_response_out *resp, const void *b, size_t len);
 
 /**
  * If `len` is set negative then selva_proto_send_array_end() should be used to

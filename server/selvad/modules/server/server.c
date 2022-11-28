@@ -52,16 +52,16 @@ static selva_cmd_function get_command(int nr)
     return (nr >= 0 && nr < (int)num_elem(commands)) ? commands[nr].cmd_fn : NULL;
 }
 
-static void ping(struct selva_server_response_out *resp, const char *buf __unused, size_t size __unused) {
+static void ping(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused) {
     const char msg[] = "pong";
 
     selva_send_str(resp, msg, sizeof(msg) - 1);
     server_send_end(resp);
 }
 
-static void echo(struct selva_server_response_out *resp, const char *buf, size_t size) {
+static void echo(struct selva_server_response_out *resp, const void *buf, size_t size) {
     struct selva_proto_string hdr;
-    const char *p = buf;
+    const char *p = (char *)buf;
     size_t left = size;
 
     /* TODO Could also support receiving an array */
@@ -95,7 +95,7 @@ static void echo(struct selva_server_response_out *resp, const char *buf, size_t
     server_send_end(resp);
 }
 
-static void cmdlist(struct selva_server_response_out *resp, const char *buf __unused, size_t size __unused) {
+static void cmdlist(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused) {
     selva_send_array(resp, -1);
     for (size_t i = 0; i < num_elem(commands); i++) {
         if (commands[i].cmd_fn) {

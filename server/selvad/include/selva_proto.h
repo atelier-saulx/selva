@@ -176,5 +176,5 @@ static_assert(sizeof_field(struct selva_proto_string, flags) == 1, "string flags
  * Parse type from a selva_ptoto value.
  * Implemented in libutil.
  */
-int selva_proto_parse_vtype(const char *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out);
-int selva_proto_parse_error(const char *buf, size_t bsize, size_t i, int *err_out, const char **msg_str_out, size_t *msg_len_out);
+int selva_proto_parse_vtype(const void *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out);
+int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_out, const char **msg_str_out, size_t *msg_len_out);

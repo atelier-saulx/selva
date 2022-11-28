@@ -152,7 +152,7 @@ int selva_send_string(struct selva_server_response_out *resp, const struct selva
     return selva_send_str(resp, s_str, s_len);
 }
 
-int selva_send_bin(struct selva_server_response_out *resp, const char *b, size_t len)
+int selva_send_bin(struct selva_server_response_out *resp, const void *b, size_t len)
 {
     const size_t bsize = sizeof(struct selva_proto_string) + len;
     struct selva_proto_string *buf = alloca(bsize);

@@ -76,7 +76,7 @@ static void start_resp_frame_buf(struct selva_server_response_out *resp)
     resp->frame_flags &= ~SELVA_PROTO_HDR_FFMASK;
 }
 
-static void finalize_frame(char *buf, size_t bsize, int last_frame)
+static void finalize_frame(void *buf, size_t bsize, int last_frame)
 {
     struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
 
