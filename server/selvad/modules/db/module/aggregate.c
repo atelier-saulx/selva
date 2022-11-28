@@ -492,8 +492,11 @@ static size_t AggregateCommand_SendAggregateResult(const struct AggregateCommand
     return 0;
 }
 
-int SelvaHierarchy_AggregateCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+void SelvaHierarchy_AggregateCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     __auto_finalizer struct finalizer fin;
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string **argv;
+    int argc;
     int err;
 
     finalizer_init(&fin);
@@ -532,8 +535,13 @@ int SelvaHierarchy_AggregateCommand(struct selva_server_response_out *resp, stru
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    if (argc < 6) {
-        return selva_send_error_arity(resp);
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc < 6) {
+        selva_send_error_arity(resp);
+        return;
     }
 
     struct selva_string *lang = argv[ARGV_LANG];
@@ -546,8 +554,6 @@ int SelvaHierarchy_AggregateCommand(struct selva_server_response_out *resp, stru
     struct rpn_expression *filter_expression = NULL;
     __selva_autofree selva_stringList index_hints = NULL;
     int nr_index_hints = 0;
-
-    SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*
      * Parse the traversal arguments.
@@ -602,7 +608,8 @@ int SelvaHierarchy_AggregateCommand(struct selva_server_response_out *resp, stru
      */
     nr_index_hints = SelvaArgParser_IndexHints(&index_hints, argv + ARGV_INDEX_TXT, argc - ARGV_INDEX_TXT);
     if (nr_index_hints < 0) {
-        return selva_send_error(resp, nr_index_hints, NULL, 0);
+        selva_send_error(resp, nr_index_hints, NULL, 0);
+        return;
     } else if (nr_index_hints > 0) {
         SHIFT_ARGS(2 * nr_index_hints);
     }
@@ -922,8 +929,6 @@ out:
         rpn_destroy(rpn_ctx);
         rpn_destroy_expression(filter_expression);
     }
-
-    return 0;
 #undef SHIFT_ARGS
 }
 
@@ -931,8 +936,11 @@ out:
  * Find node in set.
  * SELVA.inherit REDIS_KEY NODE_ID [TYPE1[TYPE2[...]]] [FIELD_NAME1[ FIELD_NAME2[ ...]]]
  */
-int SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+void SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     __auto_finalizer struct finalizer fin;
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string **argv;
+    int argc;
     int err;
 
     finalizer_init(&fin);
@@ -962,12 +970,16 @@ int SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, st
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    if (argc < 6) {
-        return selva_send_error_arity(resp);
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc < 6) {
+        selva_send_error_arity(resp);
+        return;
     }
 
     struct selva_string *lang = argv[ARGV_LANG];
-    SelvaHierarchy *hierarchy = main_hierarchy;
 
     const enum SelvaHierarchy_AggregateType agg_fn_type = selva_string_to_str(argv[ARGV_AGG_FN], NULL)[0];
     double initial_double_val = 0;
@@ -991,7 +1003,8 @@ int SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, st
         if (err == 0) {
             SHIFT_ARGS(3);
         } else if (err != SELVA_HIERARCHY_ENOENT) {
-            return selva_send_errorf(resp, err, "order");
+            selva_send_errorf(resp, err, "order");
+            return;
         }
     }
 
@@ -1004,10 +1017,12 @@ int SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, st
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return selva_send_errorf(resp, err, "offset");
+            selva_send_errorf(resp, err, "offset");
+            return;
         }
         if (offset < -1) {
-            return selva_send_errorf(resp, err, "offset < -1");
+            selva_send_errorf(resp, err, "offset < -1");
+            return;
         }
     }
 
@@ -1020,7 +1035,8 @@ int SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, st
         if (err == 0) {
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return selva_send_errorf(resp, err, "limit");
+            selva_send_errorf(resp, err, "limit");
+            return;
         }
     }
 
@@ -1032,12 +1048,14 @@ int SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, st
         err = SelvaArgsParser_StringSetList(&fin, &fields, NULL, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
         if (err == 0) {
             if (SelvaObject_Len(fields, NULL) > 1) {
-                return selva_send_errorf(resp, err, "fields");
+                selva_send_errorf(resp, err, "fields");
+                return;
             }
 
             SHIFT_ARGS(2);
         } else if (err != SELVA_ENOENT) {
-            return selva_send_errorf(resp, err, "fields");
+            selva_send_errorf(resp, err, "fields");
+            return;
         }
     }
 
@@ -1060,7 +1078,8 @@ int SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, st
         filter_expression = rpn_compile(input);
         if (!filter_expression) {
             rpn_destroy(rpn_ctx);
-            return selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+            selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+            return;
         }
 
         /*
@@ -1173,8 +1192,6 @@ out:
         rpn_destroy(rpn_ctx);
         rpn_destroy_expression(filter_expression);
     }
-
-    return 0;
 #undef SHIFT_ARGS
 }
 
