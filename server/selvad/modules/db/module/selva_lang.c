@@ -185,8 +185,13 @@ static void SelvaLang_Reply(struct selva_server_response_out *resp, void *p) {
     selva_send_str(resp, slang->territory, strnlen(slang->territory, LANG_TERRITORY_MAX));
 }
 
-static void lslang(struct selva_server_response_out *resp, const char *buf __unused, size_t size __unused) {
+static void lslang(struct selva_server_response_out *resp, const void *buf __unused, size_t size) {
     const char msg[] = "test";
+
+    if (size != 0) {
+        selva_send_error_arity(resp);
+        return;
+    }
 
     selva_send_str(resp, msg, sizeof(msg) - 1);
 }
