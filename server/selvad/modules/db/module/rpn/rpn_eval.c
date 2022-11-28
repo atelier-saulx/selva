@@ -4,9 +4,11 @@
  */
 #include <stddef.h>
 #include <sys/types.h>
+#include "util/finalizer.h"
 #include "util/selva_string.h"
 #include "selva_error.h"
 #include "selva_server.h"
+#include "arg_parser.h"
 #include "selva_onload.h"
 #include "selva_set.h"
 #include "hierarchy.h"
@@ -19,19 +21,27 @@ enum SelvaRpnEvalType {
     EVAL_TYPE_SET,
 };
 
-static int SelvaRpn_Eval(enum SelvaRpnEvalType type, struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    struct SelvaHierarchy *hierarchy;
+static void SelvaRpn_Eval(enum SelvaRpnEvalType type, struct selva_server_response_out *resp, const void *buf, size_t len) {
+    __auto_finalizer struct finalizer fin;
+    struct SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string **argv = NULL;
+    int argc;
     enum rpn_error err;
+
+    finalizer_init(&fin);
 
     const int ARGV_KEY         = 1;
     const int ARGV_FILTER_EXPR = 2;
     const int ARGV_FILTER_ARGS = 3;
 
-    if (argc < 3) {
-        return selva_send_error_arity(resp);
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc < 3) {
+        selva_send_error_arity(resp);
+        return;
     }
-
-    hierarchy = main_hierarchy;
 
     /*
      * Prepare the filter expression.
@@ -43,7 +53,8 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, struct selva_server_respons
 
     rpn_ctx = rpn_init(nr_reg);
     if (!rpn_ctx) {
-        return selva_send_errorf(resp, SELVA_ENOMEM, "filter expression");
+        selva_send_errorf(resp, SELVA_ENOMEM, "filter expression");
+        return;
     }
 
     /*
@@ -53,7 +64,8 @@ static int SelvaRpn_Eval(enum SelvaRpnEvalType type, struct selva_server_respons
     filter_expression = rpn_compile(input);
     if (!filter_expression) {
         rpn_destroy(rpn_ctx);
-        return selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+        selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+        return;
     }
 
     /* Set reg[0] */
@@ -143,24 +155,22 @@ fail:
         rpn_destroy_expression(filter_expression);
         rpn_destroy(rpn_ctx);
     }
-
-    return 0;
 }
 
-int SelvaRpn_EvalBoolCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    return SelvaRpn_Eval(EVAL_TYPE_BOOL, resp, argv, argc);
+void SelvaRpn_EvalBoolCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    SelvaRpn_Eval(EVAL_TYPE_BOOL, resp, buf, len);
 }
 
-int SelvaRpn_EvalDoubleCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    return SelvaRpn_Eval(EVAL_TYPE_DOUBLE, resp, argv, argc);
+void SelvaRpn_EvalDoubleCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    SelvaRpn_Eval(EVAL_TYPE_DOUBLE, resp, buf, len);
 }
 
-int SelvaRpn_EvalStringCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    return SelvaRpn_Eval(EVAL_TYPE_STRING, resp, argv, argc);
+void SelvaRpn_EvalStringCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    SelvaRpn_Eval(EVAL_TYPE_STRING, resp, buf, len);
 }
 
-int SelvaRpn_EvalSetCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    return SelvaRpn_Eval(EVAL_TYPE_SET, resp, argv, argc);
+void SelvaRpn_EvalSetCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    SelvaRpn_Eval(EVAL_TYPE_SET, resp, buf, len);
 }
 
 static int RpnEval_OnLoad(void) {
