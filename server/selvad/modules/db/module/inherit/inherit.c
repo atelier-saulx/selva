@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "util/cstrings.h"
+#include "util/finalizer.h"
 #include "util/selva_string.h"
 #include "util/svector.h"
 #include "selva_error.h"
@@ -360,18 +361,28 @@ size_t inheritHierarchyFields(
  * Find node in set.
  * SELVA.inherit REDIS_KEY NODE_ID [TYPE1[TYPE2[...]]] [FIELD_NAME1[ FIELD_NAME2[ ...]]]
  */
-int SelvaInheritCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    SelvaHierarchy *hierarchy;
+void SelvaInheritCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    __auto_finalizer struct finalizer fin;
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string **argv;
+    int argc;
     Selva_NodeId node_id;
     int err;
+
+    finalizer_init(&fin);
 
     const int ARGV_LANG          = 1;
     const int ARGV_NODE_ID       = 3;
     const int ARGV_TYPES         = 4;
     const int ARGV_FIELD_NAMES   = 5;
 
-    if (argc < ARGV_FIELD_NAMES + 1) {
-        return selva_send_error_arity(resp);
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc < ARGV_FIELD_NAMES + 1) {
+        selva_send_error_arity(resp);
+        return;
     }
 
     struct selva_string *lang = argv[ARGV_LANG];
@@ -383,7 +394,8 @@ int SelvaInheritCommand(struct selva_server_response_out *resp, struct selva_str
      */
     err = selva_string2node_id(node_id, argv[ARGV_NODE_ID]);
     if (err) {
-        return selva_send_errorf(resp, err, "node_id");
+        selva_send_errorf(resp, err, "node_id");
+        return;
     }
 
     /*
@@ -393,7 +405,8 @@ int SelvaInheritCommand(struct selva_server_response_out *resp, struct selva_str
     const Selva_NodeType *types = (char const (*)[SELVA_NODE_TYPE_SIZE])selva_string_to_str(argv[ARGV_TYPES], &nr_types);
 
     if (nr_types % SELVA_NODE_TYPE_SIZE != 0) {
-        return selva_send_errorf(resp, SELVA_EINVAL, "types");
+        selva_send_errorf(resp, SELVA_EINVAL, "types");
+        return;
     }
     nr_types /= SELVA_NODE_TYPE_SIZE;
 
@@ -442,11 +455,9 @@ int SelvaInheritCommand(struct selva_server_response_out *resp, struct selva_str
          */
         SELVA_LOG(SELVA_LOGL_ERR, "Inherit failed: %s", selva_strerror(err));
     }
-
-    return 0;
 }
 
-static int Inherit_OnLoad() {
+static int Inherit_OnLoad(void) {
     selva_mk_command(18, "hierarchy.inherit", SelvaInheritCommand);
 
     return 0;
