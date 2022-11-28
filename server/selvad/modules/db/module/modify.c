@@ -1564,10 +1564,12 @@ void replicateModify(struct finalizer *fin, const struct bitmap *replset, struct
  * OK = the triplet made no changes
  * UPDATED = changes made and replicated
  */
-int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf, size_t len) {
     SELVA_TRACE_BEGIN_AUTO(cmd_modify);
     __auto_finalizer struct finalizer fin;
     SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string **argv;
+    int argc;
     SVECTOR_AUTOFREE(alias_query);
     bool created = false; /* Will be set if the node was created during this command. */
     bool updated = false;
@@ -1582,11 +1584,16 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
      */
     SVector_Init(&alias_query, 5, NULL);
 
-    /*
-     * We expect two fixed arguments and a number of [type, field, value] triplets.
-     */
-    if (argc < 6 || (argc - 3) % 3) {
-        return selva_send_error_arity(resp);
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc < 6 || (argc - 3) % 3) {
+        /*
+         * We expect two fixed arguments and a number of [type, field, value] triplets.
+         */
+        selva_send_error_arity(resp);
+        return;
     }
 
     /*
@@ -1596,7 +1603,8 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
     Selva_NodeId nodeId;
     err = selva_string2node_id(nodeId, argv[1]);
     if (err) {
-        return selva_send_errorf(resp, err, "Invalid nodeId");
+        selva_send_errorf(resp, err, "Invalid nodeId");
+        return;
     }
 
     /*
@@ -1642,19 +1650,20 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
         if (FISSET_UPDATE(flags)) {
             /* if the specified id doesn't exist but $operation: 'update' specified */
             selva_send_null(resp);
-            return 0;
+            return;
         }
 
         const size_t nr_parents = !FISSET_NO_ROOT(flags);
 
         err = SelvaModify_SetHierarchy(hierarchy, nodeId, nr_parents, ((Selva_NodeId []){ ROOT_NODE_ID }), 0, NULL, &node);
         if (err < 0) {
-            return selva_send_errorf(resp, err,"ERR Failed to initialize the node hierarchy for id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, nodeId);
+            selva_send_errorf(resp, err,"ERR Failed to initialize the node hierarchy for id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, nodeId);
+            return;
         }
     } else if (FISSET_CREATE(flags)) {
         /* if the specified id exists but $operation: 'insert' specified. */
         selva_send_null(resp);
-        return 0;
+        return;
     }
 
     created = updated = SelvaHierarchy_ClearNodeFlagImplicit(node);
@@ -1877,7 +1886,7 @@ int SelvaCommand_Modify(struct selva_server_response_out *resp, struct selva_str
 
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
 
-    return 0;
+    return;
 }
 
 static int Modify_OnLoad(void) {
