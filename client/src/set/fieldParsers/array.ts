@@ -50,8 +50,15 @@ async function sendInsert(
   result: (string | Buffer)[],
   fields: FieldSchemaArrayLike,
   type: string,
+  maxLen?: number,
   $lang?: string
 ) {
+  if (maxLen >= 0) {
+    const content = new Uint32Array([maxLen - 1])
+    const buf = Buffer.from(content.buffer)
+    result.push('H', field, buf)
+  }
+
   result.push('E', field, typeArg)
 
   if (!Number.isInteger(idx) || !payload) {
@@ -156,12 +163,12 @@ export default async (
             result,
             fields,
             type,
+            undefined,
             $lang
           )
         }
       } else if (payload.$unshift.$value) {
         const { $maxLen, $value } = payload.$unshift
-        console.log('MAXLEN', $maxLen)
 
         if (Array.isArray($value)) {
           for (let i = $value.length - 1; i >= 0; i--) {
@@ -176,6 +183,7 @@ export default async (
               result,
               fields,
               type,
+              $maxLen,
               $lang
             )
           }
@@ -190,6 +198,7 @@ export default async (
             result,
             fields,
             type,
+            $maxLen,
             $lang
           )
         }
@@ -204,6 +213,7 @@ export default async (
           result,
           fields,
           type,
+          undefined,
           $lang
         )
       }
@@ -248,6 +258,7 @@ export default async (
             result,
             fields,
             type,
+            undefined,
             $lang
           )
         }
@@ -262,6 +273,7 @@ export default async (
           result,
           fields,
           type,
+          undefined,
           $lang
         )
       }

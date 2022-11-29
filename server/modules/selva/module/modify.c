@@ -1761,6 +1761,35 @@ int SelvaCommand_Modify(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             }
 
             repl_state = SELVA_OP_REPL_STATE_UPDATED;
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_QUEUE_TRIM) {
+            TO_STR(value);
+            uint32_t max_array_len;
+
+            if (value_len != 1 * sizeof(uint32_t)) {
+                replyWithSelvaErrorf(ctx, SELVA_EINTYPE, "Expected: int[1]");
+                continue;
+            }
+
+            memcpy(&max_array_len, value_str, sizeof(uint32_t));
+
+
+            struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+
+            const uint32_t ary_len = (uint32_t)SelvaObject_GetArrayLenStr(obj, field_str, field_len);
+            if (ary_len > max_array_len) {
+              for (uint32_t i = ary_len; i > max_array_len; i--) {
+                  err = SelvaObject_RemoveArrayIndexStr(obj, field_str, field_len, i - 1);
+                  if (err) {
+                      fprintf(stderr, "Failed to remove array index: %.*s[%d]",
+                              (int)field_len, field_str,
+                              (int)i-1);
+                  }
+
+              }
+            }
+
+
+            repl_state = SELVA_OP_REPL_STATE_UPDATED;
         } else if (type_code == SELVA_MODIFY_ARG_STRING_ARRAY) {
             /*
              * Currently the $alias query is the only operation using string arrays.

@@ -2615,7 +2615,7 @@ test.serial('set - insert and set further into array', async (t) => {
   client.destroy()
 })
 
-test.serial.only('set - insert and set into start of array', async (t) => {
+test.serial('set - insert and set into start of array', async (t) => {
   const client = connect({ port })
   const id = await client.set({
     type: 'lekkerType',
