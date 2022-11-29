@@ -159,6 +159,40 @@ export default async (
             $lang
           )
         }
+      } else if (payload.$unshift.$value) {
+        const { $maxLen, $value } = payload.$unshift
+        console.log('MAXLEN', $maxLen)
+
+        if (Array.isArray($value)) {
+          for (let i = $value.length - 1; i >= 0; i--) {
+            const v = $value[i]
+            await sendInsert(
+              buf,
+              0,
+              client,
+              schema,
+              field,
+              v,
+              result,
+              fields,
+              type,
+              $lang
+            )
+          }
+        } else {
+          await sendInsert(
+            buf,
+            0,
+            client,
+            schema,
+            field,
+            $value,
+            result,
+            fields,
+            type,
+            $lang
+          )
+        }
       } else {
         await sendInsert(
           buf,
