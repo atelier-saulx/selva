@@ -95,7 +95,7 @@ static int (*const parse_hdr[])(const char *buf, size_t bsize, enum selva_proto_
     parse_hdr_array_end,
 };
 
-int selva_proto_parse_vtype(const char *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out)
+int selva_proto_parse_vtype(const void *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out)
 {
     size_t val_size = bsize - i; /* max size guess */
     struct selva_proto_control ctrl;
@@ -106,13 +106,13 @@ int selva_proto_parse_vtype(const char *buf, size_t bsize, size_t i, enum selva_
 
     memcpy(&ctrl, buf + i, sizeof(ctrl));
     if ((unsigned)ctrl.type <= num_elem(parse_hdr)) {
-        return parse_hdr[ctrl.type](buf + i, val_size, type_out, len_out);
+        return parse_hdr[ctrl.type]((char *)buf + i, val_size, type_out, len_out);
     }
 
     return SELVA_PROTO_EBADMSG;
 }
 
-int selva_proto_parse_error(const char *buf, size_t bsize, size_t i, int *err_out, const char **msg_str_out, size_t *msg_len_out)
+int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_out, const char **msg_str_out, size_t *msg_len_out)
 {
     size_t val_size = bsize - i;
     struct selva_proto_error hdr;
@@ -121,7 +121,7 @@ int selva_proto_parse_error(const char *buf, size_t bsize, size_t i, int *err_ou
         return SELVA_PROTO_EBADMSG;
     }
 
-    memcpy(&hdr, buf + i, sizeof(hdr));
+    memcpy(&hdr, (char *)buf + i, sizeof(hdr));
     if (hdr.type != SELVA_PROTO_ERROR) {
         return SELVA_PROTO_EBADMSG;
     }
@@ -137,7 +137,7 @@ int selva_proto_parse_error(const char *buf, size_t bsize, size_t i, int *err_ou
             *msg_str_out = NULL;
             *msg_len_out = 0;
         } else {
-            *msg_str_out = buf + i + sizeof(hdr);
+            *msg_str_out = (char *)buf + i + sizeof(hdr);
             *msg_len_out = hdr.bsize;
         }
     }
