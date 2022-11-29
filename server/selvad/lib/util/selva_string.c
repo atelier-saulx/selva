@@ -201,9 +201,7 @@ int selva_string_truncate(struct selva_string *s, size_t newlen)
         s->p = selva_realloc(s->p, s->len + 1);
         s->p[s->len] = '\0';
 
-        if (flags & SELVA_STRING_CRC) {
-            update_crc(s);
-        }
+        update_crc(s);
     }
 
     return 0;
@@ -225,9 +223,7 @@ int selva_string_append(struct selva_string *s, const char *str, size_t len)
         memcpy(s->p + old_len, str, len);
         s->p[s->len] = '\0';
 
-        if (flags & SELVA_STRING_CRC) {
-            update_crc(s);
-        }
+        update_crc(s);
     }
 
     return 0;
@@ -281,6 +277,23 @@ const char *selva_string_to_str(const struct selva_string *s, size_t *len)
 {
     /* Compat with legacy. */
     if (!s) {
+        if (len) {
+            *len = 0;
+        }
+        return NULL;
+    }
+
+    if (len) {
+        *len = s->len;
+    }
+
+    return get_buf(s);
+}
+
+char *selva_string_to_mstr(struct selva_string *s, size_t *len)
+{
+    /* Compat with legacy. */
+    if (!s || !(s->flags & SELVA_STRING_MUTABLE)) {
         if (len) {
             *len = 0;
         }

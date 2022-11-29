@@ -2742,10 +2742,8 @@ static int verifyDetachableSubtree(struct SelvaHierarchy *hierarchy, struct Selv
  * @returns The compressed tree is returned as a compressed_rms structure.
  */
 static struct compressed_rms *compress_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, double *cratio) {
-    /* FIXME Fix compressing subtrees */
-#if 0
     struct selva_string *raw;
-    struct compressed_rms *compressed;
+    struct compressed_string *compressed;
     int err;
 
     err = verifyDetachableSubtree(hierarchy, node);
@@ -2766,14 +2764,17 @@ static struct compressed_rms *compress_subtree(SelvaHierarchy *hierarchy, struct
         .node = node,
     };
 
+    /* FIXME Get serialized string */
+#if 0
     raw = RedisModule_SaveDataTypeToString(ctx, &subtree, HierarchySubtreeType);
     if (!raw) {
         return NULL;
     }
+#endif
 
-    compressed = rms_alloc_compressed();
-    err = rms_compress(compressed, raw, cratio);
-    RedisModule_FreeString(ctx, raw);
+    compressed = alloc_compressed_string();
+    err = compress_string(compressed, raw, cratio);
+    selva_string_free(raw);
     if (err) {
         rms_free_compressed(compressed);
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to compress the subtree of %.*s: %s\n",
@@ -2784,8 +2785,6 @@ static struct compressed_rms *compress_subtree(SelvaHierarchy *hierarchy, struct
     }
 
     return compressed;
-#endif
-    return NULL;
 }
 
 static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, enum SelvaHierarchyDetachedType type) {
@@ -3925,7 +3924,7 @@ static void SelvaHierarchy_CompressCommand(struct selva_server_response_out *res
 #endif
 }
 
-static void SelvaHierarchy_ListCompressedCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+static void SelvaHierarchy_ListCompressedCommand(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
     SelvaObject_Iterator *it;
     const char *id;
@@ -3947,7 +3946,7 @@ static void SelvaHierarchy_ListCompressedCommand(struct selva_server_response_ou
     }
 }
 
-static void SelvaHierarchy_VerCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+static void SelvaHierarchy_VerCommand(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {
     if (len != 0) {
         selva_send_error_arity(resp);
         return;
@@ -3996,7 +3995,7 @@ static void SelvaVersion_AuxSave(struct selva_io *io, int when __unused) {
     selva_io_save_str(io, selva_db_version, len);
 }
 
-static int Hierarchy_OnLoad(struct RedisModuleCtx *ctx) {
+static int Hierarchy_OnLoad(void) {
     /* FIXME Load & save */
 #if 0
     RedisModuleTypeMethods mtm = {

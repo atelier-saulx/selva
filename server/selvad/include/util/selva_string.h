@@ -108,11 +108,20 @@ void selva_string_auto_finalize(struct finalizer *finalizer, struct selva_string
 enum selva_string_flags selva_string_get_flags(const struct selva_string *s);
 
 /**
- * Get a pointer to the contained string.
+ * Get a pointer to the contained C-string.
  * @param s is a pointer to a selva_string.
  * @param[out] len is a pointer to a variable to store the length of s.
+ * @retruns Returns a pointer to the C-string.
  */
 const char *selva_string_to_str(const struct selva_string *s, size_t *len);
+
+/**
+ * Get a pointer to the mutable C-string.
+ * @param s is a pointer to a selva_string.
+ * @param[out] len is a pointer to a variable to store the length of s.
+ * @returns Returns a pointer to the C-string if the string is mutable; Otherwise a NULL pointer is returned.
+ */
+char *selva_string_to_mstr(struct selva_string *s, size_t *len);
 
 /**
  * Convert a string into a long long integer.

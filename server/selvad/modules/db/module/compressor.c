@@ -10,37 +10,40 @@
 #include <unistd.h>
 #include "libdeflate.h"
 #include "jemalloc.h"
-#include "selva.h"
+#include "util/auto_free.h"
+#include "util/selva_string.h"
+#include "selva_error.h"
+#include "selva_log.h"
+#include "selva_io.h"
 #include "config.h"
 #include "selva_onload.h"
-#include "auto_free.h"
-#include "rms.h"
+#include "compressor.h"
 
 static struct libdeflate_compressor *compressor;
 static struct libdeflate_decompressor *decompressor;
 
-int rms_compress(struct compressed_rms *out, RedisModuleString *in, double *cratio) {
-    char *compressed_str __selva_autofree = NULL;
-    size_t compressed_size = 0;
+int compress_string(struct compressed_string *out, struct selva_string *in, double *cratio) {
     TO_STR(in);
+    struct selva_string *compressed = selva_string_create(NULL, in_len, SELVA_STRING_MUTABLE);
+    size_t compressed_size;
 
-    compressed_str = selva_malloc(in_len);
-    compressed_size = libdeflate_deflate_compress(compressor, in_str, in_len, compressed_str, in_len);
-
+    compressed_size = libdeflate_deflate_compress(compressor, in_str, in_len, selva_string_to_mstr(compressed, NULL), in_len);
     if (compressed_size == 0) {
         /*
          * No compression was achieved.
          * Therefore we use the original uncompressed string.
-         * */
+         */
+        selva_string_free(compressed);
         compressed_size = in_len;
         out->uncompressed_size = -1;
-        out->rms = RedisModule_HoldString(NULL, in);
+        out->s = selva_string_dup(in, 0);
     } else {
         /*
          * The string was compressed.
          */
+        selva_string_truncate(compressed, compressed_size);
         out->uncompressed_size = in_len;
-        out->rms = RedisModule_CreateString(NULL, compressed_str, compressed_size);
+        out->s = compressed;
     }
 
     if (cratio) {
@@ -50,32 +53,34 @@ int rms_compress(struct compressed_rms *out, RedisModuleString *in, double *crat
     return 0;
 }
 
-int rms_decompress(RedisModuleString **out, struct compressed_rms *in) {
+int decompress_string(struct selva_string **out, struct compressed_string *in) {
     size_t compressed_len;
     const char *compressed_str;
-    char *uncompressed_str __selva_autofree = NULL;
+    struct selva_string *uncompressed;
     size_t nbytes_out = 0;
     enum libdeflate_result res;
 
     if (in->uncompressed_size < 0) {
-        *out = RedisModule_HoldString(NULL, in->rms);
-        return (*out) ? 0 : SELVA_ENOMEM;
+        /* RFE dup is a bit dumb in this case? */
+        *out = selva_string_dup(in->s, 0);
+        return 0;
     }
 
-    uncompressed_str = selva_malloc(in->uncompressed_size);
-    compressed_str = RedisModule_StringPtrLen(in->rms, &compressed_len);
-    res = libdeflate_deflate_decompress(decompressor, compressed_str, compressed_len, uncompressed_str, in->uncompressed_size, &nbytes_out);
+    compressed_str = selva_string_to_str(in->s, &compressed_len);
+    uncompressed = selva_string_create(NULL, in->uncompressed_size, SELVA_STRING_MUTABLE);
+    res = libdeflate_deflate_decompress(decompressor, compressed_str, compressed_len, selva_string_to_mstr(uncompressed, NULL), in->uncompressed_size, &nbytes_out);
     if (res != 0 || nbytes_out != (size_t)in->uncompressed_size) {
+        selva_string_free(uncompressed);
         return SELVA_EINVAL;
     }
 
-    *out = RedisModule_CreateString(NULL, uncompressed_str, in->uncompressed_size);
+    *out = uncompressed;
     return 0;
 }
 
-int rms_fwrite_compressed(const struct compressed_rms *compressed, FILE *fp) {
+int fwrite_compressed_string(const struct compressed_string *compressed, FILE *fp) {
     size_t buf_size;
-    const char *buf = RedisModule_StringPtrLen(compressed->rms, &buf_size);
+    const char *buf = selva_string_to_str(compressed->s, &buf_size);
     size_t res;
 
     res = fwrite(&compressed->uncompressed_size, sizeof(compressed->uncompressed_size), 1, fp);
@@ -132,13 +137,13 @@ static void print_read_error(FILE *fp) {
     const char *str_err = ferr ? strerror(errno) : "No error";
     const int eof = feof(fp);
 
-    SELVA_LOG(SELVA_LOGL_ERR, "Failed to read a compressed subtree file. path: \"%s\": err: \"%s\" eof: %d",
+    SELVA_LOG(SELVA_LOGL_ERR, "Failed to read a compressed file. path: \"%s\": err: \"%s\" eof: %d",
               get_filename(filename, fp),
               str_err,
               eof);
 }
 
-int rms_fread_compressed(struct compressed_rms *compressed, FILE *fp) {
+int fread_compressed_string(struct compressed_string *compressed, FILE *fp) {
     const ssize_t file_size = get_file_size(fp);
     char *buf;
     size_t read_bytes;
@@ -157,33 +162,34 @@ int rms_fread_compressed(struct compressed_rms *compressed, FILE *fp) {
         goto fail;
     }
 
+    /* TODO Avoid double alloc */
     memcpy(&compressed->uncompressed_size, buf, sizeof(compressed->uncompressed_size));
-    compressed->rms = RedisModule_CreateString(NULL, buf + sizeof(compressed->uncompressed_size), file_size - sizeof(compressed->uncompressed_size));
+    compressed->s = selva_string_create(buf + sizeof(compressed->uncompressed_size), file_size - sizeof(compressed->uncompressed_size), 0);
 
 fail:
     selva_free(buf);
     return err;
 }
 
-void rms_RDBSaveCompressed(selva_io *io, struct compressed_rms *compressed) {
+void RDBSaveCompressedString(struct selva_io *io, struct compressed_string *compressed) {
     selva_io_save_signed(io, compressed->uncompressed_size);
-    selva_io_save_string(io, compressed->rms);
+    selva_io_save_string(io, compressed->s);
 }
 
-void rms_RDBLoadCompressed(selva_io *io, struct compressed_rms *compressed) {
+void RDBLoadCompressedString(struct selva_io *io, struct compressed_string *compressed) {
     compressed->uncompressed_size = selva_io_load_signed(io);
-    compressed->rms = selva_io_load_string(io);
+    compressed->s = selva_io_load_string(io);
 }
 
 static int init_compressor(void) {
     compressor = libdeflate_alloc_compressor(selva_glob_config.hierarchy_compression_level);
     if (!compressor) {
-        return REDISMODULE_ERR;
+        return SELVA_EGENERAL;
     }
 
     decompressor = libdeflate_alloc_decompressor();
     if (!decompressor) {
-        return REDISMODULE_ERR;
+        return SELVA_EGENERAL;
     }
 
     return 0;

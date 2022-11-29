@@ -7,6 +7,7 @@ OBJ := \
 	   module/alias.o \
 	   module/arg_parser.o \
 	   module/comparator.o \
+	   module/compressor.o \
 	   module/config.o \
 	   module/edge/edge.o \
 	   module/edge/edge_constraint.o \
