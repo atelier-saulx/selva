@@ -145,7 +145,7 @@ export default async (
       const buf = Buffer.from(content.buffer)
       if (Array.isArray(payload.$unshift)) {
         for (let i = payload.$unshift.length - 1; i >= 0; i--) {
-          const v = payload[i]
+          const v = payload.$unshift[i]
           await sendInsert(
             buf,
             0,
