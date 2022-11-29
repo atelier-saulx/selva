@@ -25,15 +25,16 @@
 #include "selva_log.h"
 #include "arg_parser.h"
 #include "async_task.h"
+#include "compressor.h"
+#include "config.h"
 #include "edge.h"
+#include "find_index.h"
 #include "modify.h"
 #include "rpn.h"
-#include "config.h"
 #include "selva_object.h"
 #include "selva_onload.h"
-#include "selva_trace.h"
-#include "find_index.h"
 #include "selva_set.h"
+#include "selva_trace.h"
 #include "subscriptions.h"
 #include "traversal.h"
 #include "hierarchy.h"
@@ -2776,7 +2777,7 @@ static struct compressed_rms *compress_subtree(SelvaHierarchy *hierarchy, struct
     err = compress_string(compressed, raw, cratio);
     selva_string_free(raw);
     if (err) {
-        rms_free_compressed(compressed);
+        free_compressed_string(compressed);
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to compress the subtree of %.*s: %s\n",
                   (int)SELVA_NODE_ID_SIZE, node->id,
                   selva_strerror(err));
