@@ -1639,29 +1639,29 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
 
     finalizer_init(&fin);
 
-    const int ARGV_LANG      = 1;
-    const int ARGV_DIRECTION = 3;
-    const int ARGV_REF_FIELD = 4;
-    int ARGV_EDGE_FILTER_TXT = 4;
-    int ARGV_EDGE_FILTER_VAL = 5;
-    int ARGV_INDEX_TXT       = 4;
-    __unused int ARGV_INDEX_VAL = 5;
-    int ARGV_ORDER_TXT       = 4;
-    int ARGV_ORDER_FLD       = 5;
-    int ARGV_ORDER_ORD       = 6;
-    int ARGV_OFFSET_TXT      = 4;
-    int ARGV_OFFSET_NUM      = 5;
-    int ARGV_LIMIT_TXT       = 4;
-    int ARGV_LIMIT_NUM       = 5;
-    int ARGV_MERGE_TXT       = 4;
-    int ARGV_MERGE_VAL       = 5;
-    int ARGV_FIELDS_TXT      = 4;
-    int ARGV_FIELDS_VAL      = 5;
-    int ARGV_INHERIT_TXT     = 4;
-    int ARGV_INHERIT_VAL     = 5;
-    int ARGV_NODE_IDS        = 4;
-    int ARGV_FILTER_EXPR     = 5;
-    int ARGV_FILTER_ARGS     = 6;
+    const int ARGV_LANG      = 0;
+    const int ARGV_DIRECTION = 1;
+    const int ARGV_REF_FIELD = 2;
+    int ARGV_EDGE_FILTER_TXT = 2;
+    int ARGV_EDGE_FILTER_VAL = 3;
+    int ARGV_INDEX_TXT       = 2;
+    __unused int ARGV_INDEX_VAL = 3;
+    int ARGV_ORDER_TXT       = 2;
+    int ARGV_ORDER_FLD       = 3;
+    int ARGV_ORDER_ORD       = 4;
+    int ARGV_OFFSET_TXT      = 2;
+    int ARGV_OFFSET_NUM      = 3;
+    int ARGV_LIMIT_TXT       = 2;
+    int ARGV_LIMIT_NUM       = 3;
+    int ARGV_MERGE_TXT       = 2;
+    int ARGV_MERGE_VAL       = 3;
+    int ARGV_FIELDS_TXT      = 2;
+    int ARGV_FIELDS_VAL      = 3;
+    int ARGV_INHERIT_TXT     = 2;
+    int ARGV_INHERIT_VAL     = 3;
+    int ARGV_NODE_IDS        = 2;
+    int ARGV_FILTER_EXPR     = 3;
+    int ARGV_FILTER_ARGS     = 4;
 #define SHIFT_ARGS(i) \
     ARGV_EDGE_FILTER_TXT += i; \
     ARGV_EDGE_FILTER_VAL += i; \
@@ -1685,11 +1685,12 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
     ARGV_FILTER_ARGS += i
 
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc < 5) {
-        selva_send_error_arity(resp);
+    if (argc < 3) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
         return;
     }
 

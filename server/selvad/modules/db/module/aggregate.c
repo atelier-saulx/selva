@@ -501,24 +501,24 @@ void SelvaHierarchy_AggregateCommand(struct selva_server_response_out *resp, con
 
     finalizer_init(&fin);
 
-    const int ARGV_LANG      = 1;
-    const int ARGV_AGG_FN    = 3;
-    const int ARGV_DIRECTION = 4;
-    const int ARGV_REF_FIELD = 5;
-    int ARGV_INDEX_TXT       = 5;
-    __unused int ARGV_INDEX_VAL = 6;
-    int ARGV_ORDER_TXT       = 5;
-    int ARGV_ORDER_FLD       = 6;
-    int ARGV_ORDER_ORD       = 7;
-    int ARGV_OFFSET_TXT      = 5;
-    int ARGV_OFFSET_NUM      = 6;
-    int ARGV_LIMIT_TXT       = 5;
-    int ARGV_LIMIT_NUM       = 6;
-    int ARGV_FIELDS_TXT      = 5;
-    int ARGV_FIELDS_VAL      = 6;
-    int ARGV_NODE_IDS        = 5;
-    int ARGV_FILTER_EXPR     = 6;
-    int ARGV_FILTER_ARGS     = 7;
+    const int ARGV_LANG      = 0;
+    const int ARGV_AGG_FN    = 1;
+    const int ARGV_DIRECTION = 2;
+    const int ARGV_REF_FIELD = 3;
+    int ARGV_INDEX_TXT       = 3;
+    __unused int ARGV_INDEX_VAL = 4;
+    int ARGV_ORDER_TXT       = 3;
+    int ARGV_ORDER_FLD       = 4;
+    int ARGV_ORDER_ORD       = 5;
+    int ARGV_OFFSET_TXT      = 3;
+    int ARGV_OFFSET_NUM      = 4;
+    int ARGV_LIMIT_TXT       = 3;
+    int ARGV_LIMIT_NUM       = 4;
+    int ARGV_FIELDS_TXT      = 3;
+    int ARGV_FIELDS_VAL      = 4;
+    int ARGV_NODE_IDS        = 3;
+    int ARGV_FILTER_EXPR     = 4;
+    int ARGV_FILTER_ARGS     = 5;
 #define SHIFT_ARGS(i) \
     ARGV_INDEX_TXT += i; \
     ARGV_INDEX_VAL += i; \
@@ -945,20 +945,20 @@ void SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, c
 
     finalizer_init(&fin);
 
-    const int ARGV_LANG      = 1;
-    const int ARGV_AGG_FN    = 3;
-    const int ARGV_ORDER_TXT = 4;
-    const int ARGV_ORDER_FLD = 5;
-    const int ARGV_ORDER_ORD = 6;
-    int ARGV_OFFSET_TXT      = 4;
-    int ARGV_OFFSET_NUM      = 5;
-    int ARGV_LIMIT_TXT       = 4;
-    int ARGV_LIMIT_NUM       = 5;
-    int ARGV_FIELDS_TXT      = 4;
-    int ARGV_FIELDS_VAL      = 5;
-    int ARGV_NODE_IDS        = 4;
-    int ARGV_FILTER_EXPR     = 5;
-    int ARGV_FILTER_ARGS     = 6;
+    const int ARGV_LANG      = 0;
+    const int ARGV_AGG_FN    = 1;
+    const int ARGV_ORDER_TXT = 2;
+    const int ARGV_ORDER_FLD = 3;
+    const int ARGV_ORDER_ORD = 4;
+    int ARGV_OFFSET_TXT      = 2;
+    int ARGV_OFFSET_NUM      = 3;
+    int ARGV_LIMIT_TXT       = 2;
+    int ARGV_LIMIT_NUM       = 3;
+    int ARGV_FIELDS_TXT      = 2;
+    int ARGV_FIELDS_VAL      = 3;
+    int ARGV_NODE_IDS        = 2;
+    int ARGV_FILTER_EXPR     = 3;
+    int ARGV_FILTER_ARGS     = 4;
 #define SHIFT_ARGS(i) \
     ARGV_OFFSET_TXT += i; \
     ARGV_OFFSET_NUM += i; \
@@ -971,11 +971,12 @@ void SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, c
     ARGV_FILTER_ARGS += i
 
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc < 6) {
-        selva_send_error_arity(resp);
+    if (argc < 4) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
         return;
     }
 

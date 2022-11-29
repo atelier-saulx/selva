@@ -3515,17 +3515,21 @@ static void SelvaHierarchy_DelNodeCommand(struct selva_server_response_out *resp
 
     finalizer_init(&fin);
 
+    const int ARGV_FLAGS     = 0;
+    const int ARGV_NODE_IDS  = 1;
+
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc < 3) {
-        selva_send_error_arity(resp);
+    if (argc < 2) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
         return;
     }
 
     size_t flags_len;
-    const char *flags_str = selva_string_to_str(argv[2], &flags_len);
+    const char *flags_str = selva_string_to_str(argv[ARGV_FLAGS], &flags_len);
     enum SelvaModify_DelHierarchyNodeFlag flags = 0;
 
     for (size_t i = 0; i < flags_len; i++) {
@@ -3538,7 +3542,7 @@ static void SelvaHierarchy_DelNodeCommand(struct selva_server_response_out *resp
     }
 
     long long nr_deleted = 0;
-    for (int i = 3; i < argc; i++) {
+    for (int i = ARGV_NODE_IDS; i < argc; i++) {
         Selva_NodeId nodeId;
         int res;
 
@@ -3571,17 +3575,8 @@ static void SelvaHierarchy_DelNodeCommand(struct selva_server_response_out *resp
 
 static void SelvaHierarchy_HeadsCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
-    __auto_finalizer struct finalizer fin;
-    struct selva_string **argv;
-    int argc;
 
-    finalizer_init(&fin);
-
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc != 2) {
+    if (len != 0) {
         selva_send_error_arity(resp);
         return;
     }
@@ -3603,12 +3598,15 @@ static void SelvaHierarchy_ParentsCommand(struct selva_server_response_out *resp
     struct selva_string **argv;
     int argc;
 
+    finalizer_init(&fin);
+
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc != 3) {
-        selva_send_error_arity(resp);
+    if (argc != 1) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
         return;
     }
 
@@ -3617,7 +3615,7 @@ static void SelvaHierarchy_ParentsCommand(struct selva_server_response_out *resp
     /*
      * Find the node.
      */
-    selva_string2node_id(nodeId, argv[2]);
+    selva_string2node_id(nodeId, argv[0]);
     const SelvaHierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
@@ -3655,12 +3653,15 @@ static void SelvaHierarchy_ChildrenCommand(struct selva_server_response_out *res
     struct selva_string **argv;
     int argc;
 
+    finalizer_init(&fin);
+
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc != 3) {
-        selva_send_error_arity(resp);
+    if (argc != 1) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
         return;
     }
 
@@ -3669,7 +3670,7 @@ static void SelvaHierarchy_ChildrenCommand(struct selva_server_response_out *res
     /*
      * Find the node.
      */
-    selva_string2node_id(nodeId, argv[2]);
+    selva_string2node_id(nodeId, argv[0]);
     const SelvaHierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
@@ -3693,21 +3694,26 @@ static void SelvaHierarchy_EdgeListCommand(struct selva_server_response_out *res
     struct selva_string **argv;
     int argc;
 
+    finalizer_init(&fin);
+
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
-    } else if (argc != 3 && argc != 4) {
+    } else if (argc != 1 && argc != 2) {
         selva_send_error_arity(resp);
         return;
     }
+
+    const int ARGV_NODE_ID   = 0;
+    const int ARGV_KEY_NAME  = 1;
 
     Selva_NodeId nodeId;
 
     /*
      * Find the node.
      */
-    selva_string2node_id(nodeId, argv[2]);
+    selva_string2node_id(nodeId, argv[0]);
     SelvaHierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
@@ -3722,7 +3728,7 @@ static void SelvaHierarchy_EdgeListCommand(struct selva_server_response_out *res
         return;
     }
 
-    const struct selva_string *key_name = argc == 4 ? argv[3] : NULL;
+    const struct selva_string *key_name = argc == 2 ? argv[ARGV_KEY_NAME] : NULL;
     if (key_name) {
         int err;
 
@@ -3752,32 +3758,35 @@ static void SelvaHierarchy_EdgeGetCommand(struct selva_server_response_out *resp
     struct selva_string **argv;
     int argc;
 
+    finalizer_init(&fin);
+
+    const int ARGV_NODE_ID   = 0;
+    const int ARGV_KEY_NAME  = 1;
+
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc != 4) {
-        selva_send_error_arity(resp);
+    if (argc != 2) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
         return;
     }
 
-    /*
-     * Open the Redis key.
-     */
     Selva_NodeId nodeId;
     const SelvaHierarchyNode *node;
 
     /*
      * Find the node.
      */
-    selva_string2node_id(nodeId, argv[2]);
+    selva_string2node_id(nodeId, argv[ARGV_NODE_ID]);
     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
         return;
     }
 
-    const struct selva_string *field_name = argv[3];
+    const struct selva_string *field_name = argv[ARGV_KEY_NAME];
     TO_STR(field_name);
     const struct EdgeField *edge_field;
 
@@ -3816,18 +3825,25 @@ static void SelvaHierarchy_EdgeGetMetadataCommand(struct selva_server_response_o
     Selva_NodeId dst_node_id;
     int err;
 
+    finalizer_init(&fin);
+
+    const int ARGV_SRC_NODE_ID  = 0;
+    const int ARGV_KEY_NAME     = 1;
+    const int ARGV_DST_NODE_ID  = 2;
+
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc != 5) {
-        selva_send_error_arity(resp);
+    if (argc != 3) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
         return;
     }
 
-    selva_string2node_id(src_node_id, argv[2]);
-    field_name = argv[3];
-    selva_string2node_id(dst_node_id, argv[4]);
+    selva_string2node_id(src_node_id, argv[ARGV_SRC_NODE_ID]);
+    field_name = argv[ARGV_KEY_NAME];
+    selva_string2node_id(dst_node_id, argv[ARGV_DST_NODE_ID]);
     TO_STR(field_name);
 
     /*
@@ -3867,16 +3883,22 @@ static void SelvaHierarchy_CompressCommand(struct selva_server_response_out *res
     int argc;
     int err;
 
+    finalizer_init(&fin);
+
+    const int ARGV_NODE_ID  = 0;
+    const int ARGV_TYPES    = 1;
+
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc != 3 && argc != 4) {
-        selva_send_error_arity(resp);
+    if (argc != 1 && argc != 2) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
         return;
     }
 
-    if (argc == 4) {
+    if (argc == 2) {
         static const struct SelvaArgParser_EnumType types[] = {
             {
                 .name = "mem",
@@ -3892,7 +3914,7 @@ static void SelvaHierarchy_CompressCommand(struct selva_server_response_out *res
             }
         };
 
-        err = SelvaArgParser_Enum(types, argv[3]);
+        err = SelvaArgParser_Enum(types, argv[ARGV_TYPES]);
         if (err < 0) {
             selva_send_error(resp, err, "Type", 4);
             return;
@@ -3905,7 +3927,7 @@ static void SelvaHierarchy_CompressCommand(struct selva_server_response_out *res
     /*
      * Find the node.
      */
-    selva_string2node_id(nodeId, argv[2]);
+    selva_string2node_id(nodeId, argv[ARGV_NODE_ID]);
     SelvaHierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
         selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);

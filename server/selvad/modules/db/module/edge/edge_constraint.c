@@ -268,16 +268,16 @@ void Edge_AddConstraintCommand(struct selva_server_response_out *resp, const voi
 
     finalizer_init(&fin);
 
-    const int ARGV_SRC_NODE_TYPE = 2;
-    const int ARGV_CONSTRAINT_FLAGS = 3;
-    const int ARGV_FWD_FIELD = 4;
-    const int ARGV_BCK_FIELD = 5;
+    const int ARGV_SRC_NODE_TYPE = 0;
+    const int ARGV_CONSTRAINT_FLAGS = 1;
+    const int ARGV_FWD_FIELD = 2;
+    const int ARGV_BCK_FIELD = 3;
 
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
-    } else if (argc != 6 && argc != 7) {
+    } else if (argc != 3 && argc != 4) {
         selva_send_error_arity(resp);
     }
 
@@ -331,20 +331,11 @@ void Edge_AddConstraintCommand(struct selva_server_response_out *resp, const voi
     }
 }
 
-void Edge_ListConstraintsCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
-    __auto_finalizer struct finalizer fin;
+void Edge_ListConstraintsCommand(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
-    struct selva_string **argv;
-    int argc;
     int err;
 
-    finalizer_init(&fin);
-
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc != 2) {
+    if (len != 0) {
         selva_send_error_arity(resp);
         return;
     }

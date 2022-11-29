@@ -78,11 +78,12 @@ void SelvaResolve_NodeIdCommand(struct selva_server_response_out *resp, const vo
     const size_t ARGV_IDS = 1;
 
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 0) {
-        selva_send_errorf(resp, argc, "Failed to parse args");
-        return;
-    } else if (argc < (int)ARGV_IDS + 1) {
-        selva_send_error_arity(resp);
+    if (argc != 2) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
         return;
     }
 

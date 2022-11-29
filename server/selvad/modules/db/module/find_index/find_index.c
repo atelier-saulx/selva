@@ -19,6 +19,7 @@
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_server.h"
+#include "arg_parser.h"
 #include "config.h"
 #include "hierarchy.h"
 #include "selva_db.h"
@@ -1126,51 +1127,62 @@ static void debug_index(struct selva_server_response_out *resp, struct SelvaHier
     }
 }
 
-static int SelvaFindIndex_ListCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+static void SelvaFindIndex_ListCommand(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {
     SelvaHierarchy *hierarchy;
 
-    if (argc != 2) {
-        return selva_send_error_arity(resp);
+    if (len != 0) {
+        selva_send_error_arity(resp);
+        return;
     }
 
     hierarchy = main_hierarchy;
 
     if (!is_indexing_active(hierarchy)) {
-        return selva_send_errorf(resp, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
+        selva_send_errorf(resp, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
+        return;
     }
 
     selva_send_array(resp, -1);
     (void)list_index(resp, hierarchy->dyn_index.index_map);
     /* Sent 2 * res */
-    selva_send_array_end(resp);
-
-    return 0;
 }
 
-static int SelvaFindIndex_NewCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+static void SelvaFindIndex_NewCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    __auto_finalizer struct finalizer fin;
+    struct selva_string **argv = NULL;
+    int argc;
     int err;
 
-    const int ARGV_DIRECTION = 2;
-    const int ARGV_REF_FIELD = 3;
-    const int ARGV_ORDER_ORD = 4;
-    const int ARGV_ORDER_FLD = 5;
-    const int ARGV_NODE_ID = 6;
-    const int ARGV_FILTER = 7;
+    finalizer_init(&fin);
 
-    if (argc != 8) {
-        return selva_send_error_arity(resp);
+    const int ARGV_DIRECTION = 0;
+    const int ARGV_REF_FIELD = 1;
+    const int ARGV_ORDER_ORD = 2;
+    const int ARGV_ORDER_FLD = 3;
+    const int ARGV_NODE_ID = 4;
+    const int ARGV_FILTER = 5;
+
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc != 6) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
+        return;
     }
 
-    SelvaHierarchy *hierarchy = main_hierarchy;
-
     if (!is_indexing_active(hierarchy)) {
-        return selva_send_errorf(resp, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
+        selva_send_errorf(resp, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
+        return;
     }
 
     enum SelvaTraversal dir;
     err = SelvaTraversal_ParseDir2(&dir, argv[ARGV_DIRECTION]);
     if (err) {
-        return selva_send_errorf(resp, err, "Traversal direction");
+        selva_send_errorf(resp, err, "Traversal direction");
+        return;
     }
 
     struct selva_string *dir_expression;
@@ -1179,19 +1191,22 @@ static int SelvaFindIndex_NewCommand(struct selva_server_response_out *resp, str
     } else if ((dir & allowed_dirs) != 0) {
         dir_expression = NULL;
     } else {
-        return selva_send_errorf(resp, SELVA_ENOTSUP, "Traversal direction");
+        selva_send_errorf(resp, SELVA_ENOTSUP, "Traversal direction");
+        return;
     }
 
     enum SelvaResultOrder order;
     err = SelvaTraversal_ParseOrder(&order, argv[ARGV_ORDER_ORD]);
     if (err) {
-        return selva_send_errorf(resp, err, "order");
+        selva_send_errorf(resp, err, "order");
+        return;
     }
 
     Selva_NodeId node_id;
     err = selva_string2node_id(node_id, argv[ARGV_NODE_ID]);
     if (err) {
-        return selva_send_errorf(resp, err, "node_id");
+        selva_send_errorf(resp, err, "node_id");
+        return;
     }
 
     /*
@@ -1204,7 +1219,8 @@ static int SelvaFindIndex_NewCommand(struct selva_server_response_out *resp, str
     struct rpn_expression *expr = rpn_compile(filter_str);
     rpn_destroy_expression(expr);
     if (!expr) {
-        return selva_send_error(resp, SELVA_RPN_ECOMP, NULL, 0);
+        selva_send_error(resp, SELVA_RPN_ECOMP, NULL, 0);
+        return;
     }
 
     /*
@@ -1217,7 +1233,8 @@ static int SelvaFindIndex_NewCommand(struct selva_server_response_out *resp, str
             order, order != SELVA_RESULT_ORDER_NONE ? argv[ARGV_ORDER_FLD] : NULL,
             filter, &icb);
     if ((err && err != SELVA_ENOENT) || !icb) {
-        return selva_send_errorf(resp, err, "Failed to create an index");
+        selva_send_errorf(resp, err, "Failed to create an index");
+        return;
     }
 
     /*
@@ -1236,19 +1253,30 @@ static int SelvaFindIndex_NewCommand(struct selva_server_response_out *resp, str
     icb->pop_count.ave = 1000.0f;
     icb->flags.permanent = 1;
 
-    return selva_send_ll(resp, 1);
+    selva_send_ll(resp, 1);
 }
 
-static int SelvaFindIndex_DelCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    SelvaHierarchy *hierarchy;
+static void SelvaFindIndex_DelCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    __auto_finalizer struct finalizer fin;
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string **argv;
+    int argc;
     struct SelvaFindIndexControlBlock *icb;
     int discard = 0;
     int err;
 
-    const int ARGV_INDEX = 2;
-    const int ARGV_OP = 3;
+    finalizer_init(&fin);
 
-    if (argc == 4) {
+    const int ARGV_INDEX = 0;
+    const int ARGV_OP = 1;
+
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    }
+
+    if (argc == 2) {
         const struct selva_string *op = argv[ARGV_OP];
         TO_STR(op);
 
@@ -1257,25 +1285,28 @@ static int SelvaFindIndex_DelCommand(struct selva_server_response_out *resp, str
         } else if (op_len == 1 && op_str[0] == '1') {
             discard = 1;
         } else {
-            return selva_send_error(resp, SELVA_ENOTSUP, NULL, 0);
+            selva_send_error(resp, SELVA_ENOTSUP, NULL, 0);
+            return;
         }
     } else if (argc != 3) {
-        return selva_send_error_arity(resp);
+        selva_send_error_arity(resp);
+        return;
     }
 
-    hierarchy = main_hierarchy;
-
     if (!is_indexing_active(hierarchy)) {
-        return selva_send_errorf(resp, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
+        selva_send_errorf(resp, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
+        return;
     }
 
     size_t name_len;
     const char *name_str = selva_string_to_str(argv[ARGV_INDEX], &name_len);
     err = SelvaFindIndexICB_Get(hierarchy, name_str, name_len, &icb);
     if (err == SELVA_ENOENT) {
-        return selva_send_ll(resp, 0);
+        selva_send_ll(resp, 0);
+        return;
     } else if (err) {
-        return selva_send_error(resp, err, NULL, 0);
+        selva_send_error(resp, err, NULL, 0);
+        return;
     }
 
     if (discard) {
@@ -1284,33 +1315,43 @@ static int SelvaFindIndex_DelCommand(struct selva_server_response_out *resp, str
         err = destroy_icb(hierarchy, icb);
     }
     if (err) {
-        return selva_send_error(resp, err, NULL, 0);
+        selva_send_error(resp, err, NULL, 0);
+        return;
     }
 
-    return selva_send_ll(resp, 1);
+    selva_send_ll(resp, 1);
 }
 
-static int SelvaFindIndex_DebugCommand(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
-    SelvaHierarchy *hierarchy;
+static void SelvaFindIndex_DebugCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    __auto_finalizer struct finalizer fin;
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string **argv;
+    int argc;
+    struct SelvaObject *obj;
 
-    if (argc != 3) {
-        return selva_send_error_arity(resp);
+    finalizer_init(&fin);
+
+    const int ARGV_INDEX = 0; /* Numeric index. */
+
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc != 1) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
+        return;
     }
 
-    const int ARGV_INDEX = 2; /* Numeric index. */
-
-    hierarchy = main_hierarchy;
-
     if (!is_indexing_active(hierarchy)) {
-        return selva_send_errorf(resp, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
+        selva_send_errorf(resp, SELVA_ENOENT, INDEX_ERR_MSG_DISABLED);
+        return;
     }
 
     long long i = -1;
 
     selva_string_to_ll(argv[ARGV_INDEX], &i);
     debug_index(resp, hierarchy, (int)((i - 1) / 2));
-
-    return 0;
 }
 
 /* FIXME modinfo */

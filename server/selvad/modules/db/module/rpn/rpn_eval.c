@@ -30,9 +30,9 @@ static void SelvaRpn_Eval(enum SelvaRpnEvalType type, struct selva_server_respon
 
     finalizer_init(&fin);
 
-    const int ARGV_KEY         = 1;
-    const int ARGV_FILTER_EXPR = 2;
-    const int ARGV_FILTER_ARGS = 3;
+    const int ARGV_KEY         = 0;
+    const int ARGV_FILTER_EXPR = 1;
+    const int ARGV_FILTER_ARGS = 2;
 
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
