@@ -537,7 +537,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             if (err) {
                 return err;
             }
-        } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT && key->type != SELVA_OBJECT_ARRAY)) &&
+        } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT && key->type != SELVA_OBJECT_ARRAY && nr_parts > nr_parts_found)) &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
