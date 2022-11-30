@@ -35,56 +35,56 @@ headers unless otherwise specified.
 
 `-` means empty message payload.
 
-| Name                      | cmd   |  Module | Description                                                      |
-|---------------------------|------:|---------|------------------------------------------------------------------|
-| PING                      |     0 |  server | Traditional ping/pong.                                           |
-| ECHO                      |     1 |  server | Echoes back the same strings that were present in the request.   |
-| LSCMD                     |     2 |  server | List all currently registered commands.                          |
-| LSLANG                    |     3 |  db     | List supported languages.                                        |
-| resolve.nodeid            |    16 |  db     |                                                                  |
-| hierarchy.find            |    17 |  db     |                                                                  |
-| hierarchy.inherit         |    18 |  db     |                                                                  |
-| hierarchy.aggregate       |    19 |  db     | Aggregate.                                                       |
-| hierarchy.aggregateIn     |    20 |  db     | Aggregate in.                                                    |
-| hierarchy.addConstraint   |    21 |  db     | edge add constraints.                                            |
-| hierarchy.listConstraints |    22 |  db     | edge list constraints.                                           |
-| hierarchy.del             |    23 |  db     |                                                                  |
-| hierarchy.heads           |    24 |  db     |                                                                  |
-| hierarchy.parents         |    25 |  db     |                                                                  |
-| hierarchy.children        |    26 |  db     |                                                                  |
-| hierarchy.edgeList        |    27 |  db     |                                                                  |
-| hierarchy.edgeGet         |    28 |  db     |                                                                  |
-| hierarchy.edgeGetMetadata |    29 |  db     |                                                                  |
-| hierarchy.compress        |    30 |  db     |                                                                  |
-| hierarchy.listCompressed  |    31 |  db     |                                                                  |
-| hierarchy.ver             |    32 |  db     |                                                                  |
-| hierarchy.types.add       |    33 |  db     |                                                                  |
-| hierarchy.types.clear     |    34 |  db     |                                                                  |
-| hierarchy.types.list      |    35 |  db     |                                                                  |
-| index.list                |    36 |  db     |                                                                  |
-| index.new                 |    37 |  db     |                                                                  |
-| index.del                 |    38 |  db     |                                                                  |
-| index.debug               |    39 |  db     |                                                                  |
-| modify                    |    40 |  db     |                                                                  |
-| rpn.evalBool              |    41 |  db     |                                                                  |
-| rpn.evalDouble            |    42 |  db     |                                                                  |
-| rpn.evalString            |    43 |  db     |                                                                  |
-| rpn.evalSet               |    44 |  db     |                                                                  |
-| object.del                |    45 |  db     |                                                                  |
-| object.exists             |    46 |  db     |                                                                  |
-| object.get                |    47 |  db     |                                                                  |
-| object.len                |    48 |  db     |                                                                  |
-| object.set                |    49 |  db     |                                                                  |
-| object.type               |    50 |  db     |                                                                  |
-| object.getMeta            |    51 |  db     |                                                                  |
-| object.setMeta            |    52 |  db     |                                                                  |
-| subscriptions.add         |    53 |  db     |                                                                  |
-| subscriptions.addAlias    |    54 |  db     |                                                                  |
-| subscriptions.addMissing  |    55 |  db     |                                                                  |
-| subscriptions.addTrigger  |    56 |  db     |                                                                  |
-| subscriptions.refresh     |    57 |  db     |                                                                  |
-| subscriptions.list        |    58 |  db     |                                                                  |
-| subscriptions.listMissing |    59 |  db     |                                                                  |
-| subscriptions.debug       |    60 |  db     |                                                                  |
-| subscriptions.del         |    61 |  db     |                                                                  |
-| subscriptions.delmarker   |    62 |  db     |                                                                  |
+| Name                      | cmd   |  Module | Description                                                     |
+|---------------------------|------:|---------|-----------------------------------------------------------------|
+| PING                      |     0 |  server | Traditional ping/pong.                                          |
+| ECHO                      |     1 |  server | Echoes back the same strings that were present in the request.  |
+| LSCMD                     |     2 |  server | List all currently registered commands.                         |
+| LSLANG                    |     3 |  db     | List supported languages.                                       |
+| resolve.nodeid            |    16 |  db     |                                                                 |
+| hierarchy.find            |    17 |  db     |                                                                 |
+| hierarchy.inherit         |    18 |  db     |                                                                 |
+| hierarchy.aggregate       |    19 |  db     | Aggregate.                                                      |
+| hierarchy.aggregateIn     |    20 |  db     | Aggregate in.                                                   |
+| hierarchy.addConstraint   |    21 |  db     | edge add constraints.                                           |
+| hierarchy.listConstraints |    22 |  db     | edge list constraints.                                          |
+| hierarchy.del             |    23 |  db     |                                                                 |
+| hierarchy.heads           |    24 |  db     |                                                                 |
+| hierarchy.parents         |    25 |  db     |                                                                 |
+| hierarchy.children        |    26 |  db     |                                                                 |
+| hierarchy.edgeList        |    27 |  db     |                                                                 |
+| hierarchy.edgeGet         |    28 |  db     |                                                                 |
+| hierarchy.edgeGetMetadata |    29 |  db     |                                                                 |
+| hierarchy.compress        |    30 |  db     |                                                                 |
+| hierarchy.listCompressed  |    31 |  db     |                                                                 |
+| hierarchy.ver             |    32 |  db     |                                                                 |
+| hierarchy.types.add       |    33 |  db     |                                                                 |
+| hierarchy.types.clear     |    34 |  db     |                                                                 |
+| hierarchy.types.list      |    35 |  db     |                                                                 |
+| index.list                |    36 |  db     |                                                                 |
+| index.new                 |    37 |  db     |                                                                 |
+| index.del                 |    38 |  db     |                                                                 |
+| index.debug               |    39 |  db     |                                                                 |
+| modify                    |    40 |  db     |                                                                 |
+| rpn.evalBool              |    41 |  db     |                                                                 |
+| rpn.evalDouble            |    42 |  db     |                                                                 |
+| rpn.evalString            |    43 |  db     |                                                                 |
+| rpn.evalSet               |    44 |  db     |                                                                 |
+| object.del                |    45 |  db     |                                                                 |
+| object.exists             |    46 |  db     |                                                                 |
+| object.get                |    47 |  db     |                                                                 |
+| object.len                |    48 |  db     |                                                                 |
+| object.set                |    49 |  db     |                                                                 |
+| object.type               |    50 |  db     |                                                                 |
+| object.getMeta            |    51 |  db     |                                                                 |
+| object.setMeta            |    52 |  db     |                                                                 |
+| subscriptions.add         |    53 |  db     |                                                                 |
+| subscriptions.addAlias    |    54 |  db     |                                                                 |
+| subscriptions.addMissing  |    55 |  db     |                                                                 |
+| subscriptions.addTrigger  |    56 |  db     |                                                                 |
+| subscriptions.refresh     |    57 |  db     |                                                                 |
+| subscriptions.list        |    58 |  db     |                                                                 |
+| subscriptions.listMissing |    59 |  db     |                                                                 |
+| subscriptions.debug       |    60 |  db     |                                                                 |
+| subscriptions.del         |    61 |  db     |                                                                 |
+| subscriptions.delmarker   |    62 |  db     |                                                                 |
