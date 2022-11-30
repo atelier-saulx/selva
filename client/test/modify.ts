@@ -986,7 +986,7 @@ test.serial('set empty object', async (t) => {
   await client.destroy()
 })
 
-test.serial.only('$increment, $default', async (t) => {
+test.serial('$increment, $default', async (t) => {
   const client = connect({
     port,
   })
