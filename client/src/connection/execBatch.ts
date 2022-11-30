@@ -118,6 +118,7 @@ export default function execBatch(
           } else {
             connection.serverIsBusy = false
             if (queue.length > 1e3) {
+              // make this timeout longer
               process.nextTick(() => {
                 // let it gc a bit
                 resolve()

@@ -715,6 +715,7 @@ const createConnection = (serverDescriptor: ServerDescriptor) => {
       console.info('NEED TO MAKE A SPECIAL CONNECTION!')
     }
 
+    // NEW SELVA CONNECTION which shared connecton as an abtract class for ts conflicts
     connection = new Connection(serverDescriptor)
   }
   return connection
