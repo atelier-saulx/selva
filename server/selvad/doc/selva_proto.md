@@ -78,13 +78,13 @@ headers unless otherwise specified.
 | object.type               |    50 |                       |                       | db     |                                                                  |
 | object.getMeta            |    51 |                       |                       | db     |                                                                  |
 | object.setMeta            |    52 |                       |                       | db     |                                                                  |
-| subscriptions.add         |    53 |
-| subscriptions.addAlias    |    54 |
-| subscriptions.addMissing  |    55 |
-| subscriptions.addTrigger  |    56 |
-| subscriptions.refresh     |    57 |
-| subscriptions.list        |    58 |
-| subscriptions.listMissing |    59 |
-| subscriptions.debug       |    60 |
-| subscriptions.del         |    61 |
-| subscriptions.delmarker   |    62 |
+| subscriptions.add         |    53 |                       |                       | db     |                                                                  |
+| subscriptions.addAlias    |    54 |                       |                       | db     |                                                                  |
+| subscriptions.addMissing  |    55 |                       |                       | db     |                                                                  |
+| subscriptions.addTrigger  |    56 |                       |                       | db     |                                                                  |
+| subscriptions.refresh     |    57 |                       |                       | db     |                                                                  |
+| subscriptions.list        |    58 |                       |                       | db     |                                                                  |
+| subscriptions.listMissing |    59 |                       |                       | db     |                                                                  |
+| subscriptions.debug       |    60 |                       |                       | db     |                                                                  |
+| subscriptions.del         |    61 |                       |                       | db     |                                                                  |
+| subscriptions.delmarker   |    62 |                       |                       | db     |                                                                  |
