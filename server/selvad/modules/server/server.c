@@ -21,6 +21,8 @@
 #include "selva_server.h"
 #include "server.h"
 
+#define ENV_PORT_NAME "SELVA_PORT"
+static int selva_port = 3000;
 #define BACKLOG_SIZE 10
 static const int use_tcp_nodelay = 1;
 #define MAX_CLIENTS 100 /*!< Maximum number of client connections. */
@@ -316,7 +318,13 @@ IMPORT() {
 
 __constructor void init(void)
 {
+    const char *selva_port_str = getenv(ENV_PORT_NAME);
+
     SELVA_LOG(SELVA_LOGL_INFO, "Init server");
+
+    if (selva_port_str) {
+        selva_port = strtol(selva_port_str, NULL, 10);
+    }
 
 #if 0
     server_start_workers();
@@ -327,6 +335,6 @@ __constructor void init(void)
     SELVA_MK_COMMAND(2, cmdlist);
 
     /* Async server for receiving messages. */
-    server_sockfd = new_server(3000);
+    server_sockfd = new_server(selva_port);
     evl_wait_fd(server_sockfd, on_connection, NULL, NULL, NULL);
 }
