@@ -23,7 +23,7 @@ OBJ += \
 	   linux/poll.o \
 	   linux/signal.o
 CFLAGS += -DUSE_EPOLL=1
-LDFLAGS += -rdynamic -ldl -L ../lib -Wl,-rpath,'$$ORIGIN'/lib
+LDFLAGS += -rdynamic -ldl -L ../lib -Wl,-rpath,'$$ORIGIN'/lib:'$$ORIGIN'/modules
 endif
 ifeq ($(uname_S),Darwin)
 OBJ += \

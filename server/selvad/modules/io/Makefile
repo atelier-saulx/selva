@@ -5,7 +5,7 @@ OBJ := \
 	   io.o
 LDFLAGS += -lutil
 CFLAGS += -DSELVA_IO_MAIN=1
-TARGET := ../io$(MOD_SUFFIX)
+TARGET := ../mod_io$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^

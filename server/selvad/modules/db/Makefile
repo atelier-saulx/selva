@@ -50,7 +50,7 @@ OBJ := \
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -I./include -include ../../tunables.h
 LDFLAGS += -ldeflate -lutil
-TARGET := ../db$(MOD_SUFFIX)
+TARGET := ../mod_db$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^

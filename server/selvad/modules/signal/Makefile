@@ -6,7 +6,7 @@ OBJ := \
 	   trace.o
 
 DEP := $(OBJ:%.o=%.d)
-TARGET := ../signal$(MOD_SUFFIX)
+TARGET := ../mod_signal$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^
