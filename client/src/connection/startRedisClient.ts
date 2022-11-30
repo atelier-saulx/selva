@@ -130,6 +130,7 @@ export default (connection: Connection) => {
     }
   }, 60e3)
 
+  
   connection.subscriber = startClient(connection, 'subscriber')
   connection.publisher = startClient(connection, 'publisher')
 
