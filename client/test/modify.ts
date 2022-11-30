@@ -115,6 +115,21 @@ test.beforeEach(async (t) => {
           value: {
             type: 'number',
           },
+          obj: {
+            type: 'object',
+            properties: {
+              value: { type: 'int' },
+              rec: {
+                type: 'record',
+                values: {
+                  type: 'object',
+                  properties: {
+                    value: { type: 'number' },
+                  },
+                },
+              },
+            },
+          },
         },
       },
       otherTestThing: {
@@ -971,7 +986,7 @@ test.serial('set empty object', async (t) => {
   await client.destroy()
 })
 
-test.serial('$increment, $default', async (t) => {
+test.serial.only('$increment, $default', async (t) => {
   const client = connect({
     port,
   })
@@ -1031,6 +1046,76 @@ test.serial('$increment, $default', async (t) => {
     await client.redis.selva_object_get('', 'viDingDong', 'title.en'),
     'title',
     'does not overwrite if value exists'
+  )
+
+  await client.set({
+    $id: 'viHelloYes',
+    obj: {
+      value: {
+        $default: 100,
+        $increment: 10,
+      },
+      rec: {
+        test1: {
+          value: {
+            $default: 10,
+            $increment: 11,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viHelloYes',
+      obj: true,
+    }),
+    {
+      obj: {
+        value: 100,
+        rec: {
+          test1: {
+            value: 10,
+          },
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: 'viHelloYes',
+    obj: {
+      value: {
+        $default: 100,
+        $increment: 10,
+      },
+      rec: {
+        test1: {
+          value: {
+            $default: 10,
+            $increment: 11,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viHelloYes',
+      obj: true,
+    }),
+    {
+      obj: {
+        value: 110,
+        rec: {
+          test1: {
+            value: 21,
+          },
+        },
+      },
+    }
   )
 
   await client.delete('root')
@@ -2615,7 +2700,7 @@ test.serial('set - insert and set further into array', async (t) => {
   client.destroy()
 })
 
-test.serial.only('set - insert and set into start of array', async (t) => {
+test.serial('set - insert and set into start of array', async (t) => {
   const client = connect({ port })
   const id = await client.set({
     type: 'lekkerType',
