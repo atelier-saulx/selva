@@ -1081,23 +1081,20 @@ int SelvaObject_SetString(struct SelvaObject *obj, const RedisModuleString *key_
 }
 
 int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double default_value, double incr) {
-    struct SelvaObjectKey *key;
     int err;
+    double current;
+    double val = default_value;
 
-    assert(obj);
-
-    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
-    if (err) {
-        return err;
+    err = SelvaObject_GetDoubleStr(obj, key_name_str, key_name_len, &current);
+    if (err != SELVA_ENOENT) {
+        val = current;
+        val += incr;
     }
 
-    if (key->type == SELVA_OBJECT_NULL) {
-        key->type = SELVA_OBJECT_DOUBLE;
-        key->emb_double_value = default_value;
-    } else if (key->type == SELVA_OBJECT_DOUBLE) {
-        key->emb_double_value += incr;
-    } else {
-        return SELVA_EINTYPE;
+    err = SelvaObject_SetDoubleStr(obj, key_name_str, key_name_len, val);
+
+    if (err) {
+      return err;
     }
 
     return 0;
@@ -1110,26 +1107,24 @@ int SelvaObject_IncrementDouble(struct SelvaObject *obj, const RedisModuleString
 }
 
 int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long default_value, long long incr) {
-    struct SelvaObjectKey *key;
     int err;
+    long long current;
+    long long val = default_value;
 
-    assert(obj);
-
-    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
-    if (err) {
-        return err;
+    err = SelvaObject_GetLongLongStr(obj, key_name_str, key_name_len, &current);
+    if (err != SELVA_ENOENT) {
+        val = current;
+        val += incr;
     }
 
-    if (key->type == SELVA_OBJECT_NULL) {
-        key->type = SELVA_OBJECT_LONGLONG;
-        key->emb_ll_value = default_value;
-    } else if (key->type == SELVA_OBJECT_LONGLONG) {
-        key->emb_ll_value += incr;
-    } else {
-        return SELVA_EINTYPE;
+    err = SelvaObject_SetLongLongStr(obj, key_name_str, key_name_len, val);
+
+    if (err) {
+      return err;
     }
 
     return 0;
+
 }
 
 int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const RedisModuleString *key_name, long long default_value, long long incr) {
