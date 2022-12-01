@@ -1123,7 +1123,6 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
         return err;
     }
 
-    fprintf(stderr, "HELLO HELLO %.*s %d %lld\n", (int)key_name_len, key_name_str, key->type, key->emb_ll_value);
     if (key->type == SELVA_OBJECT_LONGLONG) {
         key->emb_ll_value += incr;
     } else {
@@ -1136,7 +1135,6 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
         key->emb_ll_value = default_value;
     }
 
-    fprintf(stderr, "YES HELLO %.*s %d\n", (int)key_name_len, key_name_str, key->type);
     return 0;
 }
 
