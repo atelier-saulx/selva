@@ -188,7 +188,7 @@ const result = await get({
 })
 ```
 
-[See test](../client/test/examples/clauses/value.ts)
+[See test](https://github.com/atelier-saulx/selva/blob/master/client/test/examples/clauses/value.ts)
 
 ### `$default`: _any_
 
@@ -201,7 +201,7 @@ const result = await get({
 })
 ```
 
-[See test](../client/test/examples/clauses/default.ts)
+[See test](https://github.com/atelier-saulx/selva/blob/master/client/test/examples/clauses/default.ts)
 
 ### `$inherit`: _boolean_
 
@@ -216,7 +216,7 @@ const result = await client.get({
 })
 ```
 
-[See test](../client/test/examples/clauses/inherit.ts)
+[See test](https://github.com/atelier-saulx/selva/blob/master/client/test/examples/clauses/inherit.ts)
 
 #### `$type`: _string_, _array&lt;string&gt;_
 
@@ -345,7 +345,7 @@ const = await client.get({
 
 The field the path points to can exist in the same document or through `$inherit` and `$find` be part of another document.
 
-[See test](../client/test/examples/clauses/field.ts)
+[See test](https://github.com/atelier-saulx/selva/blob/master/client/test/examples/clauses/field.ts)
 
 ### `$list`: _boolean_, _object_
 
@@ -376,7 +376,7 @@ const result = await client.get({
 })
 ```
 
-[See test](../client/test/examples/clauses/list.ts)
+[See test](https://github.com/atelier-saulx/selva/blob/master/client/test/examples/clauses/list.ts)
 
 #### `$offset`: _integer_
 
@@ -404,7 +404,7 @@ const result = await client.get({
 Property of `$list` operator.  
 Limits the `$list` amount of items returned in a `$list`.
 
-[See test](../client/test/examples/clauses/list.ts)
+[See test](https://github.com/atelier-saulx/selva/blob/master/client/test/examples/clauses/list.ts)
 
 ## `$all`: _boolean_
 
@@ -427,7 +427,7 @@ const result = await get({
 })
 ```
 
-[See test](../client/test/examples/clauses/all.ts)
+[See test](https://github.com/atelier-saulx/selva/blob/master/client/test/examples/clauses/all.ts)
 
 ## `$language`: _string_
 
@@ -441,7 +441,7 @@ const result = await client.get({
 })
 ```
 
-[See test](../client/test/examples/clauses/language.ts)
+[See test](https://github.com/atelier-saulx/selva/blob/master/client/test/examples/clauses/language.ts)
 
 ## `$find`: _object_
 
@@ -465,7 +465,7 @@ Has the following properties:
 - `$field`: _string_ - Field name to compare the value to.
 - `$value`: _string_ - Value to compare the field to.
 
-Find operations depend on indexes for comparison. See [Field Indexes](schemas.md#field-indexes) for a description of the available index types and compatible comparison operators.
+Find operations depend on indexes for comparison. See [Field Indexes](https://github.com/atelier-saulx/selva/blob/master/docs/schemas.md#field-indexes) for a description of the available index types and compatible comparison operators.
 
 Search terms can be composed with the `$or` and `$and` operators, and nested to create complex logic.
 If an array of search terms is used, each term acts as an AND.

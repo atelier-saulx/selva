@@ -1,9 +1,12 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
 #include "selva.h"
-#include "errors.h"
 #include "selva_object.h"
 #include "hierarchy.h"
 

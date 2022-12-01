@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <tgmath.h>
 #include <time.h>
 #include "timestamp.h"

@@ -1,9 +1,12 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <math.h>
 #include "redismodule.h"
-#include "cdefs.h"
+#include "jemalloc.h"
 #include "funmap.h"
 #include "selva.h"
-#include "errors.h"
 #include "ptag.h"
 #include "hierarchy.h"
 #include "selva_lang.h"
@@ -73,10 +76,9 @@ int SelvaTraversal_ParseOrderArg(
     if (err) {
         TO_STR(ord);
 
-        fprintf(stderr, "%s:%d: Invalid order \"%.*s\": %s\n",
-                __FILE__, __LINE__,
-                (int)ord_len, ord_str,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid order \"%.*s\": %s",
+                  (int)ord_len, ord_str,
+                  getSelvaErrorStr(err));
         return SELVA_HIERARCHY_EINVAL;
     }
 
@@ -200,7 +202,7 @@ static struct TraversalOrderItem *alloc_item(RedisModuleCtx *ctx, size_t data_si
     if (ctx) {
         return RedisModule_PoolAlloc(ctx, item_size);
     } else {
-        return RedisModule_Calloc(1, item_size);
+        return selva_calloc(1, item_size);
     }
 }
 
@@ -298,7 +300,7 @@ struct TraversalOrderItem *SelvaTraversalOrder_CreateObjectOrderItem(
 
 void SelvaTraversalOrder_DestroyOrderItem(RedisModuleCtx *ctx, struct TraversalOrderItem *item) {
     if (!ctx) {
-        RedisModule_Free(item);
+        selva_free(item);
     }
-    /* Otherwise it's from the pool. */
+    /* Otherwise it's allocated from the pool. */
 }

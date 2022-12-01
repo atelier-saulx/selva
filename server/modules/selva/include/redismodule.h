@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2006-2020, Salvatore Sanfilippo
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 #ifndef REDISMODULE_H
 #define REDISMODULE_H
 
@@ -519,11 +524,11 @@ typedef struct RedisModuleTypeMethods {
 #define REDISMODULE_ATTR REDISMODULE_ATTR_COMMON
 #endif
 
-REDISMODULE_API void * (*RedisModule_Alloc)(size_t bytes) REDISMODULE_ATTR;
-REDISMODULE_API void * (*RedisModule_Realloc)(void *ptr, size_t bytes) REDISMODULE_ATTR;
-REDISMODULE_API void (*RedisModule_Free)(void *ptr) REDISMODULE_ATTR;
-REDISMODULE_API void * (*RedisModule_Calloc)(size_t nmemb, size_t size) REDISMODULE_ATTR;
-REDISMODULE_API char * (*RedisModule_Strdup)(const char *str) REDISMODULE_ATTR;
+REDISMODULE_API void * (*RedisModule_Alloc)(size_t bytes) REDISMODULE_ATTR __attribute__ ((deprecated));
+REDISMODULE_API void * (*RedisModule_Realloc)(void *ptr, size_t bytes) REDISMODULE_ATTR __attribute__ ((deprecated));
+REDISMODULE_API void (*RedisModule_Free)(void *ptr) REDISMODULE_ATTR __attribute__ ((deprecated));
+REDISMODULE_API void * (*RedisModule_Calloc)(size_t nmemb, size_t size) REDISMODULE_ATTR __attribute__ ((deprecated));
+REDISMODULE_API char * (*RedisModule_Strdup)(const char *str) REDISMODULE_ATTR __attribute__ ((deprecated));
 REDISMODULE_API int (*RedisModule_GetApi)(const char *, void *) REDISMODULE_ATTR;
 REDISMODULE_API int (*RedisModule_CreateCommand)(RedisModuleCtx *ctx, const char *name, RedisModuleCmdFunc cmdfunc, const char *strflags, int firstkey, int lastkey, int keystep) REDISMODULE_ATTR;
 REDISMODULE_API void (*RedisModule_SetModuleAttribs)(RedisModuleCtx *ctx, const char *name, int ver, int apiver) REDISMODULE_ATTR;
@@ -636,8 +641,8 @@ REDISMODULE_API void (*RedisModule_SaveLongDouble)(RedisModuleIO *io, long doubl
 REDISMODULE_API long double (*RedisModule_LoadLongDouble)(RedisModuleIO *io) REDISMODULE_ATTR;
 REDISMODULE_API void * (*RedisModule_LoadDataTypeFromString)(const RedisModuleString *str, const RedisModuleType *mt) REDISMODULE_ATTR;
 REDISMODULE_API RedisModuleString * (*RedisModule_SaveDataTypeToString)(RedisModuleCtx *ctx, void *data, const RedisModuleType *mt) REDISMODULE_ATTR;
-REDISMODULE_API void (*RedisModule_Log)(RedisModuleCtx *ctx, const char *level, const char *fmt, ...) REDISMODULE_ATTR REDISMODULE_ATTR_PRINTF(3,4);
-REDISMODULE_API void (*RedisModule_LogIOError)(RedisModuleIO *io, const char *levelstr, const char *fmt, ...) REDISMODULE_ATTR REDISMODULE_ATTR_PRINTF(3,4);
+REDISMODULE_API void (*RedisModule_Log)(RedisModuleCtx *ctx, const char *level, const char *fmt, ...) REDISMODULE_ATTR REDISMODULE_ATTR_PRINTF(3,4) __attribute__ ((deprecated));
+REDISMODULE_API void (*RedisModule_LogIOError)(RedisModuleIO *io, const char *levelstr, const char *fmt, ...) REDISMODULE_ATTR REDISMODULE_ATTR_PRINTF(3,4) __attribute__ ((deprecated));
 REDISMODULE_API void (*RedisModule__Assert)(const char *estr, const char *file, int line) REDISMODULE_ATTR;
 REDISMODULE_API void (*RedisModule_LatencyAddSample)(const char *event, mstime_t latency) REDISMODULE_ATTR;
 REDISMODULE_API int (*RedisModule_StringAppendBuffer)(RedisModuleCtx *ctx, RedisModuleString *str, const char *buf, size_t len) REDISMODULE_ATTR;
@@ -767,6 +772,9 @@ REDISMODULE_API int *(*RedisModule_GetCommandKeys)(RedisModuleCtx *ctx, RedisMod
 #endif
 
 #define RedisModule_IsAOFClient(id) ((id) == CLIENT_ID_AOF)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 /* This is included inline inside each Redis module. */
 static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver, int apiver) REDISMODULE_ATTR_UNUSED;
@@ -1021,6 +1029,8 @@ static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver, int 
     RedisModule_SetModuleAttribs(ctx,name,ver,apiver);
     return REDISMODULE_OK;
 }
+
+#pragma GCC diagnostic pop
 
 #define RedisModule_Assert(_e) ((_e)?(void)0 : (RedisModule__Assert(#_e,__FILE__,__LINE__),exit(1)))
 

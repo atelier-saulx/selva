@@ -11,6 +11,7 @@ char *rmalloc_strndup(const char *s, size_t n) {
   return ret;
 }
 
+#if 0
 /*
  * Re-patching RedisModule_Alloc and friends to the original malloc functions
  *
@@ -30,3 +31,4 @@ void RMUTil_InitAlloc() {
   RedisModule_Free = free;
   RedisModule_Strdup = strdup;
 }
+#endif

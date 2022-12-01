@@ -1,8 +1,12 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include "redismodule.h"
-#include "cdefs.h"
+#include "jemalloc.h"
+#include "libdeflate.h"
 #include "config.h"
 #include "selva.h"
-#include "errors.h"
 #include "selva_onload.h"
 
 SET_DECLARE(selva_onload, Selva_Onload);
@@ -21,12 +25,9 @@ static int my_RedisModuleEventCallback(RedisModuleCtx *ctx, RedisModuleEvent eid
 SELVA_EXPORT int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int err;
 
-    fprintf(stderr, "Selva version: %s\n", selva_version);
+    SELVA_LOG(SELVA_LOGL_INFO, "Selva version: %s", selva_version);
 
-    /* FIXME These pointers end up being NULL */
-#if 0
-    libdeflate_set_memory_allocator(RedisModule_Alloc, RedisModule_Free);
-#endif
+    libdeflate_set_memory_allocator(selva_malloc, selva_free);
 
     /* Register the module itself */
     if (RedisModule_Init(ctx, "selva", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
@@ -43,9 +44,8 @@ SELVA_EXPORT int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **arg
 
     err = parse_config_args(argv, argc);
     if (err) {
-        fprintf(stderr, "%s:%d:%s: Failed to parse config args: %s\n",
-                __FILE__, __LINE__, __func__,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse config args: %s",
+                  getSelvaErrorStr(err));
         return REDISMODULE_ERR;
     }
 

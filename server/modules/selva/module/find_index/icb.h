@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021-2022 SAULX
- * SPDX-License-Identifier: (MIT WITH selva-exception) OR AGPL-3.0-only
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 #ifndef _FIND_INDEX_ICB_
@@ -27,7 +27,7 @@ struct icb_descriptor {
     enum SelvaTraversal dir; /*!< Indexing traversal direction. */
     RedisModuleString *dir_expression; /*!< Indexing traversal expression. (optional) */
     RedisModuleString *filter; /*!< Indexing filter. */
-    struct index_order sort;
+    struct index_order sort; /*!< Sort order of the index. */
 };
 
 /**
@@ -125,14 +125,8 @@ struct SelvaFindIndexControlBlock {
     /*
      * Traversal.
      */
-    struct {
-        Selva_NodeId node_id; /*!< Starting node_id. */
-        enum SelvaTraversal dir; /*!< Traversal direction for the index. */
-        RedisModuleString *dir_expression; /*!< Traversal direction rpn expression. */
-        RedisModuleString *filter; /*!< Indexing rpn filter. */
-    } traversal;
-
-    struct index_order sort;
+    Selva_NodeId node_id; /*!< Starting node_id. */
+    struct icb_descriptor traversal;
 
     /**
      * Result set of the indexing clause.
@@ -164,7 +158,7 @@ struct SelvaFindIndexControlBlock {
 /**
  * Calculate the length of an index name.
  */
-size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct icb_descriptor *desc);
+__purefn size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct icb_descriptor *desc);
 
 /**
  * Create a deterministic name for an index.

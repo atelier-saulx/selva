@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef SELVA_ASYNC_TASK_H
 #define SELVA_ASYNC_TASK_H

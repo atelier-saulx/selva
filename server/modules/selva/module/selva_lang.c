@@ -1,11 +1,15 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <ctype.h>
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
 #include "redismodule.h"
+#include "selva.h"
+#include "jemalloc.h"
 #include "selva_onload.h"
-#include "cdefs.h"
-#include "errors.h"
 #include "selva_lang.h"
 #include "selva_object.h"
 
@@ -54,8 +58,8 @@
     apply(zh, zh_CN)
 
 struct SelvaLang {
-    char name[LANG_NAME_MAX]; /* Not nul-terminated. */
-    char territory[LANG_NAME_MAX]; /* Not nul-terminated. */
+    __nonstring char name[LANG_NAME_MAX];
+    __nonstring char territory[LANG_NAME_MAX];
     locale_t locale;
 };
 
@@ -91,7 +95,7 @@ static int add_lang(const char *lang, const char *locale_name) {
     struct SelvaLang *slang;
     int err;
 
-    slang = RedisModule_Calloc(1, sizeof(*slang));
+    slang = selva_calloc(1, sizeof(*slang));
     slang->locale = newlocale(LC_ALL_MASK, locale_name, 0);
     if (!slang->locale) {
         if (errno == EINVAL) {
@@ -110,19 +114,12 @@ static int add_lang(const char *lang, const char *locale_name) {
     /*
      * Note that slang->name is not supposed to be nul-terminated.
      */
-#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-truncation"
-#endif
     strncpy(slang->name, lang, sizeof(slang->name));
-#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
     get_territory(slang->territory, locale_name);
 
     err = SelvaObject_SetPointerStr(langs, lang, strnlen(lang, LANG_NAME_MAX), slang, &obj_opts);
     if (err) {
-        RedisModule_Free(slang);
+        selva_free(slang);
     }
 
     return err;
@@ -132,7 +129,7 @@ static void SelvaLang_Free(void *p) {
     struct SelvaLang *slang = (struct SelvaLang *)p;
 
     freelocale(slang->locale);
-    RedisModule_Free(slang);
+    selva_free(slang);
 }
 
 locale_t SelvaLang_GetLocale(const char *lang_str, size_t lang_len) {
@@ -149,10 +146,9 @@ locale_t SelvaLang_GetLocale(const char *lang_str, size_t lang_len) {
         void *p;
 
         if (lang_len > 0) {
-            fprintf(stderr, "%s:%d: Lang \"%.*s\" not found: %s\n",
-                    __FILE__, __LINE__,
-                    (int)lang_len, lang_str,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Lang \"%.*s\" not found: %s\n",
+                      (int)lang_len, lang_str,
+                      getSelvaErrorStr(err));
         }
 
         err = SelvaObject_GetPointerStr(langs, FALLBACK_LANG, sizeof(FALLBACK_LANG) - 1, &p);
@@ -170,7 +166,7 @@ static void load_lang(const char *lang, const char *locale_name) {
 
     err = add_lang(lang, locale_name);
     if (err) {
-        fprintf(stderr, "Loading locale %s for lang %s failed with error: %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Loading locale %s for lang %s failed with error: %s\n",
                 locale_name, lang,
                 getSelvaErrorStr(err));
     }

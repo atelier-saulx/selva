@@ -1,10 +1,13 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
 #include "svector.h"
 #include "selva.h"
-#include "errors.h"
 #include "selva_object.h"
 
 int SelvaObject_ArrayForeach(

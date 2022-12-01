@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef SELVA_MODIFY_H
 #define SELVA_MODIFY_H
@@ -30,6 +34,7 @@ enum SelvaModify_ArgType {
     SELVA_MODIFY_ARG_OP_ARRAY_PUSH = 'D', /*!< Set a new empty SelvaObject at the end of an array */
     SELVA_MODIFY_ARG_OP_ARRAY_INSERT = 'E', /*!< Set a new empty SelvaObject at the start of an array */
     SELVA_MODIFY_ARG_OP_ARRAY_REMOVE = 'F', /*!< Remove item in specified index from array */
+    SELVA_MODIFY_ARG_OP_ARRAY_QUEUE_TRIM = 'H', /*!< Remove items from the end of the array to match given length */
     /* Node object operations. */
     SELVA_MODIFY_ARG_OP_DEL = '7', /*!< Delete field; value is a modifier. */
     SELVA_MODIFY_ARG_OP_OBJ_META = 'C', /*!< Set object user metadata. */

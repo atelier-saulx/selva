@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef _SELVA_RMS_H_
 #define _SELVA_RMS_H_
@@ -51,7 +55,7 @@ struct compressed_rms {
  * @returns a new compressed_rms structure.
  */
 __attribute__ ((malloc)) static inline struct compressed_rms *rms_alloc_compressed(void) {
-    return RedisModule_Calloc(1, sizeof(struct compressed_rms));
+    return selva_calloc(1, sizeof(struct compressed_rms));
 }
 
 /**
@@ -61,7 +65,7 @@ static inline void rms_free_compressed(struct compressed_rms *compressed_rms) {
     if (compressed_rms->rms) {
         RedisModule_FreeString(NULL, compressed_rms->rms);
     }
-    RedisModule_Free(compressed_rms);
+    selva_free(compressed_rms);
 }
 
 /**

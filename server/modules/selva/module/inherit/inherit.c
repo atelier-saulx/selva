@@ -1,14 +1,17 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "selva.h"
 #include "redismodule.h"
+#include "selva.h"
 #include "cstrings.h"
 #include "svector.h"
-#include "errors.h"
 #include "arg_parser.h"
 #include "hierarchy.h"
 #include "modify.h"
@@ -90,11 +93,10 @@ static int Inherit_FieldValue_NodeCb(
          * SELVA_ENOENT is expected as not all nodes have all fields set;
          * Any other error is unexpected.
          */
-        fprintf(stderr, "%s:%d: Failed to get a field value. nodeId: %.*s fieldName: \"%.*s\" error: %s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, nodeId,
-                (int)args->field_name_len, args->field_name_str,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%.*s\" error: %s\n",
+                  (int)SELVA_NODE_ID_SIZE, nodeId,
+                  (int)args->field_name_len, args->field_name_str,
+                  getSelvaErrorStr(err));
     }
 
     return 0;
@@ -171,11 +173,10 @@ static int Inherit_SendFields_NodeCb(
              * SELVA_ENOENT is expected as not all nodes have all fields set;
              * Any other error is unexpected.
              */
-            fprintf(stderr, "%s:%d: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    RedisModule_StringPtrLen(field_name, NULL),
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      RedisModule_StringPtrLen(field_name, NULL),
+                      getSelvaErrorStr(err));
         }
     }
 
@@ -205,9 +206,7 @@ int Inherit_SendFields(
     err = SelvaHierarchy_Traverse(ctx, hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
     if (err) {
         /* TODO Better error handling? */
-        fprintf(stderr, "%s:%d: Inherit failed: %s\n",
-                __FILE__, __LINE__,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Inherit failed: %s", getSelvaErrorStr(err));
     }
 
     return args.nr_results;
@@ -280,8 +279,7 @@ static int InheritCommand_NodeCb(
              * SELVA_ENOENT is expected as not all nodes have all fields set;
              * Any other error is unexpected.
              */
-            fprintf(stderr, "%s:%d: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
-                    __FILE__, __LINE__,
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s",
                     (int)SELVA_NODE_ID_SIZE, nodeId,
                     RedisModule_StringPtrLen(field_name, NULL),
                     getSelvaErrorStr(err));
@@ -343,9 +341,10 @@ size_t inheritHierarchyFields(
         }
 
         if (err < 0) {
-            fprintf(stderr, "%s:%d: Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node_id, field_name_str, getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s",
+                      (int)SELVA_NODE_ID_SIZE, node_id,
+                      field_name_str,
+                      getSelvaErrorStr(err));
         }
     }
 
@@ -443,9 +442,7 @@ int SelvaInheritCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         /*
          * We can't reply with an error anymore, so we just log it.
          */
-        fprintf(stderr, "%s:%d: Inherit failed: %s\n",
-                __FILE__, __LINE__,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Inherit failed: %s", getSelvaErrorStr(err));
     }
 
     return REDISMODULE_OK;

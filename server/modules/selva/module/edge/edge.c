@@ -1,10 +1,15 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "auto_free.h"
-#include "errors.h"
 #include "svector.h"
+#include "selva.h"
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "subscriptions.h"
@@ -105,7 +110,7 @@ __attribute__((nonnull (1, 2))) static struct EdgeField *alloc_EdgeField(
 
     assert(constraint);
 
-    edgeField = RedisModule_Calloc(1, sizeof(struct EdgeField));
+    edgeField = selva_calloc(1, sizeof(struct EdgeField));
     edgeField->constraint = constraint;
     memcpy(edgeField->src_node_id, src_node_id, SELVA_NODE_ID_SIZE);
     SVector_Init(&edgeField->arcs, initial_size, SelvaSVectorComparator_Node);
@@ -252,9 +257,8 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaHierarchyN
                                   src_edge_field->src_node_id, SELVA_NODE_ID_SIZE,
                                   SELVA_OBJECT_POINTER, src_edge_field);
     if (err) {
-        fprintf(stderr, "%s:%d: Edge origin update failed: %s\n",
-                __FILE__, __LINE__,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Edge origin update failed: %s",
+                  getSelvaErrorStr(err));
         abort();
     }
 }
@@ -412,8 +416,9 @@ int Edge_Add(
              * The normal flow should be like this:
              * Edge_Add(src, dst) -> Edge_Add(dst, src) -> Edge_Add(src, dst) => SELVA_EEXIST
              */
-            fprintf(stderr, "%s:%d: An error occurred while creating a bidirectional edge: %s\n",
-                    __FILE__, __LINE__, getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR,
+                      "An error occurred while creating a bidirectional edge: %s",
+                      getSelvaErrorStr(err));
 
             /*
              * In case of an error we can't actually rollback anymore but we can
@@ -424,8 +429,9 @@ int Edge_Add(
             SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
             err1 = Edge_Delete(ctx, hierarchy, src_edge_field, src_node, dst_node_id);
             if (err1 && err1 != SELVA_ENOENT) {
-                fprintf(stderr, "%s:%d: Failed to remove the broken edge: %s\n",
-                        __FILE__, __LINE__, getSelvaErrorStr(err1));
+                SELVA_LOG(SELVA_LOGL_ERR,
+                          "Failed to remove the broken edge: %s",
+                          getSelvaErrorStr(err1));
             }
         } else {
             /* We don't want to leak the SELVA_EEXIST. */
@@ -511,8 +517,7 @@ static void remove_related_edge_markers(
     SelvaHierarchy_GetNodeId(src_node_id, src_node);
 
     if (unlikely(!SVector_Clone(&sub_markers, &dst_meta->sub_markers.vec, NULL))) {
-        fprintf(stderr, "%s:%d: ENOMEM failed to remove sub markers from a referenced node\n",
-                __FILE__, __LINE__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to remove sub markers from a referenced node");
         return;
     }
 
@@ -609,17 +614,15 @@ int Edge_Delete(
         if (bck_edge_field) {
             err = Edge_Delete(ctx, hierarchy, bck_edge_field, dst_node, src_node_id);
             if (err && err != SELVA_ENOENT) {
-                fprintf(stderr, "%s:%d: Failed to to remove a backwards edge of a bidirectional edge field\n",
-                        __FILE__, __LINE__);
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to to remove a backwards edge of a bidirectional edge field");
             }
         }
     } else if (!src_constraint) {
         /* Every edge_field should have a reference to its constraint. */
-        fprintf(stderr, "%s:%d: Source field constraint not set. node: %.*s (edge_field: %p) -> %.*s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, src_node_id,
-                edge_field,
-                (int)SELVA_NODE_ID_SIZE, dst_node_id);
+        SELVA_LOG(SELVA_LOGL_ERR, "Source field constraint not set. node: %.*s (edge_field: %p) -> %.*s",
+                  (int)SELVA_NODE_ID_SIZE, src_node_id,
+                  edge_field,
+                  (int)SELVA_NODE_ID_SIZE, dst_node_id);
     }
 
     return 0;
@@ -657,12 +660,11 @@ static int clear_field(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy, st
             Selva_NodeId src_node_id;
 
             SelvaHierarchy_GetNodeId(src_node_id, src_node);
-            fprintf(stderr, "%s:%d:%s: Unable to delete an edge %.*s (edge_field: %p) -> %.*s: %s\n",
-                    __FILE__, __LINE__, __func__,
-                    (int)SELVA_NODE_ID_SIZE, src_node_id,
-                    edge_field,
-                    (int)SELVA_NODE_ID_SIZE, dst_node_id,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Unable to delete an edge %.*s (edge_field: %p) -> %.*s: %s",
+                      (int)SELVA_NODE_ID_SIZE, src_node_id,
+                      edge_field,
+                      (int)SELVA_NODE_ID_SIZE, dst_node_id,
+                      getSelvaErrorStr(err));
         }
     }
 
@@ -689,9 +691,7 @@ static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierar
             enum SelvaObjectType subtype;
 
             if (SelvaObject_GetArrayStr(obj, name, strlen(name), &subtype, NULL)) {
-                fprintf(stderr, "%s:%d: Failed to read the subtype of an edges array: \"%s\"\n",
-                        __FILE__, __LINE__,
-                        name);
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to read the subtype of an edges array: \"%s\"", name);
                 continue;
             }
 
@@ -714,16 +714,14 @@ static void _clear_all_fields(RedisModuleCtx *ctx, struct SelvaHierarchy *hierar
                     _clear_all_fields(ctx, hierarchy, node, arr_obj);
                 }
             } else {
-                fprintf(stderr, "%s:%d: Unsupported subtype for an array in edges: %s key: \"%s\"\n",
-                        __FILE__, __LINE__,
-                        SelvaObject_Type2String(subtype, NULL),
-                        name);
+                SELVA_LOG(SELVA_LOGL_ERR, "Unsupported subtype for an array in edges: %s key: \"%s\"",
+                          SelvaObject_Type2String(subtype, NULL),
+                          name);
             }
         } else {
-            fprintf(stderr, "%s:%d: Unsupported value type in an edges object: %s key: \"%s\"\n",
-                    __FILE__, __LINE__,
-                    SelvaObject_Type2String(type, NULL),
-                    name);
+            SELVA_LOG(SELVA_LOGL_ERR, "Unsupported value type in an edges object: %s key: \"%s\"\n",
+                      SelvaObject_Type2String(type, NULL),
+                      name);
         }
     }
 }
@@ -786,9 +784,8 @@ int Edge_DeleteField(
      * Doing this will cause a full cleanup of the edges and origin pointers (EdgeField_Free()).
      */
     if (SelvaObject_DelKeyStr(SelvaHierarchy_GetNodeMetadataByPtr(src_node)->edge_fields.edges, field_name_str, field_name_len)) {
-        fprintf(stderr, "%s:%d: Failed to delete the edge field: \"%.*s\"",
-                __FILE__, __LINE__,
-                (int)field_name_len, field_name_str);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to delete the edge field: \"%.*s\"",
+                  (int)field_name_len, field_name_str);
     }
 
     return 0;
@@ -843,7 +840,7 @@ static void EdgeField_Free(void *p) {
 #endif
     SVector_Destroy(&edge_field->arcs);
     SelvaObject_Destroy(edge_field->metadata);
-    RedisModule_Free(p);
+    selva_free(p);
 }
 
 /**
@@ -886,8 +883,8 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
      */
     constraint_id = RedisModule_LoadUnsigned(io);
     if (constraint_id == EDGE_FIELD_CONSTRAINT_DYNAMIC) {
-        char *node_type __auto_free = NULL;
-        char *field_name_str __auto_free = NULL;
+        __rm_autofree char *node_type = NULL;
+        __rm_autofree char *field_name_str = NULL;
         size_t field_name_len;
 
         node_type = RedisModule_LoadStringBuffer(io, NULL);
@@ -898,7 +895,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
     }
 
     if (!constraint) {
-        RedisModule_LogIOError(io, "warning", "Constraint not found");
+        SELVA_LOG(SELVA_LOGL_CRIT, "Constraint not found");
         return NULL;
     }
 
@@ -914,7 +911,7 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
      * Edges/arcs.
      */
     for (size_t i = 0; i < nr_edges; i++) {
-        char *dst_id_str __auto_free = NULL;
+        __rm_autofree char *dst_id_str = NULL;
         size_t dst_id_len;
         struct SelvaHierarchyNode *dst_node;
         int err;
@@ -929,9 +926,9 @@ static void *EdgeField_RdbLoad(struct RedisModuleIO *io, __unused int encver __u
          */
         err = SelvaModify_AddHierarchy(ctx, hierarchy, dst_id_str, 0, NULL, 0, NULL);
         if (err < 0) {
-            RedisModule_LogIOError(io, "warning", "AddHierarchy(%.*s) failed: %s",
-                                   (int)SELVA_NODE_ID_SIZE, dst_id_str,
-                                   getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_CRIT, "AddHierarchy(%.*s) failed: %s",
+                      (int)SELVA_NODE_ID_SIZE, dst_id_str,
+                      getSelvaErrorStr(err));
             return NULL;
         }
 
@@ -956,7 +953,7 @@ int Edge_RdbLoad(struct RedisModuleIO *io, int encver, SelvaHierarchy *hierarchy
     struct SelvaHierarchyMetadata *metadata;
 
     if (unlikely(!ctx)) {
-        RedisModule_LogIOError(io, "warning", "Redis ctx can't be NULL");
+        SELVA_LOG(SELVA_LOGL_CRIT, "Redis ctx can't be NULL");
         return SELVA_EINVAL;
     }
 

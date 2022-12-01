@@ -139,7 +139,7 @@ export type FieldInputSchema =
 
 // maybe null?
 
-export type DeleteField = { $delete: true }
+export type DeleteField = { $delete: boolean }
 
 export type InputFields = Record<string, FieldInputSchema>
 
@@ -147,7 +147,7 @@ export type InputTypeSchema = {
   prefix?: string
   hierarchy?: HierarchySchema
   fields?: InputFields
-  $delete?: true
+  $delete?: boolean
   meta?: any
 }
 
@@ -192,7 +192,7 @@ export type Schema = {
   sha?: string
   languages?: string[]
   types: Types
-  rootType: Pick<TypeSchema, 'fields' | 'prefix'>
+  rootType: Pick<TypeSchema, 'fields' | 'prefix' | 'meta'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>
 }
@@ -201,7 +201,7 @@ export type SchemaOptions = {
   sha?: string
   languages?: string[]
   types?: Types
-  rootType: Pick<TypeSchema, 'fields' | 'prefix'>
+  rootType: Pick<TypeSchema, 'fields' | 'prefix' | 'meta'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>
 }

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -5,14 +9,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
-#include "cdefs.h"
 #include "funmap.h"
 #include "selva.h"
 #include "config.h"
 #include "redismodule.h"
 #include "auto_free.h"
 #include "arg_parser.h"
-#include "errors.h"
 #include "ptag.h"
 #include "hierarchy.h"
 #include "modify.h"
@@ -243,10 +245,9 @@ static int AggregateCommand_NodeCb(
          */
         err = rpn_bool(ctx, rpn_ctx, args->find_args.filter, &take);
         if (err) {
-            fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    rpn_str_error[err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed (node: \"%.*s\"): \"%s\"\n",
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      rpn_str_error[err]);
             return 1;
         }
     }
@@ -263,10 +264,9 @@ static int AggregateCommand_NodeCb(
 
             err = args->agg(SelvaHierarchy_GetNodeObject(node), args);
             if (err) {
-                fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, nodeId,
-                        getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                          (int)SELVA_NODE_ID_SIZE, nodeId,
+                          getSelvaErrorStr(err));
             }
 
             *nr_nodes = *nr_nodes + 1;
@@ -288,8 +288,7 @@ static int AggregateCommand_NodeCb(
                  * life, it's fairly ok to just log the error and return what
                  * we can.
                  */
-                fprintf(stderr, "%s:%d: Out of memory while creating an order result item\n",
-                        __FILE__, __LINE__);
+                SELVA_LOG(SELVA_LOGL_ERR, "Out of memory while creating an order result item\n");
             }
         }
     }
@@ -307,9 +306,8 @@ static int AggregateCommand_ArrayObjectCb(
     int take = (args->find_args.offset > 0) ? !args->find_args.offset-- : 1;
 
     if (subtype != SELVA_OBJECT_OBJECT) {
-        fprintf(stderr, "%s:%d: Array subtype not supported: %s\n",
-                __FILE__, __LINE__,
-                SelvaObject_Type2String(subtype, NULL));
+        SELVA_LOG(SELVA_LOGL_ERR, "Array subtype not supported: %s\n",
+                  SelvaObject_Type2String(subtype, NULL));
         return 1;
     }
 
@@ -319,9 +317,8 @@ static int AggregateCommand_ArrayObjectCb(
         /* Set obj to the register */
         err = rpn_set_reg_slvobj(rpn_ctx, 0, obj, 0);
         if (err) {
-            fprintf(stderr, "%s:%d: Register set failed: \"%s\"\n",
-                    __FILE__, __LINE__,
-                    rpn_str_error[err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "Register set failed: \"%s\"\n",
+                      rpn_str_error[err]);
             return 1;
         }
         rpn_set_obj(rpn_ctx, obj);
@@ -331,9 +328,8 @@ static int AggregateCommand_ArrayObjectCb(
          */
         err = rpn_bool(args->ctx, rpn_ctx, args->find_args.filter, &take);
         if (err) {
-            fprintf(stderr, "%s:%d: Expression failed: \"%s\"\n",
-                    __FILE__, __LINE__,
-                    rpn_str_error[err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed: \"%s\"\n",
+                      rpn_str_error[err]);
             return 1;
         }
     }
@@ -366,8 +362,7 @@ static int AggregateCommand_ArrayObjectCb(
                  * life, it's fairly ok to just log the error and return what
                  * we can.
                  */
-                fprintf(stderr, "%s:%d Failed to create an order item\n",
-                        __FILE__, __LINE__);
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order item");
             }
         }
     }
@@ -416,10 +411,9 @@ static size_t AggregateCommand_AggregateOrderResult(
             err = SELVA_HIERARCHY_ENOENT;
         }
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, item->node_id,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                      (int)SELVA_NODE_ID_SIZE, item->node_id,
+                      getSelvaErrorStr(err));
             continue;
         }
 
@@ -468,10 +462,9 @@ static size_t AggregateCommand_AggregateOrderArrayResult(
 
         if (err) {
             RedisModule_ReplyWithNull(ctx);
-            fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, item->node_id,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                      (int)SELVA_NODE_ID_SIZE, item->node_id,
+                      getSelvaErrorStr(err));
         }
 
     }
@@ -508,7 +501,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     const int ARGV_DIRECTION = 4;
     const int ARGV_REF_FIELD = 5;
     int ARGV_INDEX_TXT       = 5;
-    int ARGV_INDEX_VAL       = 6;
+    __unused int ARGV_INDEX_VAL = 6;
     int ARGV_ORDER_TXT       = 5;
     int ARGV_ORDER_FLD       = 6;
     int ARGV_ORDER_ORD       = 7;
@@ -549,7 +542,7 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     struct rpn_ctx *rpn_ctx = NULL;
     RedisModuleString *argv_filter_expr = NULL;
     struct rpn_expression *filter_expression = NULL;
-    __auto_free RedisModuleString **index_hints = NULL;
+    __selva_autofree RedisModuleStringList index_hints = NULL;
     int nr_index_hints = 0;
 
     /*
@@ -879,11 +872,10 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            fprintf(stderr, "%s:%d: Aggregate failed. err: %s dir: %s node_id: \"%.*s\"\n",
-                    __FILE__, __LINE__,
-                    getSelvaErrorStr(err),
-                    SelvaTraversal_Dir2str(dir),
-                    (int)SELVA_NODE_ID_SIZE, nodeId);
+            SELVA_LOG(SELVA_LOGL_ERR, "Aggregate failed. err: %s dir: %s node_id: \"%.*s\"",
+                      getSelvaErrorStr(err),
+                      SelvaTraversal_Dir2str(dir),
+                      (int)SELVA_NODE_ID_SIZE, nodeId);
         }
 
         /*

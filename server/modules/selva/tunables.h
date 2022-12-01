@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef SELVA_TUNABLES
 #define SELVA_TUNABLES
@@ -119,7 +123,7 @@
 /**
  * Max number of forward jump labels in a single expression.
  */
-#define RPN_MAX_LABELS                  10
+#define RPN_MAX_LABELS                  128
 
 /*
  * Dynamic Find Query Index Tunables.

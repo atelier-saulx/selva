@@ -34,6 +34,7 @@ function all2rpn(
   types: Record<string, { prefix?: string }>,
   t: { $all: TraverseByTypeExpression[] }
 ): string {
+  // TODO If $all is just an array of strings then we could already build the set
   let result = ''
   for (let i = 0; i < t.$all.length; i++) {
     const expr = t.$all[i]

@@ -1,6 +1,6 @@
 /*
  * Base64 encoding/decoding (RFC1341)
- * Copyright (c) 2021 SAULX
+ * Copyright (c) 2021-2022 SAULX
  * Copyright (c) 2005-2011, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
@@ -9,7 +9,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "redismodule.h"
+#include "jemalloc.h"
 #include "base64.h"
 
 static const unsigned char base64_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -69,7 +69,7 @@ char * base64_encode(const char *str_in, size_t len, size_t *out_len)
     char *out;
     size_t n;
 
-    out = RedisModule_Alloc(base64_out_len(len, line_max) + 1);
+    out = selva_malloc(base64_out_len(len, line_max) + 1);
     n = base64_encode_s(out, str_in, len, line_max);
     if (out_len) {
         *out_len = n;
@@ -102,7 +102,7 @@ char * base64_decode(const char *str_in, size_t len, size_t *out_len)
     }
 
     olen = count / 4 * 3;
-    pos = out = RedisModule_Alloc(olen);
+    pos = out = selva_malloc(olen);
 
     count = 0;
     for (i = 0; i < len; i++) {
@@ -130,7 +130,7 @@ char * base64_decode(const char *str_in, size_t len, size_t *out_len)
                     pos -= 2;
                 } else {
                     /* Invalid padding */
-                    RedisModule_Free(out);
+                    selva_free(out);
                     return NULL;
                 }
                 break;

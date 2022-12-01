@@ -1,6 +1,10 @@
-#include "selva_set.h"
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include "redismodule.h"
-#include "cdefs.h"
+#include "selva_set.h"
+#include "jemalloc.h"
 #include "rms.h"
 
 #define SELVA_SHARED_KEY_STR "type"

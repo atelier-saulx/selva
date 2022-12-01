@@ -139,6 +139,7 @@ test.beforeEach(async (t) => {
       custom: {
         prefix: 'cu',
         fields: {
+          name: { type: 'string' },
           value: { type: 'number' },
           age: { type: 'number' },
           auth: {

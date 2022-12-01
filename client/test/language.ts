@@ -48,6 +48,15 @@ test.serial('language in all types of objects', async (t) => {
               },
             },
           },
+          randoRecord: {
+            type: 'record',
+            values: {
+              type: 'object',
+              properties: {
+                title: { type: 'text' },
+              },
+            },
+          },
         },
       },
     },
@@ -75,6 +84,25 @@ test.serial('language in all types of objects', async (t) => {
       },
     }
   )
+
+  t.throwsAsync(() => client.set({
+    $type: 'blurf',
+    title: 'someTitle',
+  }))
+  t.throwsAsync(() => client.set({
+    $type: 'blurf',
+    randoObject: { title: 'someTitle' },
+  }))
+  t.throwsAsync(() => client.set({
+    $type: 'blurf',
+    randoArray: [{ title: 'someTitle' }],
+  }))
+  t.throwsAsync(() => client.set({
+    $type: 'blurf',
+    randoRecord: {
+      thing: { title: 'someTitle' }
+    },
+  }))
 
   await client.destroy()
 })

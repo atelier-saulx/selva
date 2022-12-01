@@ -180,3 +180,33 @@ test.serial('add and delete nodes in an index', async (t) => {
     '84',
   ])
 })
+
+test.serial('create max number of indices', async (t) => {
+  const client = connect({ port })
+  const getQ = () => [
+    '', '___selva_hierarchy', 'descendants',
+    ...[...Array(15).keys()].map((v) => ['index', `"value" g #${Math.floor(Math.random() * 100 + v)} I`]).flat(),
+    'fields', 'strValue', 'root', '"value" g #10 I'
+  ]
+
+  for (let i = 0; i < 800; i++) {
+    await client.set({
+      type: 'match',
+      title: { en: 'a', de: 'b', nl: 'c' },
+      value: i,
+      strValue: `${i}`,
+    })
+  }
+
+  for (let j = 0; j < 100; j++) {
+    console.time('batch')
+    const q = getQ()
+    for (let i = 0; i < 500; i++) {
+      await client.redis.selva_hierarchy_find(...q)
+    }
+    await wait(2e3)
+    console.timeEnd('batch')
+  }
+
+  t.pass()
+})

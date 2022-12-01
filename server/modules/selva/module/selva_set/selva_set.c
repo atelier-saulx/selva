@@ -1,10 +1,13 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <math.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include "cdefs.h"
-#include "selva.h"
-#include "errors.h"
 #include "redismodule.h"
+#include "jemalloc.h"
+#include "selva.h"
 #include "alias.h"
 #include "selva_set.h"
 
@@ -56,7 +59,7 @@ int SelvaSet_AddRms(struct SelvaSet *set, struct RedisModuleString *s) {
         return SELVA_EEXIST;
     }
 
-    el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
+    el = selva_calloc(1, sizeof(struct SelvaSetElement));
     el->value_rms = s;
 
     (void)RB_INSERT(SelvaSetRms, &set->head_rms, el);
@@ -80,7 +83,7 @@ int SelvaSet_AddDouble(struct SelvaSet *set, double d) {
         return SELVA_EEXIST;
     }
 
-    el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
+    el = selva_calloc(1, sizeof(struct SelvaSetElement));
     el->value_d = d;
 
     (void)RB_INSERT(SelvaSetDouble, &set->head_d, el);
@@ -100,7 +103,7 @@ int SelvaSet_AddLongLong(struct SelvaSet *set, long long ll) {
         return SELVA_EEXIST;
     }
 
-    el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
+    el = selva_calloc(1, sizeof(struct SelvaSetElement));
     el->value_ll = ll;
 
     (void)RB_INSERT(SelvaSetLongLong, &set->head_ll, el);
@@ -120,7 +123,7 @@ int SelvaSet_AddNodeId(struct SelvaSet *set, const Selva_NodeId node_id) {
         return SELVA_EEXIST;
     }
 
-    el = RedisModule_Calloc(1, sizeof(struct SelvaSetElement));
+    el = selva_calloc(1, sizeof(struct SelvaSetElement));
     memcpy(el->value_nodeId, node_id, SELVA_NODE_ID_SIZE);
 
     (void)RB_INSERT(SelvaSetNodeId, &set->head_nodeId, el);
@@ -134,7 +137,7 @@ void SelvaSet_DestroyElement(struct SelvaSetElement *el) {
         return;
     }
 
-    RedisModule_Free(el);
+    selva_free(el);
 }
 
 static void SelvaSet_DestroyRms(struct SelvaSet *set) {

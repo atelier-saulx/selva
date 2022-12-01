@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef _SELVA_INHERIT_FIELDS_H_
 #define _SELVA_INHERIT_FIELDS_H_

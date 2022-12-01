@@ -14,6 +14,10 @@ test.before(async (t) => {
     port,
   })
   await wait(100)
+
+  const client = connect({ port }, { loglevel: 'info' })
+  await client.redis.selva_log_dbg('module/hierarchy/hierarchy.c:2861')
+  await client.destroy()
 })
 
 test.beforeEach(async (t) => {

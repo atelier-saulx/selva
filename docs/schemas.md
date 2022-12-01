@@ -152,7 +152,7 @@ but can also be applied to the following types:
 
 The _type_ field is automatically indexed as a `TAG`.
 
-When indexed as `TAG`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operators:
+When indexed as `TAG`, the field becomes queryable with [`$filter`](https://github.com/atelier-saulx/selva/blob/master/docs/get_query.md#filter-object-array) using the following operators:
 
 - `$operator: '='`
 - `$operator: '!='`
@@ -171,7 +171,7 @@ but can also be applied to the following types:
 
 - _timestamp_
 
-When indexed as `NUMERIC`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operators:
+When indexed as `NUMERIC`, the field becomes queryable with [`$filter`](https://github.com/atelier-saulx/selva/blob/master/docs/get_query.md#filter-object-array) using the following operators:
 
 - `$operator: '='` (exact equality of the numeric values)
 - `$operator: '!='` (exact inequality of the numeric values)
@@ -193,13 +193,13 @@ but can also be applied to the following types:
 - _string_ (as `TAG`)
 - _text_ (as `TEXT-LANGUAGE`)
 
-When indexed as `SORTABLE`, the field becomes queryable with [`$sort`](./get_query.md#sort-object).
+When indexed as `SORTABLE`, the field becomes queryable with [`$sort`](https://github.com/atelier-saulx/selva/blob/master/docs/get_query.md#sort-object).
 
 ##### TEXT-LANGUAGE
 
 The `TEXT-LANGUAGE` index type can be applied to the `text` type only.
 
-When indexed as `TEXT-LANGUAGE`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operators:
+When indexed as `TEXT-LANGUAGE`, the field becomes queryable with [`$filter`](https://github.com/atelier-saulx/selva/blob/master/docs/get_query.md#filter-object-array) using the following operators:
 
 - `$operator: '='`
 - `$operator: '!='`
@@ -228,7 +228,7 @@ $value: '%%heyyo%%' // would match "hello", with two character substitutions fro
 
 The `TEXT-LANGUAGE-SUG` index type can be applied to the `text` type only.
 
-When indexed as `TEXT-LANGUAGE-SUG`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operators:
+When indexed as `TEXT-LANGUAGE-SUG`, the field becomes queryable with [`$filter`](https://github.com/atelier-saulx/selva/blob/master/docs/get_query.md#filter-object-array) using the following operators:
 
 - `$operator: '='`
 - `$operator: '!='`
@@ -241,7 +241,7 @@ No operators are possible in the `$value` filter property itself, unlike with `T
 
 The `GEO` index type can be applied to the `geo` type only.
 
-When indexed as `GEO`, the field becomes queryable with [`$filter`](./get_query.md#filter-object-array) using the following operator:
+When indexed as `GEO`, the field becomes queryable with [`$filter`](https://github.com/atelier-saulx/selva/blob/master/docs/get_query.md#filter-object-array) using the following operator:
 
 - `$operator: 'distance'`
 
@@ -249,7 +249,7 @@ The `distance` operator can be used to return only results within a certain radi
 
 ##### EXISTS
 
-The `EXISTS` index type can be applied to any type. When other indexing is enabled, it can be added as the last index type. It enables the following [`$filter`](./get_query.md#filter-object-array) operators:
+The `EXISTS` index type can be applied to any type. When other indexing is enabled, it can be added as the last index type. It enables the following [`$filter`](https://github.com/atelier-saulx/selva/blob/master/docs/get_query.md#filter-object-array) operators:
 
 - `$operator: 'exists'` (filter matches only records where the field has been set)
 - `$operator: 'notExists'` (filter matches only records where the field has _not_ been set)
@@ -275,4 +275,4 @@ The `EXISTS` index type can be applied to any type. When other indexing is enabl
 - [`object`](#object-type)
 - `json`
 
-For more information on what kind of values are stored in each of these types, you can visit the [set query](./set_query.md#any-field-name) documentation.
+For more information on what kind of values are stored in each of these types, you can visit the [set query](https://github.com/atelier-saulx/selva/blob/master/docs/set_query.md#any-field-name) documentation.

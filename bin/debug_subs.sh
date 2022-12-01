@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
+
 out=$(ps aux | grep redis)
 for line in $out; do
   if [[ $line == '*:'* ]]; then

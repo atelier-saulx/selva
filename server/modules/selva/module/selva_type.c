@@ -1,9 +1,11 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "cdefs.h"
 #include "redismodule.h"
-#include "errors.h"
 #include "selva.h"
 
 /*

@@ -48,7 +48,6 @@ const selva_commands = [
   'selva.hierarchy.edgegetmetadata',
   'selva.hierarchy.edgelist',
   'selva.hierarchy.find',
-  'selva.hierarchy.findin',
   'selva.hierarchy.parents',
   'selva.hierarchy.compress',
   'selva.hierarchy.listcompressed',
@@ -74,6 +73,8 @@ const selva_commands = [
   'selva.rpn.evalbool',
   'selva.rpn.evaldouble',
   'selva.rpn.evalstring',
+  'selva.log.dbg',
+  'selva.log.dbglist',
 ]
 
 redis.RedisClient.prototype.on_info_cmd = function (err, res) {

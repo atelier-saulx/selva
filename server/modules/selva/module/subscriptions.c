@@ -1,6 +1,9 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #define _POSIX_C_SOURCE 200809L
 #define _GNU_SOURCE
-
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -8,13 +11,12 @@
 #include <string.h>
 #include <sys/types.h>
 #include "redismodule.h"
-#include "cdefs.h"
+#include "jemalloc.h"
 #include "cstrings.h"
 #include "selva.h"
 #include "svector.h"
 #include "arg_parser.h"
 #include "async_task.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "resolve.h"
 #include "rpn.h"
@@ -226,10 +228,9 @@ int Selva_SubscriptionFilterMatch(
         rpn_set_obj(filter_ctx, SelvaHierarchy_GetNodeObject(node));
         err = rpn_bool(ctx, filter_ctx, marker->filter_expression, &res);
         if (err) {
-            fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node_id,
-                    rpn_str_error[err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed (node: \"%.*s\"): \"%s\"",
+                      (int)SELVA_NODE_ID_SIZE, node_id,
+                      rpn_str_error[err]);
             res = 0;
         }
     }
@@ -272,10 +273,10 @@ __attribute__((nonnull (1))) static void destroy_marker(struct Selva_Subscriptio
                        SELVA_HIERARCHY_TRAVERSAL_EXPRESSION)) {
         rpn_destroy_expression(marker->traversal_expression);
     } else {
-        RedisModule_Free(marker->ref_field);
+        selva_free(marker->ref_field);
     }
     rpn_destroy_expression(marker->filter_expression);
-    RedisModule_Free(marker);
+    selva_free(marker);
 }
 
 static void remove_sub_missing_accessor_markers(SelvaHierarchy *hierarchy, const struct Selva_Subscription *sub) {
@@ -401,7 +402,7 @@ static void destroy_sub(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, struct S
 #if MEM_DEBUG
     memset(sub, 0, sizeof(*sub));
 #endif
-    RedisModule_Free(sub);
+    selva_free(sub);
 }
 
 /*
@@ -600,7 +601,7 @@ static struct Selva_Subscription *create_subscription(
         const Selva_SubscriptionId sub_id) {
     struct Selva_Subscription *sub;
 
-    sub = RedisModule_Calloc(1, sizeof(struct Selva_Subscription));
+    sub = selva_calloc(1, sizeof(struct Selva_Subscription));
     memcpy(sub->sub_id, sub_id, sizeof(sub->sub_id));
     SVector_Init(&sub->markers, 1, marker_svector_compare);
 
@@ -609,7 +610,7 @@ static struct Selva_Subscription *create_subscription(
      */
     if (unlikely(RB_INSERT(hierarchy_subscriptions_tree, &hierarchy->subs.head, sub) != NULL)) {
         SVector_Destroy(&sub->markers);
-        RedisModule_Free(sub);
+        selva_free(sub);
         return NULL;
     }
 
@@ -657,7 +658,7 @@ static int new_marker(
         }
     }
 
-    marker = RedisModule_Calloc(1, sizeof(struct Selva_SubscriptionMarker) + (fields_str ? fields_len + 1 : 0));
+    marker = selva_calloc(1, sizeof(struct Selva_SubscriptionMarker) + (fields_str ? fields_len + 1 : 0));
     marker->marker_id = marker_id;
     marker->marker_flags = flags;
     marker->dir = SELVA_HIERARCHY_TRAVERSAL_NONE;
@@ -708,7 +709,7 @@ static void marker_set_ref_field(struct Selva_SubscriptionMarker *marker, const 
     assert((marker->dir & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD | SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD)) &&
            !(marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_TRIGGER));
 
-    marker->ref_field = RedisModule_Strdup(ref_field);
+    marker->ref_field = selva_strdup(ref_field);
 }
 
 static void marker_set_traversal_expression(struct Selva_SubscriptionMarker *marker, struct rpn_expression *traversal_expression) {
@@ -735,11 +736,11 @@ int Selva_AddSubscriptionAliasMarker(
         if (memcmp(old_marker->node_id, node_id, SELVA_NODE_ID_SIZE)) {
             TO_STR(alias_name);
 
-            fprintf(stderr, "%s:%d: Alias marker \"%.*s\" exists but it's associated with another node. No changed made. orig: %.*s new: %.*s\n:",
-                    __FILE__, __LINE__,
-                    (int)alias_name_len, alias_name_str,
-                    (int)SELVA_NODE_ID_SIZE, old_marker->node_id,
-                    (int)SELVA_NODE_ID_SIZE, node_id);
+            SELVA_LOG(SELVA_LOGL_WARN,
+                      "Alias marker \"%.*s\" exists but it's associated with another node. No changed made. orig: %.*s new: %.*s\n:",
+                      (int)alias_name_len, alias_name_str,
+                      (int)SELVA_NODE_ID_SIZE, old_marker->node_id,
+                      (int)SELVA_NODE_ID_SIZE, node_id);
         }
 
         /* Marker already created. */
@@ -752,9 +753,8 @@ int Selva_AddSubscriptionAliasMarker(
      */
     filter_expression = rpn_compile("$1 $2 a");
     if (!filter_expression) {
-        fprintf(stderr, "%s:%d: Failed to compile a filter for alias \"%s\"\n",
-                __FILE__, __LINE__,
-                RedisModule_StringPtrLen(alias_name, NULL));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to compile a filter for alias \"%s\"\n",
+                  RedisModule_StringPtrLen(alias_name, NULL));
         err = SELVA_RPN_ECOMP;
         goto fail;
     }
@@ -769,11 +769,11 @@ int Selva_AddSubscriptionAliasMarker(
         (rpn_err = rpn_set_reg(filter_ctx, 2, SELVA_ALIASES_FIELD, sizeof(SELVA_ALIASES_FIELD), 0))) {
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-        fprintf(stderr, "%s:%d: Fatal RPN error while adding an alias maker. sub_id: %s alias: %s rpn_error: %d\n",
-                __FILE__, __LINE__,
-                Selva_SubscriptionId2str(str, sub_id),
-                RedisModule_StringPtrLen(alias_name, NULL),
-                rpn_err);
+        SELVA_LOG(SELVA_LOGL_ERR,
+                  "Fatal RPN error while adding an alias maker. sub_id: %s alias: %s rpn_error: %d",
+                  Selva_SubscriptionId2str(str, sub_id),
+                  RedisModule_StringPtrLen(alias_name, NULL),
+                  rpn_err);
         if (rpn_err == RPN_ERR_ENOMEM) {
             err = SELVA_ENOMEM;
         } else {
@@ -1106,11 +1106,11 @@ static void clear_node_sub(RedisModuleCtx *ctx, struct SelvaHierarchy *hierarchy
         if (err && err != SELVA_HIERARCHY_ENOENT) {
             char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-            fprintf(stderr, "%s:%d: Failed to clear a subscription %s:%" PRImrkId ": %s\n",
-                    __FILE__, __LINE__,
-                    Selva_SubscriptionId2str(str, marker->sub->sub_id),
-                    marker->marker_id,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR,
+                      "Failed to clear a subscription %s:%" PRImrkId ": %s",
+                      Selva_SubscriptionId2str(str, marker->sub->sub_id),
+                      marker->marker_id,
+                      getSelvaErrorStr(err));
             abort(); /* It would be dangerous to not abort here. */
         }
     } else {
@@ -1160,7 +1160,7 @@ void SelvaSubscriptions_ClearAllMarkers(
 #endif
 
     if (unlikely(!SVector_Clone(&markers, &metadata->sub_markers.vec, NULL))) {
-        fprintf(stderr, "%s:%d: %s ENOMEM\n", __FILE__, __LINE__, __func__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to clone an SVector");
         return;
     }
 
@@ -1295,37 +1295,54 @@ void SelvaSubscriptions_InheritEdge(
         struct SelvaHierarchyNode *dst_node,
         const char *field_str,
         size_t field_len) {
+    Selva_NodeId src_node_id;
+    Selva_NodeId dst_node_id;
     struct SelvaHierarchyMetadata *src_metadata = SelvaHierarchy_GetNodeMetadataByPtr(src_node);
     struct SelvaHierarchyMetadata *dst_metadata = SelvaHierarchy_GetNodeMetadataByPtr(dst_node);
     struct Selva_SubscriptionMarkers *src_markers = &src_metadata->sub_markers;
     struct Selva_SubscriptionMarkers *dst_markers = &dst_metadata->sub_markers;
     struct SVectorIterator it;
     struct Selva_SubscriptionMarker *marker;
-    Selva_NodeId dst_node_id;
-    int traversing = 0;
+    int defer_all_traversing = 0;
 
+    SelvaHierarchy_GetNodeId(src_node_id, src_node);
     SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
 
     SVector_ForeachBegin(&it, &src_markers->vec);
     while ((marker = SVector_Foreach(&it))) {
-        if (marker->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD) {
+        if ((marker->dir & SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD) ||
+            ((marker->dir & SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD) && !memcmp(src_node_id, marker->node_id, SELVA_NODE_ID_SIZE))) {
             const size_t ref_field_len = strlen(marker->ref_field);
 
             if (field_len == ref_field_len && !strncmp(field_str, marker->ref_field, ref_field_len)) {
                 set_marker(dst_markers, marker);
-                traversing = 1;
+
+                if (!defer_all_traversing &&
+                    (marker->dir & SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD) &&
+                    Edge_GetField(dst_node, field_str, field_len)) {
+                    /*
+                     * If there was a traversing marker and the destination has the field
+                     * too then we should send an event to make the client propagate the
+                     * subscription marker by issuing a refresh.
+                     * RFE Technically we could check whether the field is empty before
+                     * doing this.
+                     */
+                    defer_all_traversing = 1;
+                } else if ((marker->dir & SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD) &&
+                           Selva_SubscriptionFilterMatch(ctx, hierarchy, dst_node, marker)) {
+                    unsigned short flags = SELVA_SUBSCRIPTION_FLAG_CH_HIERARCHY;
+
+                    /*
+                     * In the case of a marker over single edge_field we should
+                     * just trigger the markers that match.
+                     */
+                    marker->marker_action(ctx, hierarchy, marker, flags, NULL, 0, dst_node);
+                }
             }
         }
     }
 
-    /*
-     * If there was a traversing marker and the destination has the field
-     * too then we should send an event to make the client propagate the
-     * subscription marker by issuing a refresh.
-     * RFE Technically we could check whether the field is empty before
-     * doing this.
-     */
-    if (traversing && Edge_GetField(dst_node, field_str, field_len)) {
+    if (defer_all_traversing) {
         defer_event_for_traversing_markers(ctx, hierarchy, dst_node);
     }
 }
@@ -1379,9 +1396,8 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaHierarchy *hierar
     /* Get the <id> object containing a number of subscription pointers for this id. */
     err = SelvaObject_GetObjectStr(hierarchy->subs.missing, id_str, id_len, &obj);
     if (err) {
-        fprintf(stderr, "%s:%d: Failed to get missing accessor marker: %s",
-                __FILE__, __LINE__,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to get missing accessor marker: %s",
+                  getSelvaErrorStr(err));
         return;
     }
 
@@ -1715,9 +1731,8 @@ void SelvaSubscriptions_DeferAliasChangeEvents(
 
     orig_metadata = SelvaHierarchy_GetNodeMetadata(hierarchy, orig_node_id);
     if (!orig_metadata) {
-        fprintf(stderr, "%s:%d: Failed to get metadata for node: \"%.*s\"\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, orig_node_id);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to get metadata for node: \"%.*s\"",
+                  (int)SELVA_NODE_ID_SIZE, orig_node_id);
         return;
     }
 
@@ -1822,6 +1837,37 @@ static void send_trigger_events(struct SelvaHierarchy *hierarchy) {
 void SelvaSubscriptions_SendDeferredEvents(struct SelvaHierarchy *hierarchy) {
     send_update_events(hierarchy);
     send_trigger_events(hierarchy);
+}
+
+void SelvaSubscriptions_ReplyWithMarker(RedisModuleCtx *ctx, struct Selva_SubscriptionMarker *marker) {
+    char sub_buf[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
+    const int is_trigger = isTriggerMarker(marker->marker_flags);
+    size_t marker_array_len = 4;
+
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "sub_id: %s", Selva_SubscriptionId2str(sub_buf, marker->sub->sub_id)));
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "marker_id: %" PRImrkId, marker->marker_id));
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "flags: 0x%04x", marker->marker_flags));
+    if (is_trigger) {
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "event_type: %s", trigger_event_types[marker->event_type].name));
+        marker_array_len++;
+    } else {
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "node_id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, marker->node_id));
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "dir: %s", SelvaTraversal_Dir2str(marker->dir)));
+        marker_array_len += 2;
+
+        if (marker->dir & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD | SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD)) {
+            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "field: %s", marker->ref_field));
+            marker_array_len++;
+        }
+    }
+    RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "filter_expression: %s", (marker->filter_ctx) ? "set" : "unset"));
+    if (!is_trigger && (marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD)) {
+        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "fields: \"%s\"", marker->fields));
+        marker_array_len++;
+    }
+
+    RedisModule_ReplySetArrayLength(ctx, marker_array_len);
 }
 
 /*
@@ -1986,10 +2032,10 @@ int SelvaSubscriptions_AddMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
              */
             str = RedisModule_StringPtrLen(argv[i], &str_len);
             str_len++;
-            arg = RedisModule_Alloc(str_len);
+            arg = selva_malloc(str_len);
             memcpy(arg, str, str_len);
 
-            rpn_set_reg(filter_ctx, reg_i, arg, str_len, RPN_SET_REG_FLAG_RMFREE);
+            rpn_set_reg(filter_ctx, reg_i, arg, str_len, RPN_SET_REG_FLAG_SELVA_FREE);
         }
     }
 
@@ -2283,10 +2329,10 @@ int SelvaSubscriptions_AddTriggerCommand(RedisModuleCtx *ctx, RedisModuleString 
              */
             str = RedisModule_StringPtrLen(argv[i], &str_len);
             str_len++;
-            arg = RedisModule_Alloc(str_len);
+            arg = selva_malloc(str_len);
             memcpy(arg, str, str_len);
 
-            rpn_set_reg(filter_ctx, reg_i, arg, str_len, RPN_SET_REG_FLAG_RMFREE);
+            rpn_set_reg(filter_ctx, reg_i, arg, str_len, RPN_SET_REG_FLAG_SELVA_FREE);
         }
     }
 
@@ -2352,9 +2398,8 @@ int SelvaSubscriptions_RefreshCommand(RedisModuleCtx *ctx, RedisModuleString **a
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n",
-                __FILE__, __LINE__,
-                RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%s\"",
+                  RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
         return replyWithSelvaError(ctx, err);
     }
 
@@ -2472,9 +2517,8 @@ int SelvaSubscriptions_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **arg
 
         err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_ID]);
         if (err) {
-            fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n",
-                    __FILE__, __LINE__,
-                    RedisModule_StringPtrLen(argv[ARGV_ID], NULL));
+            SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%s\"",
+                      RedisModule_StringPtrLen(argv[ARGV_ID], NULL));
             return replyWithSelvaError(ctx, err);
         }
 
@@ -2512,34 +2556,7 @@ int SelvaSubscriptions_DebugCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     SVector_ForeachBegin(&it, markers);
     while ((marker = SVector_Foreach(&it))) {
-        char sub_buf[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
-        const int is_trigger = isTriggerMarker(marker->marker_flags);
-        size_t marker_array_len = 4;
-
-        RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "sub_id: %s", Selva_SubscriptionId2str(sub_buf, marker->sub->sub_id)));
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "marker_id: %" PRImrkId, marker->marker_id));
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "flags: 0x%04x", marker->marker_flags));
-        if (is_trigger) {
-            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "event_type: %s", trigger_event_types[marker->event_type].name));
-            marker_array_len++;
-        } else {
-            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "node_id: \"%.*s\"", (int)SELVA_NODE_ID_SIZE, marker->node_id));
-            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "dir: %s", SelvaTraversal_Dir2str(marker->dir)));
-            marker_array_len += 2;
-
-            if (marker->dir & (SELVA_HIERARCHY_TRAVERSAL_REF | SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD)) {
-                RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "field: %s", marker->ref_field));
-                marker_array_len++;
-            }
-        }
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "filter_expression: %s", (marker->filter_ctx) ? "set" : "unset"));
-        if (!is_trigger && (marker->marker_flags & SELVA_SUBSCRIPTION_FLAG_CH_FIELD)) {
-            RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "fields: \"%s\"", marker->fields));
-            marker_array_len++;
-        }
-
-        RedisModule_ReplySetArrayLength(ctx, marker_array_len);
+        SelvaSubscriptions_ReplyWithMarker(ctx, marker);
         array_len++;
     }
     RedisModule_ReplySetArrayLength(ctx, array_len);
@@ -2572,9 +2589,8 @@ int SelvaSubscriptions_DelCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n",
-                __FILE__, __LINE__,
-                RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%s\"",
+                  RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
         return replyWithSelvaError(ctx, err);
     }
 
@@ -2620,9 +2636,8 @@ int SelvaSubscriptions_DelMarkerCommand(RedisModuleCtx *ctx, RedisModuleString *
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
     if (err) {
-        fprintf(stderr, "%s:%d: Invalid sub_id \"%s\"\n",
-                __FILE__, __LINE__,
-                RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%s\"",
+                  RedisModule_StringPtrLen(argv[ARGV_SUB_ID], NULL));
         return replyWithSelvaError(ctx, err);
     }
 

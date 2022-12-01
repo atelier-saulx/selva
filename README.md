@@ -31,9 +31,9 @@ Here are some of its features:
 Selva is composed of two main modules - @saulx/selva client and @saulx/selva-server.
 Documentation for its API as well as the two main concepts: the schemas and its query DSL can be viewed in the links below.
 
-- [API](docs/api.md)
-- [Schema definition](docs/schemas.md)
-- [Query language](docs/query.md)
+- [API](https://github.com/atelier-saulx/selva/blob/master/docs/api.md)
+- [Schema definition](https://github.com/atelier-saulx/selva/blob/master/docs/schemas.md)
+- [Query language](https://github.com/atelier-saulx/selva/blob/master/docs/query.md)
 
 ## Usage
 
@@ -45,7 +45,7 @@ import { start } from '@saulx/selva-server'
 const server = await start({ port: 8080 })
 ```
 
-Setup the client and load the [schema](docs/schemas.md)
+Setup the client and load the [schema](https://github.com/atelier-saulx/selva/blob/master/docs/schemas.md)
 
 ```js
 import { connect } from '@saulx/selva'
@@ -168,7 +168,8 @@ const sub = obs.subscribe((data) => {
   console.log('Data changed: ', data)
 })
 ```
-
+<!-- based-docs-remove-start -->
 ---
 
 This project was funded through the NGI0 Discovery Fund, a fund established by NLnet with financial support from the European Commission's Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 825322.
+<!-- based-docs-remove-end -->

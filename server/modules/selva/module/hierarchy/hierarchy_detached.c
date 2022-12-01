@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <assert.h>
 #include <errno.h>
 #include <stddef.h>
@@ -5,9 +9,9 @@
 #include <string.h>
 #include <unistd.h>
 #include "redismodule.h"
-#include "cdefs.h"
-#include "errors.h"
+#include "jemalloc.h"
 #include "ptag.h"
+#include "selva.h"
 #include "rms.h"
 #include "selva_object.h"
 #include "hierarchy.h"
@@ -81,10 +85,9 @@ static int fread_compressed_subtree(RedisModuleString *zpath, struct compressed_
 
     fp = fopen(zpath_str, "rb");
     if (!fp) {
-        fprintf(stderr, "%s:%d: Failed to open compressed subtree \"%s\": %s\n",
-                __FILE__, __LINE__,
-                zpath_str,
-                strerror(errno));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to open compressed subtree \"%s\": %s",
+                  zpath_str,
+                  strerror(errno));
         /*
          * It could look like ENOENT would make more sense here but that's not
          * true because ENOENT would be interpreted as if the node was not
@@ -148,7 +151,7 @@ void *SelvaHierarchyDetached_Store(
             p = PTAG(p, SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK);
             break;
         }
-        fprintf(stderr, "%s:%d: Fallback to inmem compression\n", __FILE__, __LINE__);
+        SELVA_LOG(SELVA_LOGL_WARN, "Fallback to inmem compression");
         __attribute__((fallthrough));
     case SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM:
     default:
@@ -193,9 +196,8 @@ int SelvaHierarchyDetached_Get(
 
         return fread_compressed_subtree(zpath, compressed);
     } else {
-        fprintf(stderr, "%s:%d: Invalid tag on detached node_id: %.*s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node_id);
+        SELVA_LOG(SELVA_LOGL_WARN, "Invalid tag on detached node_id: %.*s",
+                  (int)SELVA_NODE_ID_SIZE, node_id);
         return SELVA_EINTYPE;
     }
 }

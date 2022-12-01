@@ -8,7 +8,7 @@ sonar-scanner \
     -Dsonar.organization=atelier-saulx \
     -Dsonar.projectKey=atelier-saulx_selva \
     -Dsonar.sources=server/modules/selva \
-    '-Dsonar.exclusions=server/modules/selva/lib/rmutil/**,server/modules/selva/lib/deflate/**' \
+    '-Dsonar.exclusions=server/modules/selva/lib/rmutil/**,server/modules/selva/lib/deflate/**,server/modules/jemalloc/**,server/modules/selva/include/hiredis/**,server/modules/selva/include/jemalloc_*.h' \
     -Dsonar.cfamily.gcov.reportsPath=server/modules/selva/gcov/reports \
     -Dsonar.cfamily.build-wrapper-output=bw-output \
     -Dsonar.cfamily.threads=4 \

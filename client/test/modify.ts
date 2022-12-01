@@ -115,6 +115,21 @@ test.beforeEach(async (t) => {
           value: {
             type: 'number',
           },
+          obj: {
+            type: 'object',
+            properties: {
+              value: { type: 'int' },
+              rec: {
+                type: 'record',
+                values: {
+                  type: 'object',
+                  properties: {
+                    value: { type: 'number' },
+                  },
+                },
+              },
+            },
+          },
         },
       },
       otherTestThing: {
@@ -295,15 +310,12 @@ test.serial('root', async (t) => {
     [match]
   )
 
-  t.deepEqualIgnoreOrder(
-    await client.get({ $id: 'root', $all: true }),
-    {
-      id: 'root',
-      type: 'root',
-      value: 9001,
-      hello: 'http://example.com/hello--yo-yes',
-    }
-  )
+  t.deepEqualIgnoreOrder(await client.get({ $id: 'root', $all: true }), {
+    id: 'root',
+    type: 'root',
+    value: 9001,
+    hello: 'http://example.com/hello--yo-yes',
+  })
 
   await client.delete('root')
   await client.destroy()
@@ -570,6 +582,18 @@ test.serial('basic', async (t) => {
     await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, match),
     [],
     'match has no children after $add: []'
+  )
+
+  // invalid child nodeId
+  await client.set({
+    $id: match,
+    children: { $add: ['', '\0\0\0\0\0\0\0\0\0\0'] },
+  })
+
+  t.deepEqual(
+    await client.redis.selva_hierarchy_children(DEFAULT_HIERARCHY, match),
+    [],
+    "match has no children after $add: ['']"
   )
 
   // set null children
@@ -1022,6 +1046,76 @@ test.serial('$increment, $default', async (t) => {
     await client.redis.selva_object_get('', 'viDingDong', 'title.en'),
     'title',
     'does not overwrite if value exists'
+  )
+
+  await client.set({
+    $id: 'viHelloYes',
+    obj: {
+      value: {
+        $default: 100,
+        $increment: 10,
+      },
+      rec: {
+        test1: {
+          value: {
+            $default: 10,
+            $increment: 11,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viHelloYes',
+      obj: true,
+    }),
+    {
+      obj: {
+        value: 100,
+        rec: {
+          test1: {
+            value: 10,
+          },
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: 'viHelloYes',
+    obj: {
+      value: {
+        $default: 100,
+        $increment: 10,
+      },
+      rec: {
+        test1: {
+          value: {
+            $default: 11,
+            $increment: 11,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viHelloYes',
+      obj: true,
+    }),
+    {
+      obj: {
+        value: 110,
+        rec: {
+          test1: {
+            value: 21,
+          },
+        },
+      },
+    }
   )
 
   await client.delete('root')
@@ -2597,6 +2691,241 @@ test.serial('set - insert and set further into array', async (t) => {
             {},
             {},
             { value: 7 },
+          ],
+        },
+      },
+    }
+  )
+
+  client.destroy()
+})
+
+test.serial('set - insert and set into start of array', async (t) => {
+  const client = connect({ port })
+  const id = await client.set({
+    type: 'lekkerType',
+    dingdongs: ['a', 'b', 'test'],
+    intArray: [1, 2, 3, 4, 5],
+    floatArray: [1.1, 2.2, 3.3, 4.4],
+    objRec: {
+      abba: {
+        intArray: [1, 2, 3, 4, 5],
+        floatArray: [1.1, 2.2, 3.3, 4.4],
+        strArray: ['a', 'b', 'c'],
+        objArray: [
+          {
+            hello: 'yes 1',
+            value: 1,
+          },
+          {
+            hello: 'yes 2',
+            value: 2,
+          },
+          {
+            hello: 'yes 3',
+            value: 3,
+          },
+        ],
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          intArray: [1, 2, 3, 4, 5],
+          strArray: ['a', 'b', 'c'],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+          ],
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        intArray: {
+          $unshift: [11, 12, 13],
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          intArray: [11, 12, 13, 1, 2, 3, 4, 5],
+          strArray: ['a', 'b', 'c'],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+          ],
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        intArray: {
+          $unshift: {
+            $value: [-11, -12, -13],
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          intArray: [-11, -12, -13, 11, 12, 13, 1, 2, 3, 4, 5],
+          strArray: ['a', 'b', 'c'],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+          ],
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        intArray: {
+          $unshift: {
+            $value: 123,
+            $maxLen: 10,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          intArray: [123, -11, -12, -13, 11, 12, 13, 1, 2, 3],
+          strArray: ['a', 'b', 'c'],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
+          ],
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: id,
+    objRec: {
+      abba: {
+        intArray: {
+          $unshift: {
+            $value: 321,
+            $maxLen: 10,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: id,
+      objRec: true,
+    }),
+    {
+      objRec: {
+        abba: {
+          floatArray: [1.1, 2.2, 3.3, 4.4],
+          intArray: [321, 123, -11, -12, -13, 11, 12, 13, 1, 2],
+          strArray: ['a', 'b', 'c'],
+          objArray: [
+            {
+              hello: 'yes 1',
+              value: 1,
+            },
+            {
+              hello: 'yes 2',
+              value: 2,
+            },
+            {
+              hello: 'yes 3',
+              value: 3,
+            },
           ],
         },
       },

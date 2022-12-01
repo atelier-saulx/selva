@@ -69,6 +69,7 @@ test.before(async (t) => {
       team: {
         prefix: 'te',
         fields: {
+          name: { type: 'string' },
           updatedAt: {
             type: 'timestamp',
           },
@@ -76,6 +77,9 @@ test.before(async (t) => {
       },
       competition: {
         prefix: 'co',
+        fields: {
+          name: { type: 'string' },
+        },
       },
       camera: {
         prefix: 'ca',

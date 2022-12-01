@@ -45,6 +45,7 @@ test.before(async (t) => {
       match: {
         prefix: 'ma',
         fields: {
+          name: { type: 'string' },
           title: { type: 'text' },
           end: { type: 'number' },
           start: { type: 'number' },

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
 #gcov "../../$1" -m -k -j -q -t --object-directory obj
 mkdir -p gcov/reports
 cd gcov/reports

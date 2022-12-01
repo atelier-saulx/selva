@@ -97,7 +97,7 @@ export default function ast2rpn(
         types,
         {
           isFork: true,
-          $or: [
+          [f.$operator == '!=' ? '$and' : '$or']: [
             {
               $operator: f.$operator,
               $field: f.$field,

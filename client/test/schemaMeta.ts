@@ -94,3 +94,27 @@ test.serial('schemas - meta', async (t) => {
   await server.destroy()
   await t.connectionsAreEmpty()
 })
+
+test.serial('schemas - rootType meta', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+
+  await client.updateSchema({
+    rootType: {
+      meta: {
+        name: 'Root!',
+      },
+    },
+  })
+
+  const x = await client.getSchema()
+
+  t.is(x.schema.rootType.meta.name, 'Root!')
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+})

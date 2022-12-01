@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2021-2022 SAULX
- * SPDX-License-Identifier: (MIT WITH selva-exception) OR AGPL-3.0-only
+ * SPDX-License-Identifier: MIT
  */
-#include "redismodule.h"
+#include "jemalloc.h"
 #include "bitmap.h"
-#include "errors.h"
+#include "selva.h"
 #include "ida.h"
 
 struct ida {
@@ -14,7 +14,7 @@ struct ida {
 struct ida *ida_init(ida_t max) {
     struct ida *ida;
 
-    ida = RedisModule_Alloc(sizeof(struct ida) - sizeof_field(struct ida, id_map) + BITMAP_ALLOC_SIZE(max));
+    ida = selva_malloc(sizeof(struct ida) - sizeof_field(struct ida, id_map) + BITMAP_ALLOC_SIZE(max));
     ida->id_map.nbits = max;
 
     for (int i = 0; i < max; i++) {
@@ -25,7 +25,7 @@ struct ida *ida_init(ida_t max) {
 }
 
 void ida_destroy(struct ida *ida) {
-    RedisModule_Free(ida);
+    selva_free(ida);
 }
 
 ida_t ida_alloc(struct ida *ida) {

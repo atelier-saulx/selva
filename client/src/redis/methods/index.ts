@@ -3548,21 +3548,6 @@ async selva_hierarchy_find(opts: any, ...args: args): Promise<any> {
 }
 
 
-async selva_hierarchy_findin(opts: ServerSelector, ...args: args): Promise<any>
-async selva_hierarchy_findin(...args: args): Promise<any>
-async selva_hierarchy_findin(opts: any, ...args: args): Promise<any> {
-  if (typeof opts === 'object') {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_hierarchy_findin', args, resolve, reject }, opts)
-    })
-  } else {
-    return new Promise((resolve, reject) => {
-      this.addCommandToQueue({ command: 'selva_hierarchy_findin', args: [opts, ...args], resolve, reject })
-    })
-  }
-}
-
-
 async selva_hierarchy_parents(opts: ServerSelector, ...args: args): Promise<any>
 async selva_hierarchy_parents(...args: args): Promise<any>
 async selva_hierarchy_parents(opts: any, ...args: args): Promise<any> {
@@ -4083,6 +4068,36 @@ async selva_rpn_evalstring(opts: any, ...args: args): Promise<any> {
   } else {
     return new Promise((resolve, reject) => {
       this.addCommandToQueue({ command: 'selva_rpn_evalstring', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_log_dbg(opts: ServerSelector, ...args: args): Promise<any>
+async selva_log_dbg(...args: args): Promise<any>
+async selva_log_dbg(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_log_dbg', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_log_dbg', args: [opts, ...args], resolve, reject })
+    })
+  }
+}
+
+
+async selva_log_dbglist(opts: ServerSelector, ...args: args): Promise<any>
+async selva_log_dbglist(...args: args): Promise<any>
+async selva_log_dbglist(opts: any, ...args: args): Promise<any> {
+  if (typeof opts === 'object') {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_log_dbglist', args, resolve, reject }, opts)
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.addCommandToQueue({ command: 'selva_log_dbglist', args: [opts, ...args], resolve, reject })
     })
   }
 }

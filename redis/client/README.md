@@ -55,33 +55,6 @@ snake_case and all options / variables / events etc. can be used either way. It
 is recommended to use camelCase as this is the default for the Node.js
 landscape.
 
-### Promises
-
-You can also use node_redis with promises by promisifying node_redis with
-[bluebird](https://github.com/petkaantonov/bluebird) as in:
-
-```js
-var redis = require('redis');
-bluebird.promisifyAll(redis.RedisClient.prototype);
-bluebird.promisifyAll(redis.Multi.prototype);
-```
-
-It'll add a *Async* to all node_redis functions (e.g. return client.getAsync().then())
-
-```js
-// We expect a value 'foo': 'bar' to be present
-// So instead of writing client.get('foo', cb); you have to write:
-return client.getAsync('foo').then(function(res) {
-    console.log(res); // => 'bar'
-});
-
-// Using multi with promises looks like:
-
-return client.multi().get('foo').execAsync().then(function(res) {
-    console.log(res); // => 'bar'
-});
-```
-
 ### Sending Commands
 
 Each Redis command is exposed as a function on the `client` object.

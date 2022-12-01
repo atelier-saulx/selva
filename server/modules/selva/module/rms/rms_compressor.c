@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -6,22 +10,22 @@
 #include <unistd.h>
 #include "libdeflate.h"
 #include "redismodule.h"
-#include "cdefs.h"
+#include "jemalloc.h"
+#include "selva.h"
 #include "config.h"
 #include "selva_onload.h"
 #include "auto_free.h"
-#include "errors.h"
 #include "rms.h"
 
 static struct libdeflate_compressor *compressor;
 static struct libdeflate_decompressor *decompressor;
 
 int rms_compress(struct compressed_rms *out, RedisModuleString *in, double *cratio) {
-    char *compressed_str __auto_free = NULL;
+    char *compressed_str __selva_autofree = NULL;
     size_t compressed_size = 0;
     TO_STR(in);
 
-    compressed_str = RedisModule_Alloc(in_len);
+    compressed_str = selva_malloc(in_len);
     compressed_size = libdeflate_deflate_compress(compressor, in_str, in_len, compressed_str, in_len);
 
     if (compressed_size == 0) {
@@ -50,7 +54,7 @@ int rms_compress(struct compressed_rms *out, RedisModuleString *in, double *crat
 int rms_decompress(RedisModuleString **out, struct compressed_rms *in) {
     size_t compressed_len;
     const char *compressed_str;
-    char *uncompressed_str __auto_free = NULL;
+    char *uncompressed_str __selva_autofree = NULL;
     size_t nbytes_out = 0;
     enum libdeflate_result res;
 
@@ -59,7 +63,7 @@ int rms_decompress(RedisModuleString **out, struct compressed_rms *in) {
         return (*out) ? 0 : SELVA_ENOMEM;
     }
 
-    uncompressed_str = RedisModule_Alloc(in->uncompressed_size);
+    uncompressed_str = selva_malloc(in->uncompressed_size);
     compressed_str = RedisModule_StringPtrLen(in->rms, &compressed_len);
     res = libdeflate_deflate_decompress(decompressor, compressed_str, compressed_len, uncompressed_str, in->uncompressed_size, &nbytes_out);
     if (res != 0 || nbytes_out != (size_t)in->uncompressed_size) {
@@ -129,11 +133,10 @@ static void print_read_error(FILE *fp) {
     const char *str_err = ferr ? strerror(errno) : "No error";
     const int eof = feof(fp);
 
-    fprintf(stderr, "%s:%d: Failed to read a compressed subtree file. path: \"%s\": err: \"%s\" eof: %d\n",
-            __FILE__, __LINE__,
-            get_filename(filename, fp),
-            str_err,
-            eof);
+    SELVA_LOG(SELVA_LOGL_ERR, "Failed to read a compressed subtree file. path: \"%s\": err: \"%s\" eof: %d",
+              get_filename(filename, fp),
+              str_err,
+              eof);
 }
 
 int rms_fread_compressed(struct compressed_rms *compressed, FILE *fp) {
@@ -146,7 +149,7 @@ int rms_fread_compressed(struct compressed_rms *compressed, FILE *fp) {
         return (int)file_size;
     }
 
-    buf = RedisModule_Alloc(file_size);
+    buf = selva_malloc(file_size);
 
     read_bytes = fread(buf, sizeof(char), file_size, fp);
     if (read_bytes != (size_t)file_size) {
@@ -159,7 +162,7 @@ int rms_fread_compressed(struct compressed_rms *compressed, FILE *fp) {
     compressed->rms = RedisModule_CreateString(NULL, buf + sizeof(compressed->uncompressed_size), file_size - sizeof(compressed->uncompressed_size));
 
 fail:
-    RedisModule_Free(buf);
+    selva_free(buf);
     return err;
 }
 

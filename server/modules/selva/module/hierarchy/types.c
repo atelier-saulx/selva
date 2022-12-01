@@ -1,10 +1,14 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include "redismodule.h"
+#include "jemalloc.h"
 #include "selva.h"
 #include "selva_onload.h"
 #include "selva_object.h"
 #include "rms.h"
 #include "hierarchy.h"
-#include "errors.h"
 
 /**
  * This function takes care of sharing/holding name.

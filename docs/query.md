@@ -8,6 +8,6 @@ _Operators_ do not show as fields but have a special meaning to Selva and manipu
 
 ## Reference
 
-- [_Get_ Method Queries](./get_query.md)
-- [_Set_ Method Queries](./set_query.md)
-- [_Delete_ Method Queries](./delete_query.md)
+- [_Get_ Method Queries](https://github.com/atelier-saulx/selva/blob/master/docs/get_query.md)
+- [_Set_ Method Queries](https://github.com/atelier-saulx/selva/blob/master/docs/set_query.md)
+- [_Delete_ Method Queries](https://github.com/atelier-saulx/selva/blob/master/docs/delete_query.md)

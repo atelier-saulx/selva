@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef SELVA_MODIFY_SUBSCRIPTIONS
 #define SELVA_MODIFY_SUBSCRIPTIONS
@@ -421,5 +425,6 @@ void SelvaSubscriptions_DeferTriggerEvents(
         struct SelvaHierarchyNode *node,
         enum Selva_SubscriptionTriggerType event_type);
 void SelvaSubscriptions_SendDeferredEvents(struct SelvaHierarchy *hierarchy);
+void SelvaSubscriptions_ReplyWithMarker(struct RedisModuleCtx *ctx, struct Selva_SubscriptionMarker *marker);
 
 #endif /* SELVA_MODIFY_SUBSCRIPTIONS */

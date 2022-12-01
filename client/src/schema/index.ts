@@ -37,7 +37,7 @@ export type SchemaOpts = {
   sha?: string
   languages?: string[]
   types?: InputTypes
-  rootType?: Pick<TypeSchema, 'fields'>
+  rootType?: Pick<TypeSchema, 'fields' | 'meta'>
   idSeedCounter?: number
   prefixToTypeMapping?: Record<string, string>
 }

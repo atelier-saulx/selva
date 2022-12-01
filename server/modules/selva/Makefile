@@ -1,3 +1,6 @@
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
+
 SHELL := /bin/bash
 
 include common.mk
@@ -42,6 +45,7 @@ OBJS := \
 	module/rpn/rpn.o \
 	module/rpn/rpn_eval.o \
 	module/selva_lang.o \
+	module/selva_log.o \
 	module/selva_object/selva_object.o \
 	module/selva_object/selva_object_commands.o \
 	module/selva_object/selva_object_foreach.o \
@@ -63,18 +67,20 @@ CFLAGS += $(IDIR) -include tunables.h \
 	-fPIC \
 	-fno-strict-aliasing
 LIBDIR := $(patsubst %,lib/%,$(LIBS))
-SHOBJ_LDLIBS := -lc -lhiredis -lcrypto -lssl
+SHOBJ_LDLIBS := -lc -ljemalloc_selva -lhiredis -lcrypto -lssl
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
 	CFLAGS += -include include/linux_cdefs.h \
 			  -fisolate-erroneous-paths-attribute
 	SHOBJ_CFLAGS ?= -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Bsymbolic
+	LIBDIR += ../binaries/linux_x64
 endif
 ifeq ($(uname_S),Darwin) # macOS
 	CFLAGS += -include include/macos_cdefs.h
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
-	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup
+	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup -rpath @executable_path/../binaries/darwin_x64/
+	LIBDIR += ../binaries/darwin_x64
 	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib $(wildcard /usr/local/Cellar/openssl@1.1/1.1.1*/lib)
 endif
 ifeq ($(SELVA_TRACE),1)
@@ -107,14 +113,14 @@ module.so: $(OBJS) $(LIBS_A)
 check:
 ifeq ($(uname_S),Linux)
 	cppcheck --quiet --inline-suppr \
-		--language=c --std=c99 --platform=unix64 --enable=all \
+		--language=c --std=c99 --platform=unix64 --enable=all --max-configs=100 \
 		-addon=threadsafety.py --addon=cert.py \
 		--suppressions-list=cppcheck_suppressions.txt \
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
 		$(IDIR) module.c ./module ./lib/util
 else # Assume macOs
 	cppcheck --quiet --inline-suppr \
-		--language=c --std=c99 --platform=unix64 --enable=all \
+		--language=c --std=c99 --platform=unix64 --enable=all --max-configs=100 \
 		--suppressions-list=cppcheck_suppressions.txt \
 		--library=redis_cppcheck.cfg --library=selva_cppcheck.cfg \
 		-i test $(IDIR) -I./module -I./lib/util module.c ./module ./lib/util
@@ -139,7 +145,7 @@ clean: FORCE
 	find . -type f -name "*.gcno" -exec rm -f {} \;
 	find . -type f -name "*.gcov" -exec rm -f {} \;
 	$(MAKE) -C test clean
-	$(MAKE) -C lib/deflate clean
+	$(foreach lib,$(LIBS),pushd "lib/$(lib)" && $(MAKE) clean; popd;)
 
 FORCE:
 

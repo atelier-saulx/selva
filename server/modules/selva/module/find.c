@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #define _GNU_SOURCE
 #include <assert.h>
 #include <stddef.h>
@@ -8,13 +12,12 @@
 #include <strings.h>
 #include <tgmath.h>
 #include "redismodule.h"
+#include "selva.h"
 #include "auto_free.h"
 #include "arg_parser.h"
-#include "errors.h"
 #include "ptag.h"
 #include "hierarchy.h"
 #include "rpn.h"
-#include "selva.h"
 #include "config.h"
 #include "selva_lang.h"
 #include "selva_object.h"
@@ -140,11 +143,10 @@ static int send_edge_field(
         if (err && err != SELVA_ENOENT) {
             Selva_NodeId node_id;
 
-            fprintf(stderr, "%s:%d: Sending edge fields with a wildcard \"%.*s\" of %.*s failed: %s\n",
-                    __FILE__, __LINE__,
-                    (int)field_len, field_str,
-                    (int)SELVA_NODE_ID_SIZE, SelvaHierarchy_GetNodeId(node_id, node),
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Sending edge fields with a wildcard \"%.*s\" of %.*s failed: %s",
+                      (int)field_len, field_str,
+                      (int)SELVA_NODE_ID_SIZE, SelvaHierarchy_GetNodeId(node_id, node),
+                      getSelvaErrorStr(err));
         }
         return (int)(resp_count / 2);
     }
@@ -383,11 +385,10 @@ static int send_node_field(
     if (err == 0) {
         return 1;
     } else if (err != SELVA_ENOENT) {
-        fprintf(stderr, "%s:%d: Sending the %s field of %.*s failed: %s\n",
-                __FILE__, __LINE__,
-                field_str,
-                (int)SELVA_NODE_ID_SIZE, nodeId,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Sending the %s field of %.*s failed: %s",
+                  field_str,
+                  (int)SELVA_NODE_ID_SIZE, nodeId,
+                  getSelvaErrorStr(err));
         return 1; /* Something was already sent so +1 */
     } else {
         /*
@@ -411,11 +412,10 @@ static int send_node_field(
 
         err = SelvaObject_ReplyWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err && err != SELVA_ENOENT) {
-            fprintf(stderr, "%s:%d: Sending wildcard field \"%.*s\" of %.*s failed: %s\n",
-                    __FILE__, __LINE__,
-                    (int)field_len, field_str,
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Sending wildcard field \"%.*s\" of %.*s failed: %s\n",
+                      (int)field_len, field_str,
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      getSelvaErrorStr(err));
         }
 
         res += (int)(resp_count / 2);
@@ -439,11 +439,10 @@ static int send_node_field(
         RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str));
         err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to send the field (%.*s) for node_id: \"%.*s\" err: \"%s\"\n",
-                    __FILE__, __LINE__,
-                    (int)field_len, field_str,
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send the field (%.*s) for node_id: \"%.*s\" err: \"%s\"",
+                      (int)field_len, field_str,
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      getSelvaErrorStr(err));
             RedisModule_ReplyWithNull(ctx);
         }
 
@@ -482,11 +481,10 @@ static int send_all_node_data_fields(
             Selva_NodeId node_id;
 
             SelvaHierarchy_GetNodeId(node_id, node);
-            fprintf(stderr, "%s:%d: send_node_field(%.*s, %.*s) failed: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node_id,
-                    (int)field_name_len, field_name_str,
-                    getSelvaErrorStr(res));
+            SELVA_LOG(SELVA_LOGL_ERR, "send_node_field(%.*s, %.*s) failed: %s\n",
+                      (int)SELVA_NODE_ID_SIZE, node_id,
+                      (int)field_name_len, field_name_str,
+                      getSelvaErrorStr(res));
         }
     }
 
@@ -590,9 +588,8 @@ static int send_node_fields(
 
         err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to send all fields for node_id: \"%.*s\"\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, nodeId);
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send all fields for node_id: \"%.*s\"",
+                      (int)SELVA_NODE_ID_SIZE, nodeId);
         }
     } else {
         size_t nr_fields = 0;
@@ -650,10 +647,9 @@ static int send_array_object_field(
 
         err = SelvaObject_ReplyWithWildcardStr(ctx, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err && err != SELVA_ENOENT) {
-            fprintf(stderr, "%s:%d: Sending wildcard field %.*s in array object failed: %s\n",
-                    __FILE__, __LINE__,
-                    (int)field_len, field_str,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Sending wildcard field %.*s in array object failed: %s\n",
+                      (int)field_len, field_str,
+                      getSelvaErrorStr(err));
         }
 
         return (int)(resp_count / 2);
@@ -673,10 +669,9 @@ static int send_array_object_field(
     RedisModule_ReplyWithString(ctx, full_field_name);
     err = SelvaObject_ReplyWithObject(ctx, lang, obj, field, SELVA_OBJECT_REPLY_BINUMF_FLAG);
     if (err) {
-        fprintf(stderr, "%s:%d: Failed to send the field (%s) in array object err: \"%s\"\n",
-                __FILE__, __LINE__,
-                field_str,
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to send the field (%s) in array object err: \"%s\"\n",
+                  field_str,
+                  getSelvaErrorStr(err));
         RedisModule_ReplyWithNull(ctx);
     }
 
@@ -719,9 +714,8 @@ static int send_array_object_fields(
                SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
         err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to send all fields for selva object in array: %s\n",
-                    __FILE__, __LINE__,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send all fields for selva object in array: %s\n",
+                      getSelvaErrorStr(err));
         }
     } else {
         void *iterator;
@@ -806,11 +800,10 @@ static int send_merge_text(
         RedisModule_ReplyWithString(ctx, obj_path);
         err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to send \"%s\" (text) of node_id: \"%.*s\": %s\n",
-                    __FILE__, __LINE__,
-                    RedisModule_StringPtrLen(obj_path, NULL),
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send \"%s\" (text) of node_id: \"%.*s\": %s\n",
+                      RedisModule_StringPtrLen(obj_path, NULL),
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      getSelvaErrorStr(err));
         } else {
             /* Mark the key as sent. */
             (void)SelvaObject_SetLongLong(fields, obj_path, 1);
@@ -861,11 +854,10 @@ static int send_merge_all(
         if (err) {
             TO_STR(obj_path);
 
-            fprintf(stderr, "%s:%d: Failed to send \"%s.%s\" of node_id: \"%.*s\"\n",
-                    __FILE__, __LINE__,
-                    obj_path_str,
-                    key_name_str,
-                    (int)SELVA_NODE_ID_SIZE, nodeId);
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send \"%s.%s\" of node_id: \"%.*s\"\n",
+                      obj_path_str,
+                      key_name_str,
+                      (int)SELVA_NODE_ID_SIZE, nodeId);
             continue;
         }
 
@@ -917,11 +909,10 @@ static int send_named_merge(
             if (err) {
                 TO_STR(field);
 
-                fprintf(stderr, "%s:%d: Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
-                        __FILE__, __LINE__,
-                        field_str,
-                        (int)SELVA_NODE_ID_SIZE, nodeId,
-                        getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
+                          field_str,
+                          (int)SELVA_NODE_ID_SIZE, nodeId,
+                          getSelvaErrorStr(err));
 
                 /* Reply with null to fill the gap. */
                 RedisModule_ReplyWithNull(ctx);
@@ -976,9 +967,8 @@ static int send_deep_merge(
 
             err = send_deep_merge(ctx, lang, nodeId, fields, next_obj, next_path, nr_fields_out);
             if (err < 0) {
-                fprintf(stderr, "%s:%d: Deep merge failed %s\n",
-                        __FILE__, __LINE__,
-                        getSelvaErrorStr(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "Deep merge failed %s",
+                          getSelvaErrorStr(err));
             }
 
             /* Mark the text field as sent. */
@@ -1002,11 +992,10 @@ static int send_deep_merge(
             if (err) {
                 TO_STR(obj_path);
 
-                fprintf(stderr, "%s:%d: Failed to send \"%s.%s\" of node_id: \"%.*s\"\n",
-                        __FILE__, __LINE__,
-                        obj_path_str,
-                        key_name_str,
-                        (int)SELVA_NODE_ID_SIZE, nodeId);
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to send \"%s.%s\" of node_id: \"%.*s\"",
+                          obj_path_str,
+                          key_name_str,
+                          (int)SELVA_NODE_ID_SIZE, nodeId);
                 continue;
             }
 
@@ -1168,10 +1157,9 @@ static void print_node(
 
         RedisModule_ReplyWithNull(ctx);
 
-        fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, SelvaHierarchy_GetNodeId(nodeId, node),
-                getSelvaErrorStr(err));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                  (int)SELVA_NODE_ID_SIZE, SelvaHierarchy_GetNodeId(nodeId, node),
+                  getSelvaErrorStr(err));
     }
 }
 
@@ -1211,9 +1199,8 @@ static int process_node_sort(
          * we can.
          */
         SelvaHierarchy_GetNodeId(nodeId, node);
-        fprintf(stderr, "%s:%d: Failed to create an order item for %.*s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, nodeId);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order item for %.*s\n",
+                  (int)SELVA_NODE_ID_SIZE, nodeId);
     }
 
     return 0;
@@ -1255,10 +1242,9 @@ static __hot int FindCommand_NodeCb(
          */
         err = rpn_bool(ctx, rpn_ctx, args->filter, &take);
         if (err) {
-            fprintf(stderr, "%s:%d: Expression failed (node: \"%.*s\"): \"%s\"\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, nodeId,
-                    rpn_str_error[err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed (node: \"%.*s\"): \"%s\"\n",
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      rpn_str_error[err]);
             return 1;
         }
     }
@@ -1285,9 +1271,8 @@ static int process_array_obj_send(
         err = send_array_object_fields(ctx, args->lang, obj, args->send_param.fields);
         if (err) {
             RedisModule_ReplyWithNull(ctx);
-            fprintf(stderr, "%s:%d: Failed to handle field(s), err: %s\n",
-                    __FILE__, __LINE__,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s), err: %s",
+                      getSelvaErrorStr(err));
         }
     } else {
         RedisModule_ReplyWithStringBuffer(ctx, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE);
@@ -1315,8 +1300,7 @@ static int process_array_obj_sort(
          * life, it's fairly ok to just log the error and return what
          * we can.
          */
-        fprintf(stderr, "%s:%d: Failed to create an order item\n",
-                __FILE__, __LINE__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order item");
     }
 
     return 0;
@@ -1333,9 +1317,8 @@ static int FindCommand_ArrayObjectCb(
     int take = (find_args->offset > 0) ? !find_args->offset-- : 1;
 
     if (subtype != SELVA_OBJECT_OBJECT) {
-        fprintf(stderr, "%s:%d: Array subtype not supported: %s\n",
-                __FILE__, __LINE__,
-                SelvaObject_Type2String(subtype, NULL));
+        SELVA_LOG(SELVA_LOGL_ERR, "Array subtype not supported: %s",
+                  SelvaObject_Type2String(subtype, NULL));
         return 1;
     }
 
@@ -1345,9 +1328,8 @@ static int FindCommand_ArrayObjectCb(
         /* Set obj to the register */
         err = rpn_set_reg_slvobj(rpn_ctx, 0, obj, 0);
         if (err) {
-            fprintf(stderr, "%s:%d: Register set failed: \"%s\"\n",
-                    __FILE__, __LINE__,
-                    rpn_str_error[err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "Register set failed: \"%s\"",
+                      rpn_str_error[err]);
             return 1;
         }
         rpn_set_obj(rpn_ctx, obj);
@@ -1357,9 +1339,8 @@ static int FindCommand_ArrayObjectCb(
          */
         err = rpn_bool(args->ctx, rpn_ctx, find_args->filter, &take);
         if (err) {
-            fprintf(stderr, "%s:%d: Expression failed: \"%s\"\n",
-                    __FILE__, __LINE__,
-                    rpn_str_error[err]);
+            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed: \"%s\"",
+                      rpn_str_error[err]);
             return 1;
         }
     }
@@ -1451,10 +1432,9 @@ static void postprocess_array(
         err = send_array_object_fields(ctx, lang, PTAG_GETP(item->tagp), args->fields);
         if (err) {
             RedisModule_ReplyWithNull(ctx);
-            fprintf(stderr, "%s:%d: Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, item->node_id,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                      (int)SELVA_NODE_ID_SIZE, item->node_id,
+                      getSelvaErrorStr(err));
         }
 
         len++;
@@ -1529,9 +1509,8 @@ static void postprocess_inherit(
                 Selva_NodeId nodeId;
 
                 SelvaHierarchy_GetNodeId(nodeId, node);
-                fprintf(stderr, "%s:%d: Failed to create an order item for %.*s\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, nodeId);
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order item for %.*s\n",
+                          (int)SELVA_NODE_ID_SIZE, nodeId);
             }
 
         }
@@ -1599,7 +1578,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     int ARGV_EDGE_FILTER_TXT = 4;
     int ARGV_EDGE_FILTER_VAL = 5;
     int ARGV_INDEX_TXT       = 4;
-    int ARGV_INDEX_VAL       = 5;
+    __unused int ARGV_INDEX_VAL = 5;
     int ARGV_ORDER_TXT       = 4;
     int ARGV_ORDER_FLD       = 5;
     int ARGV_ORDER_ORD       = 6;
@@ -1648,7 +1627,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     __auto_free_rpn_expression struct rpn_expression *traversal_expression = NULL;
     __auto_free_rpn_ctx struct rpn_ctx *edge_filter_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *edge_filter = NULL;
-    __auto_free RedisModuleString **index_hints = NULL;
+    __selva_autofree RedisModuleStringList index_hints = NULL;
     int nr_index_hints = 0;
 
     /*
@@ -1848,7 +1827,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         fields = SelvaObject_New();
     }
 
-    RedisModuleStringList inherit_fields = NULL;
+    __selva_autofree RedisModuleStringList inherit_fields = NULL;
     if (argc > ARGV_INHERIT_VAL) {
         err = SelvaArgsParser_StringList(ctx, &inherit_fields, "inherit", argv[ARGV_INHERIT_TXT], argv[ARGV_INHERIT_VAL]);
         if (err == 0) {
@@ -2117,11 +2096,10 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            fprintf(stderr, "%s:%d: Find failed. err: %s dir: %s node_id: \"%.*s\"\n",
-                    __FILE__, __LINE__,
-                    getSelvaErrorStr(err),
-                    SelvaTraversal_Dir2str(dir),
-                    (int)SELVA_NODE_ID_SIZE, nodeId);
+            SELVA_LOG(SELVA_LOGL_ERR, "Find failed. err: %s dir: %s node_id: \"%.*s\"\n",
+                      getSelvaErrorStr(err),
+                      SelvaTraversal_Dir2str(dir),
+                      (int)SELVA_NODE_ID_SIZE, nodeId);
         }
 
         /*
@@ -2154,213 +2132,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 #undef SHIFT_ARGS
 }
 
-/**
- * Find node in set.
- * SELVA.HIERARCHY.findIn REDIS_KEY [order field asc|desc] [offset 1234] [limit 1234] [fields field1\nfield2] NODE_IDS [expression] [args...]
- */
-int SelvaHierarchy_FindInCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    int err;
-
-    const int ARGV_LANG      = 1;
-    const int ARGV_REDIS_KEY = 2;
-    const int ARGV_ORDER_TXT = 3;
-    const int ARGV_ORDER_FLD = 4;
-    const int ARGV_ORDER_ORD = 5;
-    int ARGV_OFFSET_TXT      = 3;
-    int ARGV_OFFSET_NUM      = 4;
-    int ARGV_LIMIT_TXT       = 3;
-    int ARGV_LIMIT_NUM       = 4;
-    int ARGV_FIELDS_TXT      = 3;
-    int ARGV_FIELDS_VAL      = 4;
-    int ARGV_NODE_IDS        = 3;
-    int ARGV_FILTER_EXPR     = 4;
-    int ARGV_FILTER_ARGS     = 5;
-#define SHIFT_ARGS(i) \
-    ARGV_OFFSET_TXT += i; \
-    ARGV_OFFSET_NUM += i; \
-    ARGV_LIMIT_TXT += i; \
-    ARGV_LIMIT_NUM += i; \
-    ARGV_FIELDS_TXT += i; \
-    ARGV_FIELDS_VAL += i; \
-    ARGV_NODE_IDS += i; \
-    ARGV_FILTER_EXPR += i; \
-    ARGV_FILTER_ARGS += i
-
-    if (argc < 5) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    RedisModuleString *lang = argv[ARGV_LANG];
-
-    /*
-     * Open the Redis key.
-     */
-    SelvaHierarchy *hierarchy = SelvaModify_OpenHierarchy(ctx, argv[ARGV_REDIS_KEY], REDISMODULE_READ);
-    if (!hierarchy) {
-        return REDISMODULE_OK;
-    }
-
-    /*
-     * Parse the order arg.
-     */
-    enum SelvaResultOrder order = SELVA_RESULT_ORDER_NONE;
-    RedisModuleString *order_by_field = NULL;
-    if (argc > ARGV_ORDER_ORD) {
-        err = SelvaTraversal_ParseOrderArg(&order_by_field, &order,
-                          argv[ARGV_ORDER_TXT],
-                          argv[ARGV_ORDER_FLD],
-                          argv[ARGV_ORDER_ORD]);
-        if (err == 0) {
-            SHIFT_ARGS(3);
-        } else if (err != SELVA_HIERARCHY_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "order");
-        }
-    }
-
-    /*
-     * Parse the offset arg.
-     */
-    ssize_t offset = 0;
-    if (argc > ARGV_OFFSET_NUM) {
-        err = SelvaArgParser_IntOpt(&offset, "offset", argv[ARGV_OFFSET_TXT], argv[ARGV_OFFSET_NUM]);
-        if (err == 0) {
-            SHIFT_ARGS(2);
-        } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "offset");
-        }
-    }
-
-    /*
-     * Parse the limit arg. -1 = inf
-     */
-    ssize_t limit = -1;
-    if (argc > ARGV_LIMIT_NUM) {
-        err = SelvaArgParser_IntOpt(&limit, "limit", argv[ARGV_LIMIT_TXT], argv[ARGV_LIMIT_NUM]);
-        if (err == 0) {
-            SHIFT_ARGS(2);
-        } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "limit");
-        }
-    }
-
-    /*
-     * Parse fields.
-     */
-    selvaobject_autofree struct SelvaObject *fields = NULL;
-    RedisModuleString *excluded_fields = NULL;
-    if (argc > ARGV_FIELDS_VAL) {
-        err = SelvaArgsParser_StringSetList(ctx, &fields, &excluded_fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
-        if (err == 0) {
-            SHIFT_ARGS(2);
-        } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "fields");
-        }
-    }
-
-    int nr_reg = argc - ARGV_FILTER_ARGS + 1;
-    struct rpn_ctx *rpn_ctx = rpn_init(nr_reg);
-    const RedisModuleString *ids = argv[ARGV_NODE_IDS];
-    const RedisModuleString *filter = argv[ARGV_FILTER_EXPR];
-    TO_STR(ids, filter);
-
-    /*
-     * Compile the filter expression.
-     */
-    struct rpn_expression *filter_expression = rpn_compile(filter_str);
-    if (!filter_expression) {
-        rpn_destroy(rpn_ctx);
-        return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
-    }
-
-    /*
-     * Get the filter expression arguments and set them to the registers.
-     */
-    for (int i = ARGV_FILTER_ARGS; i < argc; i++) {
-        /* reg[0] is reserved for the current nodeId */
-        const size_t reg_i = i - ARGV_FILTER_ARGS + 1;
-        size_t str_len;
-        const char *str = RedisModule_StringPtrLen(argv[i], &str_len);
-
-        rpn_set_reg(rpn_ctx, reg_i, str, str_len + 1, 0);
-    }
-
-    SVECTOR_AUTOFREE(traverse_result); /*!< for ordered result. */
-    if (order != SELVA_RESULT_ORDER_NONE) {
-        SelvaTraversalOrder_InitOrderResult(&traverse_result, order, limit);
-    }
-
-    ssize_t array_len = 0;
-    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
-
-    /*
-     * Run the filter for each node.
-     */
-    for (size_t i = 0; i < ids_len; i += SELVA_NODE_ID_SIZE) {
-        struct SelvaHierarchyNode *node;
-        ssize_t tmp_limit = -1;
-        struct FindCommand_Args args = {
-            .lang = lang,
-            .nr_nodes = &array_len,
-            .offset = (order == SELVA_RESULT_ORDER_NONE) ? offset : 0,
-            .limit = (order == SELVA_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
-            .rpn_ctx = rpn_ctx,
-            .filter = filter_expression,
-            .send_param.merge_strategy = MERGE_STRATEGY_NONE,
-            .send_param.merge_path = NULL,
-            .merge_nr_fields = 0,
-            .send_param.fields = fields,
-            .send_param.excluded_fields = excluded_fields,
-            .send_param.order = order,
-            .send_param.order_field = order_by_field,
-            .result = &traverse_result,
-            .acc_take = 0,
-            .acc_tot = 0,
-            .process_node = (order == SELVA_RESULT_ORDER_NONE) ? &process_node_send : &process_node_sort,
-        };
-
-        node = SelvaHierarchy_FindNode(hierarchy, ids_str + i);
-        if (node) {
-            (void)FindCommand_NodeCb(ctx, hierarchy, node, &args);
-        }
-    }
-
-    /*
-     * If an ordered request was requested then nothing was sent to the client yet
-     * and we need to do it now.
-     */
-    if (order != SELVA_RESULT_ORDER_NONE) {
-        struct SelvaNodeSendParam args = {
-            .merge_strategy = MERGE_STRATEGY_NONE,
-            .merge_path = NULL,
-            .fields = fields,
-            .excluded_fields = excluded_fields,
-        };
-
-        array_len = FindCommand_PrintOrderedResult(ctx, hierarchy, lang, offset, limit, &args, &traverse_result, NULL);
-    }
-
-    RedisModule_ReplySetArrayLength(ctx, array_len);
-
-    rpn_destroy(rpn_ctx);
-#if MEM_DEBUG
-    memset(filter_expression, 0, sizeof(*filter_expression));
-#endif
-    rpn_destroy_expression(filter_expression);
-
-    return REDISMODULE_OK;
-#undef SHIFT_ARGS
-}
-
 static int Find_OnLoad(RedisModuleCtx *ctx) {
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaHierarchy_FindCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.hierarchy.findIn", SelvaHierarchy_FindInCommand, "readonly", 2, 2, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    return REDISMODULE_OK;
+    return RedisModule_CreateCommand(ctx, "selva.hierarchy.find", SelvaHierarchy_FindCommand, "readonly", 2, 2, 1);
 }
 SELVA_ONLOAD(Find_OnLoad);

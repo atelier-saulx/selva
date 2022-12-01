@@ -7,6 +7,7 @@ SRC-selva_object += ../../lib/util/memrchr.c
 SRC-selva_object += ../../lib/util/svector.c
 SRC-selva_object += ../../module/errors.c
 SRC-selva_object += ../../module/rms/shared.c
+SRC-selva_object += ../../module/selva_log.c
 SRC-selva_object += ../../module/selva_object/selva_object.c
 SRC-selva_object += ../../module/selva_set/selva_set.c
 SRC-selva_object += ../../module/selva_type.c

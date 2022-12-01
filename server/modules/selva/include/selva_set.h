@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #ifndef _SELVA_SET_H_
 #define _SELVA_SET_H_
@@ -186,6 +190,6 @@ int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src);
  * @param res should be an empty set initialized with the right type.
  *            `res` must not be a pointer to one of the source sets.
  */
-int SelvaSet_Union(struct SelvaSet *res, ...);
+int SelvaSet_Union(struct SelvaSet *res, ...) __attribute__((sentinel));
 
 #endif /* _SELVA_SET_H_ */

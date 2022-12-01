@@ -4,9 +4,8 @@
 var config = require('./config');
 var fs = require('fs');
 var path = require('path');
-var spawn = require('win-spawn');
+const { spawn } = require('child_process');
 var tcpPortUsed = require('tcp-port-used');
-var bluebird = require('bluebird');
 
 // wait for redis to be listening in
 // all three modes (ipv4, ipv6, socket).
@@ -24,10 +23,10 @@ function waitForRedis (available, cb, port) {
     var id = setInterval(function () {
         if (running) return;
         running = true;
-        bluebird.join(
+        Promise.all([
             tcpPortUsed.check(port, '127.0.0.1'),
-            tcpPortUsed.check(port, '::1'),
-        function (ipV4, ipV6) {
+            tcpPortUsed.check(port, '::1')
+        ]).then(function ([ipV4, ipV6]) {
             if (ipV6 === available && ipV4 === available) {
                 if (fs.existsSync(socket) === available) {
                     clearInterval(id);

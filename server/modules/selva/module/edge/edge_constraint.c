@@ -1,9 +1,14 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include "redismodule.h"
+#include "jemalloc.h"
+#include "auto_free.h"
 #include "cstrings.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "edge.h"
 #include "selva_onload.h"
@@ -72,7 +77,7 @@ static struct EdgeFieldConstraint *create_constraint(const struct EdgeFieldDynCo
         bck_field_name_str = RedisModule_StringPtrLen(params->bck_field_name, &bck_field_name_len);
     }
 
-    p = RedisModule_Calloc(1,
+    p = selva_calloc(1,
             sizeof(*p) +
             fwd_field_name_len + bck_field_name_len + 2);
     if (!p) {
@@ -145,11 +150,11 @@ const struct EdgeFieldConstraint *Edge_GetConstraint(
         make_dyn_constraint_name(constraint_name_str, node_type, field_name_str, field_name_len);
         err = SelvaObject_GetPointerStr(get_dyn_constraints(efc), constraint_name_str, constraint_name_len, &p);
         if (err) {
-            fprintf(stderr, "%s:%d: Failed to get a dynamic constraint. type: \"%.*s\" field_name: \"%.*s\" err: %s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_TYPE_SIZE, node_type,
-                    (int)field_name_len, field_name_str,
-                    getSelvaErrorStr(err));
+            SELVA_LOG(SELVA_LOGL_ERR,
+                      "Failed to get a dynamic constraint. type: \"%.*s\" field_name: \"%.*s\" err: %s",
+                      (int)SELVA_NODE_TYPE_SIZE, node_type,
+                      (int)field_name_len, field_name_str,
+                      getSelvaErrorStr(err));
         }
 
         constraint = p;
@@ -176,7 +181,7 @@ static void EdgeConstraint_Reply(struct RedisModuleCtx *ctx, void *p) {
 }
 
 static void rdb_load_src_node_type(struct RedisModuleIO *io, Selva_NodeType type) {
-    char *s;
+    __rm_autofree char *s;
     size_t len;
 
     s = RedisModule_LoadStringBuffer(io, &len);
@@ -185,8 +190,6 @@ static void rdb_load_src_node_type(struct RedisModuleIO *io, Selva_NodeType type
     } else {
         memset(type, '\0', SELVA_NODE_TYPE_SIZE);
     }
-
-    RedisModule_Free(s);
 }
 
 static void rdb_save_src_node_type(struct RedisModuleIO *io, const Selva_NodeType type) {

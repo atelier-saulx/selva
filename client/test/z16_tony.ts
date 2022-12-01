@@ -24,6 +24,7 @@ test.before(async (t) => {
         },
       },
       category: {
+        name: { type: 'string' },
         prefix: 'ca',
         fields: {
           title: {

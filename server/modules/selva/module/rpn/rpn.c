@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #define _GNU_SOURCE
 #include <assert.h>
 #include <ctype.h>
@@ -7,11 +11,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "cdefs.h"
+#include "jemalloc.h"
+#include "selva.h"
 #include "../rmutil/sds.h"
 #include "redismodule.h"
 #include "cstrings.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "selva_object.h"
 #include "selva_set.h"
@@ -152,7 +156,7 @@ struct rpn_ctx *rpn_init(int nr_reg) {
         nr_reg = 1;
     }
 
-    ctx = RedisModule_Calloc(1, sizeof(struct rpn_ctx) + nr_reg * sizeof(struct rpn_operand *));
+    ctx = selva_calloc(1, sizeof(struct rpn_ctx) + nr_reg * sizeof(struct rpn_operand *));
     ctx->nr_reg = nr_reg;
 
     return ctx;
@@ -177,7 +181,7 @@ void rpn_destroy(struct rpn_ctx *ctx) {
         if (ctx->rms) {
             RedisModule_FreeString(NULL, ctx->rms);
         }
-        RedisModule_Free(ctx);
+        selva_free(ctx);
     }
 }
 
@@ -216,8 +220,9 @@ static int cpy2rm_str(RedisModuleString **rms_p, const char *str, size_t len) {
 
     rms = *rms_p;
     if (((struct redisObjectAccessor *)rms)->refcount > 1) {
-        fprintf(stderr, "%s:%d:, The given RMS (%p) is already in use and cannot be modified\n",
-                __FILE__, __LINE__, rms);
+        SELVA_LOG(SELVA_LOGL_ERR,
+                  "The given RMS (%p) is already in use and cannot be modified",
+                  rms);
         return RPN_ERR_NOTSUP;
     }
 
@@ -270,7 +275,7 @@ static struct rpn_operand *alloc_rpn_operand(size_t s_size) {
     } else {
         const size_t size = sizeof(struct rpn_operand) - RPN_SMALL_OPERAND_SIZE + s_size;
 
-        v = RedisModule_Calloc(1, size);
+        v = selva_calloc(1, size);
     }
 
     return v;
@@ -307,7 +312,7 @@ static void free_rpn_operand(void *p) {
     }
 
     if (v->flags.spused && v->flags.spfree && v->sp) {
-        RedisModule_Free((void *)v->sp);
+        selva_free((void *)v->sp);
     } else if (v->flags.embset && v->flags.slvset) {
         SelvaSet_Destroy(&v->set_emb);
     }
@@ -320,7 +325,7 @@ static void free_rpn_operand(void *p) {
         small_operand_pool_next = v;
         small_operand_pool_next->next_free = prev;
     } else {
-        RedisModule_Free(v);
+        selva_free(v);
     }
 }
 
@@ -342,7 +347,7 @@ static struct rpn_operand *pop(struct rpn_ctx *ctx) {
 
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
     if (unlikely(ctx->depth >= RPN_MAX_D)) {
-        fprintf(stderr, "%s:%d: Stack overflow\n", __FILE__, __LINE__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Stack overflow");
         return RPN_ERR_BADSTK;
     }
 
@@ -501,7 +506,7 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
          */
         r->flags.regist = 1; /* Can't be freed when this flag is set. */
         r->flags.spused = 1;
-        r->flags.spfree = (flags & RPN_SET_REG_FLAG_RMFREE) == RPN_SET_REG_FLAG_RMFREE;
+        r->flags.spfree = (flags & RPN_SET_REG_FLAG_SELVA_FREE) == RPN_SET_REG_FLAG_SELVA_FREE;
         r->s_size = size;
         r->sp = s;
 
@@ -533,9 +538,9 @@ enum rpn_error rpn_set_reg_rms(struct rpn_ctx *ctx, size_t i, RedisModuleString 
     const size_t size = rms_len + 1;
     char *arg;
 
-    arg = RedisModule_Alloc(size);
+    arg = selva_malloc(size);
     memcpy(arg, rms_str, size);
-    return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_RMFREE);
+    return rpn_set_reg(ctx, i, arg, size, RPN_SET_REG_FLAG_SELVA_FREE);
 }
 
 /* TODO free flag for rpn_set_reg_slvobj() */
@@ -720,11 +725,10 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
             } else {
                 const char *type_str = SelvaObject_Type2String(field_type, NULL);
 
-                fprintf(stderr, "%s:%d: Field value [%.*s].%.*s is not a number, actual type: \"%s\"\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, OPERAND_GET_S(ctx->reg[0]),
-                        (int)field->s_size, OPERAND_GET_S(field),
-                        type_str ? type_str : "INVALID");
+                SELVA_LOG(SELVA_LOGL_ERR, "Field value [%.*s].%.*s is not a number, actual type: \"%s\"",
+                          (int)SELVA_NODE_ID_SIZE, OPERAND_GET_S(ctx->reg[0]),
+                          (int)field->s_size, OPERAND_GET_S(field),
+                          type_str ? type_str : "INVALID");
 
                 return RPN_ERR_NAN;
             }
@@ -1611,15 +1615,17 @@ static int compile_find_labels(int labels[RPN_MAX_LABELS], const char *input) {
          tok_str = tokenize(NULL, delim, group, &rest, &tok_len)) {
         int l = compile_parse_label(tok_str, tok_len);
 
-        if (l > 0) {
+        if (l == -1) {
+            /* Invalid label. */
+            SELVA_LOG(SELVA_LOGL_ERR, "Invalid label");
+            return RPN_ERR_ILLOPN;
+        } else if (l > 0) {
             if (labels[l] != 0) {
                 /* Disallow using the same label twice. */
+                SELVA_LOG(SELVA_LOGL_ERR, "Duplicate label: %d", l);
                 return RPN_ERR_BADSTK;
             }
             labels[l] = i;
-        } else if (l == -1) {
-            /* Invalid label. */
-            return RPN_ERR_ILLOPN;
         }
         i++;
     }
@@ -1657,8 +1663,7 @@ static enum rpn_error compile_num_literal(struct rpn_expression *expr, size_t i,
     d = strtod(s, &e);
 
     if (unlikely(e == s)) {
-        fprintf(stderr, "%s:%d: Operand is not a number: #%s\n",
-                __FILE__, __LINE__, s);
+        SELVA_LOG(SELVA_LOGL_ERR, "Operand is not a number: #%s", s);
         return RPN_ERR_NAN;
     }
 
@@ -1766,13 +1771,11 @@ struct rpn_expression *rpn_compile(const char *input) {
     size_t size = 2 * sizeof(rpn_token);
     int labels[RPN_MAX_LABELS] = { 0 }; /*!< Jump labels. */
 
-    expr = RedisModule_Alloc(sizeof(struct rpn_expression));
+    expr = selva_malloc(sizeof(struct rpn_expression));
     memset(expr->literal_reg, 0, sizeof(expr->literal_reg));
-    expr->expression = RedisModule_Alloc(size);
+    expr->expression = selva_malloc(size);
 
     if (compile_find_labels(labels, input)) {
-        fprintf(stderr, "%s:%d:%s: Failed to parse labels\n",
-                __FILE__, __LINE__, __func__);
         goto fail;
     }
 
@@ -1795,8 +1798,7 @@ struct rpn_expression *rpn_compile(const char *input) {
         tok_len = compile_skip_label(&tok_str, tok_len);
 
         if (tok_len == 0) {
-            fprintf(stderr, "%s:%d:%s: Token length can't be zero\n",
-                    __FILE__, __LINE__, __func__);
+            SELVA_LOG(SELVA_LOGL_ERR, "Token length can't be zero");
             goto fail;
         }
 
@@ -1821,30 +1823,24 @@ struct rpn_expression *rpn_compile(const char *input) {
             goto next;
         case '>': /* Conditional jump forward */
             if (tok_len < 2 || tok_str[1] == '-') {
-                fprintf(stderr, "%s:%d:%s: Invalid conditional jump\n",
-                        __FILE__, __LINE__, __func__);
+                SELVA_LOG(SELVA_LOGL_ERR, "Invalid conditional jump");
                 goto fail;
             } else {
                 unsigned l = fast_atou(tok_str + 1);
                 int n;
 
                 if (l >= RPN_MAX_LABELS) {
-                    fprintf(stderr, "%s:%d:%s: Invalid label\n",
-                            __FILE__, __LINE__, __func__);
+                    SELVA_LOG(SELVA_LOGL_ERR, "Invalid label");
                     goto fail;
                 }
 
                 n = labels[l];
                 if (n == 0) {
-                    fprintf(stderr, "%s:%d:%s: Label not found: %d\n",
-                            __FILE__, __LINE__, __func__,
-                            n);
+                    SELVA_LOG(SELVA_LOGL_ERR, "Label not found: %d", n);
                     goto fail;
                 }
                 if (n <= (int)i - 1) {
-                    fprintf(stderr, "%s:%d:%s: Can't jump backwards to %d with `>`\n",
-                            __FILE__, __LINE__, __func__,
-                            n);
+                    SELVA_LOG(SELVA_LOGL_ERR, "Can't jump backwards to %d with `>`", n);
                     goto fail;
                 }
 
@@ -1853,16 +1849,12 @@ struct rpn_expression *rpn_compile(const char *input) {
             goto next;
         default:
             if (tok_len > RPN_MAX_TOKEN_SIZE - 1) {
-                fprintf(stderr, "%s:%d:%s: Invalid token length %llu\n",
-                        __FILE__, __LINE__, __func__,
-                        (unsigned long long)tok_len);
+                SELVA_LOG(SELVA_LOGL_ERR, "Invalid token length %llu", (unsigned long long)tok_len);
                 goto fail;
             }
 
             if (compile_operator(e, tok_str[0])) {
-                fprintf(stderr, "%s:%d:%s: Invalid operator: %c\n",
-                        __FILE__, __LINE__, __func__,
-                        tok_str[0]);
+                SELVA_LOG(SELVA_LOGL_ERR, "Invalid operator: %c", tok_str[0]);
                 goto fail;
             }
 
@@ -1870,9 +1862,8 @@ struct rpn_expression *rpn_compile(const char *input) {
         }
 
         if (err) {
-            fprintf(stderr, "%s:%d:%s: RPN compilation error: %s\n",
-                    __FILE__, __LINE__, __func__,
-                    err >= 0 && err < num_elem(rpn_str_error) ? rpn_str_error[err] : "Unknown");
+            SELVA_LOG(SELVA_LOGL_ERR, "RPN compilation error: %s",
+                      err >= 0 && err < num_elem(rpn_str_error) ? rpn_str_error[err] : "Unknown");
             goto fail;
         }
 
@@ -1884,7 +1875,7 @@ struct rpn_expression *rpn_compile(const char *input) {
         compile_emit_code_uint32(e, RPN_CODE_GET_LIT, literal_reg_i);
         literal_reg_i++;
 next:
-        new = RedisModule_Realloc(expr->expression, size);
+        new = selva_realloc(expr->expression, size);
         expr->expression = new;
 
         size += sizeof(rpn_token);
@@ -1892,8 +1883,7 @@ next:
 
     /* The returned length is only ever 0 if the grouping failed. */
     if (tok_len == 0) {
-        fprintf(stderr, "%s:%d:%s: Tokenization failed\n",
-                __FILE__, __LINE__, __func__);
+        SELVA_LOG(SELVA_LOGL_ERR, "Tokenization failed");
         rpn_destroy_expression(expr);
         return NULL;
     }
@@ -1911,7 +1901,7 @@ void rpn_destroy_expression(struct rpn_expression *expr) {
     if (expr) {
         struct rpn_operand **op = expr->literal_reg;
 
-        RedisModule_Free(expr->expression);
+        selva_free(expr->expression);
 
         while (*op) {
             (*op)->flags.regist = 0;
@@ -1919,7 +1909,7 @@ void rpn_destroy_expression(struct rpn_expression *expr) {
             op++;
         }
 
-        RedisModule_Free(expr);
+        selva_free(expr);
     }
 }
 
@@ -1938,22 +1928,19 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *s, int type) 
 
     memcpy(&i, s + RPN_CODE_SIZE, sizeof(uint32_t));
     if (i >= (typeof(i))ctx->nr_reg) {
-        fprintf(stderr, "%s:%d: Register index out of bounds: %u\n",
-                __FILE__, __LINE__, (unsigned)i);
+        SELVA_LOG(SELVA_LOGL_ERR, "Register index out of bounds: %u", (unsigned)i);
         return RPN_ERR_BNDS;
     }
 
     r = ctx->reg[i];
     if (!r) {
-        fprintf(stderr, "%s:%d: Register value is a NULL pointer: %u\n",
-                __FILE__, __LINE__, (unsigned)i);
+        SELVA_LOG(SELVA_LOGL_ERR, "Register value is a NULL pointer: %u", (unsigned)i);
         return RPN_ERR_NPE;
     }
 
     if (type == RPN_LVTYPE_NUMBER) {
         if (isnan(r->d)) {
-            fprintf(stderr, "%s:%d: Register value is not a number: %u\n",
-                    __FILE__, __LINE__, (unsigned)i);
+            SELVA_LOG(SELVA_LOGL_ERR, "Register value is not a number: %u", (unsigned)i);
             return RPN_ERR_NAN;
         }
 
@@ -1968,8 +1955,7 @@ static enum rpn_error rpn_get_reg(struct rpn_ctx *ctx, const char *s, int type) 
         return push(ctx, r);
     }
 
-    fprintf(stderr, "%s:%d: Unknown type code: %d\n",
-            __FILE__, __LINE__, type);
+    SELVA_LOG(SELVA_LOGL_ERR, "Unknown type code: %d", type);
 
     return RPN_ERR_TYPE;
 }

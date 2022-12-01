@@ -17,6 +17,7 @@ SRC-edge += ../../module/errors.c
 SRC-edge += ../../module/hierarchy/hierarchy.c
 SRC-edge += ../../module/hierarchy/types.c
 SRC-edge += ../../module/rms/shared.c
+SRC-edge += ../../module/selva_log.c
 SRC-edge += ../../module/selva_object/selva_object.c
 SRC-edge += ../../module/selva_object/selva_object_foreach.c
 SRC-edge += ../../module/selva_set/selva_set.c

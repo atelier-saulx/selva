@@ -1,8 +1,11 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <string.h>
 #include "redismodule.h"
 #include "cstrings.h"
 #include "selva.h"
-#include "errors.h"
 #include "selva_object.h"
 #include "edge.h"
 #include "hierarchy.h"

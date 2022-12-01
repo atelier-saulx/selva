@@ -1,9 +1,12 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <stddef.h>
 #include "redismodule.h"
 #include "selva.h"
 #include "alias.h"
 #include "arg_parser.h"
-#include "errors.h"
 #include "hierarchy.h"
 #include "selva_onload.h"
 #include "subscriptions.h"

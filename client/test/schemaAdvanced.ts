@@ -78,7 +78,7 @@ test.serial('schemas - custom validation', async (t) => {
     })
   } catch (err) {}
 
-  const info = []
+  const info: any = []
 
   client.setCustomValidator((schema, type, path, value, lang) => {
     info.push([type, ...path])
@@ -114,8 +114,6 @@ test.serial('schemas - custom validation', async (t) => {
   })
 
   t.deepEqual(info, [
-    ['thing', 'type'],
-    ['thing', 'type'],
     ['thing', 'image'],
     ['thing', 'list'],
     ['thing', 'list', 0],
@@ -182,7 +180,7 @@ test.serial('schemas - hard override', async (t) => {
   )
 
   for (let i = 0; i < 10; i++) {
-    const q = []
+    const q: any = []
     for (let i = 0; i < 1000; i++) {
       q.push(
         client.set({
@@ -287,7 +285,7 @@ test.serial('schemas - remove fields', async (t) => {
   await wait(1000)
 
   for (let i = 0; i < 10; i++) {
-    const q = []
+    const q: any = []
     for (let i = 0; i < 1000; i++) {
       q.push(
         client.set({
@@ -389,7 +387,7 @@ test.serial(
     await wait(1000)
 
     for (let i = 0; i < 10; i++) {
-      const q = []
+      const q: any = []
       for (let i = 0; i < 10; i++) {
         q.push(
           client.set(
@@ -522,7 +520,7 @@ test.serial('schemas - return null from mut handler', async (t) => {
   let other = 0
 
   for (let i = 0; i < 2; i++) {
-    const q = []
+    const q: any = []
     for (let i = 0; i < 10; i++) {
       if (i % 2) {
         other++
@@ -563,7 +561,7 @@ test.serial('schemas - return null from mut handler', async (t) => {
     'default',
     true,
     (node) => {
-      if (node.image) {
+      if (node && node.image) {
         return {
           flap: '10000',
         }
@@ -676,7 +674,7 @@ test.serial('schemas - return to other id or type', async (t) => {
 
   await wait(1000)
 
-  const q = []
+  const q: any = []
   for (let i = 0; i < 10; i++) {
     q.push(
       client.set({
@@ -786,7 +784,7 @@ test.serial('schemas - remove type', async (t) => {
 
   await wait(1000)
 
-  const q = []
+  const q: any = []
   for (let i = 0; i < 1000; i++) {
     q.push(
       client.set({
@@ -886,7 +884,7 @@ test.serial('schemas - migrate type', async (t) => {
 
   await wait(1000)
 
-  const q = []
+  const q: any = []
   for (let i = 0; i < 1000; i++) {
     q.push(
       client.set({
@@ -1012,7 +1010,7 @@ test.serial('schemas - migrate object', async (t) => {
 
   await wait(1000)
 
-  const q = []
+  const q: any = []
   for (let i = 0; i < 10; i++) {
     q.push(
       client.set({
@@ -1190,6 +1188,115 @@ test.serial('schemas - validate array', async (t) => {
   })
 
   console.info('hello')
+
+  await wait(1000)
+
+  await client.destroy()
+  await server.destroy()
+  await t.connectionsAreEmpty()
+
+  t.pass()
+})
+
+
+test.serial('schemas - $delete on array and record', async (t) => {
+  const port = await getPort()
+  const server = await start({
+    port,
+  })
+  const client = connect({ port })
+
+  await client.updateSchema({
+    languages: ['en'],
+    types: {
+      thing: {
+        prefix: 'th',
+        fields: {
+          flappers: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                flap: { type: 'number' },
+              },
+            },
+          },
+          flippers: {
+            type: 'record',
+            values: {
+              type: 'object',
+              properties: {
+                flap: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const { schema: { types: { thing: { fields } } } } = await client.getSchema()
+
+  t.deepEqualIgnoreOrder(fields.flappers, {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        flap: { type: 'number' },
+      },
+    },
+  })
+
+  t.deepEqualIgnoreOrder(fields.flippers, {
+    type: 'record',
+    values: {
+      type: 'object',
+      properties: {
+        flap: { type: 'number' },
+      },
+    },
+  })
+
+  await client.updateSchema({
+    languages: ['en'],
+    types: {
+      thing: {
+        prefix: 'th',
+        fields: {
+          flappers: {
+            type: 'array',
+            items: {
+              $delete: true
+            },
+          },
+          flippers: {
+            type: 'record',
+            values: {
+              $delete: true
+            },
+          },
+        },
+      },
+    },
+  }, 'default', true)
+
+  const { schema: { types: { thing: { fields: fields2 } } } } = await client.getSchema()
+
+  t.deepEqualIgnoreOrder(fields2.flappers, {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {},
+    },
+  })
+
+  t.deepEqualIgnoreOrder(fields2.flippers, {
+    type: 'record',
+    values: {
+      type: 'object',
+      properties: {},
+    },
+  })
 
   await wait(1000)
 

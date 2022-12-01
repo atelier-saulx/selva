@@ -1,7 +1,9 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
-#ifndef _SELVA_TRACE_H_
 
-#include "cdefs.h"
 #include "linker_set.h"
 
 #ifdef SELVA_TRACE
@@ -66,5 +68,3 @@ extern __itt_domain* selva_trace_domain;
 #define SELVA_TRACE_END(name)
 #define SELVA_TRACE_BEGIN_AUTO(_name)
 #endif
-
-#endif /* _SELVA_TRACE_H_ */

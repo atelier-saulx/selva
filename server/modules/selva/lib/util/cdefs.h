@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2022 SAULX
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
@@ -13,8 +13,24 @@
  * Using this attribute will help to get better warnings at compilation time.
  */
 #define __nonstring __attribute__((nonstring))
+/**
+ * Annotate a pure function.
+ * The function has no side effects and the value returned depends on the
+ * arguments and the state of global variables. Therefore it is safe for
+ * the optimizer to eliminate repeated calls with unchanged arguments.
+ */
+#define __purefn __attribute__((pure))
+/**
+ * Annotate a const function.
+ * The return value of the function is solely a function of its arguments,
+ * and if any of the arguments are pointers, then the pointers are not be
+ * dereferenced.
+ */
+#define __constfn __attribute__((const))
 #else
 #define __nonstring
+#define __purefn
+#define __constfn
 #endif
 
 #define CONCATENATE(arg1, arg2)   CONCATENATE1(arg1, arg2)
@@ -35,6 +51,13 @@
     46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, \
     29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, \
     12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0
+
+#define _S__LINE__S(x) #x
+#define _S__LINE__S2(x) _S__LINE__S(x)
+/**
+ * Current line number as a string.
+ */
+#define S__LINE__ _S__LINE__S2(__LINE__)
 
 /**
  * Get the struct that contains `m`.

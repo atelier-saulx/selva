@@ -226,3 +226,86 @@ test.serial('find - by type', async (t) => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial('find - by IS NOT type', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'le1',
+    type: 'league',
+    name: 'league 1',
+  })
+
+  await client.set({
+    $id: 'ma1',
+    parents: ['le1'],
+    type: 'match',
+    name: 'match 1',
+    value: 1,
+  })
+
+  const res = await client.get({
+    matches: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '!=',
+            $value: 'league',
+          },
+        },
+      },
+    },
+  })
+  t.is(res.matches.length, 1)
+
+  const resWithLanguage = await client.get({
+    $language: 'en',
+    matches: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '!=',
+            $value: 'league',
+          },
+        },
+      },
+    },
+  })
+  t.is(resWithLanguage.matches.length, 1)
+
+  await client.set({
+    $id: 'ma2',
+    parents: ['le1'],
+    type: 'match',
+    name: 'match 2',
+    description: { en: 'some' },
+    value: 1,
+  })
+
+  const resWithLanguage1 = await client.get({
+    $language: 'en',
+    matches: {
+      id: true,
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'description',
+            $operator: '!=',
+            $value: 'some',
+          },
+        },
+      },
+    },
+  })
+  t.is(resWithLanguage1.matches.length, 2)
+
+  await client.delete('root')
+  await client.destroy()
+})
