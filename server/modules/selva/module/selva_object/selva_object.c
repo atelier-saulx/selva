@@ -537,7 +537,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             if (err) {
                 return err;
             }
-        } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT && key->type != SELVA_OBJECT_ARRAY)) &&
+        } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT && key->type != SELVA_OBJECT_ARRAY && nr_parts > nr_parts_found)) &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
              * Either the nested object doesn't exist yet or the nested key is not an object,
@@ -1091,13 +1091,16 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
         return err;
     }
 
-    if (key->type == SELVA_OBJECT_NULL) {
-        key->type = SELVA_OBJECT_DOUBLE;
-        key->emb_double_value = default_value;
-    } else if (key->type == SELVA_OBJECT_DOUBLE) {
+    if (key->type == SELVA_OBJECT_DOUBLE) {
         key->emb_double_value += incr;
     } else {
-        return SELVA_EINTYPE;
+        err = clear_key_value(key);
+        if (err) {
+            return err;
+        }
+
+        key->type = SELVA_OBJECT_DOUBLE;
+        key->emb_double_value = default_value;
     }
 
     return 0;
@@ -1120,13 +1123,16 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
         return err;
     }
 
-    if (key->type == SELVA_OBJECT_NULL) {
-        key->type = SELVA_OBJECT_LONGLONG;
-        key->emb_ll_value = default_value;
-    } else if (key->type == SELVA_OBJECT_LONGLONG) {
+    if (key->type == SELVA_OBJECT_LONGLONG) {
         key->emb_ll_value += incr;
     } else {
-        return SELVA_EINTYPE;
+        err = clear_key_value(key);
+        if (err) {
+            return err;
+        }
+
+        key->type = SELVA_OBJECT_LONGLONG;
+        key->emb_ll_value = default_value;
     }
 
     return 0;

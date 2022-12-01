@@ -95,11 +95,11 @@ for (const key in verifiers) {
                 field,
                 createRecord(incrementDef, {
                   $default: isNaN(payload.$default)
-                    ? 0
-                    : Number(payload.$default),
+                    ? BigInt(0)
+                    : BigInt(Number(payload.$default)),
                   $increment: isNaN(payload.$increment)
-                    ? 0
-                    : Number(payload.$increment),
+                    ? BigInt(0)
+                    : BigInt(Number(payload.$increment)),
                 })
               )
             } else {
