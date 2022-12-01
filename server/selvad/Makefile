@@ -6,6 +6,8 @@ SHELL := /bin/bash
 include common.mk
 export uname_S
 
+INSTALL_DIR := binaries/$(uname_S)_$(uname_M)
+
 # Ordered list of libraries
 LIBS := \
 		lib/jemalloc \
@@ -26,6 +28,15 @@ $(LIBS):
 
 modules:
 	$(MAKE) -C modules
+
+install:
+	mkdir -p "$(INSTALL_DIR)/lib"
+	mkdir -p "$(INSTALL_DIR)/modules"
+	mkdir -p "$(INSTALL_DIR)/locale"
+	install -s $(wildcard lib/lib*) "$(INSTALL_DIR)/lib"
+	install -s $(wildcard modules/*$(MOD_SUFFIX)) "$(INSTALL_DIR)/modules"
+	install -s selvad "$(INSTALL_DIR)/"
+	$(MAKE) -C locale LOCPATH=../$(INSTALL_DIR)/locale
 
 test:
 	$(MAKE) -C test

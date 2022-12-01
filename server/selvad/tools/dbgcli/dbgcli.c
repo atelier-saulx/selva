@@ -297,7 +297,6 @@ static void print_selva_resolve(const void *msg, size_t msg_size)
             return;
         }
     }
-
 }
 
 int main(int argc, char const* argv[])

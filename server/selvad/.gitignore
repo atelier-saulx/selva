@@ -5,3 +5,4 @@
 *.so
 *.so.*
 *.dylib
+/binaries
