@@ -1890,7 +1890,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
 }
 
 static int Modify_OnLoad(void) {
-    selva_mk_command(40, "modify", SelvaCommand_Modify);
+    selva_mk_command(63, "modify", SelvaCommand_Modify);
 
     return 0;
 }

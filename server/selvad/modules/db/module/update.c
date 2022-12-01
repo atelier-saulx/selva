@@ -346,18 +346,24 @@ static int update_node_cb(
     return 0;
 }
 
-int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_string **argv, int argc) {
+void SelvaCommand_Update(struct selva_server_response_out *resp, const void *buf, size_t len) {
+    __auto_finalizer struct finalizer fin;
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    struct selva_string **argv;
+    int argc;
     int err;
 
-    const int ARGV_DIRECTION = 2;
-    const int ARGV_REF_FIELD = 3;
-    int ARGV_EDGE_FILTER_TXT = 3;
-    int ARGV_EDGE_FILTER_VAL = 4;
-    int ARGV_NR_UPDATE_OPS   = 3;
-    __unused int ARGV_UPDATE_OPS = 4;
-    int ARGV_NODE_IDS        = 3;
-    int ARGV_FILTER_EXPR     = 4;
-    int ARGV_FILTER_ARGS     = 5;
+    finalizer_init(&fin);
+
+    const int ARGV_DIRECTION = 0;
+    const int ARGV_REF_FIELD = 1;
+    int ARGV_EDGE_FILTER_TXT = 1;
+    int ARGV_EDGE_FILTER_VAL = 2;
+    int ARGV_NR_UPDATE_OPS   = 1;
+    __unused int ARGV_UPDATE_OPS = 2;
+    int ARGV_NODE_IDS        = 2;
+    int ARGV_FILTER_EXPR     = 2;
+    int ARGV_FILTER_ARGS     = 3;
 #define SHIFT_ARGS(i) \
     ARGV_EDGE_FILTER_TXT += i; \
     ARGV_EDGE_FILTER_VAL += i; \
@@ -367,19 +373,20 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    if (argc < 6) {
-        return selva_send_error_arity(resp);
+    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    if (argc < 4) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
+        return;
     }
 
-    struct finalizer fin;
     __auto_free_rpn_ctx struct rpn_ctx *traversal_rpn_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *traversal_expression = NULL;
     __auto_free_rpn_ctx struct rpn_ctx *edge_filter_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *edge_filter = NULL;
-
-    finalizer_init(&fin);
-
-    SelvaHierarchy *hierarchy = main_hierarchy;
 
     /*
      * Parse the traversal arguments.
@@ -388,7 +395,8 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
     const struct selva_string *ref_field = NULL;
     err = SelvaTraversal_ParseDir2(&dir, argv[ARGV_DIRECTION]);
     if (err) {
-        return selva_send_errorf(resp, err, "Traversal argument");
+        selva_send_errorf(resp, err, "Traversal argument");
+        return;
     }
     if (argc <= ARGV_REF_FIELD &&
         (dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
@@ -396,8 +404,8 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
                 SELVA_HIERARCHY_TRAVERSAL_BFS_EDGE_FIELD |
                 SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION |
                 SELVA_HIERARCHY_TRAVERSAL_EXPRESSION))) {
-        return selva_send_error_arity(resp);
-        return 0;
+        selva_send_error_arity(resp);
+        return;
     }
     if (dir & (SELVA_HIERARCHY_TRAVERSAL_REF |
                SELVA_HIERARCHY_TRAVERSAL_EDGE_FIELD |
@@ -412,7 +420,8 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
         traversal_rpn_ctx = rpn_init(1);
         traversal_expression = rpn_compile(input_str);
         if (!traversal_expression) {
-            return selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the traversal expression");
+            selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the traversal expression");
+            return;
         }
         SHIFT_ARGS(1);
     }
@@ -426,16 +435,19 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
 
             if (!(dir & (SELVA_HIERARCHY_TRAVERSAL_EXPRESSION |
                          SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION))) {
-                return selva_send_errorf(resp, SELVA_EINVAL, "edge_filter can be only used with expression traversals");
+                selva_send_errorf(resp, SELVA_EINVAL, "edge_filter can be only used with expression traversals");
+                return;
             }
 
             edge_filter_ctx = rpn_init(1);
             edge_filter = rpn_compile(expr_str);
             if (!edge_filter) {
-                return selva_send_errorf(resp, SELVA_RPN_ECOMP, "edge_filter");
+                selva_send_errorf(resp, SELVA_RPN_ECOMP, "edge_filter");
+                return;
             }
         } else if (err != SELVA_ENOENT) {
-            return selva_send_errorf(resp, err, "edge_filter");
+            selva_send_errorf(resp, err, "edge_filter");
+            return;
         }
     }
 
@@ -445,7 +457,8 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
     struct update_op *update_ops;
     const int nr_update_ops = parse_update_ops(&fin, argv + ARGV_NR_UPDATE_OPS, argc - ARGV_NR_UPDATE_OPS, &update_ops);
     if (nr_update_ops < 0 || !update_ops) {
-        return selva_send_errorf(resp, nr_update_ops, "update_ops");
+        selva_send_errorf(resp, nr_update_ops, "update_ops");
+        return;
     }
     SHIFT_ARGS(1 + nr_update_ops * 3);
 
@@ -462,7 +475,8 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
         rpn_ctx = rpn_init(nr_reg);
         filter_expression = rpn_compile(selva_string_to_str(argv_filter_expr, NULL));
         if (!filter_expression) {
-            return selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+            selva_send_errorf(resp, SELVA_RPN_ECOMP, "Failed to compile the filter expression");
+            return;
         }
 
         /*
@@ -479,7 +493,8 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
     }
 
     if (argc <= ARGV_NODE_IDS) {
-        return selva_send_errorf(resp, SELVA_HIERARCHY_EINVAL, "node_ids missing");
+        selva_send_errorf(resp, SELVA_HIERARCHY_EINVAL, "node_ids missing");
+        return;
     }
 
     const struct selva_string *ids = argv[ARGV_NODE_IDS];
@@ -565,24 +580,12 @@ int SelvaCommand_Update(struct selva_server_response_out *resp, struct selva_str
 #if 0
     RedisModule_ReplicateVerbatim(ctx);
 #endif
-
-    return 0;
 #undef SHIFT_ARGS
 }
 
-/*
- * FIXME Register the command
- */
-#if 0
-static int Update_OnLoad(RedisModuleCtx *ctx) {
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.update", SelvaCommand_Update, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
+static int Update_OnLoad(void) {
+    selva_mk_command(64, "update", SelvaCommand_Update);
 
     return 0;
 }
 SELVA_ONLOAD(Update_OnLoad);
-#endif

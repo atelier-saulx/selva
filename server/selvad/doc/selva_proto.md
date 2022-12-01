@@ -41,6 +41,17 @@ headers unless otherwise specified.
 | ECHO                      |     1 |  server | Echoes back the same strings that were present in the request.  |
 | LSCMD                     |     2 |  server | List all currently registered commands.                         |
 | LSLANG                    |     3 |  db     | List supported languages.                                       |
+|                           |     4 |         | spare                                                           |
+|                           |     5 |         | spare                                                           |
+|                           |     6 |         | spare                                                           |
+|                           |     7 |         | spare                                                           |
+|                           |     8 |         | spare                                                           |
+|                           |     9 |         | spare                                                           |
+|                           |    10 |         | spare                                                           |
+|                           |    11 |         | spare                                                           |
+|                           |    13 |         | spare                                                           |
+|                           |    14 |         | spare                                                           |
+|                           |    15 |         | spare                                                           |
 | resolve.nodeid            |    16 |  db     |                                                                 |
 | hierarchy.find            |    17 |  db     |                                                                 |
 | hierarchy.inherit         |    18 |  db     |                                                                 |
@@ -65,7 +76,7 @@ headers unless otherwise specified.
 | index.new                 |    37 |  db     |                                                                 |
 | index.del                 |    38 |  db     |                                                                 |
 | index.debug               |    39 |  db     |                                                                 |
-| modify                    |    40 |  db     |                                                                 |
+|                           |    40 |         | spare                                                           |
 | rpn.evalBool              |    41 |  db     |                                                                 |
 | rpn.evalDouble            |    42 |  db     |                                                                 |
 | rpn.evalString            |    43 |  db     |                                                                 |
@@ -88,3 +99,5 @@ headers unless otherwise specified.
 | subscriptions.debug       |    60 |  db     |                                                                 |
 | subscriptions.del         |    61 |  db     |                                                                 |
 | subscriptions.delmarker   |    62 |  db     |                                                                 |
+| modify                    |    63 |  db     |                                                                 |
+| update                    |    64 |  db     |                                                                 |
