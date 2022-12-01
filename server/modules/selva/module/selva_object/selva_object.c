@@ -1091,7 +1091,6 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
         return err;
     }
 
-    fprintf(stderr, "HELLO HELLO %.*s %d %llf\n", (int)key_name_len, key_name_str, key->type, key->emb_double_value);
     if (key->type == SELVA_OBJECT_DOUBLE) {
         key->emb_double_value += incr;
     } else {
@@ -1103,8 +1102,6 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
         key->type = SELVA_OBJECT_DOUBLE;
         key->emb_double_value = default_value;
     }
-
-    fprintf(stderr, "YES HELLO %.*s %d %llf\n", (int)key_name_len, key_name_str, key->type, key->emb_double_value);
 
     return 0;
 }
