@@ -1093,7 +1093,7 @@ test.serial('$increment, $default', async (t) => {
       rec: {
         test1: {
           value: {
-            $default: 10,
+            $default: 11,
             $increment: 11,
           },
         },
