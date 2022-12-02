@@ -10,6 +10,20 @@
 #include "module.h"
 #include "selva_io.h"
 
+struct selva_io {
+    int rw; /*!< read if not set; write if set. */
+    enum selva_io_flags flags;
+    int fd;
+    int err; /*!< Store error. If set the saving can be halted/skipped. */
+};
+
+/**
+ * Start a new IO dump to a file.
+ */
+int selva_io_new(const char *filename, enum selva_io_flags flags, struct selva_io **io_out)
+{
+}
+
 void selva_io_save_unsigned(struct selva_io *io, uint64_t value)
 {
 }

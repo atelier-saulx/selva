@@ -16,6 +16,17 @@
 struct selva_io;
 struct selva_string;
 
+enum selva_io_flags {
+    SELVA_IO_FLAGS_COMPRESSED, /* TODO */
+};
+
+/*
+ * TODO Move string compression to util
+ * TODO Move hierarchy compression stuff to selva_io
+ */
+
+SELVA_IO_EXPORT(int, selva_io_new, const char *filename, enum selva_io_flags flags, struct selva_io **io_out);
+
 SELVA_IO_EXPORT(void, selva_io_save_unsigned, struct selva_io *io, uint64_t value);
 SELVA_IO_EXPORT(void, selva_io_save_signed, struct selva_io *io, int64_t value);
 SELVA_IO_EXPORT(void, selva_io_save_float, struct selva_io *io, float f);
