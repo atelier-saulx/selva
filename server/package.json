@@ -1,7 +1,7 @@
 {
   "name": "@saulx/selva-server",
-  "version": "19.1.2",
-  "license" : "MIT",
+  "version": "20.0.0",
+  "license": "MIT",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -60,7 +60,7 @@
   "dependencies": {
     "@saulx/hash": "^1.0.1",
     "@saulx/diff": "^1.1.3",
-    "@saulx/selva": "19.1.2",
+    "@saulx/selva": "20.0.0",
     "aws-sdk": "^2.841.0",
     "before-exit": "^1.0.0",
     "body-parser": "^1.19.0",

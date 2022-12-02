@@ -1,19 +1,19 @@
 {
   "name": "tools",
   "private": true,
-  "version": "19.1.2",
-  "license" : "MIT",
+  "version": "20.0.0",
+  "license": "MIT",
   "bin": {
     "watch": "index.js"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.168",
-    "@saulx/selva-server": "19.1.2"
+    "@saulx/selva-server": "20.0.0"
   },
   "dependencies": {
     "chokidar": "^3.5.1",
     "execa": "^5.0.0",
     "lodash.chunk": "^4.2.0",
-    "@saulx/selva": "19.1.2"
+    "@saulx/selva": "20.0.0"
   }
 }
