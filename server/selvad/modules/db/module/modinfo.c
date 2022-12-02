@@ -7,7 +7,7 @@
 
 SET_DECLARE(selva_modnfo, const struct SelvaModinfo);
 
-static void modinfo(RedisModuleInfoCtx *ctx, int for_crash_report __unused) {
+static void modinfo(struct selva_server_response_out *resp, const void *buf, size_t len) {
     const struct SelvaModinfo **modnfo_p;
 
     if (RedisModule_InfoAddSection(ctx, "selva") == REDISMODULE_ERR) {
@@ -23,7 +23,7 @@ static void modinfo(RedisModuleInfoCtx *ctx, int for_crash_report __unused) {
     }
 }
 
-static int Modinfo_OnLoad(RedisModuleCtx *ctx) {
+static int Modinfo_OnLoad(void) {
     RedisModule_RegisterInfoFunc(ctx, modinfo);
 
     return REDISMODULE_OK;
