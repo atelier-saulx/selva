@@ -177,30 +177,32 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
 
     const ssize_t frame_bsize = le16toh(ctx->recv_frame_hdr_buf.frame_bsize); /* We know it's aligned. */
     const size_t frame_payload_size = frame_bsize - sizeof(struct selva_proto_header);
-    if (frame_payload_size == 0 || frame_payload_size > SELVA_PROTO_FRAME_SIZE_MAX) {
+    if (frame_payload_size > SELVA_PROTO_FRAME_SIZE_MAX) {
         return SELVA_PROTO_EBADMSG;
     }
 
-    /*
-     * Resize the message buffer if necessary.
-     */
-    if (frame_payload_size > ctx->recv_msg_buf_size - ctx->recv_msg_buf_i) {
-        const size_t new_buf_size = ctx->recv_msg_buf_size + frame_payload_size;
+    if (frame_payload_size > 0) {
+        /*
+         * Resize the message buffer if necessary.
+         */
+        if (frame_payload_size > ctx->recv_msg_buf_size - ctx->recv_msg_buf_i) {
+            const size_t new_buf_size = ctx->recv_msg_buf_size + frame_payload_size;
 
-        ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, new_buf_size);
-        ctx->recv_msg_buf_size = new_buf_size;
+            ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, new_buf_size);
+            ctx->recv_msg_buf_size = new_buf_size;
+        }
+
+        r = read(fd, ctx->recv_msg_buf + ctx->recv_msg_buf_i, frame_payload_size);
+        if (r <= 0) {
+            /* TODO Check if we want better error handling. */
+            return SELVA_PROTO_ECONNRESET;
+        } else if (r != (ssize_t)frame_payload_size) {
+            return SELVA_PROTO_EBADMSG;
+        }
+
+        ctx->recv_msg_buf_i += frame_payload_size;
+        /* TODO Check chk */
     }
-
-    r = read(fd, ctx->recv_msg_buf + ctx->recv_msg_buf_i, frame_payload_size);
-    if (r <= 0) {
-        /* TODO Check if we want better error handling. */
-        return SELVA_PROTO_ECONNRESET;
-    } else if (r != (ssize_t)frame_payload_size) {
-        return SELVA_PROTO_EBADMSG;
-    }
-
-    ctx->recv_msg_buf_i += frame_payload_size;
-    /* TODO Check chk */
 
     return frame_bsize;
 }
