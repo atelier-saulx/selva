@@ -1,13 +1,21 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
+#define __STDC_FORMAT_MACROS 1
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include "cdefs.h"
 #include "endian.h"
+#include "selva_error.h"
 #include "selva_proto.h"
 #include "commands.h"
 
 #define TAB_WIDTH 2
+#define TABS_MAX (80 / TAB_WIDTH / 2)
 
 static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno);
 static void cmd_ping_res(const struct cmd *cmd, const void *msg, size_t msg_size);
@@ -57,7 +65,7 @@ static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno)
     return 0;
 }
 
-static void cmd_ping_res(const struct cmd *cmd, const void *msg, size_t msg_size)
+static void cmd_ping_res(const struct cmd *, const void *msg, size_t msg_size)
 {
     if (msg_size >= sizeof(struct selva_proto_control)) {
         struct selva_proto_control *ctrl = (struct selva_proto_control *)msg;
@@ -115,12 +123,12 @@ static int cmd_echo_req(const struct cmd *cmd, int sock, int seqno)
     return 0;
 }
 
-static void cmd_echo_res(const struct cmd *cmd, const void *msg, size_t msg_size)
+static void cmd_echo_res(const struct cmd *, const void *msg, size_t msg_size)
 {
     const char *p = (const char *)msg;
     ssize_t left = msg_size;
 
-    while (left > sizeof(struct selva_proto_string)) {
+    while (left > (typeof(left))sizeof(struct selva_proto_string)) {
         struct selva_proto_string hdr;
         ssize_t bsize;
 
@@ -170,30 +178,28 @@ static int generic_req(const struct cmd *cmd, int sock, int seqno)
 
 static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
 {
-    const char *p = (const char *)msg;
-    ssize_t left = msg_size;
-#define CPY_HDR(_hdr_) \
-    do { \
-        (void)(_hdr_).type; /* Fail comp if pointer. */ \
-        memcpy(&(_hdr_), p, sizeof(_hdr_)); \
-        left -= sizeof(_hdr_); \
-        p += sizeof(hdr); \
-    } while (0)
-    const unsigned int tabs_max = 80 / TAB_WIDTH / 2;
-    unsigned int tabs_hold_stack[tabs_max + 1] = { 0 };
+    unsigned int tabs_hold_stack[TABS_MAX + 1] = { 0 };
     unsigned int tabs = 0;
+    size_t i = 0;
 
-    while (left > sizeof(struct selva_proto_control)) {
-        struct selva_proto_control hdr;
-        ssize_t bsize;
+    while (i < msg_size) {
+        enum selva_proto_data_type type;
+        size_t data_len;
+        int off;
 
-        memcpy(&hdr, p, sizeof(hdr));
-        if (hdr.type == SELVA_PROTO_NULL) {
-            left -= sizeof(struct selva_proto_null);
-            p += sizeof(struct selva_proto_null);
+        off = selva_proto_parse_vtype(msg, msg_size, i, &type, &data_len);
+        if (off <= 0) {
+            if (off < 0) {
+                fprintf(stderr, "Failed to parse a value header: %s\n", selva_strerror(off));
+            }
+            return;
+        }
 
+        i += off;
+
+        if (type == SELVA_PROTO_NULL) {
             printf("%*s<null>\n", tabs * TAB_WIDTH, "");
-        } else if (hdr.type == SELVA_PROTO_ERROR) {
+        } else if (type == SELVA_PROTO_ERROR) {
             const char *err_msg_str;
             size_t err_msg_len;
             int err, err1;
@@ -203,39 +209,41 @@ static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
                 fprintf(stderr, "Failed to parse an error received: %s\n", selva_strerror(err));
                 return;
             } else {
-                fprintf("%*s<Error %.*s: %s>\n",
-                        tabs * TAB_WIDTH, "",
-                        (int)err_msg_len, err_msg_str,
-                        selva_strerror(err1));
+                printf("%*s<Error %.*s: %s>\n",
+                       tabs * TAB_WIDTH, "",
+                       (int)err_msg_len, err_msg_str,
+                       selva_strerror(err1));
             }
-        } else if (hdr.type == SELVA_PROTO_DOUBLE) {
-        } else if (hdr.type == SELVA_PROTO_LONGLONG) {
-        } else if (hdr.type == SELVA_PROTO_STRING) {
-            struct selva_proto_string str_hdr;
+        } else if (type == SELVA_PROTO_DOUBLE) {
+            double d;
 
-            if (bsize < sizeof(struct selva_proto_string)) {
-                fprintf(stderr, "Invalid proto string header\n");
-                return;
-            }
-            CPY_HDR(str_hdr);
+            memcpy(&d, (char *)msg + i - sizeof(d), sizeof(d));
+            /* TODO ledouble to host double */
+            printf("%*s%e\n", tabs * TAB_WIDTH, "", d);
+        } else if (type == SELVA_PROTO_LONGLONG) {
+            uint64_t ll;
 
-            hdr.bsize = bsize = le32toh(hdr.bsize);
-            if (hdr.bsize > left) {
-                fprintf(stderr, "Invalid proto string size\n");
-                return;
-            }
+            memcpy(&ll, (char *)msg + i - sizeof(ll), sizeof(ll));
+            printf("%*s%" PRIu64 "\n", tabs * TAB_WIDTH, "", le64toh(ll));
+        } else if (type == SELVA_PROTO_STRING) {
+            printf("%*s%.*s\n", tabs * TAB_WIDTH, "", (int)data_len, (char *)msg + i - data_len);
+        } else if (type == SELVA_PROTO_ARRAY) {
+            struct selva_proto_array hdr;
 
-            printf("%*s%.*s\n", tabs * TAB_WIDTH, "", (int)hdr.bsize, p);
-        } else if (hdr.type == SELVA_PROTO_ARRAY) {
+            memcpy(&hdr, msg + i - off, sizeof(hdr));
+
             printf("%*s[\n", tabs * TAB_WIDTH, "");
-            if (tabs < tabs_max) {
+            if (tabs < TABS_MAX) {
                 tabs++;
             }
 
-            if (!(array_hdr.flags & SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH)) {
-                tabs_hold_stack[tabs] = array_hdr.length;
+            /* TODO Support embedded arrays */
+
+            if (!(hdr.flags & SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH)) {
+                tabs_hold_stack[tabs] = data_len;
+                continue; /* Avoid decrementing the tab stack value. */
             }
-        } else if (hdr.type == SELVA_PROTO_ARRAY_END) {
+        } else if (type == SELVA_PROTO_ARRAY_END) {
             if (tabs_hold_stack[tabs]) {
                 /*
                  * This isn't necessary if the server is sending correct data.
@@ -246,6 +254,9 @@ static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
                 tabs--;
             }
             printf("%*s]\n", tabs * TAB_WIDTH, "");
+        } else {
+            fprintf(stderr, "Invalid proto value\n");
+            return;
         }
 
         /*
@@ -260,13 +271,7 @@ static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
                 printf("%*s]\n", tabs * TAB_WIDTH, "");
             }
         }
-
-        left -= bsize;
-        p += bsize;
     }
-    printf("\n");
-#undef CPY_HDR
-#undef PRINT_TABS
 }
 
 void cmd_discover(int fd, void (*cb)(struct cmd *cmd))

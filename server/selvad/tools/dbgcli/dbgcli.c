@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <alloca.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
@@ -16,6 +20,7 @@
 #include "commands.h"
 
 #define PORT 3000
+#define MAX_LINE 200
 
 /* TODO REMOVE */
 
@@ -49,36 +54,6 @@ static int connect_to_server(void)
     }
 
     return sock;
-}
-
-static void clear_crlf(char *buf)
-{
-    char *c = strpbrk(buf, "\r\n");
-
-    if (c) {
-        *c = '\0';
-    }
-}
-
-static const struct cmd *get_cmd(void)
-{
-    char buf[80];
-    struct eztrie_iterator it;
-    struct eztrie_node_value *v;
-
-    printf("> ");
-    if (fgets(buf, sizeof(buf), stdin)) {
-        clear_crlf(buf);
-
-        it = eztrie_find(&commands, buf);
-        v = eztrie_remove_ithead(&it);
-
-        if (v && !strcmp(v->key, buf)) {
-            return v->p;
-        }
-    }
-
-    return NULL;
 }
 
 void *recv_message(int fd,int *cmd, size_t *msg_size)
@@ -219,47 +194,100 @@ static void insert_cmd(struct cmd *cmd)
     eztrie_insert(&commands, cmd->cmd_name, cmd);
 }
 
+static void clear_crlf(char *buf)
+{
+    char *c = strpbrk(buf, "\r\n");
+
+    if (c) {
+        *c = '\0';
+    }
+}
+
+static char *get_line(char *buf, size_t bsize)
+{
+    char *s;
+
+    printf("> ");
+    s = fgets(buf, bsize, stdin);
+    if (s) {
+        clear_crlf(buf);
+    }
+
+    return s;
+}
+
+static const struct cmd *get_cmd(const char *name)
+{
+    struct eztrie_iterator it;
+    struct eztrie_node_value *v;
+
+    it = eztrie_find(&commands, name);
+    v = eztrie_remove_ithead(&it);
+
+    if (v && !strcmp(v->key, name)) {
+        return v->p;
+    }
+
+    return NULL;
+}
+
 int main(int argc, char const* argv[])
 {
-     int sock = connect_to_server();
+    static char line[MAX_LINE];
+    static char *args[256];
+    int sock = connect_to_server();
 
-     if (sock == -1) {
-         exit(EXIT_FAILURE);
-     }
+    if (sock == -1) {
+        exit(EXIT_FAILURE);
+    }
 
-     /*
-      * Init commands trie.
-      */
-     eztrie_init(&commands);
-     eztrie_insert(&commands, "quit", cmd_quit);
-     cmd_discover(sock, insert_cmd);
+    /*
+     * Init commands trie.
+     */
+    eztrie_init(&commands);
+    eztrie_insert(&commands, "quit", cmd_quit);
+    cmd_discover(sock, insert_cmd);
 
-     for (const struct cmd *cmd = get_cmd(); !cmd || cmd->cmd_req != cmd_quit; cmd = get_cmd()) {
-         int resp_cmd;
-         size_t msg_size;
-         void *msg;
+    fflush(NULL);
+    while (get_line(line, sizeof(line))) {
+        const struct cmd *cmd;
+        int resp_cmd;
+        size_t msg_size;
+        void *msg;
 
-         if (!cmd || !cmd->cmd_req) {
-             fprintf(stderr, "Unknown command\n");
-             continue;
-         } else if (cmd->cmd_req(cmd, sock, seqno++) == -1) {
-             fprintf(stderr, "Command failed\n");
-             continue;
-         }
+        if (strlen(line) == 0) {
+            continue;
+        }
+        split(line, args, num_elem(args));
+        if (!args[0]) {
+            continue;
+        }
 
-         msg = recv_message(sock, &resp_cmd, &msg_size);
-         if (!msg) {
-             fprintf(stderr, "Reading response failed\n");
-             continue;
-         }
+        /*
+         * TODO Pass arguments
+         */
+        cmd = get_cmd(args[0]);
+        if (!cmd || !cmd->cmd_req) {
+            fprintf(stderr, "Unknown command\n");
+            continue;
+        } else if (cmd->cmd_req(cmd, sock, seqno++) == -1) {
+            fprintf(stderr, "Command failed\n");
+            continue;
+        }
 
-         if (cmd->cmd_res) {
+        msg = recv_message(sock, &resp_cmd, &msg_size);
+        if (!msg) {
+            fprintf(stderr, "Reading response failed\n");
+            continue;
+        }
+
+        if (cmd->cmd_res) {
             cmd->cmd_res(cmd, msg, msg_size);
-         } else {
-             fprintf(stderr, "Unsupported command response\n");
-         }
-     }
+        } else {
+            fprintf(stderr, "Unsupported command response\n");
+        }
+    }
 
-     close(sock);
-     return EXIT_SUCCESS;
+    close(sock);
+    return EXIT_SUCCESS;
 }
