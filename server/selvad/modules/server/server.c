@@ -59,7 +59,6 @@ static void ping(struct selva_server_response_out *resp, const void *buf __unuse
     const char msg[] = "pong";
 
     selva_send_str(resp, msg, sizeof(msg) - 1);
-    server_send_end(resp);
 }
 
 static void echo(struct selva_server_response_out *resp, const void *buf, size_t size) {
@@ -94,11 +93,9 @@ static void echo(struct selva_server_response_out *resp, const void *buf, size_t
         left -= bsize;
         p += bsize;
     }
-
-    server_send_end(resp);
 }
 
-static void cmdlist(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused) {
+static void lscmd(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused) {
     selva_send_array(resp, -1);
     for (size_t i = 0; i < num_elem(commands); i++) {
         if (commands[i].cmd_fn) {
@@ -108,8 +105,6 @@ static void cmdlist(struct selva_server_response_out *resp, const void *buf __un
         }
     }
     selva_send_array_end(resp);
-
-    server_send_end(resp);
 }
 
 static int new_server(int port)
@@ -330,7 +325,7 @@ __constructor void init(void)
 
     SELVA_MK_COMMAND(0, ping);
     SELVA_MK_COMMAND(1, echo);
-    SELVA_MK_COMMAND(2, cmdlist);
+    SELVA_MK_COMMAND(2, lscmd);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(selva_port);
