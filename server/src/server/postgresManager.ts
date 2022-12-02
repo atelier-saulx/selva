@@ -3,6 +3,8 @@ import { spawnSync } from 'child_process'
 import { Client as PgClient } from 'pg'
 import * as path from 'path'
 
+const IS_PROD: boolean = process.env.CLOUD && process.env.CLOUD !== 'local'
+
 // TODO: increase this? and make the worker update it when it creates new tables
 const TABLE_META_COLLECT_INTERVAL = 0.3 * 60 * 1e3
 
@@ -15,6 +17,7 @@ export default class PostgresManager extends ProcessManager {
   private pgClient: PgClient
   private name: string
   private lastRun: number
+  private tout: NodeJS.Timeout
 
   constructor({
     port,
@@ -63,6 +66,15 @@ export default class PostgresManager extends ProcessManager {
   }
 
   destroy(signal?: NodeJS.Signals) {
+    if (IS_PROD) {
+      if (this.tout) {
+        clearTimeout(this.tout)
+        this.tout = undefined
+      }
+
+      return
+    }
+
     spawnSync(`docker`, [`rm`, `-f`, this.name])
     super.destroy(signal)
   }
@@ -155,6 +167,28 @@ WHERE schemaname != 'pg_catalog' AND
   }
 
   start() {
+    if (IS_PROD) {
+      const measurementLoop = () => {
+        this.tout = setTimeout(() => {
+          this.getTableMeta()
+            .then((data) => {
+              this.emit('stats', { pgInfo: data })
+            })
+            .catch((e) => {
+              // console.error(
+              //   `Error collecting load measurements from ${this.command}`,
+              //   e
+              // )
+            })
+            .finally(() => {
+              measurementLoop()
+            })
+        }, 10e3)
+      }
+
+      return
+    }
+
     super.start()
     this.createClient()
   }
