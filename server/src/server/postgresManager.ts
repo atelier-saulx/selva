@@ -186,6 +186,8 @@ WHERE schemaname != 'pg_catalog' AND
         }, 10e3)
       }
 
+      measurementLoop()
+
       return
     }
 
