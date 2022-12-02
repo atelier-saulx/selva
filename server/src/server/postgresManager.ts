@@ -172,7 +172,10 @@ WHERE schemaname != 'pg_catalog' AND
         this.tout = setTimeout(() => {
           this.getTableMeta()
             .then((data) => {
-              this.emit('stats', { pgInfo: data })
+              this.emit('stats', {
+                pgInfo: data,
+                runtimeInfo: { timestamp: Date.now(), cpu: 0.2 },
+              })
             })
             .catch((e) => {
               // console.error(
