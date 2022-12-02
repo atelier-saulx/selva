@@ -2,6 +2,10 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#if __linux__
+/* Linux defines IPPROTO_TCP in here */
+#include <arpa/inet.h>
+#endif
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/types.h>
