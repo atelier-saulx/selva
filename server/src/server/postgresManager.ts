@@ -189,7 +189,14 @@ WHERE schemaname != 'pg_catalog' AND
         }, 10e3)
       }
 
-      measurementLoop()
+      this.createClient()
+        .then(() => {
+          measurementLoop()
+        })
+        .catch((e) => {
+          console.error('ERROR STARTING POSTRGES MANAGER', e)
+          process.exit(1)
+        })
 
       return
     }
