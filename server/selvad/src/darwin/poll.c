@@ -86,7 +86,6 @@ void evl_poll(struct event_loop_state *state, const struct timespec *timeout)
     if (nfds_out > 0) {
         const int offset = state->nr_pending;
         int nr_events = 0;
-        SELVA_LOG(SELVA_LOGL_INFO, "Hello fds");
 
         for (int i = 0; i < nfds; i++) {
             const struct pollfd *pfd = &state->pfds[i];

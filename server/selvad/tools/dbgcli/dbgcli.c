@@ -172,6 +172,12 @@ static int echo(int sock)
     memcpy(buf + sizeof(*hdr) + sizeof(str_hdr), data, sizeof(data));
 
     for (int i = 0; i < n; i++) {
+#if __linux__
+        const int send_flags = i < n - 1 ? MSG_MORE : 0;
+#else
+        const int send_flags = 0;
+#endif
+
         memset(hdr, 0, sizeof(*hdr));
         hdr->cmd = SELVA_CMD_ECHO;
         hdr->flags = (i == 0) ? SELVA_PROTO_HDR_FFIRST : (i == n - 1) ? SELVA_PROTO_HDR_FLAST : 0;
@@ -179,7 +185,7 @@ static int echo(int sock)
         hdr->frame_bsize = htole16(sizeof(buf));
         hdr->msg_bsize = 0;
 
-        if (send(sock, buf, sizeof(buf), i < n - 1 ? MSG_MORE: 0) != sizeof(buf)) {
+        if (send(sock, buf, sizeof(buf), send_flags) != sizeof(buf)) {
             fprintf(stderr, "Send %d/%d failed\n", i, n);
         }
     }
