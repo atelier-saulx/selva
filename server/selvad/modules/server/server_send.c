@@ -95,7 +95,7 @@ int selva_send_double(struct selva_server_response_out *resp, double value)
 
 int selva_send_ll(struct selva_server_response_out *resp, long long value)
 {
-    struct selva_proto_double buf = {
+    struct selva_proto_longlong buf = {
         .type = SELVA_PROTO_LONGLONG,
         .v = htole64(value),
     };
