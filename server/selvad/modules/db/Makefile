@@ -5,6 +5,7 @@ SELVA_DB_VERSION := $(shell sh -c 'git rev-parse --verify HEAD')
 OBJ := \
 	   db.o \
 	   module/alias.o \
+	   module/aggregate.o \
 	   module/arg_parser.o \
 	   module/comparator.o \
 	   module/compressor.o \
@@ -25,7 +26,6 @@ OBJ := \
 	   module/inherit/inherit.o \
 	   module/inherit/send_field.o \
 	   module/inherit/send_field_find.o \
-	   module/aggregate.o \
 	   module/modify.o \
 	   module/resolve.o \
 	   module/rpn/rpn.o \

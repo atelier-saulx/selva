@@ -3,6 +3,7 @@
 
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 OBJ := \
+	   commands.o \
 	   dbgcli.o
 CFLAGS := -Wall -Wextra -g3 -std=gnu2x -I../../include
 LDFLAGS := -L../../lib -lutil -ljemalloc_selva

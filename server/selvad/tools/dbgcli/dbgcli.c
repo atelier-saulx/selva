@@ -13,20 +13,13 @@
 #include "selva_error.h"
 #include "selva_proto.h"
 #include "util/eztrie.h"
+#include "commands.h"
 
 #define PORT 3000
 
-typedef int (*cmd_fn)(int);
+/* TODO REMOVE */
 
-enum selva_command_num {
-    SELVA_CMD_PING = 0,
-    SELVA_CMD_ECHO = 1,
-    SELVA_CMD_LSCMD = 2,
-    SELVA_CMD_LSLANG = 3,
-    SELVA_CMD_RESOLVE_NODEID = 16,
-};
-
-struct eztrie commands;
+static struct eztrie commands;
 static int seqno = 0;
 
 [[nodiscard]]
@@ -67,7 +60,7 @@ static void clear_crlf(char *buf)
     }
 }
 
-static cmd_fn get_cmd(void)
+static const struct cmd *get_cmd(void)
 {
     char buf[80];
     struct eztrie_iterator it;
@@ -82,8 +75,6 @@ static cmd_fn get_cmd(void)
 
         if (v && !strcmp(v->key, buf)) {
             return v->p;
-        } else {
-            fprintf(stderr, "Unknown command\n");
         }
     }
 
@@ -131,69 +122,13 @@ void *recv_message(int fd,int *cmd, size_t *msg_size)
     return msg_buf;
 }
 
-static int quit(int sock __unused)
+static int cmd_quit(const struct cmd *, int, int)
 {
     return 0;
 }
 
-static int ping(int sock)
-{
-    _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header)];
-    struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
-
-    memset(hdr, 0, sizeof(*hdr));
-    hdr->cmd = SELVA_CMD_PING;
-    hdr->flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST;
-    hdr->seqno = htole32(seqno++);
-    hdr->frame_bsize = htole16(sizeof(buf));
-    hdr->msg_bsize = 0;
-
-    if (send(sock, buf, sizeof(buf), 0) != sizeof(buf)) {
-        fprintf(stderr, "Send failed\n");
-        return -1;
-    }
-
-    return 0;
-}
-
-static int echo(int sock)
-{
-    const char data[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
-    const struct selva_proto_string str_hdr = {
-        .type = SELVA_PROTO_STRING,
-        .bsize = htole32(sizeof(data)),
-    };
-    _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header) + sizeof(str_hdr) + sizeof(data)];
-    struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
-    const int seq = htole32(seqno++);
-    const int n = 100;
-
-    memcpy(buf + sizeof(*hdr), &str_hdr, sizeof(str_hdr));
-    memcpy(buf + sizeof(*hdr) + sizeof(str_hdr), data, sizeof(data));
-
-    for (int i = 0; i < n; i++) {
-#if __linux__
-        const int send_flags = i < n - 1 ? MSG_MORE : 0;
-#else
-        const int send_flags = 0;
-#endif
-
-        memset(hdr, 0, sizeof(*hdr));
-        hdr->cmd = SELVA_CMD_ECHO;
-        hdr->flags = (i == 0) ? SELVA_PROTO_HDR_FFIRST : (i == n - 1) ? SELVA_PROTO_HDR_FLAST : 0;
-        hdr->seqno = seq;
-        hdr->frame_bsize = htole16(sizeof(buf));
-        hdr->msg_bsize = 0;
-
-        if (send(sock, buf, sizeof(buf), send_flags) != sizeof(buf)) {
-            fprintf(stderr, "Send %d/%d failed\n", i, n);
-        }
-    }
-
-    return 0;
-}
-
-static int selva_resolve(int sock)
+#if 0
+static int cmd_resolve(int sock)
 {
     struct selva_proto_header *hdr;
     struct selva_proto_string str_hdr = {
@@ -232,34 +167,6 @@ static int selva_resolve(int sock)
     }
 
     return 0;
-}
-
-static void print_echo(const void *msg, size_t msg_size)
-{
-    const char *p = (const char *)msg;
-    ssize_t left = msg_size;
-
-    while (left > sizeof(struct selva_proto_string)) {
-        struct selva_proto_string hdr;
-        ssize_t bsize;
-
-        memcpy(&hdr, p, sizeof(hdr));
-        left -= sizeof(hdr);
-        p += sizeof(hdr);
-
-        bsize = le32toh(hdr.bsize);
-        if (hdr.type != SELVA_PROTO_STRING ||
-            bsize > left) {
-            fprintf(stderr, "Invalid string (type: %d bsize: %zd buf_size: %zd)\n",
-                    hdr.type, bsize, left);
-            return;
-        }
-
-        printf("%.*s", (int)bsize, p);
-        left -= bsize;
-        p += bsize;
-    }
-    printf("\n");
 }
 
 static void print_selva_resolve(const void *msg, size_t msg_size)
@@ -304,6 +211,13 @@ static void print_selva_resolve(const void *msg, size_t msg_size)
         }
     }
 }
+#endif
+
+static void insert_cmd(struct cmd *cmd)
+{
+    printf("Adding: %s\n", cmd->cmd_name);
+    eztrie_insert(&commands, cmd->cmd_name, cmd);
+}
 
 int main(int argc, char const* argv[])
 {
@@ -313,14 +227,23 @@ int main(int argc, char const* argv[])
          exit(EXIT_FAILURE);
      }
 
-     for (cmd_fn cmd = get_cmd(); cmd != quit; cmd = get_cmd()) {
+     /*
+      * Init commands trie.
+      */
+     eztrie_init(&commands);
+     eztrie_insert(&commands, "quit", cmd_quit);
+     cmd_discover(sock, insert_cmd);
+
+     for (const struct cmd *cmd = get_cmd(); !cmd || cmd->cmd_req != cmd_quit; cmd = get_cmd()) {
          int resp_cmd;
          size_t msg_size;
          void *msg;
 
-         if (!cmd) {
+         if (!cmd || !cmd->cmd_req) {
+             fprintf(stderr, "Unknown command\n");
              continue;
-         } else if (cmd(sock) == -1) {
+         } else if (cmd->cmd_req(cmd, sock, seqno++) == -1) {
+             fprintf(stderr, "Command failed\n");
              continue;
          }
 
@@ -330,46 +253,13 @@ int main(int argc, char const* argv[])
              continue;
          }
 
-         switch (resp_cmd) {
-         case SELVA_CMD_PING:
-             if (msg_size >= sizeof(struct selva_proto_control)) {
-                 struct selva_proto_control *ctrl = (struct selva_proto_control *)msg;
-
-                 if (ctrl->type == SELVA_PROTO_STRING && msg_size >= sizeof(struct selva_proto_string)) {
-                     struct selva_proto_string *s = (struct selva_proto_string *)msg;
-
-                     if (le32toh(s->bsize) <= msg_size - sizeof(struct selva_proto_string)) {
-                        printf("%.*s\n", (int)s->bsize, s->data);
-                     } else {
-                         fprintf(stderr, "Invalid string\n");
-                     }
-                 } else {
-                     fprintf(stderr, "Unexpected response to \"ping\": %d\n", ctrl->type);
-                 }
-             } else {
-                 fprintf(stderr, "Response is shorter than expected\n");
-             }
-             break;
-         case SELVA_CMD_ECHO:
-             print_echo(msg, msg_size);
-             break;
-         case SELVA_CMD_RESOLVE_NODEID:
-             print_selva_resolve(msg, msg_size);
-             break;
-         default:
+         if (cmd->cmd_res) {
+            cmd->cmd_res(cmd, msg, msg_size);
+         } else {
              fprintf(stderr, "Unsupported command response\n");
          }
      }
 
      close(sock);
      return EXIT_SUCCESS;
-}
-
-__constructor static void init(void)
-{
-    eztrie_init(&commands);
-    eztrie_insert(&commands, "quit", quit);
-    eztrie_insert(&commands, "ping", ping);
-    eztrie_insert(&commands, "echo", echo);
-    eztrie_insert(&commands, "resolve.nodeid", selva_resolve);
 }

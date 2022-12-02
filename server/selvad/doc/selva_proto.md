@@ -37,11 +37,11 @@ headers unless otherwise specified.
 
 | Name                      | cmd   |  Module | Description                                                     |
 |---------------------------|------:|---------|-----------------------------------------------------------------|
-| PING                      |     0 |  server | Traditional ping/pong.                                          |
-| ECHO                      |     1 |  server | Echoes back the same strings that were present in the request.  |
-| LSCMD                     |     2 |  server | List all currently registered commands.                         |
-| LSLANG                    |     3 |  db     | List supported languages.                                       |
-|                           |     4 |         | spare                                                           |
+| ping                      |     0 |  server | Traditional ping/pong.                                          |
+| echo                      |     1 |  server | Echoes back the same strings that were present in the request.  |
+| lscmd                     |     2 |  server | List all currently registered commands.                         |
+| lslang                    |     3 |  db     | List supported languages.                                       |
+| modinfo                   |     4 |         | TODO                                                            |
 |                           |     5 |         | spare                                                           |
 |                           |     6 |         | spare                                                           |
 |                           |     7 |         | spare                                                           |
