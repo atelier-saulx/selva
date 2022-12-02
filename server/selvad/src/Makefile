@@ -17,13 +17,13 @@ CFLAGS += -fvisibility=hidden \
 		  -include ../include/cdefs.h \
 		  -DEVL_MAIN=1
 
-LDFLAGS += -ljemalloc_selva -lutil
+LDFLAGS += -L ../lib -ljemalloc_selva -lutil
 ifeq ($(uname_S),Linux)
 OBJ += \
 	   linux/poll.o \
 	   linux/signal.o
 CFLAGS += -DUSE_EPOLL=1
-LDFLAGS += -rdynamic -ldl -L ../lib -Wl,-rpath,'$$ORIGIN'/lib:'$$ORIGIN'/modules
+LDFLAGS += -rdynamic -ldl -Wl,-rpath,'$$ORIGIN'/lib:'$$ORIGIN'/modules
 endif
 ifeq ($(uname_S),Darwin)
 OBJ += \

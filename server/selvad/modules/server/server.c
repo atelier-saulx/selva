@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include "endian.h"
 #include "event_loop.h"
 #include "module.h"
 #include "selva_error.h"
@@ -19,12 +20,12 @@
 #include "selva_proto.h"
 #define SELVA_SERVER_MAIN 1
 #include "selva_server.h"
+#include "tcp.h"
 #include "server.h"
 
 #define ENV_PORT_NAME "SELVA_PORT"
 static int selva_port = 3000;
 #define BACKLOG_SIZE 10
-static const int use_tcp_nodelay = 1;
 #define MAX_CLIENTS 100 /*!< Maximum number of client connections. */
 static int server_sockfd;
 static struct conn_ctx clients[MAX_CLIENTS];
@@ -294,10 +295,7 @@ static void on_connection(struct event *event, void *arg __unused)
         return;
     }
 
-    if (use_tcp_nodelay) {
-        (void)setsockopt(new_sockfd, IPPROTO_TCP, TCP_NODELAY, &(int){1}, sizeof(int));
-    }
-
+    tcp_set_nodelay(new_sockfd);
 
     inet_ntop(AF_INET, &client.sin_addr, buf, sizeof(buf));
     SELVA_LOG(SELVA_LOGL_INFO, "Received a connection from %s", buf);

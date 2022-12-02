@@ -4,10 +4,11 @@
 OBJ := \
 	   server.o \
 	   server_frame.o \
-	   server_send.o
+	   server_send.o \
+	   tcp.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -DSELVA_SERVER_MAIN=1
-LDFLAGS += -lutil
+LDFLAGS += -lutil -ljemalloc_selva
 TARGET := ../mod_server$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)

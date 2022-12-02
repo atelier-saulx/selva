@@ -17,6 +17,7 @@
 #include "selva_proto.h"
 #define SELVA_SERVER_MAIN 1
 #include "selva_server.h"
+#include "tcp.h"
 #include "server.h"
 
 #define MAX_RETRIES 3
@@ -112,7 +113,7 @@ ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const v
         return SELVA_PROTO_EINVAL;
     }
 
-    (void)setsockopt(resp->ctx->fd, IPPROTO_TCP, TCP_CORK, &(int){1}, sizeof(int));
+    tcp_cork(resp->ctx->fd);
     while (i < len) {
         if (resp->buf_i >= sizeof(resp->buf)) {
             int err;
@@ -133,7 +134,7 @@ ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const v
     }
 
 out:
-    (void)setsockopt(resp->ctx->fd, IPPROTO_TCP, TCP_CORK, &(int){0}, sizeof(int));
+    tcp_uncork(resp->ctx->fd);
     return ret;
 }
 
