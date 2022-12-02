@@ -61,7 +61,7 @@ enum selva_proto_data_type {
     SELVA_PROTO_LONGLONG = 3, /*!< A 64-bit integer value. */
     SELVA_PROTO_STRING = 4, /*!< A string or binary blob. */
     SELVA_PROTO_ARRAY = 5, /*!< Begin an array. */
-    SELVA_PROTO_ARRAY_END = 6, /*!< Terminates an array of unknown length. */
+    SELVA_PROTO_ARRAY_END = 6, /*!< Terminates an array of unknown length. Uses selva_proto_control. */
 } __attribute__((packed));
 
 /**
@@ -166,6 +166,15 @@ struct selva_proto_control {
      */
     enum selva_proto_data_type type;
 } __attribute__((packed));
+
+#define selva_proto_typeof_str(v) _Generic((v), \
+        struct selva_proto_null: "null", \
+        struct selva_proto_error: "error", \
+        struct selva_proto_double: "double", \
+        struct selva_proto_longlong: "long long", \
+        struct selva_proto_string: "string", \
+        struct selva_proto_array: "array", \
+        struct selva_proto_control: "control")
 
 static_assert(sizeof(struct selva_proto_header) == (2 * sizeof(uint64_t)), "Header must be 64 bits");
 static_assert(__alignof__(struct selva_proto_header) == __alignof__(uint64_t), "Header must be aligned as a 64-bit integer");
