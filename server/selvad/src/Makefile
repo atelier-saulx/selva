@@ -30,7 +30,7 @@ OBJ += \
 	   darwin/poll.o \
 	   darwin/signal.o
 CFLAGS += -DUSE_POLL=1
-LDFLAGS += -Wl,-rpath,@executable_path/lib
+LDFLAGS += -Wl,-rpath,@executable_path/lib,-rpath,@executable_path/modules
 endif
 
 DEP := $(OBJ:%.o=%.d)

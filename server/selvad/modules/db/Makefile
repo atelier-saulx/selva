@@ -49,7 +49,7 @@ OBJ := \
 #	   module/modinfo.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -I./include -include ../../tunables.h
-LDFLAGS += -ldeflate -lutil
+LDFLAGS += -ldeflate -lutil -ljemalloc_selva
 TARGET := ../mod_db$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)
