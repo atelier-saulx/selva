@@ -246,8 +246,8 @@ int main(int argc, char const* argv[])
      * Init commands trie.
      */
     eztrie_init(&commands);
-    eztrie_insert(&commands, "quit", cmd_quit);
-    cmd_discover(sock, insert_cmd);
+    eztrie_insert(&commands, "quit", main);
+    cmd_discover(sock, seqno++, insert_cmd);
 
     fflush(NULL);
     while (get_line(line, sizeof(line))) {
@@ -271,7 +271,9 @@ int main(int argc, char const* argv[])
         args_c--;
 
         cmd = get_cmd(args[0]);
-        if (!cmd || !cmd->cmd_req) {
+        if ((void *)cmd == main) {
+            break;
+        } else if (!cmd || !cmd->cmd_req) {
             fprintf(stderr, "Unknown command\n");
             continue;
         } else if (cmd->cmd_req(cmd, sock, seqno++, args_c, args) == -1) {

@@ -181,33 +181,17 @@ static int generic_req(const struct cmd *cmd, int sock, int seqno, int argc, cha
         }
         hdr->frame_bsize = htole16(frame_bsize);
 
+        int send_flags = 0;
+
         if (arg_i == argc) {
             hdr->flags |= SELVA_PROTO_HDR_FLAST;
-        }
-
-        send(sock, buf, frame_bsize, 0);
-
-#if 0
-
-        for (int i = 0; i < n; i++) {
+        } else {
 #if     __linux__
-            const int send_flags = i < n - 1 ? MSG_MORE : 0;
-#else
-            const int send_flags = 0;
+            send_flags = MSG_MORE;
 #endif
-
-            memset(hdr, 0, sizeof(*hdr));
-            hdr->cmd = cmd->cmd_id;
-            hdr->flags = (i == 0) ? SELVA_PROTO_HDR_FFIRST : (i == n - 1) ? SELVA_PROTO_HDR_FLAST : 0;
-            hdr->seqno = seq;
-            hdr->frame_bsize = htole16(sizeof(buf));
-            hdr->msg_bsize = 0;
-
-            if (send(sock, buf, sizeof(buf), send_flags) != sizeof(buf)) {
-                fprintf(stderr, "Send %d/%d failed\n", i, n);
-            }
         }
-#endif
+
+        send(sock, buf, frame_bsize, send_flags);
     }
 
 #undef FRAME_PAYLOAD_SIZE_MAX
@@ -236,7 +220,7 @@ static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
         i += off;
 
         if (type == SELVA_PROTO_NULL) {
-            printf("%*s<null>\n", tabs * TAB_WIDTH, "");
+            printf("%*s<null>,\n", tabs * TAB_WIDTH, "");
         } else if (type == SELVA_PROTO_ERROR) {
             const char *err_msg_str;
             size_t err_msg_len;
@@ -247,7 +231,7 @@ static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
                 fprintf(stderr, "Failed to parse an error received: %s\n", selva_strerror(err));
                 return;
             } else {
-                printf("%*s<Error %.*s: %s>\n",
+                printf("%*s<Error %.*s: %s>,\n",
                        tabs * TAB_WIDTH, "",
                        (int)err_msg_len, err_msg_str,
                        selva_strerror(err1));
@@ -257,14 +241,14 @@ static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
 
             memcpy(&d, (char *)msg + i - sizeof(d), sizeof(d));
             /* TODO ledouble to host double */
-            printf("%*s%e\n", tabs * TAB_WIDTH, "", d);
+            printf("%*s%e,\n", tabs * TAB_WIDTH, "", d);
         } else if (type == SELVA_PROTO_LONGLONG) {
             uint64_t ll;
 
             memcpy(&ll, (char *)msg + i - sizeof(ll), sizeof(ll));
-            printf("%*s%" PRIu64 "\n", tabs * TAB_WIDTH, "", le64toh(ll));
+            printf("%*s%" PRIu64 ",\n", tabs * TAB_WIDTH, "", le64toh(ll));
         } else if (type == SELVA_PROTO_STRING) {
-            printf("%*s%.*s\n", tabs * TAB_WIDTH, "", (int)data_len, (char *)msg + i - data_len);
+            printf("%*s\"%.*s\",\n", tabs * TAB_WIDTH, "", (int)data_len, (char *)msg + i - data_len);
         } else if (type == SELVA_PROTO_ARRAY) {
             struct selva_proto_array hdr;
 
