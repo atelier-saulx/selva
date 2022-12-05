@@ -6,7 +6,7 @@
 
 struct cmd;
 
-typedef int (*cmd_req_fn)(const struct cmd *cmd, int fd, int seqno);
+typedef int (*cmd_req_fn)(const struct cmd *cmd, int fd, int seqno, int argc, char *argv[]);
 typedef void (*cmd_res_fn)(const struct cmd *cmd, const void *buf, size_t bsize);
 
 struct cmd {

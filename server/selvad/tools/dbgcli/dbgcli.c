@@ -17,6 +17,7 @@
 #include "selva_error.h"
 #include "selva_proto.h"
 #include "util/eztrie.h"
+#include "split.h"
 #include "commands.h"
 
 #define PORT 3000
@@ -250,6 +251,7 @@ int main(int argc, char const* argv[])
 
     fflush(NULL);
     while (get_line(line, sizeof(line))) {
+        int args_c;
         const struct cmd *cmd;
         int resp_cmd;
         size_t msg_size;
@@ -263,14 +265,16 @@ int main(int argc, char const* argv[])
             continue;
         }
 
-        /*
-         * TODO Pass arguments
-         */
+        /* Count args. */
+        args_c = 0;
+        while (args[args_c++]);
+        args_c--;
+
         cmd = get_cmd(args[0]);
         if (!cmd || !cmd->cmd_req) {
             fprintf(stderr, "Unknown command\n");
             continue;
-        } else if (cmd->cmd_req(cmd, sock, seqno++) == -1) {
+        } else if (cmd->cmd_req(cmd, sock, seqno++, args_c, args) == -1) {
             fprintf(stderr, "Command failed\n");
             continue;
         }

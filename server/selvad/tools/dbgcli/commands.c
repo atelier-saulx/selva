@@ -17,11 +17,11 @@
 #define TAB_WIDTH 2
 #define TABS_MAX (80 / TAB_WIDTH / 2)
 
-static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno);
+static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 static void cmd_ping_res(const struct cmd *cmd, const void *msg, size_t msg_size);
-static int cmd_echo_req(const struct cmd *cmd, int sock, int seqno);
 static void cmd_echo_res(const struct cmd *cmd, const void *msg, size_t msg_size);
-static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno);
+static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
+static int generic_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size);
 
 static struct cmd commands[254] = {
@@ -34,7 +34,7 @@ static struct cmd commands[254] = {
     [1] = {
         .cmd_id = 1,
         .cmd_name = "echo",
-        .cmd_req = cmd_echo_req,
+        .cmd_req = generic_req,
         .cmd_res = cmd_echo_res,
     },
     [2] = {
@@ -45,7 +45,7 @@ static struct cmd commands[254] = {
     },
 };
 
-static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno)
+static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[])
 {
     _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header)];
     struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
@@ -86,43 +86,6 @@ static void cmd_ping_res(const struct cmd *, const void *msg, size_t msg_size)
     }
 }
 
-static int cmd_echo_req(const struct cmd *cmd, int sock, int seqno)
-{
-    const char data[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
-    const struct selva_proto_string str_hdr = {
-        .type = SELVA_PROTO_STRING,
-        .bsize = htole32(sizeof(data)),
-    };
-    _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header) + sizeof(str_hdr) + sizeof(data)];
-    struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
-    const int seq = htole32(seqno);
-    const int n = 100;
-
-    memcpy(buf + sizeof(*hdr), &str_hdr, sizeof(str_hdr));
-    memcpy(buf + sizeof(*hdr) + sizeof(str_hdr), data, sizeof(data));
-
-    for (int i = 0; i < n; i++) {
-#if __linux__
-        const int send_flags = i < n - 1 ? MSG_MORE : 0;
-#else
-        const int send_flags = 0;
-#endif
-
-        memset(hdr, 0, sizeof(*hdr));
-        hdr->cmd = cmd->cmd_id;
-        hdr->flags = (i == 0) ? SELVA_PROTO_HDR_FFIRST : (i == n - 1) ? SELVA_PROTO_HDR_FLAST : 0;
-        hdr->seqno = seq;
-        hdr->frame_bsize = htole16(sizeof(buf));
-        hdr->msg_bsize = 0;
-
-        if (send(sock, buf, sizeof(buf), send_flags) != sizeof(buf)) {
-            fprintf(stderr, "Send %d/%d failed\n", i, n);
-        }
-    }
-
-    return 0;
-}
-
 static void cmd_echo_res(const struct cmd *, const void *msg, size_t msg_size)
 {
     const char *p = (const char *)msg;
@@ -151,7 +114,7 @@ static void cmd_echo_res(const struct cmd *, const void *msg, size_t msg_size)
     printf("\n");
 }
 
-static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno)
+static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[])
 {
     _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header)];
     struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
@@ -171,8 +134,83 @@ static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno)
     return 0;
 }
 
-static int generic_req(const struct cmd *cmd, int sock, int seqno)
+static int generic_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[])
 {
+    const int seq = htole32(seqno);
+#define FRAME_PAYLOAD_SIZE_MAX (sizeof(struct selva_proto_string) + 20)
+    int arg_i = 1;
+    int value_i = 0;
+    int frame_nr = 0;
+
+    while (arg_i < argc) {
+        _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header) + FRAME_PAYLOAD_SIZE_MAX];
+        struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
+        size_t frame_bsize = sizeof(*hdr);
+
+        memset(hdr, 0, sizeof(*hdr));
+        hdr->cmd = cmd->cmd_id;
+        hdr->flags = (frame_nr++ == 0) ? SELVA_PROTO_HDR_FFIRST : 0;
+        hdr->seqno = seq;
+        hdr->msg_bsize = 0;
+
+        while (frame_bsize < sizeof(buf) && arg_i < argc) {
+            if (value_i == 0) {
+                const struct selva_proto_string str_hdr = {
+                    .type = SELVA_PROTO_STRING,
+                    .bsize = htole32(strlen(argv[arg_i])),
+                };
+
+                if (frame_bsize + sizeof(str_hdr) >= sizeof(buf)) {
+                    break;
+                }
+
+                memcpy(buf + frame_bsize, &str_hdr, sizeof(str_hdr));
+                frame_bsize += sizeof(str_hdr);
+            }
+
+            while (frame_bsize < sizeof(buf)) {
+                const char c = argv[arg_i][value_i++];
+
+                if (c == '\0') {
+                    arg_i++;
+                    value_i = 0;
+                    break;
+                }
+                buf[frame_bsize++] = c;
+            }
+        }
+        hdr->frame_bsize = htole16(frame_bsize);
+
+        if (arg_i == argc) {
+            hdr->flags |= SELVA_PROTO_HDR_FLAST;
+        }
+
+        send(sock, buf, frame_bsize, 0);
+
+#if 0
+
+        for (int i = 0; i < n; i++) {
+#if     __linux__
+            const int send_flags = i < n - 1 ? MSG_MORE : 0;
+#else
+            const int send_flags = 0;
+#endif
+
+            memset(hdr, 0, sizeof(*hdr));
+            hdr->cmd = cmd->cmd_id;
+            hdr->flags = (i == 0) ? SELVA_PROTO_HDR_FFIRST : (i == n - 1) ? SELVA_PROTO_HDR_FLAST : 0;
+            hdr->seqno = seq;
+            hdr->frame_bsize = htole16(sizeof(buf));
+            hdr->msg_bsize = 0;
+
+            if (send(sock, buf, sizeof(buf), send_flags) != sizeof(buf)) {
+                fprintf(stderr, "Send %d/%d failed\n", i, n);
+            }
+        }
+#endif
+    }
+
+#undef FRAME_PAYLOAD_SIZE_MAX
     return 0;
 }
 
