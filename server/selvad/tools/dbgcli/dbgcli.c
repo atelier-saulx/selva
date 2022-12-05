@@ -57,52 +57,6 @@ static int connect_to_server(void)
     return sock;
 }
 
-void *recv_message(int fd,int *cmd, size_t *msg_size)
-{
-    static _Alignas(uintptr_t) uint8_t msg_buf[1048576];
-    struct selva_proto_header resp_hdr;
-    ssize_t r;
-    size_t i = 0;
-
-    do {
-        r = recv(fd, &resp_hdr, sizeof(resp_hdr), 0);
-        if (r != (ssize_t)sizeof(resp_hdr)) {
-            fprintf(stderr, "recv() returned %d\n", (int)r);
-            return NULL;
-        } else {
-            size_t frame_bsize = le16toh(resp_hdr.frame_bsize);
-            const size_t payload_size = frame_bsize - sizeof(resp_hdr);
-
-            if (!(resp_hdr.flags & SELVA_PROTO_HDR_FREQ_RES)) {
-                fprintf(stderr, "Invalid response: response bit not set\n");
-                return NULL;
-            } else if (i + payload_size > sizeof(msg_buf)) {
-                fprintf(stderr, "Buffer overflow\n");
-                return NULL;
-            }
-
-            if (payload_size > 0) {
-                r = recv(fd, msg_buf + i, payload_size, 0);
-                if (r != (ssize_t)payload_size) {
-                    fprintf(stderr, "recv() returned %d\n", (int)r);
-                    return NULL;
-                }
-
-                i += payload_size;
-            }
-        }
-    } while (!(resp_hdr.flags & SELVA_PROTO_HDR_FLAST));
-
-    *cmd = resp_hdr.cmd;
-    *msg_size = i;
-    return msg_buf;
-}
-
-static int cmd_quit(const struct cmd *, int, int)
-{
-    return 0;
-}
-
 #if 0
 static int cmd_resolve(int sock)
 {

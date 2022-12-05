@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include "cdefs.h"
 #include "endian.h"
+#include "jemalloc.h"
 #include "selva_error.h"
 #include "selva_proto.h"
 #include "commands.h"
@@ -19,7 +20,6 @@
 
 static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 static void cmd_ping_res(const struct cmd *cmd, const void *msg, size_t msg_size);
-static void cmd_echo_res(const struct cmd *cmd, const void *msg, size_t msg_size);
 static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 static int generic_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size);
@@ -35,7 +35,7 @@ static struct cmd commands[254] = {
         .cmd_id = 1,
         .cmd_name = "echo",
         .cmd_req = generic_req,
-        .cmd_res = cmd_echo_res,
+        .cmd_res = generic_res,
     },
     [2] = {
         .cmd_id = 2,
@@ -45,7 +45,7 @@ static struct cmd commands[254] = {
     },
 };
 
-static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[])
+static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno, int argc __unused, char *argv[] __unused)
 {
     _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header)];
     struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
@@ -86,35 +86,7 @@ static void cmd_ping_res(const struct cmd *, const void *msg, size_t msg_size)
     }
 }
 
-static void cmd_echo_res(const struct cmd *, const void *msg, size_t msg_size)
-{
-    const char *p = (const char *)msg;
-    ssize_t left = msg_size;
-
-    while (left > (typeof(left))sizeof(struct selva_proto_string)) {
-        struct selva_proto_string hdr;
-        ssize_t bsize;
-
-        memcpy(&hdr, p, sizeof(hdr));
-        left -= sizeof(hdr);
-        p += sizeof(hdr);
-
-        bsize = le32toh(hdr.bsize);
-        if (hdr.type != SELVA_PROTO_STRING ||
-            bsize > left) {
-            fprintf(stderr, "Invalid string (type: %d bsize: %zd buf_size: %zd)\n",
-                    hdr.type, bsize, left);
-            return;
-        }
-
-        printf("%.*s", (int)bsize, p);
-        left -= bsize;
-        p += bsize;
-    }
-    printf("\n");
-}
-
-static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[])
+static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno, int argc __unused, char *argv[] __unused)
 {
     _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header)];
     struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
@@ -142,7 +114,7 @@ static int generic_req(const struct cmd *cmd, int sock, int seqno, int argc, cha
     int value_i = 0;
     int frame_nr = 0;
 
-    while (arg_i < argc) {
+    while (arg_i < argc || frame_nr == 0) {
         _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header) + FRAME_PAYLOAD_SIZE_MAX];
         struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
         size_t frame_bsize = sizeof(*hdr);
@@ -198,7 +170,7 @@ static int generic_req(const struct cmd *cmd, int sock, int seqno, int argc, cha
     return 0;
 }
 
-static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
+static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t msg_size)
 {
     unsigned int tabs_hold_stack[TABS_MAX + 1] = { 0 };
     unsigned int tabs = 0;
@@ -231,10 +203,10 @@ static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
                 fprintf(stderr, "Failed to parse an error received: %s\n", selva_strerror(err));
                 return;
             } else {
-                printf("%*s<Error %.*s: %s>,\n",
+                printf("%*s<Error %s: %.*s>,\n",
                        tabs * TAB_WIDTH, "",
-                       (int)err_msg_len, err_msg_str,
-                       selva_strerror(err1));
+                       selva_strerror(err1),
+                       (int)err_msg_len, err_msg_str);
             }
         } else if (type == SELVA_PROTO_DOUBLE) {
             double d;
@@ -296,9 +268,111 @@ static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
     }
 }
 
-void cmd_discover(int fd, void (*cb)(struct cmd *cmd))
+void *recv_message(int fd, int *cmd, size_t *msg_size)
 {
-    /* TODO Discover commands from the server */
+    static _Alignas(uintptr_t) uint8_t msg_buf[1048576];
+    struct selva_proto_header resp_hdr;
+    ssize_t r;
+    size_t i = 0;
+
+    do {
+        r = recv(fd, &resp_hdr, sizeof(resp_hdr), 0);
+        if (r != (ssize_t)sizeof(resp_hdr)) {
+            fprintf(stderr, "recv() returned %d\n", (int)r);
+            return NULL;
+        } else {
+            size_t frame_bsize = le16toh(resp_hdr.frame_bsize);
+            const size_t payload_size = frame_bsize - sizeof(resp_hdr);
+
+            if (!(resp_hdr.flags & SELVA_PROTO_HDR_FREQ_RES)) {
+                fprintf(stderr, "Invalid response: response bit not set\n");
+                return NULL;
+            } else if (i + payload_size > sizeof(msg_buf)) {
+                fprintf(stderr, "Buffer overflow\n");
+                return NULL;
+            }
+
+            if (payload_size > 0) {
+                r = recv(fd, msg_buf + i, payload_size, 0);
+                if (r != (ssize_t)payload_size) {
+                    fprintf(stderr, "recv() returned %d\n", (int)r);
+                    return NULL;
+                }
+
+                i += payload_size;
+            }
+        }
+    } while (!(resp_hdr.flags & SELVA_PROTO_HDR_FLAST));
+
+    *cmd = resp_hdr.cmd;
+    *msg_size = i;
+    return msg_buf;
+}
+
+void cmd_discover(int fd, int seqno, void (*cb)(struct cmd *cmd))
+{
+    if (!cmd_lscmd_req(&commands[2], fd, seqno, 0, NULL)) {
+        int cmd;
+        size_t msg_size;
+        void *msg = recv_message(fd, &cmd, &msg_size);
+        size_t i = 0;
+        int level = 0;
+        int cmd_id;
+
+        while (i < msg_size) {
+            enum selva_proto_data_type type;
+            size_t data_len;
+            int off;
+
+            off = selva_proto_parse_vtype(msg, msg_size, i, &type, &data_len);
+            if (off <= 0) {
+                if (off < 0) {
+                    fprintf(stderr, "Failed to parse a value header: %s\n", selva_strerror(off));
+                }
+                return;
+            }
+
+            i += off;
+
+            if (level < 2) {
+                if (type == SELVA_PROTO_ARRAY) {
+                    level++;
+                } else if (type == SELVA_PROTO_ARRAY_END) {
+                    printf("Commands discovery complete\n");
+                    break;
+                } else {
+                    fprintf(stderr, "Invalid response from lscmd\n");
+                    break;
+                }
+            } else if (level == 2) {
+                if (type == SELVA_PROTO_LONGLONG) {
+                    uint64_t ll;
+
+                    memcpy(&ll, (char *)msg + i - sizeof(ll), sizeof(ll));
+                    cmd_id = le64toh(ll);
+                } else if (type == SELVA_PROTO_STRING) {
+                    struct cmd *cmd = selva_malloc(sizeof(struct cmd) + data_len + 1);
+                    char *cmd_name = (char *)cmd + sizeof(struct cmd);
+
+                    memcpy(cmd_name, (char *)msg + i - data_len, data_len);
+                    cmd_name[data_len] = '\0';
+
+                    cmd->cmd_id = cmd_id;
+                    cmd->cmd_name = cmd_name;
+                    cmd->cmd_req = generic_req;
+                    cmd->cmd_res = generic_res;
+
+                    cb(cmd);
+                    level--;
+                } else {
+                    fprintf(stderr, "Invalid response from lscmd\n");
+                    break;
+                }
+            }
+        }
+    } else {
+        fprintf(stderr, "Commands discovery failed\n");
+    }
 
     for (struct cmd *cmd = &commands[0]; cmd != commands + num_elem(commands); cmd++) {
         if (cmd->cmd_name && cmd->cmd_req) {

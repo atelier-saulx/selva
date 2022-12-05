@@ -16,4 +16,9 @@ struct cmd {
     cmd_res_fn cmd_res;
 };
 
-void cmd_discover(int fd, void (*cb)(struct cmd *cmd));
+/**
+ * Receive a message.
+ * Not reentrant.
+ */
+void *recv_message(int fd,int *cmd, size_t *msg_size);
+void cmd_discover(int fd, int seqno, void (*cb)(struct cmd *cmd));
