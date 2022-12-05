@@ -87,6 +87,7 @@ SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out 
     apply(selva_send_null) \
     apply(selva_send_error) \
     apply(selva_send_errorf) \
+    apply(selva_send_error_arity) \
     apply(selva_send_double) \
     apply(selva_send_ll) \
     apply(selva_send_str) \

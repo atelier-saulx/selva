@@ -66,6 +66,11 @@ static void echo(struct selva_server_response_out *resp, const void *buf, size_t
     const char *p = (char *)buf;
     size_t left = size;
 
+    if (size == 0) {
+        selva_send_errorf(resp, SELVA_EINVAL, "Empty payload");
+        return;
+    }
+
     /* TODO Could also support receiving an array */
     while (left > sizeof(hdr)) {
         size_t bsize;

@@ -61,11 +61,9 @@ int SelvaArgParser_buf2strings(struct finalizer *fin, const char *buf, size_t bs
         }
     }
 
-    if (!out) {
-        return SELVA_EINVAL;
+    if (list) {
+        finalizer_add(fin, list, selva_free);
     }
-
-    finalizer_add(fin, list, selva_free);
     *out = list;
     return list_len;
 }
