@@ -38,7 +38,7 @@ static void SelvaRpn_Eval(enum SelvaRpnEvalType type, struct selva_server_respon
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
-    } else if (argc < 3) {
+    } else if (argc < 2) {
         selva_send_error_arity(resp);
         return;
     }
