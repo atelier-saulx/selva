@@ -183,12 +183,15 @@ static void on_data(struct event *event, void *arg)
         evl_end_fd(fd);
         return;
     }
-    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame of %d bytes from %d",
-              (int)frame_bsize, fd);
 
     struct selva_proto_header *hdr = &ctx->recv_frame_hdr_buf;
     const uint32_t seqno = le32toh(hdr->seqno);
     const unsigned frame_state = hdr->flags & SELVA_PROTO_HDR_FFMASK;
+
+    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame. fd: %d bytes: %d seqno: %d",
+              fd,
+              (int)frame_bsize,
+              (int)seqno);
 
     if (ctx->recv_state == CONN_CTX_RECV_STATE_NEW) {
         ctx->cur_seqno = seqno;
@@ -225,6 +228,7 @@ static void on_data(struct event *event, void *arg)
             return;
         }
     } else {
+        /* TODO disco? */
         SELVA_LOG(SELVA_LOGL_ERR, "Invalid connection state");
         return;
     }
