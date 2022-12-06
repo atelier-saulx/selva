@@ -99,11 +99,6 @@ typedef int64_t Selva_SubscriptionMarkerId;
 #define PRImrkId PRId64
 
 /**
- * Selva version.
- */
-extern const char * const selva_db_version;
-
-/**
  * Get the length of nodeId ignoring nul bytes at the end of the string.
  */
 __purefn size_t Selva_NodeIdLen(const Selva_NodeId nodeId);

@@ -33,7 +33,6 @@ __constructor void init(void)
     Selva_Onload **onload_p;
 
     SELVA_LOG(SELVA_LOGL_INFO, "Init db");
-    SELVA_LOG(SELVA_LOGL_INFO, "Selva db version: %s", selva_db_version);
 
     libdeflate_set_memory_allocator(selva_malloc, selva_free);
 

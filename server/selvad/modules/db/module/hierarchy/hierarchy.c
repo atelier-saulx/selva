@@ -2,7 +2,7 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
-#include "alloca.h"
+#include <alloca.h>
 #include <assert.h>
 #include <errno.h>
 #include <stddef.h>
@@ -40,16 +40,6 @@
 #include "hierarchy.h"
 #include "hierarchy_detached.h"
 #include "hierarchy_inactive.h"
-
-/**
- * Selva module version tracking.
- * This is used to track the Selva module version used to create and modify the
- * hierarchy that was serialized and later deserialized.
- */
-static struct SelvaDbVersionInfo {
-    const struct selva_string *created_with;
-    const struct selva_string *updated_with;
-} selva_db_version_info;
 
 /**
  * Node flags changing the node behavior.
@@ -3970,52 +3960,33 @@ static void SelvaHierarchy_ListCompressedCommand(struct selva_server_response_ou
 }
 
 static void SelvaHierarchy_VerCommand(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {
+    struct SelvaDbVersionInfo nfo;
+
     if (len != 0) {
         selva_send_error_arity(resp);
         return;
     }
 
+    selva_io_get_ver(&nfo);
+
     selva_send_array(resp, 6);
 
     selva_send_str(resp, "running", 7);
-    selva_send_str(resp, selva_db_version, strlen(selva_db_version));
+    selva_send_str(resp, nfo.running, sizeof(nfo.running));
 
     selva_send_str(resp, "created", 7);
-    if (selva_db_version_info.created_with) {
-        selva_send_string(resp, selva_db_version_info.created_with);
+    if (nfo.created_with[0] != '\0') {
+        selva_send_str(resp, nfo.created_with, sizeof(nfo.created_with));
     } else {
         selva_send_null(resp);
     }
 
     selva_send_str(resp, "updated", 7);
-    if (selva_db_version_info.updated_with) {
-        selva_send_string(resp, selva_db_version_info.updated_with);
+    if (nfo.updated_with[0] != '\0') {
+        selva_send_str(resp, nfo.updated_with, sizeof(nfo.updated_with));
     } else {
         selva_send_null(resp);
     }
-}
-
-static int SelvaVersion_AuxLoad(struct selva_io *io, int encver __unused, int when __unused) {
-    selva_db_version_info.created_with = selva_io_load_string(io);
-    selva_db_version_info.updated_with = selva_io_load_string(io);
-
-    SELVA_LOG(SELVA_LOGL_INFO,
-              "Selva hierarchy version info created_with: %s updated_with: %s",
-              selva_string_to_str(selva_db_version_info.created_with, NULL),
-              selva_string_to_str(selva_db_version_info.updated_with, NULL));
-
-    return 0;
-}
-
-static void SelvaVersion_AuxSave(struct selva_io *io, int when __unused) {
-    const size_t len = strlen(selva_db_version);
-
-    if (selva_db_version_info.created_with) {
-        selva_io_save_string(io, selva_db_version_info.created_with);
-    } else {
-        selva_io_save_str(io, selva_db_version, len);
-    }
-    selva_io_save_str(io, selva_db_version, len);
 }
 
 static int Hierarchy_OnLoad(void) {
@@ -4027,8 +3998,6 @@ static int Hierarchy_OnLoad(void) {
         .rdb_save = Hierarchy_RDBSave,
         .aof_rewrite = NULL,
         .free = HierarchyTypeFree,
-        .aux_load = SelvaVersion_AuxLoad,
-        .aux_save = SelvaVersion_AuxSave,
         .aux_save_triggers = REDISMODULE_AUX_BEFORE_RDB,
     };
     RedisModuleTypeMethods ztm = {

@@ -1,7 +1,6 @@
 # Copyright (c) 2022 SAULX
 # SPDX-License-Identifier: MIT
 
-SELVA_DB_VERSION := $(shell sh -c 'git rev-parse --verify HEAD')
 OBJ := \
 	   db.o \
 	   module/alias.o \
@@ -43,8 +42,7 @@ OBJ := \
 	   module/selva_type.o \
 	   module/shared_strings.o \
 	   module/subscriptions.o \
-	   module/update.o \
-	   version.o
+	   module/update.o
 #	   module/selva_object/selva_object_commands.o
 #	   module/modinfo.o
 DEP := $(OBJ:%.o=%.d)
@@ -56,14 +54,3 @@ $(TARGET): $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^
 
 -include $(DEP)
-
-version.c: FORCE
-ifeq ($(SELVA_IS_DOCKER),1)
-	@echo "Using existing version.c: $(shell sh -c 'cat version.c')"
-else
-	@echo selva_db_version $(SELVA_DB_VERSION)
-	echo "const char * const selva_db_version = \"$(SELVA_DB_VERSION)\";" > version.c
-endif
-
-FORCE:
-
