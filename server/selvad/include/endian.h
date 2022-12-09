@@ -106,4 +106,29 @@ static inline void htoledouble(char buf[8], double x) {
 #error "Machine byte order not supported"
 #endif
 
+/**
+ * Type generic Host to LE.
+ */
+#define htole(v) _Generic((v), \
+        uint16_t: htole16(v), \
+        int16_t: (int16_t)htole16(v), \
+        uint32_t: htole32(v), \
+        int32_t: (int32_t)htole32(v), \
+        uint64_t: htole64(v), \
+        int64_t: (int64_t)htole64(v), \
+        double: htoledouble(v))
+
+/**
+ * Type generic LE to Host.
+ */
+#define letoh(v) _Generic((v), \
+        uint16_t: le16toh(v), \
+        int16_t: (int16_t)le16toh(v), \
+        uint32_t: le32toh(v), \
+        int32_t: (int32_t)le32toh(v), \
+        uint64_t: le64toh(v), \
+        int64_t: (int64_t)le64toh(v) \
+        /*double: ledoubletoh(v) */)
+/* TODO ledoubletoh */
+
 #endif /* _SELVA_ENDIAN_H_ */
