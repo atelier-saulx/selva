@@ -23,6 +23,11 @@ enum selva_string_flags {
      */
     SELVA_STRING_MUTABLE = 0x04,
     /**
+     * Fixed size mutable string.
+     * Mutable only with selva_string_replace() and selva_string_to_mstr().
+     */
+    SELVA_STRING_MUTABLE_FIXED = 0x08,
+    /**
      * Intern the string.
      * Similar to SELVA_STRING_FREEZE but tracked and shared internally.
      * Implies SELVA_STRING_FREEZE.

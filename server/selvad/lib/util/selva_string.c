@@ -233,16 +233,26 @@ int selva_string_replace(struct selva_string *s, const char *str, size_t len)
 {
     const enum selva_string_flags flags = s->flags;
 
-    if (!(flags & SELVA_STRING_MUTABLE)) {
-        return SELVA_ENOTSUP;
+    if (flags & SELVA_STRING_MUTABLE_FIXED) {
+        if (len != s->len) {
+            return SELVA_EINVAL;
+        }
+
+        memcpy(s->emb, str, len);
+
+        return 0;
     }
 
-    /* TODO Optimize to avoid reallocs */
-    s->len = len;
-    s->p = selva_realloc(s->p, len + 1);
-    memcpy(s->p, str, len);
+    if (flags & SELVA_STRING_MUTABLE) {
+        /* TODO Optimize to avoid reallocs */
+        s->len = len;
+        s->p = selva_realloc(s->p, len + 1);
+        memcpy(s->p, str, len);
 
-    return 0;
+        return 0;
+    }
+
+    return SELVA_ENOTSUP;
 }
 
 void selva_string_free(_selva_string_ptr_t _s)
@@ -293,7 +303,7 @@ const char *selva_string_to_str(const struct selva_string *s, size_t *len)
 char *selva_string_to_mstr(struct selva_string *s, size_t *len)
 {
     /* Compat with legacy. */
-    if (!s || !(s->flags & SELVA_STRING_MUTABLE)) {
+    if (!s || !(s->flags & (SELVA_STRING_MUTABLE | SELVA_STRING_MUTABLE_FIXED))) {
         if (len) {
             *len = 0;
         }
