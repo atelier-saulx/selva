@@ -52,7 +52,7 @@ SELVA_IO_EXPORT(void, selva_io_end, struct selva_io *io);
 
 SELVA_IO_EXPORT(void, selva_io_save_unsigned, struct selva_io *io, uint64_t value);
 SELVA_IO_EXPORT(void, selva_io_save_signed, struct selva_io *io, int64_t value);
-SELVA_IO_EXPORT(void, selva_io_save_double, struct selva_io *io, double d);
+SELVA_IO_EXPORT(void, selva_io_save_double, struct selva_io *io, double value);
 SELVA_IO_EXPORT(void, selva_io_save_str, struct selva_io *io, const char *str, size_t len);
 SELVA_IO_EXPORT(void, selva_io_save_string, struct selva_io *io, const struct selva_string *s);
 
