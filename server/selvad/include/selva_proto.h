@@ -181,9 +181,19 @@ static_assert(__alignof__(struct selva_proto_header) == __alignof__(uint64_t), "
 static_assert(sizeof(enum selva_proto_data_type) == 1, "data_type must be an 8-bit integer");
 static_assert(sizeof_field(struct selva_proto_string, flags) == 1, "string flags must be 8-bit wide");
 
+/*
+ * The following functions are implemented in libutil.
+ */
+
+#if __has_c_attribute(unsequenced)
+[[unsequenced]]
+#else
+__attribute__((const))
+#endif
+const char *selva_proto_type_to_str(enum selva_proto_data_type type);
+
 /**
  * Parse type from a selva_ptoto value.
- * Implemented in libutil.
  */
 int selva_proto_parse_vtype(const void *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out);
 int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_out, const char **msg_str_out, size_t *msg_len_out);

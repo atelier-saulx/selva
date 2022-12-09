@@ -13,6 +13,28 @@
 #include "selva_proto.h"
 #include "util/selva_string.h"
 
+const char *selva_proto_type_to_str(enum selva_proto_data_type type)
+{
+    switch (type) {
+    case SELVA_PROTO_NULL:
+        return "null";
+    case SELVA_PROTO_ERROR:
+        return "error";
+    case SELVA_PROTO_DOUBLE:
+        return "double";
+    case SELVA_PROTO_LONGLONG:
+        return "longlong";
+    case SELVA_PROTO_STRING:
+        return "string";
+    case SELVA_PROTO_ARRAY:
+        return "array";
+    case SELVA_PROTO_ARRAY_END:
+        return "array end";
+    }
+
+    __builtin_unreachable();
+}
+
 /* FIXME check bsize before copying from buf */
 
 static int parse_hdr_null(const char *buf __unused, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
