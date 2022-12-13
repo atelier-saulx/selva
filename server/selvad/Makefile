@@ -10,8 +10,9 @@ INSTALL_DIR := binaries/$(uname_S)_$(uname_M)
 
 # Ordered list of libraries
 LIBS := \
-		lib/jemalloc \
 		lib/deflate \
+		lib/jemalloc \
+		lib/sha3iuf \
 		lib/util
 
 all: selvad modules $(LIBS)

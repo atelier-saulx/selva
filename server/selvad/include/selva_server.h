@@ -101,7 +101,7 @@ SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out 
     evl_import(f, "mod_server.so");
 
 /**
- * Import all symbols from event_loop.h.
+ * Import all symbols from selva_sever.h.
  */
 #define import_selva_server() \
     _import_selva_server(_import_selva_server1)

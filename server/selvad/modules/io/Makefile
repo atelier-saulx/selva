@@ -6,7 +6,7 @@ OBJ := \
 	   io.o \
 	   sdb.o \
 	   version.o
-LDFLAGS += -lutil
+LDFLAGS += -lutil -lsha3iuf
 CFLAGS += -DSELVA_IO_MAIN=1
 TARGET := ../mod_io$(MOD_SUFFIX)
 

@@ -32,8 +32,8 @@ enum selva_string_flags {
      * Similar to SELVA_STRING_FREEZE but tracked and shared internally.
      * Implies SELVA_STRING_FREEZE.
      */
-    SELVA_STRING_INTERN = 0x08,
-    _SELVA_STRING_LAST_FLAG = 0x10,
+    SELVA_STRING_INTERN = 0x10,
+    _SELVA_STRING_LAST_FLAG = 0x20,
 };
 
 struct selva_string;

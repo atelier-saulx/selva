@@ -583,6 +583,9 @@ int HierarchyReply_WithTraversal(
         const Selva_NodeType *types,
         enum SelvaTraversal dir);
 
+SelvaHierarchy *Hierarchy_RDBLoad(struct selva_io *io);
+void Hierarchy_RDBSave(struct selva_io *io, SelvaHierarchy *hierarchy);
+
 extern SelvaHierarchy *main_hierarchy;
 
 #endif /* _SELVA_HIERARCHY_H_ */

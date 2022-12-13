@@ -7,11 +7,12 @@
 struct selva_io {
     enum selva_io_flags flags;
     FILE *file;
-    char hash[16]; /*!< Currently computed hash of the data. */
-    int err; /*!< Store error. If set the saving can be halted/skipped. RFE needed? */
+    sha3_context hash_c; /*!< Currently computed hash of the data. */
 };
 
-int fwrite_sdb_header(struct selva_io *io);
-int fread_sdb_header(struct selva_io *io);
-int fwrite_sdb_footer(struct selva_io *io);
-int fread_sdb_footer(struct selva_io *io);
+size_t sdb_write(const void * ptr, size_t size, size_t count, struct selva_io *io);
+size_t sdb_read(void * ptr, size_t size, size_t count, struct selva_io *io);
+int sdb_write_header(struct selva_io *io);
+int sdb_read_header(struct selva_io *io);
+int sdb_write_footer(struct selva_io *io);
+int sdb_read_footer(struct selva_io *io);

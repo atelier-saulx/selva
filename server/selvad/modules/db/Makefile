@@ -9,6 +9,7 @@ OBJ := \
 	   module/comparator.o \
 	   module/compressor.o \
 	   module/config.o \
+	   module/dump.o \
 	   module/edge/edge.o \
 	   module/edge/edge_constraint.o \
 	   module/find.o \

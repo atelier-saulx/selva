@@ -50,8 +50,8 @@ headers unless otherwise specified.
 |                           |    10 |         | spare                                                           |
 |                           |    11 |         | spare                                                           |
 |                           |    13 |         | spare                                                           |
-|                           |    14 |         | spare                                                           |
-|                           |    15 |         | spare                                                           |
+| load                      |    14 |  db     | Load db.                                                        |
+| save                      |    15 |  db     | Save db.                                                        |
 | resolve.nodeid            |    16 |  db     |                                                                 |
 | hierarchy.find            |    17 |  db     |                                                                 |
 | hierarchy.inherit         |    18 |  db     |                                                                 |

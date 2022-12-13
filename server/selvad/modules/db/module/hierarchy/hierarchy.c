@@ -3216,10 +3216,12 @@ static int load_tree(struct selva_io *io, int encver, SelvaHierarchy *hierarchy)
     return 0;
 }
 
-static void *Hierarchy_RDBLoad(struct selva_io *io, int encver) {
+SelvaHierarchy *Hierarchy_RDBLoad(struct selva_io *io) {
     SelvaHierarchy *hierarchy;
+    int encver;
     int err;
 
+    encver = selva_io_load_signed(io);
     if (encver > HIERARCHY_ENCODING_VERSION) {
         SELVA_LOG(SELVA_LOGL_CRIT, "selva_hierarchy encoding version %d not supported", encver);
         return NULL;
@@ -3302,7 +3304,6 @@ static void save_metadata(struct selva_io *io, SelvaHierarchyNode *node) {
  * Used by Hierarchy_RDBSave() when doing an rdb dump.
  */
 static int HierarchyRDBSaveNode(
-        struct RedisModuleCtx *ctx __unused,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         void *arg) {
@@ -3344,7 +3345,6 @@ static int HierarchyRDBSaveSubtreeNode(
 }
 
 static void HierarchyRDBSaveChild(
-        struct RedisModuleCtx *ctx __unused,
         struct SelvaHierarchy *hierarchy __unused,
         const struct SelvaHierarchyTraversalMetadata *metadata __unused,
         struct SelvaHierarchyNode *child,
@@ -3378,11 +3378,10 @@ static void save_hierarchy(struct selva_io *io, SelvaHierarchy *hierarchy) {
     selva_io_save_str(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
 }
 
-static void Hierarchy_RDBSave(struct selva_io *io, void *value) {
-    SelvaHierarchy *hierarchy = (SelvaHierarchy *)value;
-
+void Hierarchy_RDBSave(struct selva_io *io, SelvaHierarchy *hierarchy) {
     /*
      * Serialization format:
+     * ENCVER
      * TYPE_MAP
      * EDGE_CONSTRAINTS
      * NODE_ID1 | FLAGS | METADATA | NR_CHILDREN | CHILD_ID_0,..
@@ -3390,6 +3389,7 @@ static void Hierarchy_RDBSave(struct selva_io *io, void *value) {
      * HIERARCHY_RDB_EOF
      */
     isRdbSaving = 1;
+    selva_io_save_signed(io, HIERARCHY_ENCODING_VERSION);
     SelvaObjectTypeRDBSave(io, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL);
     EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
     save_hierarchy(io, hierarchy);
@@ -3485,12 +3485,6 @@ static void Hierarchy_SubtreeRDBSave(struct selva_io *io, void *value) {
      */
     (void)dfs(hierarchy, node, RELATIONSHIP_CHILD, &cb);
     selva_io_save_str(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
-}
-
-void HierarchyTypeFree(void *value) {
-    SelvaHierarchy *hierarchy = (SelvaHierarchy *)value;
-
-    SelvaModify_DestroyHierarchy(hierarchy);
 }
 
 /*
@@ -3992,25 +3986,11 @@ static void SelvaHierarchy_VerCommand(struct selva_server_response_out *resp, co
 static int Hierarchy_OnLoad(void) {
     /* FIXME Load & save */
 #if 0
-    RedisModuleTypeMethods mtm = {
-        .version = REDISMODULE_TYPE_METHOD_VERSION,
-        .rdb_load = Hierarchy_RDBLoad,
-        .rdb_save = Hierarchy_RDBSave,
-        .aof_rewrite = NULL,
-        .free = HierarchyTypeFree,
-        .aux_save_triggers = REDISMODULE_AUX_BEFORE_RDB,
-    };
     RedisModuleTypeMethods ztm = {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
         .rdb_load = Hierarchy_SubtreeRDBLoad,
         .rdb_save = Hierarchy_SubtreeRDBSave,
     };
-
-    HierarchyType = RedisModule_CreateDataType(ctx, "hierarchy", HIERARCHY_ENCODING_VERSION, &mtm);
-    if (HierarchyType == NULL) {
-        /* TODO */
-        return SELVA_HIERARCHY_EGENERAL;
-    }
 
     HierarchySubtreeType = RedisModule_CreateDataType(ctx, "hisubtree", HIERARCHY_ENCODING_VERSION, &ztm);
     if (HierarchyType == NULL) {

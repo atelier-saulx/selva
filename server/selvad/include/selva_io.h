@@ -61,3 +61,27 @@ SELVA_IO_EXPORT(int64_t, selva_io_load_signed, struct selva_io *io);
 SELVA_IO_EXPORT(double, selva_io_load_double, struct selva_io *io);
 SELVA_IO_EXPORT(const char*, selva_io_load_str, struct selva_io *io, size_t *len);
 SELVA_IO_EXPORT(struct selva_string *, selva_io_load_string, struct selva_io *io);
+
+#define _import_selva_io(apply) \
+    apply(selva_io_get_ver) \
+    apply(selva_io_new) \
+    apply(selva_io_end) \
+    apply(selva_io_save_unsigned) \
+    apply(selva_io_save_signed) \
+    apply(selva_io_save_double) \
+    apply(selva_io_save_str) \
+    apply(selva_io_save_string) \
+    apply(selva_io_load_unsigned) \
+    apply(selva_io_load_signed) \
+    apply(selva_io_load_double) \
+    apply(selva_io_load_str) \
+    apply(selva_io_load_string)
+
+#define _import_selva_io1(f) \
+    evl_import(f, "mod_io.so");
+
+/**
+ * Import all symbols from selva_io.h.
+ */
+#define import_selva_io() \
+    _import_selva_io(_import_selva_io1)
