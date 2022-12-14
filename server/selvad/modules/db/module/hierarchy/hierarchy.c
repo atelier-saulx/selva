@@ -141,11 +141,6 @@ SET_DECLARE(selva_HMCtor, SelvaHierarchyMetadataConstructorHook);
 SET_DECLARE(selva_HMDtor, SelvaHierarchyMetadataDestructorHook);
 
 __nonstring static const Selva_NodeId HIERARCHY_RDB_EOF;
-/* FIXME */
-#if 0
-static RedisModuleType *HierarchyType;
-static RedisModuleType *HierarchySubtreeType;
-#endif
 
 SelvaHierarchy *main_hierarchy;
 
@@ -169,23 +164,21 @@ static int isDecompressingSubtree;
  * Are we executing an RDB save.
  * TODO This should be technically per hierarchy structure.
  */
-static int isRdbSaving;
+static int flag_isRdbSaving;
+static int flag_isRdbLoading;
 
 static int isRdbLoading(void) {
-     /* FIXME */
-#if 0
-     return !!(REDISMODULE_CTX_FLAGS_LOADING & RedisModule_GetContextFlags(ctx) || isDecompressingSubtree);
-#endif
-     return 0;
+     return flag_isRdbLoading || isDecompressingSubtree;
 }
 
+/* FIXME Only needed for subtree compression. */
+#if 0
 /**
  * Returns 1 on both the RDB process and the parent if we are currently
  * executing an RDB save.
  */
 static int isRdbChildRunning(void) {
     /* FIXME */
-#if 0
     const int ctx_flags = RedisModule_GetContextFlags(ctx);
 
     /*
@@ -195,10 +188,10 @@ static int isRdbChildRunning(void) {
      */
     return (ctx_flags & (REDISMODULE_CTX_FLAGS_RDB)) &&
            (ctx_flags & (REDISMODULE_CTX_FLAGS_ACTIVE_CHILD | REDISMODULE_CTX_FLAGS_IS_CHILD));
-#endif
 
     return 0;
 }
+#endif
 
 static int SVector_HierarchyNode_id_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
     const SelvaHierarchyNode *a = *(const SelvaHierarchyNode **)a_raw;
@@ -1646,7 +1639,6 @@ static int SelvaModify_DelHierarchyNodeP(
     if (nr_ids > 0) {
         Selva_NodeId *ids;
 
-        /* TODO maybe alloca is not good here */
         ids = alloca(nr_ids * SELVA_NODE_ID_SIZE);
 
         copy_nodeIds(ids, &node->parents);
@@ -1670,7 +1662,7 @@ static int SelvaModify_DelHierarchyNodeP(
     if (nr_ids > 0) {
         Selva_NodeId *ids;
 
-        ids = alloca(nr_ids * SELVA_NODE_ID_SIZE); /* TODO Perhaps replace with something else */
+        ids = alloca(nr_ids * SELVA_NODE_ID_SIZE);
 
         copy_nodeIds(ids, &node->children);
         for (size_t i = 0; i < nr_ids; i++) {
@@ -1860,7 +1852,7 @@ static int full_dfs(
     /**
      * Set if we should track inactive nodes for auto compression.
      */
-    const int enAutoCompression = selva_glob_config.hierarchy_auto_compress_period_ms > 0 && isRdbSaving;
+    const int enAutoCompression = selva_glob_config.hierarchy_auto_compress_period_ms > 0 && flag_isRdbSaving;
     const long long old_age_threshold = selva_glob_config.hierarchy_auto_compress_old_age_lim;
 
     SVector_ForeachBegin(&it, &hierarchy->heads);
@@ -2795,7 +2787,7 @@ static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *
     }
 
     if (nr_parents > 0) {
-        parents = alloca(nr_parents * SELVA_NODE_ID_SIZE); /* TODO Alloca maybe not great */
+        parents = alloca(nr_parents * SELVA_NODE_ID_SIZE);
         copy_nodeIds(parents, &node->parents);
     }
 
@@ -3217,29 +3209,31 @@ static int load_tree(struct selva_io *io, int encver, SelvaHierarchy *hierarchy)
 }
 
 SelvaHierarchy *Hierarchy_RDBLoad(struct selva_io *io) {
-    SelvaHierarchy *hierarchy;
+    SelvaHierarchy *hierarchy = NULL;
     int encver;
     int err;
+
+    flag_isRdbLoading = 1;
 
     encver = selva_io_load_signed(io);
     if (encver > HIERARCHY_ENCODING_VERSION) {
         SELVA_LOG(SELVA_LOGL_CRIT, "selva_hierarchy encoding version %d not supported", encver);
-        return NULL;
+        err = SELVA_HIERARCHY_EINVAL;
+        goto error;
     }
 
-    /*
-     * TODO This should probably replace the main_hierarchy.
-     */
     hierarchy = SelvaModify_NewHierarchy();
     if (!hierarchy) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to create a new hierarchy");
-        return NULL;
+        err = SELVA_HIERARCHY_ENOMEM;
+        goto error;
     }
 
     if (encver >= 5) {
         if (!SelvaObjectTypeRDBLoadTo(io, encver, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL)) {
             SELVA_LOG(SELVA_LOGL_CRIT, "Failed to node types");
-            return NULL;
+            err = SELVA_HIERARCHY_EINVAL;
+            goto error;
         }
     }
 
@@ -3255,11 +3249,14 @@ SelvaHierarchy *Hierarchy_RDBLoad(struct selva_io *io) {
         goto error;
     }
 
-    return hierarchy;
 error:
-    SelvaModify_DestroyHierarchy(hierarchy);
+    if (hierarchy) {
+        SelvaModify_DestroyHierarchy(hierarchy);
+        hierarchy = NULL;
+    }
+    flag_isRdbLoading = 0;
 
-    return NULL;
+    return hierarchy;
 }
 
 static void save_detached_node(struct selva_io *io, SelvaHierarchy *hierarchy, const Selva_NodeId id) {
@@ -3276,7 +3273,7 @@ static void save_detached_node(struct selva_io *io, SelvaHierarchy *hierarchy, c
      * subtrees temporarily.
      */
 
-    /* FIXME fix hiereachy detaching */
+    /* FIXME fix hierarchy detaching */
 #if 0
     err = SelvaHierarchyDetached_Get(hierarchy, id, &compressed, &type);
     if (err) {
@@ -3330,7 +3327,6 @@ static int HierarchyRDBSaveNode(
  * to do save_detached() here.
  */
 static int HierarchyRDBSaveSubtreeNode(
-        struct RedisModuleCtx *ctx __unused,
         struct SelvaHierarchy *hierarchy __unused,
         struct SelvaHierarchyNode *node,
         void *arg) {
@@ -3388,12 +3384,12 @@ void Hierarchy_RDBSave(struct selva_io *io, SelvaHierarchy *hierarchy) {
      * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
      * HIERARCHY_RDB_EOF
      */
-    isRdbSaving = 1;
+    flag_isRdbSaving = 1;
     selva_io_save_signed(io, HIERARCHY_ENCODING_VERSION);
     SelvaObjectTypeRDBSave(io, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL);
     EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
     save_hierarchy(io, hierarchy);
-    isRdbSaving = 0;
+    flag_isRdbSaving = 0;
 }
 
 static int load_nodeId(struct selva_io *io, Selva_NodeId nodeId) {
@@ -3984,21 +3980,6 @@ static void SelvaHierarchy_VerCommand(struct selva_server_response_out *resp, co
 }
 
 static int Hierarchy_OnLoad(void) {
-    /* FIXME Load & save */
-#if 0
-    RedisModuleTypeMethods ztm = {
-        .version = REDISMODULE_TYPE_METHOD_VERSION,
-        .rdb_load = Hierarchy_SubtreeRDBLoad,
-        .rdb_save = Hierarchy_SubtreeRDBSave,
-    };
-
-    HierarchySubtreeType = RedisModule_CreateDataType(ctx, "hisubtree", HIERARCHY_ENCODING_VERSION, &ztm);
-    if (HierarchyType == NULL) {
-        /* TODO */
-        return SELVA_HIERARCHY_EGENERAL;
-    }
-#endif
-
     /*
      * Register commands.
      */
@@ -4014,7 +3995,8 @@ static int Hierarchy_OnLoad(void) {
     selva_mk_command(32, "hierarchy.ver", SelvaHierarchy_VerCommand);
 
     main_hierarchy = SelvaModify_NewHierarchy();
-    if (!main_hierarchy) { /* TODO Can this even fail? */
+    if (!main_hierarchy) {
+        /* Probably not what happened but good enough. */
         return SELVA_HIERARCHY_ENOMEM;
     }
 
