@@ -151,7 +151,7 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
     }
 
     if (argc == 2) {
-        (void)SelvaObject_ReplyWithObjectStr(resp, lang, obj, NULL, 0, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        (void)SelvaObject_ReplyWithObjectStr(resp, lang, obj, NULL, 0, 0);
         return;
     }
 
@@ -167,7 +167,7 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
             selva_send_array(resp, -1);
             err = SelvaObject_ReplyWithWildcardStr(resp, lang, obj, okey_str, okey_len,
                                                    &resp_count, -1,
-                                                   SELVA_OBJECT_REPLY_SPLICE_FLAG | SELVA_OBJECT_REPLY_BINUMF_FLAG);
+                                                   SELVA_OBJECT_REPLY_SPLICE_FLAG);
             if (err == SELVA_ENOENT) {
                 /* Keep looking. */
                 selva_send_array_end(resp);
@@ -180,7 +180,7 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
 
             selva_send_array_end(resp);
         } else {
-            err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, okey_str, okey_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+            err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, okey_str, okey_len, 0);
             if (err == SELVA_ENOENT) {
                 /* Keep looking. */
                 continue;

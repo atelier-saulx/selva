@@ -27,9 +27,10 @@ enum SelvaObjectType {
     SELVA_OBJECT_POINTER = 7,
 } __packed;
 
-#define SELVA_OBJECT_REPLY_SPLICE_FLAG  0x01 /*!< Set if the path should be spliced to start from the first wildcard. */
-#define SELVA_OBJECT_REPLY_BINUMF_FLAG  0x02 /*!< Send numeric fields in an LE binary format. */
-#define SELVA_OBJECT_REPLY_ANY_OBJ_FLAG 0x03 /*!< Send any object as a wildcard reply from SelvaObject_GetPointerPartialMatchStr(). */
+enum SelvaObjectReplyFlags {
+    SELVA_OBJECT_REPLY_SPLICE_FLAG = 0x01, /*!< Set if the path should be spliced to start from the first wildcard. */
+    SELVA_OBJECT_REPLY_ANY_OBJ_FLAG = 0x02, /*!< Send any object as a wildcard reply from SelvaObject_GetPointerPartialMatchStr(). */
+};
 
 /**
  * Size of struct SelvaObject.
@@ -308,7 +309,7 @@ int SelvaObject_ReplyWithWildcardStr(
         size_t okey_len,
         long *resp_count,
         int resp_path_start_idx,
-        unsigned int flags);
+        enum SelvaObjectReplyFlags flags);
 
 SelvaObject_Iterator *SelvaObject_ForeachBegin(struct SelvaObject *obj);
 const char *SelvaObject_ForeachKey(const struct SelvaObject *obj, SelvaObject_Iterator **iterator);
@@ -400,7 +401,7 @@ int SelvaObject_ReplyWithObjectStr(
         struct SelvaObject *obj,
         const char *key_name_str,
         size_t key_name_len,
-        unsigned flags);
+        enum SelvaObjectReplyFlags flags);
 
 /*
  * Send a SelvaObject as a Redis reply.
@@ -411,7 +412,7 @@ int SelvaObject_ReplyWithObject(
         struct selva_string *lang,
         struct SelvaObject *obj,
         const struct selva_string *key_name,
-        unsigned flags);
+        enum SelvaObjectReplyFlags flags);
 
 /**
  * Load a SelvaObject from RDB.

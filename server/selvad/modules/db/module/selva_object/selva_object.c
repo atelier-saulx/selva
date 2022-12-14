@@ -47,9 +47,11 @@
 #define SELVA_OBJECT_FLAG_DYNAMIC       0x01 /*!< Dynamic allocation with SelvaObject_New(). */
 #define SELVA_OBJECT_FLAG_STATIC        0x02 /*!< Static allocation, do not free. */
 
-#define SELVA_OBJECT_GETKEY_CREATE      0x1 /*!< Create the key and required nested objects. */
-#define SELVA_OBJECT_GETKEY_DELETE      0x2 /*!< Delete the key found. */
-#define SELVA_OBJECT_GETKEY_PARTIAL     0x4 /*!< Return a partial result, the last key found, and the length of the match in key_name_str. */
+enum SelvaObjectGetKeyFlags {
+    SELVA_OBJECT_GETKEY_CREATE        = 0x1, /*!< Create the key and required nested objects. */
+    SELVA_OBJECT_GETKEY_DELETE        = 0x2, /*!< Delete the key found. */
+    SELVA_OBJECT_GETKEY_PARTIAL       = 0x4, /*!< Return a partial result, the last key found, and the length of the match in key_name_str. */
+};
 
 RB_HEAD(SelvaObjectKeys, SelvaObjectKey);
 
@@ -454,7 +456,7 @@ static int _insert_new_obj_into_array(struct SelvaObject *obj, const char *s, si
     return 0;
 }
 
-static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
+static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectGetKeyFlags flags, struct SelvaObjectKey **out) {
     int is_timeseries = 0;
     const char *sep = ".";
     const size_t nr_parts = substring_count(key_name_str, sep, key_name_len) + 1;
@@ -678,7 +680,7 @@ static struct SelvaObjectKey *find_key(struct SelvaObject *obj, const char *key_
     return key;
 }
 
-static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out) {
+static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectGetKeyFlags flags, struct SelvaObjectKey **out) {
     SELVA_TRACE_BEGIN_AUTO(SelvaObject_get_key);
     int ary_err;
     struct SelvaObjectKey *key;
@@ -2283,7 +2285,7 @@ int SelvaObject_ReplyWithObjectStr(
         struct SelvaObject *obj,
         const char *key_name_str,
         size_t key_name_len,
-        unsigned flags) {
+        enum SelvaObjectReplyFlags flags __unused) {
     struct SelvaObjectKey *key;
     ssize_t ary_idx;
     int err;
@@ -2357,7 +2359,7 @@ int SelvaObject_ReplyWithObject(
         struct selva_string *lang,
         struct SelvaObject *obj,
         const struct selva_string *key_name,
-        unsigned flags) {
+        enum SelvaObjectReplyFlags flags __unused) {
     if (key_name) {
         TO_STR(key_name);
         return SelvaObject_ReplyWithObjectStr(resp, lang, obj, key_name_str, key_name_len, 0);
@@ -2375,7 +2377,7 @@ int SelvaObject_ReplyWithWildcardStr(
         size_t okey_len,
         long *resp_count,
         int resp_path_start_idx,
-        unsigned int flags) {
+        enum SelvaObjectReplyFlags flags) {
     const int idx = (int)((const char *)memmem(okey_str, okey_len, ".*.", 3) - okey_str + 1); /* .*. => *. */
 
     if (idx > SELVA_OBJECT_KEY_MAX) {

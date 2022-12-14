@@ -448,7 +448,7 @@ static int send_node_field(
     if (strstr(field_str, ".*.")) {
         long resp_count = 0;
 
-        err = SelvaObject_ReplyWithWildcardStr(resp, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithWildcardStr(resp, lang, obj, field_str, field_len, &resp_count, -1, 0);
         if (err && err != SELVA_ENOENT) {
             SELVA_LOG(SELVA_LOGL_ERR, "Sending wildcard field \"%.*s\" of %.*s failed: %s\n",
                       (int)field_len, field_str,
@@ -477,7 +477,7 @@ static int send_node_field(
         struct selva_string *tmp = selva_string_createf( "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str); /* TODO Could use stack */
         finalizer_add(fin, tmp, selva_string_free);
         selva_send_string(resp, tmp);
-        err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, field_str, field_len, 0);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to send the field (%.*s) for node_id: \"%.*s\" err: \"%s\"",
                       (int)field_len, field_str,
@@ -629,7 +629,7 @@ static int send_node_fields(
                SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
         struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
 
-        err = SelvaObject_ReplyWithObject(resp, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithObject(resp, lang, obj, NULL, 0);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to send all fields for node_id: \"%.*s\"",
                       (int)SELVA_NODE_ID_SIZE, nodeId);
@@ -691,7 +691,7 @@ static int send_array_object_field(
     if (strstr(field_str, ".*.")) {
         long resp_count = 0;
 
-        err = SelvaObject_ReplyWithWildcardStr(resp, lang, obj, field_str, field_len, &resp_count, -1, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithWildcardStr(resp, lang, obj, field_str, field_len, &resp_count, -1, 0);
         if (err && err != SELVA_ENOENT) {
             SELVA_LOG(SELVA_LOGL_ERR, "Sending wildcard field %.*s in array object failed: %s\n",
                       (int)field_len, field_str,
@@ -713,7 +713,7 @@ static int send_array_object_field(
      * Send the reply.
      */
     selva_send_string(resp, full_field_name);
-    err = SelvaObject_ReplyWithObject(resp, lang, obj, field, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+    err = SelvaObject_ReplyWithObject(resp, lang, obj, field, 0);
     if (err) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to send the field (%s) in array object err: \"%s\"\n",
                   field_str,
@@ -759,7 +759,7 @@ static int send_array_object_fields(
         return fields_len;
     } else if (fields_len == 1 &&
                SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
-        err = SelvaObject_ReplyWithObject(resp, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithObject(resp, lang, obj, NULL, 0);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to send all fields for selva object in array: %s\n",
                       selva_strerror(err));
@@ -847,7 +847,7 @@ static int send_merge_text(
 
         selva_send_str(resp, nodeId, Selva_NodeIdLen(nodeId));
         selva_send_string(resp, obj_path);
-        err = SelvaObject_ReplyWithObject(resp, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithObject(resp, lang, obj, NULL, 0);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to send \"%s\" (text) of node_id: \"%.*s\": %s\n",
                       selva_string_to_str(obj_path, NULL),
@@ -900,7 +900,7 @@ static int send_merge_all(
         selva_send_array(resp, 3);
         selva_send_str(resp, nodeId, Selva_NodeIdLen(nodeId));
         selva_send_string(resp, full_field_path);
-        err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, key_name_str, key_name_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, key_name_str, key_name_len, 0);
         if (err) {
             TO_STR(obj_path);
 
@@ -956,7 +956,7 @@ static int send_named_merge(
             selva_send_array(resp, 3);
             selva_send_str(resp, nodeId, Selva_NodeIdLen(nodeId));
             selva_send_string(resp, full_field_path);
-            err = SelvaObject_ReplyWithObject(resp, lang, obj, field, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+            err = SelvaObject_ReplyWithObject(resp, lang, obj, field, 0);
             if (err) {
                 TO_STR(field);
 
@@ -1040,7 +1040,7 @@ static int send_deep_merge(
 
             selva_send_str(resp, nodeId, Selva_NodeIdLen(nodeId));
             selva_send_string(resp, next_path);
-            err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, key_name_str, key_name_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+            err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, key_name_str, key_name_len, 0);
             if (err) {
                 TO_STR(obj_path);
 

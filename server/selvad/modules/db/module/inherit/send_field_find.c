@@ -87,7 +87,7 @@ static int send_edge_field_deref_value(
         selva_send_str(resp, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
         selva_send_array(resp, 2);
         selva_send_str(resp, nodeId, Selva_NodeIdLen(nodeId)); /* The actual node_id. */
-        SelvaObject_ReplyWithObject(resp, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        SelvaObject_ReplyWithObject(resp, lang, obj, NULL, 0);
     } else {
         const struct SelvaHierarchyNode *node;
 
@@ -121,7 +121,7 @@ static int send_object_field_value(
         selva_send_array(resp, 2);
         selva_send_str(resp, node_id, Selva_NodeIdLen(node_id));
 
-        err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+        err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, field_str, field_len, 0);
         if (err) {
             (void)selva_send_errorf(resp, err, "failed to inherit field: \"%.*s\"",
                                     (int)field_len, field_str);

@@ -3852,7 +3852,7 @@ static void SelvaHierarchy_EdgeGetMetadataCommand(struct selva_server_response_o
         return;
     }
 
-    SelvaObject_ReplyWithObject(resp, NULL, edge_metadata, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
+    SelvaObject_ReplyWithObject(resp, NULL, edge_metadata, NULL, 0);
 }
 
 static void SelvaHierarchy_CompressCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
