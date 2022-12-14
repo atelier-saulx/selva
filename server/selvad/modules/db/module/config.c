@@ -2,9 +2,9 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
-#include <string.h>
 #include <stddef.h>
-#include "util/selva_string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_db.h"
@@ -25,15 +25,15 @@ struct selva_glob_config selva_glob_config = {
     .find_indexing_popularity_ave_period = FIND_INDEXING_POPULARITY_AVE_PERIOD,
 };
 
-static int parse_size_t(void *dst, const struct selva_string *src) {
+static int parse_size_t(void *dst, const char *src)
+{
     long long v;
+    char *endptr;
     size_t *d = (size_t *)dst;
-    int err;
 
-    /* TODO or ull? */
-    err = selva_string_to_ll(src, &v);
-    if (err) {
-        return err;
+    v = strtoull(src, &endptr, 10);
+    if (endptr == src) {
+        return SELVA_EINVAL;
     }
 
     *d = (size_t)v;
@@ -41,14 +41,15 @@ static int parse_size_t(void *dst, const struct selva_string *src) {
     return 0;
 }
 
-static int parse_int(void *dst, const struct selva_string *src) {
+static int parse_int(void *dst, const char *src)
+{
     long long v;
+    char *endptr;
     int *d = (int *)dst;
-    int err;
 
-    err = selva_string_to_ll(src, &v);
-    if (err) {
-        return err;
+    v = strtol(src, &endptr, 10);
+    if (endptr == src) {
+        return SELVA_EINVAL;
     }
 
     *d = (int)v;
@@ -58,7 +59,7 @@ static int parse_int(void *dst, const struct selva_string *src) {
 
 struct cfg {
     const char * const name;
-    int (*const parse)(void *dst, const struct selva_string *sp);
+    int (*const parse)(void *dst, const char *src);
     void * const dp;
 } const cfg_map[] = {
     { "DEBUG_MODIFY_REPLICATION_DELAY_NS", parse_int, &selva_glob_config.debug_modify_replication_delay_ns },
@@ -74,36 +75,25 @@ struct cfg {
     { "FIND_INDEXING_POPULARITY_AVE_PERIOD", parse_int, &selva_glob_config.find_indexing_popularity_ave_period },
 };
 
-int parse_config_args(struct selva_string **argv, int argc) {
-    if (argc % 2 != 0) {
-        return SELVA_EINVAL;
-    }
+int parse_config_args(void)
+{
+    for (size_t i = 0; i < num_elem(cfg_map); i++) {
+        struct cfg const * const cfg = &cfg_map[i];
+        const char *name = cfg->name;
+        const char *str;
+        int err;
 
-    for (int j = 0; j < argc; j += 2) {
-        const char * const cfg_name = selva_string_to_str(argv[j], NULL);
-        const struct selva_string *cfg_value = argv[j + 1];
-        int found = 0;
-
-        for (size_t i = 0; i < num_elem(cfg_map); i++) {
-            struct cfg const * const cfg = &cfg_map[i];
-            if (!strcmp(cfg_name, cfg->name)) {
-                int err;
-
-                err = cfg->parse(cfg->dp, cfg_value);
-                if (err) {
-                    return err;
-                }
-
-                SELVA_LOG_DBG("Selva tunable changed: %s\n", cfg->name);
-
-                found = 1;
-                break;
-            }
+        str = getenv(name);
+        if (!str) {
+            continue;
         }
 
-        if (!found) {
-            return SELVA_EINVAL;
+        err = cfg->parse(cfg->dp, str);
+        if (err) {
+            return err;
         }
+
+        SELVA_LOG_DBG("Selva tunable changed: %s\n", cfg->name);
     }
 
     return 0;
@@ -111,7 +101,8 @@ int parse_config_args(struct selva_string **argv, int argc) {
 
 /* FIXME Implement SELVA_MODINFO */
 #if 0
-static void mod_info(RedisModuleInfoCtx *ctx) {
+static void mod_info(RedisModuleInfoCtx *ctx)
+{
     for (size_t i = 0; i < num_elem(cfg_map); i++) {
         struct cfg const * const cfg = &cfg_map[i];
         char *name = (char *)cfg->name;

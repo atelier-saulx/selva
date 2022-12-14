@@ -1777,10 +1777,8 @@ static void send_update_events(struct SelvaHierarchy *hierarchy) {
                 __FILE__, __LINE__,
                 Selva_SubscriptionId2str(str, sub->sub_id));
 #endif
-        /* FIXME Implement subscription events */
-#if 0
-        SelvaModify_PublishSubscriptionUpdate(sub->sub_id);
-#endif
+
+        AsyncTask_PublishSubscriptionUpdate(sub->sub_id);
     }
     SVector_Clear(&def->updates);
 }
@@ -1800,10 +1798,7 @@ static void send_trigger_events(struct SelvaHierarchy *hierarchy) {
                 Selva_SubscriptionId2str(str, marker->sub->sub_id));
 #endif
 
-        /* FIXME Implement subscription events */
-#if 0
-        SelvaModify_PublishSubscriptionTrigger(marker->sub->sub_id, marker->filter_history.node_id);
-#endif
+        AsyncTask_PublishSubscriptionTrigger(marker->sub->sub_id, marker->filter_history.node_id);
     }
     SVector_Clear(&def->triggers);
 }

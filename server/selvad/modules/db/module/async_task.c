@@ -10,10 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "async_task.h"
+#include <hiredis/hiredis.h>
+#include "util/queue_r.h"
+#include "selva_db.h"
 #include "hierarchy.h"
 #include "subscriptions.h"
-#include "queue_r.h"
+#include "async_task.h"
 
 #define CHANNEL_SUB_ID(prefix, sub_id) \
             char channel[sizeof(prefix) + SELVA_SUBSCRIPTION_ID_STR_LEN] = prefix; \
@@ -65,8 +67,6 @@ struct SelvaModify_AsyncTask {
     };
 };
 
-static const char *redis_addr = "127.0.0.1";
-
 static uint64_t total_publishes;
 static uint64_t missed_publishes;
 
@@ -87,12 +87,21 @@ static inline uint8_t next_queue_idx(void) {
     return idx;
 }
 
+/* TODO Use config? */
+static const char *getRedisAddr(void) {
+    const char *str;
+
+    str = getenv("REDIS_ADDR");
+
+    return (str) ? str : "127.0.0.1";
+}
+
 static int getRedisPort(void) {
     const char *str;
 
     str = getenv("REDIS_PORT");
     if (!str) {
-        return 0;
+        return 6379;
     }
 
     return (int)strtol(str, NULL, 10);
@@ -118,20 +127,23 @@ static void async_task_yield(void) {
 
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     uint64_t thread_idx = (uint64_t)argv;
+    int port;
+    const char *addr;
     redisContext *ctx = NULL;
     queue_cb_t *queue = queues + thread_idx;
 
     ASYNC_TASK_LOG("Started async task worker\n");
 
-    int port = getRedisPort();
+    addr = getRedisAddr();
+    port = getRedisPort();
     if (!port) {
         ASYNC_TASK_LOG("REDIS_PORT invalid or not set\n");
         goto error;
     }
 
-    ASYNC_TASK_LOG("Connecting to Redis master on %s:%d\n", redis_addr, port);
+    ASYNC_TASK_LOG("Connecting to Redis master on %s:%d\n", addr, port);
 
-    ctx = redisConnect(redis_addr, port);
+    ctx = redisConnect(addr, port);
     if (ctx->err) {
         ASYNC_TASK_LOG("Error connecting to the redis instance\n");
         async_task_nsleep(100000000L);
@@ -199,9 +211,9 @@ retry:
             goto error;
         }
         if (!ctx) {
-            ASYNC_TASK_LOG("Reconnecting to Redis master on %s:%d\n", redis_addr, port);
+            ASYNC_TASK_LOG("Reconnecting to Redis master on %s:%d\n", addr, port);
 
-            ctx = redisConnect(redis_addr, port);
+            ctx = redisConnect(addr, port);
             if (ctx->err) {
                 ASYNC_TASK_LOG("Error connecting to the redis instance\n");
                 async_task_nsleep(20000000L);

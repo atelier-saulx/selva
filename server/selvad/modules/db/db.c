@@ -38,15 +38,12 @@ __constructor void init(void)
 
     libdeflate_set_memory_allocator(selva_malloc, selva_free);
 
-    /* FIXME How to pass selva config args */
-#if 0
-    err = parse_config_args(argv, argc);
+    err = parse_config_args();
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to parse config args: %s",
                   selva_strerror(err));
         exit(EXIT_FAILURE);
     }
-#endif
 
     SET_FOREACH(onload_p, selva_onload) {
         Selva_Onload *onload = *onload_p;

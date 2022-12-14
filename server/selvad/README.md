@@ -24,6 +24,32 @@ The project build uses `make`.
 - `mostlyclean` - Refrain from deleting libraries
 - `check` - Run `cppcheck`
 
+Running the Server
+------------------
+
+```
+./selvad
+```
+
+**Environment Variables**
+
+| Name |                                | Description               |
+|---------------------------------------|---------------------------|
+`REDIS_ADDR`                            | for publishing events.    |
+`REDIS_PORT`                            | for publishing events.    |
+`DEBUG_MODIFY_REPLICATION_DELAY_NS`     |                           |
+`HIERARCHY_INITIAL_VECTOR_LEN`          |                           |
+`HIERARCHY_EXPECTED_RESP_LEN`           |                           |
+`HIERARCHY_COMPRESSION_LEVEL`           |                           |
+`HIERARCHY_AUTO_COMPRESS_PERIOD_MS`     |                           |
+`HIERARCHY_AUTO_COMPRESS_OLD_AGE_LIM`   |                           |
+`FIND_INDICES_MAX`                      |                           |
+`FIND_INDEXING_THRESHOLD`               |                           |
+`FIND_INDEXING_ICB_UPDATE_INTERVAL`     |                           |
+`FIND_INDEXING_INTERVAL`                |                           |
+`FIND_INDEXING_POPULARITY_AVE_PERIOD`   |                           |
+
+
 API
 ---
 

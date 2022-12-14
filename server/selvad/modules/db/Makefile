@@ -3,9 +3,10 @@
 
 OBJ := \
 	   db.o \
-	   module/alias.o \
 	   module/aggregate.o \
+	   module/alias.o \
 	   module/arg_parser.o \
+	   module/async_task.o \
 	   module/comparator.o \
 	   module/compressor.o \
 	   module/config.o \

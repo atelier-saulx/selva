@@ -28,6 +28,6 @@ struct selva_glob_config {
 
 extern struct selva_glob_config selva_glob_config;
 
-int parse_config_args(struct selva_string **argv, int argc);
+int parse_config_args(void);
 
 #endif /* _CONFIG_H_ */
