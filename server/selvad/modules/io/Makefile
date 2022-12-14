@@ -6,8 +6,9 @@ OBJ := \
 	   io.o \
 	   sdb.o \
 	   version.o
-LDFLAGS += -lutil -lsha3iuf
+DEP := $(OBJ:%.o=%.d)
 CFLAGS += -DSELVA_IO_MAIN=1
+LDFLAGS += -lutil -lsha3iuf -ljemalloc_selva
 TARGET := ../mod_io$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)
