@@ -8,6 +8,7 @@
 #include "selva_io.h"
 #include "selva_server.h"
 #include "selva_onload.h"
+#include "arg_parser.h"
 #include "hierarchy.h"
 
 static void send_open_error(
