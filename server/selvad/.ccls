@@ -1,3 +1,4 @@
+-std=gnu2x
 -Wall
 -Wextra
 -g

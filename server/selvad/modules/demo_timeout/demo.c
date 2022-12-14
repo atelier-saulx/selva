@@ -10,7 +10,7 @@
 #include "event_loop.h"
 #include "module.h"
 
-static void my_hello()
+static void my_hello(struct event *, void *)
 {
     SELVA_LOG(SELVA_LOGL_INFO, "Hello world from a module");
 }
