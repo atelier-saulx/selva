@@ -5,3 +5,6 @@ strrnchr: strrnchr.c ../cstrings.c
 
 get_array_field_index: get_array_field_index.c ../cstrings.c
 	clang $(CFLAGS) -fsanitize=fuzzer,signed-integer-overflow $^ -o $@
+
+selva_proto_parse_vtype: get_array_field_index.c ../cstrings.c
+	clang $(CFLAGS) -fsanitize=fuzzer,signed-integer-overflow $^ -o $@

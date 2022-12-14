@@ -32,10 +32,8 @@ const char *selva_proto_type_to_str(enum selva_proto_data_type type)
         return "array end";
     }
 
-    __builtin_unreachable();
+    return "invalid";
 }
-
-/* FIXME check bsize before copying from buf */
 
 static int parse_hdr_null(const char *buf __unused, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
 {
@@ -45,9 +43,13 @@ static int parse_hdr_null(const char *buf __unused, size_t bsize __unused, enum 
     return sizeof(struct selva_proto_null);
 }
 
-static int parse_hdr_error(const char *buf, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
+static int parse_hdr_error(const char *buf, size_t bsize, enum selva_proto_data_type *type_out, size_t *len_out)
 {
     struct selva_proto_error hdr;
+
+    if (bsize < sizeof(hdr)) {
+        return SELVA_PROTO_EBADMSG;
+    };
 
     memcpy(&hdr, buf, sizeof(hdr));
     hdr.bsize = le16toh(hdr.bsize);
@@ -74,9 +76,13 @@ static int parse_hdr_longlong(const char *buf __unused, size_t bsize __unused, e
     return sizeof (struct selva_proto_longlong);
 }
 
-static int parse_hdr_string(const char *buf, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
+static int parse_hdr_string(const char *buf, size_t bsize, enum selva_proto_data_type *type_out, size_t *len_out)
 {
     struct selva_proto_string hdr;
+
+    if (bsize < sizeof(hdr)) {
+        return SELVA_PROTO_EBADMSG;
+    }
 
     memcpy(&hdr, buf, sizeof(hdr));
     hdr.bsize = le16toh(hdr.bsize);
@@ -87,9 +93,13 @@ static int parse_hdr_string(const char *buf, size_t bsize __unused, enum selva_p
     return sizeof(hdr) + hdr.bsize;
 }
 
-static int parse_hdr_array(const char *buf, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
+static int parse_hdr_array(const char *buf, size_t bsize, enum selva_proto_data_type *type_out, size_t *len_out)
 {
     struct selva_proto_array hdr;
+
+    if (bsize < sizeof(hdr)) {
+        return SELVA_PROTO_EBADMSG;
+    }
 
     memcpy(&hdr, buf, sizeof(hdr));
     hdr.length = le32toh(hdr.length);
@@ -121,6 +131,10 @@ int selva_proto_parse_vtype(const void *buf, size_t bsize, size_t i, enum selva_
 {
     size_t val_size = bsize - i; /* max size guess */
     struct selva_proto_control ctrl;
+
+    if (i >= bsize) {
+        return SELVA_PROTO_EINVAL;
+    }
 
     if (val_size < sizeof(ctrl)) {
         return SELVA_PROTO_EBADMSG;
