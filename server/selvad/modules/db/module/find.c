@@ -222,7 +222,6 @@ static int send_edge_field(
         if (field_prefix_str) {
             struct selva_string *act_field_name;
 
-            /* TODO Could use stack */
             act_field_name = selva_string_createf("%.*s%s", (int)field_prefix_len, field_prefix_str, field_str);
             finalizer_add(fin, act_field_name, selva_string_free);
             selva_send_string(resp, act_field_name);
@@ -262,7 +261,6 @@ static int send_edge_field(
             const int n = s ? (int)(s - field_str) + 1 : (int)field_len;
             struct selva_string *next_prefix;
 
-            /* TODO Could use stack */
             next_prefix = selva_string_createf("%.*s%.*s", (int)field_prefix_len, field_prefix_str, n, field_str);
             finalizer_add(fin, next_prefix, selva_string_free);
             next_prefix_str = selva_string_to_str(next_prefix, &next_prefix_len);
@@ -443,9 +441,8 @@ static int send_node_field(
     /*
      * Check if we have a wildcard in the middle of the field name
      * and process it.
-     * TODO Might be better to use memmem()
      */
-    if (strstr(field_str, ".*.")) {
+    if (memmem(field_str, field_len, ".*.", 3)) {
         long resp_count = 0;
 
         err = SelvaObject_ReplyWithWildcardStr(resp, lang, obj, field_str, field_len, &resp_count, -1, 0);
@@ -474,7 +471,7 @@ static int send_node_field(
         /*
          * Send the reply.
          */
-        struct selva_string *tmp = selva_string_createf( "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str); /* TODO Could use stack */
+        struct selva_string *tmp = selva_string_createf( "%.*s%.*s", (int)field_prefix_len, field_prefix_str, (int)field_len, field_str);
         finalizer_add(fin, tmp, selva_string_free);
         selva_send_string(resp, tmp);
         err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, field_str, field_len, 0);
