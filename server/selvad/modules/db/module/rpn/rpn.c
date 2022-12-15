@@ -235,10 +235,6 @@ static struct rpn_operand *alloc_rpn_set_operand(enum SelvaSetType type) {
     struct rpn_operand *v;
 
     v = alloc_rpn_operand(sizeof(struct SelvaSet *) + sizeof(struct SelvaSet));
-    if (!v) {
-        return NULL;
-    }
-
     v->flags.slvset = 1;
     v->flags.embset = 1;
     v->d = nan_undefined();
@@ -310,10 +306,6 @@ static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
 static enum rpn_error push_double_result(struct rpn_ctx *ctx, double x) {
     struct rpn_operand *v = alloc_rpn_operand(0);
 
-    if (unlikely(!v)) {
-        return RPN_ERR_ENOMEM;
-    }
-
     v->d = x;
 
     return push(ctx, v);
@@ -321,10 +313,6 @@ static enum rpn_error push_double_result(struct rpn_ctx *ctx, double x) {
 
 static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long x) {
     struct rpn_operand *v = alloc_rpn_operand(0);
-
-    if (unlikely(!v)) {
-        return RPN_ERR_ENOMEM;
-    }
 
     v->d = (double)x;
 
@@ -334,10 +322,6 @@ static enum rpn_error push_int_result(struct rpn_ctx *ctx, long long x) {
 static enum rpn_error push_string_result(struct rpn_ctx *ctx, const char *s, size_t slen) {
     const size_t size = slen + 1;
     struct rpn_operand *v = alloc_rpn_operand(size);
-
-    if (unlikely(!v)) {
-        return RPN_ERR_ENOMEM;
-    }
 
     v->s_size = size;
     memcpy(v->s, s, slen);
@@ -350,10 +334,6 @@ static enum rpn_error push_string_result(struct rpn_ctx *ctx, const char *s, siz
 static enum rpn_error push_empty_value(struct rpn_ctx *ctx) {
     const size_t size = 2;
     struct rpn_operand *v = alloc_rpn_operand(size);
-
-    if (unlikely(!v)) {
-        return RPN_ERR_ENOMEM;
-    }
 
     v->d = 0.0;
     v->s_size = size;
@@ -371,10 +351,6 @@ static enum rpn_error push_selva_string_result(struct rpn_ctx *ctx, const struct
     size_t slen;
     struct rpn_operand *v = alloc_rpn_operand(sizeof(struct selva_string *));
 
-    if (unlikely(!v)) {
-        return RPN_ERR_ENOMEM;
-    }
-
     v->flags.spused = 1;
     v->sp = selva_string_to_str(s, &slen);
     v->s_size = slen + 1;
@@ -385,10 +361,6 @@ static enum rpn_error push_selva_string_result(struct rpn_ctx *ctx, const struct
 
 static enum rpn_error push_selva_set_result(struct rpn_ctx *ctx, struct SelvaSet *set) {
     struct rpn_operand *v = alloc_rpn_operand(sizeof(struct SelvaSet *));
-
-    if (unlikely(!v)) {
-        return RPN_ERR_ENOMEM;
-    }
 
     v->flags.slvset = 1;
     v->set = set;
@@ -444,12 +416,7 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
     clear_old_reg(ctx, i);
 
     if (s) {
-        struct rpn_operand *r;
-
-        r = alloc_rpn_operand(sizeof(char *));
-        if (!r) {
-            return RPN_ERR_ENOMEM;
-        }
+        struct rpn_operand *r = alloc_rpn_operand(sizeof(char *));
 
         /*
          * Set the string value.
@@ -502,9 +469,7 @@ enum rpn_error rpn_set_reg_slvobj(struct rpn_ctx *ctx, size_t i, struct SelvaObj
     clear_old_reg(ctx, i);
 
     if (obj) {
-        struct rpn_operand *r;
-
-        r = alloc_rpn_operand(sizeof(struct SelvaObject *));
+        struct rpn_operand *r = alloc_rpn_operand(sizeof(struct SelvaObject *));
 
         /*
          * Set the values.
