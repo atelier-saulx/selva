@@ -1030,14 +1030,9 @@ static enum rpn_error rpn_op_idcmp(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
 
-#if RPN_ASSERTS
-    assert(ctx->reg[0]);
-    assert(ctx->reg[0]->s_size == SELVA_NODE_ID_SIZE);
-#endif
-
     /*
      * Note the the allocated string is always large enough,
-     * so the comparison is safe.
+     * so the comparison is safe without checking s_size.
      */
     return push_int_result(ctx, !Selva_CmpNodeType(OPERAND_GET_S(a), OPERAND_GET_S(ctx->reg[0])));
 }
