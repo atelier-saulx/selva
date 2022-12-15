@@ -276,7 +276,7 @@ static void free_rpn_operand(void *p) {
 }
 
 static struct rpn_operand *pop(struct rpn_ctx *ctx) {
-    if (!ctx->depth) {
+    if (ctx->depth <= 0) {
         return NULL;
     }
 
@@ -287,6 +287,9 @@ static struct rpn_operand *pop(struct rpn_ctx *ctx) {
 #endif
 
     v->refcount--;
+#if RPN_ASSERTS
+    assert(v->refcount >= 0);
+#endif
 
     return v;
 }
@@ -1056,8 +1059,7 @@ static enum rpn_error rpn_op_ffirst(struct rpn_ctx *ctx) {
         }
     }
 
-    push(ctx, result);
-    return RPN_ERR_OK;
+    return push(ctx, result);
 }
 
 static enum rpn_error rpn_op_aon(struct rpn_ctx *ctx) {
@@ -1088,14 +1090,12 @@ static enum rpn_error rpn_op_aon(struct rpn_ctx *ctx) {
             }
 
             /* Push empty set as a result. */
-            push(ctx, result);
-            return RPN_ERR_OK;
+            return push(ctx, result);
         }
     }
 
     /* Push the original set as a result. */
-    push(ctx, a);
-    return RPN_ERR_OK;
+    return push(ctx, a);
 }
 
 static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
@@ -1971,7 +1971,7 @@ end:
                 OPERAND(ctx, x);
 
                 clear_stack(ctx);
-                push(ctx, x);
+                (void)push(ctx, x);
 
                 break;
             }
