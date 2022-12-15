@@ -48,20 +48,12 @@ enum rpn_code {
     RPN_CODE_JMP_FWD,
 } __packed;
 
-/*
- * This type should match the alignment of `typedef struct redisObject` in Redis
- * so we can extract `ptr` properly. The struct is likely located in
- * `/src/server.h` in the Redis source tree.
- */
-struct redisObjectAccessor {
-    uint32_t _meta;
-    int refcount;
-    void *ptr;
-};
+#define AUTO_OPERANDS(...) \
+    struct rpn_operand *auto_operands[] __attribute__((cleanup(free_rpn_auto_operands))) = { __VA_ARGS__ __VA_OPT__(,) NULL }; \
+    for (size_t i = 0; i < num_elem(auto_operands) - 1; i++) { if (!auto_operands[i]) return RPN_ERR_BADSTK; }
 
 #define OPERAND(ctx, x) \
-    struct rpn_operand * x __attribute__((cleanup(free_rpn_operand))) = pop(ctx); \
-    if (!x) return RPN_ERR_BADSTK
+    struct rpn_operand *x = pop(ctx)
 
 #define OPERAND_GET_S(x) \
      ((const char *)((x)->flags.spused && ((x)->sp) ? (x)->sp : (x)->s))
@@ -129,6 +121,7 @@ const char *rpn_str_error[] = {
 };
 
 static void free_rpn_operand(void *p);
+static void free_rpn_auto_operands(void *p);
 static void clear_stack(struct rpn_ctx *ctx);
 
 __constructor static void init_pool(void) {
@@ -275,6 +268,40 @@ static void free_rpn_operand(void *p) {
     }
 }
 
+static size_t count_auto_operands(struct rpn_operand *arr[]) {
+    size_t n = 0;
+
+    while (!!arr[n++]);
+
+    return n - 1;
+}
+
+static size_t dedup_auto_operands(struct rpn_operand *arr[], size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        for (size_t j = i + 1; j < len; j++) {
+            if (arr[i] == arr[j]) {
+                for (size_t k = j; k < len - 1; k++) {
+                    arr[k] = arr[k + 1];
+                }
+                len--;
+                j--;
+            }
+        }
+    }
+
+    return len;
+}
+
+static void free_rpn_auto_operands(void *p) {
+    struct rpn_operand **auto_operands = (struct rpn_operand **)p;
+    const size_t n = dedup_auto_operands(auto_operands, count_auto_operands(auto_operands));
+
+    for (size_t i = 0; i < n; i++) {
+        free_rpn_operand(auto_operands + i);
+        auto_operands[i] = NULL;
+    }
+}
+
 static struct rpn_operand *pop(struct rpn_ctx *ctx) {
     if (ctx->depth <= 0) {
         return NULL;
@@ -287,15 +314,14 @@ static struct rpn_operand *pop(struct rpn_ctx *ctx) {
 #endif
 
     v->refcount--;
-#if RPN_ASSERTS
-    assert(v->refcount >= 0);
-#endif
 
     return v;
 }
 
 static enum rpn_error push(struct rpn_ctx *ctx, struct rpn_operand *v) {
     if (unlikely(ctx->depth >= RPN_MAX_D)) {
+        free_rpn_operand(&v);
+
         SELVA_LOG(SELVA_LOGL_ERR, "Stack overflow");
         return RPN_ERR_BADSTK;
     }
@@ -669,6 +695,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
 static enum rpn_error rpn_op_add(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, a->d + b->d);
 }
@@ -676,6 +703,7 @@ static enum rpn_error rpn_op_add(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_sub(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, a->d - b->d);
 }
@@ -683,6 +711,7 @@ static enum rpn_error rpn_op_sub(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_div(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, a->d / b->d);
 }
@@ -690,6 +719,7 @@ static enum rpn_error rpn_op_div(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_mul(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, a->d * b->d);
 }
@@ -697,6 +727,7 @@ static enum rpn_error rpn_op_mul(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_rem(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, js_fmod(a->d, b->d));
 }
@@ -704,6 +735,7 @@ static enum rpn_error rpn_op_rem(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_eq(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, a->d == b->d);
 }
@@ -711,6 +743,7 @@ static enum rpn_error rpn_op_eq(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_ne(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, a->d != b->d);
 }
@@ -718,6 +751,7 @@ static enum rpn_error rpn_op_ne(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_lt(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, a->d < b->d);
 }
@@ -725,6 +759,7 @@ static enum rpn_error rpn_op_lt(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_gt(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, a->d > b->d);
 }
@@ -732,6 +767,7 @@ static enum rpn_error rpn_op_gt(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_le(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, a->d <= b->d);
 }
@@ -739,12 +775,14 @@ static enum rpn_error rpn_op_le(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_ge(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_double_result(ctx, a->d >= b->d);
 }
 
 static enum rpn_error rpn_op_not(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
+    AUTO_OPERANDS(a);
 
     return push_int_result(ctx, !to_bool(a));
 }
@@ -752,6 +790,7 @@ static enum rpn_error rpn_op_not(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_and(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_int_result(ctx, to_bool(a) && to_bool(b));
 }
@@ -759,6 +798,7 @@ static enum rpn_error rpn_op_and(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_or(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_int_result(ctx, to_bool(a) || to_bool(b));
 }
@@ -766,12 +806,14 @@ static enum rpn_error rpn_op_or(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_xor(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_int_result(ctx, to_bool(a) ^ to_bool(b));
 }
 
 static enum rpn_error rpn_op_necess(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
+    AUTO_OPERANDS(a);
 
     if (to_bool(a)) {
         return push(ctx, a); /* Push back. */
@@ -786,6 +828,7 @@ static enum rpn_error rpn_op_necess(struct rpn_ctx *ctx) {
 
 static enum rpn_error rpn_op_possib(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
+    AUTO_OPERANDS(a);
 
     if (to_bool(a)) {
         enum rpn_error err;
@@ -801,6 +844,7 @@ static enum rpn_error rpn_op_possib(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_dup(struct rpn_ctx *ctx) {
     enum rpn_error err;
     OPERAND(ctx, a);
+    AUTO_OPERANDS(a);
 
     err = push(ctx, a);
     return err ? err : push(ctx, a);
@@ -810,6 +854,7 @@ static enum rpn_error rpn_op_swap(struct rpn_ctx *ctx) {
     enum rpn_error err;
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     err = push(ctx, a);
     return err ? err : push(ctx, b);
@@ -819,6 +864,7 @@ static enum rpn_error rpn_op_ternary(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     OPERAND(ctx, c);
+    AUTO_OPERANDS(a, b, c);
 
     if (to_bool(a)) {
         return push(ctx, b);
@@ -829,6 +875,7 @@ static enum rpn_error rpn_op_ternary(struct rpn_ctx *ctx) {
 
 static enum rpn_error rpn_op_drop(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
+    AUTO_OPERANDS(a);
 
     return RPN_ERR_OK;
 }
@@ -838,6 +885,7 @@ static enum rpn_error rpn_op_rot(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     OPERAND(ctx, c);
+    AUTO_OPERANDS(a, b, c);
 
     err = push(ctx, b);
     if (err) {
@@ -854,6 +902,7 @@ static enum rpn_error rpn_op_over(struct rpn_ctx *ctx) {
     enum rpn_error err;
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     err = push(ctx, b);
     if (err) {
@@ -869,6 +918,7 @@ static enum rpn_error rpn_op_over(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_exists(struct rpn_ctx *ctx) {
     int exists;
     OPERAND(ctx, field);
+    AUTO_OPERANDS(field);
     const char *field_str = OPERAND_GET_S(field);
     const size_t field_len = OPERAND_GET_S_LEN(field);
     const struct SelvaHierarchyNode *node = ctx->node;
@@ -896,6 +946,7 @@ static enum rpn_error rpn_op_range(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
     OPERAND(ctx, c);
+    AUTO_OPERANDS(a, b, c);
 
     return push_int_result(ctx, a->d <= b->d && b->d <= c->d);
 }
@@ -904,6 +955,7 @@ static enum rpn_error rpn_op_has(struct rpn_ctx *ctx) {
     struct SelvaSet *set;
     OPERAND(ctx, s); /* set */
     OPERAND(ctx, v); /* value */
+    AUTO_OPERANDS(s, v);
 
     set = OPERAND_GET_SET(s); /* The operand `s` is a set if this gets set. */
     if (!set) {
@@ -961,6 +1013,7 @@ static enum rpn_error rpn_op_has(struct rpn_ctx *ctx) {
 
 static enum rpn_error rpn_op_typeof(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
+    AUTO_OPERANDS(a);
     char t[SELVA_NODE_TYPE_SIZE];
     const char *s = OPERAND_GET_S(a);
 
@@ -976,6 +1029,7 @@ static enum rpn_error rpn_op_typeof(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_strcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
     const size_t a_size = a->s_size;
     const size_t b_size = b->s_size;
     const ssize_t sizeDiff = b_size - a_size;
@@ -989,6 +1043,7 @@ static enum rpn_error rpn_op_strcmp(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_idcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
     const int size_ok = a->s_size >= SELVA_NODE_ID_SIZE && b->s_size >= SELVA_NODE_ID_SIZE;
 
     return push_int_result(ctx, size_ok &&
@@ -997,6 +1052,7 @@ static enum rpn_error rpn_op_idcmp(struct rpn_ctx *ctx) {
 
 static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
+    AUTO_OPERANDS(a);
 
     /*
      * Note the the allocated string is always large enough,
@@ -1007,18 +1063,21 @@ static enum rpn_error rpn_op_cidcmp(struct rpn_ctx *ctx) {
 
 static enum rpn_error rpn_op_getsfld(struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
+    AUTO_OPERANDS(field);
 
     return rpn_getfld(ctx, field, RPN_LVTYPE_STRING);
 }
 
 static enum rpn_error rpn_op_getdfld(struct rpn_ctx *ctx) {
     OPERAND(ctx, field);
+    AUTO_OPERANDS(field);
 
     return rpn_getfld(ctx, field, RPN_LVTYPE_NUMBER);
 }
 
 static enum rpn_error rpn_op_ffirst(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
+    AUTO_OPERANDS(a);
     struct SelvaSet *set_a;
     RESULT_OPERAND(result);
     struct SelvaSetElement *el;
@@ -1064,6 +1123,7 @@ static enum rpn_error rpn_op_ffirst(struct rpn_ctx *ctx) {
 
 static enum rpn_error rpn_op_aon(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
+    AUTO_OPERANDS(a);
     struct SelvaSet *set_a;
     struct SelvaSetElement *el;
     const struct SelvaHierarchyNode *node = ctx->node;
@@ -1103,6 +1163,7 @@ static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
     struct SelvaSet *set_b;
     OPERAND(ctx, a); /* set A */
     OPERAND(ctx, b); /* set B */
+    AUTO_OPERANDS(a, b);
     int res = 0;
 
     set_a = OPERAND_GET_SET(a);
@@ -1135,6 +1196,7 @@ static enum rpn_error rpn_op_in(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_str_includes(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
 
     return push_int_result(ctx, !!memmem(OPERAND_GET_S(a), OPERAND_GET_S_LEN(a), OPERAND_GET_S(b), OPERAND_GET_S_LEN(b)));
 }
@@ -1147,6 +1209,7 @@ static enum rpn_error rpn_op_rec_filter(struct rpn_ctx *ctx) {
     OPERAND(ctx, a); /* field */
     OPERAND(ctx, b); /* operator */
     OPERAND(ctx, c); /* value */
+    AUTO_OPERANDS(a, b, c);
     RESULT_OPERAND(res);
     const char *field_str = OPERAND_GET_S(a);
     const size_t field_len = OPERAND_GET_S_LEN(a);
@@ -1268,6 +1331,7 @@ static enum rpn_error rpn_op_rec_filter(struct rpn_ctx *ctx) {
 static enum rpn_error rpn_op_union(struct rpn_ctx *ctx) {
     OPERAND(ctx, a);
     OPERAND(ctx, b);
+    AUTO_OPERANDS(a, b);
     RESULT_OPERAND(res);
     struct SelvaSet *set_a;
     struct SelvaSet *set_b;
@@ -1900,6 +1964,7 @@ static enum rpn_error get_literal(struct rpn_ctx *ctx, const struct rpn_expressi
  */
 static enum rpn_error cond_jump(struct rpn_ctx *ctx, const char *s, const rpn_token * restrict *it) {
     OPERAND(ctx, cond);
+    AUTO_OPERANDS(cond);
 
     if (to_bool(cond)) {
         uint32_t n;
@@ -1969,8 +2034,15 @@ end:
                  * in the stack.
                  */
                 OPERAND(ctx, x);
+                /* Shouldn't use AUTO_OPERANDS() here. */
+                if (!x) {
+                    err = RPN_ERR_BADSTK;
+                    goto end;
+                }
 
+                x->refcount++;
                 clear_stack(ctx);
+                x->refcount--;
                 (void)push(ctx, x);
 
                 break;
