@@ -329,7 +329,7 @@ static int SelvaModify_SendAsyncTask(const char *payload, size_t payload_len) {
     return 0;
 }
 
-void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {
+void AsyncTask_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {
     const size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
     const size_t payload_len = sizeof(int32_t) + struct_len;
     int32_t total_len = payload_len;
@@ -347,7 +347,7 @@ void SelvaModify_PublishSubscriptionUpdate(const Selva_SubscriptionId sub_id) {
     SelvaModify_SendAsyncTask(payload_str, payload_len);
 }
 
-void SelvaModify_PublishSubscriptionTrigger(const Selva_SubscriptionId sub_id, const Selva_NodeId node_id) {
+void AsyncTask_PublishSubscriptionTrigger(const Selva_SubscriptionId sub_id, const Selva_NodeId node_id) {
     const size_t struct_len = sizeof(struct SelvaModify_AsyncTask);
     const size_t payload_len = sizeof(int32_t) + struct_len;
     int32_t total_len = payload_len;
