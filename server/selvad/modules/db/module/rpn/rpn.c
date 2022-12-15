@@ -1754,12 +1754,24 @@ struct rpn_expression *rpn_compile(const char *input) {
 
         switch (tok_str[0]) {
         case '#': /* Number literal */
+            if (tok_len - 1 >= tok_len) {
+                err = RPN_ERR_ILLOPN;
+                break;
+            }
             err = compile_num_literal(expr, literal_reg_i, tok_str + 1, tok_len - 1);
             break;
         case '"': /* String literal */
+            if (tok_len - 2 >= tok_len) {
+                err = RPN_ERR_ILLOPN;
+                break;
+            }
             err = compile_str_literal(expr, literal_reg_i, tok_str + 1, tok_len - 2);
             break;
         case '{': /* Set literal */
+            if (tok_len - 2 >= tok_len) {
+                err = RPN_ERR_ILLOPN;
+                break;
+            }
             err = compile_selvaset_literal(expr, literal_reg_i, tok_str + 1, tok_len - 2);
             break;
         case '@':
