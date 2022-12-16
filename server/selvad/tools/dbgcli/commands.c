@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include "cdefs.h"
 #include "endian.h"
+#include "util/crc32c.h"
 #include "jemalloc.h"
 #include "selva_error.h"
 #include "selva_proto.h"
@@ -56,6 +57,7 @@ static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno, int argc __u
     hdr->seqno = htole32(seqno);
     hdr->frame_bsize = htole16(sizeof(buf));
     hdr->msg_bsize = 0;
+    hdr->chk = htole32(crc32c(0, buf, sizeof(buf)));
 
     if (send(sock, buf, sizeof(buf), 0) != sizeof(buf)) {
         fprintf(stderr, "Send failed\n");
@@ -97,6 +99,7 @@ static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno, int argc __
     hdr->seqno = htole32(seqno);
     hdr->frame_bsize = htole16(sizeof(buf));
     hdr->msg_bsize = 0;
+    hdr->chk = htole32(crc32c(0, buf, sizeof(buf)));
 
     if (send(sock, buf, sizeof(buf), 0) != sizeof(buf)) {
         fprintf(stderr, "Send failed\n");
@@ -162,6 +165,9 @@ static int generic_req(const struct cmd *cmd, int sock, int seqno, int argc, cha
             send_flags = MSG_MORE;
 #endif
         }
+
+        hdr->chk = 0;
+        hdr->chk = htole32(crc32c(0, buf, frame_bsize));
 
         send(sock, buf, frame_bsize, send_flags);
     }
@@ -279,7 +285,7 @@ void *recv_message(int fd, int *cmd, size_t *msg_size)
         r = recv(fd, &resp_hdr, sizeof(resp_hdr), 0);
         if (r != (ssize_t)sizeof(resp_hdr)) {
             fprintf(stderr, "recv() returned %d\n", (int)r);
-            return NULL;
+            exit(1);
         } else {
             size_t frame_bsize = le16toh(resp_hdr.frame_bsize);
             const size_t payload_size = frame_bsize - sizeof(resp_hdr);
@@ -301,6 +307,11 @@ void *recv_message(int fd, int *cmd, size_t *msg_size)
 
                 i += payload_size;
             }
+
+            if (!selva_proto_verify_frame_chk(&resp_hdr, msg_buf + i - payload_size, payload_size)) {
+                fprintf(stderr, "Checksum mismatch\n");
+                return NULL;
+            }
         }
     } while (!(resp_hdr.flags & SELVA_PROTO_HDR_FLAST));
 
@@ -319,7 +330,7 @@ void cmd_discover(int fd, int seqno, void (*cb)(struct cmd *cmd))
         int level = 0;
         int cmd_id;
 
-        while (i < msg_size) {
+        while (msg && i < msg_size) {
             enum selva_proto_data_type type;
             size_t data_len;
             int off;

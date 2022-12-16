@@ -46,7 +46,6 @@ struct selva_proto_header {
      * Checksum/CRC.
      * The checksum is calculated over the whole frame with all header fields
      * set to their final values and this field zeroed.
-     * TODO Not implemented.
      */
     uint32_t chk;
 } __attribute__((packed,aligned(__alignof__(uint64_t))));
@@ -186,6 +185,17 @@ static_assert(sizeof_field(struct selva_proto_string, flags) == 1, "string flags
  * Selva proto parsers.
  * The following functions are implemented in libutil.
  */
+
+/**
+ * Verify chk field of a selva_proto frame.
+ * @param hdr is a pointer to the frame header. It will be modified briefly but then returned to the original state.
+ * @param payload is a pointer to the frame payload.
+ * @param size is the size of the payload in bytes.
+ */
+int selva_proto_verify_frame_chk(
+        struct selva_proto_header * restrict hdr,
+        const void * restrict payload,
+        size_t size);
 
 #if __has_c_attribute(unsequenced)
 [[unsequenced]]

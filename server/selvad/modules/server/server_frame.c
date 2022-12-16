@@ -12,6 +12,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "endian.h"
+#include "util/crc32c.h"
 #include "jemalloc.h"
 #include "selva_error.h"
 #include "selva_proto.h"
@@ -84,11 +85,7 @@ static void finalize_frame(void *buf, size_t bsize, int last_frame)
     hdr->flags |= last_frame ? SELVA_PROTO_HDR_FLAST : 0;
     hdr->frame_bsize = htole16(bsize);
     hdr->chk = 0;
-
-    /* TODO calc */
-#if 0
-    chk = htole32(chk);
-#endif
+    hdr->chk = htole32(crc32c(0, buf, bsize));
 }
 
 static int flush_frame_buf(struct selva_server_response_out *resp, int last_frame)
@@ -177,11 +174,10 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
 
     const ssize_t frame_bsize = le16toh(ctx->recv_frame_hdr_buf.frame_bsize); /* We know it's aligned. */
     const size_t frame_payload_size = frame_bsize - sizeof(struct selva_proto_header);
+
     if (frame_payload_size > SELVA_PROTO_FRAME_SIZE_MAX) {
         return SELVA_PROTO_EBADMSG;
-    }
-
-    if (frame_payload_size > 0) {
+    } else if (frame_payload_size > 0) {
         /*
          * Resize the message buffer if necessary.
          */
@@ -201,7 +197,17 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
         }
 
         ctx->recv_msg_buf_i += frame_payload_size;
-        /* TODO Check chk */
+    }
+
+    /*
+     * Verify the frame checksum.
+     */
+    if (!selva_proto_verify_frame_chk(&ctx->recv_frame_hdr_buf,
+                                      ctx->recv_msg_buf + ctx->recv_msg_buf_i - frame_payload_size,
+                                      frame_payload_size)) {
+        /* Discard the frame */
+        ctx->recv_msg_buf_i -= frame_payload_size;
+        return SELVA_PROTO_EBADMSG;
     }
 
     return frame_bsize;

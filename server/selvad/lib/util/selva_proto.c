@@ -9,9 +9,30 @@
 #include <sys/types.h>
 #include "cdefs.h"
 #include "endian.h"
+#include "util/crc32c.h"
 #include "selva_error.h"
 #include "selva_proto.h"
 #include "util/selva_string.h"
+
+int selva_proto_verify_frame_chk(
+        struct selva_proto_header * restrict hdr,
+        const void * restrict payload,
+        size_t size)
+{
+    uint32_t orig_chk;
+    uint32_t comp_chk;
+
+    orig_chk = le32toh(hdr->chk);
+    hdr->chk = 0;
+    comp_chk = crc32c(0, hdr, sizeof(*hdr));
+    hdr->chk = orig_chk;
+
+    if (size > 0) {
+        comp_chk = crc32c(comp_chk, payload, size);
+    }
+
+    return comp_chk == orig_chk;
+}
 
 const char *selva_proto_type_to_str(enum selva_proto_data_type type)
 {
