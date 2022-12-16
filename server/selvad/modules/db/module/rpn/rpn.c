@@ -193,6 +193,56 @@ __used static int isnan_undefined(double x) {
     return i & 1;
 }
 
+/**
+ * atou but faster and more unsafe.
+ * This is way faster than strtoll() in glibc.
+ */
+static int fast_atou(const char * str) {
+    int n = 0;
+
+    while (*str >= '0' && *str <= '9') {
+        n = n * 10 + (int)(*str++) - '0';
+    }
+
+    return n;
+}
+
+/**
+ * strtod for unterminated strings.
+ */
+static double strtod_s(const char * str, size_t len) {
+    double d;
+
+    if (len > 0 && len < 1024) {
+        char buf[len + 1];
+        char *e = buf;
+
+        memcpy(buf, str, len);
+        buf[len] = '\0';
+        d = strtod(buf, &e);
+
+        if (e == buf) {
+            d = nan("");
+        }
+    } else {
+        d = nan("");
+    }
+
+    return d;
+}
+
+/**
+ * Mod (%) like it is in JS.
+ */
+static inline double js_fmod(double x, double y) {
+    double result = remainder(fabs(x), (y = fabs(y)));
+    if (signbit(result)) {
+        result += y;
+    }
+
+    return copysign(result, x);
+}
+
 static int rpn_operand2string(struct rpn_ctx *ctx, const struct rpn_operand *o) {
     const char *str = OPERAND_GET_S(o);
     const size_t len = OPERAND_GET_S_LEN(o);
@@ -459,17 +509,7 @@ enum rpn_error rpn_set_reg(struct rpn_ctx *ctx, size_t i, const char *s, size_t 
         /*
          * Set the integer value.
          */
-        if (flags & RPN_SET_REG_FLAG_IS_NAN) {
-            r->d = nan("");
-        } else {
-            char *e = (char *)s;
-            if (size > 0) {
-                r->d = strtod(s, &e);
-            }
-            if (e == s) {
-                r->d = nan("");
-            }
-        }
+        r->d = (flags & RPN_SET_REG_FLAG_IS_NAN) ? nan("") : strtod_s(s, size);
 
         ctx->reg[i] = r;
     } else { /* Otherwise just clear the register. */
@@ -606,28 +646,6 @@ static enum rpn_error add_rec_key2slvset_res(
             (int)field_len, field_str,
             (int)key_len, key_str);
     return add2slvset_res(res, full_field_str, full_field_len);
-}
-
-/*
- * This is way faster than strtoll() in glibc.
- */
-static int fast_atou(const char * str) {
-    int n = 0;
-
-    while (*str >= '0' && *str <= '9') {
-        n = n * 10 + (int)(*str++) - '0';
-    }
-
-    return n;
-}
-
-static inline double js_fmod(double x, double y) {
-    double result = remainder(fabs(x), (y = fabs(y)));
-    if (signbit(result)) {
-        result += y;
-    }
-
-    return copysign(result, x);
 }
 
 static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *field, int type) {
@@ -1627,17 +1645,12 @@ static enum rpn_error compile_store_literal(struct rpn_expression *expr, size_t 
  * Parse a numeric literal into an operand and store it in the literal register file.
  */
 static enum rpn_error compile_num_literal(struct rpn_expression *expr, size_t i, const char *str, size_t len) {
-    char s[len + 1];
-    char *e;
     double d;
     RESULT_OPERAND(v);
 
-    memcpy(s, str, len);
-    s[len] = '\0';
-    d = strtod(s, &e);
-
-    if (unlikely(e == s)) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Operand is not a number: #%s", s);
+    d = strtod_s(str, len);
+    if (isnan(d)) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Operand is not a number: #%.*s", (int)len, str);
         return RPN_ERR_NAN;
     }
 
