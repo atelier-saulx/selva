@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2013, 2021 Mark Adler <madler@alumni.caltech.edu>
+ * SPDX-License-Identifier: Zlib
+ */
 #pragma once
 #ifndef CRC32C_H
 #define CRC32C_H

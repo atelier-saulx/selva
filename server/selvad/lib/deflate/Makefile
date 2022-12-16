@@ -1,3 +1,5 @@
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
 LIBDEFLATE_VER ?= 1.14
 
 ifeq ($(uname_S),Linux)

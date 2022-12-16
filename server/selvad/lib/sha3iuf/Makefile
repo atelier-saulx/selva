@@ -1,3 +1,5 @@
+# Copyright (c) 2022 SAULX
+# SPDX-License-Identifier: MIT
 .POSIX:
 include ../../common.mk
 CFLAGS := -std=c99 -fPIC -Wall -Wextra -Wpedantic -O2 -g -I../../include/sha3iuf
