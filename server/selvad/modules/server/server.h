@@ -10,8 +10,6 @@
 #define SERVER_RING_BUF_LEN         128
 #endif
 
-/* TODO Perhaps extracts types from selva_proto with macros */
-
 struct conn_ctx {
     int fd; /*<! The socket associated with this connection. */
     int inuse; /*!< Set if the connection is active. */
@@ -22,7 +20,7 @@ struct conn_ctx {
         CONN_CTX_RECV_STATE_NEW, /*!< Waiting for the next seq; No recv in progress. */
         CONN_CTX_RECV_STATE_FRAGMENT, /*!< Waiting for the next frame of a sequence. */
     } recv_state;
-    uint32_t cur_seqno; /*!< Currently incoming sequence. */
+    typeof_field(struct selva_proto_header, seqno) cur_seqno; /*!< Currently incoming sequence. */
     struct selva_proto_header recv_frame_hdr_buf;
     char *recv_msg_buf; /*!< Buffer for the currently incoming message. */
     size_t recv_msg_buf_size;
@@ -34,9 +32,9 @@ struct conn_ctx {
  */
 struct selva_server_response_out {
     struct conn_ctx *ctx;
-    int8_t cmd;
+    typeof_field(struct selva_proto_header, cmd) cmd;
     typeof_field(struct selva_proto_header, flags) frame_flags;
-    uint32_t seqno;
+    typeof_field(struct selva_proto_header, seqno) seqno;
     size_t buf_i;
     _Alignas(struct selva_proto_header) char buf[SELVA_PROTO_FRAME_SIZE_MAX];
 };
