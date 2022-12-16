@@ -1,6 +1,9 @@
 /**
  * @file test_queue_r.c
  * @brief Test generic thread-safe queue implementation.
+ * Copyright (c) 2022 SAULX
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include <punit.h>

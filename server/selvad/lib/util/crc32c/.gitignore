@@ -1,1 +1,3 @@
+# Copyright (C) 2013, 2021 Mark Adler <madler@alumni.caltech.edu>
+# SPDX-License-Identifier: Zlib
 gen_crc32c_table

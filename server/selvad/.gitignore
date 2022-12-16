@@ -6,3 +6,5 @@
 *.so.*
 *.dylib
 /binaries
+# Selva db dumps
+*.sdb

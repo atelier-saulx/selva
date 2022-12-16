@@ -1,4 +1,7 @@
-# PUnit example project #######################################################
+# Copyright (c) 2022 SAULX
+#
+# SPDX-License-Identifier: MIT
+
 include ../../common.mk
 
 # Add here one or more include directories.

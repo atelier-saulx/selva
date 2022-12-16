@@ -20,6 +20,10 @@ Copyright:
     Copyright (C) 2009-present Facebook, Inc.  All rights reserved.
 License: BSD-2-Clause
 
+Files: server/selvad/lib/sha3iuf/*
+Copyright: Copyright (c) 2020 brainhub
+License: MIT
+
 Files: server/selvad/include/hiredis/*
 Copyright:
     Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>

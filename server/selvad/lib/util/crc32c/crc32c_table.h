@@ -1,5 +1,7 @@
 // crc32c.h
 // Tables and constants for crc32c.c software and hardware calculations.
+// Copyright (C) 2013, 2021 Mark Adler <madler@alumni.caltech.edu>
+// SPDX-License-Identifier: Zlib
 
 
 // Block sizes for three-way parallel crc computation.  LONG and SHORT

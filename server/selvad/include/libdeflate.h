@@ -1,5 +1,7 @@
 /*
  * libdeflate.h - public header for libdeflate
+ * Copyright 2016 Eric Biggers
+ * SPDX-License-Identifier: MIT
  */
 
 #ifndef LIBDEFLATE_H

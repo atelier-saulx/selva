@@ -1,3 +1,9 @@
+<!--
+Copyright (c) 2022 SAULX
+
+SPDX-License-Identifier: MIT
+-->
+
 # RPN Filter Expressions
 
 RPN filter expressions allows creating simple expressions for filtering lookups

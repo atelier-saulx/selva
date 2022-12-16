@@ -1,3 +1,7 @@
+# Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+
 # PUnit example project #######################################################
 
 # Add here one or more include directories.

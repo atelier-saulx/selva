@@ -1,3 +1,9 @@
+<!--
+Copyright (c) 2022 SAULX
+
+SPDX-License-Identifier: MIT
+-->
+
 # Edge
 
 Edge is the part that makes Selva a true graph database, as it allows making

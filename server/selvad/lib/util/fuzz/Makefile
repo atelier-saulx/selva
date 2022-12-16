@@ -1,3 +1,7 @@
+# Copyright (c) 2022 SAULX
+#
+# SPDX-License-Identifier: MIT
+
 CFLAGS := -std=gnu2x -g -O1 -include ../../../include/cdefs.h -I../../../include
 
 strrnchr: strrnchr.c ../cstrings.c

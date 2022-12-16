@@ -1,3 +1,9 @@
+<!--
+Copyright (c) 2022 SAULX
+
+SPDX-License-Identifier: MIT
+-->
+
 # Hierarchy Serialization
 
 Hierarchy trees are serialized starting from each head towards descendants using

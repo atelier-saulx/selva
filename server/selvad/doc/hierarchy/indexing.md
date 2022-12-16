@@ -1,3 +1,9 @@
+<!--
+Copyright (c) 2022 SAULX
+
+SPDX-License-Identifier: MIT
+-->
+
 # Indexing
 
 The indexing system in Selva is completely automatic from the user's point of

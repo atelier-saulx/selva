@@ -1,3 +1,7 @@
+# Copyright (c) 2022 SAULX
+#
+# SPDX-License-Identifier: MIT
+
 JEMALLOC_VER := 5.3.0
 JEMALLOC_CONFIG := --with-version=VERSION \
 				   --with-lg-quantum=3 \
