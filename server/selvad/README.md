@@ -8,6 +8,9 @@ Directory Structure
 - `modules/` contains sources for loadable modules (selva)
 - `lib/` contains libraries that can be used in modules (util, deflate, jmalloc)
 
+Some directories may have a subdirectory called `fuzz/`, that's for fuzzers
+(using LLVM LibFuzzer).
+
 Build Goals
 -----------
 
