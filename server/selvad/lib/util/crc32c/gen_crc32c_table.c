@@ -16,6 +16,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  *
  * Copyright (C) 2013, 2021 Mark Adler <madler@alumni.caltech.edu>
+ * SPDX-License-Identifier: Zlib
  */
 
 /* Generate crc32c_table.h for crc32c.c. */

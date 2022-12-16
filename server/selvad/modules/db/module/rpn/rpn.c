@@ -25,7 +25,7 @@
 #include "selva_set_ops.h"
 #include "rpn.h"
 
-#define RPN_ASSERTS         0
+#define RPN_ASSERTS         1
 
 /*
  * Codes for primitive types.
