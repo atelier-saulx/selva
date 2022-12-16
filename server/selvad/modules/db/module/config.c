@@ -28,7 +28,7 @@ struct selva_glob_config selva_glob_config = {
 static int parse_size_t(void *dst, const char *src)
 {
     long long v;
-    char *endptr;
+    char *endptr = (char *)src;
     size_t *d = (size_t *)dst;
 
     v = strtoull(src, &endptr, 10);
@@ -44,7 +44,7 @@ static int parse_size_t(void *dst, const char *src)
 static int parse_int(void *dst, const char *src)
 {
     long long v;
-    char *endptr;
+    char *endptr = (char *)src;
     int *d = (int *)dst;
 
     v = strtol(src, &endptr, 10);
