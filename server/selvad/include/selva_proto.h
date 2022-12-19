@@ -201,12 +201,16 @@ int selva_proto_verify_frame_chk(
         const void * restrict payload,
         size_t size);
 
+/**
+ * Selva_proto type code to a human readable string.
+ * @param len is optional.
+ */
 #if __has_c_attribute(unsequenced)
 [[unsequenced]]
 #else
 __attribute__((const))
 #endif
-const char *selva_proto_type_to_str(enum selva_proto_data_type type);
+const char *selva_proto_type_to_str(enum selva_proto_data_type type, size_t *len);
 
 /**
  * Parse type from a selva_proto value.

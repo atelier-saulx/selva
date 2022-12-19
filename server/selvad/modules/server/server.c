@@ -4,6 +4,7 @@
  */
 #include <arpa/inet.h>
 #include <dlfcn.h>
+#include <errno.h>
 #include <netinet/tcp.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -53,6 +54,52 @@ int selva_mk_command(int nr, const char *name, selva_cmd_function cmd)
 static selva_cmd_function get_command(int nr)
 {
     return (nr >= 0 && nr < (int)num_elem(commands)) ? commands[nr].cmd_fn : NULL;
+}
+
+/* addr + port + nul */
+#define CONN_STR_LEN (INET_ADDRSTRLEN + 5 + 1)
+static size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize)
+{
+    struct sockaddr_in addr; /*!< Client/peer addr */
+    socklen_t addr_size = sizeof(struct sockaddr_in);
+
+    memset(buf, '\0', bsize); /* bc inet_ntop() may not terminate. */
+    if (unlikely(bsize < CONN_STR_LEN)) {
+        return 0;
+    }
+
+    if (getpeername(ctx->fd, (struct sockaddr *)&addr, &addr_size) == -1) {
+        const int e = errno;
+
+        static_assert(CONN_STR_LEN > 17);
+
+        switch (e) {
+        case ENOBUFS:
+            strcpy(buf, "<sys error>");
+            return 11;
+        case EBADF:
+        case ENOTCONN:
+        case ENOTSOCK:
+            strcpy(buf, "<not connected>");
+            return 15;
+        case EFAULT:
+        case EINVAL:
+        default:
+            strcpy(buf, "<internal error>");
+            return 16;
+        }
+    }
+
+    if (!inet_ntop(AF_INET, &addr.sin_addr, buf, bsize)) {
+        strcpy(buf, "<ntop failed>");
+        return 13;
+    }
+
+    const ssize_t end = strlen(buf);
+    const int n = bsize - end;
+    const int res = snprintf(buf + end, n, ":%d", ntohs(addr.sin_port));
+
+    return (res > 0 && res < n) ? end + n : end;
 }
 
 static void ping(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused) {
@@ -183,8 +230,11 @@ static void on_data(struct event *event, void *arg)
 
     ssize_t frame_bsize = server_recv_frame(ctx);
     if (frame_bsize <= 0) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed (fd: %d): %s",
-                  fd, selva_strerror(frame_bsize));
+        char peer[CONN_STR_LEN];
+
+        conn_to_str(ctx, peer, sizeof(peer));
+        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed (%s): %s",
+                  peer, selva_strerror(frame_bsize));
         evl_end_fd(fd);
         return;
     }
@@ -193,8 +243,10 @@ static void on_data(struct event *event, void *arg)
     const uint32_t seqno = le32toh(hdr->seqno);
     const unsigned frame_state = hdr->flags & SELVA_PROTO_HDR_FFMASK;
 
-    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame. fd: %d bytes: %d seqno: %d",
-              fd,
+    char peer[CONN_STR_LEN];
+    conn_to_str(ctx, peer, sizeof(peer));
+    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame. client: %s bytes: %d seqno: %d",
+              peer,
               (int)frame_bsize,
               (int)seqno);
 
@@ -302,7 +354,7 @@ static void on_connection(struct event *event, void *arg __unused)
     tcp_set_nodelay(new_sockfd);
 
     inet_ntop(AF_INET, &client.sin_addr, buf, sizeof(buf));
-    SELVA_LOG(SELVA_LOGL_INFO, "Received a connection from %s", buf);
+    SELVA_LOG(SELVA_LOGL_INFO, "Received a connection from %s:%d", buf, ntohs(client.sin_port));
 
     conn_ctx->fd = new_sockfd;
     conn_ctx->recv_state = CONN_CTX_RECV_STATE_NEW;

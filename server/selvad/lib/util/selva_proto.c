@@ -34,25 +34,39 @@ int selva_proto_verify_frame_chk(
     return comp_chk == orig_chk;
 }
 
-const char *selva_proto_type_to_str(enum selva_proto_data_type type)
+const char *selva_proto_type_to_str(enum selva_proto_data_type type, size_t *len)
 {
+    size_t tmp;
+
+    if (!len) {
+        len = &tmp;
+    }
+
     switch (type) {
     case SELVA_PROTO_NULL:
+        *len = 4;
         return "null";
     case SELVA_PROTO_ERROR:
+        *len = 5;
         return "error";
     case SELVA_PROTO_DOUBLE:
+        *len = 6;
         return "double";
     case SELVA_PROTO_LONGLONG:
+        *len = 8;
         return "longlong";
     case SELVA_PROTO_STRING:
+        *len = 6;
         return "string";
     case SELVA_PROTO_ARRAY:
+        *len = 5;
         return "array";
     case SELVA_PROTO_ARRAY_END:
+        *len = 9;
         return "array end";
     }
 
+    *len = 7;
     return "invalid";
 }
 

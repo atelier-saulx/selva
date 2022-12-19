@@ -19,12 +19,31 @@
 #define TAB_WIDTH 2
 #define TABS_MAX (80 / TAB_WIDTH / 2)
 
+/*
+ * Ping is special because it has no body/payload.
+ */
 static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 static void cmd_ping_res(const struct cmd *cmd, const void *msg, size_t msg_size);
+
+/*
+ * lscmd request is similar to ping.
+ */
 static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
+
+/*
+ * Currently most commands encode the request arguments using strings and send
+ * back more properly formatted responses (using integers, arrays, etc.). This
+ * will change in the future once we optimize more things and move away from the
+ * Redis ways.
+ */
 static int generic_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size);
 
+/**
+ * A map of Selva commands.
+ * Only a few commands are hardcoded here as the others can be "discovered"
+ * using `lscmd`.
+ */
 static struct cmd commands[254] = {
     [0] = {
         .cmd_id = 0,
@@ -81,7 +100,7 @@ static void cmd_ping_res(const struct cmd *, const void *msg, size_t msg_size)
                 fprintf(stderr, "Invalid string\n");
             }
         } else {
-            fprintf(stderr, "Unexpected response to \"ping\": %d\n", ctrl->type);
+            fprintf(stderr, "ping: Unexpected response value type: %s\n", selva_proto_type_to_str(ctrl->type, NULL));
         }
     } else {
         fprintf(stderr, "Response is shorter than expected\n");
