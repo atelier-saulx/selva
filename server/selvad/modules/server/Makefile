@@ -5,6 +5,7 @@ OBJ := \
 	   server.o \
 	   server_frame.o \
 	   server_send.o \
+	   server_msg.o \
 	   tcp.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -DSELVA_SERVER_MAIN=1

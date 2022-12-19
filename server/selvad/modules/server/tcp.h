@@ -8,3 +8,11 @@ void tcp_set_nodelay(int fd);
 void tcp_unset_nodelay(int fd);
 void tcp_cork(int fd);
 void tcp_uncork(int fd);
+
+#ifndef FUZZER
+#define tcp_read read
+#define tcp_write write
+#define tcp_send send
+#define tcp_sendto sendto
+#define tcp_sendmsg sendmsg
+#endif

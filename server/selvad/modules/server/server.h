@@ -44,4 +44,5 @@ void server_start_workers(void);
 void server_dispatch2worker(struct conn_ctx *restrict ctx, const char *restrict payload, size_t payload_len);
 #endif
 
+int server_recv_message(struct conn_ctx *ctx);
 ssize_t server_recv_frame(struct conn_ctx *ctx);

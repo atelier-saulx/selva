@@ -29,7 +29,7 @@ static int send_frame(int sockfd, const void *buf, size_t len, int flags)
     ssize_t res;
 
 retry:
-    res = send(sockfd, buf, len, flags);
+    res = tcp_send(sockfd, buf, len, flags);
     if (res < 0) {
         switch (errno) {
         case EAGAIN:
@@ -164,7 +164,7 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
     ssize_t r;
 
     /* TODO We might want to do this in a single read and add more buffering to reduce syscall overhead. */
-    r = read(fd, &ctx->recv_frame_hdr_buf, sizeof(ctx->recv_frame_hdr_buf));
+    r = tcp_read(fd, &ctx->recv_frame_hdr_buf, sizeof(ctx->recv_frame_hdr_buf));
     if (r <= 0) {
         /* Drop the connection immediately. */
         return SELVA_PROTO_ECONNRESET;
@@ -188,7 +188,7 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
             ctx->recv_msg_buf_size = new_buf_size;
         }
 
-        r = read(fd, ctx->recv_msg_buf + ctx->recv_msg_buf_i, frame_payload_size);
+        r = tcp_read(fd, ctx->recv_msg_buf + ctx->recv_msg_buf_i, frame_payload_size);
         if (r <= 0) {
             /*
              * Just drop the connection immediately to keep the server side

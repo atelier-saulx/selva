@@ -5,12 +5,8 @@
 #include <arpa/inet.h>
 #include <dlfcn.h>
 #include <errno.h>
-#include <netinet/tcp.h>
 #include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include "endian.h"
 #include "event_loop.h"
@@ -54,52 +50,6 @@ int selva_mk_command(int nr, const char *name, selva_cmd_function cmd)
 static selva_cmd_function get_command(int nr)
 {
     return (nr >= 0 && nr < (int)num_elem(commands)) ? commands[nr].cmd_fn : NULL;
-}
-
-/* addr + port + nul */
-#define CONN_STR_LEN (INET_ADDRSTRLEN + 5 + 1)
-static size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize)
-{
-    struct sockaddr_in addr; /*!< Client/peer addr */
-    socklen_t addr_size = sizeof(struct sockaddr_in);
-
-    memset(buf, '\0', bsize); /* bc inet_ntop() may not terminate. */
-    if (unlikely(bsize < CONN_STR_LEN)) {
-        return 0;
-    }
-
-    if (getpeername(ctx->fd, (struct sockaddr *)&addr, &addr_size) == -1) {
-        const int e = errno;
-
-        static_assert(CONN_STR_LEN > 17);
-
-        switch (e) {
-        case ENOBUFS:
-            strcpy(buf, "<sys error>");
-            return 11;
-        case EBADF:
-        case ENOTCONN:
-        case ENOTSOCK:
-            strcpy(buf, "<not connected>");
-            return 15;
-        case EFAULT:
-        case EINVAL:
-        default:
-            strcpy(buf, "<internal error>");
-            return 16;
-        }
-    }
-
-    if (!inet_ntop(AF_INET, &addr.sin_addr, buf, bsize)) {
-        strcpy(buf, "<ntop failed>");
-        return 13;
-    }
-
-    const ssize_t end = strlen(buf);
-    const int n = bsize - end;
-    const int res = snprintf(buf + end, n, ":%d", ntohs(addr.sin_port));
-
-    return (res > 0 && res < n) ? end + n : end;
 }
 
 static void ping(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused) {
@@ -215,130 +165,39 @@ static void on_data(struct event *event, void *arg)
 {
     const int fd = event->fd;
     struct conn_ctx *ctx = (struct conn_ctx *)arg;
+    int res;
 
-    /*
-     * TODO Currently we don't do frame reassembly for multiple simultaneous
-     *      sequences and expect the client to only send one message sequence
-     *      at time.
-     * TODO Some commands would possibly benefit from streaming support instead
-     *      of buffering the whole request.
-     */
-
-    if (ctx->recv_state == CONN_CTX_RECV_STATE_NEW) {
-        ctx->recv_msg_buf_i = 0;
-    }
-
-    ssize_t frame_bsize = server_recv_frame(ctx);
-    if (frame_bsize <= 0) {
-        char peer[CONN_STR_LEN];
-
-        conn_to_str(ctx, peer, sizeof(peer));
-        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed client: %s err: \"%s\"",
-                  peer, selva_strerror(frame_bsize));
+    /* TODO enum? */
+    res = server_recv_message(ctx);
+    if (res == -1) {
+        /* Drop the connection as requested. */
         evl_end_fd(fd);
-        return;
-    }
-
-    struct selva_proto_header *hdr = &ctx->recv_frame_hdr_buf;
-    const uint32_t seqno = le32toh(hdr->seqno);
-    const unsigned frame_state = hdr->flags & SELVA_PROTO_HDR_FFMASK;
-
-    char peer[CONN_STR_LEN];
-    conn_to_str(ctx, peer, sizeof(peer));
-    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame. client: %s seqno: %d bytes: %d",
-              peer,
-              (int)seqno,
-              (int)frame_bsize);
-
-    if (ctx->recv_state == CONN_CTX_RECV_STATE_NEW) {
-        ctx->cur_seqno = seqno;
-        size_t msg_bsize = le32toh(hdr->msg_bsize);
-
-        /*
-         * This is supposed to be the beginning of a new sequence.
-         */
-        if (!(frame_state & SELVA_PROTO_HDR_FFIRST)) {
-            char peer[CONN_STR_LEN];
-            conn_to_str(ctx, peer, sizeof(peer));
-
-            SELVA_LOG(SELVA_LOGL_WARN, "Sequence tracking error client: %s seqno: %d",
-                      peer,
-                      seqno);
-            /*
-             * Drop the connection.
-             * It's the easiest way because the client might be rogue or
-             * in a broken state.
-             */
-            evl_end_fd(fd);
-            return;
-        }
-
-        /*
-         * msg_bsize isn't necessarily set but if it is then we can alloc a
-         * big enough buffer right away.
-         */
-        if (msg_bsize > SELVA_PROTO_MSG_SIZE_MAX) {
-            /* TODO Send an error instead of dropping the connection. */
-            evl_end_fd(fd);
-            return;
-        } else if (ctx->recv_msg_buf_size < msg_bsize) {
-            ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, msg_bsize);
-            ctx->recv_msg_buf_size = msg_bsize;
-        }
-    } else if (ctx->recv_state == CONN_CTX_RECV_STATE_FRAGMENT) {
-        if (seqno != ctx->cur_seqno) {
-            char peer[CONN_STR_LEN];
-            conn_to_str(ctx, peer, sizeof(peer));
-
-            SELVA_LOG(SELVA_LOGL_WARN, "Discarding an unexpected frame. client: %s seqno: %d",
-                      peer, seqno);
-            /* RFE Drop or send an error? */
-            return;
-        }
-        if (frame_state & SELVA_PROTO_HDR_FFIRST) {
-            char peer[CONN_STR_LEN];
-            conn_to_str(ctx, peer, sizeof(peer));
-
-            SELVA_LOG(SELVA_LOGL_WARN, "Received invalid frame. client: %s seqno: %d",
-                      peer, seqno);
-            /* TODO Send an error or drop? */
-            ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
-            return;
-        }
-    } else {
-        char peer[CONN_STR_LEN];
-        conn_to_str(ctx, peer, sizeof(peer));
-
-        SELVA_LOG(SELVA_LOGL_ERR, "Invalid connection state. client: %s", peer);
-        evl_end_fd(fd); /* Drop the connection. */
-        return;
-    }
-
-    if (frame_state & SELVA_PROTO_HDR_FLAST) {
-        selva_cmd_function cmd;
+    } else if (res == 1) {
+        /* A message was received. */
+        const uint32_t seqno = le32toh(ctx->recv_frame_hdr_buf.seqno);
         struct selva_server_response_out resp = {
             .ctx = ctx,
-            .cmd = hdr->cmd,
+            .cmd = ctx->recv_frame_hdr_buf.cmd,
             .frame_flags = SELVA_PROTO_HDR_FFIRST,
             .seqno = seqno,
             .buf_i = 0,
         };
+        selva_cmd_function cmd;
 
-        cmd = get_command(hdr->cmd);
+        cmd = get_command(resp.cmd);
         if (cmd) {
             cmd(&resp, ctx->recv_msg_buf, ctx->recv_msg_buf_i);
         } else {
             const char msg[] = "Invalid command";
 
-            SELVA_LOG(SELVA_LOGL_WARN, "%s: %d", msg, hdr->cmd);
+            /* TODO Log client */
+            SELVA_LOG(SELVA_LOGL_WARN, "%s: %d", msg, resp.cmd);
             (void)selva_send_error(&resp, SELVA_PROTO_EINVAL, msg, sizeof(msg) - 1);
         }
 
         server_send_end(&resp);
-        ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
-    } else {
-        ctx->recv_state = CONN_CTX_RECV_STATE_FRAGMENT;
     }
+    /* Otherwise we need to wait for more frames. */
 }
 
 static void on_close(struct event *event, void *arg)
