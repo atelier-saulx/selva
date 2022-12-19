@@ -166,7 +166,7 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
     /* TODO We might want to do this in a single read and add more buffering to reduce syscall overhead. */
     r = read(fd, &ctx->recv_frame_hdr_buf, sizeof(ctx->recv_frame_hdr_buf));
     if (r <= 0) {
-        /* TODO Check if we want better error handling. */
+        /* Drop the connection immediately. */
         return SELVA_PROTO_ECONNRESET;
     } else if (r != (ssize_t)sizeof(struct selva_proto_header)) {
         return SELVA_PROTO_EBADMSG;
@@ -190,7 +190,11 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
 
         r = read(fd, ctx->recv_msg_buf + ctx->recv_msg_buf_i, frame_payload_size);
         if (r <= 0) {
-            /* TODO Check if we want better error handling. */
+            /*
+             * Just drop the connection immediately to keep the server side
+             * connection handling simple. The client can handle connection
+             * issues better.
+             */
             return SELVA_PROTO_ECONNRESET;
         } else if (r != (ssize_t)frame_payload_size) {
             return SELVA_PROTO_EBADMSG;

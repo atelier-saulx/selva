@@ -233,7 +233,7 @@ static void on_data(struct event *event, void *arg)
         char peer[CONN_STR_LEN];
 
         conn_to_str(ctx, peer, sizeof(peer));
-        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed (%s): %s",
+        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed client: %s err: \"%s\"",
                   peer, selva_strerror(frame_bsize));
         evl_end_fd(fd);
         return;
@@ -245,20 +245,31 @@ static void on_data(struct event *event, void *arg)
 
     char peer[CONN_STR_LEN];
     conn_to_str(ctx, peer, sizeof(peer));
-    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame. client: %s bytes: %d seqno: %d",
+    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame. client: %s seqno: %d bytes: %d",
               peer,
-              (int)frame_bsize,
-              (int)seqno);
+              (int)seqno,
+              (int)frame_bsize);
 
     if (ctx->recv_state == CONN_CTX_RECV_STATE_NEW) {
         ctx->cur_seqno = seqno;
         size_t msg_bsize = le32toh(hdr->msg_bsize);
 
+        /*
+         * This is supposed to be the beginning of a new sequence.
+         */
         if (!(frame_state & SELVA_PROTO_HDR_FFIRST)) {
-            /* TODO Send an error */
-            /* TODO Better log */
-            SELVA_LOG(SELVA_LOGL_WARN, "Sequence tracking error: %d",
+            char peer[CONN_STR_LEN];
+            conn_to_str(ctx, peer, sizeof(peer));
+
+            SELVA_LOG(SELVA_LOGL_WARN, "Sequence tracking error client: %s seqno: %d",
+                      peer,
                       seqno);
+            /*
+             * Drop the connection.
+             * It's the easiest way because the client might be rogue or
+             * in a broken state.
+             */
+            evl_end_fd(fd);
             return;
         }
 
@@ -267,7 +278,8 @@ static void on_data(struct event *event, void *arg)
          * big enough buffer right away.
          */
         if (msg_bsize > SELVA_PROTO_MSG_SIZE_MAX) {
-            /* TODO Send an error */
+            /* TODO Send an error instead of dropping the connection. */
+            evl_end_fd(fd);
             return;
         } else if (ctx->recv_msg_buf_size < msg_bsize) {
             ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, msg_bsize);
@@ -275,18 +287,30 @@ static void on_data(struct event *event, void *arg)
         }
     } else if (ctx->recv_state == CONN_CTX_RECV_STATE_FRAGMENT) {
         if (seqno != ctx->cur_seqno) {
-            SELVA_LOG(SELVA_LOGL_WARN, "Discarding an unexpected frame. seqno: %d", seqno);
+            char peer[CONN_STR_LEN];
+            conn_to_str(ctx, peer, sizeof(peer));
+
+            SELVA_LOG(SELVA_LOGL_WARN, "Discarding an unexpected frame. client: %s seqno: %d",
+                      peer, seqno);
+            /* RFE Drop or send an error? */
             return;
         }
         if (frame_state & SELVA_PROTO_HDR_FFIRST) {
-            SELVA_LOG(SELVA_LOGL_WARN, "Received invalid frame. seqno: %d", seqno);
-            /* TODO Send an error? */
+            char peer[CONN_STR_LEN];
+            conn_to_str(ctx, peer, sizeof(peer));
+
+            SELVA_LOG(SELVA_LOGL_WARN, "Received invalid frame. client: %s seqno: %d",
+                      peer, seqno);
+            /* TODO Send an error or drop? */
             ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
             return;
         }
     } else {
-        /* TODO disco? */
-        SELVA_LOG(SELVA_LOGL_ERR, "Invalid connection state");
+        char peer[CONN_STR_LEN];
+        conn_to_str(ctx, peer, sizeof(peer));
+
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid connection state. client: %s", peer);
+        evl_end_fd(fd); /* Drop the connection. */
         return;
     }
 
