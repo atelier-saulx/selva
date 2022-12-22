@@ -2,12 +2,9 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
-#include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
-#include <netinet/tcp.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -16,8 +13,6 @@
 #include "jemalloc.h"
 #include "selva_error.h"
 #include "selva_proto.h"
-#define SELVA_SERVER_MAIN 1
-#include "selva_server.h"
 #include "tcp.h"
 #include "server.h"
 

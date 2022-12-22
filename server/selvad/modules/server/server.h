@@ -44,5 +44,38 @@ void server_start_workers(void);
 void server_dispatch2worker(struct conn_ctx *restrict ctx, const char *restrict payload, size_t payload_len);
 #endif
 
+/**
+ * @addtogroup conn
+ * Client connection.
+ * Alloc, free, and describe client connections.
+ * @{
+ */
+
+#ifdef INET_ADDRSTRLEN
+/* addr + port + nul */
+#define CONN_STR_LEN (INET_ADDRSTRLEN + 5 + 1)
+#endif
+
+/**
+ * Allocate a new client connection descriptor.
+ */
+struct conn_ctx *alloc_conn_ctx(void);
+
+/**
+ * Free a client connection descriptor.
+ */
+void free_conn_ctx(struct conn_ctx *ctx);
+
+#ifdef INET_ADDRSTRLEN
+/**
+ * Describe a client connection.
+ */
+size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize);
+#endif
+
+/**
+ * @}
+ */
+
 int server_recv_message(struct conn_ctx *ctx);
 ssize_t server_recv_frame(struct conn_ctx *ctx);

@@ -5,10 +5,8 @@
 #include <arpa/inet.h>
 #include <dlfcn.h>
 #include <errno.h>
-#include <stddef.h>
 #include <string.h>
 #include <unistd.h>
-#include "endian.h"
 #include "event_loop.h"
 #include "module.h"
 #include "selva_error.h"
@@ -22,10 +20,9 @@
 
 #define ENV_PORT_NAME "SELVA_PORT"
 static int selva_port = 3000;
-#define BACKLOG_SIZE 10
-#define MAX_CLIENTS 100 /*!< Maximum number of client connections. */
+#define BACKLOG_SIZE 10 /* TODO Tunable? */
 static int server_sockfd;
-static struct conn_ctx clients[MAX_CLIENTS];
+
 struct {
     selva_cmd_function cmd_fn;
     const char *cmd_name;
@@ -138,39 +135,19 @@ static int new_server(int port)
     return sockfd;
 }
 
-static struct conn_ctx *alloc_conn_ctx(void)
-{
-    struct conn_ctx *ctx = NULL;
-
-    /*
-     * TODO We want to have greater max conns and thus foreach isn't good enough alloc
-     */
-    for (size_t i = 0; i < num_elem(clients); i++) {
-        if (!clients[i].inuse) {
-            ctx = &clients[i];
-            ctx->inuse = 1;
-            break;
-        }
-    }
-
-    return ctx;
-}
-
-static void free_conn_ctx(struct conn_ctx *ctx)
-{
-    ctx->inuse = 0;
-}
-
 static void on_data(struct event *event, void *arg)
 {
     const int fd = event->fd;
     struct conn_ctx *ctx = (struct conn_ctx *)arg;
     int res;
 
-    /* TODO enum? */
     res = server_recv_message(ctx);
-    if (res == -1) {
-        /* Drop the connection as requested. */
+    if (res < 0) {
+        /*
+         * Drop the connection on error.
+         * We can't send an error message because we don't know if the header
+         * data is reliable.
+         */
         evl_end_fd(fd);
     } else if (res == 1) {
         /* A message was received. */

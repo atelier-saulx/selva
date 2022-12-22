@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: MIT
 
 OBJ := \
+	   conn.o \
 	   server.o \
 	   server_frame.o \
-	   server_send.o \
 	   server_msg.o \
+	   server_send.o \
 	   tcp.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -DSELVA_SERVER_MAIN=1
