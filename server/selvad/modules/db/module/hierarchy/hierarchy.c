@@ -3249,14 +3249,14 @@ SelvaHierarchy *Hierarchy_RDBLoad(struct selva_io *io) {
         goto error;
     }
 
+    return hierarchy;
 error:
     if (hierarchy) {
         SelvaModify_DestroyHierarchy(hierarchy);
-        hierarchy = NULL;
     }
     flag_isRdbLoading = 0;
 
-    return hierarchy;
+    return NULL;
 }
 
 static void save_detached_node(struct selva_io *io, SelvaHierarchy *hierarchy, const Selva_NodeId id) {

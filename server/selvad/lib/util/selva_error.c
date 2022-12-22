@@ -17,6 +17,7 @@ static const char * const err2str[-SELVA_INVALID_ERROR + 1] = {
     [-SELVA_ENOENT]                     = (const char *)"ERR_SELVA ENOENT Not found",
     [-SELVA_EEXIST]                     = (const char *)"ERR_SELVA EEXIST Exist",
     [-SELVA_ENOBUFS]                    = (const char *)"ERR_SELVA ENOBUFS No buffer or resource space available",
+    [-SELVA_EIO]                        = (const char *)"ERR_SELVA Input/output error",
     [-SELVA_PROTO_EALREADY]             = (const char *)"ERR_PROTO EALREADY Operation already in progress",
     [-SELVA_PROTO_ENOTSUP]              = (const char *)"ERR_PROTO ENOTSUP Operation not supported",
     [-SELVA_PROTO_EINVAL]               = (const char *)"ERR_PROTO EINVAL Invalid argument/input value",

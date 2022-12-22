@@ -88,7 +88,6 @@ int selva_io_new(const char *filename_str, size_t filename_len, enum selva_io_fl
 
 void selva_io_end(struct selva_io *io)
 {
-    /* TODO hash */
     if (io->flags & SELVA_IO_FLAGS_WRITE) {
         sdb_write_footer(io);
         fflush(io->file);
@@ -97,7 +96,12 @@ void selva_io_end(struct selva_io *io)
 
         err = sdb_read_footer(io);
         if (err) {
-            /* FIXME Handle error */
+            SELVA_LOG(SELVA_LOGL_CRIT, "SDB deserialization failed: %s", selva_strerror(err));
+            /*
+             * It wouldn't be necessary to crash here as hierarchy loading is
+             * sort of safe to fail.
+             */
+            abort();
         }
     }
 

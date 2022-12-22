@@ -38,8 +38,12 @@ size_t sdb_write(const void * ptr, size_t size, size_t count, struct selva_io *i
 
 size_t sdb_read(void * ptr, size_t size, size_t count, struct selva_io *io)
 {
+    size_t r;
+
+    r = fread(ptr, size, count, io->file);
     sha3_Update(&io->hash_c, ptr, count * size);
-    return fread(ptr, size, count, io->file);
+
+    return r;
 }
 
 int sdb_write_header(struct selva_io *io)
@@ -57,7 +61,9 @@ int sdb_write_header(struct selva_io *io)
     sdb_write(created_with, sizeof(char), SELVA_DB_VERSION_SIZE, io);
     sdb_write(selva_db_version_info.running, sizeof(char), SELVA_DB_VERSION_SIZE, io); /* updated_with */
     sdb_write(pad, sizeof(char), sizeof(pad), io);
-    /* TODO Error handling */
+    if (ferror(io->file)) {
+        return SELVA_EIO;
+    }
 
     return 0;
 }
@@ -65,19 +71,20 @@ int sdb_write_header(struct selva_io *io)
 int sdb_read_header(struct selva_io *io)
 {
     char magic[sizeof(magic_start)];
+    char pad[8];
     size_t res;
 
     res = sdb_read(magic, sizeof(char), sizeof(magic), io);
     if (res != sizeof(magic) || memcmp(magic, magic_start, sizeof(magic))) {
-        return SELVA_EINVAL; /* TODO Better error code */
+        return SELVA_EINVAL;
     }
 
     res = sdb_read(selva_db_version_info.created_with, SELVA_DB_VERSION_SIZE, 1, io);
     res += sdb_read(selva_db_version_info.updated_with, SELVA_DB_VERSION_SIZE, 1, io);
-    if (res != 2) {
-        return SELVA_EINVAL; /* TODO Better error code */
+    res += sdb_read(pad, sizeof(char), sizeof(pad), io);
+    if (res != 2 + sizeof(pad)) {
+        return SELVA_EINVAL;
     }
-    fseek(io->file, 8, SEEK_CUR); /* Skip pad */
 
     SELVA_LOG(SELVA_LOGL_INFO,
               "sdb loading. created_with: %.*s updated_with: %.*s",
@@ -91,9 +98,13 @@ int sdb_write_footer(struct selva_io *io)
 {
     const uint8_t *computed_hash;
 
-    computed_hash = sha3_Finalize(&io->hash_c);
     sdb_write(magic_end, sizeof(char), sizeof(magic_end), io);
+
+    computed_hash = sha3_Finalize(&io->hash_c);
     fwrite(computed_hash, sizeof(uint8_t), HASH_SIZE, io->file);
+    if (ferror(io->file)) {
+        return SELVA_EIO;
+    }
 
     return 0;
 }
@@ -107,13 +118,15 @@ int sdb_read_footer(struct selva_io *io)
 
     res = sdb_read(magic, sizeof(char), sizeof(magic), io);
     if (res != sizeof(magic) || memcmp(magic, magic_end, sizeof(magic))) {
-        return SELVA_EINVAL; /* TODO Better error code */
+        SELVA_LOG(SELVA_LOGL_ERR, "Bad magic");
+        return SELVA_EINVAL;
     }
 
     computed_hash = sha3_Finalize(&io->hash_c);
     res = fread(stored_hash, sizeof(uint8_t), sizeof(stored_hash), io->file);
     if (res != HASH_SIZE || memcmp(computed_hash, stored_hash, HASH_SIZE)) {
-        return SELVA_EINVAL; /* TODO Better error code */
+        SELVA_LOG(SELVA_LOGL_ERR, "Hash mismatch res: %zu sz: %zu", res, (size_t)HASH_SIZE);
+        return SELVA_EINVAL;
     }
 
     return 0;
