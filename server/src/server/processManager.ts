@@ -4,7 +4,7 @@ import { EventEmitter } from 'events'
 import chalk from 'chalk'
 
 // const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
-const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every 10 seconds
+const LOAD_MEASUREMENTS_INTERVAL = 10e3 // every 10 seconds
 let cnt = 0
 
 export default class ProcessManager extends EventEmitter {

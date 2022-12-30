@@ -232,7 +232,14 @@ test.after(async (t) => {
 // TODO: in filters
 //jsonb_extract_path_text(from_json jsonb, VARIADIC path_elems text[])
 
-test[!fs.existsSync('/usr/lib/postgresql/12/bin/postgres') ? 'skip' : 'serial']('get - basic value types timeseries', async (t) => {
+test[
+  !(
+    fs.existsSync('/usr/lib/postgresql/12/bin/postgres') ||
+    fs.existsSync('/usr/local/Cellar/postgresql@12')
+  )
+    ? 'skip'
+    : 'serial'
+]('get - basic value types timeseries', async (t) => {
   const client = connect({ port })
 
   // TODO: removet his manual step
