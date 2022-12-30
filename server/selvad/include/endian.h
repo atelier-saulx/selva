@@ -49,6 +49,31 @@ static inline void htoledouble(char buf[8], double x) {
 #endif
 }
 
+static inline double ledoubletoh(const char buf[8]) {
+#if __FLOAT_WORD_ORDER__ == __ORDER_BIG_ENDIAN__
+    char s[8];
+    double x;
+
+    s[0] = buf[4];
+    s[1] = buf[5];
+    s[2] = buf[6];
+    s[3] = buf[7];
+    s[4] = buf[0];
+    s[5] = buf[1];
+    s[6] = buf[2];
+    s[7] = buf[3];
+
+    __builtin_memcpy(&x, s, sizeof(double));
+    return x;
+#else
+    double x;
+
+    __builtin_memcpy(&x, buf, sizeof(double));
+
+    return x;
+#endif
+}
+
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 
 #define htobe16(x) (x)
@@ -102,6 +127,34 @@ static inline void htoledouble(char buf[8], double x) {
 #endif
 }
 
+static inline double ledoubletoh(const char buf[8]) {
+    char s[8];
+    double x;
+
+#if __FLOAT_WORD_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    s[0] = buf[3];
+    s[1] = buf[2];
+    s[2] = buf[1];
+    s[3] = buf[0];
+    s[4] = buf[7];
+    s[5] = buf[6];
+    s[6] = buf[5];
+    s[7] = buf[4];
+#else
+    s[0] = buf[7];
+    s[1] = buf[6];
+    s[2] = buf[5];
+    s[3] = buf[4];
+    s[4] = buf[3];
+    s[5] = buf[2];
+    s[6] = buf[1];
+    s[7] = buf[0];
+#endif
+
+    __builtin_memcpy(&x, s, sizeof(double));
+    return x;
+}
+
 #else
 #error "Machine byte order not supported"
 #endif
@@ -115,8 +168,7 @@ static inline void htoledouble(char buf[8], double x) {
         uint32_t: htole32(v), \
         int32_t: (int32_t)htole32(v), \
         uint64_t: htole64(v), \
-        int64_t: (int64_t)htole64(v), \
-        double: htoledouble(v))
+        int64_t: (int64_t)htole64(v))
 
 /**
  * Type generic LE to Host.
@@ -127,8 +179,6 @@ static inline void htoledouble(char buf[8], double x) {
         uint32_t: le32toh(v), \
         int32_t: (int32_t)le32toh(v), \
         uint64_t: le64toh(v), \
-        int64_t: (int64_t)le64toh(v) \
-        /*double: ledoubletoh(v) */)
-/* TODO ledoubletoh */
+        int64_t: (int64_t)le64toh(v))
 
 #endif /* _SELVA_ENDIAN_H_ */
