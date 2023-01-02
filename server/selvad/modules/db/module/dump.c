@@ -17,11 +17,11 @@
 
 static void send_open_error(
         struct selva_server_response_out *resp,
-        const char *filename_str,
-        size_t filename_len,
+        const struct selva_string *filename,
         enum selva_io_flags flags,
         int err)
 {
+    TO_STR(filename);
     const char *mode = (flags & SELVA_IO_FLAGS_WRITE) ? "write" : "read";
 
     SELVA_LOG(SELVA_LOGL_ERR, "Failed to open the db file \"%.*s\" for %s: %s",
@@ -39,8 +39,6 @@ static void load_db(struct selva_server_response_out *resp, const void *buf, siz
     struct selva_string **argv;
     int argc;
     int err;
-    const char *filename_str;
-    size_t filename_len;
     enum selva_io_flags flags = SELVA_IO_FLAGS_READ;
     struct selva_io *io;
     struct SelvaHierarchy *tmp_hierarchy = main_hierarchy;
@@ -58,11 +56,10 @@ static void load_db(struct selva_server_response_out *resp, const void *buf, siz
         }
         return;
     }
-    filename_str = selva_string_to_str(argv[ARGV_FILENAME], &filename_len);
 
-    err = selva_io_new(filename_str, filename_len, flags, &io);
+    err = selva_io_new(argv[ARGV_FILENAME], flags, &io);
     if (err) {
-        send_open_error(resp, filename_str, filename_len, flags, err);
+        send_open_error(resp, argv[ARGV_FILENAME], flags, err);
         return;
     }
 
@@ -86,8 +83,6 @@ static void save_db(struct selva_server_response_out *resp, const void *buf, siz
     struct selva_string **argv;
     int argc;
     int err;
-    const char *filename_str;
-    size_t filename_len;
     enum selva_io_flags flags = SELVA_IO_FLAGS_WRITE;
     struct selva_io *io;
 
@@ -104,11 +99,10 @@ static void save_db(struct selva_server_response_out *resp, const void *buf, siz
         }
         return;
     }
-    filename_str = selva_string_to_str(argv[ARGV_FILENAME], &filename_len);
 
-    err = selva_io_new(filename_str, filename_len, flags, &io);
+    err = selva_io_new(argv[ARGV_FILENAME], flags, &io);
     if (err) {
-        send_open_error(resp, filename_str, filename_len, flags, err);
+        send_open_error(resp, argv[ARGV_FILENAME], flags, err);
         return;
     }
 

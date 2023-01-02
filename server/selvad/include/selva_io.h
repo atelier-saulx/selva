@@ -41,7 +41,7 @@ SELVA_IO_EXPORT(void, selva_io_get_ver, struct SelvaDbVersionInfo *nfo);
 /**
  * Start a new IO operation.
  */
-SELVA_IO_EXPORT(int, selva_io_new, const char *filename_str, size_t filename_len, enum selva_io_flags flags, struct selva_io **io_out);
+SELVA_IO_EXPORT(int, selva_io_new, const struct selva_string *filename, enum selva_io_flags flags, struct selva_io **io_out);
 
 /**
  * End the IO operation.

@@ -53,9 +53,9 @@ static void exit_read_error(struct selva_io *io, const char *type, const char *w
     abort();
 }
 
-int selva_io_new(const char *filename_str, size_t filename_len, enum selva_io_flags flags, struct selva_io **io_out)
+int selva_io_new(const struct selva_string *filename, enum selva_io_flags flags, struct selva_io **io_out)
 {
-    char *filename;
+    TO_STR(filename);
     const char *mode = (flags & SELVA_IO_FLAGS_WRITE) ? "wb" : "rb";
     struct selva_io *io;
 
@@ -63,13 +63,9 @@ int selva_io_new(const char *filename_str, size_t filename_len, enum selva_io_fl
         return SELVA_EINVAL;
     }
 
-    filename = alloca(filename_len + 1);
-    memcpy(filename, filename_str, filename_len);
-    filename[filename_len] = '\0';
-
     io = selva_malloc(sizeof(*io));
     io->flags = flags;
-    io->file = fopen(filename, mode);
+    io->file = fopen(filename_str, mode);
     if (!io->file) {
         /* TODO Better error handling */
         return SELVA_EGENERAL;
