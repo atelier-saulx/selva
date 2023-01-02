@@ -16,11 +16,11 @@
 #define SELVA_SERVER_MAIN 1
 #include "selva_server.h"
 #include "tcp.h"
+#include "../../tunables.h"
 #include "server.h"
 
 #define ENV_PORT_NAME "SELVA_PORT"
 static int selva_port = 3000;
-#define BACKLOG_SIZE 10 /* TODO Tunable? */
 static int server_sockfd;
 
 struct {
@@ -129,7 +129,7 @@ static int new_server(int port)
         exit(EXIT_FAILURE);
     }
 
-    listen(sockfd, BACKLOG_SIZE);
+    listen(sockfd, SERVER_BACKLOG_SIZE);
     SELVA_LOG(SELVA_LOGL_INFO, "Listening on port: %d", port);
 
     return sockfd;
@@ -167,8 +167,6 @@ static void on_data(struct event *event, void *arg)
         } else {
             const char msg[] = "Invalid command";
 
-            /* TODO Log client */
-            SELVA_LOG(SELVA_LOGL_WARN, "%s: %d", msg, resp.cmd);
             (void)selva_send_error(&resp, SELVA_PROTO_EINVAL, msg, sizeof(msg) - 1);
         }
 
@@ -195,19 +193,14 @@ static void on_connection(struct event *event, void *arg __unused)
     char buf[INET_ADDRSTRLEN];
     struct conn_ctx *conn_ctx = alloc_conn_ctx();
 
-    new_sockfd = accept(event->fd, (struct sockaddr *)&client, (socklen_t*)&c);
-    if (new_sockfd < 0) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Accept failed");
+    if (!conn_ctx) {
+        SELVA_LOG(SELVA_LOGL_WARN, "Maximum number of client connections reached");
         return;
     }
 
-    /*
-     * TODO We want to dealloc this somewhere.
-     * TODO connection timeout support?
-     */
-    if (!conn_ctx) {
-        close(new_sockfd);
-        SELVA_LOG(SELVA_LOGL_WARN, "Maximum number of client connections reached");
+    new_sockfd = accept(event->fd, (struct sockaddr *)&client, (socklen_t*)&c);
+    if (new_sockfd < 0) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Accept failed");
         return;
     }
 

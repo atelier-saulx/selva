@@ -37,6 +37,15 @@
 #define SVECTOR_SLAB_SIZE 4194304
 
 /*
+ * Server tunables.
+ */
+
+/**
+ * Server TCP backlog size.
+ */
+#define SERVER_BACKLOG_SIZE 10
+
+/*
  * Hierarchy tunables.
  */
 
