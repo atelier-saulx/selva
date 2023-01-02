@@ -55,7 +55,6 @@ static void exit_read_error(struct selva_io *io, const char *type, const char *w
 
 int selva_io_new(const struct selva_string *filename, enum selva_io_flags flags, struct selva_io **io_out)
 {
-    TO_STR(filename);
     const char *mode = (flags & SELVA_IO_FLAGS_WRITE) ? "wb" : "rb";
     struct selva_io *io;
 
@@ -65,9 +64,12 @@ int selva_io_new(const struct selva_string *filename, enum selva_io_flags flags,
 
     io = selva_malloc(sizeof(*io));
     io->flags = flags;
-    io->file = fopen(filename_str, mode);
+    io->file = fopen(selva_string_to_str(filename, NULL), mode);
     if (!io->file) {
-        /* TODO Better error handling */
+        /*
+         * fopen() can fail for a dozen reasons, the best we can do is to tell
+         * the caller that we failed to open the file.
+         */
         return SELVA_EGENERAL;
     }
     sha3_Init256(&io->hash_c);
