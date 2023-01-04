@@ -1544,21 +1544,21 @@ static void postprocess_inherit(
 
 /**
  * Find node(s) matching the query.
- * SELVA.HIERARCHY.find lang REDIS_KEY dir [field_name/expr] [edge_filter expr] [index [expr]] [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] [inherit field_names] NODE_IDS [expression] [args...]
- *                                     |   |                 |                  |              |                      |             |            |            |                    |                     |        |            |
- * Traversal method/direction --------/    |                 |                  |              |                      |             |            |            |                    |                     |        |            |
- * Traversed field or expression ---------/                  |                  |              |                      |             |            |            |                    |                     |        |            |
- * Expression to decide whether and edge should be taken ---/                   |              |                      |             |            |            |                    |                     |        |            |
- * Indexing hint --------------------------------------------------------------/               |                      |             |            |            |                    |                     |        |            |
- * Sort order of the results -----------------------------------------------------------------/                       |             |            |            |                    |                     |        |            |
- * Skip the first 1234 - 1 results ----------------------------------------------------------------------------------/              |            |            |                    |                     |        |            |
- * Limit the number of results (Optional) -----------------------------------------------------------------------------------------/             |            |                    |                     |        |            |
- * Merge fields. fields option must be set -----------------------------------------------------------------------------------------------------/             |                    |                     |        |            |
- * Return field values instead of node names ----------------------------------------------------------------------------------------------------------------/                     |                     |        |            |
- * Inherit fields ----------------------------------------------------------------------------------------------------------------------------------------------------------------/                      |        |            |
- * One or more node IDs concatenated (10 chars per ID) -------------------------------------------------------------------------------------------------------------------------------------------------/         |            |
- * RPN filter expression ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------/             |
- * Register arguments for the RPN filter -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------/
+ *
+ * SELVA.HIERARCHY.find
+ * lang
+ * REDIS_KEY
+ * dir [field_name/expr]                            Traversal method/direction
+ * ["edge_filter" expr]                             Expression to decide whether and edge should be visited
+ * ["index" [expr]]                                 Indexing hint
+ * ["order" field asc|desc]                         Sort order of the results
+ * ["offset" 1234]                                  Skip the first 1234 - 1 results
+ * ["limit" 1234]                                   Limit the number of results (Optional)
+ * ["merge" path]                                   Merge fields. fields option must be set
+ * ["fields(_rpn)|inherit_rpn" field_names|expr]    Return field values instead of node names
+ * NODE_IDS                                         One or more node IDs concatenated (10 chars per ID)
+ * [expression]                                     RPN filter expression
+ * [args...]                                        Register arguments for the RPN filter
  *
  * The traversed field is typically either ancestors or descendants but it can
  * be any hierarchy or edge field.
@@ -1586,8 +1586,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     int ARGV_MERGE_VAL       = 5;
     int ARGV_FIELDS_TXT      = 4;
     int ARGV_FIELDS_VAL      = 5;
-    int ARGV_INHERIT_TXT     = 4;
-    int ARGV_INHERIT_VAL     = 5;
     int ARGV_NODE_IDS        = 4;
     int ARGV_FILTER_EXPR     = 5;
     int ARGV_FILTER_ARGS     = 6;
@@ -1607,8 +1605,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     ARGV_MERGE_VAL += i; \
     ARGV_FIELDS_TXT += i; \
     ARGV_FIELDS_VAL += i; \
-    ARGV_INHERIT_TXT += i; \
-    ARGV_INHERIT_VAL += i; \
     ARGV_NODE_IDS += i; \
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
@@ -1780,38 +1776,60 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     RedisModuleString *excluded_fields = NULL;
     __auto_free_rpn_ctx struct rpn_ctx *fields_rpn_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *fields_expression = NULL;
+    __selva_autofree RedisModuleStringList inherit_fields = NULL;
     if (argc > ARGV_FIELDS_VAL) {
-        err = SelvaArgsParser_StringSetList(ctx, &fields, &excluded_fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
-        if (err == SELVA_ENOENT && merge_strategy == MERGE_STRATEGY_NONE) {
-            /*
-             * Note that fields_rpn and merge can't work together because the
-             * field names can't vary in a merge.
-             */
-            const char *expr_str;
+        const char *argv_fields_txt = RedisModule_StringPtrLen(argv[ARGV_FIELDS_TXT], NULL);
 
-            err = SelvaArgParser_StrOpt(&expr_str, "fields_rpn", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
-            if (err == 0) {
-                fields_rpn_ctx = rpn_init(1);
-                fields_expression = rpn_compile(expr_str);
-                if (!fields_expression) {
-                    return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "fields_rpn");
-                }
-            }
-        }
-
-        /*
-         * If fields argument was found.
-         */
-        if (err == 0) {
+        if (!strcmp("fields", argv_fields_txt)) {
             if (merge_strategy == MERGE_STRATEGY_ALL) {
                 /* Having fields set turns a regular merge into a named merge. */
                 merge_strategy = MERGE_STRATEGY_NAMED;
             } else if (merge_strategy != MERGE_STRATEGY_NONE) {
                 return replyWithSelvaErrorf(ctx, err, "Only the regular merge can be used with fields");
             }
+
+            err = SelvaArgsParser_StringSetList(ctx, &fields, &excluded_fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+            if (err) {
+                return replyWithSelvaErrorf(ctx, err, "Parsing fields argument failed");
+            }
+
             SHIFT_ARGS(2);
-        } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "Parsing fields argument failed");
+        } else if (!strcmp("fields_rpn", argv_fields_txt) && merge_strategy == MERGE_STRATEGY_NONE) {
+            const char *expr_str;
+
+            /*
+             * Note that fields_rpn and merge can't work together because the
+             * field names can't vary in a merge.
+             */
+            if (merge_strategy != MERGE_STRATEGY_NONE) {
+                return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "fields_rpn with merge not supported");
+            }
+
+            err = SelvaArgParser_StrOpt(&expr_str, "fields_rpn", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+            if (err) {
+                return replyWithSelvaErrorf(ctx, err, "Parsing fields argument failed");
+            }
+
+            fields_rpn_ctx = rpn_init(1);
+            fields_expression = rpn_compile(expr_str);
+            if (!fields_expression) {
+                return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "fields_rpn");
+            }
+
+            SHIFT_ARGS(2);
+        } else if (!strcmp("inherit_rpn", argv_fields_txt)) {
+            if (merge_strategy != MERGE_STRATEGY_NONE) {
+                return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "inherit with merge not supported");
+            }
+
+#if 0
+            err = SelvaArgsParser_StringList(ctx, &inherit_fields, "inherit", argv[ARGV_INHERIT_TXT], argv[ARGV_INHERIT_VAL]);
+            if (err) {
+                return replyWithSelvaErrorf(ctx, err, "inherit");
+            }
+#endif
+
+            SHIFT_ARGS(2);
         }
     }
     if (merge_strategy != MERGE_STRATEGY_NONE && (!fields || SelvaTraversal_FieldsContains(fields, "*", 1))) {
@@ -1821,22 +1839,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
         /* Merge needs a fields object anyway but it must be empty. */
         fields = SelvaObject_New();
-    }
-
-    __selva_autofree RedisModuleStringList inherit_fields = NULL;
-    if (argc > ARGV_INHERIT_VAL) {
-        err = SelvaArgsParser_StringList(ctx, &inherit_fields, "inherit", argv[ARGV_INHERIT_TXT], argv[ARGV_INHERIT_VAL]);
-        if (err == 0) {
-            if (merge_strategy != MERGE_STRATEGY_NONE) {
-                return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "inherit with merge not supported");
-            }
-
-            SHIFT_ARGS(2);
-        } else if (err != SELVA_ENOENT) {
-            return replyWithSelvaErrorf(ctx, err, "inherit");
-        } else {
-            inherit_fields = NULL;
-        }
     }
 
     /*
