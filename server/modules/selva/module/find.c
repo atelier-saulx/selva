@@ -582,15 +582,6 @@ static int send_node_fields(
     const ssize_t fields_len = SelvaObject_Len(fields, NULL);
     if (fields_len < 0) {
         return fields_len;
-    } else if (!excluded_fields && fields_len == 1 &&
-               SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
-        struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
-
-        err = SelvaObject_ReplyWithObject(ctx, lang, obj, NULL, SELVA_OBJECT_REPLY_BINUMF_FLAG);
-        if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send all fields for node_id: \"%.*s\"",
-                      (int)SELVA_NODE_ID_SIZE, nodeId);
-        }
     } else {
         size_t nr_fields = 0;
 
