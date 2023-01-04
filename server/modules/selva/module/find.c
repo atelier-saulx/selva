@@ -1131,14 +1131,18 @@ static void print_node(
 
     if (args->merge_strategy != MERGE_STRATEGY_NONE) {
         err = send_node_object_merge(ctx, lang, node, args->merge_strategy, args->merge_path, args->fields, merge_nr_fields);
-    } else if (args->fields || (!args->fields_expression && args->inherit_fields)) { /* Predefined list of fields. */
-        err = send_node_fields(ctx, lang, hierarchy, node, args->fields, args->inherit_fields, args->excluded_fields);
-    } else if (args->fields_expression) { /* Select fields using an RPN expression. */
+    } else if (args->fields) { /* Predefined list of fields. */
+        err = send_node_fields(ctx, lang, hierarchy, node, args->fields, NULL, args->excluded_fields);
+    } else if (args->fields_expression || args->inherit_expression) { /* Select fields using an RPN expression. */
+         struct rpn_expression *expr = args->fields_expression ?: args->inherit_expression;
         selvaobject_autofree struct SelvaObject *fields = SelvaObject_New();
+         RedisModuleStringList inherit_fields = NULL; /* TODO */
 
-        err = exec_fields_expression(ctx, hierarchy, node, args->fields_rpn_ctx, args->fields_expression, fields);
+         assert(!(args->fields_expression && args->inherit_expression));
+
+        err = exec_fields_expression(ctx, hierarchy, node, args->fields_rpn_ctx, expr, fields);
         if (!err) {
-            err = send_node_fields(ctx, lang, hierarchy, node, fields, args->inherit_fields, args->excluded_fields);
+            err = send_node_fields(ctx, lang, hierarchy, node, fields, inherit_fields, args->excluded_fields);
         }
     } else { /* Otherwise the nodeId is sent. */
         Selva_NodeId nodeId;
@@ -1776,7 +1780,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     RedisModuleString *excluded_fields = NULL;
     __auto_free_rpn_ctx struct rpn_ctx *fields_rpn_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *fields_expression = NULL;
-    __selva_autofree RedisModuleStringList inherit_fields = NULL;
+    __auto_free_rpn_expression struct rpn_expression *inherit_expression = NULL;
     if (argc > ARGV_FIELDS_VAL) {
         const char *argv_fields_txt = RedisModule_StringPtrLen(argv[ARGV_FIELDS_TXT], NULL);
 
@@ -1818,16 +1822,23 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
             SHIFT_ARGS(2);
         } else if (!strcmp("inherit_rpn", argv_fields_txt)) {
+            const char *expr_str;
+
             if (merge_strategy != MERGE_STRATEGY_NONE) {
                 return replyWithSelvaErrorf(ctx, SELVA_EINVAL, "inherit with merge not supported");
             }
 
-#if 0
-            err = SelvaArgsParser_StringList(ctx, &inherit_fields, "inherit", argv[ARGV_INHERIT_TXT], argv[ARGV_INHERIT_VAL]);
+            /* TODO arg parser isn't technically needed here */
+            err = SelvaArgParser_StrOpt(&expr_str, "inherit_rpn", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
             if (err) {
-                return replyWithSelvaErrorf(ctx, err, "inherit");
+                return replyWithSelvaErrorf(ctx, err, "Parsing inherit_rpn argument failed");
             }
-#endif
+
+            fields_rpn_ctx = rpn_init(1);
+            inherit_expression = rpn_compile(expr_str);
+            if (!inherit_expression) {
+                return replyWithSelvaErrorf(ctx, SELVA_RPN_ECOMP, "inherit_rpn");
+            }
 
             SHIFT_ARGS(2);
         }
@@ -1877,7 +1888,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
     const RedisModuleString *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
-    if (inherit_fields) {
+    if (inherit_expression) {
         SVector_Init(&traverse_result, HIERARCHY_EXPECTED_RESP_LEN, NULL);
     } else if (order != SELVA_RESULT_ORDER_NONE) {
         SelvaTraversalOrder_InitOrderResult(&traverse_result, order, limit);
@@ -1893,21 +1904,6 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         if (limit != -1 && order == SELVA_RESULT_ORDER_NONE) {
             nr_index_hints = 0;
         }
-
-        /*
-         * The client must never try to index by inherit field because the
-         * indexing system doesn't do inherit nor would track changes over
-         * inherit.
-         */
-#if 0
-        /*
-         * Inherit and indexing are incompatible because we don't track field
-         * changes over inherited fields.
-         */
-        if (inherit_fields) {
-            nr_index_hints = 0;
-        }
-#endif
     }
 
     /*
@@ -1986,7 +1982,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .send_param.fields = fields,
             .send_param.fields_rpn_ctx = fields_rpn_ctx,
             .send_param.fields_expression = fields_expression,
-            .send_param.inherit_fields = inherit_fields,
+            .send_param.inherit_expression = inherit_expression,
             .send_param.excluded_fields = excluded_fields,
             .send_param.order = order,
             .send_param.order_field = order_by_field,
@@ -2008,7 +2004,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
                 postprocess = NULL;
             }
         } else {
-            if (inherit_fields) {
+            if (inherit_expression) {
                 /* This will also handle sorting if it was requested. */
                 args.process_node = &process_node_inherit;
                 postprocess = &postprocess_inherit;
@@ -2115,7 +2111,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             .fields = fields,
             .fields_rpn_ctx = fields_rpn_ctx,
             .fields_expression = fields_expression,
-            .inherit_fields = inherit_fields,
+            .inherit_expression = inherit_expression,
             .excluded_fields = excluded_fields,
         };
 
