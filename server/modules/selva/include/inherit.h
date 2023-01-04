@@ -40,7 +40,7 @@ int Inherit_FieldValue(
  * @param hierarchy is a pointer to the hierarchy.
  * @param lang an optional lang list.
  * @param node_id is the starting node_id.
- * @param field_names is an array of pointers to field names.
+ * @param types_field_names is an array of pointers to field names. Format: `^ty:field`
  * @param Returns the number of fields sent.
  */
 size_t Inherit_SendFields(
@@ -48,9 +48,7 @@ size_t Inherit_SendFields(
         struct SelvaHierarchy *hierarchy,
         RedisModuleString *lang,
         const Selva_NodeId node_id,
-        const Selva_NodeType *types,
-        size_t nr_types,
-        RedisModuleString **field_names,
+        RedisModuleString **types_field_names,
         size_t nr_field_names);
 
 #endif /* _SELVA_INHERIT_H_ */

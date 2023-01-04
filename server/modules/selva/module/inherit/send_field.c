@@ -23,14 +23,20 @@ static int send_field_value(
         RedisModuleString *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        RedisModuleString *full_field,
+        const char *full_field_str,
+        size_t full_field_len,
         const char *field_str,
         size_t field_len);
 
-static int send_edge_field_value(RedisModuleCtx *ctx, const Selva_NodeId node_id, RedisModuleString *full_field, struct EdgeField *edge_field) {
+static int send_edge_field_value(
+        RedisModuleCtx *ctx,
+        const Selva_NodeId node_id,
+        const char *full_field_str,
+        size_t full_field_len,
+        struct EdgeField *edge_field) {
     RedisModule_ReplyWithArray(ctx, 3);
     RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
-    RedisModule_ReplyWithString(ctx, full_field);
+    RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len);
     replyWithEdgeField(ctx, edge_field);
 
     return 0;
@@ -57,7 +63,8 @@ static int send_edge_field_deref_value(
         RedisModuleCtx *ctx,
         SelvaHierarchy *hierarchy,
         RedisModuleString *lang,
-        RedisModuleString *full_field,
+        const char *full_field_str,
+        size_t full_field_len,
         const struct EdgeField *edge_field,
         const char *field_str,
         size_t field_len) {
@@ -75,8 +82,6 @@ static int send_edge_field_deref_value(
          * It's a wildcard and we should send the whole node object excluding
          * reference fields.
          */
-        TO_STR(full_field);
-
         RedisModule_ReplyWithArray(ctx, 3);
         RedisModule_ReplyWithStringBuffer(ctx, nodeId, Selva_NodeIdLen(nodeId)); /* The actual node_id. */
         RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len - 2); /* -2 to remove the `.*` suffix */
@@ -89,7 +94,7 @@ static int send_edge_field_deref_value(
             return SELVA_ENOENT; /* RFE Should we return SELVA_HIERARCHY_ENOENT? */
         }
 
-        return send_field_value(ctx, hierarchy, lang, node, obj, full_field, field_str, field_len);
+        return send_field_value(ctx, hierarchy, lang, node, obj, full_field_str, full_field_len, field_str, field_len);
     }
 
     return 0;
@@ -100,7 +105,8 @@ static int send_object_field_value(
         RedisModuleString *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        RedisModuleString *full_field,
+        const char *full_field_str,
+        size_t full_field_len,
         const char *field_str,
         size_t field_len) {
     int err = SELVA_ENOENT;
@@ -112,7 +118,7 @@ static int send_object_field_value(
 
         RedisModule_ReplyWithArray(ctx, 3);
         RedisModule_ReplyWithStringBuffer(ctx, node_id, Selva_NodeIdLen(node_id));
-        RedisModule_ReplyWithString(ctx, full_field);
+        RedisModule_ReplyWithStringBuffer(ctx, full_field_str, full_field_len);
 
         err = SelvaObject_ReplyWithObjectStr(ctx, lang, obj, field_str, field_len, SELVA_OBJECT_REPLY_BINUMF_FLAG);
         if (err) {
@@ -129,7 +135,8 @@ static int send_field_value(
         RedisModuleString *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        RedisModuleString *full_field,
+        const char *full_field_str,
+        size_t full_field_len,
         const char *field_str,
         size_t field_len) {
     struct EdgeField *edge_field;
@@ -144,7 +151,7 @@ static int send_field_value(
 
         SelvaHierarchy_GetNodeId(node_id, node);
 
-        return send_edge_field_value(ctx, node_id, full_field, edge_field);
+        return send_edge_field_value(ctx, node_id, full_field_str, full_field_len, edge_field);
     } else {
         /*
          * If field was not an edge field perhaps a substring of field is an edge field.
@@ -157,13 +164,13 @@ static int send_field_value(
                 const char *rest_str = field_str + n + 1;
                 const size_t rest_len = field_len - n - 1;
 
-                return send_edge_field_deref_value(ctx, hierarchy, lang, full_field, edge_field, rest_str, rest_len);
+                return send_edge_field_deref_value(ctx, hierarchy, lang, full_field_str, full_field_len, edge_field, rest_str, rest_len);
             }
         }
     }
 
     /* Finally try from a node object field. */
-    return send_object_field_value(ctx, lang, node, obj, full_field, field_str, field_len);
+    return send_object_field_value(ctx, lang, node, obj, full_field_str, full_field_len, field_str, field_len);
 }
 
 int Inherit_SendField(
@@ -172,8 +179,9 @@ int Inherit_SendField(
         RedisModuleString *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        RedisModuleString *full_field,
+        const char *full_field_str,
+        size_t full_field_len,
         const char *field_str,
         size_t field_len) {
-    return send_field_value(ctx, hierarchy, lang, node, obj, full_field, field_str, field_len);
+    return send_field_value(ctx, hierarchy, lang, node, obj, full_field_str, full_field_len, field_str, field_len);
 }

@@ -608,7 +608,7 @@ static int send_node_fields(
 
             size_t nr_inherit_fields = count_inherit_fields(inherit_fields);
             nr_fields += Inherit_SendFields(ctx, hierarchy, lang,
-                                            nodeId, NULL, 0,
+                                            nodeId,
                                             inherit_fields, nr_inherit_fields);
         }
         RedisModule_ReplySetArrayLength(ctx, 2 * nr_fields);

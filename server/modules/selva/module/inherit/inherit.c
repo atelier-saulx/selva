@@ -2,6 +2,7 @@
  * Copyright (c) 2022 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <alloca.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -9,8 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "redismodule.h"
-#include "selva.h"
+#include "bitmap.h"
 #include "cstrings.h"
+#include "selva.h"
 #include "svector.h"
 #include "arg_parser.h"
 #include "hierarchy.h"
@@ -35,10 +37,9 @@ struct InheritFieldValue_Args {
 struct InheritSendFields_Args {
     size_t first_node; /*!< We ignore the type of the first node. */
     size_t nr_fields;
-    size_t nr_types;
-    const Selva_NodeType *types;
     RedisModuleString *lang;
     RedisModuleString **field_names;
+    struct bitmap *found;
     ssize_t nr_results; /*!< Number of results sent. */
 };
 
@@ -144,36 +145,66 @@ int Inherit_FieldValue(
     return SelvaHierarchy_Traverse(ctx, hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
 }
 
+// TODO Add pure
+static void parse_type_and_field(const char *str, size_t len, const char **types_str, size_t *types_len, const char **name_str, size_t *name_len) {
+    if (len < 2 || str[0] != '^') {
+        *name_str = NULL;
+        *name_len = 0;
+        *types_str = NULL;
+        *types_len = 0;
+        return;
+    }
+
+    *types_str = str + 1;
+    *name_str = strchr(str + 1, ':'); /* TODO len limited */
+    if (*name_str) {
+        (*name_str)++;
+    }
+
+    *name_len = (size_t)((str + len) - *name_str);
+    *types_len = (size_t)(*name_str - *types_str - 1);
+}
+
 static int Inherit_SendFields_NodeCb(
         RedisModuleCtx *ctx,
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         void *arg) {
     struct InheritSendFields_Args *restrict args = (struct InheritSendFields_Args *)arg;
+    const int first_node = args->first_node;
     struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
     int err;
 
-    /*
-     * Check that the node is of an accepted type.
-     */
-    if (likely(!args->first_node)) {
-        if (!is_type_match(node, args->types, args->nr_types)) {
-            /*
-             * This node type is not accepted and we don't need to check whether
-             * the field set.
-             */
-            return 0;
-        }
-    } else {
+    if (unlikely(first_node)) {
         args->first_node = 0;
     }
 
     for (size_t i = 0; i < args->nr_fields; i++) {
-        RedisModuleString *field_name = args->field_names[i];
-
         /* Field already found. */
-        if (!field_name) {
+        if (bitmap_get(args->found, i)) {
             continue;
+        }
+
+        RedisModuleString *types_and_field = args->field_names[i];
+        const char *types_str;
+        size_t types_len;
+        const char *field_name_str;
+        size_t field_name_len;
+        TO_STR(types_and_field);
+
+        parse_type_and_field(types_and_field_str, types_and_field_len, &types_str, &types_len, &field_name_str, &field_name_len);
+        if (!types_str || !field_name_str || field_name_len == 0) {
+            /* Invalid inherit string. */
+            continue;
+        }
+
+        if (!first_node && !is_type_match(node, (const char (*)[SELVA_NODE_TYPE_SIZE])types_str, types_len / sizeof(Selva_NodeType))) {
+            /*
+             * This node type is not accepted and we don't need to check whether
+             * the field set.
+             * We accept any type for the first node.
+             */
+            return 0;
         }
 
         /*
@@ -181,13 +212,12 @@ static int Inherit_SendFields_NodeCb(
          * The response should always start like this: [node_id, field_name, ...]
          * but we don't send the header yet.
          */
-        TO_STR(field_name);
         err = Inherit_SendFieldFind(ctx, hierarchy, args->lang,
-                                node, obj,
-                                field_name, /* Initially full_field is the same as field_name. */
-                                field_name_str, field_name_len);
+                                    node, obj,
+                                    field_name_str, field_name_len, /* Initially full_field is the same as field_name. */
+                                    field_name_str, field_name_len);
         if (err == 0) { /* found */
-            args->field_names[i] = NULL; /* No need to look for this one anymore. */
+            bitmap_set(args->found, i); /* No need to look for this field anymore. */
             args->nr_results++;
 
             /* Stop traversing if all fields were found. */
@@ -203,9 +233,9 @@ static int Inherit_SendFields_NodeCb(
              * SELVA_ENOENT is expected as not all nodes have all fields set;
              * Any other error is unexpected.
              */
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%s\" error: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%.*s\" error: %s\n",
                       (int)SELVA_NODE_ID_SIZE, nodeId,
-                      RedisModule_StringPtrLen(field_name, NULL),
+                      (int)field_name_len, field_name_str,
                       getSelvaErrorStr(err));
         }
     }
@@ -218,16 +248,12 @@ int Inherit_SendFields(
         struct SelvaHierarchy *hierarchy,
         RedisModuleString *lang,
         const Selva_NodeId node_id,
-        const Selva_NodeType *types,
-        size_t nr_types,
-        RedisModuleString **field_names,
+        RedisModuleString **types_field_names,
         size_t nr_field_names) {
     struct InheritSendFields_Args args = {
-        .first_node = 1,
-        .nr_types = nr_types,
-        .types = types,
         .lang = lang,
-        .field_names = RedisModule_PoolAlloc(ctx, nr_field_names * sizeof(RedisModuleString *)),
+        .first_node = 1,
+        .field_names = types_field_names,
         .nr_fields = nr_field_names,
         .nr_results = 0,
     };
@@ -237,7 +263,10 @@ int Inherit_SendFields(
     };
     int err;
 
-    memcpy(args.field_names, field_names, nr_field_names * sizeof(RedisModuleString *));
+    args.found = alloca(BITMAP_ALLOC_SIZE(nr_field_names));
+    args.found->nbits = nr_field_names;
+    bitmap_erase(args.found);
+
     err = SelvaHierarchy_Traverse(ctx, hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
     if (err) {
         /* TODO Better error handling? */
@@ -287,7 +316,7 @@ static int InheritCommand_NodeCb(
         TO_STR(field_name);
         err = Inherit_SendField(ctx, hierarchy, args->lang,
                                 node, obj,
-                                field_name, /* Initially full_field is the same as field_name. */
+                                field_name_str, field_name_len, /* Initially full_field is the same as field_name. */
                                 field_name_str, field_name_len);
         if (err == 0) { /* found */
             args->field_names[i] = NULL; /* No need to look for this one anymore. */
