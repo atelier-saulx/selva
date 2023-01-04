@@ -541,6 +541,20 @@ static size_t send_node_fields_named(
     return nr_fields;
 }
 
+static size_t count_inherit_fields(RedisModuleStringList inherit_fields) {
+    size_t nr_inherit_fields;
+    RedisModuleStringList s = inherit_fields;
+
+    /*
+     * Counting the fields is easy because we know the list ends with
+     * a NULL pointer.
+     */
+    while (*s++);
+    nr_inherit_fields = s - inherit_fields - 1;
+
+    return nr_inherit_fields;
+}
+
 /**
  * Send node fields to the client.
  */
@@ -552,9 +566,7 @@ static int send_node_fields(
         struct SelvaObject *fields,
         RedisModuleStringList inherit_fields,
         RedisModuleString *excluded_fields) {
-    const char wildcard[2] = { WILDCARD_CHAR, '\0' };
     Selva_NodeId nodeId;
-    int err;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
 
@@ -594,17 +606,10 @@ static int send_node_fields(
              * system.
              */
 
-            size_t nr_inherit_fields;
-            RedisModuleStringList s = inherit_fields;
-
-            /*
-             * Counting the fields is easy because we know the list ends with
-             * a NULL pointer.
-             */
-            while (*s++);
-            nr_inherit_fields = s - inherit_fields - 1;
-
-            nr_fields += Inherit_SendFields(ctx, hierarchy, lang, nodeId, inherit_fields, nr_inherit_fields);
+            size_t nr_inherit_fields = count_inherit_fields(inherit_fields);
+            nr_fields += Inherit_SendFields(ctx, hierarchy, lang,
+                                            nodeId, NULL, 0,
+                                            inherit_fields, nr_inherit_fields);
         }
         RedisModule_ReplySetArrayLength(ctx, 2 * nr_fields);
     }
