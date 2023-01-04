@@ -48,6 +48,8 @@ size_t Inherit_SendFields(
         struct SelvaHierarchy *hierarchy,
         RedisModuleString *lang,
         const Selva_NodeId node_id,
+        const Selva_NodeType *types,
+        size_t nr_types,
         RedisModuleString **field_names,
         size_t nr_field_names);
 

@@ -33,7 +33,10 @@ struct InheritFieldValue_Args {
 };
 
 struct InheritSendFields_Args {
+    size_t first_node; /*!< We ignore the type of the first node. */
     size_t nr_fields;
+    size_t nr_types;
+    const Selva_NodeType *types;
     RedisModuleString *lang;
     RedisModuleString **field_names;
     ssize_t nr_results; /*!< Number of results sent. */
@@ -49,6 +52,26 @@ struct InheritCommand_Args {
     ssize_t nr_results; /*!< Number of results sent. */
 };
 
+static int is_type_match(struct SelvaHierarchyNode *node, const Selva_NodeType *types, size_t nr_types)
+{
+    Selva_NodeId node_id;
+
+    if (nr_types == 0) {
+        /* Wildcard */
+        return 1;
+    }
+
+    SelvaHierarchy_GetNodeId(node_id, node);
+
+    for (size_t i = 0; i < nr_types; i++) {
+        if (!memcmp(types[i], node_id, SELVA_NODE_TYPE_SIZE)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 static int Inherit_FieldValue_NodeCb(
         RedisModuleCtx *ctx __unused,
         struct SelvaHierarchy *hierarchy,
@@ -62,15 +85,7 @@ static int Inherit_FieldValue_NodeCb(
      * Check that the node is of an accepted type.
      */
     if (likely(!args->first_node)) {
-        Selva_NodeId nodeId;
-        int match = 0;
-
-        SelvaHierarchy_GetNodeId(nodeId, node);
-
-        for (size_t i = 0; i < args->nr_types; i++) {
-            match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
-        }
-        if (!match && args->nr_types > 0) {
+        if (!is_type_match(node, args->types, args->nr_types)) {
             /*
              * This node type is not accepted and we don't need to check whether
              * the field set.
@@ -138,6 +153,21 @@ static int Inherit_SendFields_NodeCb(
     struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
     int err;
 
+    /*
+     * Check that the node is of an accepted type.
+     */
+    if (likely(!args->first_node)) {
+        if (!is_type_match(node, args->types, args->nr_types)) {
+            /*
+             * This node type is not accepted and we don't need to check whether
+             * the field set.
+             */
+            return 0;
+        }
+    } else {
+        args->first_node = 0;
+    }
+
     for (size_t i = 0; i < args->nr_fields; i++) {
         RedisModuleString *field_name = args->field_names[i];
 
@@ -188,9 +218,14 @@ int Inherit_SendFields(
         struct SelvaHierarchy *hierarchy,
         RedisModuleString *lang,
         const Selva_NodeId node_id,
+        const Selva_NodeType *types,
+        size_t nr_types,
         RedisModuleString **field_names,
         size_t nr_field_names) {
     struct InheritSendFields_Args args = {
+        .first_node = 1,
+        .nr_types = nr_types,
+        .types = types,
         .lang = lang,
         .field_names = RedisModule_PoolAlloc(ctx, nr_field_names * sizeof(RedisModuleString *)),
         .nr_fields = nr_field_names,
@@ -225,15 +260,7 @@ static int InheritCommand_NodeCb(
      * Check that the node is of an accepted type.
      */
     if (likely(!args->first_node)) {
-        Selva_NodeId nodeId;
-        int match = 0;
-
-        SelvaHierarchy_GetNodeId(nodeId, node);
-
-        for (size_t i = 0; i < args->nr_types; i++) {
-            match |= memcmp(args->types[i], nodeId, SELVA_NODE_TYPE_SIZE) == 0;
-        }
-        if (!match && args->nr_types > 0) {
+        if (!is_type_match(node, args->types, args->nr_types)) {
             /*
              * This node type is not accepted and we don't need to check whether
              * the field set.
