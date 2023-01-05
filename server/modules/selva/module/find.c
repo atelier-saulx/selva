@@ -13,6 +13,7 @@
 #include <tgmath.h>
 #include "redismodule.h"
 #include "selva.h"
+#include "jemalloc.h"
 #include "auto_free.h"
 #include "arg_parser.h"
 #include "ptag.h"
@@ -1076,12 +1077,15 @@ static int exec_fields_expression(
         struct SelvaHierarchyNode *node,
         struct rpn_ctx *rpn_ctx,
         const struct rpn_expression *expr,
-        struct SelvaObject *fields) {
+        struct SelvaObject *fields,
+        RedisModuleString ***inherit) {
     Selva_NodeId nodeId;
     struct SelvaSet set;
     enum rpn_error rpn_err;
     struct SelvaSetElement *el;
-    size_t i;
+    size_t i_fields;
+    size_t i_inherit;
+    RedisModuleString **tmp_inherit_fields = NULL;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
     rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
@@ -1098,18 +1102,30 @@ static int exec_fields_expression(
         return SELVA_EGENERAL;
     }
 
-    i = 0;
+    i_fields = 0;
+    i_inherit = 0;
     SELVA_SET_RMS_FOREACH(el, &set) {
-        const size_t key_len = (size_t)(log10(i + 1)) + 1;
-        char key_str[key_len + 1];
+        RedisModuleString *field_name = RedisModule_HoldString(NULL, el->value_rms);
+        const char *field_name_str = RedisModule_StringPtrLen(el->value_rms, NULL);
 
-        snprintf(key_str, key_len + 1, "%zu", i);
-        SelvaObject_AddArrayStr(fields, key_str, key_len, SELVA_OBJECT_STRING, RedisModule_HoldString(NULL, el->value_rms));
-        i++;
+        if (field_name_str[0] == '^') { /* inherit */
+            tmp_inherit_fields = selva_realloc(tmp_inherit_fields, i_inherit + 1);
+
+            tmp_inherit_fields[i_inherit] = field_name;
+            i_inherit++;
+        } else { /* no inherit */
+            const size_t key_len = (size_t)(log10(i_fields + 1)) + 1;
+            char key_str[key_len + 1];
+
+            snprintf(key_str, key_len + 1, "%zu", i_fields);
+            SelvaObject_AddArrayStr(fields, key_str, key_len, SELVA_OBJECT_STRING, field_name);
+            i_fields++;
+        }
     }
 
     SelvaSet_Destroy(&set);
 
+    *inherit = tmp_inherit_fields;
     return 0;
 }
 
@@ -1136,13 +1152,16 @@ static void print_node(
     } else if (args->fields_expression || args->inherit_expression) { /* Select fields using an RPN expression. */
          struct rpn_expression *expr = args->fields_expression ?: args->inherit_expression;
         selvaobject_autofree struct SelvaObject *fields = SelvaObject_New();
-         RedisModuleStringList inherit_fields = NULL; /* TODO */
+         RedisModuleStringList inherit_fields = NULL; /* allocated by exec_fields_expression() */
 
          assert(!(args->fields_expression && args->inherit_expression));
 
-        err = exec_fields_expression(ctx, hierarchy, node, args->fields_rpn_ctx, expr, fields);
+        err = exec_fields_expression(ctx, hierarchy, node, args->fields_rpn_ctx, expr, fields, &inherit_fields);
         if (!err) {
             err = send_node_fields(ctx, lang, hierarchy, node, fields, inherit_fields, args->excluded_fields);
+        }
+        if (inherit_fields) {
+            selva_free(inherit_fields);
         }
     } else { /* Otherwise the nodeId is sent. */
         Selva_NodeId nodeId;
@@ -1798,7 +1817,7 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
             }
 
             SHIFT_ARGS(2);
-        } else if (!strcmp("fields_rpn", argv_fields_txt) && merge_strategy == MERGE_STRATEGY_NONE) {
+        } else if (!strcmp("fields_rpn", argv_fields_txt)) {
             const char *expr_str;
 
             /*
