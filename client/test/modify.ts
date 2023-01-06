@@ -115,6 +115,21 @@ test.beforeEach(async (t) => {
           value: {
             type: 'number',
           },
+          obj: {
+            type: 'object',
+            properties: {
+              value: { type: 'int' },
+              rec: {
+                type: 'record',
+                values: {
+                  type: 'object',
+                  properties: {
+                    value: { type: 'number' },
+                  },
+                },
+              },
+            },
+          },
         },
       },
       otherTestThing: {
@@ -1031,6 +1046,76 @@ test.serial('$increment, $default', async (t) => {
     await client.redis.selva_object_get('', 'viDingDong', 'title.en'),
     'title',
     'does not overwrite if value exists'
+  )
+
+  await client.set({
+    $id: 'viHelloYes',
+    obj: {
+      value: {
+        $default: 100,
+        $increment: 10,
+      },
+      rec: {
+        test1: {
+          value: {
+            $default: 10,
+            $increment: 11,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viHelloYes',
+      obj: true,
+    }),
+    {
+      obj: {
+        value: 100,
+        rec: {
+          test1: {
+            value: 10,
+          },
+        },
+      },
+    }
+  )
+
+  await client.set({
+    $id: 'viHelloYes',
+    obj: {
+      value: {
+        $default: 100,
+        $increment: 10,
+      },
+      rec: {
+        test1: {
+          value: {
+            $default: 11,
+            $increment: 11,
+          },
+        },
+      },
+    },
+  })
+
+  t.deepEqual(
+    await client.get({
+      $id: 'viHelloYes',
+      obj: true,
+    }),
+    {
+      obj: {
+        value: 110,
+        rec: {
+          test1: {
+            value: 21,
+          },
+        },
+      },
+    }
   )
 
   await client.delete('root')
