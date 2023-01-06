@@ -30,11 +30,13 @@ import { mkIndex } from './indexing'
 
 function makeFieldsString(
   schema: Schema,
-  fieldsByType: Map<string, Set<string>>
+  fieldsByType: Map<string, Set<string>>,
+  isInherit: boolean = false
 ): [string, string] {
   const fields = fieldsByType.get('$any')
 
   if (
+    isInherit ||
     fieldsByType.size > 1 ||
     (fieldsByType.size === 1 && !fieldsByType.has('$any'))
   ) {
@@ -61,7 +63,10 @@ function makeFieldsString(
       byType[type] = { $all: [...allFields] }
     }
 
-    return ['fields_rpn', bfsExpr2rpn(schema.types, byType)]
+    return [
+      isInherit ? 'inherit_rpn' : 'fields_rpn',
+      bfsExpr2rpn(schema.types, byType),
+    ]
   }
 
   let str = ''
@@ -91,9 +96,14 @@ function parseGetOpts(
   nestedMapping?: Record<string, { targetField?: string[]; default?: any }>
 ): [
   Map<string, Set<string>>,
-  Record<string, { targetField?: string[]; default?: any }>,
+  Record<
+    string,
+    { targetField?: string[]; default?: any; isInherit?: boolean }
+  >,
+  boolean,
   boolean
 ] {
+  let isInherit = false
   const pathPrefix = path === '' ? '' : path + '.'
   const fields: Map<string, Set<string>> = new Map()
   if (!fields.has(type)) {
@@ -104,6 +114,7 @@ function parseGetOpts(
     {
       targetField?: string[]
       default?: any
+      isInherit?: boolean
     }
   > = nestedMapping || {}
 
@@ -141,6 +152,15 @@ function parseGetOpts(
           mapping[$field].targetField.push(path)
         }
       }
+    } else if (k === '$inherit') {
+      // TODO: support inherit type filters
+      fields.get(type).add(`^:${path}`)
+      if (mapping[path]) {
+        mapping[path].isInherit = true
+      } else {
+        mapping[path] = { isInherit: true }
+      }
+      isInherit = true
     } else if (k === '$default') {
       fields.get(type).add(path)
       const $default = props[k]
@@ -155,14 +175,17 @@ function parseGetOpts(
       fields.get(type).add(path + '.*')
     } else if (k === '$fieldsByType') {
       for (const t in props.$fieldsByType) {
-        const [nestedFieldsMap, , hasSpecial] = parseGetOpts(
+        const [nestedFieldsMap, , hasSpecial, nestedInherit] = parseGetOpts(
           props.$fieldsByType[t],
           path,
           t,
           nestedMapping
         )
         if (hasSpecial) {
-          return [fields, mapping, true]
+          return [fields, mapping, true, false]
+        }
+        if (nestedInherit) {
+          isInherit = true
         }
         for (const [type, nestedFields] of nestedFieldsMap.entries()) {
           const set = fields.get(type) || new Set()
@@ -173,17 +196,21 @@ function parseGetOpts(
         }
       }
     } else if (k.startsWith('$')) {
-      return [fields, mapping, true]
+      return [fields, mapping, true, false]
     } else if (typeof props[k] === 'object') {
-      const [nestedFieldsMap, , hasSpecial] = parseGetOpts(
+      const [nestedFieldsMap, , hasSpecial, nestedInherit] = parseGetOpts(
         props[k],
         pathPrefix + k,
         type,
         mapping
       )
       if (hasSpecial) {
-        return [fields, mapping, true]
+        return [fields, mapping, true, false]
       }
+      if (nestedInherit) {
+        isInherit = true
+      }
+
       for (const [type, nestedFields] of nestedFieldsMap.entries()) {
         const set = fields.get(type) || new Set()
         for (const f of nestedFields.values()) {
@@ -194,7 +221,7 @@ function parseGetOpts(
     }
   }
 
-  return [fields, mapping, false]
+  return [fields, mapping, false, isInherit]
 }
 
 function findTimebased(ast: Fork): FilterAST[] {
@@ -555,6 +582,7 @@ const findFields = async (
   lang: string,
   ctx: ExecContext,
   fieldsOpt: Map<string, Set<string>>,
+  isInherit: boolean = false,
   passedSchema?: Schema
 ): Promise<string[]> => {
   const sourceField: string = <string>op.sourceField
@@ -620,7 +648,11 @@ const findFields = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      ...makeFieldsString(passedSchema || client.schemas[ctx.db], fieldsOpt),
+      ...makeFieldsString(
+        passedSchema || client.schemas[ctx.db],
+        fieldsOpt,
+        isInherit
+      ),
       joinIds(op.inKeys),
       ...args
     )
@@ -722,7 +754,7 @@ const findFields = async (
       op.options.offset,
       'limit',
       op.options.limit,
-      ...makeFieldsString(schema, fieldsOpt),
+      ...makeFieldsString(schema, fieldsOpt, isInherit),
       padId(op.id),
       ...args
     )
@@ -796,7 +828,10 @@ const executeFindOperation = async (
     return results
   }
 
-  const [fieldOpts, fieldMapping, additionalGets] = parseGetOpts(op.props, '')
+  const [fieldOpts, fieldMapping, additionalGets, isInherit] = parseGetOpts(
+    op.props,
+    ''
+  )
 
   if (additionalGets) {
     const ids = await findIds(client, op, lang, ctx, passedSchema)
@@ -838,6 +873,7 @@ const executeFindOperation = async (
     lang,
     ctx,
     fieldOpts,
+    isInherit,
     passedSchema
   )
 
@@ -845,7 +881,9 @@ const executeFindOperation = async (
   // Track ambiguous/implicit reference fields found in the query response that might need markers.
   // If `op` contains a `$find` then we are already tracking it elsewhere as we know there may
   // be references in the response.
-  const ambiguousReferenceFields = op.props['$find'] ? null : new Map<string, string[]>() // nodeId = [originField, ...fieldName(s)]
+  const ambiguousReferenceFields = op.props['$find']
+    ? null
+    : new Map<string, string[]>() // nodeId = [originField, ...fieldName(s)]
 
   const allMappings = new Set(Object.keys(fieldMapping))
   const result = []
@@ -901,11 +939,18 @@ const executeFindOperation = async (
               lang
             )
 
-            if (ambiguousReferenceFields && nestedId != id && !ambiguousReferenceFields.get(id)) {
+            if (
+              ambiguousReferenceFields &&
+              nestedId != id &&
+              !ambiguousReferenceFields.get(id)
+            ) {
               const destFields = op.props[field]
 
               if (destFields) {
-                ambiguousReferenceFields.set(id, [field, ...Object.keys(destFields)])
+                ambiguousReferenceFields.set(id, [
+                  field,
+                  ...Object.keys(destFields),
+                ])
               }
             }
 
@@ -940,6 +985,22 @@ const executeFindOperation = async (
       } else {
         const mapping = fieldMapping[field]
         const targetField = mapping?.targetField
+
+        if (mapping?.isInherit) {
+          const casted = typeCast(value[1], value[0], field, schema, lang)
+          if (targetField) {
+            for (const f of targetField) {
+              setNestedResult(entryRes, f, casted)
+            }
+          } else {
+            setNestedResult(entryRes, field, casted)
+          }
+
+          usedMappings.add(field)
+
+          continue
+        }
+
         const casted =
           id === EMPTY_ID
             ? typeCast(value, op.id, `${op.field}[0].${field}`, schema, lang)
@@ -975,12 +1036,14 @@ const executeFindOperation = async (
     for (const v of ambiguousReferenceFields) {
       const [id, [originField, ...fields]] = v
 
-      if (await addMarker(client, ctx, {
-        type: 'edge_field',
-        refField: originField,
-        id,
-        fields,
-      })) {
+      if (
+        await addMarker(client, ctx, {
+          type: 'edge_field',
+          refField: originField,
+          id,
+          fields,
+        })
+      ) {
         ctx.hasFindMarkers = true
       }
     }
