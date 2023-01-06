@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -42,7 +42,12 @@ void evl_init(void);
 void evl_deinit(void);
 void evl_start(void);
 EVL_EXPORT(int, evl_set_timeout, const struct timespec * restrict timeout, evl_event_cb cb, void *arg);
-EVL_EXPORT(void, evl_clear_timeout, int timer_id);
+
+/**
+ * Clear a timeout.
+ * @param arg Returns the arg passed to evl_set_timeout().
+ */
+EVL_EXPORT(void, evl_clear_timeout, int timer_id, void **arg);
 
 /**
  * Listen for events for fd.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
@@ -107,7 +107,7 @@ int evl_timers_set_timeout(struct timers *timers, const struct timespec * restri
     return tim_id;
 }
 
-void evl_timers_clear_timeout(struct timers *timers, int tim_id)
+void evl_timers_clear_timeout(struct timers *timers, int tim_id, void **arg)
 {
     struct timer_reg *tim;
 
@@ -118,6 +118,10 @@ void evl_timers_clear_timeout(struct timers *timers, int tim_id)
     tim = &timers->tim[tim_id];
     if (!tim->cb) {
         return;
+    }
+
+    if (arg) {
+        *arg = tim->arg;
     }
 
     tim->timeout.tv_sec = -1;

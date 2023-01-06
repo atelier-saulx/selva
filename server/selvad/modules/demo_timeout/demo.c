@@ -43,5 +43,5 @@ __constructor void init(void)
         .tv_nsec = 0,
     };
     int tim = evl_set_timeout(&t2, my_hello, NULL);
-    evl_clear_timeout(tim);
+    evl_clear_timeout(tim, NULL);
 }

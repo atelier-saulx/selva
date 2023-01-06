@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 SAULX
+ * Copyright (c) 2021-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
@@ -16,6 +16,7 @@
 #include "util/lpf.h"
 #include "util/poptop.h"
 #include "util/selva_string.h"
+#include "event_loop.h"
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_server.h"
@@ -405,10 +406,7 @@ __attribute__((nonnull (1, 2))) static int destroy_icb(
     }
 
     if (icb->flags.valid_timer_id) {
-        /* FIXME Index timer */
-#if 0
-        RedisModule_StopTimerUnsafe(icb->timer_id, NULL);
-#endif
+        evl_clear_timeout(icb->timer_id, NULL);
     }
 
     memset(icb, 0, sizeof(*icb));
@@ -427,7 +425,7 @@ __attribute__((nonnull (1, 2))) static int destroy_icb(
  * 3) create an index; if one didn't exist yet and
  *    the max number of indices hasn't been exceeded yet.
  */
-static void make_indexing_decission_proc(void *data) {
+static void make_indexing_decission_proc(struct event *e __unused, void *data) {
     SELVA_TRACE_BEGIN_AUTO(FindIndex_make_indexing_decission_proc);
     SelvaHierarchy *hierarchy = (struct SelvaHierarchy *)data;
     struct poptop_list_el *el;
@@ -578,7 +576,7 @@ static float calc_icb_score(const struct SelvaFindIndexControlBlock *icb) {
  * actual indexing decission process by inserting the ICB into the list of
  * ICBs considered for indexing.
  */
-static void icb_proc(void *data) {
+static void icb_proc(struct event *e __unused, void *data) {
     SELVA_TRACE_BEGIN_AUTO(FindIndex_icb_proc);
     struct SelvaFindIndexControlBlock *icb = (struct SelvaFindIndexControlBlock *)data;
 
@@ -754,10 +752,7 @@ static void create_icb_timer(struct SelvaFindIndexControlBlock *icb) {
     const struct timespec period = MSEC2TIMESPEC(selva_glob_config.find_indexing_icb_update_interval);
 
     assert(icb->flags.valid_timer_id == 0);
-    /* FIXME Index timer */
-#if 0
-    icb->timer_id = RedisModule_CreateTimer(period, icb_proc, icb);
-#endif
+    icb->timer_id = evl_set_timeout(&period, icb_proc, icb);
     icb->flags.valid_timer_id = 1;
 }
 
@@ -769,10 +764,7 @@ static void create_indexing_timer(struct SelvaHierarchy *hierarchy) {
     const struct timespec period = MSEC2TIMESPEC(selva_glob_config.find_indexing_interval);
 
     assert(hierarchy->dyn_index.proc_timer_active == 0);
-    /* FIXME Index timer */
-#if 0
-    hierarchy->dyn_index.proc_timer_id = RedisModule_CreateTimer(period, make_indexing_decission_proc, hierarchy);
-#endif
+    hierarchy->dyn_index.proc_timer_id = evl_set_timeout(&period, make_indexing_decission_proc, hierarchy);
     hierarchy->dyn_index.proc_timer_active = 1;
 }
 
@@ -824,10 +816,7 @@ void SelvaFindIndex_Deinit(struct SelvaHierarchy *hierarchy) {
     ida_destroy(hierarchy->dyn_index.ida);
 
     if (hierarchy->dyn_index.proc_timer_active) {
-    /* FIXME Index timer */
-#if 0
-        RedisModule_StopTimerUnsafe(hierarchy->dyn_index.proc_timer_id, NULL);
-#endif
+        evl_clear_timeout(hierarchy->dyn_index.proc_timer_id, NULL);
     }
 
     memset(&hierarchy->dyn_index, 0, sizeof(hierarchy->dyn_index));
@@ -1327,7 +1316,6 @@ static void SelvaFindIndex_DebugCommand(struct selva_server_response_out *resp, 
     SelvaHierarchy *hierarchy = main_hierarchy;
     struct selva_string **argv;
     int argc;
-    struct SelvaObject *obj;
 
     finalizer_init(&fin);
 

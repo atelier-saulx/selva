@@ -24,6 +24,8 @@ SET_DECLARE(selva_onunld, Selva_Onunload);
 
 IMPORT() {
     evl_import_main(selva_log);
+    evl_import_main(evl_set_timeout);
+    evl_import_main(evl_clear_timeout);
     evl_import_event_loop();
     import_selva_server();
     import_selva_io();

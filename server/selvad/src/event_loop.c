@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
@@ -60,9 +60,9 @@ int evl_set_timeout(const struct timespec * restrict timeout, evl_event_cb cb, v
     return evl_timers_set_timeout(&event_loop_state.timers, timeout, cb, arg);
 }
 
-void evl_clear_timeout(int timer_id)
+void evl_clear_timeout(int timer_id, void **arg)
 {
-    evl_timers_clear_timeout(&event_loop_state.timers, timer_id);
+    evl_timers_clear_timeout(&event_loop_state.timers, timer_id, arg);
 }
 
 static int get_fdr(struct fd_reg **fdr, int fd)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -23,7 +23,11 @@ struct timers {
 
 void evl_timers_init(struct timers *timers);
 int evl_timers_set_timeout(struct timers *timers, const struct timespec * restrict timeout, evl_event_cb cb, void *arg);
-void evl_timers_clear_timeout(struct timers *timers, int tim_id);
+/**
+ * Clear a timeout.
+ * @param arg Returns the arg passed to evl_timers_set_timeout().
+ */
+void evl_timers_clear_timeout(struct timers *timers, int tim_id, void **arg);
 int evl_timers_nr_waiting(struct timers *timers);
 void evl_timers_tick(struct timers *timers);
 struct timespec *evl_timers_next_timeout(struct timers *timers, struct timespec *spec);
