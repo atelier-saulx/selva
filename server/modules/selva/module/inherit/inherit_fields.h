@@ -34,7 +34,8 @@ int Inherit_SendField(
         struct RedisModuleString *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        struct RedisModuleString *full_field,
+        const char *full_field_str,
+        size_t full_field_len,
         const char *field_str,
         size_t field_len);
 
@@ -47,7 +48,8 @@ int Inherit_SendFieldFind(
         RedisModuleString *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        RedisModuleString *full_field,
+        const char *full_field_str,
+        size_t full_field_len,
         const char *field_str,
         size_t field_len);
 
