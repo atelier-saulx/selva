@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <errno.h>
@@ -65,7 +65,7 @@ static void sig_handler(int sig, siginfo_t *info, void *uap __unused)
     const int wfd = darwin_sig2fd_wr[sig];
 
     if (wfd == -1) {
-        /* TODO Log error */
+        SELVA_LOG(SELVA_LOGL_ERR, "Signal hander fd not found for signo: %d", signo);
         return;
     }
 
@@ -87,7 +87,7 @@ static void sig_handler(int sig, siginfo_t *info, void *uap __unused)
     int err = write(wfd, &esig, sizeof(esig));
     if (err == -1) {
         /* TODO proper log. */
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle signo: %d fildes: %d err: %s", sig, wfd, strerror(errno));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle signo: %d fd: %d err: %s", sig, wfd, strerror(errno));
     }
 
     errno = saved_errno;

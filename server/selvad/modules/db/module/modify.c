@@ -1767,6 +1767,34 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
             }
 
             repl_state = SELVA_OP_REPL_STATE_UPDATED;
+        } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_QUEUE_TRIM) {
+            TO_STR(value);
+            uint32_t max_array_len;
+
+            if (value_len != 1 * sizeof(uint32_t)) {
+                selva_send_errorf(resp, SELVA_EINTYPE, "Expected: int[1]");
+                continue;
+            }
+
+            memcpy(&max_array_len, value_str, sizeof(uint32_t));
+
+            struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+            const uint32_t ary_len = (uint32_t)SelvaObject_GetArrayLenStr(obj, field_str, field_len);
+            if (ary_len > max_array_len) {
+                for (uint32_t i = ary_len; i > max_array_len; i--) {
+                    int err;
+
+                    err = SelvaObject_RemoveArrayIndexStr(obj, field_str, field_len, i - 1);
+                    if (err) {
+                        SELVA_LOG(SELVA_LOGL_ERR, "Failed to remove array index (%.*s[%d]): %s",
+                                  (int)field_len, field_str,
+                                  (int)i - 1,
+                                  selva_strerror(err));
+                    }
+                }
+            }
+
+            repl_state = SELVA_OP_REPL_STATE_UPDATED;
         } else if (type_code == SELVA_MODIFY_ARG_STRING_ARRAY) {
             /*
              * Currently the $alias query is the only operation using string arrays.
