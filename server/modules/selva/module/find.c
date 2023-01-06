@@ -542,20 +542,6 @@ static size_t send_node_fields_named(
     return nr_fields;
 }
 
-static size_t count_inherit_fields(RedisModuleStringList inherit_fields) {
-    size_t nr_inherit_fields;
-    RedisModuleStringList s = inherit_fields;
-
-    /*
-     * Counting the fields is easy because we know the list ends with
-     * a NULL pointer.
-     */
-    while (*s++);
-    nr_inherit_fields = s - inherit_fields - 1;
-
-    return nr_inherit_fields;
-}
-
 /**
  * Send node fields to the client.
  */
@@ -566,6 +552,7 @@ static int send_node_fields(
         struct SelvaHierarchyNode *node,
         struct SelvaObject *fields,
         RedisModuleStringList inherit_fields,
+        size_t nr_inherit_fields,
         RedisModuleString *excluded_fields) {
     Selva_NodeId nodeId;
 
@@ -606,8 +593,6 @@ static int send_node_fields(
              * otherwise we'll easily hit the reentrancy limit of the trx
              * system.
              */
-
-            size_t nr_inherit_fields = count_inherit_fields(inherit_fields);
             nr_fields += Inherit_SendFields(ctx, hierarchy, lang,
                                             nodeId,
                                             inherit_fields, nr_inherit_fields);
@@ -1078,7 +1063,8 @@ static int exec_fields_expression(
         struct rpn_ctx *rpn_ctx,
         const struct rpn_expression *expr,
         struct SelvaObject *fields,
-        RedisModuleString ***inherit) {
+        RedisModuleString ***inherit,
+        size_t *nr_inherit) {
     Selva_NodeId nodeId;
     struct SelvaSet set;
     enum rpn_error rpn_err;
@@ -1111,8 +1097,7 @@ static int exec_fields_expression(
         if (field_name_str[0] == '^') { /* inherit */
             tmp_inherit_fields = selva_realloc(tmp_inherit_fields, i_inherit + 1);
 
-            tmp_inherit_fields[i_inherit] = field_name;
-            i_inherit++;
+            tmp_inherit_fields[i_inherit++] = field_name;
         } else { /* no inherit */
             const size_t key_len = (size_t)(log10(i_fields + 1)) + 1;
             char key_str[key_len + 1];
@@ -1126,6 +1111,7 @@ static int exec_fields_expression(
     SelvaSet_Destroy(&set);
 
     *inherit = tmp_inherit_fields;
+    *nr_inherit = i_inherit;
     return 0;
 }
 
@@ -1148,19 +1134,23 @@ static void print_node(
     if (args->merge_strategy != MERGE_STRATEGY_NONE) {
         err = send_node_object_merge(ctx, lang, node, args->merge_strategy, args->merge_path, args->fields, merge_nr_fields);
     } else if (args->fields) { /* Predefined list of fields. */
-        err = send_node_fields(ctx, lang, hierarchy, node, args->fields, NULL, args->excluded_fields);
+        err = send_node_fields(ctx, lang, hierarchy, node, args->fields, NULL, 0, args->excluded_fields);
     } else if (args->fields_expression || args->inherit_expression) { /* Select fields using an RPN expression. */
          struct rpn_expression *expr = args->fields_expression ?: args->inherit_expression;
         selvaobject_autofree struct SelvaObject *fields = SelvaObject_New();
          RedisModuleStringList inherit_fields = NULL; /* allocated by exec_fields_expression() */
+         size_t nr_inherit_fields;
 
          assert(!(args->fields_expression && args->inherit_expression));
 
-        err = exec_fields_expression(ctx, hierarchy, node, args->fields_rpn_ctx, expr, fields, &inherit_fields);
+        err = exec_fields_expression(ctx, hierarchy, node, args->fields_rpn_ctx, expr, fields, &inherit_fields, &nr_inherit_fields);
         if (!err) {
-            err = send_node_fields(ctx, lang, hierarchy, node, fields, inherit_fields, args->excluded_fields);
+            err = send_node_fields(ctx, lang, hierarchy, node, fields, inherit_fields, nr_inherit_fields, args->excluded_fields);
         }
         if (inherit_fields) {
+            for (size_t i = 0; i < nr_inherit_fields; i++) {
+                RedisModule_FreeString(NULL, inherit_fields[i]);
+            }
             selva_free(inherit_fields);
         }
     } else { /* Otherwise the nodeId is sent. */
