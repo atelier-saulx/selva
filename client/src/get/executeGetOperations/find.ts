@@ -90,6 +90,7 @@ function makeFieldsString(
 }
 
 function parseGetOpts(
+  schema: Schema,
   props: GetOptions,
   path: string,
   type: string = '$any',
@@ -153,8 +154,22 @@ function parseGetOpts(
         }
       }
     } else if (k === '$inherit') {
-      // TODO: support inherit type filters
-      fields.get(type).add(`^:${path}`)
+      let types = (props[k] as any)?.$type
+      if (!types) {
+        types = []
+      } else if (typeof types === 'string') {
+        types = [types]
+      }
+
+      const prefixes = types.map((type: string) => {
+        if (type === 'root') {
+          return 'ro'
+        }
+
+        return schema.types[type].prefix
+      })
+
+      fields.get(type).add(`^${prefixes.join('')}:${path}`)
       if (mapping[path]) {
         mapping[path].isInherit = true
       } else {
@@ -176,6 +191,7 @@ function parseGetOpts(
     } else if (k === '$fieldsByType') {
       for (const t in props.$fieldsByType) {
         const [nestedFieldsMap, , hasSpecial, nestedInherit] = parseGetOpts(
+          schema,
           props.$fieldsByType[t],
           path,
           t,
@@ -199,6 +215,7 @@ function parseGetOpts(
       return [fields, mapping, true, false]
     } else if (typeof props[k] === 'object') {
       const [nestedFieldsMap, , hasSpecial, nestedInherit] = parseGetOpts(
+        schema,
         props[k],
         pathPrefix + k,
         type,
@@ -829,6 +846,7 @@ const executeFindOperation = async (
   }
 
   const [fieldOpts, fieldMapping, additionalGets, isInherit] = parseGetOpts(
+    schema,
     op.props,
     ''
   )
