@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -34,7 +34,8 @@ int Inherit_SendField(
         struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        struct selva_string *full_field,
+        const char *full_field_str,
+        size_t full_field_len,
         const char *field_str,
         size_t field_len);
 
@@ -47,7 +48,8 @@ int Inherit_SendFieldFind(
         struct selva_string *lang,
         const struct SelvaHierarchyNode *node,
         struct SelvaObject *obj,
-        struct selva_string *full_field,
+        const char *full_field_str,
+        size_t full_field_len,
         const char *field_str,
         size_t field_len);
 

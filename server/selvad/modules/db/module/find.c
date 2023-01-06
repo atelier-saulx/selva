@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #define _GNU_SOURCE
@@ -13,6 +13,7 @@
 #include <strings.h>
 #include <sys/types.h>
 #include <tgmath.h>
+#include "jemalloc.h"
 #include "util/auto_free.h"
 #include "util/cstrings.h"
 #include "util/finalizer.h"
@@ -591,10 +592,9 @@ static int send_node_fields(
         struct SelvaHierarchyNode *node,
         struct SelvaObject *fields,
         selva_stringList inherit_fields,
+        size_t nr_inherit_fields,
         struct selva_string *excluded_fields) {
-    const char wildcard[2] = { WILDCARD_CHAR, '\0' };
     Selva_NodeId nodeId;
-    int err;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
 
@@ -622,15 +622,6 @@ static int send_node_fields(
     const ssize_t fields_len = SelvaObject_Len(fields, NULL);
     if (fields_len < 0) {
         return fields_len;
-    } else if (!excluded_fields && fields_len == 1 &&
-               SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
-        struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
-
-        err = SelvaObject_ReplyWithObject(resp, lang, obj, NULL, 0);
-        if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send all fields for node_id: \"%.*s\"",
-                      (int)SELVA_NODE_ID_SIZE, nodeId);
-        }
     } else {
         size_t nr_fields = 0;
 
@@ -642,19 +633,9 @@ static int send_node_fields(
              * otherwise we'll easily hit the reentrancy limit of the trx
              * system.
              */
-
-            size_t nr_inherit_fields;
-            selva_stringList s = inherit_fields;
-
-            /*
-             * Counting the fields is easy because we know the list ends with
-             * a NULL pointer.
-             */
-            while (*s++);
-            nr_inherit_fields = s - inherit_fields - 1;
-
             nr_fields += Inherit_SendFields(resp, hierarchy, lang, nodeId, inherit_fields, nr_inherit_fields);
         }
+
         /* Sent 2 * nr_fields */
         selva_send_array_end(resp);
     }
@@ -1129,12 +1110,16 @@ static int exec_fields_expression(
         struct SelvaHierarchyNode *node,
         struct rpn_ctx *rpn_ctx,
         const struct rpn_expression *expr,
-        struct SelvaObject *fields) {
+        struct SelvaObject *fields,
+        struct selva_string ***inherit,
+        size_t *nr_inherit) {
     Selva_NodeId nodeId;
     struct SelvaSet set;
     enum rpn_error rpn_err;
     struct SelvaSetElement *el;
-    size_t i;
+    size_t i_fields;
+    size_t i_inherit;
+    struct selva_string **tmp_inherit_fields = NULL;
 
     SelvaHierarchy_GetNodeId(nodeId, node);
     rpn_set_reg(rpn_ctx, 0, nodeId, SELVA_NODE_ID_SIZE, RPN_SET_REG_FLAG_IS_NAN);
@@ -1151,21 +1136,30 @@ static int exec_fields_expression(
         return SELVA_EGENERAL;
     }
 
-    i = 0;
+    i_fields = 0;
+    i_inherit = 0;
     SELVA_SET_STRING_FOREACH(el, &set) {
-        const size_t key_len = (size_t)(log10(i + 1)) + 1;
-        char key_str[key_len + 1];
+        struct selva_string *field_name = selva_string_dup(el->value_string, 0);
+        const char *field_name_str = selva_string_to_str(field_name, NULL);
 
-        snprintf(key_str, key_len + 1, "%zu", i);
-        /*
-         * RFE duplicate is probably not optimal but SelvaSet_Destroy() will free the originals.
-         */
-        SelvaObject_AddArrayStr(fields, key_str, key_len, SELVA_OBJECT_STRING, selva_string_dup(el->value_string, 0));
-        i++;
+        if (field_name_str[0] == '^') { /* inherit */
+            tmp_inherit_fields = selva_realloc(tmp_inherit_fields, i_inherit + 1);
+
+            tmp_inherit_fields[i_inherit++] = field_name;
+        } else { /* no inherit */
+            const size_t key_len = (size_t)(log10(i_fields + 1)) + 1;
+            char key_str[key_len + 1];
+
+            snprintf(key_str, key_len + 1, "%zu", i_fields);
+            SelvaObject_AddArrayStr(fields, key_str, key_len, SELVA_OBJECT_STRING, field_name);
+            i_fields++;
+        }
     }
 
     SelvaSet_Destroy(&set);
 
+    *inherit = tmp_inherit_fields;
+    *nr_inherit = i_inherit;
     return 0;
 }
 
@@ -1188,14 +1182,25 @@ static void send_node(
 
     if (args->merge_strategy != MERGE_STRATEGY_NONE) {
         err = send_node_object_merge(fin, resp, lang, node, args->merge_strategy, args->merge_path, args->fields, merge_nr_fields);
-    } else if (args->fields || (!args->fields_expression && args->inherit_fields)) { /* Predefined list of fields. */
-        err = send_node_fields(fin, resp, lang, hierarchy, node, args->fields, args->inherit_fields, args->excluded_fields);
-    } else if (args->fields_expression) { /* Select fields using an RPN expression. */
+    } else if (args->fields) { /* Predefined list of fields. */
+        err = send_node_fields(fin, resp, lang, hierarchy, node, args->fields, NULL, 0, args->excluded_fields);
+    } else if (args->fields_expression || args->inherit_expression) { /* Select fields using an RPN expression. */
+        struct rpn_expression *expr = args->fields_expression ?: args->inherit_expression;
         selvaobject_autofree struct SelvaObject *fields = SelvaObject_New();
+        selva_stringList inherit_fields = NULL; /* allocated by exec_fields_expression() */
+        size_t nr_inherit_fields;
 
-        err = exec_fields_expression(hierarchy, node, args->fields_rpn_ctx, args->fields_expression, fields);
+        assert(!(args->fields_expression && args->inherit_expression));
+
+        err = exec_fields_expression(hierarchy, node, args->fields_rpn_ctx, expr, fields, &inherit_fields, &nr_inherit_fields);
         if (!err) {
-            err = send_node_fields(fin, resp, lang, hierarchy, node, fields, args->inherit_fields, args->excluded_fields);
+            err = send_node_fields(fin, resp, lang, hierarchy, node, fields, inherit_fields, nr_inherit_fields, args->excluded_fields);
+        }
+        if (inherit_fields) {
+            for (size_t i = 0; i < nr_inherit_fields; i++) {
+                selva_string_free(inherit_fields[i]);
+            }
+            selva_free(inherit_fields);
         }
     } else { /* Otherwise the nodeId is sent. */
         Selva_NodeId nodeId;
@@ -1608,21 +1613,20 @@ static void postprocess_inherit(
 
 /**
  * Find node(s) matching the query.
- * SELVA.HIERARCHY.find lang REDIS_KEY dir [field_name/expr] [edge_filter expr] [index [expr]] [order field asc|desc] [offset 1234] [limit 1234] [merge path] [fields field_names] [inherit field_names] NODE_IDS [expression] [args...]
- *                                     |   |                 |                  |              |                      |             |            |            |                    |                     |        |            |
- * Traversal method/direction --------/    |                 |                  |              |                      |             |            |            |                    |                     |        |            |
- * Traversed field or expression ---------/                  |                  |              |                      |             |            |            |                    |                     |        |            |
- * Expression to decide whether and edge should be taken ---/                   |              |                      |             |            |            |                    |                     |        |            |
- * Indexing hint --------------------------------------------------------------/               |                      |             |            |            |                    |                     |        |            |
- * Sort order of the results -----------------------------------------------------------------/                       |             |            |            |                    |                     |        |            |
- * Skip the first 1234 - 1 results ----------------------------------------------------------------------------------/              |            |            |                    |                     |        |            |
- * Limit the number of results (Optional) -----------------------------------------------------------------------------------------/             |            |                    |                     |        |            |
- * Merge fields. fields option must be set -----------------------------------------------------------------------------------------------------/             |                    |                     |        |            |
- * Return field values instead of node names ----------------------------------------------------------------------------------------------------------------/                     |                     |        |            |
- * Inherit fields ----------------------------------------------------------------------------------------------------------------------------------------------------------------/                      |        |            |
- * One or more node IDs concatenated (10 chars per ID) -------------------------------------------------------------------------------------------------------------------------------------------------/         |            |
- * RPN filter expression ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------/             |
- * Register arguments for the RPN filter -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------/
+ *
+ * SELVA.HIERARCHY.find
+ * lang
+ * dir [field_name/expr]                            Traversal method/direction
+ * ["edge_filter" expr]                             Expression to decide whether and edge should be visited
+ * ["index" [expr]]                                 Indexing hint
+ * ["order" field asc|desc]                         Sort order of the results
+ * ["offset" 1234]                                  Skip the first 1234 - 1 results
+ * ["limit" 1234]                                   Limit the number of results (Optional)
+ * ["merge" path]                                   Merge fields. fields option must be set
+ * ["fields(_rpn)|inherit_rpn" field_names|expr]    Return field values instead of node names
+ * NODE_IDS                                         One or more node IDs concatenated (10 chars per ID)
+ * [expression]                                     RPN filter expression
+ * [args...]                                        Register arguments for the RPN filter
  *
  * The traversed field is typically either ancestors or descendants but it can
  * be any hierarchy or edge field.
@@ -1654,8 +1658,6 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
     int ARGV_MERGE_VAL       = 3;
     int ARGV_FIELDS_TXT      = 2;
     int ARGV_FIELDS_VAL      = 3;
-    int ARGV_INHERIT_TXT     = 2;
-    int ARGV_INHERIT_VAL     = 3;
     int ARGV_NODE_IDS        = 2;
     int ARGV_FILTER_EXPR     = 3;
     int ARGV_FILTER_ARGS     = 4;
@@ -1675,8 +1677,6 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
     ARGV_MERGE_VAL += i; \
     ARGV_FIELDS_TXT += i; \
     ARGV_FIELDS_VAL += i; \
-    ARGV_INHERIT_TXT += i; \
-    ARGV_INHERIT_VAL += i; \
     ARGV_NODE_IDS += i; \
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
@@ -1857,30 +1857,11 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
     struct selva_string *excluded_fields = NULL;
     __auto_free_rpn_ctx struct rpn_ctx *fields_rpn_ctx = NULL;
     __auto_free_rpn_expression struct rpn_expression *fields_expression = NULL;
+    __auto_free_rpn_expression struct rpn_expression *inherit_expression = NULL;
     if (argc > ARGV_FIELDS_VAL) {
-        err = SelvaArgsParser_StringSetList(&fin, &fields, &excluded_fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
-        if (err == SELVA_ENOENT && merge_strategy == MERGE_STRATEGY_NONE) {
-            /*
-             * Note that fields_rpn and merge can't work together because the
-             * field names can't vary in a merge.
-             */
-            const char *expr_str;
+        const char *argv_fields_txt = selva_string_to_str(argv[ARGV_FIELDS_TXT], NULL);
 
-            err = SelvaArgParser_StrOpt(&expr_str, "fields_rpn", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
-            if (err == 0) {
-                fields_rpn_ctx = rpn_init(1);
-                fields_expression = rpn_compile(expr_str);
-                if (!fields_expression) {
-                    selva_send_errorf(resp, SELVA_RPN_ECOMP, "fields_rpn");
-                    return;
-                }
-            }
-        }
-
-        /*
-         * If fields argument was found.
-         */
-        if (err == 0) {
+        if (!strcmp("fields", argv_fields_txt)) {
             if (merge_strategy == MERGE_STRATEGY_ALL) {
                 /* Having fields set turns a regular merge into a named merge. */
                 merge_strategy = MERGE_STRATEGY_NAMED;
@@ -1888,10 +1869,63 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
                 selva_send_errorf(resp, err, "Only the regular merge can be used with fields");
                 return;
             }
+
+            err = SelvaArgsParser_StringSetList(&fin, &fields, &excluded_fields, "fields", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+            if (err) {
+                selva_send_errorf(resp, err, "Parsing fields argument failed");
+                return;
+            }
+
             SHIFT_ARGS(2);
-        } else if (err != SELVA_ENOENT) {
-            selva_send_errorf(resp, err, "Parsing fields argument failed");
-            return;
+        } else if (!strcmp("fields_rpn", argv_fields_txt)) {
+            const char *expr_str;
+
+            /*
+             * Note that fields_rpn and merge can't work together because the
+             * field names can't vary in a merge.
+             */
+            if (merge_strategy != MERGE_STRATEGY_NONE) {
+                selva_send_errorf(resp, SELVA_EINVAL, "fields_rpn with merge not supported");
+                return;
+            }
+
+            err = SelvaArgParser_StrOpt(&expr_str, "fields_rpn", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+            if (err) {
+                selva_send_errorf(resp, err, "Parsing fields_rpn argument failed");
+                return;
+            }
+
+            fields_rpn_ctx = rpn_init(1);
+            fields_expression = rpn_compile(expr_str);
+            if (!fields_expression) {
+                selva_send_errorf(resp, SELVA_RPN_ECOMP, "fields_rpn");
+                return;
+            }
+
+            SHIFT_ARGS(2);
+        } else if (!strcmp("inherit_rpn", argv_fields_txt)) {
+            const char *expr_str;
+
+            if (merge_strategy != MERGE_STRATEGY_NONE) {
+                selva_send_errorf(resp, SELVA_EINVAL, "inherit with merge not supported");
+                return;
+            }
+
+            /* TODO arg parser isn't technically needed here */
+            err = SelvaArgParser_StrOpt(&expr_str, "inherit_rpn", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
+            if (err) {
+                selva_send_errorf(resp, err, "Parsing inherit_rpn argument failed");
+                return;
+            }
+
+            fields_rpn_ctx = rpn_init(1);
+            inherit_expression = rpn_compile(expr_str);
+            if (!inherit_expression) {
+                selva_send_errorf(resp, SELVA_RPN_ECOMP, "inherit_rpn");
+                return;
+            }
+
+            SHIFT_ARGS(2);
         }
     }
     if (merge_strategy != MERGE_STRATEGY_NONE && (!fields || SelvaTraversal_FieldsContains(fields, "*", 1))) {
@@ -1901,24 +1935,6 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
 
         /* Merge needs a fields object anyway but it must be empty. */
         fields = SelvaObject_New();
-    }
-
-    __selva_autofree selva_stringList inherit_fields = NULL;
-    if (argc > ARGV_INHERIT_VAL) {
-        err = SelvaArgsParser_StringList(&fin, &inherit_fields, "inherit", argv[ARGV_INHERIT_TXT], argv[ARGV_INHERIT_VAL]);
-        if (err == 0) {
-            if (merge_strategy != MERGE_STRATEGY_NONE) {
-                selva_send_errorf(resp, SELVA_EINVAL, "inherit with merge not supported");
-                return;
-            }
-
-            SHIFT_ARGS(2);
-        } else if (err != SELVA_ENOENT) {
-            selva_send_errorf(resp, err, "inherit");
-            return;
-        } else {
-            inherit_fields = NULL;
-        }
     }
 
     /*
@@ -1959,7 +1975,7 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
     const struct selva_string *ids = argv[ARGV_NODE_IDS];
     TO_STR(ids);
 
-    if (inherit_fields) {
+    if (inherit_expression) {
         SVector_Init(&traverse_result, HIERARCHY_EXPECTED_RESP_LEN, NULL);
     } else if (order != SELVA_RESULT_ORDER_NONE) {
         SelvaTraversalOrder_InitOrderResult(&traverse_result, order, limit);
@@ -1975,21 +1991,6 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
         if (limit != -1 && order == SELVA_RESULT_ORDER_NONE) {
             nr_index_hints = 0;
         }
-
-        /*
-         * The client must never try to index by inherit field because the
-         * indexing system doesn't do inherit nor would track changes over
-         * inherit.
-         */
-#if 0
-        /*
-         * Inherit and indexing are incompatible because we don't track field
-         * changes over inherited fields.
-         */
-        if (inherit_fields) {
-            nr_index_hints = 0;
-        }
-#endif
     }
 
     /*
@@ -2070,7 +2071,7 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
             .send_param.fields = fields,
             .send_param.fields_rpn_ctx = fields_rpn_ctx,
             .send_param.fields_expression = fields_expression,
-            .send_param.inherit_fields = inherit_fields,
+             .send_param.inherit_expression = inherit_expression,
             .send_param.excluded_fields = excluded_fields,
             .send_param.order = order,
             .send_param.order_field = order_by_field,
@@ -2092,7 +2093,7 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
                 postprocess = NULL;
             }
         } else {
-            if (inherit_fields) {
+            if (inherit_expression) {
                 /* This will also handle sorting if it was requested. */
                 args.process_node = &process_node_inherit;
                 postprocess = &postprocess_inherit;
@@ -2198,7 +2199,7 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
             .fields = fields,
             .fields_rpn_ctx = fields_rpn_ctx,
             .fields_expression = fields_expression,
-            .inherit_fields = inherit_fields,
+            .inherit_expression = inherit_expression,
             .excluded_fields = excluded_fields,
         };
 

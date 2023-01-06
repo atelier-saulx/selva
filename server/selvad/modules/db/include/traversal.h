@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -172,9 +172,9 @@ struct SelvaNodeSendParam {
     /**
      * Inherit fields using ancestors traversal.
      * Optional, can be set to NULL.
-     * The last element shall be NULL.
+     * Only fields_expression or inherit_expression should be set but not both.
      */
-    struct selva_string **inherit_fields;
+    struct rpn_expression *inherit_expression;
 
     /**
      * Fields that should be excluded when `fields` contains a wildcard.
