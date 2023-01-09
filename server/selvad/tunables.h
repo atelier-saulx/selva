@@ -41,6 +41,11 @@
  */
 
 /**
+ * Maximum number of client connections.
+ */
+#define SERVER_MAX_CLIENTS 100
+
+/**
  * Server TCP backlog size.
  */
 #define SERVER_BACKLOG_SIZE 10

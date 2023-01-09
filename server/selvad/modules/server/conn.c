@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <arpa/inet.h>
@@ -9,8 +9,7 @@
 #include "selva_proto.h"
 #include "server.h"
 
-#define MAX_CLIENTS 100 /*!< Maximum number of client connections. TODO Tunable */
-static struct conn_ctx clients[MAX_CLIENTS];
+static struct conn_ctx clients[SERVER_MAX_CLIENTS];
 
 struct conn_ctx *alloc_conn_ctx(void)
 {
