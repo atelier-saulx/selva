@@ -18,8 +18,6 @@
 #include "selva_io.h"
 #include "sdb.h"
 
-/* FIXME Implement write error handling */
-
 #define READ_WHENCE_READ_HEADER "read header"
 #define READ_WHENCE_HEADER_TYPE "type"
 #define READ_WHENCE_VALUE       "read value"
@@ -212,7 +210,7 @@ double selva_io_load_double(struct selva_io *io)
         exit_read_error(io, selva_proto_typeof_str(buf), READ_WHENCE_HEADER_TYPE);
     }
 
-    return buf.v; /* FIXME conversion */
+    return ledoubletoh((void *)&buf.v);
 }
 
 const char *selva_io_load_str(struct selva_io *io, size_t *len)
