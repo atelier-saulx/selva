@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 SAULX
+ * Copyright (c) 2021, 2023 SAULX
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
@@ -18,21 +18,37 @@
 typedef unsigned __int128 bitmap_t;
 
 /**
- * A variable size bitmap.
+ * A flexible bitmap.
  */
 struct bitmap {
     size_t nbits;
-    bitmap_t d[0];
+    bitmap_t d[];
 };
 
 #define BITMAP_CEILING(x, y) \
     (((x) + (y) - (size_t)1) / (y))
 
+/*
+ * We use this instead of max() to avoid GCC compound statements that don't work
+ * outside of functions. C23 constexpr might make compound statements available
+ * for initialization but compound statements are currently only supported in
+ * GCC 13 and there is no support in Clang.
+ */
+#define BITMAP_MAX(a, b) \
+    ((a) > (b) ? (a) : (b))
+
+#define BITMAP_D_SIZE(nbits) \
+    (BITMAP_CEILING(BITMAP_MAX((size_t)(nbits), (size_t)8) / (size_t)8, sizeof(bitmap_t)) * sizeof(bitmap_t))
+
 /**
  * Byte size of a bitmap struct passable to a malloc()-like function.
+ * nbits must be a literal or variable.
  */
 #define BITMAP_ALLOC_SIZE(nbits) \
-    (sizeof(struct bitmap) + BITMAP_CEILING(max((size_t)(nbits), (size_t)8) / (size_t)8, sizeof(bitmap_t)) * sizeof(bitmap_t))
+    (sizeof(struct bitmap) + BITMAP_D_SIZE(nbits))
+
+#define BITMAP_INIT(_nbits_) \
+    { .nbits = _nbits_, .d = { [BITMAP_D_SIZE(_nbits_) / sizeof(bitmap_t) - 1] = 0 } }
 
 /**
  * Get the status of a bit in a bitmap pointed by bitmap.
