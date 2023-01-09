@@ -924,7 +924,6 @@ struct SelvaModify_OpSet *SelvaModify_OpSet_align(struct finalizer *fin, const s
     TO_STR(data);
     struct SelvaModify_OpSet *op;
 
-    /* TODO Support __ORDER_BIG_ENDIAN__ */
     _Static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Only little endian host is supported");
 
     if (!data || data_len == 0 || data_len < sizeof(struct SelvaModify_OpSet)) {
@@ -953,7 +952,6 @@ static struct SelvaModify_OpEdgeMeta *SelvaModify_OpEdgeMeta_align(struct finali
     TO_STR(data);
     struct SelvaModify_OpEdgeMeta *op;
 
-    /* TODO Support __ORDER_BIG_ENDIAN__ */
     _Static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Only little endian host is supported");
 
     if (!data || data_len == 0 || data_len < sizeof(struct SelvaModify_OpEdgeMeta)) {
