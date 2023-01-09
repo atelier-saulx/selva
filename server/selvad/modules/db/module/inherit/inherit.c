@@ -161,7 +161,7 @@ static void parse_type_and_field(const char *str, size_t len, const char **types
     }
 
     *types_str = str + 1;
-    *name_str = strchr(str + 1, ':'); /* TODO len limited */
+    *name_str = memchr(str + 1, ':', len);
     if (*name_str) {
         (*name_str)++;
     }
