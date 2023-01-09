@@ -6,24 +6,29 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include "util/bitmap.h"
 #include "selva_proto.h"
 #include "server.h"
+#include "../../tunables.h"
 
+/**
+ * Client conn_ctx allocation map.
+ * 0 = in use;
+ * 1 = free.
+ */
+static struct bitmap clients_map = BITMAP_INIT(SERVER_MAX_CLIENTS);
 static struct conn_ctx clients[SERVER_MAX_CLIENTS];
 
 struct conn_ctx *alloc_conn_ctx(void)
 {
+    int i;
     struct conn_ctx *ctx = NULL;
 
-    /*
-     * TODO We want to have greater max conns and thus foreach isn't good enough alloc
-     */
-    for (size_t i = 0; i < num_elem(clients); i++) {
-        if (!clients[i].inuse) {
-            ctx = &clients[i];
-            ctx->inuse = 1;
-            break;
-        }
+    i = bitmap_ffs(&clients_map);
+    if (i >= 0) {
+        bitmap_clear(&clients_map, i);
+        ctx = &clients[i];
+        ctx->inuse = i;
     }
 
     return ctx;
@@ -31,7 +36,10 @@ struct conn_ctx *alloc_conn_ctx(void)
 
 void free_conn_ctx(struct conn_ctx *ctx)
 {
+    int i = ctx->inuse;
+
     ctx->inuse = 0;
+    bitmap_set(&clients_map, i);
 }
 
 size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize)
@@ -76,4 +84,11 @@ size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize)
     const int res = snprintf(buf + end, n, ":%d", ntohs(addr.sin_port));
 
     return (res > 0 && res < n) ? end + n : end;
+}
+
+__constructor void init_conn(void)
+{
+    for (size_t i = 0; i < SERVER_MAX_CLIENTS; i++) {
+        bitmap_set(&clients_map, i);
+    }
 }
