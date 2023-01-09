@@ -135,7 +135,7 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
     const int ARGV_OKEY = 2;
 
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 3) {
+    if (argc != 2 && argc != 3) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
         } else {
