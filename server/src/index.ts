@@ -16,6 +16,8 @@ import { connect, ServerDescriptor } from '@saulx/selva'
 
 export * as s3Backups from './backup-plugins/s3'
 
+export { startTimeseriesWorker }
+
 const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   let parsedOpts: ServerOptions
   if (typeof opts === 'function') {
