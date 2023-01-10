@@ -36,8 +36,12 @@ void print_trace(void *pc)
 
 void *get_pc(ucontext_t *ucontext)
 {
-#if __APPLE__ && defined(_STRUCT_X86_THREAD_STATE64)
+#if __APPLE__ && defined(__arm64__)
+    return (void*)arm_thread_state64_get_pc(uc->uc_mcontext->__ss);
+#elif __APPLE__ && defined(_STRUCT_X86_THREAD_STATE64)
     return (void*)ucontext->uc_mcontext->__ss.__rip;
+#elif __linux__ && defined(__aarch64__)
+    return (void*)uc->uc_mcontext.pc;
 #elif __linux__ && (defined(__X86_64__) || defined(__x86_64__))
     return (void*)ucontext->uc_mcontext.gregs[16];
 #else
