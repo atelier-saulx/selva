@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -174,10 +174,10 @@ void SelvaRpn_EvalSetCommand(struct selva_server_response_out *resp, const void 
 }
 
 static int RpnEval_OnLoad(void) {
-    selva_mk_command(41, "rpn.evalBool", SelvaRpn_EvalBoolCommand);
-    selva_mk_command(42, "rpn.evalDouble", SelvaRpn_EvalDoubleCommand);
-    selva_mk_command(43, "rpn.evalString", SelvaRpn_EvalStringCommand);
-    selva_mk_command(44, "rpn.evalSet", SelvaRpn_EvalSetCommand);
+    selva_mk_command(CMD_RPN_EVAL_BOOL_ID, "rpn.evalBool", SelvaRpn_EvalBoolCommand);
+    selva_mk_command(CMD_RPN_EVAL_DOUBLE_ID, "rpn.evalDouble", SelvaRpn_EvalDoubleCommand);
+    selva_mk_command(CMD_RPN_EVAL_STRING_ID, "rpn.evalString", SelvaRpn_EvalStringCommand);
+    selva_mk_command(CMD_RPN_EVAL_SET_ID, "rpn.evalSet", SelvaRpn_EvalSetCommand);
 
     return 0;
 }

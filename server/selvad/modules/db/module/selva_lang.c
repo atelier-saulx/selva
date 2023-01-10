@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <ctype.h>
@@ -201,7 +201,7 @@ static int SelvaLang_OnLoad(void) {
 
     FORALL_LANGS(LOAD_LANG)
 
-    SELVA_MK_COMMAND(2, lslang);
+    SELVA_MK_COMMAND(CMD_LSLANG_ID, lslang);
 
     return 0;
 }

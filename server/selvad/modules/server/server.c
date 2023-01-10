@@ -237,9 +237,9 @@ __constructor void init(void)
     server_start_workers();
 #endif
 
-    SELVA_MK_COMMAND(0, ping);
-    SELVA_MK_COMMAND(1, echo);
-    SELVA_MK_COMMAND(2, lscmd);
+    SELVA_MK_COMMAND(CMD_PING_ID, ping);
+    SELVA_MK_COMMAND(CMD_ECHO_ID, echo);
+    SELVA_MK_COMMAND(CMD_LSCMD_ID, lscmd);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(selva_port);

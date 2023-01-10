@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
@@ -1197,8 +1197,8 @@ out:
 }
 
 static int Aggregate_OnLoad(void) {
-    selva_mk_command(19, "selva.aggregate", SelvaHierarchy_AggregateCommand);
-    selva_mk_command(20, "selva.aggregateIn", SelvaHierarchy_AggregateInCommand);
+    selva_mk_command(CMD_HIERARCHY_AGGREGATE_ID, "selva.aggregate", SelvaHierarchy_AggregateCommand);
+    selva_mk_command(CMD_HIERARCHY_AGGREGATE_IN_ID, "selva.aggregateIn", SelvaHierarchy_AggregateInCommand);
 
     return 0;
 }

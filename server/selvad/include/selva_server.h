@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
 
 #include "_evl_export.h"
+#include "../commands.h"
 
 #if SELVA_SERVER_MAIN
 #define SELVA_SERVER_EXPORT(_ret_, _fun_name_, ...) _ret_ _fun_name_(__VA_ARGS__) EVL_EXTERN

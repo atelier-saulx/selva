@@ -513,7 +513,7 @@ void SelvaInheritCommand(struct selva_server_response_out *resp, const void *buf
 }
 
 static int Inherit_OnLoad(void) {
-    selva_mk_command(18, "hierarchy.inherit", SelvaInheritCommand);
+    selva_mk_command(CMD_HIERARCHY_INHERIT_ID, "hierarchy.inherit", SelvaInheritCommand);
 
     return 0;
 }

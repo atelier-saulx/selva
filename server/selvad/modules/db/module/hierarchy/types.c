@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -99,9 +99,9 @@ void SelvaHierarchyTypes_ListCommand(struct selva_server_response_out *resp, con
 }
 
 static int SelvaHierarchyTypes_OnLoad(void) {
-    selva_mk_command(33, "hierarchy.types.add", SelvaHierarchyTypes_AddCommand);
-    selva_mk_command(34, "hierarchy.types.clear", SelvaHierarchyTypes_ClearCommand);
-    selva_mk_command(35, "hierarchy.types.list", SelvaHierarchyTypes_ListCommand);
+    selva_mk_command(CMD_HIERARCHY_TYPES_ADD_ID, "hierarchy.types.add", SelvaHierarchyTypes_AddCommand);
+    selva_mk_command(CMD_HIERARCHY_TYPES_CLEAR_ID, "hierarchy.types.clear", SelvaHierarchyTypes_ClearCommand);
+    selva_mk_command(CMD_HIERARCHY_TYPES_LIST_ID, "hierarchy.types.list", SelvaHierarchyTypes_ListCommand);
 
     return 0;
 }

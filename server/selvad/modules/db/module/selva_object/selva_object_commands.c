@@ -510,14 +510,14 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
 }
 
 static int SelvaObject_OnLoad(void) {
-        selva_mk_command(45, "object.del", SelvaObject_DelCommand);
-        selva_mk_command(46, "object.exists", SelvaObject_ExistsCommand);
-        selva_mk_command(47, "object.get", SelvaObject_GetCommand);
-        selva_mk_command(48, "object.len", SelvaObject_LenCommand);
-        selva_mk_command(49, "object.set", SelvaObject_SetCommand);
-        selva_mk_command(50, "object.type", SelvaObject_TypeCommand);
-        selva_mk_command(51, "object.getMeta", SelvaObject_GetMetaCommand);
-        selva_mk_command(52, "object.setMeta", SelvaObject_SetMetaCommand);
+    selva_mk_command(CMD_OBJECT_DEL_ID, "object.del", SelvaObject_DelCommand);
+    selva_mk_command(CMD_OBJECT_EXIST_ID, "object.exists", SelvaObject_ExistsCommand);
+    selva_mk_command(CMD_OBJECT_GET_ID, "object.get", SelvaObject_GetCommand);
+    selva_mk_command(CMD_OBJECT_LEN_ID, "object.len", SelvaObject_LenCommand);
+    selva_mk_command(CMD_OBJECT_SET_ID, "object.set", SelvaObject_SetCommand);
+    selva_mk_command(CMD_OBJECT_TYPE_ID, "object.type", SelvaObject_TypeCommand);
+    selva_mk_command(CMD_OBJECT_GETMETA_ID, "object.getMeta", SelvaObject_GetMetaCommand);
+    selva_mk_command(CMD_OBJECT_SETMETA_ID, "object.setMeta", SelvaObject_SetMetaCommand);
 
     return 0;
 }

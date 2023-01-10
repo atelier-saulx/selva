@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <alloca.h>
@@ -3983,16 +3983,16 @@ static int Hierarchy_OnLoad(void) {
     /*
      * Register commands.
      */
-    selva_mk_command(23, "hierarchy.del", SelvaHierarchy_DelNodeCommand);
-    selva_mk_command(24, "hierarchy.heads", SelvaHierarchy_HeadsCommand);
-    selva_mk_command(25, "hierarchy.parents", SelvaHierarchy_ParentsCommand);
-    selva_mk_command(26, "hierarchy.children", SelvaHierarchy_ChildrenCommand);
-    selva_mk_command(27, "hierarchy.edgeList", SelvaHierarchy_EdgeListCommand);
-    selva_mk_command(28, "hierarchy.edgeGet", SelvaHierarchy_EdgeGetCommand);
-    selva_mk_command(29, "hierarchy.edgeGetMetadata", SelvaHierarchy_EdgeGetMetadataCommand);
-    selva_mk_command(30, "hierarchy.compress", SelvaHierarchy_CompressCommand);
-    selva_mk_command(31, "hierarchy.listCompressed", SelvaHierarchy_ListCompressedCommand);
-    selva_mk_command(32, "hierarchy.ver", SelvaHierarchy_VerCommand);
+    selva_mk_command(CMD_HIERARCHY_DEL_ID, "hierarchy.del", SelvaHierarchy_DelNodeCommand);
+    selva_mk_command(CMD_HIERARCHY_HEADS_ID, "hierarchy.heads", SelvaHierarchy_HeadsCommand);
+    selva_mk_command(CMD_HIERARCHY_PARENTS_ID, "hierarchy.parents", SelvaHierarchy_ParentsCommand);
+    selva_mk_command(CMD_HIERARCHY_CHILDREN_ID, "hierarchy.children", SelvaHierarchy_ChildrenCommand);
+    selva_mk_command(CMD_HIERARCHY_EDGE_LIST_ID, "hierarchy.edgeList", SelvaHierarchy_EdgeListCommand);
+    selva_mk_command(CMD_HIERARCHY_EDGE_GET_ID, "hierarchy.edgeGet", SelvaHierarchy_EdgeGetCommand);
+    selva_mk_command(CMD_HIERARCHY_EDGE_GET_METADATA_ID, "hierarchy.edgeGetMetadata", SelvaHierarchy_EdgeGetMetadataCommand);
+    selva_mk_command(CMD_HIERARCHY_COMPRESS_ID, "hierarchy.compress", SelvaHierarchy_CompressCommand);
+    selva_mk_command(CMD_HIERARCHY_LIST_COMPRESSED_ID, "hierarchy.listCompressed", SelvaHierarchy_ListCompressedCommand);
+    selva_mk_command(CMD_HIERARCHY_VER_ID, "hierarchy.ver", SelvaHierarchy_VerCommand);
 
     main_hierarchy = SelvaModify_NewHierarchy();
     if (!main_hierarchy) {

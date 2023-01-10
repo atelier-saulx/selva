@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #define _POSIX_C_SOURCE 200809L
@@ -2635,16 +2635,16 @@ static int Subscriptions_OnLoad(void) {
      * observed or serialized key values in any way. This is important
      * because we need to be able to create markers on readonly replicas.
      */
-    selva_mk_command(53, "selva.subscriptions.add", SelvaSubscriptions_AddMarkerCommand);
-    selva_mk_command(54, "selva.subscriptions.addAlias", SelvaSubscriptions_AddAliasCommand);
-    selva_mk_command(55, "selva.subscriptions.addMissing", SelvaSubscriptions_AddMissingCommand);
-    selva_mk_command(56, "selva.subscriptions.addTrigger", SelvaSubscriptions_AddTriggerCommand);
-    selva_mk_command(57, "selva.subscriptions.refresh", SelvaSubscriptions_RefreshCommand);
-    selva_mk_command(58, "selva.subscriptions.list", SelvaSubscriptions_ListCommand);
-    selva_mk_command(59, "selva.subscriptions.listMissing", SelvaSubscriptions_ListMissingCommand);
-    selva_mk_command(60, "selva.subscriptions.debug", SelvaSubscriptions_DebugCommand);
-    selva_mk_command(61, "selva.subscriptions.del", SelvaSubscriptions_DelCommand);
-    selva_mk_command(62, "selva.subscriptions.delmarker", SelvaSubscriptions_DelMarkerCommand);
+    selva_mk_command(CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_ADD_ID, "selva.subscriptions.add", SelvaSubscriptions_AddMarkerCommand);
+    selva_mk_command(CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDALIAS_ID, "selva.subscriptions.addAlias", SelvaSubscriptions_AddAliasCommand);
+    selva_mk_command(CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDMISSING_ID, "selva.subscriptions.addMissing", SelvaSubscriptions_AddMissingCommand);
+    selva_mk_command(CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDTRIGGER_ID, "selva.subscriptions.addTrigger", SelvaSubscriptions_AddTriggerCommand);
+    selva_mk_command(CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_REFRESH_ID, "selva.subscriptions.refresh", SelvaSubscriptions_RefreshCommand);
+    selva_mk_command(CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_LIST_ID, "selva.subscriptions.list", SelvaSubscriptions_ListCommand);
+    selva_mk_command(CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_LISTMISSING_ID, "selva.subscriptions.listMissing", SelvaSubscriptions_ListMissingCommand);
+    selva_mk_command(CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_DEBUG_ID, "selva.subscriptions.debug", SelvaSubscriptions_DebugCommand);
+    selva_mk_command(CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_DEL_ID, "selva.subscriptions.del", SelvaSubscriptions_DelCommand);
+    selva_mk_command(CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_DELMARKER_ID, "selva.subscriptions.delmarker", SelvaSubscriptions_DelMarkerCommand);
 
     return 0;
 }

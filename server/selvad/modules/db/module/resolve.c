@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -127,7 +127,7 @@ void SelvaResolve_NodeIdCommand(struct selva_server_response_out *resp, const vo
 }
 
 static int SelvaResolve_OnLoad(void) {
-    selva_mk_command(16, "resolve.nodeid", SelvaResolve_NodeIdCommand);
+    selva_mk_command(CMD_RESOLVE_NODEID_ID, "resolve.nodeid", SelvaResolve_NodeIdCommand);
 
     return 0;
 }

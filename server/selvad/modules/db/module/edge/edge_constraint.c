@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
@@ -348,8 +348,8 @@ void Edge_ListConstraintsCommand(struct selva_server_response_out *resp, const v
 }
 
 static int EdgeConstraints_OnLoad(void) {
-    selva_mk_command(21, "hierarchy.addConstraint", Edge_AddConstraintCommand);
-    selva_mk_command(22, "hierarchy.listConstraints", Edge_ListConstraintsCommand);
+    selva_mk_command(CMD_HIERARCHY_ADDCONSTRAINT_ID, "hierarchy.addConstraint", Edge_AddConstraintCommand);
+    selva_mk_command(CMD_HIERARCHY_LIST_CONSTRAINTS_ID, "hierarchy.listConstraints", Edge_ListConstraintsCommand);
 
     return 0;
 }
