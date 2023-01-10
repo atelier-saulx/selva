@@ -16,8 +16,7 @@ void print_trace(void *pc)
 {
     void *array[10];
     void **ap = array;
-    char **strings;
-    int size, i;
+    int size;
 
     fprintf(stderr, "Running a backtrace\n");
     size = backtrace(array, 10);
@@ -31,19 +30,8 @@ void print_trace(void *pc)
     }
     size = (array + 10) - ap;
 
-    /* TODO Should use void backtrace_symbols_fd (void *const *buffer, int size, int fd) to avoid malloc. */
-    strings = backtrace_symbols(ap, size);
-    if (strings) {
-        fprintf(stderr, "Obtained %d stack frames.\n", size);
-        for (i = 0; i < size; i++) {
-            /* Hint: run `addr2line -e a.out -f <addr>` for these` */
-            printf("%s\n", strings[i]);
-        }
-    } else {
-        fprintf(stderr, "Backtrace failed\n");
-    }
-
-    free (strings);
+    fprintf(stderr, "Obtained %d stack frames.\nHint: run `addr2line -e a.out -f <addr>` for these lines\n", size);
+    backtrace_symbols_fd(ap, size, fileno(stderr));
 }
 
 void *get_pc(ucontext_t *ucontext)
