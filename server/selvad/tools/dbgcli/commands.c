@@ -251,16 +251,24 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
 
             memcpy(&hdr, msg + i - off, sizeof(hdr));
 
-            printf("%*s[\n", tabs * TAB_WIDTH, "");
-            if (tabs < TABS_MAX) {
-                tabs++;
-            }
-
             /* TODO Support embedded arrays */
+            if (hdr.flags & SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH) {
+                printf("%*s[\n", tabs * TAB_WIDTH, "");
+                if (tabs < TABS_MAX) {
+                    tabs++;
+                }
+            } else {
+                if (data_len == 0) {
+                    printf("%*s[]\n", tabs * TAB_WIDTH, "");
+                } else {
+                    printf("%*s[\n", tabs * TAB_WIDTH, "");
+                    if (tabs < TABS_MAX) {
+                        tabs++;
+                    }
 
-            if (!(hdr.flags & SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH)) {
-                tabs_hold_stack[tabs] = data_len;
-                continue; /* Avoid decrementing the tab stack value. */
+                    tabs_hold_stack[tabs] = data_len;
+                    continue; /* Avoid decrementing the tab stack value. */
+                }
             }
         } else if (type == SELVA_PROTO_ARRAY_END) {
             if (tabs_hold_stack[tabs]) {
