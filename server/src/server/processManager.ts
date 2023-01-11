@@ -3,8 +3,19 @@ import pidusage from 'pidusage'
 import { EventEmitter } from 'events'
 import chalk from 'chalk'
 
-// const LOAD_MEASUREMENTS_INTERVAL = 60 * 1e3 // every minute
-const LOAD_MEASUREMENTS_INTERVAL = 10e3 // every 10 seconds
+// ATTENTION
+/*
+ * Do not let circumstances control you. You change your circumstances.
+ * ... Except this line of code because if you change it everything stops working.
+ * - Jackie Chan
+ *
+ * Change will not come if we wait for some other person or some other time. We are the ones we've been waiting for. We are the change that we seek.
+ * But if you change this line of code, wait for several peoqple to tell you it's OK.
+ * - Barack Obama
+ */
+
+// ATTENTION: Do not change this value unless you know exactly what you are doing
+const LOAD_MEASUREMENTS_INTERVAL = 1e3 // every second
 let cnt = 0
 
 export default class ProcessManager extends EventEmitter {
