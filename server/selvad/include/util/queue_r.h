@@ -4,7 +4,7 @@
  * @author  Olli Vanhoja
  * @brief   Thread-safe queue
  * @section LICENSE
- * Copyright (c) 2020-2021 SAULX
+ * Copyright (c) 2020-2021, 2023 SAULX
  * Copyright (c) 2013, 2015, 2016 Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
  * Copyright (c) 2012, 2013 Ninjaware Oy,
  *                          Olli Vanhoja <olli.vanhoja@ninjaware.fi>
@@ -36,11 +36,6 @@
  */
 
 /**
- * @addtogroup libkern
- * @{
- */
-
-/**
  * @addtogroup queue_r
  * @{
  */
@@ -69,7 +64,7 @@ typedef struct queue_cb {
         .a_len = (array_size / block_size),                     \
         .m_write = 0,                                           \
         .m_read = 0,                                            \
-        }
+    }
 
 /**
  * Create a new queue control block.
@@ -77,7 +72,7 @@ typedef struct queue_cb {
  * @param data_array an array where the actual queue data is stored.
  * @param block_size the size of single data block/struct/data type in
  *                   data_array in bytes.
- * @param arra_size the size of the data_array in bytes.
+ * @param array_size the size of the data_array in bytes.
  * @return a new queue_cb_t queue control block structure.
  */
 queue_cb_t queue_create(void * data_array, size_t block_size,
@@ -168,10 +163,6 @@ int queue_isfull(const queue_cb_t * cb);
 int seek(queue_cb_t * cb, size_t i, void * element);
 
 #endif /* QUEUE_R_H */
-
-/**
- * @}
- */
 
 /**
  * @}
