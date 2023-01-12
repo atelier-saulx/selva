@@ -145,7 +145,6 @@ int Inherit_FieldValue(
     return SelvaHierarchy_Traverse(ctx, hierarchy, node_id, SELVA_HIERARCHY_TRAVERSAL_BFS_ANCESTORS, &cb);
 }
 
-// TODO Add pure
 static void parse_type_and_field(const char *str, size_t len, const char **types_str, size_t *types_len, const char **name_str, size_t *name_len) {
     if (len < 2 || str[0] != '^') {
         *name_str = NULL;
@@ -185,7 +184,7 @@ static int Inherit_SendFields_NodeCb(
             continue;
         }
 
-        RedisModuleString *types_and_field = args->field_names[i];
+        const RedisModuleString *types_and_field = args->field_names[i];
         const char *types_str;
         size_t types_len;
         const char *field_name_str;
