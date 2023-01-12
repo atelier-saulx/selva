@@ -1095,8 +1095,7 @@ static int exec_fields_expression(
         const char *field_name_str = RedisModule_StringPtrLen(el->value_rms, NULL);
 
         if (field_name_str[0] == '^') { /* inherit */
-            tmp_inherit_fields = selva_realloc(tmp_inherit_fields, i_inherit + 1);
-
+            tmp_inherit_fields = selva_realloc(tmp_inherit_fields, (i_inherit + 1) * sizeof(RedisModuleString *));
             tmp_inherit_fields[i_inherit++] = field_name;
         } else { /* no inherit */
             const size_t key_len = (size_t)(log10(i_fields + 1)) + 1;
@@ -1138,7 +1137,7 @@ static void print_node(
     } else if (args->fields_expression || args->inherit_expression) { /* Select fields using an RPN expression. */
          struct rpn_expression *expr = args->fields_expression ?: args->inherit_expression;
         selvaobject_autofree struct SelvaObject *fields = SelvaObject_New();
-         RedisModuleStringList inherit_fields = NULL; /* allocated by exec_fields_expression() */
+         RedisModuleStringList inherit_fields; /* allocated by exec_fields_expression() */
          size_t nr_inherit_fields;
 
          assert(!(args->fields_expression && args->inherit_expression));
@@ -1146,12 +1145,13 @@ static void print_node(
         err = exec_fields_expression(ctx, hierarchy, node, args->fields_rpn_ctx, expr, fields, &inherit_fields, &nr_inherit_fields);
         if (!err) {
             err = send_node_fields(ctx, lang, hierarchy, node, fields, inherit_fields, nr_inherit_fields, args->excluded_fields);
-        }
-        if (inherit_fields) {
-            for (size_t i = 0; i < nr_inherit_fields; i++) {
-                RedisModule_FreeString(NULL, inherit_fields[i]);
+
+            if (inherit_fields) {
+                for (size_t i = 0; i < nr_inherit_fields; i++) {
+                    RedisModule_FreeString(NULL, inherit_fields[i]);
+                }
+                selva_free(inherit_fields);
             }
-            selva_free(inherit_fields);
         }
     } else { /* Otherwise the nodeId is sent. */
         Selva_NodeId nodeId;
