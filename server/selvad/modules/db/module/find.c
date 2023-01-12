@@ -1143,8 +1143,7 @@ static int exec_fields_expression(
         const char *field_name_str = selva_string_to_str(field_name, NULL);
 
         if (field_name_str[0] == '^') { /* inherit */
-            tmp_inherit_fields = selva_realloc(tmp_inherit_fields, i_inherit + 1);
-
+            tmp_inherit_fields = selva_realloc(tmp_inherit_fields, (i_inherit + 1) * sizeof(struct selva_string *));
             tmp_inherit_fields[i_inherit++] = field_name;
         } else { /* no inherit */
             const size_t key_len = (size_t)(log10(i_fields + 1)) + 1;
