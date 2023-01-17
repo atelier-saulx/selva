@@ -388,3 +388,17 @@
  * cmd: update
  */
 #define CMD_UPDATE_ID 64
+
+/**
+ *
+ * module: replication
+ * cmd: replicaof
+ */
+#define CMD_REPLICAOF_ID 65
+
+/**
+ *
+ * module: replication
+ * cmd: replicainfo
+ */
+#define CMD_REPLICAINFO_ID 66

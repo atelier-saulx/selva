@@ -1,4 +1,4 @@
-# Copyright (c) 2022 SAULX
+# Copyright (c) 2022-2023 SAULX
 # SPDX-License-Identifier: MIT
 
 include ../common.mk
@@ -22,6 +22,7 @@ MODULES := \
 		   demo_sock \
 		   demo_timeout \
 		   io \
+		   replication \
 		   server \
 		   signal
 
