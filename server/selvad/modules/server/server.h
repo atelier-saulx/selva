@@ -1,14 +1,9 @@
 /*
  * Selva Server Module.
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
-
-#if 0
-#define SERVER_RING_BUF_BLOCK_SIZE  4096
-#define SERVER_RING_BUF_LEN         128
-#endif
 
 struct conn_ctx {
     int fd; /*<! The socket associated with this connection. */
