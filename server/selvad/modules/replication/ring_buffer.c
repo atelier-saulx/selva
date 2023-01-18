@@ -11,7 +11,7 @@
 #include <stdatomic.h>
 #include "ring_buffer.h"
 
-void ring_buffer_init(struct ring_buffer* rb, void (*free_element_data)(void *p))
+void ring_buffer_init(struct ring_buffer* rb, void (*free_element_data)(void *p, ring_buffer_eid_t eid))
 {
     memset(rb, 0, sizeof(*rb));
 
@@ -109,16 +109,24 @@ unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t 
     }
 
     if (rb->free_element_data && e->data) {
-        rb->free_element_data(e->data);
+        rb->free_element_data(e->data, e->id);
     }
 
     e->id = id;
     e->data = p;
     atomic_store(&e->not_replicated, atomic_load(&rb->replicas_mask));
+
+    /*
+     * Locking the mutex here is important to invoke a proper memory barrier and
+     * to avoid code reordering.
+     */
+    pthread_mutex_lock(&rb->lock);
     if (rb->len < RING_BUFFER_SIZE) {
         rb->len++;
     }
+
     rb->tail = (rb->tail + 1) % rb->len;
+    pthread_mutex_unlock(&rb->lock);
 
     pthread_cond_broadcast(&rb->cond);
     return 0;

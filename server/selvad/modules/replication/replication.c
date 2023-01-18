@@ -2,34 +2,96 @@
  * Copyright (c) 2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#define _GNU_SOURCE
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+#include <sys/sysinfo.h>
+#include "jemalloc.h"
 #include "module.h"
+#include "selva_error.h"
 #include "selva_log.h"
 #include "selva_server.h"
 #include "ring_buffer.h"
+#include "replication.h"
 
 /* TODO This should be same as SDB HASH_SIZE */
 #define HASH_SIZE 32
+
+#define MAX_REPLICAS 32
 
 #if 0
 #define ISPOW2(x) ((x != 0) && ((x & (x - 1)) == 0))
 static_assert(ISPOW2(CMD_LOG_SIZE));
 #endif
 
+#define EID_MSB_MASK (~(~(typeof(replication_state.sdb_eid))0 >> 1))
+
 static struct replication_state {
-    char sdb_hash[HASH_SIZE];
+    char sdb_hash[HASH_SIZE]; /*!< The hash of the latest dump. */
+    ring_buffer_eid_t sdb_eid; /*!< Id of the sdb in rb. */
     struct ring_buffer rb;
+    struct replica replicas[MAX_REPLICAS];
 } replication_state;
+
+static ring_buffer_eid_t gen_sdb_eid(char sdb_hash[HASH_SIZE])
+{
+    /* FIXME generate and mark with MSB? */
+    return EID_MSB_MASK;
+}
 
 void replication_new_sdb(char sdb_hash[HASH_SIZE])
 {
+    memcpy(replication_state.sdb_hash, sdb_hash, HASH_SIZE);
+    replication_state.sdb_eid = gen_sdb_eid(sdb_hash);
+    ring_buffer_insert(&replication_state.rb, replication_state.sdb_eid, replication_state.sdb_hash);
+}
+
+static void free_replbuf(void *buf, ring_buffer_eid_t eid)
+{
+    if (!(eid & EID_MSB_MASK)) {
+        selva_free(buf);
+    }
 }
 
 void replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
 {
+    /* TODO We'd really like to avoid at least malloc() here, preferrably also memcpy(). */
+    void *p = selva_malloc(sizeof(buf_size) + buf_size);
+    static ring_buffer_eid_t eid;
+
+    eid = (eid + 1) & ~EID_MSB_MASK; /* TODO any better ideas? */
+    memcpy(p, &buf_size, sizeof(buf_size));
+    memcpy(p + sizeof(buf_size), buf, buf_size);
+    ring_buffer_insert(&replication_state.rb, eid, p);
+}
+
+static struct replica *new_replica_cb(void)
+{
+    for (int i = 0; i < MAX_REPLICAS; i++) {
+        if (!replication_state.replicas[i].in_use) {
+            struct replica *r = &replication_state.replicas[i];
+
+            r->in_use = 1;
+            return r;
+        }
+    }
+
+    return NULL;
+}
+
+static void start_replica_thread(struct sockaddr_in *serv_addr)
+{
+    struct replica *replica = new_replica_cb();
+
+    if (!replica) {
+        return; /* TODO ERROR */
+    }
+
+    ring_buffer_add_replica(&replication_state.rb, replica->id);
+    pthread_create(&replica->thread, NULL, replication_thread, replica);
 }
 
 static void replicaof(struct selva_server_response_out *resp, const void *buf, size_t size)
@@ -63,6 +125,16 @@ IMPORT() {
 __constructor void init(void)
 {
     SELVA_LOG(SELVA_LOGL_INFO, "Init replication");
+
+    int nr_cores = get_nprocs();
+
+    for (unsigned i = 0; i < MAX_REPLICAS; i++) {
+        struct replica *r = &replication_state.replicas[i];
+
+        r->id = i;
+        r->core_id = i % nr_cores;
+    }
+    ring_buffer_init(&replication_state.rb, free_replbuf);
 
     SELVA_MK_COMMAND(CMD_REPLICAOF_ID, replicaof);
     SELVA_MK_COMMAND(CMD_REPLICAINFO_ID, replicainfo);

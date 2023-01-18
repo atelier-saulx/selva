@@ -40,14 +40,13 @@ struct ring_buffer {
      * buffer, that happens only if the element has been marked as replicated
      * for every replice, i.e. not_replicated = 0.
      */
-    void (*free_element_data)(void *p);
+    void (*free_element_data)(void *p, ring_buffer_eid_t eid);
     /**
      * A bitmask of all active replicas.
      * Updated with ring_buffer_add_replica() and ring_buffer_del_replica().
      */
     atomic_uint replicas_mask;
-    pthread_mutex_t lock; /*!< Lock for replica threads to synchronize acces to
-                           *   cond. */
+    pthread_mutex_t lock;
     pthread_cond_t cond; /*!< Used to wait for new insertions. */
 };
 
@@ -65,7 +64,7 @@ struct ring_buffer_reader_state {
  * @param free_element_data is a pointer to a function that can free a pointer
  * p given to the ring_buffer_insert() function.
  */
-void ring_buffer_init(struct ring_buffer* rb, void (*free_element_data)(void *p));
+void ring_buffer_init(struct ring_buffer* rb, void (*free_element_data)(void *p, ring_buffer_eid_t eid));
 
 /**
  * Initialize a ring_buffer_state structure.
