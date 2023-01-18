@@ -2,11 +2,14 @@
  * Copyright (c) 2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <pthread.h>
+#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "module.h"
 #include "selva_log.h"
 #include "selva_server.h"
+#include "ring_buffer.h"
 
 /* TODO This should be same as SDB HASH_SIZE */
 #define HASH_SIZE 32
@@ -18,7 +21,7 @@ static_assert(ISPOW2(CMD_LOG_SIZE));
 
 static struct replication_state {
     char sdb_hash[HASH_SIZE];
-    //struct replication_buffer buffer;
+    struct ring_buffer rb;
 } replication_state;
 
 void replication_new_sdb(char sdb_hash[HASH_SIZE])
