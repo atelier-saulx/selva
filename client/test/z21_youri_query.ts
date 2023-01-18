@@ -1,9 +1,8 @@
-import { join as pathJoin } from 'path'
 import test from 'ava'
 import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
-import { wait, removeDump } from './assertions'
 import getPort from 'get-port'
+import { wait } from './assertions'
 
 let srv
 let port: number
@@ -21,24 +20,16 @@ test.before(async (t) => {
     types: {
       author: {
         fields: {
-          books: {
-            type: 'references',
-            bidirectional: { fromField: 'authors' },
-          },
+          name: { type: 'string' },
         },
       },
       book: {
         fields: {
-          genre: { type: 'string' },
-          authors: {
-            type: 'references',
-            bidirectional: { fromField: 'books' },
-          },
+          name: { type: 'string' },
         },
       },
     },
   })
-
   await client.destroy()
 })
 
@@ -50,114 +41,68 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial.skip('find books', async (t) => {
+test.serial.only('find things', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
-  // let n = 5
-  // while (n--) {
-  await client.set({
-    type: 'book',
-    genre: 'thriller',
-  })
+  const books = 1000
+  const authors = 10
 
-  await client.set({
-    type: 'author',
-  })
-  // }
+  await Promise.all(
+    Array.from(Array(authors)).map(async (_, index) => {
+      const authorId = await client.set({
+        type: 'author',
+        name: 'author ' + index,
+      })
+      return Promise.all(
+        Array.from(Array(books / authors)).map((_, index) => {
+          return client.set({
+            type: 'book',
+            name: 'book ' + index,
+            parents: [authorId],
+          })
+        })
+      )
+    })
+  )
 
-  console.log(
-    await client.get({
-      $language: 'en',
-      books: {
+  const query = {
+    books: {
+      name: true,
+      author: {
         id: true,
-        $list: {
-          $find: {
-            $traverse: 'descendants',
-            $filter: {
-              $field: 'type',
-              $operator: '!=',
-              $value: 'author',
-            },
+        name: true,
+        $find: {
+          $traverse: 'parents',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'author',
           },
         },
       },
-    })
+      $list: {
+        $find: {
+          $traverse: 'descendants',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'book',
+          },
+        },
+      },
+    },
+  }
+
+  const startGet = Date.now()
+  await client.get(query)
+  const timeToGet = Date.now() - startGet
+  const startSub = Date.now()
+  await new Promise((resolve) => client.observe(query).subscribe(resolve))
+  const timeToSub = Date.now() - startSub
+
+  t.true(
+    timeToSub <= timeToGet + 1e3,
+    'time to subscribe is similar to time to get'
   )
 
   await client.destroy()
 })
-
-// test.serial.skip('find books', async (t) => {
-//   const client = connect({ port }, { loglevel: 'info' })
-
-//   const thrillerBook = await client.set({
-//     type: 'book',
-//     genre: 'thriller'
-//   })
-
-//   const authorId = await client.set({
-//     type: 'author',
-//     books: [thrillerBook]
-//   })
-
-//   await client.set({
-//     type: 'author',
-//     books: []
-//   })
-
-//   console.log(await client.get({
-//     booksByAuthorX: {
-//       $all: true,
-//       $list:{
-//         $find: {
-//           $traverse: 'descendants',
-//           $filter: {
-//             $field: 'authors',
-//             $operator: 'has',
-//             $value: authorId
-//           }
-//         }
-//       }
-//     }
-//   }))
-
-// //   console.log(await client.get({
-// //     authorsWithThrillers: {
-// //         $all: true,
-// //         $list: {
-// //             $find: {
-// //                 $traverse: 'descendants',
-// //                 $filter: [{
-// //                     $field: 'type',
-// //                     $operator: '=',
-// //                     $value: 'book'
-// //                 }, {
-// //                     $field: 'genre',
-// //                     $operator: '=',
-// //                     $value: 'thriller'
-// //                 }],
-// //                 $find: {
-// //                   $traverse: 'authors'
-// //                 }
-// //             }
-// //         }
-// //     },
-// //     authorsWithoutBooks: {
-// //       $all: true,
-// //       $list: {
-// //           $find: {
-// //               $traverse: 'descendants',
-// //               $filter: [{
-// //                   $field: 'type',
-// //                   $operator: '=',
-// //                   $value: 'author'
-// //               }, {
-// //                   $field: 'books',
-// //                   $operator: 'notExists'
-// //               }]
-// //           }
-// //       }
-// //     }
-// // }))
-
-//   await client.destroy()
-// })

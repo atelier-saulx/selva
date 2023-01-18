@@ -53,7 +53,7 @@ test.serial('find - inherit - low level', async (t) => {
   })
 
   // A small delay is needed after setting the schema
-  await new Promise((r) => setTimeout(r, 100))
+  await wait(100)
 
   await client.set({
     type: 'author',
@@ -147,7 +147,7 @@ test.serial('find - inherit', async (t) => {
   })
 
   // A small delay is needed after setting the schema
-  await new Promise((r) => setTimeout(r, 100))
+  await wait(100)
 
   await client.set({
     type: 'author',
@@ -245,7 +245,7 @@ test.serial('find - inherit by type', async (t) => {
   })
 
   // A small delay is needed after setting the schema
-  await new Promise((r) => setTimeout(r, 100))
+  await wait(100)
 
   await client.set({
     type: 'author',
