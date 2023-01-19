@@ -8,6 +8,8 @@
 
 typedef int64_t ring_buffer_eid_t; /*!< Element id type. */
 
+/* TODO Rename replica as reader. */
+
 /*
  * We use atomic_uint to access replica masks. Otherwise replica ids and masks
  * are passed using the unsigned type.
@@ -95,6 +97,8 @@ void ring_buffer_add_replica(struct ring_buffer *rb, unsigned replica_id);
  * @param replica_id is the unique id of the replica to be removed.
  */
 void ring_buffer_del_replica(struct ring_buffer *rb, unsigned replica_id);
+
+void ring_buffer_replica_exit(struct ring_buffer *rb, struct ring_buffer_reader_state *state);
 
 /**
  * Calls ring_buffer_del_replica() for each replica in the replicas bitmask.
