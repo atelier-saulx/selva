@@ -19,18 +19,18 @@ void ring_buffer_init(struct ring_buffer* rb, void (*free_element_data)(void *p,
     rb->tail = 0;
     rb->len = RING_BUFFER_SIZE;
     rb->free_element_data = free_element_data;
-    rb->replicas_mask = ATOMIC_VAR_INIT(0);
+    rb->readers_mask = ATOMIC_VAR_INIT(0);
     pthread_mutex_init(&rb->lock, NULL);
     pthread_cond_init(&rb->cond, NULL);
 
     for (size_t i = 0; i < rb->len; i++) {
-        rb->buffer[i].not_replicated = ATOMIC_VAR_INIT(0);
+        rb->buffer[i].not_read = ATOMIC_VAR_INIT(0);
     }
 }
 
-int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_buffer* rb, ring_buffer_eid_t id, unsigned replica_id)
+int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_buffer* rb, ring_buffer_eid_t id, unsigned reader_id)
 {
-    const unsigned mask = 1 << replica_id;
+    const unsigned mask = 1 << reader_id;
     ssize_t new_index = -1;
 
     pthread_mutex_lock(&rb->lock);
@@ -38,10 +38,10 @@ int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_b
     int j = (rb->tail) % rb->len;
     for (size_t i = 0; i < rb->len; i++) {
         if (rb->buffer[j].id == id) {
-            atomic_fetch_and(&rb->buffer[j].not_replicated, ~mask);
+            atomic_fetch_and(&rb->buffer[j].not_read, ~mask);
             new_index = j;
         } else if (new_index >= 0) {
-            atomic_fetch_or(&rb->buffer[j].not_replicated, mask);
+            atomic_fetch_or(&rb->buffer[j].not_read, mask);
         }
         j = (j + 1) % rb->len;
     }
@@ -52,62 +52,64 @@ int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_b
     }
 
     state->index = new_index;
-    state->replica = replica_id;
+    state->reader_id = reader_id;
 
     pthread_mutex_unlock(&rb->lock);
     return 0;
 }
 
-void ring_buffer_add_replica(struct ring_buffer *rb, unsigned replica_id)
+void ring_buffer_add_reader(struct ring_buffer *rb, unsigned reader_id)
 {
-    const unsigned mask = 1 << replica_id;
+    const unsigned mask = 1 << reader_id;
 
-    atomic_fetch_or(&rb->replicas_mask, mask);
+    atomic_fetch_or(&rb->readers_mask, mask);
 }
 
-void ring_buffer_del_replica(struct ring_buffer *rb, unsigned replica_id)
+void ring_buffer_del_reader(struct ring_buffer *rb, unsigned reader_id)
 {
-    const unsigned mask = 1 << replica_id;
-    unsigned prev_replicas;
+    const unsigned mask = 1 << reader_id;
+    unsigned prev_readers;
 
-    prev_replicas = atomic_fetch_and(&rb->replicas_mask, ~mask);
+    prev_readers = atomic_fetch_and(&rb->readers_mask, ~mask);
 
-    if (prev_replicas & mask) {
+    if (prev_readers & mask) {
         pthread_cond_broadcast(&rb->cond);
     }
 }
 
-void ring_buffer_replica_exit(struct ring_buffer *rb, struct ring_buffer_reader_state *state)
+void ring_buffer_reader_exit(struct ring_buffer *rb, struct ring_buffer_reader_state *state)
 {
-    const unsigned mask = 1 << state->replica;
+    const unsigned mask = 1 << state->reader_id;
 
     /*
      * Clear from the elements in the ring buffer.
      */
     for (size_t i = 0; i < rb->len; i++) {
-        atomic_fetch_and(&rb->buffer[i].not_replicated, ~mask);
+        atomic_fetch_and(&rb->buffer[i].not_read, ~mask);
     }
 }
 
-void ring_buffer_del_replica_mask(struct ring_buffer *rb, unsigned replicas)
+void ring_buffer_del_readers_mask(struct ring_buffer *rb, unsigned readers)
 {
-    unsigned replica;
+    unsigned reader_id;
 
-    while ((replica = __builtin_ffs(replicas))) {
-        replica--;
-        ring_buffer_del_replica(rb, replica);
-        replicas ^= 1 << replica;
+    while ((reader_id = __builtin_ffs(readers))) {
+        reader_id--;
+        ring_buffer_del_reader(rb, reader_id);
+        readers ^= 1 << reader_id;
     }
 }
 
 unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t id, void * restrict p)
 {
-    unsigned not_replicated = atomic_load(&rb->buffer[rb->tail].not_replicated);
-    struct ring_buffer_element *e = &rb->buffer[rb->tail];
+    unsigned not_read;
+    struct ring_buffer_element *e;
 
-    if (atomic_load(&rb->buffer[rb->tail].not_replicated)) {
-        return not_replicated;
+    if ((not_read = atomic_load(&rb->buffer[rb->tail].not_read))) {
+        return not_read;
     }
+
+    e = &rb->buffer[rb->tail];
 
     if (rb->free_element_data && e->data) {
         rb->free_element_data(e->data, e->id);
@@ -115,7 +117,7 @@ unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t 
 
     e->id = id;
     e->data = p;
-    atomic_store(&e->not_replicated, atomic_load(&rb->replicas_mask));
+    atomic_store(&e->not_read, atomic_load(&rb->readers_mask));
 
     /*
      * Locking the mutex here is important to invoke a proper memory barrier and
@@ -131,12 +133,12 @@ unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t 
 
 static int should_stop(struct ring_buffer *rb, unsigned mask)
 {
-    return !(atomic_load(&rb->replicas_mask) & mask);
+    return !(atomic_load(&rb->readers_mask) & mask);
 }
 
 int ring_buffer_get_next(struct ring_buffer *rb, struct ring_buffer_reader_state *state, struct ring_buffer_element **e)
 {
-    const unsigned mask = 1 << state->replica;
+    const unsigned mask = 1 << state->reader_id;
     const size_t next = (state->index + 1) % rb->len;
 
     pthread_mutex_lock(&rb->lock);
@@ -154,9 +156,9 @@ int ring_buffer_get_next(struct ring_buffer *rb, struct ring_buffer_reader_state
     return 1;
 }
 
-void ring_buffer_mark_replicated(struct ring_buffer_reader_state *state, struct ring_buffer_element *e)
+void ring_buffer_release(struct ring_buffer_reader_state *state, struct ring_buffer_element *e)
 {
-    const unsigned mask = 1 << state->replica;
+    const unsigned mask = 1 << state->reader_id;
 
-    atomic_fetch_and(&e->not_replicated, ~mask);
+    atomic_fetch_and(&e->not_read, ~mask);
 }
