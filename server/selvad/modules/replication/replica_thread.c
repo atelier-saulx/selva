@@ -21,7 +21,7 @@ static int thread_set_self_core(int core_id)
     CPU_ZERO(&cpuset);
     CPU_SET(core_id, &cpuset);
 
-    if (pthread_setaffinity_np(pid, sizeof(cpu_set_t), &cpuset)) {
+    if (pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset)) {
         /* TODO Better error handling. */
         return SELVA_EGENERAL;
     }
@@ -32,7 +32,7 @@ static int thread_set_self_core(int core_id)
 void *replication_thread(void *arg)
 {
     struct replica *replica = (struct replica *)arg;
-    struct ring_buffer *rb = &replication_state.rb;
+    struct ring_buffer *rb = replica->rb;
     struct ring_buffer_reader_state state;
     struct ring_buffer_element *e;
 
@@ -44,10 +44,10 @@ void *replication_thread(void *arg)
 
     while (ring_buffer_get_next(rb, &state, &e)) {
         /* ... */
-        ring_buffer_mark_replicated(&state, e);
+        ring_buffer_release(&state, e);
     }
 
 out:
-    ring_buffer_del_replica(rb, replica->id);
+    ring_buffer_reader_exit(rb, replica->id);
     return NULL;
 }

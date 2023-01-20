@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 OBJ := \
+	   replica_thread.o \
 	   replication.o \
 	   ring_buffer.o
 DEP := $(OBJ:%.o=%.d)

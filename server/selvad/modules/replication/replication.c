@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 #define _GNU_SOURCE
+#include <assert.h>
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stddef.h>
@@ -19,13 +20,8 @@
 
 /* TODO This should be same as SDB HASH_SIZE */
 #define HASH_SIZE 32
-
+#define RING_BUFFER_SIZE 100
 #define MAX_REPLICAS 32
-
-#if 0
-#define ISPOW2(x) ((x != 0) && ((x & (x - 1)) == 0))
-static_assert(ISPOW2(CMD_LOG_SIZE));
-#endif
 
 #define EID_MSB_MASK (~(~(typeof(replication_state.sdb_eid))0 >> 1))
 
@@ -33,6 +29,7 @@ static struct replication_state {
     char sdb_hash[HASH_SIZE]; /*!< The hash of the latest dump. */
     ring_buffer_eid_t sdb_eid; /*!< Id of the sdb in rb. */
     struct ring_buffer rb;
+    struct ring_buffer_element buffer[RING_BUFFER_SIZE];
     struct replica replicas[MAX_REPLICAS];
 } replication_state;
 
@@ -56,19 +53,10 @@ static void free_replbuf(void *buf, ring_buffer_eid_t eid)
     }
 }
 
-void replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
-{
-    /* TODO We'd really like to avoid at least malloc() here, preferrably also memcpy(). */
-    void *p = selva_malloc(sizeof(buf_size) + buf_size);
-    static ring_buffer_eid_t eid;
-
-    eid = (eid + 1) & ~EID_MSB_MASK; /* TODO any better ideas? */
-    memcpy(p, &buf_size, sizeof(buf_size));
-    memcpy(p + sizeof(buf_size), buf, buf_size);
-    ring_buffer_insert(&replication_state.rb, eid, p);
-}
-
-static struct replica *new_replica_cb(void)
+/**
+ * Allocate a new replica_id.
+ */
+static struct replica *new_replica(void)
 {
     for (int i = 0; i < MAX_REPLICAS; i++) {
         if (!replication_state.replicas[i].in_use) {
@@ -82,16 +70,62 @@ static struct replica *new_replica_cb(void)
     return NULL;
 }
 
+/**
+ * Release a previously allocated replica_id.
+ */
+static inline void release_replica(struct replica *r)
+{
+    r->in_use = 0;
+}
+
 static void start_replica_thread(struct sockaddr_in *serv_addr)
 {
-    struct replica *replica = new_replica_cb();
+    struct replica *replica = new_replica();
 
     if (!replica) {
         return; /* TODO ERROR */
     }
 
-    ring_buffer_add_replica(&replication_state.rb, replica->id);
+    ring_buffer_add_reader(&replication_state.rb, replica->id);
     pthread_create(&replica->thread, NULL, replication_thread, replica);
+}
+
+/**
+ * Request replica reader threaders in the mask to stop and release their data.
+ * This function will block until the threads exit.
+ */
+static void drop_replicas(unsigned replicas)
+{
+    unsigned replica_id;
+
+    ring_buffer_del_reader_mask(&replication_state.rb, replicas);
+    while ((replica_id = __builtin_ffs(replicas))) {
+        struct replica *r;
+
+        replica_id--;
+        assert(replica_id < num_elem(replication_state.replicas));
+        r = &replication_state.replicas[replica_id];
+
+        pthread_join(r->thread, NULL);
+        release_replica(r);
+
+        replicas ^= 1 << replica_id;
+    }
+}
+
+void replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
+{
+    /* TODO We'd really like to avoid at least malloc() here, preferrably also memcpy(). */
+    void *p = selva_malloc(sizeof(buf_size) + buf_size);
+    static ring_buffer_eid_t eid;
+    unsigned not_replicated;
+
+    eid = (eid + 1) & ~EID_MSB_MASK; /* TODO any better ideas? */
+    memcpy(p, &buf_size, sizeof(buf_size));
+    memcpy(p + sizeof(buf_size), buf, buf_size);
+    while ((not_replicated = ring_buffer_insert(&replication_state.rb, eid, p))) {
+        drop_replicas(not_replicated);
+    }
 }
 
 static void replicaof(struct selva_server_response_out *resp, const void *buf, size_t size)
@@ -133,8 +167,9 @@ __constructor void init(void)
 
         r->id = i;
         r->core_id = i % nr_cores;
+        r->rb = &replication_state.rb;
     }
-    ring_buffer_init(&replication_state.rb, free_replbuf);
+    ring_buffer_init(&replication_state.rb, replication_state.buffer, num_elem(replication_state.buffer), free_replbuf);
 
     SELVA_MK_COMMAND(CMD_REPLICAOF_ID, replicaof);
     SELVA_MK_COMMAND(CMD_REPLICAINFO_ID, replicainfo);

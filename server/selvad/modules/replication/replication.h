@@ -9,6 +9,7 @@ struct replica {
     unsigned id;
     int core_id;
     pthread_t thread;
+    struct ring_buffer *rb; /*!< Pointer to the shared ring_buffer. */
 };
 
 /* replica_thread.c */
