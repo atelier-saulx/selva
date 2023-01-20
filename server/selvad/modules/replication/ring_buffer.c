@@ -12,19 +12,20 @@
 #include <stdatomic.h>
 #include "ring_buffer.h"
 
-void ring_buffer_init(struct ring_buffer* rb, void (*free_element_data)(void *p, ring_buffer_eid_t eid))
+void ring_buffer_init(struct ring_buffer* rb, struct ring_buffer_element *buf, size_t nelem, void (*free_element_data)(void *p, ring_buffer_eid_t eid))
 {
     memset(rb, 0, sizeof(*rb));
 
     rb->tail = 0;
-    rb->len = RING_BUFFER_SIZE;
+    rb->len = nelem;
+    rb->buf = buf;
     rb->free_element_data = free_element_data;
     rb->readers_mask = ATOMIC_VAR_INIT(0);
     pthread_mutex_init(&rb->lock, NULL);
     pthread_cond_init(&rb->cond, NULL);
 
     for (size_t i = 0; i < rb->len; i++) {
-        rb->buffer[i].not_read = ATOMIC_VAR_INIT(0);
+        rb->buf[i].not_read = ATOMIC_VAR_INIT(0);
     }
 }
 
@@ -37,11 +38,11 @@ int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_b
 
     int j = (rb->tail) % rb->len;
     for (size_t i = 0; i < rb->len; i++) {
-        if (rb->buffer[j].id == id) {
-            atomic_fetch_and(&rb->buffer[j].not_read, ~mask);
+        if (rb->buf[j].id == id) {
+            atomic_fetch_and(&rb->buf[j].not_read, ~mask);
             new_index = j;
         } else if (new_index >= 0) {
-            atomic_fetch_or(&rb->buffer[j].not_read, mask);
+            atomic_fetch_or(&rb->buf[j].not_read, mask);
         }
         j = (j + 1) % rb->len;
     }
@@ -65,16 +66,24 @@ void ring_buffer_add_reader(struct ring_buffer *rb, unsigned reader_id)
     atomic_fetch_or(&rb->readers_mask, mask);
 }
 
+void ring_buffer_del_readers_mask(struct ring_buffer *rb, unsigned readers)
+{
+    unsigned prev_readers;
+
+    pthread_mutex_lock(&rb->lock);
+    prev_readers = atomic_fetch_and(&rb->readers_mask, ~readers);
+    pthread_mutex_unlock(&rb->lock);
+
+    if (prev_readers & readers) {
+        pthread_cond_broadcast(&rb->cond);
+    }
+}
+
 void ring_buffer_del_reader(struct ring_buffer *rb, unsigned reader_id)
 {
     const unsigned mask = 1 << reader_id;
-    unsigned prev_readers;
 
-    prev_readers = atomic_fetch_and(&rb->readers_mask, ~mask);
-
-    if (prev_readers & mask) {
-        pthread_cond_broadcast(&rb->cond);
-    }
+    ring_buffer_del_readers_mask(rb, mask);
 }
 
 void ring_buffer_reader_exit(struct ring_buffer *rb, struct ring_buffer_reader_state *state)
@@ -85,18 +94,7 @@ void ring_buffer_reader_exit(struct ring_buffer *rb, struct ring_buffer_reader_s
      * Clear from the elements in the ring buffer.
      */
     for (size_t i = 0; i < rb->len; i++) {
-        atomic_fetch_and(&rb->buffer[i].not_read, ~mask);
-    }
-}
-
-void ring_buffer_del_readers_mask(struct ring_buffer *rb, unsigned readers)
-{
-    unsigned reader_id;
-
-    while ((reader_id = __builtin_ffs(readers))) {
-        reader_id--;
-        ring_buffer_del_reader(rb, reader_id);
-        readers ^= 1 << reader_id;
+        atomic_fetch_and(&rb->buf[i].not_read, ~mask);
     }
 }
 
@@ -105,11 +103,11 @@ unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t 
     unsigned not_read;
     struct ring_buffer_element *e;
 
-    if ((not_read = atomic_load(&rb->buffer[rb->tail].not_read))) {
+    if ((not_read = atomic_load(&rb->buf[rb->tail].not_read))) {
         return not_read;
     }
 
-    e = &rb->buffer[rb->tail];
+    e = &rb->buf[rb->tail];
 
     if (rb->free_element_data && e->data) {
         rb->free_element_data(e->data, e->id);
@@ -150,7 +148,7 @@ int ring_buffer_get_next(struct ring_buffer *rb, struct ring_buffer_reader_state
         return 0;
     }
 
-    *e = &rb->buffer[next];
+    *e = &rb->buf[next];
     state->index = next;
 
     return 1;

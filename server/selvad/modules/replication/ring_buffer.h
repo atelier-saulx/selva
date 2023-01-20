@@ -4,8 +4,6 @@
  */
 #pragma once
 
-#define RING_BUFFER_SIZE 5
-
 typedef int64_t ring_buffer_eid_t; /*!< Element id type. */
 
 /*
@@ -31,9 +29,9 @@ struct ring_buffer_element {
 };
 
 struct ring_buffer {
-    struct ring_buffer_element buffer[RING_BUFFER_SIZE];
     size_t tail;
     size_t len;
+    struct ring_buffer_element *buf;
     /**
      * A pointer to a function to free the data of a ring_buffer_element.
      * This function will be called when an element is replaced in the ring
@@ -64,7 +62,7 @@ struct ring_buffer_reader_state {
  * @param free_element_data is a pointer to a function that can free a pointer
  * p given to the ring_buffer_insert() function.
  */
-void ring_buffer_init(struct ring_buffer* rb, void (*free_element_data)(void *p, ring_buffer_eid_t eid));
+void ring_buffer_init(struct ring_buffer* rb, struct ring_buffer_element *buf, size_t nelem, void (*free_element_data)(void *p, ring_buffer_eid_t eid));
 
 /**
  * Initialize a ring_buffer_state structure.
@@ -88,6 +86,13 @@ int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_b
 void ring_buffer_add_reader(struct ring_buffer *rb, unsigned reader_id);
 
 /**
+ * Delete all readers in the mask from the ring_buffer.
+ * @param rb is a pointer to the ring buffer.
+ * @param readers is a bitmask of readers to be removed.
+ */
+void ring_buffer_del_reader_mask(struct ring_buffer *rb, unsigned readers);
+
+/**
  * Delete a reader from the ring_buffer.
  * Must be called by the writer reader. After this function the next
  * ring_buffer_get_next() call by the reader will fail.
@@ -102,13 +107,6 @@ void ring_buffer_del_reader(struct ring_buffer *rb, unsigned reader_id);
  * writer then the next ring_buffer_get_next() call by the reader willfail.
  */
 void ring_buffer_reader_exit(struct ring_buffer *rb, struct ring_buffer_reader_state *state);
-
-/**
- * Calls ring_buffer_del_reader() for each reader in the readers bitmask.
- * @param rb is a pointer to the ring buffer.
- * @param readers is a bitmask of readers to be removed.
- */
-void ring_buffer_del_reader_mask(struct ring_buffer *rb, unsigned readers);
 
 /**
  * Insert an element to the ring_buffer.
