@@ -14,3 +14,4 @@ struct replica {
 
 /* replica_thread.c */
 void *replication_thread(void *arg);
+

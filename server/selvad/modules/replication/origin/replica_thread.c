@@ -11,7 +11,7 @@
 #include "selva_error.h"
 #include "selva_log.h"
 #include "ring_buffer.h"
-#include "replication.h"
+#include "replica.h"
 
 static int thread_set_self_core(int core_id)
 {
@@ -43,7 +43,8 @@ void *replication_thread(void *arg)
     thread_set_self_core(replica->core_id);
 
     while (ring_buffer_get_next(rb, &state, &e)) {
-        /* ... */
+        /* TODO Send to the client */
+        /* TODO Abort if the client disconnects */
         ring_buffer_release(&state, e);
     }
 

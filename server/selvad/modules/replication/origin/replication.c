@@ -11,15 +11,14 @@
 #include <string.h>
 #include <sys/sysinfo.h>
 #include "jemalloc.h"
-#include "module.h"
 #include "selva_error.h"
 #include "selva_log.h"
-#include "selva_server.h"
 #include "ring_buffer.h"
-#include "replication.h"
+#include "replica.h"
+#include "origin.h"
 
-/* TODO This should be same as SDB HASH_SIZE */
-#define HASH_SIZE 32
+/* TODO public functions should be NOP if not origin */
+
 #define RING_BUFFER_SIZE 100
 #define MAX_REPLICAS 32
 
@@ -39,7 +38,7 @@ static ring_buffer_eid_t gen_sdb_eid(char sdb_hash[HASH_SIZE])
     return EID_MSB_MASK;
 }
 
-void replication_new_sdb(char sdb_hash[HASH_SIZE])
+void replication_origin_new_sdb(char sdb_hash[HASH_SIZE])
 {
     memcpy(replication_state.sdb_hash, sdb_hash, HASH_SIZE);
     replication_state.sdb_eid = gen_sdb_eid(sdb_hash);
@@ -78,16 +77,19 @@ static inline void release_replica(struct replica *r)
     r->in_use = 0;
 }
 
-static void start_replica_thread(struct sockaddr_in *serv_addr)
+int replication_origin_register_replica(void /* TODO client? */)
 {
     struct replica *replica = new_replica();
 
     if (!replica) {
-        return; /* TODO ERROR */
+        return SELVA_ENOBUFS;
     }
 
+    /* TODO Add client */
     ring_buffer_add_reader(&replication_state.rb, replica->id);
     pthread_create(&replica->thread, NULL, replication_thread, replica);
+
+    return 0;
 }
 
 /**
@@ -113,7 +115,7 @@ static void drop_replicas(unsigned replicas)
     }
 }
 
-void replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
+void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
 {
     /* TODO We'd really like to avoid at least malloc() here, preferrably also memcpy(). */
     void *p = selva_malloc(sizeof(buf_size) + buf_size);
@@ -128,38 +130,13 @@ void replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
     }
 }
 
-static void replicaof(struct selva_server_response_out *resp, const void *buf, size_t size)
+void replication_origin_stop()
 {
-    if (size != 2) {
-        selva_send_error_arity(resp);
-        return;
-    }
-
-    /* TODO IP and port */
+    /* TODO Implement STOP */
 }
 
-static void replicainfo(struct selva_server_response_out *resp, const void *buf, size_t size)
+void replication_origin_init(void)
 {
-    if (size != 0) {
-        selva_send_error_arity(resp);
-        return;
-    }
-
-    selva_send_array(resp, 3);
-    selva_send_strf(resp, "origin"); /* TODO origin or replica */
-    selva_send_str(resp, "", 0); /* TODO hash? */
-    selva_send_ll(resp, 0); /* TODO offset */
-}
-
-IMPORT() {
-    evl_import_main(selva_log);
-    import_selva_server();
-}
-
-__constructor void init(void)
-{
-    SELVA_LOG(SELVA_LOGL_INFO, "Init replication");
-
     int nr_cores = get_nprocs();
 
     for (unsigned i = 0; i < MAX_REPLICAS; i++) {
@@ -170,7 +147,4 @@ __constructor void init(void)
         r->rb = &replication_state.rb;
     }
     ring_buffer_init(&replication_state.rb, replication_state.buffer, num_elem(replication_state.buffer), free_replbuf);
-
-    SELVA_MK_COMMAND(CMD_REPLICAOF_ID, replicaof);
-    SELVA_MK_COMMAND(CMD_REPLICAINFO_ID, replicainfo);
 }
