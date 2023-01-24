@@ -203,8 +203,12 @@ async function get(
     createGetOperations(client, newProps, id, '', db)
   )
 
-  await addNodeMarkers(client, ctx)
-  await refreshMarkers(client, ctx)
+  try {
+    await addNodeMarkers(client, ctx)
+    await refreshMarkers(client, ctx)
+  } catch (e) {
+    console.error(e)
+  }
 
   // maybe ncie function?
   if (meta || props.$includeMeta) {
