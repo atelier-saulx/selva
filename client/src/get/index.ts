@@ -203,10 +203,8 @@ async function get(
     createGetOperations(client, newProps, id, '', db)
   )
 
-  if (!nested) {
-    await addNodeMarkers(client, ctx)
-    await refreshMarkers(client, ctx)
-  }
+  await addNodeMarkers(client, ctx)
+  await refreshMarkers(client, ctx)
 
   // maybe ncie function?
   if (meta || props.$includeMeta) {
