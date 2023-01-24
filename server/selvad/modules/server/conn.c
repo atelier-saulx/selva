@@ -39,6 +39,7 @@ void free_conn_ctx(struct conn_ctx *ctx)
     int i = ctx->inuse;
 
     ctx->inuse = 0;
+    /* TODO Handle streams */
     bitmap_set(&clients_map, i);
 }
 

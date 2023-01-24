@@ -5,6 +5,9 @@
  */
 #pragma once
 
+/**
+ * Client connection descriptor.
+ */
 struct conn_ctx {
     int fd; /*<! The socket associated with this connection. */
     int inuse; /*!< Set if the connection is active. */
@@ -16,6 +19,13 @@ struct conn_ctx {
         CONN_CTX_RECV_STATE_FRAGMENT, /*!< Waiting for the next frame of a sequence. */
     } recv_state;
     typeof_field(struct selva_proto_header, seqno) cur_seqno; /*!< Currently incoming sequence. */
+    /**
+     * Application specific data.
+     */
+    struct {
+        int tim_hrt; /*!< Server heartbeat timer. */
+    } app;
+    /* TODO streams list, must be closed when the conn_ctx is closed or something */
     struct selva_proto_header recv_frame_hdr_buf;
     char *recv_msg_buf; /*!< Buffer for the currently incoming message. */
     size_t recv_msg_buf_size;
@@ -54,6 +64,7 @@ void server_dispatch2worker(struct conn_ctx *restrict ctx, const char *restrict 
 /**
  * Allocate a new client connection descriptor.
  */
+[[nodiscard]]
 struct conn_ctx *alloc_conn_ctx(void);
 
 /**

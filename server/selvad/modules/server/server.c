@@ -49,13 +49,15 @@ static selva_cmd_function get_command(int nr)
     return (nr >= 0 && nr < (int)num_elem(commands)) ? commands[nr].cmd_fn : NULL;
 }
 
-static void ping(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused) {
+static void ping(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused)
+{
     const char msg[] = "pong";
 
     selva_send_str(resp, msg, sizeof(msg) - 1);
 }
 
-static void echo(struct selva_server_response_out *resp, const void *buf, size_t size) {
+static void echo(struct selva_server_response_out *resp, const void *buf, size_t size)
+{
     struct selva_proto_string hdr;
     const char *p = (char *)buf;
     size_t left = size;
@@ -94,7 +96,8 @@ static void echo(struct selva_server_response_out *resp, const void *buf, size_t
     }
 }
 
-static void lscmd(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused) {
+static void lscmd(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused)
+{
     selva_send_array(resp, -1);
     for (size_t i = 0; i < num_elem(commands); i++) {
         if (commands[i].cmd_fn) {
@@ -104,6 +107,51 @@ static void lscmd(struct selva_server_response_out *resp, const void *buf __unus
         }
     }
     selva_send_array_end(resp);
+}
+
+static const struct timespec hrt_period = {
+    .tv_sec = 5,
+    .tv_nsec = 0,
+};
+
+static void hrt_cb(struct event *, void *arg)
+{
+    struct selva_server_response_out *resp = (struct selva_server_response_out *)arg;
+
+    resp->ctx->app.tim_hrt = evl_set_timeout(&hrt_period, hrt_cb, resp);
+    SELVA_LOG(SELVA_LOGL_INFO, "Sending a heartbeat"); /* TODO useless log line */
+    /* TODO Do we want to handle errors? */
+
+    selva_send_str(resp, "boum", 4);
+    server_send_flush(resp);
+}
+
+static void hrt(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused)
+{
+    struct selva_server_response_out *stream_resp;
+    int tim, err;
+
+    if (resp->ctx->app.tim_hrt >= 0) {
+        selva_send_errorf(resp, SELVA_EEXIST, "Already created");
+        return;
+    }
+
+    err = server_start_stream(resp, &stream_resp);
+    if (err) {
+        selva_send_errorf(resp, err, "Failed to create a stream");
+        return;
+    }
+
+    tim = evl_set_timeout(&hrt_period, hrt_cb, stream_resp);
+    if (tim < 0) {
+        server_cancel_stream(resp, stream_resp);
+        selva_send_errorf(resp, tim, "Failed to create a timer");
+        return;
+    }
+
+    resp->ctx->app.tim_hrt = tim;
+
+    selva_send_ll(resp, 1);
 }
 
 static int new_server(int port)
@@ -170,7 +218,9 @@ static void on_data(struct event *event, void *arg)
             (void)selva_send_error(&resp, SELVA_PROTO_EINVAL, msg, sizeof(msg) - 1);
         }
 
-        server_send_end(&resp);
+        if (!(resp.frame_flags & SELVA_PROTO_HDR_STREAM)) {
+            server_send_end(&resp);
+        } /* The sequence doesn't end for streams. */
     }
     /* Otherwise we need to wait for more frames. */
 }
@@ -211,6 +261,7 @@ static void on_connection(struct event *event, void *arg __unused)
 
     conn_ctx->fd = new_sockfd;
     conn_ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
+    conn_ctx->app.tim_hrt = SELVA_EINVAL;
 #if 0
     server_assign_worker(conn_ctx);
 #endif
@@ -240,6 +291,7 @@ __constructor void init(void)
     SELVA_MK_COMMAND(CMD_PING_ID, ping);
     SELVA_MK_COMMAND(CMD_ECHO_ID, echo);
     SELVA_MK_COMMAND(CMD_LSCMD_ID, lscmd);
+    SELVA_MK_COMMAND(CMD_HRT_ID, hrt);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(selva_port);

@@ -37,18 +37,31 @@ SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, const char *name, selva_cmd_f
  * data within a sequence will be always delivered in the sending order.
  * @returns Return bytes sent; Otherwise an error.
  */
-ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len);
+SELVA_SERVER_EXPORT(ssize_t, server_send_buf, struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len);
 
 /**
  * Flush the response buffer.
  */
-int server_send_flush(struct selva_server_response_out *restrict res);
+SELVA_SERVER_EXPORT(int, server_send_flush, struct selva_server_response_out *restrict resp);
+
+/**
+ * Start a long standing stream response.
+ */
+SELVA_SERVER_EXPORT(int, server_start_stream, struct selva_server_response_out *resp, struct selva_server_response_out **stream_resp_out);
+
+/**
+ * Cancel a stream before it has been used.
+ * Stream cannot be cancelled after first use. This function is only provided
+ * for cancelling streaming immediately after creation due to an error in
+ * initializing the actual streaming.
+ */
+SELVA_SERVER_EXPORT(void, server_cancel_stream, struct selva_server_response_out *resp, struct selva_server_response_out *stream_resp_out);
 
 /**
  * End sending a response.
  * Finalizes the response sequence.
  */
-int server_send_end(struct selva_server_response_out *restrict res);
+SELVA_SERVER_EXPORT(int, server_send_end, struct selva_server_response_out *restrict resp);
 
 /**
  * Send a null value.

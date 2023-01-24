@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
@@ -87,7 +87,17 @@ static int flush_frame_buf(struct selva_server_response_out *resp, int last_fram
 {
     int err;
 
-    assert(resp->buf_i >= sizeof(struct selva_proto_header));
+    if (resp->buf_i == 0) {
+        if (last_frame) {
+            start_resp_frame_buf(resp);
+        } else {
+            /*
+             * Nothing to flush. Usually this means that the caller is starting
+             * a stream then this is fine.
+             */
+            return 0;
+        }
+    }
 
     finalize_frame(resp->buf, resp->buf_i, last_frame);
     err = send_frame(resp->ctx->fd, resp->buf, resp->buf_i, 0);
@@ -130,6 +140,36 @@ out:
     return ret;
 }
 
+int server_start_stream(struct selva_server_response_out *resp, struct selva_server_response_out **stream_resp_out)
+{
+    struct selva_server_response_out *stream_resp;
+
+    if (!resp->ctx) {
+        return SELVA_PROTO_EINVAL;
+    }
+
+    if (resp->frame_flags & SELVA_PROTO_HDR_STREAM) {
+        /* Stream already started. */
+        return SELVA_PROTO_EALREADY;
+    }
+
+    flush_frame_buf(resp, 0);
+    resp->frame_flags |= SELVA_PROTO_HDR_STREAM;
+    stream_resp = selva_malloc(sizeof(*stream_resp));
+    memcpy(stream_resp, resp, sizeof(*stream_resp));
+
+    /* TODO Add to the list of streams */
+
+    *stream_resp_out = stream_resp;
+    return 0;
+}
+
+void server_cancel_stream(struct selva_server_response_out *resp, struct selva_server_response_out *stream_resp)
+{
+    resp->frame_flags &= ~SELVA_PROTO_HDR_STREAM;
+    selva_free(stream_resp);
+}
+
 int server_send_flush(struct selva_server_response_out *restrict resp)
 {
     if (!resp->ctx) {
@@ -150,6 +190,12 @@ int server_send_end(struct selva_server_response_out *restrict resp)
     err = flush_frame_buf(resp, 1);
 
     resp->ctx = NULL; /* Make sure nothing will be sent anymore. */
+
+    if (resp->frame_flags & SELVA_PROTO_HDR_STREAM) {
+        selva_free(resp);
+        /* TODO Free stream_resp properly and remove from the list */
+    }
+
     return err;
 }
 

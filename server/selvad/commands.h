@@ -27,17 +27,24 @@
 #define CMD_LSCMD_ID 2
 
 /**
+ * Start a server heartbeat.
+ * module: server
+ * cmd: hrt
+ */
+#define CMD_HRT_ID 3
+
+/**
  * List supported languages.
  * module: db
  * cmd: lslang
  */
-#define CMD_LSLANG_ID 3
+#define CMD_LSLANG_ID 4
 
 /**
  * TODO
  * cmd: modinfo
  */
-#define CMD_MODINFO_ID 4
+#define CMD_MODINFO_ID 5
 
 /**
  * Load db.
