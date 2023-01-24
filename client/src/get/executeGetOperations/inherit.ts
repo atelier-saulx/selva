@@ -106,21 +106,12 @@ async function mergeObj(
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
-    const added = await addMarker(client, ctx, {
+    await addMarker(client, ctx, {
       type: 'ancestors',
       id: op.id,
       fields,
       rpn,
     })
-
-    if (added) {
-      client.redis.selva_subscriptions_refresh(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '___selva_hierarchy',
-        ctx.subId
-      )
-      ctx.hasFindMarkers = true
-    }
   }
 
   const res = await client.redis.selva_hierarchy_find(
@@ -206,7 +197,7 @@ async function deepMergeObj(
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
-    const added = await addMarker(
+    await addMarker(
       client,
       ctx,
       {
@@ -217,15 +208,6 @@ async function deepMergeObj(
       },
       passedOnSchema
     )
-
-    if (added) {
-      client.redis.selva_subscriptions_refresh(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '___selva_hierarchy',
-        ctx.subId
-      )
-      ctx.hasFindMarkers = true
-    }
   }
 
   const res = await client.redis.selva_hierarchy_find(
@@ -308,7 +290,7 @@ async function inheritItem(
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
-    const added = await addMarker(
+    await addMarker(
       client,
       ctx,
       {
@@ -319,15 +301,6 @@ async function inheritItem(
       },
       passedOnSchema
     )
-
-    if (added) {
-      client.redis.selva_subscriptions_refresh(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '___selva_hierarchy',
-        ctx.subId
-      )
-      ctx.hasFindMarkers = true
-    }
   }
 
   const [results] = await client.redis.selva_hierarchy_find(
@@ -426,7 +399,7 @@ export default async function inherit(
   if (fs && fs.type === 'reference') {
     if (ctx.subId) {
       bufferNodeMarker(ctx, op.id, op.sourceField)
-      const added = await addMarker(
+      await addMarker(
         client,
         ctx,
         {
@@ -459,15 +432,6 @@ export default async function inherit(
         },
         passedOnSchema
       )
-
-      if (added) {
-        client.redis.selva_subscriptions_refresh(
-          ctx.originDescriptors[ctx.db] || { name: ctx.db },
-          '___selva_hierarchy',
-          ctx.subId
-        )
-        ctx.hasFindMarkers = true
-      }
     }
 
     const res = await client.redis.selva_inherit(
@@ -514,7 +478,7 @@ export default async function inherit(
 
     if (ctx.subId) {
       bufferNodeMarker(ctx, op.id, op.sourceField)
-      const added = await addMarker(
+      await addMarker(
         client,
         ctx,
         {
@@ -547,15 +511,6 @@ export default async function inherit(
         },
         passedOnSchema
       )
-
-      if (added) {
-        client.redis.selva_subscriptions_refresh(
-          ctx.originDescriptors[ctx.db] || { name: ctx.db },
-          '___selva_hierarchy',
-          ctx.subId
-        )
-        ctx.hasFindMarkers = true
-      }
     }
 
     const res = await client.redis.selva_inherit(
@@ -654,7 +609,7 @@ export default async function inherit(
       )
     } else {
       bufferNodeMarker(ctx, op.id, ...fields)
-      added = await addMarker(
+      await addMarker(
         client,
         ctx,
         {
@@ -692,15 +647,6 @@ export default async function inherit(
         },
         passedOnSchema
       )
-    }
-
-    if (added) {
-      client.redis.selva_subscriptions_refresh(
-        ctx.originDescriptors[ctx.db] || { name: ctx.db },
-        '___selva_hierarchy',
-        ctx.subId
-      )
-      ctx.hasFindMarkers = true
     }
   }
 
