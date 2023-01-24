@@ -1,7 +1,11 @@
 import { SelvaClient } from '..'
 import { GetResult, GetOptions, ObserveEventOptions } from './types'
 import createGetOperations from './createGetOperations'
-import executeGetOperations, { adler32 } from './executeGetOperations'
+import executeGetOperations, {
+  adler32,
+  refreshMarkers,
+  addNodeMarkers,
+} from './executeGetOperations'
 import resolveId from './resolveId'
 import combineResults from './combineResults'
 import { createRpn } from '@saulx/selva-query-ast-parser'
@@ -198,6 +202,11 @@ async function get(
     ctx,
     createGetOperations(client, newProps, id, '', db)
   )
+
+  if (!nested) {
+    await addNodeMarkers(client, ctx)
+    await refreshMarkers(client, ctx)
+  }
 
   // maybe ncie function?
   if (meta || props.$includeMeta) {
