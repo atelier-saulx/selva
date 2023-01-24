@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
-#pragma  once
+#pragma once
 
 struct cmd;
 
@@ -17,8 +17,15 @@ struct cmd {
 };
 
 /**
+ * Send a message.
+ */
+int send_message(int fd, void *buf, size_t size, int flags);
+
+/**
  * Receive a message.
  * Not reentrant.
  */
-void *recv_message(int fd,int *cmd, size_t *msg_size);
-void cmd_discover(int fd, int seqno, void (*cb)(struct cmd *cmd));
+void recv_message(int fd);
+
+void cmd_discover(int fd, int seqno);
+void cmd_foreach(void (*cb)(struct cmd *cmd));
