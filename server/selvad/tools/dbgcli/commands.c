@@ -65,6 +65,12 @@ static struct cmd commands[255] = {
         .cmd_req = cmd_lscmd_req,
         .cmd_res = generic_res,
     },
+    [254] = { /* Pseudo-command to read the socket */
+        .cmd_id = 254,
+        .cmd_name = "!listen",
+        .cmd_req = NULL,
+        .cmd_res = generic_res,
+    }
 };
 
 int send_message(int fd, void *buf, size_t size, int flags)
@@ -491,7 +497,7 @@ void cmd_discover(int fd, int seqno)
 void cmd_foreach(void (*cb)(struct cmd *cmd))
 {
     for (struct cmd *cmd = &commands[0]; cmd != commands + num_elem(commands); cmd++) {
-        if (cmd->cmd_name && cmd->cmd_req) {
+        if (cmd->cmd_name) {
             cb(cmd);
         }
     }

@@ -139,6 +139,8 @@ int main(int argc, char const* argv[])
         cmd = get_cmd(args[0]);
         if ((void *)cmd == main) {
             break;
+        } else if (cmd && cmd->cmd_id == 254) { /* !listen pseudo-command */
+            /* NOP */
         } else if (!cmd || !cmd->cmd_req) {
             fprintf(stderr, "Unknown command\n");
             continue;
