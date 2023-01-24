@@ -21,6 +21,8 @@ test.before(async (t) => {
     port: port2,
   })
 
+  await wait(1000)
+
   const client = connect({ port })
   await client.updateSchema({
     languages: ['en'],
@@ -83,8 +85,8 @@ test.after(async (t) => {
 test.serial('subscription find multi-db', async (t) => {
   const client = connect({ port })
 
-  const matches = []
-  const teams = []
+  const matches: any[] = []
+  const teams: any[] = []
 
   for (let i = 0; i < 100; i++) {
     teams.push({

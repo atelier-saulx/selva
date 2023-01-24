@@ -254,7 +254,7 @@ export function bufferNodeMarker(
   ctx.nodeMarkers[id] = current
 }
 
-async function addNodeMarkers(
+export async function addNodeMarkers(
   client: SelvaClient,
   ctx: ExecContext,
   passedOnSchema?: Schema
@@ -288,7 +288,7 @@ async function addNodeMarkers(
   }
 }
 
-async function refreshMarkers(
+export async function refreshMarkers(
   client: SelvaClient,
   ctx: ExecContext
 ): Promise<void> {
@@ -532,11 +532,8 @@ function findNodeRes2field(field: string, findRes: any) {
   for (let i = 0; i < fields.length; i += 2) {
     if (fields[i] === field) {
       out.push(...fields[i + 1])
-    } else /* if (fields[i].substring(0, field.length) === field) */ {
-      out.push(
-        fields[i].substring(field.length + 1),
-        fields[i + 1]
-      )
+    } /* if (fields[i].substring(0, field.length) === field) */ else {
+      out.push(fields[i].substring(field.length + 1), fields[i + 1])
     }
   }
 
@@ -549,10 +546,7 @@ function findNodeRes2array(field: string, findRes: any) {
 
   if (field.includes('.*.')) {
     for (let i = 0; i < fields.length; i += 2) {
-      out.push(
-        fields[i].substring(field.indexOf('*')),
-        fields[i + 1]
-      )
+      out.push(fields[i].substring(field.indexOf('*')), fields[i + 1])
     }
   } else {
     for (let i = 0; i < fields.length; i += 2) {
@@ -600,7 +594,8 @@ const TYPE_TO_SPECIAL_OP: Record<
       '',
       '___selva_hierarchy',
       'node',
-      'fields', field,
+      'fields',
+      field,
       padId(id)
     )
 
@@ -622,7 +617,8 @@ const TYPE_TO_SPECIAL_OP: Record<
       '',
       '___selva_hierarchy',
       'node',
-      'fields', field,
+      'fields',
+      field,
       padId(id)
     )
 
@@ -683,12 +679,13 @@ const TYPE_TO_SPECIAL_OP: Record<
       '',
       '___selva_hierarchy',
       'node',
-      'fields', field,
+      'fields',
+      field,
       padId(id)
     )
 
     return findNodeRes2field(field, r)
-  }
+  },
 }
 
 export const executeNestedGetOperations = async (
@@ -731,7 +728,14 @@ export const executeGetOperation = async (
         : [op.field]
 
       let id = op.fromReference
-        ? await TYPE_TO_SPECIAL_OP.reference(client, ctx, op.id, field.join('\n'), lang, schema)
+        ? await TYPE_TO_SPECIAL_OP.reference(
+            client,
+            ctx,
+            op.id,
+            field.join('\n'),
+            lang,
+            schema
+          )
         : await client.redis.selva_object_get(
             ctx.originDescriptors[ctx.db] || { name: ctx.db },
             makeLangArg((schema || client.schemas[ctx.db]).languages, lang),
@@ -776,15 +780,16 @@ export const executeGetOperation = async (
         }
       }
 
-      const execGetOp = (props) => executeNestedGetOperations(
-        client,
-        props,
-        lang,
-        ctx,
-        // eslint-disable-next-line
-        op.fromReference === true ? false : true,
-        schema
-      )
+      const execGetOp = (props) =>
+        executeNestedGetOperations(
+          client,
+          props,
+          lang,
+          ctx,
+          // eslint-disable-next-line
+          op.fromReference === true ? false : true,
+          schema
+        )
 
       if (typeof id === 'string') {
         const props = Object.assign({}, op.props, { $id: id })
@@ -797,21 +802,22 @@ export const executeGetOperation = async (
       } else if (typeof id === 'object') {
         const res = {}
 
-        await Promise.all(Object.keys(id).map(async (key) => {
-          const props = Object.assign({}, op.props, { $id: id[key] })
+        await Promise.all(
+          Object.keys(id).map(async (key) => {
+            const props = Object.assign({}, op.props, { $id: id[key] })
 
-          if (!op.props.$db && ctx.db && ctx.db !== 'default') {
-            props.$db = ctx.db
-          }
+            if (!op.props.$db && ctx.db && ctx.db !== 'default') {
+              props.$db = ctx.db
+            }
 
-          setNestedResult(res, key, await execGetOp(props))
-        }))
+            setNestedResult(res, key, await execGetOp(props))
+          })
+        )
 
-        return res;
+        return res
       } else {
-          return null;
+        return null
       }
-
     } else {
       const id = await resolveId(client, op.props)
       if (!id) return null
@@ -983,14 +989,6 @@ export default async function executeGetOperations(
       }
     }
   })
-
-  // add buffered subscription markers
-  if (!nested) {
-    const addedMarkers = await addNodeMarkers(client, ctx)
-    if (addedMarkers || ctx.hasFindMarkers) {
-      await refreshMarkers(client, ctx)
-    }
-  }
 
   return o
 }
