@@ -10,6 +10,7 @@ struct replica {
     int core_id;
     pthread_t thread;
     struct ring_buffer *rb; /*!< Pointer to the shared ring_buffer. */
+    struct selva_server_response_out *resp; /*!< Response stream to the replica (client). */
 };
 
 /* replica_thread.c */

@@ -9,6 +9,21 @@
 
 void replication_origin_new_sdb(char sdb_hash[HASH_SIZE]);
 void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size);
-int replication_origin_register_replica(void /* TODO client? */);
+
+/**
+ * Register a new replication client aka replica.
+ * @param resp is a selva_server_response_out that allows sending data to the replica.
+ * @returns 0 if successful; Otherwise a selva error is returned.
+ */
+int replication_origin_register_replica(struct selva_server_response_out *resp);
+
+/**
+ * Stop all replication activity.
+ */
 void replication_origin_stop();
+
+/**
+ * Initialize this node as an origin.
+ * This is an irreversible operation.
+ */
 void replication_origin_init(void);

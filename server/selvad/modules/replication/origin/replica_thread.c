@@ -10,9 +10,13 @@
 #include "module.h"
 #include "selva_error.h"
 #include "selva_log.h"
+#include "selva_server.h"
 #include "ring_buffer.h"
 #include "replica.h"
 
+/*
+ * TODO We need a global config for core mapping.
+ */
 static int thread_set_self_core(int core_id)
 {
     const pthread_t thread = pthread_self();
@@ -32,6 +36,7 @@ static int thread_set_self_core(int core_id)
 void *replication_thread(void *arg)
 {
     struct replica *replica = (struct replica *)arg;
+    struct selva_server_response_out *resp = replica->resp;
     struct ring_buffer *rb = replica->rb;
     struct ring_buffer_reader_state state;
     struct ring_buffer_element *e;
@@ -40,15 +45,31 @@ void *replication_thread(void *arg)
         goto out;
     }
 
+    /* TODO re-enable later */
+#if 0
     thread_set_self_core(replica->core_id);
+#endif
 
     while (ring_buffer_get_next(rb, &state, &e)) {
-        /* TODO Send to the client */
-        /* TODO Abort if the client disconnects */
+        ssize_t res;
+        int err;
+
+        res = server_send_buf(resp, e->data, e->data_size);
+        if (res < 0) {
+            /* TODO Log? */
+            break;
+        }
+
+        err = server_send_flush(resp);
+        if (err) {
+            /* TODO Log? */
+            break;
+        }
+
         ring_buffer_release(&state, e);
     }
 
 out:
-    ring_buffer_reader_exit(rb, replica->id);
+    ring_buffer_reader_exit(rb, &state);
     return NULL;
 }

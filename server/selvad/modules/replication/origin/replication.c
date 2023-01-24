@@ -42,7 +42,8 @@ void replication_origin_new_sdb(char sdb_hash[HASH_SIZE])
 {
     memcpy(replication_state.sdb_hash, sdb_hash, HASH_SIZE);
     replication_state.sdb_eid = gen_sdb_eid(sdb_hash);
-    ring_buffer_insert(&replication_state.rb, replication_state.sdb_eid, replication_state.sdb_hash);
+    /* TODO This needs more context */
+    ring_buffer_insert(&replication_state.rb, replication_state.sdb_eid, replication_state.sdb_hash, HASH_SIZE);
 }
 
 static void free_replbuf(void *buf, ring_buffer_eid_t eid)
@@ -55,13 +56,14 @@ static void free_replbuf(void *buf, ring_buffer_eid_t eid)
 /**
  * Allocate a new replica_id.
  */
-static struct replica *new_replica(void)
+static struct replica *new_replica(struct selva_server_response_out *resp)
 {
     for (int i = 0; i < MAX_REPLICAS; i++) {
         if (!replication_state.replicas[i].in_use) {
             struct replica *r = &replication_state.replicas[i];
 
             r->in_use = 1;
+            r->resp = resp;
             return r;
         }
     }
@@ -77,15 +79,14 @@ static inline void release_replica(struct replica *r)
     r->in_use = 0;
 }
 
-int replication_origin_register_replica(void /* TODO client? */)
+int replication_origin_register_replica(struct selva_server_response_out *resp)
 {
-    struct replica *replica = new_replica();
+    struct replica *replica = new_replica(resp);
 
     if (!replica) {
         return SELVA_ENOBUFS;
     }
 
-    /* TODO Add client */
     ring_buffer_add_reader(&replication_state.rb, replica->id);
     pthread_create(&replica->thread, NULL, replication_thread, replica);
 
@@ -118,14 +119,13 @@ static void drop_replicas(unsigned replicas)
 void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
 {
     /* TODO We'd really like to avoid at least malloc() here, preferrably also memcpy(). */
-    void *p = selva_malloc(sizeof(buf_size) + buf_size);
+    void *p = selva_malloc(buf_size);
     static ring_buffer_eid_t eid;
     unsigned not_replicated;
 
     eid = (eid + 1) & ~EID_MSB_MASK; /* TODO any better ideas? */
-    memcpy(p, &buf_size, sizeof(buf_size));
-    memcpy(p + sizeof(buf_size), buf, buf_size);
-    while ((not_replicated = ring_buffer_insert(&replication_state.rb, eid, p))) {
+    memcpy(p, buf, buf_size);
+    while ((not_replicated = ring_buffer_insert(&replication_state.rb, eid, p, buf_size))) {
         drop_replicas(not_replicated);
     }
 }
@@ -137,13 +137,18 @@ void replication_origin_stop()
 
 void replication_origin_init(void)
 {
+#if 0
     int nr_cores = get_nprocs();
+#endif
 
     for (unsigned i = 0; i < MAX_REPLICAS; i++) {
         struct replica *r = &replication_state.replicas[i];
 
         r->id = i;
+    /* TODO Do global core mapping */
+#if 0
         r->core_id = i % nr_cores;
+#endif
         r->rb = &replication_state.rb;
     }
     ring_buffer_init(&replication_state.rb, replication_state.buffer, num_elem(replication_state.buffer), free_replbuf);

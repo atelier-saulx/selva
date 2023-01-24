@@ -26,6 +26,7 @@ struct ring_buffer_element {
      */
     atomic_uint not_read;
     void *data; /*!< A pointer to the data. */
+    size_t data_size;
 };
 
 struct ring_buffer {
@@ -114,9 +115,10 @@ void ring_buffer_reader_exit(struct ring_buffer *rb, struct ring_buffer_reader_s
  * @param rb is a pointer to the ring buffer.
  * @param id is an unique identifier assigned to the new element.
  * @param p is a pointer to the data associated with id.
+ * @param size is the size of of p in bytes.
  * @returns a reader_id mask of offending readers.
  */
-unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t id, void * restrict p);
+unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t id, void * restrict p, size_t size);
 
 /**
  * Get an element from the ring_buffer.

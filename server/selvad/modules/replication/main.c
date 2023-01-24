@@ -25,6 +25,13 @@ static const char replication_mode_str[3][8] = {
     "REPLICA",
 };
 
+/*
+ * replication_new_sdb(), replication_replicate(), and replication_stop() can be
+ * called in any replication mode. However, the current mode affects the
+ * behaviour of these functions. For example the replication_replicate()
+ * function is a NOP for a node in `replica` mode.
+ */
+
 void replication_new_sdb(char sdb_hash[HASH_SIZE])
 {
     if (replication_mode == REPLICATION_MODE_ORIGIN) {
@@ -42,6 +49,7 @@ void replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
 void replication_stop(void)
 {
     if (replication_mode == REPLICATION_MODE_ORIGIN) {
+        replication_origin_stop();
         /* TODO */
     } else if (replication_mode == REPLICATION_MODE_REPLICA) {
         /* TODO */
@@ -59,8 +67,13 @@ static void send_mode_error(struct selva_server_response_out *resp)
 static void replicasync(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
     int err;
+    struct selva_server_response_out *stream_resp;
 
     if (size) {
+        /*
+         * TODO We'd actually like to get the client's current hash and offset here
+         * to speed up the sync.
+         */
         selva_send_error_arity(resp);
         return;
     }
@@ -73,7 +86,12 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
-    err = replication_origin_register_replica(/* TODO client? */);
+    err = server_start_stream(resp, &stream_resp);
+    if (err) {
+        selva_send_errorf(resp, err, "Failed to create a stream");
+    }
+
+    err = replication_origin_register_replica(stream_resp);
     if (err) {
         selva_send_error(resp, err, NULL, 0);
         return;
