@@ -117,19 +117,28 @@ static const struct timespec hrt_period = {
 static void hrt_cb(struct event *, void *arg)
 {
     struct selva_server_response_out *resp = (struct selva_server_response_out *)arg;
+    int tim;
 
-    SELVA_LOG(SELVA_LOGL_INFO, "Sending a heartbeat"); /* TODO useless log line */
-    /* TODO Do we want to handle errors? */
+#if 0
+    SELVA_LOG(SELVA_LOGL_INFO, "Sending a heartbeat (%p, %d)", resp, resp->ctx ? resp->ctx->fd : -1);
+#endif
 
     selva_send_str(resp, "boum", 4);
+
     if (server_send_flush(resp)) {
         /* Connection reset. */
         (void)server_send_end(resp);
-
         return;
     }
 
-    resp->ctx->app.tim_hrt = evl_set_timeout(&hrt_period, hrt_cb, resp);
+    tim = evl_set_timeout(&hrt_period, hrt_cb, resp);
+    if (tim < 0) {
+        (void)selva_send_errorf(resp, SELVA_ENOBUFS, "Failed to allocate a timer");
+        (void)server_send_end(resp);
+        return;
+    }
+
+    resp->ctx->app.tim_hrt = tim;
 }
 
 static void hrt(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused)
@@ -238,6 +247,7 @@ static void on_close(struct event *event, void *arg)
 
     (void)shutdown(fd, SHUT_RDWR);
     close(fd);
+    ctx->fd = -1; /* to make async streams fail even if the fd is reused. */
     free_conn_ctx(ctx);
 }
 

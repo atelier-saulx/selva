@@ -192,6 +192,7 @@ int server_send_end(struct selva_server_response_out *restrict resp)
     err = flush_frame_buf(resp, 1);
 
     if (resp->frame_flags & SELVA_PROTO_HDR_STREAM) {
+        /* Note that this function still needs resp->ctx. */
         free_stream_resp(resp);
     }
 

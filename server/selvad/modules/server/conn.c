@@ -62,7 +62,7 @@ void free_conn_ctx(struct conn_ctx *ctx)
             .tv_nsec = 0,
         };
 
-        SELVA_LOG(SELVA_LOGL_INFO, "Ctx (%p) %d streams are busy, waiting...\n", ctx, MAX_STREAMS - __builtin_popcount(ctx->streams.free_map));
+        SELVA_LOG(SELVA_LOGL_INFO, "conn_ctx (%p) %d stream(s) busy, waiting...\n", ctx, MAX_STREAMS - __builtin_popcount(ctx->streams.free_map));
 
         (void)evl_set_timeout(&t, retry_free_con_ctx, ctx);
     }
