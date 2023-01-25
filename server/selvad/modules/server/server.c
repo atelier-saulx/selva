@@ -5,13 +5,13 @@
 #include <arpa/inet.h>
 #include <dlfcn.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include "event_loop.h"
 #include "module.h"
 #include "selva_error.h"
 #include "selva_log.h"
-#include "jemalloc.h"
 #include "selva_proto.h"
 #define SELVA_SERVER_MAIN 1
 #include "selva_server.h"
@@ -118,12 +118,18 @@ static void hrt_cb(struct event *, void *arg)
 {
     struct selva_server_response_out *resp = (struct selva_server_response_out *)arg;
 
-    resp->ctx->app.tim_hrt = evl_set_timeout(&hrt_period, hrt_cb, resp);
     SELVA_LOG(SELVA_LOGL_INFO, "Sending a heartbeat"); /* TODO useless log line */
     /* TODO Do we want to handle errors? */
 
     selva_send_str(resp, "boum", 4);
-    server_send_flush(resp);
+    if (server_send_flush(resp)) {
+        /* Connection reset. */
+        (void)server_send_end(resp);
+
+        return;
+    }
+
+    resp->ctx->app.tim_hrt = evl_set_timeout(&hrt_period, hrt_cb, resp);
 }
 
 static void hrt(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused)

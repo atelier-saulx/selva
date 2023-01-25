@@ -92,8 +92,8 @@ static int flush_frame_buf(struct selva_server_response_out *resp, int last_fram
             start_resp_frame_buf(resp);
         } else {
             /*
-             * Nothing to flush. Usually this means that the caller is starting
-             * a stream then this is fine.
+             * Nothing to flush.
+             * Usually this means that the caller is starting a stream.
              */
             return 0;
         }
@@ -112,7 +112,7 @@ ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const v
     ssize_t ret = (ssize_t)len;
 
     if (!resp->ctx) {
-        return SELVA_PROTO_EINVAL;
+        return SELVA_PROTO_ENOTCONN;
     }
 
     tcp_cork(resp->ctx->fd);
@@ -145,7 +145,7 @@ int server_start_stream(struct selva_server_response_out *resp, struct selva_ser
     struct selva_server_response_out *stream_resp;
 
     if (!resp->ctx) {
-        return SELVA_PROTO_EINVAL;
+        return SELVA_PROTO_ENOTCONN;
     }
 
     if (resp->frame_flags & SELVA_PROTO_HDR_STREAM) {
@@ -153,12 +153,14 @@ int server_start_stream(struct selva_server_response_out *resp, struct selva_ser
         return SELVA_PROTO_EALREADY;
     }
 
+    stream_resp = alloc_stream_resp(resp->ctx);
+    if (!stream_resp) {
+        return SELVA_PROTO_ENOBUFS;
+    }
+
     flush_frame_buf(resp, 0);
     resp->frame_flags |= SELVA_PROTO_HDR_STREAM;
-    stream_resp = selva_malloc(sizeof(*stream_resp));
     memcpy(stream_resp, resp, sizeof(*stream_resp));
-
-    /* TODO Add to the list of streams */
 
     *stream_resp_out = stream_resp;
     return 0;
@@ -167,13 +169,13 @@ int server_start_stream(struct selva_server_response_out *resp, struct selva_ser
 void server_cancel_stream(struct selva_server_response_out *resp, struct selva_server_response_out *stream_resp)
 {
     resp->frame_flags &= ~SELVA_PROTO_HDR_STREAM;
-    selva_free(stream_resp);
+    free_stream_resp(stream_resp);
 }
 
 int server_send_flush(struct selva_server_response_out *restrict resp)
 {
     if (!resp->ctx) {
-        return SELVA_PROTO_EINVAL;
+        return SELVA_PROTO_ENOTCONN;
     }
 
     return flush_frame_buf(resp, 0);
@@ -184,17 +186,16 @@ int server_send_end(struct selva_server_response_out *restrict resp)
     int err;
 
     if (!resp->ctx) {
-        return SELVA_PROTO_EINVAL;
+        return SELVA_PROTO_ENOTCONN;
     }
 
     err = flush_frame_buf(resp, 1);
 
-    resp->ctx = NULL; /* Make sure nothing will be sent anymore. */
-
     if (resp->frame_flags & SELVA_PROTO_HDR_STREAM) {
-        selva_free(resp);
-        /* TODO Free stream_resp properly and remove from the list */
+        free_stream_resp(resp);
     }
+
+    resp->ctx = NULL; /* Make sure nothing will be sent anymore. */
 
     return err;
 }

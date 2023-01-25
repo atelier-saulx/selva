@@ -3,13 +3,18 @@
  * SPDX-License-Identifier: MIT
  */
 #include <arpa/inet.h>
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include "util/bitmap.h"
+#include "event_loop.h"
 #include "selva_proto.h"
+#include "selva_log.h"
 #include "server.h"
 #include "../../tunables.h"
+
+#define ALL_STREAMS_FREE ((1 << MAX_STREAMS) - 1)
 
 /**
  * Client conn_ctx allocation map.
@@ -28,19 +33,60 @@ struct conn_ctx *alloc_conn_ctx(void)
     if (i >= 0) {
         bitmap_clear(&clients_map, i);
         ctx = &clients[i];
+        memset(ctx, 0, sizeof(*ctx));
+        ctx->streams.free_map = ALL_STREAMS_FREE;
         ctx->inuse = i;
     }
 
     return ctx;
 }
 
+
+static void retry_free_con_ctx(struct event *, void *arg)
+{
+    SELVA_LOG(SELVA_LOGL_INFO, "Retrying free_conn_ctx(%p)\n", arg);
+    free_conn_ctx((struct conn_ctx *)arg);
+}
+
 void free_conn_ctx(struct conn_ctx *ctx)
 {
-    int i = ctx->inuse;
+    if (ctx->streams.free_map == ALL_STREAMS_FREE) {
+        int i = ctx->inuse;
 
-    ctx->inuse = 0;
-    /* TODO Handle streams */
-    bitmap_set(&clients_map, i);
+        ctx->inuse = 0;
+        bitmap_set(&clients_map, i);
+    } else {
+        /* Wait for stream writers to terminate. */
+        const struct timespec t = {
+            .tv_sec = 3,
+            .tv_nsec = 0,
+        };
+
+        SELVA_LOG(SELVA_LOGL_INFO, "Ctx (%p) %d streams are busy, waiting...\n", ctx, MAX_STREAMS - __builtin_popcount(ctx->streams.free_map));
+
+        (void)evl_set_timeout(&t, retry_free_con_ctx, ctx);
+    }
+}
+
+struct selva_server_response_out *alloc_stream_resp(struct conn_ctx *ctx)
+{
+    unsigned i = __builtin_ffs(ctx->streams.free_map);
+
+    if (i-- == 0) {
+        return NULL;
+    }
+
+    ctx->streams.free_map &= ~(1 << i);
+    return &ctx->streams.stream_resp[i];
+}
+
+void free_stream_resp(struct selva_server_response_out *stream_resp)
+{
+    struct conn_ctx *ctx;
+
+    assert(stream_resp->ctx);
+    ctx = stream_resp->ctx;
+    ctx->streams.free_map |= 1 << (unsigned)((ptrdiff_t)stream_resp - (ptrdiff_t)ctx->streams.stream_resp);
 }
 
 size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize)
