@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -35,7 +36,7 @@ struct conn_ctx *alloc_conn_ctx(void)
         bitmap_clear(&clients_map, i);
         ctx = &clients[i];
         memset(ctx, 0, sizeof(*ctx));
-        ctx->streams.free_map = ALL_STREAMS_FREE;
+        atomic_init(&ctx->streams.free_map, ALL_STREAMS_FREE);
         ctx->inuse = i;
     }
 
@@ -51,7 +52,9 @@ static void retry_free_con_ctx(struct event *, void *arg)
 
 void free_conn_ctx(struct conn_ctx *ctx)
 {
-    if (ctx->streams.free_map == ALL_STREAMS_FREE) {
+    const unsigned free_map = atomic_load(&ctx->streams.free_map);
+
+    if (free_map == ALL_STREAMS_FREE) {
         int i = ctx->inuse;
 
         close(ctx->fd);
@@ -64,7 +67,9 @@ void free_conn_ctx(struct conn_ctx *ctx)
             .tv_nsec = 0,
         };
 
-        SELVA_LOG(SELVA_LOGL_INFO, "conn_ctx (%p) %d stream(s) busy, waiting...\n", ctx, MAX_STREAMS - __builtin_popcount(ctx->streams.free_map));
+        SELVA_LOG(SELVA_LOGL_INFO, "conn_ctx (%p) %d stream(s) busy, waiting...\n",
+                  ctx,
+                  MAX_STREAMS - __builtin_popcount(free_map));
 
         (void)evl_set_timeout(&t, retry_free_con_ctx, ctx);
     }
@@ -72,23 +77,33 @@ void free_conn_ctx(struct conn_ctx *ctx)
 
 struct selva_server_response_out *alloc_stream_resp(struct conn_ctx *ctx)
 {
-    unsigned i = __builtin_ffs(ctx->streams.free_map);
+    unsigned old_free_map, new_free_map, i;
 
-    if (i-- == 0) {
-        return NULL;
-    }
+    do {
+        old_free_map = atomic_load(&ctx->streams.free_map);
+        i = __builtin_ffs(old_free_map);
+        if (i-- == 0) {
+            return NULL;
+        }
 
-    ctx->streams.free_map &= ~(1 << i);
+        new_free_map = old_free_map & ~(1 << i);
+    } while (!atomic_compare_exchange_weak(&ctx->streams.free_map, &old_free_map, new_free_map));
+
     return &ctx->streams.stream_resp[i];
 }
 
 void free_stream_resp(struct selva_server_response_out *stream_resp)
 {
     struct conn_ctx *ctx;
+    unsigned old_free_map, new_free_map;
 
     assert(stream_resp->ctx);
     ctx = stream_resp->ctx;
-    ctx->streams.free_map |= 1 << (unsigned)((ptrdiff_t)stream_resp - (ptrdiff_t)ctx->streams.stream_resp);
+
+    do {
+        old_free_map = atomic_load(&ctx->streams.free_map);
+        new_free_map = old_free_map | 1 << (unsigned)((ptrdiff_t)stream_resp - (ptrdiff_t)ctx->streams.stream_resp);
+    } while (!atomic_compare_exchange_weak(&ctx->streams.free_map, &old_free_map, new_free_map));
 }
 
 size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize)

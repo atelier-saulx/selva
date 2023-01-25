@@ -45,7 +45,7 @@ struct conn_ctx {
      * Open streams.
      */
     struct {
-        unsigned free_map; /*!< A bit is unset if the corresponding stream_resp is in use. */
+        _Atomic unsigned int free_map; /*!< A bit is unset if the corresponding stream_resp is in use. */
         struct selva_server_response_out stream_resp[MAX_STREAMS];
     } streams;
     struct selva_proto_header recv_frame_hdr_buf;
