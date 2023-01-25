@@ -73,12 +73,14 @@ void server_dispatch2worker(struct conn_ctx *restrict ctx, const char *restrict 
 
 /**
  * Allocate a new client connection descriptor.
+ * Caller must set `ctx->fd`.
  */
 [[nodiscard]]
 struct conn_ctx *alloc_conn_ctx(void);
 
 /**
  * Free a client connection descriptor.
+ * This function will call `close(ctx->fd)` and it should not be closed before.
  */
 void free_conn_ctx(struct conn_ctx *ctx);
 

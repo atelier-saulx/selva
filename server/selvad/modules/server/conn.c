@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "util/bitmap.h"
 #include "event_loop.h"
 #include "selva_proto.h"
@@ -53,6 +54,7 @@ void free_conn_ctx(struct conn_ctx *ctx)
     if (ctx->streams.free_map == ALL_STREAMS_FREE) {
         int i = ctx->inuse;
 
+        close(ctx->fd);
         ctx->inuse = 0;
         bitmap_set(&clients_map, i);
     } else {

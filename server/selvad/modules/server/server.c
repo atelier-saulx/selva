@@ -245,9 +245,13 @@ static void on_close(struct event *event, void *arg)
     const int fd = event->fd;
     struct conn_ctx *ctx = (struct conn_ctx *)arg;
 
+    /*
+     * This will also make async streams fail while we still keep the
+     * the fd reserved, i.e. don't allow reusing the fd before we know
+     * that no async function or a thread will try to write to it.
+     */
     (void)shutdown(fd, SHUT_RDWR);
-    close(fd);
-    ctx->fd = -1; /* to make async streams fail even if the fd is reused. */
+
     free_conn_ctx(ctx);
 }
 
