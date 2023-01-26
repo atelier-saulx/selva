@@ -12,6 +12,7 @@
 #include <sys/sysinfo.h>
 #include "jemalloc.h"
 #include "selva_error.h"
+#include "selva_server.h"
 #include "selva_log.h"
 #include "ring_buffer.h"
 #include "replica.h"
@@ -79,20 +80,6 @@ static inline void release_replica(struct replica *r)
     r->in_use = 0;
 }
 
-int replication_origin_register_replica(struct selva_server_response_out *resp)
-{
-    struct replica *replica = new_replica(resp);
-
-    if (!replica) {
-        return SELVA_ENOBUFS;
-    }
-
-    ring_buffer_add_reader(&replication_state.rb, replica->id);
-    pthread_create(&replica->thread, NULL, replication_thread, replica);
-
-    return 0;
-}
-
 /**
  * Request replica reader threaders in the mask to stop and release their data.
  * This function will block until the threads exit.
@@ -114,6 +101,28 @@ static void drop_replicas(unsigned replicas)
 
         replicas ^= 1 << replica_id;
     }
+}
+
+static void stream_on_close(struct selva_server_response_out *resp, void *arg)
+{
+    drop_replicas(1 << (uintptr_t)arg);
+}
+
+int replication_origin_register_replica(struct selva_server_response_out *resp)
+{
+    struct replica *replica = new_replica(resp);
+    unsigned id;
+
+    if (!replica) {
+        return SELVA_ENOBUFS;
+    }
+
+    id = replica->id;
+    ring_buffer_add_reader(&replication_state.rb, id);
+    selva_resp_on_close(resp, stream_on_close, (void *)id);
+    pthread_create(&replica->thread, NULL, replication_thread, replica);
+
+    return id;
 }
 
 void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)

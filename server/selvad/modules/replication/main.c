@@ -100,8 +100,6 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
         selva_send_error(resp, err, NULL, 0);
         return;
     }
-
-    selva_send_ll(resp, 1);
 }
 
 static int args_to_addr(struct sockaddr_in *addr, struct selva_string *ip, struct selva_string *port)

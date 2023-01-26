@@ -33,6 +33,15 @@ static int thread_set_self_core(int core_id)
     return 0;
 }
 
+static void log_exit(struct selva_server_response_out *resp)
+{
+    char strcon[80];
+    size_t len;
+
+    len = selva_resp_to_str(resp, strcon, sizeof(strcon));
+    SELVA_LOG(SELVA_LOGL_INFO, "Replica going offline (%.*s)", (int)len, strcon);
+}
+
 void *replication_thread(void *arg)
 {
     struct replica *replica = (struct replica *)arg;
@@ -41,7 +50,9 @@ void *replication_thread(void *arg)
     struct ring_buffer_reader_state state;
     struct ring_buffer_element *e;
 
+    /* TODO Select base */
     if (ring_buffer_init_state(&state, rb, 1, replica->id)) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to initialize a ring_buffer_reader_state");
         goto out;
     }
 
@@ -52,17 +63,13 @@ void *replication_thread(void *arg)
 
     while (ring_buffer_get_next(rb, &state, &e)) {
         ssize_t res;
-        int err;
 
         res = selva_send_buf(resp, e->data, e->data_size);
         if (res < 0) {
-            /* TODO Log? */
             break;
         }
 
-        err = selva_send_flush(resp);
-        if (err) {
-            /* TODO Log? */
+        if (selva_send_flush(resp)) {
             break;
         }
 
@@ -70,6 +77,7 @@ void *replication_thread(void *arg)
     }
 
 out:
+    log_exit(resp);
     ring_buffer_reader_exit(rb, &state);
     return NULL;
 }
