@@ -48,6 +48,20 @@ static selva_cmd_function get_command(int nr)
     return (nr >= 0 && nr < (int)num_elem(commands)) ? commands[nr].cmd_fn : NULL;
 }
 
+size_t selva_resp_to_str(struct selva_server_response_out *resp, char *buf, size_t bsize)
+{
+    if (bsize < CONN_STR_LEN) {
+        return 0;
+    }
+
+    if (!resp || resp->ctx) {
+        strcpy(buf, "<not connected>");
+        return 15;
+    }
+
+    return conn_to_str(resp->ctx, buf, bsize);
+}
+
 static void ping(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused)
 {
     const char msg[] = "pong";

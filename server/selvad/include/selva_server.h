@@ -29,6 +29,8 @@ SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, const char *name, selva_cmd_f
 #define SELVA_MK_COMMAND(nr, cmd) \
     selva_mk_command(nr, #cmd, cmd)
 
+SELVA_SERVER_EXPORT(size_t, selva_resp_to_str, struct selva_server_response_out *resp, char *buf, size_t bsize);
+
 /**
  * Send buffer as a part of the response resp.
  * The data is sent as is framed within selva_proto frames. Typically the buf
@@ -105,6 +107,7 @@ SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out 
 
 #define _import_selva_server(apply) \
     apply(selva_mk_command) \
+    apply(selva_resp_to_str) \
     apply(selva_send_buf) \
     apply(selva_send_flush) \
     apply(selva_start_stream) \
