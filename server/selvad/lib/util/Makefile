@@ -22,6 +22,7 @@ OBJ := \
 	queue_r.o \
 	selva_error.o \
 	selva_proto.o \
+	selva_proto_buf.o \
 	selva_string.o \
 	svector.o \
 	timestamp.o \
