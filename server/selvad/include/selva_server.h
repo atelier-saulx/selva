@@ -58,6 +58,13 @@ SELVA_SERVER_EXPORT(int, selva_start_stream, struct selva_server_response_out *r
 SELVA_SERVER_EXPORT(void, selva_cancel_stream, struct selva_server_response_out *resp, struct selva_server_response_out *stream_resp_out);
 
 /**
+ * Register an on-close callback to the response.
+ * The on_close function is called before new sends are blocked but sends may
+ * still fail if the connection is already reset.
+ */
+SELVA_SERVER_EXPORT(void, selva_resp_on_close, struct selva_server_response_out *resp, void (*on_close)(struct selva_server_response_out *resp, void *arg), void *arg);
+
+/**
  * End sending a response.
  * Finalizes the response sequence.
  */
@@ -102,6 +109,7 @@ SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out 
     apply(selva_send_flush) \
     apply(selva_start_stream) \
     apply(selva_cancel_stream) \
+    apply(selva_resp_on_close) \
     apply(selva_send_end) \
     apply(selva_send_null) \
     apply(selva_send_error) \

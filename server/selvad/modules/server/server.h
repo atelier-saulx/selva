@@ -7,6 +7,7 @@
 
 #define MAX_STREAMS 2
 
+struct selva_server_response_out;
 struct conn_ctx;
 
 /**
@@ -14,6 +15,8 @@ struct conn_ctx;
  */
 struct selva_server_response_out {
     struct conn_ctx *ctx;
+    void *on_close_arg;
+    void (*on_close)(struct selva_server_response_out *resp, void *arg);
     typeof_field(struct selva_proto_header, cmd) cmd;
     typeof_field(struct selva_proto_header, flags) frame_flags;
     typeof_field(struct selva_proto_header, seqno) seqno;
