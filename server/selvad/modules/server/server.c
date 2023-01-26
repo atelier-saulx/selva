@@ -13,7 +13,6 @@
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_proto.h"
-#define SELVA_SERVER_MAIN 1
 #include "selva_server.h"
 #include "tcp.h"
 #include "../../tunables.h"
@@ -125,16 +124,16 @@ static void hrt_cb(struct event *, void *arg)
 
     selva_send_str(resp, "boum", 4);
 
-    if (server_send_flush(resp)) {
+    if (selva_send_flush(resp)) {
         /* Connection reset. */
-        (void)server_send_end(resp);
+        (void)selva_send_end(resp);
         return;
     }
 
     tim = evl_set_timeout(&hrt_period, hrt_cb, resp);
     if (tim < 0) {
         (void)selva_send_errorf(resp, SELVA_ENOBUFS, "Failed to allocate a timer");
-        (void)server_send_end(resp);
+        (void)selva_send_end(resp);
         return;
     }
 
@@ -151,7 +150,7 @@ static void hrt(struct selva_server_response_out *resp, const void *buf __unused
         return;
     }
 
-    err = server_start_stream(resp, &stream_resp);
+    err = selva_start_stream(resp, &stream_resp);
     if (err) {
         selva_send_errorf(resp, err, "Failed to create a stream");
         return;
@@ -159,7 +158,7 @@ static void hrt(struct selva_server_response_out *resp, const void *buf __unused
 
     tim = evl_set_timeout(&hrt_period, hrt_cb, stream_resp);
     if (tim < 0) {
-        server_cancel_stream(resp, stream_resp);
+        selva_cancel_stream(resp, stream_resp);
         selva_send_errorf(resp, tim, "Failed to create a timer");
         return;
     }
@@ -234,7 +233,7 @@ static void on_data(struct event *event, void *arg)
         }
 
         if (!(resp.frame_flags & SELVA_PROTO_HDR_STREAM)) {
-            server_send_end(&resp);
+            selva_send_end(&resp);
         } /* The sequence doesn't end for streams. */
     }
     /* Otherwise we need to wait for more frames. */

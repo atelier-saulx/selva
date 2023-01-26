@@ -38,7 +38,7 @@ struct selva_proto_header {
          * This is set for both the stack response_out to indicate that a stream
          * response was created and in the stream_resp struct so that it's send
          * to the client to help parsing the stream properly.
-         * See server_start_stream().
+         * See selva_start_stream().
          */
         SELVA_PROTO_HDR_STREAM   = 0x10,
         SELVA_PROTO_HDR_FDEFLATE = 0x01, /*!< Compressed with deflate. TODO Not implemented. */

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2022 SAULX
+ * High level send functions.
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <alloca.h>
@@ -16,13 +17,22 @@
 #include "selva_server.h"
 #include "server.h"
 
+int selva_send_flush(struct selva_server_response_out *restrict resp)
+{
+    if (!resp->ctx) {
+        return SELVA_PROTO_ENOTCONN;
+    }
+
+    return server_flush_frame_buf(resp, 0);
+}
+
 int selva_send_null(struct selva_server_response_out *resp)
 {
     struct selva_proto_null buf = {
         .type = SELVA_PROTO_NULL,
     };
 
-    return server_send_buf(resp, &buf, sizeof(buf));
+    return selva_send_buf(resp, &buf, sizeof(buf));
 }
 
 int selva_send_error(struct selva_server_response_out *resp, int err, const char *msg_str, size_t msg_len)
@@ -46,7 +56,7 @@ int selva_send_error(struct selva_server_response_out *resp, int err, const char
         memcpy(buf->msg, msg_str, msg_len);
     }
 
-    return server_send_buf(resp, buf, bsize);
+    return selva_send_buf(resp, buf, bsize);
 }
 
 int selva_send_errorf(struct selva_server_response_out *resp, int err, const char *fmt, ...)
@@ -74,7 +84,7 @@ int selva_send_errorf(struct selva_server_response_out *resp, int err, const cha
     (void)vsnprintf(buf->msg, len + 1, fmt, args);
     va_end(args);
 
-    return server_send_buf(resp, buf, bsize);
+    return selva_send_buf(resp, buf, bsize);
 }
 
 int selva_send_error_arity(struct selva_server_response_out *resp)
@@ -90,7 +100,7 @@ int selva_send_double(struct selva_server_response_out *resp, double value)
 
     htoledouble((char *)&buf.v, value);
 
-    return server_send_buf(resp, &buf, sizeof(buf));
+    return selva_send_buf(resp, &buf, sizeof(buf));
 }
 
 int selva_send_ll(struct selva_server_response_out *resp, long long value)
@@ -100,7 +110,7 @@ int selva_send_ll(struct selva_server_response_out *resp, long long value)
         .v = htole64(value),
     };
 
-    return server_send_buf(resp, &buf, sizeof(buf));
+    return selva_send_buf(resp, &buf, sizeof(buf));
 }
 
 int selva_send_str(struct selva_server_response_out *resp, const char *str, size_t len)
@@ -114,7 +124,7 @@ int selva_send_str(struct selva_server_response_out *resp, const char *str, size
     };
     memcpy(buf->data, str, len);
 
-    return server_send_buf(resp, buf, bsize);
+    return selva_send_buf(resp, buf, bsize);
 }
 
 int selva_send_strf(struct selva_server_response_out *resp, const char *fmt, ...)
@@ -142,7 +152,7 @@ int selva_send_strf(struct selva_server_response_out *resp, const char *fmt, ...
     (void)vsnprintf(buf->data, len + 1, fmt, args);
     va_end(args);
 
-    return server_send_buf(resp, buf, bsize);
+    return selva_send_buf(resp, buf, bsize);
 }
 
 int selva_send_string(struct selva_server_response_out *resp, const struct selva_string *s)
@@ -164,7 +174,7 @@ int selva_send_bin(struct selva_server_response_out *resp, const void *b, size_t
     };
     memcpy(buf->data, b, len);
 
-    return server_send_buf(resp, buf, bsize);
+    return selva_send_buf(resp, buf, bsize);
 }
 
 int selva_send_array(struct selva_server_response_out *resp, int len)
@@ -179,7 +189,7 @@ int selva_send_array(struct selva_server_response_out *resp, int len)
         buf.flags = SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH;
     }
 
-    return server_send_buf(resp, &buf, sizeof(buf));
+    return selva_send_buf(resp, &buf, sizeof(buf));
 }
 
 int selva_send_array_end(struct selva_server_response_out *resp)
@@ -188,5 +198,5 @@ int selva_send_array_end(struct selva_server_response_out *resp)
         .type = SELVA_PROTO_ARRAY_END,
     };
 
-    return server_send_buf(resp, &buf, sizeof(buf));
+    return selva_send_buf(resp, &buf, sizeof(buf));
 }

@@ -54,13 +54,13 @@ void *replication_thread(void *arg)
         ssize_t res;
         int err;
 
-        res = server_send_buf(resp, e->data, e->data_size);
+        res = selva_send_buf(resp, e->data, e->data_size);
         if (res < 0) {
             /* TODO Log? */
             break;
         }
 
-        err = server_send_flush(resp);
+        err = selva_send_flush(resp);
         if (err) {
             /* TODO Log? */
             break;

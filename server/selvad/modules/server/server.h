@@ -108,3 +108,4 @@ size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize);
 
 int server_recv_message(struct conn_ctx *ctx);
 ssize_t server_recv_frame(struct conn_ctx *ctx);
+int server_flush_frame_buf(struct selva_server_response_out *resp, int last_frame);

@@ -101,7 +101,7 @@ static void drop_replicas(unsigned replicas)
 {
     unsigned replica_id;
 
-    ring_buffer_del_reader_mask(&replication_state.rb, replicas);
+    ring_buffer_del_readers_mask(&replication_state.rb, replicas);
     while ((replica_id = __builtin_ffs(replicas))) {
         struct replica *r;
 

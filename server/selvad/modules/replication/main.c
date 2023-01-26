@@ -3,10 +3,14 @@
  * SPDX-License-Identifier: MIT
  */
 #define _GNU_SOURCE
+#include <arpa/inet.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "module.h"
+#include "util/finalizer.h"
+#include "util/selva_string.h"
+#include "selva_proto.h"
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_server.h"
@@ -86,7 +90,7 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
-    err = server_start_stream(resp, &stream_resp);
+    err = selva_start_stream(resp, &stream_resp);
     if (err) {
         selva_send_errorf(resp, err, "Failed to create a stream");
     }
@@ -100,29 +104,74 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
     selva_send_ll(resp, 1);
 }
 
+static int args_to_addr(struct sockaddr_in *addr, struct selva_string *ip, struct selva_string *port)
+{
+    long long port_ll;
+    int err;
+
+    err = selva_string_to_ll(port, &port_ll);
+    if (err) {
+        return err;
+    }
+
+    addr->sin_family = AF_INET;
+    addr->sin_port = htons(port_ll);
+
+    if (inet_pton(AF_INET, selva_string_to_str(ip, NULL), &addr->sin_addr) == -1) {
+        return SELVA_EINVAL;
+    }
+
+    return 0;
+}
+
 /**
  * Make this node a replcia of an origin.
  */
 static void replicaof(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
-    if (size != 2) {
-        selva_send_error_arity(resp);
+    __auto_finalizer struct finalizer fin;
+    struct selva_string **argv = NULL;
+    int argc;
+    struct sockaddr_in origin_addr;
+    int err;
+
+    finalizer_init(&fin);
+
+    const size_t ARGV_IP = 0;
+    const size_t ARGV_PORT = 1;
+
+    argc = selva_proto_buf2strings(&fin, buf, size, &argv);
+    if (argc != 2) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
         return;
     }
 
+    /*
+     * Change replication mode.
+     */
     if (replication_mode != REPLICATION_MODE_NONE) {
         send_mode_error(resp);
         return;
     }
-
     replication_mode = REPLICATION_MODE_REPLICA;
 
-    /* TODO IP and port */
+    err = args_to_addr(&origin_addr, argv[ARGV_IP], argv[ARGV_PORT]);
+    if (err) {
+        selva_send_errorf(resp, err, "Invalid origin address");
+        return;
+    }
+
+    selva_send_strf(resp, "I don't know how to replicate");
+    /* TODO Do it */
 }
 
 static void replicainfo(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
-    if (size != 0) {
+    if (size) {
         selva_send_error_arity(resp);
         return;
     }

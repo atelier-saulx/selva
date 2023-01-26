@@ -91,7 +91,7 @@ void ring_buffer_add_reader(struct ring_buffer *rb, unsigned reader_id);
  * @param rb is a pointer to the ring buffer.
  * @param readers is a bitmask of readers to be removed.
  */
-void ring_buffer_del_reader_mask(struct ring_buffer *rb, unsigned readers);
+void ring_buffer_del_readers_mask(struct ring_buffer *rb, unsigned readers);
 
 /**
  * Delete a reader from the ring_buffer.

@@ -37,17 +37,17 @@ SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, const char *name, selva_cmd_f
  * data within a sequence will be always delivered in the sending order.
  * @returns Return bytes sent; Otherwise an error.
  */
-SELVA_SERVER_EXPORT(ssize_t, server_send_buf, struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len);
+SELVA_SERVER_EXPORT(ssize_t, selva_send_buf, struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len);
 
 /**
  * Flush the response buffer.
  */
-SELVA_SERVER_EXPORT(int, server_send_flush, struct selva_server_response_out *restrict resp);
+SELVA_SERVER_EXPORT(int, selva_send_flush, struct selva_server_response_out *restrict resp);
 
 /**
  * Start a long standing stream response.
  */
-SELVA_SERVER_EXPORT(int, server_start_stream, struct selva_server_response_out *resp, struct selva_server_response_out **stream_resp_out);
+SELVA_SERVER_EXPORT(int, selva_start_stream, struct selva_server_response_out *resp, struct selva_server_response_out **stream_resp_out);
 
 /**
  * Cancel a stream before it has been used.
@@ -55,13 +55,13 @@ SELVA_SERVER_EXPORT(int, server_start_stream, struct selva_server_response_out *
  * for cancelling streaming immediately after creation due to an error in
  * initializing the actual streaming.
  */
-SELVA_SERVER_EXPORT(void, server_cancel_stream, struct selva_server_response_out *resp, struct selva_server_response_out *stream_resp_out);
+SELVA_SERVER_EXPORT(void, selva_cancel_stream, struct selva_server_response_out *resp, struct selva_server_response_out *stream_resp_out);
 
 /**
  * End sending a response.
  * Finalizes the response sequence.
  */
-SELVA_SERVER_EXPORT(int, server_send_end, struct selva_server_response_out *restrict resp);
+SELVA_SERVER_EXPORT(int, selva_send_end, struct selva_server_response_out *restrict resp);
 
 /**
  * Send a null value.
@@ -98,6 +98,11 @@ SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out 
 
 #define _import_selva_server(apply) \
     apply(selva_mk_command) \
+    apply(selva_send_buf) \
+    apply(selva_send_flush) \
+    apply(selva_start_stream) \
+    apply(selva_cancel_stream) \
+    apply(selva_send_end) \
     apply(selva_send_null) \
     apply(selva_send_error) \
     apply(selva_send_errorf) \
