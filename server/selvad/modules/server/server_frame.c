@@ -173,22 +173,12 @@ void selva_cancel_stream(struct selva_server_response_out *resp, struct selva_se
     free_stream_resp(stream_resp);
 }
 
-void selva_resp_on_close(struct selva_server_response_out *resp, void (*on_close)(struct selva_server_response_out *resp, void *arg), void *arg)
-{
-    resp->on_close_arg = arg;
-    resp->on_close = on_close;
-}
-
 int selva_send_end(struct selva_server_response_out *restrict resp)
 {
     int err;
 
     if (!resp->ctx) {
         return SELVA_PROTO_ENOTCONN;
-    }
-
-    if (resp->on_close) {
-        resp->on_close(resp, resp->on_close_arg);
     }
 
     err = server_flush_frame_buf(resp, 1);

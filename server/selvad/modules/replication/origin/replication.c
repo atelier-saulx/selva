@@ -103,26 +103,19 @@ static void drop_replicas(unsigned replicas)
     }
 }
 
-static void stream_on_close(struct selva_server_response_out *resp, void *arg)
-{
-    drop_replicas(1 << (uintptr_t)arg);
-}
-
 int replication_origin_register_replica(struct selva_server_response_out *resp)
 {
     struct replica *replica = new_replica(resp);
-    unsigned id;
 
     if (!replica) {
         return SELVA_ENOBUFS;
     }
 
-    id = replica->id;
-    ring_buffer_add_reader(&replication_state.rb, id);
-    selva_resp_on_close(resp, stream_on_close, (void *)id);
+    replica->start_eid = replication_state.sdb_eid;
+    ring_buffer_add_reader(&replication_state.rb, replica->id);
     pthread_create(&replica->thread, NULL, replication_thread, replica);
 
-    return id;
+    return 0;
 }
 
 void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
