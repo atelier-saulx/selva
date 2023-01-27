@@ -50,8 +50,7 @@ void *replication_thread(void *arg)
     struct ring_buffer_reader_state state;
     struct ring_buffer_element *e;
 
-    /* TODO Select base */
-    if (ring_buffer_init_state(&state, rb, 1, replica->id)) {
+    if (ring_buffer_init_state(&state, rb, replica->start_eid, replica->id)) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to initialize a ring_buffer_reader_state");
         goto out;
     }

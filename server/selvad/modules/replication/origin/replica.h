@@ -9,6 +9,7 @@ struct replica {
     unsigned id;
     int core_id;
     pthread_t thread;
+    ring_buffer_eid_t start_eid;
     struct ring_buffer *rb; /*!< Pointer to the shared ring_buffer. */
     struct selva_server_response_out *resp; /*!< Response stream to the replica (client). */
 };
