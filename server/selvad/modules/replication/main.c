@@ -63,7 +63,7 @@ void selva_replication_stop(void)
 
 static void send_mode_error(struct selva_server_response_out *resp)
 {
-    selva_send_errorf(resp, SELVA_ENOTSUP, "This server is already configured as %s", replication_mode_str[replication_mode]);
+    selva_send_errorf(resp, SELVA_ENOTSUP, "Already configured as %s", replication_mode_str[replication_mode]);
 }
 
 /**
@@ -164,7 +164,7 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
         return;
     }
 
-    selva_send_strf(resp, "I don't know how to replicate");
+    selva_send_strf(resp, "I don't know how to sync from origin");
     /* TODO Do it */
 }
 

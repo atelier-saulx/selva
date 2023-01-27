@@ -90,6 +90,8 @@ void ring_buffer_reader_exit(struct ring_buffer *rb, struct ring_buffer_reader_s
 {
     const unsigned mask = 1 << state->reader_id;
 
+    ring_buffer_del_readers_mask(rb, mask);
+
     /*
      * Clear from the elements in the ring buffer.
      */

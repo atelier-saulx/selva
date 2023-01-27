@@ -77,6 +77,7 @@ void *replication_thread(void *arg)
 
 out:
     log_exit(resp);
+    selva_send_end(resp);
     ring_buffer_reader_exit(rb, &state);
     return NULL;
 }
