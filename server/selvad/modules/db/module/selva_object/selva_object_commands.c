@@ -8,15 +8,15 @@
 #include "typestr.h"
 #include "util/finalizer.h"
 #include "util/selva_string.h"
-#include "selva_server.h"
+#include "util/svector.h"
 #include "selva_error.h"
+#include "selva_replication.h"
+#include "selva_server.h"
 #include "arg_parser.h"
 #include "selva_db.h"
 #include "hierarchy.h"
 #include "selva_onload.h"
 #include "selva_set.h"
-#include "selva_error.h"
-#include "util/svector.h"
 #include "selva_object.h"
 
 static struct SelvaObject *SelvaObject_Open(struct selva_server_response_out *resp, struct selva_string *key_name) {
@@ -283,6 +283,8 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
 #if 0
     RedisModule_ReplicateVerbatim(ctx);
 #endif
+    /* TODO Function to get THIS command id */
+    selva_replication_replicate(CMD_OBJECT_SET_ID, buf, len);
     return;
 }
 

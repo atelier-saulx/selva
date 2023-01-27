@@ -16,6 +16,7 @@
 #include "selva_onload.h"
 #include "selva_server.h"
 #include "selva_io.h"
+#include "selva_replication.h"
 #include "config.h"
 #include "selva_db.h"
 
@@ -29,6 +30,7 @@ IMPORT() {
     evl_import_event_loop();
     import_selva_server();
     import_selva_io();
+    import_selva_replication();
 }
 
 __constructor void init(void)
