@@ -7,6 +7,7 @@ OBJ := \
 	   origin/replication.o \
 	   origin/ring_buffer.o
 DEP := $(OBJ:%.o=%.d)
+CFLAGS += -DSELVA_REPLICATION_MAIN=1
 LDFLAGS += -lutil -ljemalloc_selva
 TARGET := ../mod_replication$(MOD_SUFFIX)
 

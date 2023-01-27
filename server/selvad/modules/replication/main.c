@@ -15,6 +15,7 @@
 #include "selva_log.h"
 #include "selva_server.h"
 #include "origin/origin.h"
+#include "selva_replication.h"
 
 enum replication_mode {
     REPLICATION_MODE_NONE = 0,
@@ -36,21 +37,21 @@ static const char replication_mode_str[3][8] = {
  * function is a NOP for a node in `replica` mode.
  */
 
-void replication_new_sdb(char sdb_hash[HASH_SIZE])
+void selva_replication_new_sdb(char sdb_hash[HASH_SIZE])
 {
     if (replication_mode == REPLICATION_MODE_ORIGIN) {
         replication_origin_new_sdb(sdb_hash);
     }
 }
 
-void replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
+void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
 {
     if (replication_mode == REPLICATION_MODE_ORIGIN) {
         replication_origin_replicate(cmd, buf, buf_size);
     }
 }
 
-void replication_stop(void)
+void selva_replication_stop(void)
 {
     if (replication_mode == REPLICATION_MODE_ORIGIN) {
         replication_origin_stop();
