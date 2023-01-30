@@ -129,6 +129,10 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (optind < argc) {
+        addr = argv[optind];
+    }
+
     sock = connect_to_server(addr, port);
     if (sock == -1) {
         exit(EXIT_FAILURE);
