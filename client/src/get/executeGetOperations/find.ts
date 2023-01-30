@@ -154,7 +154,20 @@ function parseGetOpts(
         }
       }
     } else if (k === '$inherit') {
-      let types = (props[k] as any)?.$type
+      const asAny = props[k] as any
+
+      if (asAny.$item) {
+        return [fields, mapping, true, false]
+      } else if (asAny.$merge === true) {
+        return [fields, mapping, true, false]
+      }
+
+      const objKeys = Object.keys(props)
+      if (objKeys.some((key) => !key.startsWith('$'))) {
+        return [fields, mapping, true, false]
+      }
+
+      let types = asAny?.$type
       if (!types) {
         types = []
       } else if (typeof types === 'string') {
