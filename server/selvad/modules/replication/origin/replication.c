@@ -14,6 +14,7 @@
 #include "selva_error.h"
 #include "selva_server.h"
 #include "selva_log.h"
+#include "../selva_thread.h"
 #include "ring_buffer.h"
 #include "replica.h"
 #include "origin.h"
@@ -44,7 +45,7 @@ void replication_origin_new_sdb(char sdb_hash[HASH_SIZE])
     memcpy(replication_state.sdb_hash, sdb_hash, HASH_SIZE);
     replication_state.sdb_eid = gen_sdb_eid(sdb_hash);
     /* TODO This needs more context */
-    ring_buffer_insert(&replication_state.rb, replication_state.sdb_eid, replication_state.sdb_hash, HASH_SIZE);
+    ring_buffer_insert(&replication_state.rb, replication_state.sdb_eid, 0, replication_state.sdb_hash, HASH_SIZE);
 }
 
 static void free_replbuf(void *buf, ring_buffer_eid_t eid)
@@ -96,7 +97,7 @@ static void drop_replicas(unsigned replicas)
         assert(replica_id < num_elem(replication_state.replicas));
         r = &replication_state.replicas[replica_id];
 
-        pthread_join(r->thread, NULL);
+        pthread_join(r->thread.pthread, NULL);
         release_replica(r);
 
         replicas ^= 1 << replica_id;
@@ -113,7 +114,7 @@ int replication_origin_register_replica(struct selva_server_response_out *resp)
 
     replica->start_eid = replication_state.sdb_eid;
     ring_buffer_add_reader(&replication_state.rb, replica->id);
-    pthread_create(&replica->thread, NULL, replication_thread, replica);
+    pthread_create(&replica->thread.pthread, NULL, replication_thread, replica);
 
     return 0;
 }
@@ -125,9 +126,10 @@ void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
     static ring_buffer_eid_t eid;
     unsigned not_replicated;
 
+    /* TODO Add cmd */
     eid = (eid + 1) & ~EID_MSB_MASK; /* TODO any better ideas? */
     memcpy(p, buf, buf_size);
-    while ((not_replicated = ring_buffer_insert(&replication_state.rb, eid, p, buf_size))) {
+    while ((not_replicated = ring_buffer_insert(&replication_state.rb, eid, cmd, p, buf_size))) {
         drop_replicas(not_replicated);
     }
 }

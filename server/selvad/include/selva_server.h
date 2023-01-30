@@ -32,16 +32,6 @@ SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, const char *name, selva_cmd_f
 SELVA_SERVER_EXPORT(size_t, selva_resp_to_str, struct selva_server_response_out *resp, char *buf, size_t bsize);
 
 /**
- * Send buffer as a part of the response resp.
- * The data is sent as is framed within selva_proto frames. Typically the buf
- * should point to one of the selva_proto value structs. The buffer might be
- * split into multiple frames and the receiver must reassemble the data. All
- * data within a sequence will be always delivered in the sending order.
- * @returns Return bytes sent; Otherwise an error.
- */
-SELVA_SERVER_EXPORT(ssize_t, selva_send_buf, struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len);
-
-/**
  * Flush the response buffer.
  */
 SELVA_SERVER_EXPORT(int, selva_send_flush, struct selva_server_response_out *restrict resp);
@@ -98,10 +88,14 @@ SELVA_SERVER_EXPORT(int, selva_send_array, struct selva_server_response_out *res
  */
 SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out *res);
 
+/**
+ * Send a replication header.
+ */
+SELVA_SERVER_EXPORT(int, selva_send_replication, struct selva_server_response_out *resp, int8_t cmd, const void *data, size_t bsize);
+
 #define _import_selva_server(apply) \
     apply(selva_mk_command) \
     apply(selva_resp_to_str) \
-    apply(selva_send_buf) \
     apply(selva_send_flush) \
     apply(selva_start_stream) \
     apply(selva_cancel_stream) \
@@ -117,7 +111,8 @@ SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out 
     apply(selva_send_string) \
     apply(selva_send_bin) \
     apply(selva_send_array) \
-    apply(selva_send_array_end)
+    apply(selva_send_array_end) \
+    apply(selva_send_replication)
 
 #define _import_selva_server1(f) \
     evl_import(f, "mod_server.so");

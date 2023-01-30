@@ -19,6 +19,7 @@ static_assert(sizeof(unsigned) >= sizeof(uint32_t));
  */
 struct ring_buffer_element {
     ring_buffer_eid_t id; /*!< Element id used for lookup in ring_buffer_init_state(). */
+    int8_t cmd_id;
     /**
      * Element not yet read/processed.
      * A bitmask of readers that have not yet received the data pointer by this
@@ -118,7 +119,7 @@ void ring_buffer_reader_exit(struct ring_buffer *rb, struct ring_buffer_reader_s
  * @param size is the size of of p in bytes.
  * @returns a reader_id mask of offending readers.
  */
-unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t id, void * restrict p, size_t size);
+unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t id, int8_t cmd_id, void * restrict p, size_t size);
 
 /**
  * Get an element from the ring_buffer.

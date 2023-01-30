@@ -5,7 +5,9 @@ OBJ := \
 	   main.o \
 	   origin/replica_thread.o \
 	   origin/replication.o \
-	   origin/ring_buffer.o
+	   origin/ring_buffer.o \
+	   replica/replicaof.o \
+	   selva_thread.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -DSELVA_REPLICATION_MAIN=1
 LDFLAGS += -lutil -ljemalloc_selva

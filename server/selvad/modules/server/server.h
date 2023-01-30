@@ -110,3 +110,13 @@ size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize);
 int server_recv_message(struct conn_ctx *ctx);
 ssize_t server_recv_frame(struct conn_ctx *ctx);
 int server_flush_frame_buf(struct selva_server_response_out *resp, int last_frame);
+
+/**
+ * Send buffer as a part of the response resp.
+ * The data is sent as is framed within selva_proto frames. Typically the buf
+ * should point to one of the selva_proto value structs. The buffer might be
+ * split into multiple frames and the receiver must reassemble the data. All
+ * data within a sequence will be always delivered in the sending order.
+ * @returns Return bytes sent; Otherwise an error.
+ */
+ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len);

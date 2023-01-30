@@ -2,7 +2,6 @@
  * Copyright (c) 2023 SAULX
  * SPDX-License-Identifier: MIT
  */
-#define _GNU_SOURCE
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stddef.h>
@@ -11,27 +10,9 @@
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_server.h"
+#include "../selva_thread.h"
 #include "ring_buffer.h"
 #include "replica.h"
-
-/*
- * TODO We need a global config for core mapping.
- */
-static int thread_set_self_core(int core_id)
-{
-    const pthread_t thread = pthread_self();
-    cpu_set_t cpuset;
-
-    CPU_ZERO(&cpuset);
-    CPU_SET(core_id, &cpuset);
-
-    if (pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset)) {
-        /* TODO Better error handling. */
-        return SELVA_EGENERAL;
-    }
-
-    return 0;
-}
 
 static void log_exit(struct selva_server_response_out *resp)
 {
@@ -57,13 +38,14 @@ void *replication_thread(void *arg)
 
     /* TODO re-enable later */
 #if 0
-    thread_set_self_core(replica->core_id);
+    selva_thread_set_self_core(replica->core_id);
 #endif
 
     while (ring_buffer_get_next(rb, &state, &e)) {
         ssize_t res;
 
-        res = selva_send_buf(resp, e->data, e->data_size);
+        SELVA_LOG(SELVA_LOGL_INFO, "Sending data");
+        res = selva_send_replication(resp, e->cmd_id, e->data, e->data_size);
         if (res < 0) {
             break;
         }

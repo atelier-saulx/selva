@@ -400,6 +400,20 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
                 tabs--;
             }
             printf("%*s]\n", tabs * TAB_WIDTH, "");
+        } else if (type == SELVA_PROTO_REPLICATION) {
+            int8_t repl_cmd_id;
+            const char *repl_cmd_str;
+            char buf[5];
+            int err;
+
+            err = selva_proto_parse_replication(msg, msg_size, i - off, &repl_cmd_id);
+            if (err) {
+                fprintf(stderr, "Failed to parse an error received: %s\n", selva_strerror(err));
+                return;
+            }
+
+            repl_cmd_str = commands[repl_cmd_id].cmd_name ?: ({ snprintf(buf, sizeof(buf), "%d", repl_cmd_id); buf; });
+            printf("%*s<replication cmd=%s>,\n", tabs * TAB_WIDTH, "", repl_cmd_str);
         } else {
             fprintf(stderr, "Invalid proto value\n");
             return;
@@ -459,15 +473,18 @@ static void cmd_discover_res(const struct cmd *, const void *msg, size_t msg_siz
                 cmd_id = le64toh(ll);
             } else if (type == SELVA_PROTO_STRING) {
                 struct cmd *cmd = &commands[cmd_id];
-                char *cmd_name = selva_malloc(data_len + 1);
 
-                memcpy(cmd_name, (char *)msg + i - data_len, data_len);
-                cmd_name[data_len] = '\0';
+                if (!cmd->cmd_name) {
+                    char *cmd_name = selva_malloc(data_len + 1);
 
-                cmd->cmd_id = cmd_id;
-                cmd->cmd_name = cmd_name;
-                cmd->cmd_req = generic_req;
-                cmd->cmd_res = generic_res;
+                    memcpy(cmd_name, (char *)msg + i - data_len, data_len);
+                    cmd_name[data_len] = '\0';
+
+                    cmd->cmd_id = cmd_id;
+                    cmd->cmd_name = cmd_name;
+                    cmd->cmd_req = generic_req;
+                    cmd->cmd_res = generic_res;
+                }
 
                 level--;
             } else {

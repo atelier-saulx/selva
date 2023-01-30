@@ -399,7 +399,7 @@
 /**
  *
  * module: replication
- * cmd: replicaof
+ * cmd: replicasync
  */
 #define CMD_REPLICASYNC_ID 65
 

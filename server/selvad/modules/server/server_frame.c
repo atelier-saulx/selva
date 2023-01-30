@@ -107,7 +107,7 @@ int server_flush_frame_buf(struct selva_server_response_out *resp, int last_fram
     return err;
 }
 
-ssize_t selva_send_buf(struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len)
+ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len)
 {
     size_t i = 0;
     ssize_t ret = (ssize_t)len;
@@ -171,26 +171,6 @@ void selva_cancel_stream(struct selva_server_response_out *resp, struct selva_se
 {
     resp->frame_flags &= ~SELVA_PROTO_HDR_STREAM;
     free_stream_resp(stream_resp);
-}
-
-int selva_send_end(struct selva_server_response_out *restrict resp)
-{
-    int err;
-
-    if (!resp->ctx) {
-        return SELVA_PROTO_ENOTCONN;
-    }
-
-    err = server_flush_frame_buf(resp, 1);
-
-    if (resp->frame_flags & SELVA_PROTO_HDR_STREAM) {
-        /* Note that this function still needs resp->ctx. */
-        free_stream_resp(resp);
-    }
-
-    resp->ctx = NULL; /* Make sure nothing will be sent anymore. */
-
-    return err;
 }
 
 ssize_t server_recv_frame(struct conn_ctx *ctx)

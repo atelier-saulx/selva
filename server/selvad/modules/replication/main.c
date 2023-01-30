@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "module.h"
+#include "event_loop.h"
 #include "util/finalizer.h"
 #include "util/selva_string.h"
 #include "selva_proto.h"
@@ -15,6 +16,7 @@
 #include "selva_log.h"
 #include "selva_server.h"
 #include "origin/origin.h"
+#include "replica/replicaof.h"
 #include "selva_replication.h"
 
 enum replication_mode {
@@ -124,7 +126,8 @@ static int args_to_addr(struct sockaddr_in *addr, struct selva_string *ip, struc
 }
 
 /**
- * Make this node a replcia of an origin.
+ * Make this node a replica of an origin.
+ * TODO Block calling replicaof for the node itself
  */
 static void replicaof(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
@@ -132,7 +135,7 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
     struct selva_string **argv = NULL;
     int argc;
     struct sockaddr_in origin_addr;
-    int err;
+    int sock, err;
 
     finalizer_init(&fin);
 
@@ -149,14 +152,10 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
         return;
     }
 
-    /*
-     * Change replication mode.
-     */
     if (replication_mode != REPLICATION_MODE_NONE) {
         send_mode_error(resp);
         return;
     }
-    replication_mode = REPLICATION_MODE_REPLICA;
 
     err = args_to_addr(&origin_addr, argv[ARGV_IP], argv[ARGV_PORT]);
     if (err) {
@@ -164,8 +163,19 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
         return;
     }
 
-    selva_send_strf(resp, "I don't know how to sync from origin");
+    sock = replication_replica_connect_to_origin(&origin_addr);
+    if (sock < 0) {
+        selva_send_errorf(resp, err, "Connection failed");
+        return;
+    }
+
+    /* TODO Error handling */
+    replication_replica_start(sock);
+
+    replication_mode = REPLICATION_MODE_REPLICA;
+
     /* TODO Do it */
+    selva_send_strf(resp, "I don't know how to sync from origin");
 }
 
 static void replicainfo(struct selva_server_response_out *resp, const void *buf, size_t size)
@@ -183,6 +193,7 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf,
 
 IMPORT() {
     evl_import_main(selva_log);
+    evl_import_main(evl_wait_fd);
     import_selva_server();
 }
 

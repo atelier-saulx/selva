@@ -64,6 +64,9 @@ const char *selva_proto_type_to_str(enum selva_proto_data_type type, size_t *len
     case SELVA_PROTO_ARRAY_END:
         *len = 9;
         return "array end";
+    case SELVA_PROTO_REPLICATION:
+        *len = 11;
+        return "replication";
     }
 
     *len = 7;
@@ -74,24 +77,18 @@ static int parse_hdr_null(const char *buf __unused, size_t bsize __unused, enum 
 {
     *type_out = SELVA_PROTO_NULL;
     *len_out = 0;
-
     return sizeof(struct selva_proto_null);
 }
 
-static int parse_hdr_error(const char *buf, size_t bsize, enum selva_proto_data_type *type_out, size_t *len_out)
+static int parse_hdr_error(const char *buf, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
 {
     struct selva_proto_error hdr;
-
-    if (bsize < sizeof(hdr)) {
-        return SELVA_PROTO_EBADMSG;
-    };
 
     memcpy(&hdr, buf, sizeof(hdr));
     hdr.bsize = le16toh(hdr.bsize);
 
     *type_out = SELVA_PROTO_ERROR;
     *len_out = hdr.bsize;
-
     return sizeof(hdr) + hdr.bsize;
 }
 
@@ -99,7 +96,6 @@ static int parse_hdr_double(const char *buf __unused, size_t bsize __unused, enu
 {
     *type_out = SELVA_PROTO_DOUBLE;
     *len_out = sizeof(double);
-
     return sizeof(struct selva_proto_double);
 }
 
@@ -107,34 +103,24 @@ static int parse_hdr_longlong(const char *buf __unused, size_t bsize __unused, e
 {
     *type_out = SELVA_PROTO_LONGLONG;
     *len_out = sizeof(long long);
-
     return sizeof (struct selva_proto_longlong);
 }
 
-static int parse_hdr_string(const char *buf, size_t bsize, enum selva_proto_data_type *type_out, size_t *len_out)
+static int parse_hdr_string(const char *buf, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
 {
     struct selva_proto_string hdr;
-
-    if (bsize < sizeof(hdr)) {
-        return SELVA_PROTO_EBADMSG;
-    }
 
     memcpy(&hdr, buf, sizeof(hdr));
     hdr.bsize = le16toh(hdr.bsize);
 
     *type_out = SELVA_PROTO_STRING;
     *len_out = hdr.bsize;
-
     return sizeof(hdr) + hdr.bsize;
 }
 
-static int parse_hdr_array(const char *buf, size_t bsize, enum selva_proto_data_type *type_out, size_t *len_out)
+static int parse_hdr_array(const char *buf, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
 {
     struct selva_proto_array hdr;
-
-    if (bsize < sizeof(hdr)) {
-        return SELVA_PROTO_EBADMSG;
-    }
 
     memcpy(&hdr, buf, sizeof(hdr));
     hdr.length = le32toh(hdr.length);
@@ -148,18 +134,33 @@ static int parse_hdr_array_end(const char *buf __unused, size_t bsize __unused, 
 {
     *type_out = SELVA_PROTO_ARRAY_END;
     *len_out = 0;
-
     return sizeof(struct selva_proto_control);
 }
 
-static int (*const parse_hdr[])(const char *buf, size_t bsize, enum selva_proto_data_type *type_out, size_t *len_out) = {
-    parse_hdr_null,
-    parse_hdr_error,
-    parse_hdr_double,
-    parse_hdr_longlong,
-    parse_hdr_string,
-    parse_hdr_array,
-    parse_hdr_array_end,
+static int parse_hdr_replication(const char *buf __unused, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
+{
+    struct selva_proto_replication hdr;
+
+    memcpy(&hdr, buf, sizeof(hdr));
+    hdr.bsize = le64toh(hdr.bsize);
+
+    *type_out = SELVA_PROTO_REPLICATION;
+    *len_out = hdr.bsize;
+    return sizeof(hdr) + hdr.bsize;
+}
+
+static struct {
+    int (*const fn)(const char *buf, size_t bsize, enum selva_proto_data_type *type_out, size_t *len_out);
+    size_t hdr_size;
+} parse_hdr[] = {
+    { parse_hdr_null, sizeof(struct selva_proto_null) },
+    { parse_hdr_error, sizeof(struct selva_proto_error) },
+    { parse_hdr_double, sizeof(struct selva_proto_double) },
+    { parse_hdr_longlong, sizeof(struct selva_proto_longlong) },
+    { parse_hdr_string, sizeof(struct selva_proto_string) },
+    { parse_hdr_array, sizeof(struct selva_proto_array) },
+    { parse_hdr_array_end, sizeof(struct selva_proto_control) },
+    { parse_hdr_replication, sizeof(struct selva_proto_replication) },
 };
 
 int selva_proto_parse_vtype(const void *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out)
@@ -177,7 +178,9 @@ int selva_proto_parse_vtype(const void *buf, size_t bsize, size_t i, enum selva_
 
     memcpy(&ctrl, buf + i, sizeof(ctrl));
     if ((unsigned)ctrl.type <= num_elem(parse_hdr)) {
-        return parse_hdr[ctrl.type]((char *)buf + i, val_size, type_out, len_out);
+        if (val_size >= parse_hdr[ctrl.type].hdr_size) {
+            return parse_hdr[ctrl.type].fn((char *)buf + i, val_size, type_out, len_out);
+        }
     }
 
     return SELVA_PROTO_EBADMSG;
@@ -212,5 +215,23 @@ int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_ou
             *msg_len_out = hdr.bsize;
         }
     }
+    return 0;
+}
+
+int selva_proto_parse_replication(const void *buf, size_t bsize, size_t i, int8_t *cmd_id)
+{
+    size_t val_size = bsize - i;
+    struct selva_proto_replication hdr;
+
+    if (val_size < sizeof(hdr)) {
+        return SELVA_PROTO_EBADMSG;
+    }
+
+    memcpy(&hdr, (char *)buf + i, sizeof(hdr));
+    if (hdr.type != SELVA_PROTO_REPLICATION) {
+        return SELVA_PROTO_EBADMSG;
+    }
+
+    *cmd_id = hdr.cmd;
     return 0;
 }
