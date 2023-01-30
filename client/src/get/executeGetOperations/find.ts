@@ -128,6 +128,56 @@ function parseGetOpts(
       fields.get(type).add(pathPrefix + k)
     } else if (props[k] === false) {
       fields.get(type).add(`!${pathPrefix + k}`)
+    } else if (k === '$inherit') {
+      const asAny = props[k] as any
+
+      if (asAny.$item) {
+        return [fields, mapping, true, false]
+      } else if (asAny.$merge === true) {
+        return [fields, mapping, true, false]
+      }
+
+      let $field = props.$field as string
+      if ($field) {
+        if (!mapping[$field]) {
+          mapping[$field] = { targetField: [path] }
+        } else if (!mapping[$field].targetField) {
+          mapping[$field].targetField = [path]
+        } else {
+          mapping[$field].targetField.push(path)
+        }
+      } else {
+        $field = path
+      }
+
+      const objKeys = Object.keys(props)
+      if (objKeys.some((key) => !key.startsWith('$'))) {
+        return [fields, mapping, true, false]
+      }
+
+      let types = asAny?.$type
+      if (!types) {
+        types = []
+      } else if (typeof types === 'string') {
+        types = [types]
+      }
+
+      const prefixes = types.map((type: string) => {
+        if (type === 'root') {
+          return 'ro'
+        }
+
+        return schema.types[type].prefix
+      })
+
+      fields.get(type).add(`^${prefixes.join('')}:${$field}`)
+      if (mapping[$field]) {
+        mapping[$field].isInherit = true
+      } else {
+        mapping[$field] = { isInherit: true }
+      }
+
+      isInherit = true
     } else if (k === '$field') {
       const $field = props[k]
       if (Array.isArray($field)) {
@@ -153,29 +203,6 @@ function parseGetOpts(
           mapping[$field].targetField.push(path)
         }
       }
-    } else if (k === '$inherit') {
-      let types = (props[k] as any)?.$type
-      if (!types) {
-        types = []
-      } else if (typeof types === 'string') {
-        types = [types]
-      }
-
-      const prefixes = types.map((type: string) => {
-        if (type === 'root') {
-          return 'ro'
-        }
-
-        return schema.types[type].prefix
-      })
-
-      fields.get(type).add(`^${prefixes.join('')}:${path}`)
-      if (mapping[path]) {
-        mapping[path].isInherit = true
-      } else {
-        mapping[path] = { isInherit: true }
-      }
-      isInherit = true
     } else if (k === '$default') {
       fields.get(type).add(path)
       const $default = props[k]
@@ -730,6 +757,7 @@ const findFields = async (
     } else {
       const schema = passedSchema || client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
+
       const added = await addMarker(client, ctx, {
         ...sourceFieldToDir(
           schema,
@@ -775,6 +803,53 @@ const findFields = async (
       padId(op.id),
       ...args
     )
+
+    if (isInherit) {
+      const findIds = result.map((el) => el[0])
+
+      const inheritFields = new Set<string>()
+      const inheritTypes = new Set<string>()
+      const _ = [...fieldsOpt.get('$any')]
+        .filter((f) => {
+          return f.startsWith('^')
+        })
+        .map((f) => {
+          const parts = f.split(':')
+          const typePart = parts[0].slice(1)
+          for (let i = 0; i < typePart.length; i += 2) {
+            const pf = typePart[i] + typePart[i + 1]
+            const type = schema.prefixToTypeMapping[pf]
+            inheritTypes.add(type)
+          }
+
+          const inheritField = parts[1]
+          inheritFields.add(inheritField)
+        })
+
+      const fork = {
+        isFork: true,
+        $or: [...inheritTypes].map((t) => {
+          return {
+            $field: 'type',
+            $operator: '=',
+            $value: t,
+          }
+        }),
+      } as any
+
+      const inheritRpn = ast2rpn(schema.types, fork, lang)
+
+      const inheritMarkers = findIds.map((id) => {
+        return addMarker(client, ctx, {
+          type: 'ancestors',
+          id: id,
+          fields: [...inheritFields],
+          rpn: inheritRpn,
+        })
+      })
+
+      await Promise.all(inheritMarkers)
+    }
 
     await checkForNextRefresh(
       ctx,
