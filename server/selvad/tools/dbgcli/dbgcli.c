@@ -4,6 +4,7 @@
  */
 #include <alloca.h>
 #include <arpa/inet.h>
+#include <ctype.h>
 #include <netinet/tcp.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -20,7 +21,6 @@
 #include "split.h"
 #include "commands.h"
 
-#define PORT 3000
 #define MAX_LINE 200
 
 /* TODO REMOVE */
@@ -29,7 +29,7 @@ static struct eztrie commands;
 static int seqno = 0;
 
 [[nodiscard]]
-static int connect_to_server(void)
+static int connect_to_server(const char *addr, int port)
 {
     int sock;
     struct sockaddr_in serv_addr;
@@ -42,15 +42,15 @@ static int connect_to_server(void)
     (void)setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &(int){1}, sizeof(int));
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(PORT);
+    serv_addr.sin_port = htons(port);
 
-    if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) == -1) {
+    if (inet_pton(AF_INET, addr, &serv_addr.sin_addr) == -1) {
         fprintf(stderr, "Invalid address\n");
         return -1;
     }
 
     if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
-        fprintf(stderr, "Connection failed\n");
+        fprintf(stderr, "Connection to %s:%d failed\n", addr, port);
         return -1;
     }
 
@@ -100,12 +100,36 @@ static const struct cmd *get_cmd(const char *name)
     return NULL;
 }
 
-int main(int argc, char const* argv[])
+int main(int argc, char *argv[])
 {
+    int c;
+    char *addr = "127.0.0.1";
+    int port = 3000;
     static char line[MAX_LINE];
     static char *args[256];
-    int sock = connect_to_server();
+    int sock;
 
+    opterr = 0;
+    while ((c = getopt(argc, argv, "p:")) != -1) {
+        switch (c) {
+        case 'p':
+            port = (int)strtol(optarg, NULL, 10);
+            break;
+        case '?':
+            if (optopt == 'p') {
+                fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+            } else if (isprint(optopt)) {
+                fprintf(stderr, "Unknown option `-%c'.\n", optopt);
+            } else {
+                fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
+            }
+            return 1;
+        default:
+            abort();
+        }
+    }
+
+    sock = connect_to_server(addr, port);
     if (sock == -1) {
         exit(EXIT_FAILURE);
     }
