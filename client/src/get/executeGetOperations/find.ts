@@ -12,7 +12,7 @@ import {
   executeNestedGetOperations,
   ExecContext,
   sourceFieldToDir,
-  addMarker,
+  bufferFindMarker,
 } from './'
 import {
   ast2rpn,
@@ -531,7 +531,7 @@ export const findIds = async (
         const id = op.id.substr(i, endLen)
         const schema = client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
-        const r = await addMarker(client, ctx, {
+        bufferFindMarker(ctx, {
           ...sourceFieldToDir(
             schema,
             sourceFieldSchema,
@@ -544,13 +544,7 @@ export const findIds = async (
           rpn: args,
         })
 
-        added = added || r
-
         await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
-      }
-
-      if (added) {
-        ctx.hasFindMarkers = true
       }
     } else {
       const schema = client.schemas[ctx.db]
@@ -561,7 +555,7 @@ export const findIds = async (
         }
         const id = op.id.substr(i, endLen)
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
-        const added = await addMarker(client, ctx, {
+        bufferFindMarker(ctx, {
           ...sourceFieldToDir(
             schema,
             sourceFieldSchema,
@@ -573,10 +567,6 @@ export const findIds = async (
           fields: op.props.$all === true ? [] : Object.keys(realOpts),
           rpn: args,
         })
-
-        if (added) {
-          ctx.hasFindMarkers = true
-        }
       }
     }
 
@@ -659,7 +649,7 @@ const findFields = async (
       let added = false
       await Promise.all(
         op.inKeys.map(async (id) => {
-          const r = await addMarker(client, ctx, {
+          bufferFindMarker(ctx, {
             type: 'node',
             id: id,
             fields:
@@ -670,14 +660,8 @@ const findFields = async (
                   ),
             rpn: args,
           })
-
-          added = added || r
         })
       )
-
-      if (added) {
-        ctx.hasFindMarkers = true
-      }
     }
 
     const result = await client.redis.selva_hierarchy_find(
@@ -721,7 +705,6 @@ const findFields = async (
     }
 
     if (op.nested) {
-      let added = false
       for (let i = 0; i < op.id.length; i += NODE_ID_SIZE) {
         let endLen = NODE_ID_SIZE
         while (op.id[i + endLen - 1] === '\0') {
@@ -733,7 +716,7 @@ const findFields = async (
         const schema = passedSchema || client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
 
-        const r = await addMarker(client, ctx, {
+        bufferFindMarker(ctx, {
           ...sourceFieldToDir(
             schema,
             sourceFieldSchema,
@@ -746,19 +729,13 @@ const findFields = async (
           rpn: args,
         })
 
-        added = added || r
-
         await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
-      }
-
-      if (added) {
-        ctx.hasFindMarkers = true
       }
     } else {
       const schema = passedSchema || client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
 
-      const added = await addMarker(client, ctx, {
+      bufferFindMarker(ctx, {
         ...sourceFieldToDir(
           schema,
           sourceFieldSchema,
@@ -770,10 +747,6 @@ const findFields = async (
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
       })
-
-      if (added) {
-        ctx.hasFindMarkers = true
-      }
     }
 
     const schema = passedSchema || client.schemas[ctx.db]
@@ -839,16 +812,14 @@ const findFields = async (
 
       const inheritRpn = ast2rpn(schema.types, fork, lang)
 
-      const inheritMarkers = findIds.map((id) => {
-        return addMarker(client, ctx, {
+      for (const id of findIds) {
+        bufferFindMarker(ctx, {
           type: 'ancestors',
           id: id,
           fields: [...inheritFields],
           rpn: inheritRpn,
         })
-      })
-
-      await Promise.all(inheritMarkers)
+      }
     }
 
     await checkForNextRefresh(
@@ -1129,16 +1100,12 @@ const executeFindOperation = async (
     for (const v of ambiguousReferenceFields) {
       const [id, [originField, ...fields]] = v
 
-      if (
-        await addMarker(client, ctx, {
-          type: 'edge_field',
-          refField: originField,
-          id,
-          fields,
-        })
-      ) {
-        ctx.hasFindMarkers = true
-      }
+      bufferFindMarker(ctx, {
+        type: 'edge_field',
+        refField: originField,
+        id,
+        fields,
+      })
     }
   }
 

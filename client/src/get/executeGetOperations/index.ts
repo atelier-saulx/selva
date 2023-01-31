@@ -25,7 +25,7 @@ export type ExecContext = {
   originDescriptors?: Record<string, ServerDescriptor>
   firstEval?: boolean
   nodeMarkers?: Record<string, Set<string>>
-  hasFindMarkers?: boolean
+  findMarkers?: { passedOnSchema?: any; marker: SubscriptionMarker }[]
 }
 
 export type TraversalType =
@@ -163,6 +163,27 @@ export function sourceFieldToFindArgs(
     : [t.type]
 }
 
+export async function flushFindMarkers(
+  client: SelvaClient,
+  ctx: ExecContext
+): Promise<boolean> {
+  if (!ctx.subId) {
+    return false
+  }
+
+  if (!ctx?.findMarkers?.length) {
+    return false
+  }
+
+  const added = await Promise.all(
+    ctx.findMarkers.map(({ marker, passedOnSchema }) => {
+      return addMarker(client, ctx, marker, passedOnSchema)
+    })
+  )
+
+  return added.every((b) => b)
+}
+
 export async function addMarker(
   client: SelvaClient,
   ctx: ExecContext,
@@ -252,6 +273,22 @@ export function bufferNodeMarker(
   fields.forEach((f) => current.add(f))
 
   ctx.nodeMarkers[id] = current
+}
+
+export function bufferFindMarker(
+  ctx: ExecContext,
+  marker: SubscriptionMarker,
+  passedOnSchema?: Schema
+): void {
+  if (!ctx.subId) {
+    return
+  }
+
+  if (!ctx.findMarkers) {
+    ctx.findMarkers = []
+  }
+
+  ctx.findMarkers.push({ marker, passedOnSchema })
 }
 
 export async function addNodeMarkers(

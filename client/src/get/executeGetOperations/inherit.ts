@@ -12,8 +12,8 @@ import {
   typeCast,
   ExecContext,
   executeNestedGetOperations,
-  addMarker,
   bufferNodeMarker,
+  bufferFindMarker,
 } from './'
 import { Schema, FieldSchema } from '../../schema'
 import { ast2rpn } from '@saulx/selva-query-ast-parser'
@@ -106,7 +106,7 @@ async function mergeObj(
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
-    await addMarker(client, ctx, {
+    bufferFindMarker(ctx, {
       type: 'ancestors',
       id: op.id,
       fields,
@@ -197,8 +197,7 @@ async function deepMergeObj(
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
-    await addMarker(
-      client,
+    bufferFindMarker(
       ctx,
       {
         type: 'ancestors',
@@ -290,8 +289,7 @@ async function inheritItem(
 
   if (ctx.subId) {
     bufferNodeMarker(ctx, op.id, ...fields)
-    await addMarker(
-      client,
+    bufferFindMarker(
       ctx,
       {
         type: 'ancestors',
@@ -399,8 +397,7 @@ export default async function inherit(
   if (fs && fs.type === 'reference') {
     if (ctx.subId) {
       bufferNodeMarker(ctx, op.id, op.sourceField)
-      await addMarker(
-        client,
+      bufferFindMarker(
         ctx,
         {
           type: 'ancestors',
@@ -478,8 +475,7 @@ export default async function inherit(
 
     if (ctx.subId) {
       bufferNodeMarker(ctx, op.id, op.sourceField)
-      await addMarker(
-        client,
+      bufferFindMarker(
         ctx,
         {
           type: 'ancestors',
@@ -563,11 +559,9 @@ export default async function inherit(
   if (ctx.subId) {
     const sourceFieldSchema = getNestedSchema(schema, op.id, op.sourceField)
 
-    let added: boolean
     if (sourceFieldSchema && sourceFieldSchema.type === 'reference') {
       bufferNodeMarker(ctx, op.id, op.sourceField)
-      added = await addMarker(
-        client,
+      bufferFindMarker(
         ctx,
         {
           type: 'bfs_expression',
@@ -609,8 +603,7 @@ export default async function inherit(
       )
     } else {
       bufferNodeMarker(ctx, op.id, ...fields)
-      await addMarker(
-        client,
+      bufferFindMarker(
         ctx,
         {
           type: 'ancestors',
