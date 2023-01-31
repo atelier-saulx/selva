@@ -253,7 +253,11 @@ int selva_proto_parse_vtype(const void *buf, size_t bsize, size_t i, enum selva_
  */
 int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_out, const char **msg_str_out, size_t *msg_len_out);
 
-int selva_proto_parse_replication(const void *buf, size_t bsize, size_t i, int8_t *cmd_id);
+/**
+ * parase selva_proto_replication.
+ * @param data_size Can be NULL.
+ */
+int selva_proto_parse_replication(const void *buf, size_t bsize, size_t i, int8_t *cmd_id, size_t *data_size);
 
 /**
  * Parse a selva proto buffer into selva_strings.

@@ -126,7 +126,6 @@ void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
     static ring_buffer_eid_t eid;
     unsigned not_replicated;
 
-    /* TODO Add cmd */
     eid = (eid + 1) & ~EID_MSB_MASK; /* TODO any better ideas? */
     memcpy(p, buf, buf_size);
     while ((not_replicated = ring_buffer_insert(&replication_state.rb, eid, cmd, p, buf_size))) {

@@ -279,10 +279,6 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
     }
     selva_send_ll(resp, values_set);
 
-    /* FIXME Replication */
-#if 0
-    RedisModule_ReplicateVerbatim(ctx);
-#endif
     /* TODO Function to get THIS command id */
     selva_replication_replicate(CMD_OBJECT_SET_ID, buf, len);
     return;

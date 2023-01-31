@@ -302,6 +302,22 @@ static void on_connection(struct event *event, void *arg __unused)
     evl_wait_fd(new_sockfd, on_data, NULL, on_close, conn_ctx);
 }
 
+void selva_server_run_cmd(int8_t cmd_id, void *msg, size_t msg_size)
+{
+    struct selva_server_response_out resp = {
+        .ctx = NULL,
+        .cmd = cmd_id,
+    };
+    selva_cmd_function cmd;
+
+    cmd = get_command(cmd_id);
+    if (cmd) {
+        cmd(&resp, msg, msg_size);
+    } else {
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid cmd_id");
+    }
+}
+
 IMPORT() {
     evl_import_main(selva_log);
     evl_import_event_loop();

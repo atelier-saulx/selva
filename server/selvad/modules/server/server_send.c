@@ -235,7 +235,7 @@ int selva_send_replication(struct selva_server_response_out *resp, int8_t cmd, c
     if (res < 0) {
         return (int)res;
     }
-    res = server_send_buf(resp, &data, bsize);
+    res = server_send_buf(resp, data, bsize);
     return (res < 0) ? (int)res : 0;
 }
 

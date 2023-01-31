@@ -93,6 +93,11 @@ SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out 
  */
 SELVA_SERVER_EXPORT(int, selva_send_replication, struct selva_server_response_out *resp, int8_t cmd, const void *data, size_t bsize);
 
+/**
+ * Run command.
+ */
+SELVA_SERVER_EXPORT(void, selva_server_run_cmd, int8_t cmd_id, void *msg, size_t msg_size);
+
 #define _import_selva_server(apply) \
     apply(selva_mk_command) \
     apply(selva_resp_to_str) \
@@ -112,7 +117,8 @@ SELVA_SERVER_EXPORT(int, selva_send_replication, struct selva_server_response_ou
     apply(selva_send_bin) \
     apply(selva_send_array) \
     apply(selva_send_array_end) \
-    apply(selva_send_replication)
+    apply(selva_send_replication) \
+    apply(selva_server_run_cmd)
 
 #define _import_selva_server1(f) \
     evl_import(f, "mod_server.so");

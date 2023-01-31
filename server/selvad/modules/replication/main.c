@@ -128,6 +128,7 @@ static int args_to_addr(struct sockaddr_in *addr, struct selva_string *ip, struc
 /**
  * Make this node a replica of an origin.
  * TODO Block calling replicaof for the node itself
+ * TODO Make replica read-only
  */
 static void replicaof(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
@@ -171,11 +172,9 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
 
     /* TODO Error handling */
     replication_replica_start(sock);
-
     replication_mode = REPLICATION_MODE_REPLICA;
 
-    /* TODO Do it */
-    selva_send_strf(resp, "I don't know how to sync from origin");
+    selva_send_ll(resp, 1);
 }
 
 static void replicainfo(struct selva_server_response_out *resp, const void *buf, size_t size)
