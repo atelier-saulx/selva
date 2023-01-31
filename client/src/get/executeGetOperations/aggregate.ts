@@ -13,7 +13,7 @@ import {
   ExecContext,
   sourceFieldToDir,
   sourceFieldToFindArgs,
-  addMarker,
+  bufferFindMarker,
 } from './'
 import { padId, joinIds, NODE_ID_SIZE } from '../../util'
 import { getNestedSchema } from '../utils'
@@ -345,7 +345,7 @@ const executeAggregateOperation = async (
         const id = op.id.substr(i, endLen)
         const schema = client.schemas[ctx.db]
         const sourceFieldSchema = getNestedSchema(schema, id, sourceField)
-        const r = await addMarker(client, ctx, {
+        bufferFindMarker(ctx, {
           ...sourceFieldToDir(
             schema,
             sourceFieldSchema,
@@ -358,18 +358,12 @@ const executeAggregateOperation = async (
           rpn: args,
         })
 
-        added = added || r
-
         await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
-      }
-
-      if (added) {
-        ctx.hasFindMarkers = true
       }
     } else {
       const schema = client.schemas[ctx.db]
       const sourceFieldSchema = getNestedSchema(schema, op.id, sourceField)
-      const added = await addMarker(client, ctx, {
+      bufferFindMarker(ctx, {
         ...sourceFieldToDir(
           schema,
           sourceFieldSchema,
@@ -381,10 +375,6 @@ const executeAggregateOperation = async (
         fields: op.props.$all === true ? [] : Object.keys(realOpts),
         rpn: args,
       })
-
-      if (added) {
-        ctx.hasFindMarkers = true
-      }
     }
 
     const schema = client.schemas[ctx.db]

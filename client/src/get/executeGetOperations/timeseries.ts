@@ -6,12 +6,7 @@ import {
   getTypeFromId,
   setNestedResult,
 } from '../utils'
-import {
-  ExecContext,
-  addMarker,
-  executeGetOperation,
-  bufferNodeMarker,
-} from './'
+import { ExecContext, executeGetOperation, bufferNodeMarker } from './'
 import { TimeseriesContext } from '../../timeseries'
 import { CreatePartialDiff } from '@saulx/diff'
 import { readLongLong } from '../executeGetOperations'

@@ -5,6 +5,7 @@ import executeGetOperations, {
   adler32,
   refreshMarkers,
   addNodeMarkers,
+  flushFindMarkers,
 } from './executeGetOperations'
 import resolveId from './resolveId'
 import combineResults from './combineResults'
@@ -204,8 +205,12 @@ async function get(
   )
 
   try {
-    await addNodeMarkers(client, ctx)
-    await refreshMarkers(client, ctx)
+    const nodeMarkers = await addNodeMarkers(client, ctx)
+    const findMarkers = await flushFindMarkers(client, ctx)
+
+    if (nodeMarkers || findMarkers) {
+      await refreshMarkers(client, ctx)
+    }
   } catch (e) {
     console.error(e)
   }
