@@ -508,14 +508,14 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
 }
 
 static int SelvaObject_OnLoad(void) {
-    selva_mk_command(CMD_OBJECT_DEL_ID, "object.del", SelvaObject_DelCommand);
-    selva_mk_command(CMD_OBJECT_EXIST_ID, "object.exists", SelvaObject_ExistsCommand);
-    selva_mk_command(CMD_OBJECT_GET_ID, "object.get", SelvaObject_GetCommand);
-    selva_mk_command(CMD_OBJECT_LEN_ID, "object.len", SelvaObject_LenCommand);
-    selva_mk_command(CMD_OBJECT_SET_ID, "object.set", SelvaObject_SetCommand);
-    selva_mk_command(CMD_OBJECT_TYPE_ID, "object.type", SelvaObject_TypeCommand);
-    selva_mk_command(CMD_OBJECT_GETMETA_ID, "object.getMeta", SelvaObject_GetMetaCommand);
-    selva_mk_command(CMD_OBJECT_SETMETA_ID, "object.setMeta", SelvaObject_SetMetaCommand);
+    selva_mk_command(CMD_OBJECT_DEL_ID, SELVA_CMD_MODE_MUTATE, "object.del", SelvaObject_DelCommand);
+    selva_mk_command(CMD_OBJECT_EXIST_ID, SELVA_CMD_MODE_PURE, "object.exists", SelvaObject_ExistsCommand);
+    selva_mk_command(CMD_OBJECT_GET_ID, SELVA_CMD_MODE_PURE, "object.get", SelvaObject_GetCommand);
+    selva_mk_command(CMD_OBJECT_LEN_ID, SELVA_CMD_MODE_PURE, "object.len", SelvaObject_LenCommand);
+    selva_mk_command(CMD_OBJECT_SET_ID, SELVA_CMD_MODE_MUTATE, "object.set", SelvaObject_SetCommand);
+    selva_mk_command(CMD_OBJECT_TYPE_ID, SELVA_CMD_MODE_PURE, "object.type", SelvaObject_TypeCommand);
+    selva_mk_command(CMD_OBJECT_GETMETA_ID, SELVA_CMD_MODE_PURE, "object.getMeta", SelvaObject_GetMetaCommand);
+    selva_mk_command(CMD_OBJECT_SETMETA_ID, SELVA_CMD_MODE_MUTATE, "object.setMeta", SelvaObject_SetMetaCommand);
 
     return 0;
 }

@@ -21,13 +21,19 @@
 #define ENV_PORT_NAME "SELVA_PORT"
 static int selva_port = 3000;
 static int server_sockfd;
-
-struct {
+static int readonly_server;
+static struct command {
     selva_cmd_function cmd_fn;
+    enum selva_cmd_mode cmd_mode;
     const char *cmd_name;
 } commands[254];
 
-int selva_mk_command(int nr, const char *name, selva_cmd_function cmd)
+void selva_server_set_readonly(void)
+{
+    readonly_server = 1;
+}
+
+int selva_mk_command(int nr, enum selva_cmd_mode mode, const char *name, selva_cmd_function cmd)
 {
     if (nr < 0 || nr >= (int)num_elem(commands)) {
         return SELVA_EINVAL;
@@ -38,14 +44,15 @@ int selva_mk_command(int nr, const char *name, selva_cmd_function cmd)
     }
 
     commands[nr].cmd_fn = cmd;
+    commands[nr].cmd_mode = mode;
     commands[nr].cmd_name = name;
 
     return 0;
 }
 
-static selva_cmd_function get_command(int nr)
+static struct command *get_command(int nr)
 {
-    return (nr >= 0 && nr < (int)num_elem(commands)) ? commands[nr].cmd_fn : NULL;
+    return (nr >= 0 && nr < (int)num_elem(commands)) ? &commands[nr] : NULL;
 }
 
 size_t selva_resp_to_str(struct selva_server_response_out *resp, char *buf, size_t bsize)
@@ -235,13 +242,19 @@ static void on_data(struct event *event, void *arg)
             .seqno = seqno,
             .buf_i = 0,
         };
-        selva_cmd_function cmd;
+        struct command *cmd;
 
         cmd = get_command(resp.cmd);
         if (cmd) {
-            cmd(&resp, ctx->recv_msg_buf, ctx->recv_msg_buf_i);
+            if (cmd->cmd_mode & SELVA_CMD_MODE_MUTATE && readonly_server) {
+                static const char msg[] = "read-only server";
+
+                (void)selva_send_error(&resp, SELVA_PROTO_ENOTSUP, msg, sizeof(msg) - 1);
+            } else {
+                cmd->cmd_fn(&resp, ctx->recv_msg_buf, ctx->recv_msg_buf_i);
+            }
         } else {
-            const char msg[] = "Invalid command";
+            static const char msg[] = "Invalid command";
 
             (void)selva_send_error(&resp, SELVA_PROTO_EINVAL, msg, sizeof(msg) - 1);
         }
@@ -308,11 +321,14 @@ void selva_server_run_cmd(int8_t cmd_id, void *msg, size_t msg_size)
         .ctx = NULL,
         .cmd = cmd_id,
     };
-    selva_cmd_function cmd;
+    struct command *cmd;
 
     cmd = get_command(cmd_id);
     if (cmd) {
-        cmd(&resp, msg, msg_size);
+        /*
+         * Note that we don't care here whether the server is in read-only mode.
+         */
+        cmd->cmd_fn(&resp, msg, msg_size);
     } else {
         SELVA_LOG(SELVA_LOGL_ERR, "Invalid cmd_id");
     }
@@ -337,10 +353,10 @@ __constructor void init(void)
     server_start_workers();
 #endif
 
-    SELVA_MK_COMMAND(CMD_PING_ID, ping);
-    SELVA_MK_COMMAND(CMD_ECHO_ID, echo);
-    SELVA_MK_COMMAND(CMD_LSCMD_ID, lscmd);
-    SELVA_MK_COMMAND(CMD_HRT_ID, hrt);
+    SELVA_MK_COMMAND(CMD_PING_ID, SELVA_CMD_MODE_PURE, ping);
+    SELVA_MK_COMMAND(CMD_ECHO_ID, SELVA_CMD_MODE_PURE, echo);
+    SELVA_MK_COMMAND(CMD_LSCMD_ID, SELVA_CMD_MODE_PURE, lscmd);
+    SELVA_MK_COMMAND(CMD_HRT_ID, SELVA_CMD_MODE_PURE, hrt);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(selva_port);

@@ -1197,8 +1197,8 @@ out:
 }
 
 static int Aggregate_OnLoad(void) {
-    selva_mk_command(CMD_HIERARCHY_AGGREGATE_ID, "selva.aggregate", SelvaHierarchy_AggregateCommand);
-    selva_mk_command(CMD_HIERARCHY_AGGREGATE_IN_ID, "selva.aggregateIn", SelvaHierarchy_AggregateInCommand);
+    selva_mk_command(CMD_HIERARCHY_AGGREGATE_ID, SELVA_CMD_MODE_PURE, "selva.aggregate", SelvaHierarchy_AggregateCommand);
+    selva_mk_command(CMD_HIERARCHY_AGGREGATE_IN_ID, SELVA_CMD_MODE_PURE, "selva.aggregateIn", SelvaHierarchy_AggregateInCommand);
 
     return 0;
 }

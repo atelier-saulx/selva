@@ -1353,10 +1353,10 @@ SELVA_MODINFO("find_index", mod_info);
 static int FindIndex_OnLoad(void) {
     lpf_a = lpf_geta((float)selva_glob_config.find_indexing_popularity_ave_period, (float)selva_glob_config.find_indexing_icb_update_interval / 1000.0f);
 
-    selva_mk_command(CMD_INDEX_LIST_ID, "index.list", SelvaFindIndex_ListCommand);
-    selva_mk_command(CMD_INDEX_NEW_ID, "index.new", SelvaFindIndex_NewCommand);
-    selva_mk_command(CMD_INDEX_DEL_ID, "index.del", SelvaFindIndex_DelCommand);
-    selva_mk_command(CMD_INDEX_DEBUG_ID, "index.debug", SelvaFindIndex_DebugCommand);
+    selva_mk_command(CMD_INDEX_LIST_ID, SELVA_CMD_MODE_PURE, "index.list", SelvaFindIndex_ListCommand);
+    selva_mk_command(CMD_INDEX_NEW_ID, SELVA_CMD_MODE_PURE, "index.new", SelvaFindIndex_NewCommand);
+    selva_mk_command(CMD_INDEX_DEL_ID, SELVA_CMD_MODE_PURE, "index.del", SelvaFindIndex_DelCommand);
+    selva_mk_command(CMD_INDEX_DEBUG_ID, SELVA_CMD_MODE_PURE, "index.debug", SelvaFindIndex_DebugCommand);
 
     return 0;
 }

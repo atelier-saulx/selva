@@ -17,6 +17,24 @@ enum selva_proto_data_type;
 struct selva_server_response_out;
 struct selva_string;
 
+enum selva_cmd_mode {
+    /**
+     * The command only reads objects.
+     * The pure attribute prohibits a command from modifying the state of the
+     * database that is observable by means other than inspecting the command's
+     * response. However, commands declared with the pure attribute can safely
+     * read and modify the database objects in a way that does not affect their
+     * observable state.
+     */
+    SELVA_CMD_MODE_PURE = 0x01,
+    /**
+     * THe command modifies objects.
+     * The command makes changes that may affect the the observable state of the
+     * database objects as well as their serialized state.
+     */
+    SELVA_CMD_MODE_MUTATE = 0x02,
+};
+
 /**
  * Command function.
  * @param resp contains information needed to build the response.
@@ -25,9 +43,17 @@ struct selva_string;
  */
 typedef void (*selva_cmd_function)(struct selva_server_response_out *resp, const void *buf, size_t len);
 
-SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, const char *name, selva_cmd_function cmd);
-#define SELVA_MK_COMMAND(nr, cmd) \
-    selva_mk_command(nr, #cmd, cmd)
+/**
+ * Set the server to read-only mode.
+ * This operation is irreversible at runtime.
+ * A read-only server can only invoke commands marked as `SELVA_CMD_MODE_PURE`
+ * through the exposed socket.
+ */
+SELVA_SERVER_EXPORT(void, selva_server_set_readonly, void);
+
+SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, enum selva_cmd_mode mode, const char *name, selva_cmd_function cmd);
+#define SELVA_MK_COMMAND(nr, mode, cmd) \
+    selva_mk_command(nr, mode, #cmd, cmd)
 
 SELVA_SERVER_EXPORT(size_t, selva_resp_to_str, struct selva_server_response_out *resp, char *buf, size_t bsize);
 
@@ -99,6 +125,7 @@ SELVA_SERVER_EXPORT(int, selva_send_replication, struct selva_server_response_ou
 SELVA_SERVER_EXPORT(void, selva_server_run_cmd, int8_t cmd_id, void *msg, size_t msg_size);
 
 #define _import_selva_server(apply) \
+    apply(selva_server_set_readonly) \
     apply(selva_mk_command) \
     apply(selva_resp_to_str) \
     apply(selva_send_flush) \

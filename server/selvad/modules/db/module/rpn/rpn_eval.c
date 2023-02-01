@@ -174,10 +174,10 @@ void SelvaRpn_EvalSetCommand(struct selva_server_response_out *resp, const void 
 }
 
 static int RpnEval_OnLoad(void) {
-    selva_mk_command(CMD_RPN_EVAL_BOOL_ID, "rpn.evalBool", SelvaRpn_EvalBoolCommand);
-    selva_mk_command(CMD_RPN_EVAL_DOUBLE_ID, "rpn.evalDouble", SelvaRpn_EvalDoubleCommand);
-    selva_mk_command(CMD_RPN_EVAL_STRING_ID, "rpn.evalString", SelvaRpn_EvalStringCommand);
-    selva_mk_command(CMD_RPN_EVAL_SET_ID, "rpn.evalSet", SelvaRpn_EvalSetCommand);
+    selva_mk_command(CMD_RPN_EVAL_BOOL_ID, SELVA_CMD_MODE_PURE, "rpn.evalBool", SelvaRpn_EvalBoolCommand);
+    selva_mk_command(CMD_RPN_EVAL_DOUBLE_ID, SELVA_CMD_MODE_PURE, "rpn.evalDouble", SelvaRpn_EvalDoubleCommand);
+    selva_mk_command(CMD_RPN_EVAL_STRING_ID, SELVA_CMD_MODE_PURE, "rpn.evalString", SelvaRpn_EvalStringCommand);
+    selva_mk_command(CMD_RPN_EVAL_SET_ID, SELVA_CMD_MODE_PURE, "rpn.evalSet", SelvaRpn_EvalSetCommand);
 
     return 0;
 }

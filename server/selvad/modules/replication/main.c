@@ -173,6 +173,7 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
     /* TODO Error handling */
     replication_replica_start(sock);
     replication_mode = REPLICATION_MODE_REPLICA;
+    selva_server_set_readonly();
 
     selva_send_ll(resp, 1);
 }
@@ -200,7 +201,7 @@ __constructor void init(void)
 {
     SELVA_LOG(SELVA_LOGL_INFO, "Init replication");
 
-    SELVA_MK_COMMAND(CMD_REPLICASYNC_ID, replicasync);
-    SELVA_MK_COMMAND(CMD_REPLICAOF_ID, replicaof);
-    SELVA_MK_COMMAND(CMD_REPLICAINFO_ID, replicainfo);
+    SELVA_MK_COMMAND(CMD_REPLICASYNC_ID, SELVA_CMD_MODE_MUTATE, replicasync);
+    SELVA_MK_COMMAND(CMD_REPLICAOF_ID, SELVA_CMD_MODE_MUTATE, replicaof);
+    SELVA_MK_COMMAND(CMD_REPLICAINFO_ID, SELVA_CMD_MODE_PURE, replicainfo);
 }

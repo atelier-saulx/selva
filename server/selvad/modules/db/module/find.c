@@ -2213,7 +2213,7 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
 }
 
 static int Find_OnLoad(void) {
-    selva_mk_command(CMD_HIERARCHY_FIND_ID, "hierarchy.find", SelvaHierarchy_FindCommand);
+    selva_mk_command(CMD_HIERARCHY_FIND_ID, SELVA_CMD_MODE_PURE, "hierarchy.find", SelvaHierarchy_FindCommand);
 
     return 0;
 }

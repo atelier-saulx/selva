@@ -3983,16 +3983,16 @@ static int Hierarchy_OnLoad(void) {
     /*
      * Register commands.
      */
-    selva_mk_command(CMD_HIERARCHY_DEL_ID, "hierarchy.del", SelvaHierarchy_DelNodeCommand);
-    selva_mk_command(CMD_HIERARCHY_HEADS_ID, "hierarchy.heads", SelvaHierarchy_HeadsCommand);
-    selva_mk_command(CMD_HIERARCHY_PARENTS_ID, "hierarchy.parents", SelvaHierarchy_ParentsCommand);
-    selva_mk_command(CMD_HIERARCHY_CHILDREN_ID, "hierarchy.children", SelvaHierarchy_ChildrenCommand);
-    selva_mk_command(CMD_HIERARCHY_EDGE_LIST_ID, "hierarchy.edgeList", SelvaHierarchy_EdgeListCommand);
-    selva_mk_command(CMD_HIERARCHY_EDGE_GET_ID, "hierarchy.edgeGet", SelvaHierarchy_EdgeGetCommand);
-    selva_mk_command(CMD_HIERARCHY_EDGE_GET_METADATA_ID, "hierarchy.edgeGetMetadata", SelvaHierarchy_EdgeGetMetadataCommand);
-    selva_mk_command(CMD_HIERARCHY_COMPRESS_ID, "hierarchy.compress", SelvaHierarchy_CompressCommand);
-    selva_mk_command(CMD_HIERARCHY_LIST_COMPRESSED_ID, "hierarchy.listCompressed", SelvaHierarchy_ListCompressedCommand);
-    selva_mk_command(CMD_HIERARCHY_VER_ID, "hierarchy.ver", SelvaHierarchy_VerCommand);
+    selva_mk_command(CMD_HIERARCHY_DEL_ID, SELVA_CMD_MODE_MUTATE, "hierarchy.del", SelvaHierarchy_DelNodeCommand);
+    selva_mk_command(CMD_HIERARCHY_HEADS_ID, SELVA_CMD_MODE_PURE, "hierarchy.heads", SelvaHierarchy_HeadsCommand);
+    selva_mk_command(CMD_HIERARCHY_PARENTS_ID, SELVA_CMD_MODE_PURE, "hierarchy.parents", SelvaHierarchy_ParentsCommand);
+    selva_mk_command(CMD_HIERARCHY_CHILDREN_ID, SELVA_CMD_MODE_PURE, "hierarchy.children", SelvaHierarchy_ChildrenCommand);
+    selva_mk_command(CMD_HIERARCHY_EDGE_LIST_ID, SELVA_CMD_MODE_PURE, "hierarchy.edgeList", SelvaHierarchy_EdgeListCommand);
+    selva_mk_command(CMD_HIERARCHY_EDGE_GET_ID, SELVA_CMD_MODE_PURE, "hierarchy.edgeGet", SelvaHierarchy_EdgeGetCommand);
+    selva_mk_command(CMD_HIERARCHY_EDGE_GET_METADATA_ID, SELVA_CMD_MODE_PURE, "hierarchy.edgeGetMetadata", SelvaHierarchy_EdgeGetMetadataCommand);
+    selva_mk_command(CMD_HIERARCHY_COMPRESS_ID, SELVA_CMD_MODE_PURE, "hierarchy.compress", SelvaHierarchy_CompressCommand); /* Pure or not? */
+    selva_mk_command(CMD_HIERARCHY_LIST_COMPRESSED_ID, SELVA_CMD_MODE_PURE, "hierarchy.listCompressed", SelvaHierarchy_ListCompressedCommand);
+    selva_mk_command(CMD_HIERARCHY_VER_ID, SELVA_CMD_MODE_PURE, "hierarchy.ver", SelvaHierarchy_VerCommand);
 
     main_hierarchy = SelvaModify_NewHierarchy();
     if (!main_hierarchy) {

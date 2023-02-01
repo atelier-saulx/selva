@@ -584,7 +584,7 @@ void SelvaCommand_Update(struct selva_server_response_out *resp, const void *buf
 }
 
 static int Update_OnLoad(void) {
-    selva_mk_command(64, "update", SelvaCommand_Update);
+    selva_mk_command(CMD_UPDATE_ID, SELVA_CMD_MODE_MUTATE, "update", SelvaCommand_Update);
 
     return 0;
 }

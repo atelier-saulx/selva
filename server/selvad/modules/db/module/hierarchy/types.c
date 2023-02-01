@@ -99,9 +99,9 @@ void SelvaHierarchyTypes_ListCommand(struct selva_server_response_out *resp, con
 }
 
 static int SelvaHierarchyTypes_OnLoad(void) {
-    selva_mk_command(CMD_HIERARCHY_TYPES_ADD_ID, "hierarchy.types.add", SelvaHierarchyTypes_AddCommand);
-    selva_mk_command(CMD_HIERARCHY_TYPES_CLEAR_ID, "hierarchy.types.clear", SelvaHierarchyTypes_ClearCommand);
-    selva_mk_command(CMD_HIERARCHY_TYPES_LIST_ID, "hierarchy.types.list", SelvaHierarchyTypes_ListCommand);
+    selva_mk_command(CMD_HIERARCHY_TYPES_ADD_ID, SELVA_CMD_MODE_MUTATE, "hierarchy.types.add", SelvaHierarchyTypes_AddCommand);
+    selva_mk_command(CMD_HIERARCHY_TYPES_CLEAR_ID, SELVA_CMD_MODE_MUTATE, "hierarchy.types.clear", SelvaHierarchyTypes_ClearCommand);
+    selva_mk_command(CMD_HIERARCHY_TYPES_LIST_ID, SELVA_CMD_MODE_PURE, "hierarchy.types.list", SelvaHierarchyTypes_ListCommand);
 
     return 0;
 }
