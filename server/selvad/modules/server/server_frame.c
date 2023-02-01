@@ -8,13 +8,13 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "endian.h"
 #include "util/crc32c.h"
+#include "util/tcp.h"
+#include "endian.h"
 #include "jemalloc.h"
 #include "selva_error.h"
 #include "selva_proto.h"
 #include "selva_server.h"
-#include "tcp.h"
 #include "server.h"
 
 #define MAX_RETRIES 3

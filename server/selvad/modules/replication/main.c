@@ -8,9 +8,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "module.h"
-#include "event_loop.h"
 #include "util/finalizer.h"
 #include "util/selva_string.h"
+#include "event_loop.h"
 #include "selva_proto.h"
 #include "selva_error.h"
 #include "selva_log.h"

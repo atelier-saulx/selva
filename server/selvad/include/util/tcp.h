@@ -6,6 +6,7 @@
 
 void tcp_set_nodelay(int fd);
 void tcp_unset_nodelay(int fd);
+void tcp_set_keepalive(int fd, int time, int intvl, int probes);
 void tcp_cork(int fd);
 void tcp_uncork(int fd);
 

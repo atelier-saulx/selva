@@ -25,6 +25,7 @@ OBJ := \
 	selva_proto_buf.o \
 	selva_string.o \
 	svector.o \
+	tcp.o \
 	timestamp.o \
 	trx.o
 

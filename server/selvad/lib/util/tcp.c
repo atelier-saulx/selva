@@ -9,7 +9,7 @@
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include "tcp.h"
+#include "util/tcp.h"
 
 static const int use_tcp_nodelay = 1;
 
@@ -25,6 +25,14 @@ void tcp_unset_nodelay(int fd)
     if (use_tcp_nodelay) {
         (void)setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &(int){0}, sizeof(int));
     }
+}
+
+void tcp_set_keepalive(int fd, int time, int intvl, int probes)
+{
+    (void)setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &(int){1}, sizeof(int));
+    (void)setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &time, sizeof(time));
+    (void)setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &intvl, sizeof(intvl));
+    (void)setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &probes, sizeof(probes));
 }
 
 void tcp_cork(int fd)

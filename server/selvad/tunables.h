@@ -15,6 +15,10 @@
  */
 #define MEM_DEBUG 1
 
+#define TCP_KEEPALIVE_TIME 7200
+#define TCP_KEEPALIVE_INTVL 75
+#define TCP_KEEPALIVE_PROBES 9
+
 /**
  * Add delay to the replication of the Modify command.
  * Unit is nanoseconds. Normally this should be set to 0.

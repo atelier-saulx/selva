@@ -8,6 +8,8 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include "util/crc32c.h"
+#include "util/tcp.h"
 #include "event_loop.h"
 #include "selva_error.h"
 #include "selva_log.h"
