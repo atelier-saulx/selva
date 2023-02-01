@@ -1,6 +1,6 @@
 import { Schema, SelvaClient } from '../../'
 import { GetOperationAggregate, GetOperationFind } from '../types'
-import { checkForNextRefresh, findIds } from './find'
+import { bufferRefreshCheck, findIds } from './find'
 import {
   ast2rpn,
   Fork,
@@ -142,7 +142,7 @@ const executeAggregateOperation = async (
       ...args
     )
 
-    await checkForNextRefresh(
+    bufferRefreshCheck(
       ctx,
       client,
       sourceField,
@@ -183,7 +183,7 @@ const executeAggregateOperation = async (
           rpn: args,
         })
 
-        await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
+        bufferRefreshCheck(ctx, client, sourceField, id, op.filter, lang)
       }
     } else {
       const schema = client.schemas[ctx.db]
@@ -232,14 +232,7 @@ const executeAggregateOperation = async (
       ...args
     )
 
-    await checkForNextRefresh(
-      ctx,
-      client,
-      sourceField,
-      padId(op.id),
-      op.filter,
-      lang
-    )
+    bufferRefreshCheck(ctx, client, sourceField, padId(op.id), op.filter, lang)
 
     return Number(agg)
   }

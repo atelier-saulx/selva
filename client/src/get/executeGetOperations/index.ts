@@ -26,6 +26,7 @@ export type ExecContext = {
   firstEval?: boolean
   nodeMarkers?: Record<string, Set<string>>
   findMarkers?: { passedOnSchema?: any; marker: SubscriptionMarker }[]
+  refreshChecks?: Promise<void>[]
 }
 
 export type TraversalType =

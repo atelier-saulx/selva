@@ -211,6 +211,10 @@ async function get(
     if (nodeMarkers || findMarkers) {
       await refreshMarkers(client, ctx)
     }
+
+    if (ctx.refreshChecks) {
+      await Promise.all(ctx.refreshChecks)
+    }
   } catch (e) {
     console.error(e)
   }

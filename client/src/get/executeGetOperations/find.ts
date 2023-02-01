@@ -340,6 +340,36 @@ function excludeTimebased(ast: Fork | FilterAST): Fork | FilterAST {
   return newFork
 }
 
+export function bufferRefreshCheck(
+  ctx: ExecContext,
+  client: SelvaClient,
+  sourceField: string,
+  paddedIds: string,
+  ast: Fork,
+  lang?: string,
+  passedSchema?: Schema
+) {
+  if (!ctx.subId) {
+    return
+  }
+
+  const p = checkForNextRefresh(
+    ctx,
+    client,
+    sourceField,
+    paddedIds,
+    ast,
+    lang,
+    passedSchema
+  )
+
+  if (!ctx.refreshChecks) {
+    ctx.refreshChecks = []
+  }
+
+  ctx.refreshChecks.push(p)
+}
+
 export async function checkForNextRefresh(
   ctx: ExecContext,
   client: SelvaClient,
@@ -503,7 +533,7 @@ export const findIds = async (
       ...args
     )
 
-    await checkForNextRefresh(
+    bufferRefreshCheck(
       ctx,
       client,
       sourceField,
@@ -544,7 +574,7 @@ export const findIds = async (
           rpn: args,
         })
 
-        await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
+        bufferRefreshCheck(ctx, client, sourceField, id, op.filter, lang)
       }
     } else {
       const schema = client.schemas[ctx.db]
@@ -597,14 +627,7 @@ export const findIds = async (
       ...args
     )
 
-    await checkForNextRefresh(
-      ctx,
-      client,
-      sourceField,
-      padId(op.id),
-      op.filter,
-      lang
-    )
+    bufferRefreshCheck(ctx, client, sourceField, padId(op.id), op.filter, lang)
 
     return ids
   }
@@ -685,7 +708,7 @@ const findFields = async (
       ...args
     )
 
-    await checkForNextRefresh(
+    bufferRefreshCheck(
       ctx,
       client,
       sourceField,
@@ -729,7 +752,7 @@ const findFields = async (
           rpn: args,
         })
 
-        await checkForNextRefresh(ctx, client, sourceField, id, op.filter, lang)
+        bufferRefreshCheck(ctx, client, sourceField, id, op.filter, lang)
       }
     } else {
       const schema = passedSchema || client.schemas[ctx.db]
@@ -822,14 +845,7 @@ const findFields = async (
       }
     }
 
-    await checkForNextRefresh(
-      ctx,
-      client,
-      sourceField,
-      padId(op.id),
-      op.filter,
-      lang
-    )
+    bufferRefreshCheck(ctx, client, sourceField, padId(op.id), op.filter, lang)
 
     return result
   }
