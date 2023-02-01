@@ -26,7 +26,7 @@ static inline void *_evl_import(const char *what, const char *from) {
      */
     _ref = dlopen(from, RTLD_NOW | RTLD_LOCAL);
     if (!_ref) {
-        fprintf(stderr, "Module \"%s\" not found\n", from ? from : "main");
+        fprintf(stderr, "Module \"%s\" not loaded\n", from ? from : "main");
     } else {
         dlerror();
         p = dlsym(_ref, what);
