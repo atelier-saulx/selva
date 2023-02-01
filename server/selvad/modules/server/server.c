@@ -301,6 +301,7 @@ static void on_connection(struct event *event, void *arg __unused)
     }
 
     tcp_set_nodelay(new_sockfd);
+    tcp_set_keepalive(new_sockfd, TCP_KEEPALIVE_TIME, TCP_KEEPALIVE_INTVL, TCP_KEEPALIVE_PROBES);
 
     inet_ntop(AF_INET, &client.sin_addr, buf, sizeof(buf));
     SELVA_LOG(SELVA_LOGL_INFO, "Received a connection from %s:%d", buf, ntohs(client.sin_port));

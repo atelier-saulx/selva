@@ -15,9 +15,9 @@
 #include "selva_log.h"
 #include "selva_proto.h"
 #include "selva_server.h"
-#include "util/crc32c.h"
 #include "../../../commands.h"
 #include "replicaof.h"
+#include "../../../tunables.h"
 
 int replication_replica_connect_to_origin(struct sockaddr_in *origin_addr)
 {
@@ -28,7 +28,8 @@ int replication_replica_connect_to_origin(struct sockaddr_in *origin_addr)
         return SELVA_ENOBUFS;
     }
 
-    (void)setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &(int){1}, sizeof(int));
+    tcp_set_nodelay(sock);
+    tcp_set_keepalive(sock, TCP_KEEPALIVE_TIME, TCP_KEEPALIVE_INTVL, TCP_KEEPALIVE_PROBES);
 
     if (connect(sock, (struct sockaddr*)origin_addr, sizeof(*origin_addr)) == -1) {
         SELVA_LOG(SELVA_LOGL_ERR, "Connection failed");
