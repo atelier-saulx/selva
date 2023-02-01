@@ -18,6 +18,8 @@
 
 #define ALL_STREAMS_FREE ((1 << MAX_STREAMS) - 1)
 
+#define STREAM_WRITER_RETRY_SEC 15
+
 /**
  * Client conn_ctx allocation map.
  * 0 = in use;
@@ -63,7 +65,7 @@ void free_conn_ctx(struct conn_ctx *ctx)
     } else {
         /* Wait for stream writers to terminate. */
         const struct timespec t = {
-            .tv_sec = 3,
+            .tv_sec = STREAM_WRITER_RETRY_SEC,
             .tv_nsec = 0,
         };
 
