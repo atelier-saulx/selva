@@ -340,7 +340,7 @@ function excludeTimebased(ast: Fork | FilterAST): Fork | FilterAST {
   return newFork
 }
 
-async function checkForNextRefresh(
+export async function checkForNextRefresh(
   ctx: ExecContext,
   client: SelvaClient,
   sourceField: string,
