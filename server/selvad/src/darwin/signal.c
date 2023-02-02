@@ -65,7 +65,7 @@ static void sig_handler(int sig, siginfo_t *info, void *uap __unused)
     const int wfd = darwin_sig2fd_wr[sig];
 
     if (wfd == -1) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Signal hander fd not found for signo: %d", signo);
+        SELVA_LOG(SELVA_LOGL_ERR, "Signal hander fd not found for signo: %d", sig);
         return;
     }
 

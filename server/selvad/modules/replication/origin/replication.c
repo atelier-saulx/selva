@@ -9,7 +9,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-#include <sys/sysinfo.h>
 #include "jemalloc.h"
 #include "selva_error.h"
 #include "selva_server.h"
@@ -140,10 +139,6 @@ void replication_origin_stop()
 
 void replication_origin_init(void)
 {
-#if 0
-    int nr_cores = get_nprocs();
-#endif
-
     for (unsigned i = 0; i < MAX_REPLICAS; i++) {
         struct replica *r = &replication_state.replicas[i];
 
