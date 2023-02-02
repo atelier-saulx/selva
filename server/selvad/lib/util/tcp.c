@@ -29,10 +29,12 @@ void tcp_unset_nodelay(int fd)
 
 void tcp_set_keepalive(int fd, int time, int intvl, int probes)
 {
+#if __linux__
     (void)setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &(int){1}, sizeof(int));
     (void)setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &time, sizeof(time));
     (void)setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &intvl, sizeof(intvl));
     (void)setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &probes, sizeof(probes));
+#endif
 }
 
 void tcp_cork(int fd)
