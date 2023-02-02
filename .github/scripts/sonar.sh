@@ -3,7 +3,7 @@ set -e
 make -C server/selvad clean
 # TODO make test fails in GH Actions
 #build-wrapper-linux-x86-64 --out-dir bw-output make all test test-gcov -C server/modules/selva -j4
-build-wrapper-linux-x86-64 --out-dir bw-output make all -C server/selvad -j4
+build-wrapper-linux-x86-64 --out-dir bw-output make all -C server/selvad
 sonar-scanner \
     -Dsonar.organization=atelier-saulx \
     -Dsonar.projectKey=atelier-saulx_selva \

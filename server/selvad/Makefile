@@ -30,7 +30,7 @@ $(LIBS):
 modules: lib
 	$(MAKE) -C modules
 
-install:
+install: all
 	mkdir -p "$(INSTALL_DIR)/lib"
 	mkdir -p "$(INSTALL_DIR)/modules"
 	mkdir -p "$(INSTALL_DIR)/locale"
