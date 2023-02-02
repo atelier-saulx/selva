@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <arpa/inet.h>
+#include "endian.h"
 #include "jemalloc.h"
 #include "selva_error.h"
 #include "selva_log.h"

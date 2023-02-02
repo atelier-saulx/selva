@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include "endian.h"
 #include "util/crc32c.h"
 #include "util/tcp.h"
 #include "event_loop.h"
