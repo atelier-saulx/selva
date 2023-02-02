@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'server/selvad/**'
+  workflow_dispatch:
 jobs:
   build:
     environment: Sonar
