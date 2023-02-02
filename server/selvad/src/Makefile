@@ -36,6 +36,6 @@ endif
 DEP := $(OBJ:%.o=%.d)
 
 ../selvad: $(OBJ)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) $^ $(LDFLAGS) -o $@
 
 -include $(DEP)
