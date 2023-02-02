@@ -17,7 +17,7 @@ LIBS := \
 
 all: selvad modules $(LIBS)
 
-selvad:
+selvad: lib
 	$(MAKE) -C src
 
 # Build all libraries (ordered)
@@ -27,7 +27,7 @@ lib: | $(LIBS)
 $(LIBS):
 	$(MAKE) -C $@
 
-modules:
+modules: lib
 	$(MAKE) -C modules
 
 install:
