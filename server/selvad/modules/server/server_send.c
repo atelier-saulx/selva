@@ -226,7 +226,6 @@ int selva_send_replication(struct selva_server_response_out *resp, int8_t cmd, c
     struct selva_proto_replication buf = {
         .type = SELVA_PROTO_REPLICATION,
         .cmd = cmd,
-        ._spare = 0,
         .bsize = htole64(bsize),
     };
     ssize_t res;

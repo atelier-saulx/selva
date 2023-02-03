@@ -178,9 +178,15 @@ struct selva_proto_replication {
      * Type must be SELVA_PROTO_REPLICATION.
      */
     enum selva_proto_data_type type;
-    int8_t cmd; /*!< Command identifier. */
-    uint16_t _spare;
-    uint64_t bsize; /*!< Size of a replicated command in bytes. */
+    enum {
+        SELVA_PROTO_REPLICATION_MSGT_CMD = 0x01, /*!< Command in the data. */
+        SELVA_PROTO_REPLICATION_MSGT_SDB = 0x02, /*!< SDB dump in the data. */
+        SELVA_PROTO_REPLICATION_MSGT_ERROR = 0x04, /*!< Error in the data. */
+    } __attribute__((packed)) msg_type;
+    int8_t cmd; /*!< Command identifier if msg_type == SELVA_PROTO_REPLICATION_MSGT_CMD. */
+    uint8_t _spare[5];
+    uint64_t eid; /*!< Element id of this message. */
+    uint64_t bsize; /*!< Size of data in bytes. */
     uint8_t data[0];
 };
 
@@ -211,7 +217,7 @@ static_assert(sizeof(struct selva_proto_header) == (2 * sizeof(uint64_t)), "Head
 static_assert(__alignof__(struct selva_proto_header) == __alignof__(uint64_t), "Header must be aligned as a 64-bit integer");
 static_assert(sizeof(enum selva_proto_data_type) == 1, "data_type must be an 8-bit integer");
 static_assert(sizeof_field(struct selva_proto_string, flags) == 1, "string flags must be 8-bit wide");
-static_assert(sizeof(struct selva_proto_replication) == 16, "Replication header should be 2 x 64-bits");
+static_assert(sizeof(struct selva_proto_replication) == 3 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
 
 /**
  * @addtogroup selva_proto_parse
@@ -254,7 +260,7 @@ int selva_proto_parse_vtype(const void *buf, size_t bsize, size_t i, enum selva_
 int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_out, const char **msg_str_out, size_t *msg_len_out);
 
 /**
- * parase selva_proto_replication.
+ * parse selva_proto_replication.
  * @param data_size Can be NULL.
  */
 int selva_proto_parse_replication(const void *buf, size_t bsize, size_t i, int8_t *cmd_id, size_t *data_size);
