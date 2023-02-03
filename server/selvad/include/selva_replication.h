@@ -16,8 +16,20 @@
 /* TODO This should be same as SDB HASH_SIZE and shouldn't be copy-pasted here */
 #define HASH_SIZE 32
 
+/**
+ * Publish a new SDB dump to the replication.
+ */
 SELVA_REPLICATION_EXPORT(void, selva_replication_new_sdb, char sdb_hash[HASH_SIZE]);
+
+/**
+ * Replicate a command buffer to the replicas.
+ * This is a NOP for replication modes other than ORIGIN.
+ */
 SELVA_REPLICATION_EXPORT(void, selva_replication_replicate, int8_t cmd, const void *buf, size_t buf_size);
+
+/**
+ * Stop replication.
+ */
 SELVA_REPLICATION_EXPORT(void, selva_replication_stop, void);
 
 #define _import_selva_replication(apply) \

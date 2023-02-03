@@ -128,7 +128,6 @@ static int args_to_addr(struct sockaddr_in *addr, struct selva_string *ip, struc
 /**
  * Make this node a replica of an origin.
  * TODO Block calling replicaof for the node itself
- * TODO Make replica read-only
  */
 static void replicaof(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
