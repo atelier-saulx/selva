@@ -47,15 +47,15 @@ int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_b
         j = (j + 1) % rb->len;
     }
 
+    pthread_mutex_unlock(&rb->lock);
+
     if (new_index == -1) {
-        pthread_mutex_unlock(&rb->lock);
         return 1;
     }
 
     state->index = new_index;
     state->reader_id = reader_id;
 
-    pthread_mutex_unlock(&rb->lock);
     return 0;
 }
 
@@ -104,15 +104,27 @@ unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t 
 {
     unsigned not_read;
     struct ring_buffer_element *e;
+    typeof(e->id) old_id;
+    typeof(e->data) old_data = NULL;
+
+    /*
+     * Locking the mutex here is important to invoke a proper memory barrier and
+     * to avoid code reordering.
+     * We also need to avoid a situation where a new replica is registered at
+     * tail after the following atomic_load.
+     */
+    pthread_mutex_lock(&rb->lock);
 
     if ((not_read = atomic_load(&rb->buf[rb->tail].not_read))) {
+        pthread_mutex_unlock(&rb->lock);
         return not_read;
     }
 
     e = &rb->buf[rb->tail];
 
     if (rb->free_element_data && e->data) {
-        rb->free_element_data(e->data, e->id);
+        old_id = e->id;
+        old_data = e->data;
     }
 
     e->id = id;
@@ -121,15 +133,15 @@ unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t 
     e->data_size = size;
     atomic_store(&e->not_read, atomic_load(&rb->readers_mask));
 
-    /*
-     * Locking the mutex here is important to invoke a proper memory barrier and
-     * to avoid code reordering.
-     */
-    pthread_mutex_lock(&rb->lock);
     rb->tail = (rb->tail + 1) % rb->len;
-    pthread_mutex_unlock(&rb->lock);
 
+    pthread_mutex_unlock(&rb->lock);
     pthread_cond_broadcast(&rb->cond);
+
+    if (old_data) {
+        rb->free_element_data(old_data, old_id);
+    }
+
     return 0;
 }
 
