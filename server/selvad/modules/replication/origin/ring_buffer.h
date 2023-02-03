@@ -4,7 +4,7 @@
  */
 #pragma once
 
-typedef int64_t ring_buffer_eid_t; /*!< Element id type. */
+typedef uint64_t ring_buffer_eid_t; /*!< Element id type. */
 
 /*
  * We use atomic_uint to access reader masks. Otherwise reader ids and masks

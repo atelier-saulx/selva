@@ -109,7 +109,7 @@ static void drop_replicas(unsigned replicas)
     }
 }
 
-int replication_origin_register_replica(struct selva_server_response_out *resp, int64_t start_eid)
+int replication_origin_register_replica(struct selva_server_response_out *resp, uint64_t start_eid)
 {
     struct replica *replica = new_replica(resp);
 
