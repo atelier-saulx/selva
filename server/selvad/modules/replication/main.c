@@ -15,9 +15,9 @@
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_server.h"
-#include "origin/origin.h"
-#include "replica/replicaof.h"
 #include "selva_replication.h"
+#include "origin/replication.h"
+#include "replica/replication.h"
 
 enum replication_mode {
     REPLICATION_MODE_NONE = 0,
@@ -98,7 +98,10 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
         selva_send_errorf(resp, err, "Failed to create a stream");
     }
 
-    err = replication_origin_register_replica(stream_resp);
+    /* TODO We need to sync the dump to the replica */
+
+    /* TODO Try to use an offset id provided by the replica. */
+    err = replication_origin_register_replica(stream_resp, 0);
     if (err) {
         selva_send_error(resp, err, NULL, 0);
         return;

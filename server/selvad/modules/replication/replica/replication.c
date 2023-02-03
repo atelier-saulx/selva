@@ -17,8 +17,8 @@
 #include "selva_proto.h"
 #include "selva_server.h"
 #include "../../../commands.h"
-#include "replicaof.h"
 #include "../../../tunables.h"
+#include "replication.h"
 
 int replication_replica_connect_to_origin(struct sockaddr_in *origin_addr)
 {

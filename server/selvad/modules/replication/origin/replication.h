@@ -8,6 +8,7 @@
 #define HASH_SIZE 32
 
 void replication_origin_new_sdb(char sdb_hash[HASH_SIZE]);
+const char *replication_origin_get_sdb(char sdb_hash[HASH_SIZE]);
 void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size);
 
 /**
@@ -15,7 +16,7 @@ void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size);
  * @param resp is a selva_server_response_out that allows sending data to the replica.
  * @returns 0 if successful; Otherwise a selva error is returned.
  */
-int replication_origin_register_replica(struct selva_server_response_out *resp);
+int replication_origin_register_replica(struct selva_server_response_out *resp, int64_t start_eid);
 
 /**
  * Stop all replication activity.
