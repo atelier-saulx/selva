@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
+#include <sys/sendfile.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include "util/crc32c.h"
@@ -139,6 +140,22 @@ ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const v
 out:
     tcp_uncork(resp->ctx->fd);
     return ret;
+}
+
+ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t size)
+{
+    server_flush_frame_buf(resp, 0);
+
+    if (!resp->ctx) {
+        return SELVA_PROTO_ENOTCONN;
+    }
+
+    off_t bytes_sent = sendfile(resp->ctx->fd, fd, &(off_t){0}, size);
+    if (bytes_sent != (off_t)size) {
+        return SELVA_PROTO_EBADF; /* FIXME Proper error handling */
+    }
+
+    return bytes_sent;
 }
 
 int selva_start_stream(struct selva_server_response_out *resp, struct selva_server_response_out **stream_resp_out)

@@ -64,9 +64,12 @@ const char *selva_proto_type_to_str(enum selva_proto_data_type type, size_t *len
     case SELVA_PROTO_ARRAY_END:
         *len = 9;
         return "array end";
-    case SELVA_PROTO_REPLICATION:
-        *len = 11;
-        return "replication";
+    case SELVA_PROTO_REPLICATION_CMD:
+        *len = 15;
+        return "replication cmd";
+    case SELVA_PROTO_REPLICATION_SDB:
+        *len = 15;
+        return "replication sdb";
     }
 
     *len = 7;
@@ -137,14 +140,14 @@ static int parse_hdr_array_end(const char *buf __unused, size_t bsize __unused, 
     return sizeof(struct selva_proto_control);
 }
 
-static int parse_hdr_replication(const char *buf __unused, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
+static int parse_hdr_replication_cmd(const char *buf __unused, size_t bsize __unused, enum selva_proto_data_type *type_out, size_t *len_out)
 {
-    struct selva_proto_replication hdr;
+    struct selva_proto_replication_cmd hdr;
 
     memcpy(&hdr, buf, sizeof(hdr));
     hdr.bsize = le64toh(hdr.bsize);
 
-    *type_out = SELVA_PROTO_REPLICATION;
+    *type_out = SELVA_PROTO_REPLICATION_CMD;
     *len_out = hdr.bsize;
     return sizeof(hdr) + hdr.bsize;
 }
@@ -160,7 +163,7 @@ static struct {
     { parse_hdr_string, sizeof(struct selva_proto_string) },
     { parse_hdr_array, sizeof(struct selva_proto_array) },
     { parse_hdr_array_end, sizeof(struct selva_proto_control) },
-    { parse_hdr_replication, sizeof(struct selva_proto_replication) },
+    { parse_hdr_replication_cmd, sizeof(struct selva_proto_replication_cmd) },
 };
 
 int selva_proto_parse_vtype(const void *buf, size_t bsize, size_t i, enum selva_proto_data_type *type_out, size_t *len_out)
@@ -218,17 +221,17 @@ int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_ou
     return 0;
 }
 
-int selva_proto_parse_replication(const void *buf, size_t bsize, size_t i, int8_t *cmd_id, size_t *data_size)
+int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, int8_t *cmd_id, size_t *data_size)
 {
     size_t val_size = bsize - i;
-    struct selva_proto_replication hdr;
+    struct selva_proto_replication_cmd hdr;
 
     if (val_size < sizeof(hdr)) {
         return SELVA_PROTO_EBADMSG;
     }
 
     memcpy(&hdr, (char *)buf + i, sizeof(hdr));
-    if (hdr.type != SELVA_PROTO_REPLICATION) {
+    if (hdr.type != SELVA_PROTO_REPLICATION_CMD) {
         return SELVA_PROTO_EBADMSG;
     }
 

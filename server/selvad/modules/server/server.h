@@ -120,3 +120,9 @@ int server_flush_frame_buf(struct selva_server_response_out *resp, int last_fram
  * @returns Return bytes sent; Otherwise an error.
  */
 ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len);
+
+/**
+ * Send contents of a file pointed by fd a part of the response resp.
+ * @returns Return bytes sent; Otherwise an error.
+ */
+ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t size);

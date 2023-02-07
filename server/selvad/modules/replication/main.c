@@ -180,8 +180,10 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
     selva_send_ll(resp, 1);
 }
 
-static void replicainfo(struct selva_server_response_out *resp, const void *buf, size_t size)
+static void replicainfo(struct selva_server_response_out *resp, const void *buf __unused, size_t size)
 {
+    char hash[HASH_SIZE];
+
     if (size) {
         selva_send_error_arity(resp);
         return;
@@ -189,7 +191,16 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf,
 
     selva_send_array(resp, 3);
     selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
-    selva_send_str(resp, "", 0); /* TODO hash? */
+    switch (replication_mode) {
+    case REPLICATION_MODE_NONE:
+        selva_send_null(resp);
+        break;
+    case REPLICATION_MODE_ORIGIN:
+        selva_send_str(resp, replication_origin_get_sdb(hash), HASH_SIZE);
+        break;
+    case REPLICATION_MODE_REPLICA:
+        selva_send_str(resp, "", 0);
+    }
     selva_send_ll(resp, 0); /* TODO offset */
 }
 

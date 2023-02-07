@@ -20,6 +20,13 @@
 #include "../../../tunables.h"
 #include "replication.h"
 
+#if 0
+static struct replica_state {
+    char sdb_hash[HASH_SIZE]; /*!< The hash of the last known dump. */
+    uint64_t sdb_eid; /*!< eid for the hash. */
+} replica_state;
+#endif
+
 int replication_replica_connect_to_origin(struct sockaddr_in *origin_addr)
 {
     int sock;
@@ -40,6 +47,7 @@ int replication_replica_connect_to_origin(struct sockaddr_in *origin_addr)
     return sock;
 }
 
+/* TODO Here we could send what we already have to avoid full sync */
 static int send_sync_req(int sock)
 {
     const int seqno = 0;
@@ -110,16 +118,16 @@ static void on_data(struct event *event, void *arg)
             }
 
             if (i == 0) {
-                size_t size = payload_size - sizeof(struct selva_proto_replication);
+                size_t size = payload_size - sizeof(struct selva_proto_replication_cmd);
                 int err;
 
-                err = selva_proto_parse_replication(msg_buf, payload_size, 0, &cmd_id, &replication_data_size);
+                err = selva_proto_parse_replication_cmd(msg_buf, payload_size, 0, &cmd_id, &replication_data_size);
                 if (err) {
                     SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse the replication header: %s", selva_strerror(err));
                     return;
                 }
 
-                memmove(msg_buf, msg_buf + sizeof(struct selva_proto_replication), size);
+                memmove(msg_buf, msg_buf + sizeof(struct selva_proto_replication_cmd), size);
                 i += size;
             } else {
                 i += payload_size;

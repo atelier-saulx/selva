@@ -4,12 +4,14 @@
  * SPDX-License-Identifier: MIT
  */
 #include <alloca.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include "endian.h"
 #include "selva_error.h"
 #include "selva_proto.h"
@@ -221,11 +223,12 @@ int selva_send_array_end(struct selva_server_response_out *resp)
     return (res < 0) ? (int)res : 0;
 }
 
-int selva_send_replication(struct selva_server_response_out *resp, int8_t cmd, const void *data, size_t bsize)
+int selva_send_replication_cmd(struct selva_server_response_out *resp, uint64_t eid, int8_t cmd, const void *data, size_t bsize)
 {
-    struct selva_proto_replication buf = {
-        .type = SELVA_PROTO_REPLICATION,
+    struct selva_proto_replication_cmd buf = {
+        .type = SELVA_PROTO_REPLICATION_CMD,
         .cmd = cmd,
+        .eid = eid,
         .bsize = htole64(bsize),
     };
     ssize_t res;
@@ -235,6 +238,36 @@ int selva_send_replication(struct selva_server_response_out *resp, int8_t cmd, c
         return (int)res;
     }
     res = server_send_buf(resp, data, bsize);
+    return (res < 0) ? (int)res : 0;
+}
+
+/* FIXME */
+int selva_send_replication_sdb(struct selva_server_response_out *resp, uint64_t eid, const char *filename)
+{
+    struct selva_proto_replication_sdb buf = {
+        .type = SELVA_PROTO_REPLICATION_SDB,
+        .eid = eid,
+    };
+    ssize_t res;
+
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1) {
+        /* TODO Handle error */
+    }
+
+    off_t file_size = lseek(fd, 0, SEEK_END);
+    buf.bsize = htole64((uint64_t)file_size);
+    lseek(fd, 0, SEEK_SET);
+
+    res = server_send_buf(resp, &buf, sizeof(buf));
+    if (res < 0) {
+        close(fd);
+        return (int)res;
+    }
+
+    res = server_send_file(resp, fd, file_size);
+    close(fd);
+
     return (res < 0) ? (int)res : 0;
 }
 
