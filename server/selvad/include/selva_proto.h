@@ -198,8 +198,7 @@ struct selva_proto_replication_sdb {
     enum selva_proto_data_type type;
     uint8_t _spare[7];
     uint64_t eid; /*!< Element id of this message. */
-    uint64_t bsize; /*!< Size of data in bytes. */
-    uint8_t data[0];
+    uint64_t bsize; /*!< Size of the dump. */
 };
 
 /**
@@ -231,6 +230,7 @@ static_assert(sizeof(enum selva_proto_data_type) == 1, "data_type must be an 8-b
 static_assert(sizeof_field(struct selva_proto_string, flags) == 1, "string flags must be 8-bit wide");
 static_assert(sizeof(struct selva_proto_replication_cmd) == 3 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
 static_assert(sizeof(struct selva_proto_replication_sdb) == 3 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
+static_assert(sizeof(struct selva_proto_replication_cmd) == sizeof(struct selva_proto_replication_sdb), "Must be same size to allow easier parsing");
 
 /**
  * @addtogroup selva_proto_parse
@@ -274,9 +274,10 @@ int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_ou
 
 /**
  * parse selva_proto_replication.
- * @param data_size Can be NULL.
  */
 int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, int8_t *cmd_id, size_t *data_size);
+
+int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, size_t *data_size);
 
 /**
  * Parse a selva proto buffer into selva_strings.
