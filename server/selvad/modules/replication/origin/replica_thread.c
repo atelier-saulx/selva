@@ -45,8 +45,7 @@ void *replication_thread(void *arg)
         ssize_t res;
 
         SELVA_LOG(SELVA_LOGL_INFO, "Sending data");
-        /* FIXME Add eid */
-        res = selva_send_replication_cmd(resp, 0, e->cmd_id, e->data, e->data_size);
+        res = selva_send_replication_cmd(resp, e->id, e->cmd_id, e->data, e->data_size);
         if (res < 0) {
             break;
         }
