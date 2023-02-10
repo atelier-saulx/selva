@@ -400,14 +400,14 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
                 tabs--;
             }
             printf("%*s]\n", tabs * TAB_WIDTH, "");
-        } else if (type == SELVA_PROTO_REPLICATION) {
+        } else if (type == SELVA_PROTO_REPLICATION_CMD) {
             int8_t repl_cmd_id;
             const char *repl_cmd_str;
             char buf[5];
             size_t cmd_size;
             int err;
 
-            err = selva_proto_parse_replication(msg, msg_size, i - off, &repl_cmd_id, &cmd_size);
+            err = selva_proto_parse_replication_cmd(msg, msg_size, i - off, &repl_cmd_id, &cmd_size);
             if (err) {
                 fprintf(stderr, "Failed to parse an error received: %s\n", selva_strerror(err));
                 return;
@@ -415,7 +415,7 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
 
             repl_cmd_str = commands[repl_cmd_id].cmd_name ?: ({ snprintf(buf, sizeof(buf), "%d", repl_cmd_id); buf; });
             printf("%*s<replication cmd=%s size=%zu>,\n", tabs * TAB_WIDTH, "", repl_cmd_str, cmd_size);
-            i = i - off + sizeof(struct selva_proto_replication);
+            i = i - off + sizeof(struct selva_proto_replication_cmd);
         } else {
             fprintf(stderr, "Invalid proto value\n");
             return;

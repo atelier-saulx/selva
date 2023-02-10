@@ -75,6 +75,13 @@ static void start_resp_frame_buf(struct selva_server_response_out *resp)
     resp->frame_flags &= ~SELVA_PROTO_HDR_FFMASK;
 }
 
+static void set_resp_msg_len(struct selva_server_response_out *resp, size_t bsize)
+{
+    struct selva_proto_header *hdr = (struct selva_proto_header *)resp->buf;
+
+    hdr->msg_bsize = bsize;
+}
+
 static void finalize_frame(void *buf, size_t bsize, int last_frame)
 {
     struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
@@ -144,11 +151,17 @@ out:
 
 ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t size)
 {
-    server_flush_frame_buf(resp, 0);
-
     if (!resp->ctx) {
         return SELVA_PROTO_ENOTCONN;
     }
+
+    /*
+     * Create and send a new frame header with no payload and msg_bsize set.
+     */
+    server_flush_frame_buf(resp, 0);
+    start_resp_frame_buf(resp);
+    set_resp_msg_len(resp, size);
+    server_flush_frame_buf(resp, 0);
 
     off_t bytes_sent = sendfile(resp->ctx->fd, fd, &(off_t){0}, size);
     if (bytes_sent != (off_t)size) {

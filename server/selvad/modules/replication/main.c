@@ -206,7 +206,7 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
 
 IMPORT() {
     evl_import_main(selva_log);
-    evl_import_main(evl_wait_fd);
+    evl_import_event_loop();
     import_selva_server();
 }
 

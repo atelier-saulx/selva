@@ -123,6 +123,10 @@ ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const v
 
 /**
  * Send contents of a file pointed by fd a part of the response resp.
+ * The file is sent with a new selva_proto frame header with no payload but
+ * msg_bsize set to size. The file is sent completely at once ignoring any
+ * normal frame size limits. The frame header CRC check doesn't apply to the
+ * file sent and thus any integrity checking must be implemented separately.
  * @returns Return bytes sent; Otherwise an error.
  */
 ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t size);
