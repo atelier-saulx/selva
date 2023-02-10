@@ -180,6 +180,27 @@ static enum repl_proto_state parse_replication_header(struct replication_sock_st
     return REPL_PROTO_STATE_ERR;
 }
 
+static enum repl_proto_state handle_recv_cmd(struct replication_sock_state *sv)
+{
+    sv->msg_buf_i += sv->cur_payload_size;
+
+    if (sv->cmd_size > sv->msg_buf_i) {
+        if (sv->cur_hdr.flags & SELVA_PROTO_HDR_FLAST && sv->msg_buf_i < sv->cmd_size) {
+            /*
+             * Replication command not fully read and the stream was terminated abruptly.
+             */
+            SELVA_LOG(SELVA_LOGL_ERR, "Stream terminated abruptly");
+            return REPL_PROTO_STATE_ERR;
+        }
+
+        /* Still missing frame(s) for this command. */
+        sv->recv_next_frame = 1;
+        /* keep the state untouched */
+    }
+
+    return REPL_PROTO_STATE_EXEC_CMD;
+}
+
 static void on_data(struct event *event, void *arg)
 {
     struct replication_sock_state *sv = (struct replication_sock_state *)arg;
@@ -201,30 +222,15 @@ static void on_data(struct event *event, void *arg)
             sv->state = parse_replication_header(sv);
             continue;
         case REPL_PROTO_STATE_RECEIVING_CMD:
-            sv->msg_buf_i += sv->cur_payload_size;
-
-            if (sv->cmd_size > sv->msg_buf_i) {
-                if (sv->cur_hdr.flags & SELVA_PROTO_HDR_FLAST && sv->msg_buf_i < sv->cmd_size) {
-                    /*
-                     * Replication command not fully read and the stream was terminated abruptly.
-                     */
-                    SELVA_LOG(SELVA_LOGL_ERR, "Stream terminated abruptly");
-                    /* TODO Error handling */
-                    return;
-                }
-
-                /* Still missing frame(s) for this command. */
-                sv->recv_next_frame = 1;
-                /* keep the state untouched */
-            }
-
-            sv->state = REPL_PROTO_STATE_EXEC_CMD;
-            /* TODO Here we could also decide to return for now. */
+            sv->state = handle_recv_cmd(sv);
+            /* TODO Here we could also decide to return for now to allow
+             * processing of other incoming messages while we are Receiving this
+             * command.
+             */
             continue;
         case REPL_PROTO_STATE_RECEIVING_SDB:
             /* TODO */
-            /* TODO Here we could also decide to return for now. */
-            continue;
+            return;
         case REPL_PROTO_STATE_EXEC_CMD:
             if (sv->msg_buf_i != sv->cmd_size) {
                 SELVA_LOG(SELVA_LOGL_ERR, "Invalid replication payload size. received: %zu expected: %zu", sv->msg_buf_i, sv->cmd_size);
