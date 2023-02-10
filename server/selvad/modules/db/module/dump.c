@@ -48,7 +48,7 @@ static void load_db(struct selva_server_response_out *resp, const void *buf, siz
     const int ARGV_FILENAME  = 0;
 
     argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
-    if (argc < 1) {
+    if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
         } else {

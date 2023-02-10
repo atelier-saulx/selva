@@ -253,7 +253,7 @@ int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, i
     return 0;
 }
 
-int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, size_t *data_size)
+int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, uint64_t *eid, size_t *data_size)
 {
     size_t val_size = bsize - i;
     struct selva_proto_replication_sdb hdr;
@@ -267,6 +267,7 @@ int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, s
         return SELVA_PROTO_EBADMSG;
     }
 
+    *eid = le64toh(hdr.eid);
     *data_size = le64toh(hdr.bsize);
     return 0;
 }

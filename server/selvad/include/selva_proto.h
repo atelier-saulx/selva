@@ -146,7 +146,7 @@ struct selva_proto_string {
         SElVA_PROTO_STRING_FDEFLATE = 0x02, /*!< Compressed with deflate. TODO Not implemented. */
     } __attribute__((packed)) flags; /*! String flags. */
     uint8_t _spare[2];
-    uint32_t bsize; /*!< Size of str in bytes. */
+    uint32_t bsize; /*!< Size of data in bytes. */
     char data[0]; /*!< A string of bytes. It's not expected to be terminated with anything. */
 } __attribute__((packed));
 
@@ -277,7 +277,7 @@ int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_ou
  */
 int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, int8_t *cmd_id, size_t *data_size);
 
-int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, size_t *data_size);
+int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, uint64_t *eid, size_t *data_size);
 
 /**
  * Parse a selva proto buffer into selva_strings.

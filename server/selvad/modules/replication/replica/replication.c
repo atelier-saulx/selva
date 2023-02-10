@@ -3,8 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 #include <arpa/inet.h>
+#include <assert.h>
+#include <inttypes.h>
 #include <netinet/tcp.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -12,6 +15,7 @@
 #include "jemalloc.h"
 #include "util/crc32c.h"
 #include "util/tcp.h"
+#include "util/timestamp.h"
 #include "event_loop.h"
 #include "selva_error.h"
 #include "selva_log.h"
@@ -33,30 +37,49 @@ struct replication_sock_state {
     enum repl_proto_state {
         REPL_PROTO_STATE_PARSE_REPLICATION_HEADER,
         REPL_PROTO_STATE_RECEIVING_CMD, /*!< Receiving more frames for the replicated command. */
+        REPL_PROTO_STATE_RECEIVING_SDB_HEADER,
         REPL_PROTO_STATE_RECEIVING_SDB,
         REPL_PROTO_STATE_EXEC_CMD,
         REPL_PROTO_STATE_EXEC_SDB,
         REPL_PROTO_STATE_ERR,
         REPL_PROTO_STATE_FIN,
     } state;
+
+    /*
+     * selva_proto frame handling.
+     */
     struct selva_proto_header cur_hdr;
     size_t cur_payload_size; /*! Size of the last received payload. */
 
-    int8_t cmd_id; /*!< Used if replicating a command. */
-    size_t cmd_size; /*!< Size of the incoming command in bytes. */
+    /*
+     * Replication.
+     */
+    union {
+        struct {
+            int8_t cmd_id; /*!< Used if replicating a command. */
+            size_t cmd_size; /*!< Size of the incoming command in bytes. */
+        };
+        struct {
+            size_t sdb_size; /*!< Size of the incoming SDB dump in bytes. */
+            size_t sdb_received_bytes; /*!< Number of bytes already received. */
+        };
+    };
+    uint64_t eid;
+    char sdb_filename[20 + 1 + 16 + 1 + 3]; /*!< Filename. `[TS]-[eid].sdb` */
+    FILE *sdb_file;
 
+    /*
+     * Buffer for receiving data.
+     */
     size_t msg_buf_i;
     _Alignas(uintptr_t) uint8_t msg_buf[1048576];
 };
 
 static void init_sv(struct replication_sock_state *sv)
 {
-    /* TODO Too slow */
-    memset(sv, 0, sizeof(*sv));
+    /* Just clean the state variables and let the buffer as is. */
+    memset(sv, 0, sizeof(*sv) - sizeof(sv->msg_buf));
 
-    /*
-     * This should be enough to start over.
-     */
     sv->recv_next_frame = 1;
     sv->state = REPL_PROTO_STATE_PARSE_REPLICATION_HEADER;
 }
@@ -171,7 +194,11 @@ static enum repl_proto_state parse_replication_header(struct replication_sock_st
 
          return REPL_PROTO_STATE_RECEIVING_CMD;
     } else if (ctrl->type == SELVA_PROTO_REPLICATION_SDB) {
-        return REPL_PROTO_STATE_RECEIVING_SDB;
+        selva_proto_parse_replication_sdb(sv->msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sv->eid, &sv->sdb_size);
+        snprintf(sv->sdb_filename, sizeof(sv->sdb_filename), "%lld-%" PRIx64 ".sdb", ts_now(), sv->eid);
+
+        sv->recv_next_frame = 1;
+        return REPL_PROTO_STATE_RECEIVING_SDB_HEADER;
     }
 
     /* TODO cleanup? */
@@ -201,6 +228,56 @@ static enum repl_proto_state handle_recv_cmd(struct replication_sock_state *sv)
     return REPL_PROTO_STATE_EXEC_CMD;
 }
 
+static enum repl_proto_state handle_recv_sdb_header(struct replication_sock_state *sv)
+{
+    if (sv->cur_hdr.msg_bsize != sv->sdb_size) {
+        SELVA_LOG(SELVA_LOGL_ERR, "SDB size mismatch: header: %zu act: %zu", (size_t)sv->cur_hdr.msg_bsize, sv->sdb_size);
+        return REPL_PROTO_STATE_ERR;
+    }
+
+    sv->sdb_file = fopen(sv->sdb_filename, "wbx");
+    if (!sv->sdb_file) {
+        /* TODO Better error handling */
+        return REPL_PROTO_STATE_ERR;
+    }
+
+    return REPL_PROTO_STATE_RECEIVING_SDB;
+}
+
+static enum repl_proto_state handle_recv_sdb(struct replication_sock_state *sv, int fd)
+{
+    const size_t size = min(sv->sdb_size - sv->sdb_received_bytes, sizeof(sv->msg_buf));
+
+    if (recv(fd, sv->msg_buf, size, 0) != (ssize_t)size) {
+        /* TODO err */
+        return REPL_PROTO_STATE_ERR;
+    }
+
+    (void)fwrite(sv->msg_buf, size, 1, sv->sdb_file);
+    sv->sdb_received_bytes += size;
+
+    assert(sv->sdb_received_bytes <= sv->sdb_size);
+    return (sv->sdb_received_bytes == sv->sdb_size)
+        ? REPL_PROTO_STATE_EXEC_SDB
+        : REPL_PROTO_STATE_RECEIVING_SDB;
+}
+
+static enum repl_proto_state handle_exec_sdb(struct replication_sock_state *sv)
+{
+    const size_t filename_len = strnlen(sv->sdb_filename, sizeof(sv->sdb_filename));
+    _Alignas(struct selva_proto_string) uint8_t buf[sizeof(struct selva_proto_string) + filename_len];
+    struct selva_proto_string *ps = (struct selva_proto_string *)buf;
+
+    memset(ps, 0, sizeof(*ps));
+    ps->type = SELVA_PROTO_STRING;
+    ps->bsize = filename_len;
+    memcpy(ps->data, sv->sdb_filename, filename_len);
+
+    selva_server_run_cmd(CMD_LOAD_ID, buf, sizeof(buf));
+
+    return REPL_PROTO_STATE_FIN;
+}
+
 static void on_data(struct event *event, void *arg)
 {
     struct replication_sock_state *sv = (struct replication_sock_state *)arg;
@@ -223,14 +300,27 @@ static void on_data(struct event *event, void *arg)
             continue;
         case REPL_PROTO_STATE_RECEIVING_CMD:
             sv->state = handle_recv_cmd(sv);
-            /* TODO Here we could also decide to return for now to allow
-             * processing of other incoming messages while we are Receiving this
-             * command.
-             */
+            if (sv->state == REPL_PROTO_STATE_RECEIVING_CMD) {
+                /*
+                 * Return for now to allow processing of other
+                 * incoming connections.
+                 */
+                return;
+            }
+            continue;
+        case REPL_PROTO_STATE_RECEIVING_SDB_HEADER:
+            sv->state = handle_recv_sdb_header(sv);
             continue;
         case REPL_PROTO_STATE_RECEIVING_SDB:
-            /* TODO */
-            return;
+            sv->state = handle_recv_sdb(sv, fd);
+            if (sv->state == REPL_PROTO_STATE_RECEIVING_SDB) {
+                /*
+                 * Return for now to allow processing of other
+                 * incoming connections.
+                 */
+                return;
+            }
+            continue;
         case REPL_PROTO_STATE_EXEC_CMD:
             if (sv->msg_buf_i != sv->cmd_size) {
                 SELVA_LOG(SELVA_LOGL_ERR, "Invalid replication payload size. received: %zu expected: %zu", sv->msg_buf_i, sv->cmd_size);
@@ -243,14 +333,16 @@ static void on_data(struct event *event, void *arg)
             sv->state = REPL_PROTO_STATE_FIN;
             continue;
         case REPL_PROTO_STATE_EXEC_SDB:
-            /* TODO apply the sdb */
-            sv->state = REPL_PROTO_STATE_FIN;
+            sv->state = handle_exec_sdb(sv);
             continue;
 state_err:
         case REPL_PROTO_STATE_ERR:
             evl_end_fd(fd);
             __attribute__((fallthrough));
         case REPL_PROTO_STATE_FIN:
+            if (sv->sdb_file) {
+                fclose(sv->sdb_file);
+            }
             init_sv(sv);
             return;
         }
