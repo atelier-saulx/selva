@@ -36,8 +36,8 @@ struct replication_sock_state {
         REPL_PROTO_STATE_RECEIVING_SDB,
         REPL_PROTO_STATE_EXEC_CMD,
         REPL_PROTO_STATE_EXEC_SDB,
-        REPL_PROTO_STATE_FIN,
         REPL_PROTO_STATE_ERR,
+        REPL_PROTO_STATE_FIN,
     } state;
     struct selva_proto_header cur_hdr;
     size_t cur_payload_size; /*! Size of the last received payload. */
@@ -246,12 +246,12 @@ static void on_data(struct event *event, void *arg)
             /* TODO apply the sdb */
             sv->state = REPL_PROTO_STATE_FIN;
             continue;
-        case REPL_PROTO_STATE_FIN:
-            init_sv(sv);
-            return;
 state_err:
         case REPL_PROTO_STATE_ERR:
             evl_end_fd(fd);
+            __attribute__((fallthrough));
+        case REPL_PROTO_STATE_FIN:
+            init_sv(sv);
             return;
         }
     }
