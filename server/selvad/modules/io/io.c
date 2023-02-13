@@ -70,7 +70,6 @@ int selva_io_new(const struct selva_string *filename, enum selva_io_flags flags,
          */
         return SELVA_EGENERAL;
     }
-    sha3_Init256(&io->hash_c);
 
     if (flags & SELVA_IO_FLAGS_WRITE) {
         sdb_write_header(io);

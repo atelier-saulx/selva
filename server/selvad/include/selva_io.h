@@ -31,6 +31,8 @@ enum selva_io_flags {
 
 #define SELVA_IO_FLAGS_MODE_MASK (SELVA_IO_FLAGS_READ | SELVA_IO_FLAGS_WRITE)
 
+#define SELVA_IO_HASH_SIZE 32
+
 /*
  * TODO Move string compression to util
  * TODO Move hierarchy compression stuff to selva_io

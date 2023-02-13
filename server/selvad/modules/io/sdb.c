@@ -12,8 +12,6 @@
 #include "selva_io.h"
 #include "sdb.h"
 
-#define HASH_SIZE 32
-
 extern const char * const selva_db_version;
 static const char magic_start[] = { 'S', 'E', 'L', 'V', 'A', '\0', '\0', '\0' };
 static const char magic_end[]   = { '\0', '\0', '\0', 'A', 'V', 'L', 'E', 'S' };
@@ -28,6 +26,11 @@ static struct SelvaDbVersionInfo selva_db_version_info;
 void selva_io_get_ver(struct SelvaDbVersionInfo *nfo)
 {
     memcpy(nfo, &selva_db_version_info, sizeof(*nfo));
+}
+
+size_t sdb_init(struct selva_io *io)
+{
+    sha3_Init256(&io->hash_c);
 }
 
 size_t sdb_write(const void * ptr, size_t size, size_t count, struct selva_io *io)
@@ -96,12 +99,10 @@ int sdb_read_header(struct selva_io *io)
 
 int sdb_write_footer(struct selva_io *io)
 {
-    const uint8_t *computed_hash;
-
     sdb_write(magic_end, sizeof(char), sizeof(magic_end), io);
 
-    computed_hash = sha3_Finalize(&io->hash_c);
-    fwrite(computed_hash, sizeof(uint8_t), HASH_SIZE, io->file);
+    io->computed_hash = sha3_Finalize(&io->hash_c);
+    fwrite(io->computed_hash, sizeof(uint8_t), SELVA_IO_HASH_SIZE, io->file);
     if (ferror(io->file)) {
         return SELVA_EIO;
     }
@@ -112,7 +113,7 @@ int sdb_write_footer(struct selva_io *io)
 int sdb_read_footer(struct selva_io *io)
 {
     char magic[sizeof(magic_start)];
-    uint8_t stored_hash[HASH_SIZE];
+    uint8_t stored_hash[SELVA_IO_HASH_SIZE];
     const uint8_t *computed_hash;
     size_t res;
 
@@ -122,10 +123,10 @@ int sdb_read_footer(struct selva_io *io)
         return SELVA_EINVAL;
     }
 
-    computed_hash = sha3_Finalize(&io->hash_c);
+    io->computed_hash = sha3_Finalize(&io->hash_c);
     res = fread(stored_hash, sizeof(uint8_t), sizeof(stored_hash), io->file);
-    if (res != HASH_SIZE || memcmp(computed_hash, stored_hash, HASH_SIZE)) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Hash mismatch res: %zu sz: %zu", res, (size_t)HASH_SIZE);
+    if (res != SELVA_IO_HASH_SIZE || memcmp(io->computed_hash, stored_hash, SELVA_IO_HASH_SIZE)) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Hash mismatch res: %zu sz: %zu", res, (size_t)SELVA_IO_HASH_SIZE);
         return SELVA_EINVAL;
     }
 
