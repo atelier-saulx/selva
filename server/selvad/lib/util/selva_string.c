@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <errno.h>
@@ -180,7 +180,7 @@ struct selva_string *selva_string_createf(const char *fmt, ...)
     return s;
 }
 
-struct selva_string *selva_string_dup(struct selva_string *s, enum selva_string_flags flags)
+struct selva_string *selva_string_dup(const struct selva_string *s, enum selva_string_flags flags)
 {
     return selva_string_create(get_buf(s), s->len, flags);
 }

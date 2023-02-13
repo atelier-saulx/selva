@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -57,7 +57,7 @@ struct selva_string *selva_string_createf(const char *fmt, ...) __attribute__((f
  * Duplicate a string.
  * @param s is a pointer to a selva_string.
  */
-struct selva_string *selva_string_dup(struct selva_string *s, enum selva_string_flags flags);
+struct selva_string *selva_string_dup(const struct selva_string *s, enum selva_string_flags flags);
 
 /**
  * Truncate the string s to a new length of newlen.
