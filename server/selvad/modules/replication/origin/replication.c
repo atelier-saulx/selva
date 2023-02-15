@@ -10,9 +10,12 @@
 #include <stdint.h>
 #include <string.h>
 #include "jemalloc.h"
+#include "util/selva_string.h"
+#include "util/timestamp.h"
 #include "selva_error.h"
-#include "selva_server.h"
 #include "selva_log.h"
+#include "selva_replication.h"
+#include "selva_server.h"
 #include "../selva_thread.h"
 #include "ring_buffer.h"
 #include "replica.h"
@@ -23,41 +26,64 @@
 #define RING_BUFFER_SIZE 100
 #define MAX_REPLICAS 32
 
-#define EID_MSB_MASK (~(~(typeof(origin_state.sdb_eid))0 >> 1))
+static_assert(sizeof(ring_buffer_eid_t) >= sizeof(uint64_t));
 
 static struct origin_state {
-    char sdb_hash[HASH_SIZE]; /*!< The hash of the latest dump. */
-    ring_buffer_eid_t sdb_eid; /*!< Id of the sdb in rb. */
+    /*!<
+     * Id of the lastest sdb still in rb.
+     * If this is zero then a new dump must be made before starting a
+     * new replica.
+     */
+    ring_buffer_eid_t last_sdb_eid;
+
     struct ring_buffer rb;
     struct ring_buffer_element buffer[RING_BUFFER_SIZE];
+
     struct replica replicas[MAX_REPLICAS];
 } origin_state;
 
-static ring_buffer_eid_t gen_sdb_eid(char sdb_hash[HASH_SIZE])
+void replication_origin_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[HASH_SIZE])
 {
-    /* FIXME generate and mark with MSB? */
-    return EID_MSB_MASK;
+    struct sdb *sdb = selva_malloc(sizeof(struct sdb));
+    uint64_t sdb_eid = ts_now() | EID_MSB_MASK; /* We assume there were no Selva DBs before 1970s. */
+
+    /* RFE Do we really need to dup here? */
+    sdb->filename = selva_string_dup(filename, 0);
+    memcpy(sdb->hash, sdb_hash, HASH_SIZE);
+
+    SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%lx)", selva_string_to_str(filename, NULL), sdb_eid);
+
+    /* TODO This may fail, handle error! */
+    ring_buffer_insert(&origin_state.rb, sdb_eid, 0, sdb, sizeof(*sdb));
+    origin_state.last_sdb_eid = sdb_eid;
 }
 
-void replication_origin_new_sdb(char sdb_hash[HASH_SIZE])
+uint64_t replication_origin_get_last_eid(void)
 {
-    memcpy(origin_state.sdb_hash, sdb_hash, HASH_SIZE);
-    origin_state.sdb_eid = gen_sdb_eid(sdb_hash);
-    /* TODO This needs more context */
-    ring_buffer_insert(&origin_state.rb, origin_state.sdb_eid, 0, origin_state.sdb_hash, HASH_SIZE);
+    return origin_state.last_sdb_eid;
 }
 
 const char *replication_origin_get_sdb(char sdb_hash[HASH_SIZE])
 {
-    memcpy(sdb_hash, origin_state.sdb_hash, HASH_SIZE);
+    /* TODO Find the latest from the ring buffer */
+    //memcpy(sdb_hash, origin_state.sdb_hash, HASH_SIZE);
+    memset(sdb_hash, '\0', HASH_SIZE);
     return sdb_hash;
 }
 
 static void free_replbuf(void *buf, ring_buffer_eid_t eid)
 {
-    if (!(eid & EID_MSB_MASK)) {
-        selva_free(buf);
+    if (eid & EID_MSB_MASK) {
+        struct sdb *sdb = (struct sdb *)buf;
+
+        if (eid == origin_state.last_sdb_eid) {
+            origin_state.last_sdb_eid = 0;
+        }
+
+        selva_string_free(sdb->filename);
     }
+
+    selva_free(buf);
 }
 
 /**
@@ -111,13 +137,14 @@ static void drop_replicas(unsigned replicas)
 
 int replication_origin_register_replica(struct selva_server_response_out *resp, uint64_t start_eid)
 {
-    struct replica *replica = new_replica(resp);
+    struct replica *replica;
 
+    replica = new_replica(resp);
     if (!replica) {
         return SELVA_ENOBUFS;
     }
 
-    replica->start_eid = start_eid ?: origin_state.sdb_eid;
+    replica->start_eid = start_eid ?: origin_state.last_sdb_eid;
     ring_buffer_add_reader(&origin_state.rb, replica->id);
     pthread_create(&replica->thread.pthread, NULL, replication_thread, replica);
 

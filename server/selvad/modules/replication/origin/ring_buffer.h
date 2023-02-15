@@ -68,10 +68,13 @@ void ring_buffer_init(struct ring_buffer* rb, struct ring_buffer_element *buf, s
 
 /**
  * Initialize a ring_buffer_state structure.
- * At least one element must be set in the ring buffer rb before a new reader
- * state can be initialized. Ideally this function is called by the
- * reader thread and ring_buffer_add_reader() is called by the writer
- * thread before this function is called or the thread is even created.
+ * At least one element must be inserted into the ring buffer rb before a new
+ * reader state can be initialized. Ideally this function is called by the
+ * reader thread and ring_buffer_add_reader() is called by the writer thread
+ * before this function is called or the thread is even created.
+ * This function will mark the selected id as unread and it must be released
+ * with `ring_buffer_release()` before proceeding to call
+ * `ring_buffer_get_next()`.
  * @param state is a pointer to an uninitialized ring_buffer_reader_state structure.
  * @param rb is a pointer to an initialized ring_buffer.
  * @param id is an id of an element known to exist in rb that doesn't need to be read by the reader i.e. initial state.
@@ -132,6 +135,12 @@ unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t 
  * @returns 1 if an element was read; 0 if we were dropped out from the ring buffer.
  */
 int ring_buffer_get_next(struct ring_buffer *rb, struct ring_buffer_reader_state *state, struct ring_buffer_element **e);
+
+/**
+ * Get the current element from the ring_buffer.
+ * There are no sanity checks here: The element must not have been released yet.
+ */
+void ring_buffer_get_current(struct ring_buffer *rb, struct ring_buffer_reader_state *state, struct ring_buffer_element **e);
 
 /**
  * Mark the element e in a ring buffer as read.

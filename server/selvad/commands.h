@@ -397,22 +397,29 @@
 #define CMD_UPDATE_ID 64
 
 /**
- *
+ * Initialize this node as an origin.
+ * module: replication
+ * cmd: replicainit
+ */
+#define CMD_REPLICAINIT_ID 65
+
+/**
+ * Start replication stream.
  * module: replication
  * cmd: replicasync
  */
-#define CMD_REPLICASYNC_ID 65
+#define CMD_REPLICASYNC_ID 66
 
 /**
- *
+ * Set this node as a replica of another node.
  * module: replication
  * cmd: replicaof
  */
-#define CMD_REPLICAOF_ID 66
+#define CMD_REPLICAOF_ID 67
 
 /**
- *
+ * Show the current status of the replication module.
  * module: replication
  * cmd: replicainfo
  */
-#define CMD_REPLICAINFO_ID 67
+#define CMD_REPLICAINFO_ID 68

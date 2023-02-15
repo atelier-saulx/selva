@@ -7,8 +7,21 @@
 /* TODO This should be same as SDB HASH_SIZE */
 #define HASH_SIZE 32
 
-void replication_origin_new_sdb(char sdb_hash[HASH_SIZE]);
+void replication_origin_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[HASH_SIZE]);
+
+/**
+ * Get the EID of the newest SDB dump point.
+ */
+uint64_t replication_origin_get_last_eid(void);
+
+/**
+ * Get the hash of the last SDB point.
+ */
 const char *replication_origin_get_sdb(char sdb_hash[HASH_SIZE]);
+
+/**
+ * Replicate a command to replicas.
+ */
 void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size);
 
 /**

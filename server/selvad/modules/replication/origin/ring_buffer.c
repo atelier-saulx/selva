@@ -39,7 +39,8 @@ int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_b
     int j = (rb->tail) % rb->len;
     for (size_t i = 0; i < rb->len; i++) {
         if (rb->buf[j].id == id) {
-            atomic_fetch_and(&rb->buf[j].not_read, ~mask);
+            //atomic_fetch_and(&rb->buf[j].not_read, ~mask);
+            atomic_fetch_or(&rb->buf[j].not_read, mask);
             new_index = j;
         } else if (new_index >= 0) {
             atomic_fetch_or(&rb->buf[j].not_read, mask);
@@ -168,6 +169,11 @@ int ring_buffer_get_next(struct ring_buffer *rb, struct ring_buffer_reader_state
     state->index = next;
 
     return 1;
+}
+
+void ring_buffer_get_current(struct ring_buffer *rb, struct ring_buffer_reader_state *state, struct ring_buffer_element **e)
+{
+    *e = &rb->buf[state->index];
 }
 
 void ring_buffer_release(struct ring_buffer_reader_state *state, struct ring_buffer_element *e)

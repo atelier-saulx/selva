@@ -16,10 +16,12 @@
 /* TODO This should be same as SDB HASH_SIZE and shouldn't be copy-pasted here */
 #define HASH_SIZE 32
 
+#define EID_MSB_MASK (~(~(typeof(uint64_t))0 >> 1))
+
 /**
  * Publish a new SDB dump to the replication.
  */
-SELVA_REPLICATION_EXPORT(void, selva_replication_new_sdb, char sdb_hash[HASH_SIZE]);
+SELVA_REPLICATION_EXPORT(void, selva_replication_new_sdb, const struct selva_string *filename, const uint8_t sdb_hash[HASH_SIZE]);
 
 /**
  * Replicate a command buffer to the replicas.

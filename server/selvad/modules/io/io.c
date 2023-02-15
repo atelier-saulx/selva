@@ -11,10 +11,11 @@
 #include "jemalloc.h"
 #include "sha3iuf/sha3.h"
 #include "util/selva_string.h"
-#include "selva_error.h"
-#include "selva_proto.h"
-#include "selva_log.h"
 #include "module.h"
+#include "selva_error.h"
+#include "selva_log.h"
+#include "selva_proto.h"
+#include "selva_replication.h"
 #include "selva_io.h"
 #include "sdb.h"
 
@@ -77,6 +78,8 @@ int selva_io_new(const struct selva_string *filename, enum selva_io_flags flags,
         sdb_read_header(io);
     }
 
+    io->filename = selva_string_dup(filename, 0);
+
     *io_out = io;
     return 0;
 }
@@ -100,7 +103,9 @@ void selva_io_end(struct selva_io *io)
         }
     }
 
+    selva_replication_new_sdb(io->filename, io->computed_hash);
     fclose(io->file);
+    selva_string_free(io->filename);
     selva_free(io);
 }
 
@@ -267,6 +272,7 @@ struct selva_string *selva_io_load_string(struct selva_io *io)
 
 IMPORT() {
     evl_import_main(selva_log);
+    evl_import(selva_replication_new_sdb, "mod_replication.so");
 }
 
 __constructor static void init(void)

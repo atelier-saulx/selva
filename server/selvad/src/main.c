@@ -20,8 +20,8 @@ int main(void)
     evl_load_module("mod_demo_sock.so");
 #endif
     evl_load_module("mod_server.so");
-    evl_load_module("mod_io.so");
     evl_load_module("mod_replication.so");
+    evl_load_module("mod_io.so");
     evl_load_module("mod_db.so");
 
     evl_start();

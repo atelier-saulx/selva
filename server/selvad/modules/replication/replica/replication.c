@@ -15,22 +15,15 @@
 #include "jemalloc.h"
 #include "util/crc32c.h"
 #include "util/tcp.h"
-#include "util/timestamp.h"
 #include "event_loop.h"
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_proto.h"
+#include "selva_replication.h"
 #include "selva_server.h"
 #include "../../../commands.h"
 #include "../../../tunables.h"
 #include "replication.h"
-
-#if 0
-static struct replica_state {
-    char sdb_hash[HASH_SIZE]; /*!< The hash of the last known dump. */
-    uint64_t sdb_eid; /*!< eid for the hash. */
-} replica_state;
-#endif
 
 struct replication_sock_state {
     int recv_next_frame;
@@ -64,8 +57,7 @@ struct replication_sock_state {
             size_t sdb_received_bytes; /*!< Number of bytes already received. */
         };
     };
-    uint64_t eid;
-    char sdb_filename[20 + 1 + 16 + 1 + 3]; /*!< Filename. `[TS]-[eid].sdb` */
+    char sdb_filename[20 + 1 + 3]; /*!< Filename. `[TS].sdb` */
     FILE *sdb_file;
 
     /*
@@ -83,7 +75,6 @@ static void init_sv(struct replication_sock_state *sv)
     sv->recv_next_frame = 1;
     sv->state = REPL_PROTO_STATE_PARSE_REPLICATION_HEADER;
 }
-
 
 int replication_replica_connect_to_origin(struct sockaddr_in *origin_addr)
 {
@@ -194,11 +185,25 @@ static enum repl_proto_state parse_replication_header(struct replication_sock_st
 
          return REPL_PROTO_STATE_RECEIVING_CMD;
     } else if (ctrl->type == SELVA_PROTO_REPLICATION_SDB) {
-        selva_proto_parse_replication_sdb(sv->msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sv->eid, &sv->sdb_size);
-        snprintf(sv->sdb_filename, sizeof(sv->sdb_filename), "%lld-%" PRIx64 ".sdb", ts_now(), sv->eid);
+        uint64_t sdb_eid;
+
+        selva_proto_parse_replication_sdb(sv->msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sdb_eid, &sv->sdb_size);
+        snprintf(sv->sdb_filename, sizeof(sv->sdb_filename), "%" PRIu64 ".sdb", sdb_eid & ~EID_MSB_MASK);
 
         sv->recv_next_frame = 1;
         return REPL_PROTO_STATE_RECEIVING_SDB_HEADER;
+    } else if (ctrl->type == SELVA_PROTO_ERROR) {
+        int err, origin_err;
+        const char *msg_str;
+        size_t msg_len;
+
+        err = selva_proto_parse_error(sv->msg_buf, sizeof(sv->msg_buf), 0, &origin_err, &msg_str, &msg_len);
+        if (!err) {
+            SELVA_LOG(SELVA_LOGL_ERR, "Origin error: (%s) msg: \"%.*s\"", selva_strerror(origin_err), (int)msg_len, msg_str);
+        } else {
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse incoming error: %s", selva_strerror(err));
+        }
+        return REPL_PROTO_STATE_ERR;
     }
 
     /* TODO cleanup? */
@@ -354,13 +359,15 @@ static void on_close(struct event *event, void *arg)
     const int fd = event->fd;
     struct replication_sock_state *sv = (struct replication_sock_state *)arg;
 
-    /* TODO Should we exit or retry? */
     SELVA_LOG(SELVA_LOGL_WARN, "Replication has stopped due to connection reset");
 
     selva_free(sv);
 
     (void)shutdown(fd, SHUT_RDWR);
     close(fd);
+
+    /* TODO Should we exit or retry? */
+    exit(1);
 }
 
 int replication_replica_start(int sock)
