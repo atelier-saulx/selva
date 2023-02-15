@@ -57,7 +57,7 @@ struct replication_sock_state {
             size_t sdb_received_bytes; /*!< Number of bytes already received. */
         };
     };
-    char sdb_filename[20 + 1 + 3]; /*!< Filename. `[TS].sdb` */
+    char sdb_filename[sizeof("replica-") + 20 + sizeof(".sdb")]; /*!< Filename. `replica-[TS].sdb` */
     FILE *sdb_file;
 
     /*
@@ -188,7 +188,7 @@ static enum repl_proto_state parse_replication_header(struct replication_sock_st
         uint64_t sdb_eid;
 
         selva_proto_parse_replication_sdb(sv->msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sdb_eid, &sv->sdb_size);
-        snprintf(sv->sdb_filename, sizeof(sv->sdb_filename), "%" PRIu64 ".sdb", sdb_eid & ~EID_MSB_MASK);
+        snprintf(sv->sdb_filename, sizeof(sv->sdb_filename), "replica-%" PRIu64 ".sdb", sdb_eid & ~EID_MSB_MASK);
 
         sv->recv_next_frame = 1;
         return REPL_PROTO_STATE_RECEIVING_SDB_HEADER;
@@ -262,9 +262,13 @@ static enum repl_proto_state handle_recv_sdb(struct replication_sock_state *sv, 
     sv->sdb_received_bytes += size;
 
     assert(sv->sdb_received_bytes <= sv->sdb_size);
-    return (sv->sdb_received_bytes == sv->sdb_size)
-        ? REPL_PROTO_STATE_EXEC_SDB
-        : REPL_PROTO_STATE_RECEIVING_SDB;
+    if (sv->sdb_received_bytes == sv->sdb_size) {
+        fclose(sv->sdb_file);
+        sv->sdb_file = NULL;
+        return REPL_PROTO_STATE_EXEC_SDB;
+    } else {
+        return REPL_PROTO_STATE_RECEIVING_SDB;
+    }
 }
 
 static enum repl_proto_state handle_exec_sdb(struct replication_sock_state *sv)
@@ -342,6 +346,7 @@ static void on_data(struct event *event, void *arg)
             continue;
 state_err:
         case REPL_PROTO_STATE_ERR:
+            SELVA_LOG(SELVA_LOGL_WARN, "Closing connection to origin");
             evl_end_fd(fd);
             __attribute__((fallthrough));
         case REPL_PROTO_STATE_FIN:

@@ -94,7 +94,7 @@ static int ensure_sdb(void)
         struct {
             struct selva_proto_array arr_hdr;
             struct selva_proto_string str_hdr;
-            char buf[20 + 1 + 3]; /*!< Filename. `[TS].sdb` */
+            char buf[20 + sizeof(".sdb")]; /*!< Filename. `[TS].sdb` */
         } msg = {
             .arr_hdr = {
                 .type = SELVA_PROTO_ARRAY,
@@ -112,8 +112,9 @@ static int ensure_sdb(void)
         static_assert((char *)(&msg.str_hdr) + sizeof(msg.str_hdr) == msg.buf);
 
         /*
-         * This happens to be the same as in replication/replication.c but
-         * it's definitely not necessary.
+         * This happens to be the almost the same as in
+         * replication/replication.c but it's definitely not
+         * required.
          */
         msg.str_hdr.bsize = snprintf(msg.buf, sizeof(msg.buf), "%" PRIu64 ".sdb", (uint64_t)ts_now());
         msg_size = sizeof(msg.arr_hdr) + sizeof(msg.str_hdr) + msg.str_hdr.bsize;
