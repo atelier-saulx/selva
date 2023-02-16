@@ -26,7 +26,7 @@
 #include "arg_parser.h"
 #include "async_task.h"
 #include "comparator.h"
-#include "config.h"
+#include "db_config.h"
 #include "hierarchy.h"
 #include "selva_db.h"
 #include "selva_object.h"

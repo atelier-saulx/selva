@@ -1,4 +1,4 @@
-# Copyright (c) 2022 SAULX
+# Copyright (c) 2022-2023 SAULX
 # SPDX-License-Identifier: MIT
 
 OBJ := \
@@ -9,7 +9,6 @@ OBJ := \
 	   module/async_task.o \
 	   module/comparator.o \
 	   module/compressor.o \
-	   module/config.o \
 	   module/dump.o \
 	   module/edge/edge.o \
 	   module/edge/edge_constraint.o \

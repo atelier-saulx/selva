@@ -21,7 +21,7 @@
 #include "selva_log.h"
 #include "selva_server.h"
 #include "arg_parser.h"
-#include "config.h"
+#include "db_config.h"
 #include "hierarchy.h"
 #include "selva_db.h"
 #include "modinfo.h"

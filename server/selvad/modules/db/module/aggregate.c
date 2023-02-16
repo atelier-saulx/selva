@@ -19,7 +19,7 @@
 #include "selva_log.h"
 #include "selva_server.h"
 #include "selva_db.h"
-#include "config.h"
+#include "db_config.h"
 #include "arg_parser.h"
 #include "hierarchy.h"
 #include "modify.h"

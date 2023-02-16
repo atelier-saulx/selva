@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
-#ifndef _CONFIG_H_
-#define _CONFIG_H_
-
-struct selva_string;
+#ifndef _SELVA_CONFIG_H_
+#define _SELVA_CONFIG_H_
 
 /**
  * A structure type of global config params that can be changed at startup.
@@ -28,6 +26,4 @@ struct selva_glob_config {
 
 extern struct selva_glob_config selva_glob_config;
 
-int parse_config_args(void);
-
-#endif /* _CONFIG_H_ */
+#endif /* _SELVA_CONFIG_H_ */

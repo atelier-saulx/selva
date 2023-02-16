@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <errno.h>
@@ -15,7 +15,7 @@
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_io.h"
-#include "config.h"
+#include "db_config.h"
 #include "selva_onload.h"
 #include "compressor.h"
 

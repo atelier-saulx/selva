@@ -26,7 +26,7 @@
 #include "arg_parser.h"
 #include "async_task.h"
 #include "compressor.h"
-#include "config.h"
+#include "db_config.h"
 #include "edge.h"
 #include "find_index.h"
 #include "modify.h"

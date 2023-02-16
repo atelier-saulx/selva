@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stdio.h>
@@ -18,15 +18,45 @@
 #include "selva_io.h"
 #include "selva_replication.h"
 #include "config.h"
+#include "db_config.h"
 #include "selva_db.h"
 
 SET_DECLARE(selva_onload, Selva_Onload);
 SET_DECLARE(selva_onunld, Selva_Onunload);
 
+struct selva_glob_config selva_glob_config = {
+    .debug_modify_replication_delay_ns = DEBUG_MODIFY_REPLICATION_DELAY_NS,
+    .hierarchy_initial_vector_len = HIERARCHY_INITIAL_VECTOR_LEN,
+    .hierarchy_expected_resp_len = HIERARCHY_EXPECTED_RESP_LEN,
+    .hierarchy_compression_level = HIERARCHY_COMPRESSION_LEVEL,
+    .hierarchy_auto_compress_period_ms = HIERARCHY_AUTO_COMPRESS_PERIOD_MS,
+    .hierarchy_auto_compress_old_age_lim = HIERARCHY_AUTO_COMPRESS_OLD_AGE_LIM,
+    .find_indices_max = FIND_INDICES_MAX,
+    .find_indexing_threshold = FIND_INDEXING_THRESHOLD,
+    .find_indexing_icb_update_interval = FIND_INDEXING_ICB_UPDATE_INTERVAL,
+    .find_indexing_interval = FIND_INDEXING_INTERVAL,
+    .find_indexing_popularity_ave_period = FIND_INDEXING_POPULARITY_AVE_PERIOD,
+};
+
+const struct config cfg_map[] = {
+    { "DEBUG_MODIFY_REPLICATION_DELAY_NS",      CONFIG_INT,     &selva_glob_config.debug_modify_replication_delay_ns },
+    { "HIERARCHY_INITIAL_VECTOR_LEN",           CONFIG_SIZE_T,  &selva_glob_config.hierarchy_initial_vector_len },
+    { "HIERARCHY_EXPECTED_RESP_LEN",            CONFIG_SIZE_T,  &selva_glob_config.hierarchy_expected_resp_len },
+    { "HIERARCHY_COMPRESSION_LEVEL",            CONFIG_INT,     &selva_glob_config.hierarchy_compression_level },
+    { "HIERARCHY_AUTO_COMPRESS_PERIOD_MS",      CONFIG_INT,     &selva_glob_config.hierarchy_auto_compress_period_ms },
+    { "HIERARCHY_AUTO_COMPRESS_OLD_AGE_LIM",    CONFIG_INT,     &selva_glob_config.hierarchy_auto_compress_old_age_lim },
+    { "FIND_INDICES_MAX",                       CONFIG_INT,     &selva_glob_config.find_indices_max },
+    { "FIND_INDEXING_THRESHOLD",                CONFIG_INT,     &selva_glob_config.find_indexing_threshold },
+    { "FIND_INDEXING_ICB_UPDATE_INTERVAL",      CONFIG_INT,     &selva_glob_config.find_indexing_icb_update_interval },
+    { "FIND_INDEXING_INTERVAL",                 CONFIG_INT,     &selva_glob_config.find_indexing_interval },
+    { "FIND_INDEXING_POPULARITY_AVE_PERIOD",    CONFIG_INT,     &selva_glob_config.find_indexing_popularity_ave_period },
+};
+
 IMPORT() {
     evl_import_main(selva_log);
     evl_import_main(evl_set_timeout);
     evl_import_main(evl_clear_timeout);
+    evl_import_main(config_resolve);
     evl_import_event_loop();
     import_selva_server();
     import_selva_io();
@@ -42,7 +72,7 @@ __constructor void init(void)
 
     libdeflate_set_memory_allocator(selva_malloc, selva_free);
 
-    err = parse_config_args();
+    err = config_resolve(cfg_map, num_elem(cfg_map));
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to parse config args: %s",
                   selva_strerror(err));

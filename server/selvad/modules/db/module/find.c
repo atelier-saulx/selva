@@ -27,7 +27,7 @@
 #include "arg_parser.h"
 #include "hierarchy.h"
 #include "rpn.h"
-#include "config.h"
+#include "db_config.h"
 #include "selva_lang.h"
 #include "selva_object.h"
 #include "selva_onload.h"
