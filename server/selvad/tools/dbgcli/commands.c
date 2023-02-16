@@ -364,7 +364,20 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
             memcpy(&ll, (char *)msg + i - sizeof(ll), sizeof(ll));
             printf("%*s%" PRIu64 ",\n", tabs * TAB_WIDTH, "", le64toh(ll));
         } else if (type == SELVA_PROTO_STRING) {
-            printf("%*s\"%.*s\",\n", tabs * TAB_WIDTH, "", (int)data_len, (char *)msg + i - data_len);
+            struct selva_proto_string str_hdr;
+
+            memcpy(&str_hdr, msg + i - off, sizeof(str_hdr));
+            if (str_hdr.flags & SELVA_PROTO_STRING_FBINARY) {
+                const char *p = (char *)msg + i - data_len;
+
+                printf("%*s\"", tabs * TAB_WIDTH, "");
+                for (size_t data_i = 0; data_i < data_len; data_i++) {
+                    printf("%x", p[data_i]);
+                }
+                printf("\",\n");
+            } else {
+                printf("%*s\"%.*s\",\n", tabs * TAB_WIDTH, "", (int)data_len, (char *)msg + i - data_len);
+            }
         } else if (type == SELVA_PROTO_ARRAY) {
             struct selva_proto_array hdr;
 
