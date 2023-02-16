@@ -210,7 +210,8 @@ struct FindCommand_Args {
     struct RedisModuleString *lang;
 
     ssize_t *nr_nodes; /*!< Number of nodes in the result. */
-    ssize_t offset; /*!< Start from nth node. */
+    ssize_t skip; /*!< Start processing from nth node. */
+    ssize_t offset; /*!< Start sending results from nth node. */
     ssize_t *limit; /*!< Limit the number of result. */
 
     struct rpn_ctx *rpn_ctx;
@@ -235,6 +236,20 @@ struct FindCommand_Args {
         SelvaFind_ProcessObject process_obj;
     };
 };
+
+static inline int SelvaTraversal_ProcessSkip(struct FindCommand_Args *args)
+{
+    const int take = (args->skip > 0) ? !args->skip-- : 1;
+
+    return take;
+}
+
+static inline int SelvaTraversal_ProcessOffset(struct FindCommand_Args *args)
+{
+    const int take = (args->offset > 0) ? !args->offset-- : 1;
+
+    return take;
+}
 
 /**
  * Called for the first node in the traversal.
