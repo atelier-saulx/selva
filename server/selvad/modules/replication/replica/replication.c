@@ -389,5 +389,11 @@ int replication_replica_start(int sock)
     }
 
     err = evl_wait_fd(sock, on_data, NULL, on_close, sv);
+    if (err) {
+        selva_free(sv);
+        shutdown(sock, SHUT_RDWR);
+        close(sock);
+    }
+
     return err;
 }

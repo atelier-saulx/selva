@@ -35,6 +35,7 @@ static struct origin_state {
      * new replica.
      */
     ring_buffer_eid_t last_sdb_eid;
+    ring_buffer_eid_t last_cmd_eid; /*!< Last cmd eid. */
 
     struct ring_buffer rb;
     struct ring_buffer_element buffer[RING_BUFFER_SIZE];
@@ -58,17 +59,14 @@ void replication_origin_new_sdb(const struct selva_string *filename, const uint8
     origin_state.last_sdb_eid = sdb_eid;
 }
 
-uint64_t replication_origin_get_last_eid(void)
+uint64_t replication_origin_get_last_sdb_eid(void)
 {
     return origin_state.last_sdb_eid;
 }
 
-const char *replication_origin_get_sdb(char sdb_hash[HASH_SIZE])
+uint64_t replication_origin_get_last_cmd_eid(void)
 {
-    /* TODO Find the latest from the ring buffer */
-    //memcpy(sdb_hash, origin_state.sdb_hash, HASH_SIZE);
-    memset(sdb_hash, '\0', HASH_SIZE);
-    return sdb_hash;
+    return origin_state.last_cmd_eid;
 }
 
 static void free_replbuf(void *buf, ring_buffer_eid_t eid)
@@ -151,14 +149,22 @@ int replication_origin_register_replica(struct selva_server_response_out *resp, 
     return 0;
 }
 
+static ring_buffer_eid_t next_eid(void)
+{
+    static ring_buffer_eid_t eid;
+
+    eid = origin_state.last_cmd_eid = (origin_state.last_cmd_eid + 1) & ~EID_MSB_MASK; /* TODO any better ideas? */
+
+    return eid;
+}
+
 void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
 {
     /* TODO We'd really like to avoid at least malloc() here, preferrably also memcpy(). */
     void *p = selva_malloc(buf_size);
-    static ring_buffer_eid_t eid;
+    ring_buffer_eid_t eid = next_eid();
     unsigned not_replicated;
 
-    eid = (eid + 1) & ~EID_MSB_MASK; /* TODO any better ideas? */
     memcpy(p, buf, buf_size);
     while ((not_replicated = ring_buffer_insert(&origin_state.rb, eid, cmd, p, buf_size))) {
         drop_replicas(not_replicated);

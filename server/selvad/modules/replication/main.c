@@ -88,7 +88,7 @@ static void send_mode_error(struct selva_server_response_out *resp)
  */
 static int ensure_sdb(void)
 {
-    if (replication_origin_get_last_eid()) {
+    if (replication_origin_get_last_sdb_eid()) {
         return 0;
     } else {
         struct {
@@ -122,7 +122,7 @@ static int ensure_sdb(void)
 
         selva_server_run_cmd(CMD_SAVE_ID, &msg, msg_size);
 
-        if (!replication_origin_get_last_eid()) {
+        if (!replication_origin_get_last_sdb_eid()) {
             return SELVA_EIO;
         }
     }
@@ -196,7 +196,7 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
     }
 
     /* TODO Try to use an offset id provided by the replica. */
-    err = replication_origin_register_replica(stream_resp, replication_origin_get_last_eid());
+    err = replication_origin_register_replica(stream_resp, replication_origin_get_last_sdb_eid());
     if (err) {
         selva_cancel_stream(resp, stream_resp);
         selva_send_error(resp, err, NULL, 0);
@@ -268,8 +268,12 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
         return;
     }
 
-    /* TODO Error handling */
-    replication_replica_start(sock);
+    err = replication_replica_start(sock);
+    if (err) {
+        selva_send_errorf(resp, err, "Connection failed");
+        return;
+    }
+
     replication_mode = REPLICATION_MODE_REPLICA;
     selva_server_set_readonly();
 
@@ -278,26 +282,33 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
 
 static void replicainfo(struct selva_server_response_out *resp, const void *buf __unused, size_t size)
 {
-    char hash[HASH_SIZE];
-
     if (size) {
         selva_send_error_arity(resp);
         return;
     }
 
     selva_send_array(resp, 3);
+
+    /*
+     * - mode
+     * - sdb_hash
+     * - cmd_eid
+     */
     selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
     switch (replication_mode) {
     case REPLICATION_MODE_NONE:
         selva_send_null(resp);
+        selva_send_null(resp);
         break;
     case REPLICATION_MODE_ORIGIN:
-        selva_send_str(resp, replication_origin_get_sdb(hash), HASH_SIZE);
+        selva_send_ll(resp, (long long)replication_origin_get_last_sdb_eid());
+        /* TODO We don't know whether this is after sdb_eid */
+        selva_send_ll(resp, (long long)replication_origin_get_last_cmd_eid());
         break;
     case REPLICATION_MODE_REPLICA:
-        selva_send_str(resp, "", 0);
+        selva_send_null(resp);
+        selva_send_null(resp);
     }
-    selva_send_ll(resp, 0); /* TODO offset */
 }
 
 IMPORT() {

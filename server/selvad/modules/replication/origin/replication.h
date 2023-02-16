@@ -12,12 +12,9 @@ void replication_origin_new_sdb(const struct selva_string *filename, const uint8
 /**
  * Get the EID of the newest SDB dump point.
  */
-uint64_t replication_origin_get_last_eid(void);
+uint64_t replication_origin_get_last_sdb_eid(void);
 
-/**
- * Get the hash of the last SDB point.
- */
-const char *replication_origin_get_sdb(char sdb_hash[HASH_SIZE]);
+uint64_t replication_origin_get_last_cmd_eid(void);
 
 /**
  * Replicate a command to replicas.
