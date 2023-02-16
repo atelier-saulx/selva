@@ -28,7 +28,7 @@ void selva_io_get_ver(struct SelvaDbVersionInfo *nfo)
     memcpy(nfo, &selva_db_version_info, sizeof(*nfo));
 }
 
-size_t sdb_init(struct selva_io *io)
+void sdb_init(struct selva_io *io)
 {
     sha3_Init256(&io->hash_c);
 }
@@ -110,11 +110,23 @@ int sdb_write_footer(struct selva_io *io)
     return 0;
 }
 
+static char *sha3_to_hex(char s[64], const uint8_t hash[SELVA_IO_HASH_SIZE])
+{
+    static const char map[] = "0123456789abcdef";
+    char *p = s;
+
+    for (size_t i = 0; i < SELVA_IO_HASH_SIZE; i++) {
+        *p++ = map[(hash[i] >> 4) % 16];
+        *p++ = map[(hash[i] & 0x0f) % 16];
+    }
+
+    return s;
+}
+
 int sdb_read_footer(struct selva_io *io)
 {
     char magic[sizeof(magic_start)];
     uint8_t stored_hash[SELVA_IO_HASH_SIZE];
-    const uint8_t *computed_hash;
     size_t res;
 
     res = sdb_read(magic, sizeof(char), sizeof(magic), io);
@@ -125,8 +137,16 @@ int sdb_read_footer(struct selva_io *io)
 
     io->computed_hash = sha3_Finalize(&io->hash_c);
     res = fread(stored_hash, sizeof(uint8_t), sizeof(stored_hash), io->file);
-    if (res != SELVA_IO_HASH_SIZE || memcmp(io->computed_hash, stored_hash, SELVA_IO_HASH_SIZE)) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Hash mismatch res: %zu sz: %zu", res, (size_t)SELVA_IO_HASH_SIZE);
+    if (res != SELVA_IO_HASH_SIZE) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Hash size invalid. act: %zu expected: %zu", res, (size_t)SELVA_IO_HASH_SIZE);
+    }
+    if (memcmp(io->computed_hash, stored_hash, SELVA_IO_HASH_SIZE)) {
+        char act[64];
+        char expected[64];
+
+        SELVA_LOG(SELVA_LOGL_ERR, "Hash mismatch. act: %.*s. expected: %.*s",
+                  64, sha3_to_hex(act, io->computed_hash),
+                  64, sha3_to_hex(expected, stored_hash));
         return SELVA_EINVAL;
     }
 
