@@ -19,12 +19,6 @@
 #define TCP_KEEPALIVE_INTVL 75
 #define TCP_KEEPALIVE_PROBES 9
 
-/**
- * Add delay to the replication of the Modify command.
- * Unit is nanoseconds. Normally this should be set to 0.
- */
-#define DEBUG_MODIFY_REPLICATION_DELAY_NS 0
-
 /*
  * SVector tunables.
  */
@@ -63,37 +57,11 @@
  */
 #define HIERARCHY_SLAB_SIZE 33554432
 
-/**
- * Initial vector lengths for children and parents lists.
- */
-#define HIERARCHY_INITIAL_VECTOR_LEN    50
-
-/**
- * Expected average length of a find response.
- */
-#define HIERARCHY_EXPECTED_RESP_LEN     5000
 
 /**
  * Sort hierarchy find results by depth.
  */
 #define HIERARCHY_SORT_BY_DEPTH         0
-
-/**
- * Compression level used for compressing subtrees.
- * Range: 1 - 12
- */
-#define HIERARCHY_COMPRESSION_LEVEL 6
-
-/**
- * Attempt to compress inactive nodes in-memory.
- * 0 Disables automatic compression.
- */
-#define HIERARCHY_AUTO_COMPRESS_PERIOD_MS 0
-
-/**
- * Hierarchy auto compression transaction age limit.
- */
-#define HIERARCHY_AUTO_COMPRESS_OLD_AGE_LIM 100
 
 /**
  * How many inactive nodes can be tracked simultaneously.
@@ -147,11 +115,6 @@
 
 #define FIND_INDICES_MAX_HINTS_FIND             20 /*!< Maximum number of indexing hints per find command. */
 #define FIND_INDICES_MAX_HINTS                 500 /*!< Maximum number of indexing hints tracked. */
-#define FIND_INDICES_MAX                         0 /*!< Maximum number of indices. 0 = disable indexing. */
-#define FIND_INDEXING_THRESHOLD                100 /*!< A candidate for indexing must have at least this many visits per traversal. */
-#define FIND_INDEXING_ICB_UPDATE_INTERVAL     5000 /*!< [ms] ICB refresh interval. */
-#define FIND_INDEXING_INTERVAL               60000 /*! How often the set of active indices is decided. */
-#define FIND_INDEXING_POPULARITY_AVE_PERIOD 216000 /*!< [sec] Averaging period for indexing hint demand count. After this period the original value is reduced to 1/e * n. */
 
 /*
  * Async_task Tunables.

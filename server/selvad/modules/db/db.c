@@ -22,17 +22,17 @@
 #include "selva_db.h"
 
 struct selva_glob_config selva_glob_config = {
-    .debug_modify_replication_delay_ns = DEBUG_MODIFY_REPLICATION_DELAY_NS,
-    .hierarchy_initial_vector_len = HIERARCHY_INITIAL_VECTOR_LEN,
-    .hierarchy_expected_resp_len = HIERARCHY_EXPECTED_RESP_LEN,
-    .hierarchy_compression_level = HIERARCHY_COMPRESSION_LEVEL,
-    .hierarchy_auto_compress_period_ms = HIERARCHY_AUTO_COMPRESS_PERIOD_MS,
-    .hierarchy_auto_compress_old_age_lim = HIERARCHY_AUTO_COMPRESS_OLD_AGE_LIM,
-    .find_indices_max = FIND_INDICES_MAX,
-    .find_indexing_threshold = FIND_INDEXING_THRESHOLD,
-    .find_indexing_icb_update_interval = FIND_INDEXING_ICB_UPDATE_INTERVAL,
-    .find_indexing_interval = FIND_INDEXING_INTERVAL,
-    .find_indexing_popularity_ave_period = FIND_INDEXING_POPULARITY_AVE_PERIOD,
+    .debug_modify_replication_delay_ns = 0,
+    .hierarchy_initial_vector_len = 50,
+    .hierarchy_expected_resp_len = 5000,
+    .hierarchy_compression_level = 6,
+    .hierarchy_auto_compress_period_ms = 0,
+    .hierarchy_auto_compress_old_age_lim = 100,
+    .find_indices_max = 0,
+    .find_indexing_threshold = 100,
+    .find_indexing_icb_update_interval = 5000,
+    .find_indexing_interval = 60000,
+    .find_indexing_popularity_ave_period = 216000,
     .redis_addr = "127.0.0.1",
     .redis_port = 6379,
 };
