@@ -50,7 +50,7 @@ int config_resolve(const struct config cfg_map[], size_t len)
         }
 
         switch (cfg->type) {
-        case CONFIG_STRING:
+        case CONFIG_CSTRING:
             *((char **)cfg->dp) = str;
             break;
         case CONFIG_INT:

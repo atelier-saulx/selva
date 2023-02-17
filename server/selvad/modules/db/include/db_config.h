@@ -22,6 +22,8 @@ struct selva_glob_config {
     int find_indexing_icb_update_interval;
     int find_indexing_interval;
     int find_indexing_popularity_ave_period;
+    const char *redis_addr;
+    int redis_port;
 };
 
 extern struct selva_glob_config selva_glob_config;

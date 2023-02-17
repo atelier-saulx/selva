@@ -7,7 +7,7 @@
 #include "_evl_export.h"
 
 enum config_type {
-    CONFIG_STRING = 0,
+    CONFIG_CSTRING = 0,
     CONFIG_INT,
     CONFIG_SIZE_T,
 };

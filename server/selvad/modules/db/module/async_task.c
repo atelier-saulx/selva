@@ -13,6 +13,7 @@
 #include <hiredis/hiredis.h>
 #include "util/queue_r.h"
 #include "selva_db.h"
+#include "db_config.h"
 #include "hierarchy.h"
 #include "subscriptions.h"
 #include "async_task.h"
@@ -87,26 +88,6 @@ static inline uint8_t next_queue_idx(void) {
     return idx;
 }
 
-/* TODO Use config? */
-static const char *getRedisAddr(void) {
-    const char *str;
-
-    str = getenv("REDIS_ADDR");
-
-    return (str) ? str : "127.0.0.1";
-}
-
-static int getRedisPort(void) {
-    const char *str;
-
-    str = getenv("REDIS_PORT");
-    if (!str) {
-        return 6379;
-    }
-
-    return (int)strtol(str, NULL, 10);
-}
-
 static void async_task_nsleep(long nsec) {
     const struct timespec tim = {
         .tv_sec = 0,
@@ -134,8 +115,8 @@ void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
 
     ASYNC_TASK_LOG("Started async task worker\n");
 
-    addr = getRedisAddr();
-    port = getRedisPort();
+    addr = selva_glob_config.redis_addr;
+    port = selva_glob_config.redis_port;
     if (!port) {
         ASYNC_TASK_LOG("REDIS_PORT invalid or not set\n");
         goto error;

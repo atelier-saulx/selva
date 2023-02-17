@@ -21,9 +21,6 @@
 #include "db_config.h"
 #include "selva_db.h"
 
-SET_DECLARE(selva_onload, Selva_Onload);
-SET_DECLARE(selva_onunld, Selva_Onunload);
-
 struct selva_glob_config selva_glob_config = {
     .debug_modify_replication_delay_ns = DEBUG_MODIFY_REPLICATION_DELAY_NS,
     .hierarchy_initial_vector_len = HIERARCHY_INITIAL_VECTOR_LEN,
@@ -36,6 +33,8 @@ struct selva_glob_config selva_glob_config = {
     .find_indexing_icb_update_interval = FIND_INDEXING_ICB_UPDATE_INTERVAL,
     .find_indexing_interval = FIND_INDEXING_INTERVAL,
     .find_indexing_popularity_ave_period = FIND_INDEXING_POPULARITY_AVE_PERIOD,
+    .redis_addr = "127.0.0.1",
+    .redis_port = 6379,
 };
 
 const struct config cfg_map[] = {
@@ -50,7 +49,12 @@ const struct config cfg_map[] = {
     { "FIND_INDEXING_ICB_UPDATE_INTERVAL",      CONFIG_INT,     &selva_glob_config.find_indexing_icb_update_interval },
     { "FIND_INDEXING_INTERVAL",                 CONFIG_INT,     &selva_glob_config.find_indexing_interval },
     { "FIND_INDEXING_POPULARITY_AVE_PERIOD",    CONFIG_INT,     &selva_glob_config.find_indexing_popularity_ave_period },
+    { "REDIS_ADDR",                             CONFIG_CSTRING, &selva_glob_config.redis_addr },
+    { "REDIS_PORT",                             CONFIG_INT,     &selva_glob_config.redis_port },
 };
+
+SET_DECLARE(selva_onload, Selva_Onload);
+SET_DECLARE(selva_onunld, Selva_Onunload);
 
 IMPORT() {
     evl_import_main(selva_log);
