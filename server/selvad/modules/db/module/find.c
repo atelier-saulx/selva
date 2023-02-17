@@ -1975,7 +1975,7 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
     TO_STR(ids);
 
     if (inherit_expression) {
-        SVector_Init(&traverse_result, HIERARCHY_EXPECTED_RESP_LEN, NULL);
+        SVector_Init(&traverse_result, selva_glob_config.hierarchy_expected_resp_len, NULL);
     } else if (order != SELVA_RESULT_ORDER_NONE) {
         SelvaTraversalOrder_InitOrderResult(&traverse_result, order, limit);
     }

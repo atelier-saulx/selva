@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <math.h>
@@ -12,6 +12,7 @@
 #include "selva_log.h"
 #include "arg_parser.h"
 #include "selva_db.h"
+#include "db_config.h"
 #include "hierarchy.h"
 #include "selva_lang.h"
 #include "selva_object.h"
@@ -142,7 +143,7 @@ static orderFunc order_functions[] = {
 GENERATE_STATIC_FUNMAP(SelvaTraversal_GetOrderFunc, order_functions, enum SelvaResultOrder, SELVA_RESULT_ORDER_NONE);
 
 void SelvaTraversalOrder_InitOrderResult(SVector *order_result, enum SelvaResultOrder order, ssize_t limit) {
-    const size_t initial_len = (limit > 0) ? limit : HIERARCHY_EXPECTED_RESP_LEN;
+    const size_t initial_len = (limit > 0) ? (size_t)limit : selva_glob_config.hierarchy_expected_resp_len;
 
     SVector_Init(order_result, initial_len, SelvaTraversal_GetOrderFunc(order));
 }
