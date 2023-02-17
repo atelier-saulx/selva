@@ -8,10 +8,12 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "module.h"
+#include <stdlib.h>
 #include "util/finalizer.h"
 #include "util/selva_string.h"
 #include "util/timestamp.h"
+#include "module.h"
+#include "config.h"
 #include "event_loop.h"
 #include "selva_proto.h"
 #include "selva_error.h"
@@ -32,6 +34,10 @@ static const char replication_mode_str[3][8] = {
     "NONE",
     "ORIGIN",
     "REPLICA",
+};
+
+static const struct config cfg_map[] = {
+    { "SELVA_REPLICATION_MODE", CONFIG_INT, &replication_mode },
 };
 
 /*
@@ -130,33 +136,6 @@ static int ensure_sdb(void)
     return 0;
 }
 
-static void replicainit(struct selva_server_response_out *resp, const void *buf __unused, size_t size)
-{
-    int err;
-
-    if (size) {
-        selva_send_error_arity(resp);
-    }
-
-    switch (replication_mode) {
-    case REPLICATION_MODE_NONE:
-        replication_mode = REPLICATION_MODE_ORIGIN;
-        replication_origin_init();
-        err = ensure_sdb();
-        if (err) {
-            selva_send_error(resp, err, NULL, 0);
-        }
-        selva_send_ll(resp, 1);
-        break;
-    case REPLICATION_MODE_ORIGIN:
-        selva_send_ll(resp, 0);
-        break;
-    default:
-        send_mode_error(resp);
-        break;
-    }
-}
-
 /**
  * Start sending replication traffic to the caller.
  */
@@ -174,10 +153,7 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
-    if (replication_mode == REPLICATION_MODE_NONE) {
-        replication_mode = REPLICATION_MODE_ORIGIN;
-        replication_origin_init();
-    } else if (replication_mode != REPLICATION_MODE_ORIGIN) {
+    if (replication_mode != REPLICATION_MODE_ORIGIN) {
         send_mode_error(resp);
         return;
     }
@@ -251,7 +227,7 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
         return;
     }
 
-    if (replication_mode != REPLICATION_MODE_NONE) {
+    if (replication_mode != REPLICATION_MODE_REPLICA) {
         send_mode_error(resp);
         return;
     }
@@ -274,7 +250,6 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
         return;
     }
 
-    replication_mode = REPLICATION_MODE_REPLICA;
     selva_server_set_readonly();
 
     selva_send_ll(resp, 1);
@@ -313,6 +288,7 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
 
 IMPORT() {
     evl_import_main(selva_log);
+    evl_import_main(config_resolve);
     evl_import_event_loop();
     import_selva_server();
 }
@@ -321,7 +297,21 @@ __constructor void init(void)
 {
     SELVA_LOG(SELVA_LOGL_INFO, "Init replication");
 
-    SELVA_MK_COMMAND(CMD_REPLICAINIT_ID, SELVA_CMD_MODE_MUTATE, replicainit);
+	int err = config_resolve(cfg_map, num_elem(cfg_map));
+    if (err) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to parse config args: %s",
+                  selva_strerror(err));
+        exit(EXIT_FAILURE);
+    }
+
+    switch (replication_mode) {
+    case REPLICATION_MODE_ORIGIN:
+        replication_origin_init();
+        break;
+    default:
+        /* NOP */
+    }
+
     SELVA_MK_COMMAND(CMD_REPLICASYNC_ID, SELVA_CMD_MODE_MUTATE, replicasync);
     SELVA_MK_COMMAND(CMD_REPLICAOF_ID, SELVA_CMD_MODE_MUTATE, replicaof);
     SELVA_MK_COMMAND(CMD_REPLICAINFO_ID, SELVA_CMD_MODE_PURE, replicainfo);

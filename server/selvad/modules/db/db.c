@@ -37,7 +37,7 @@ struct selva_glob_config selva_glob_config = {
     .redis_port = 6379,
 };
 
-const struct config cfg_map[] = {
+static const struct config cfg_map[] = {
     { "DEBUG_MODIFY_REPLICATION_DELAY_NS",      CONFIG_INT,     &selva_glob_config.debug_modify_replication_delay_ns },
     { "HIERARCHY_INITIAL_VECTOR_LEN",           CONFIG_SIZE_T,  &selva_glob_config.hierarchy_initial_vector_len },
     { "HIERARCHY_EXPECTED_RESP_LEN",            CONFIG_SIZE_T,  &selva_glob_config.hierarchy_expected_resp_len },
