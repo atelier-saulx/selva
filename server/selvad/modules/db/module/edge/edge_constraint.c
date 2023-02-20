@@ -18,7 +18,6 @@
 #include "selva_server.h"
 #include "hierarchy.h"
 #include "edge.h"
-#include "arg_parser.h"
 #include "selva_onload.h"
 #include "selva_object.h"
 
