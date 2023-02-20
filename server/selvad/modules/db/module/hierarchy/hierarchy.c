@@ -23,6 +23,7 @@
 #include "selva_io.h"
 #include "selva_log.h"
 #include "selva_proto.h"
+#include "selva_replication.h"
 #include "selva_server.h"
 #include "arg_parser.h"
 #include "async_task.h"
@@ -3547,10 +3548,8 @@ static void SelvaHierarchy_DelNodeCommand(struct selva_server_response_out *resp
     } else {
         selva_send_ll(resp, nr_deleted);
     }
-    /* FIXME Replicate */
-#if 0
-    RedisModule_ReplicateVerbatim(ctx);
-#endif
+
+    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
 }
 
@@ -3922,10 +3921,7 @@ static void SelvaHierarchy_CompressCommand(struct selva_server_response_out *res
     }
 
     selva_send_ll(resp, 1);
-    /* FIXME Replicate */
-#if 0
-    RedisModule_ReplicateVerbatim(ctx);
-#endif
+    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
 }
 
 static void SelvaHierarchy_ListCompressedCommand(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {

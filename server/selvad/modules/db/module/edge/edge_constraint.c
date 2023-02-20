@@ -15,6 +15,7 @@
 #include "selva_io.h"
 #include "selva_log.h"
 #include "selva_proto.h"
+#include "selva_replication.h"
 #include "selva_server.h"
 #include "hierarchy.h"
 #include "edge.h"
@@ -324,10 +325,7 @@ void Edge_AddConstraintCommand(struct selva_server_response_out *resp, const voi
     } else {
         selva_send_ll(resp, 1);
 
-        /* TODO replicate */
-#if 0
-        RedisModule_ReplicateVerbatim(ctx);
-#endif
+        selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
     }
 }
 

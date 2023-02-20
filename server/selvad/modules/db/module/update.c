@@ -14,6 +14,7 @@
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_proto.h"
+#include "selva_replication.h"
 #include "selva_server.h"
 #include "jemalloc.h"
 #include "arg_parser.h"
@@ -577,10 +578,7 @@ void SelvaCommand_Update(struct selva_server_response_out *resp, const void *buf
     }
 
     selva_send_ll(resp, nr_nodes);
-    /* TODO Replicate */
-#if 0
-    RedisModule_ReplicateVerbatim(ctx);
-#endif
+    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
 #undef SHIFT_ARGS
 }
 

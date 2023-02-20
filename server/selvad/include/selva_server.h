@@ -57,6 +57,8 @@ SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, enum selva_cmd_mode mode, con
 
 SELVA_SERVER_EXPORT(size_t, selva_resp_to_str, struct selva_server_response_out *resp, char *buf, size_t bsize);
 
+SELVA_SERVER_EXPORT(int, selva_resp_to_cmd_id, struct selva_server_response_out *resp);
+
 /**
  * Flush the response buffer.
  */
@@ -134,6 +136,7 @@ SELVA_SERVER_EXPORT(void, selva_server_run_cmd, int8_t cmd_id, void *msg, size_t
     apply(selva_server_set_readonly) \
     apply(selva_mk_command) \
     apply(selva_resp_to_str) \
+    apply(selva_resp_to_cmd_id) \
     apply(selva_send_flush) \
     apply(selva_start_stream) \
     apply(selva_cancel_stream) \

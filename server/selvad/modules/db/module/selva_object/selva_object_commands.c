@@ -77,10 +77,7 @@ void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *
         selva_send_ll(resp, 1);
     }
 
-    /* FIXME Replicate */
-#if 0
-    RedisModule_ReplicateVerbatim(ctx);
-#endif
+    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
 }
 
 void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
@@ -279,8 +276,7 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
     }
     selva_send_ll(resp, values_set);
 
-    /* TODO Function to get THIS command id */
-    selva_replication_replicate(CMD_OBJECT_SET_ID, buf, len);
+    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
     return;
 }
 

@@ -17,6 +17,7 @@
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_proto.h"
+#include "selva_replication.h"
 #include "selva_server.h"
 #include "util/bitmap.h"
 #include "util/cstrings.h"
@@ -1910,6 +1911,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
         replicateModify(&fin, replset, argv, &replicate_ts);
     }
 #endif
+    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len); /* FIXME This replication is incorrect */
 
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
 

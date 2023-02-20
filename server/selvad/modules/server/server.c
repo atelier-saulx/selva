@@ -71,6 +71,11 @@ size_t selva_resp_to_str(struct selva_server_response_out *resp, char *buf, size
     return conn_to_str(resp->ctx, buf, bsize);
 }
 
+int selva_resp_to_cmd_id(struct selva_server_response_out *resp)
+{
+    return resp->cmd;
+}
+
 static void ping(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused)
 {
     const char msg[] = "pong";
