@@ -6,7 +6,7 @@ OBJ := \
 	   server.o \
 	   server_frame.o \
 	   server_msg.o \
-	   server_send.o
+	   selva_send.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -DSELVA_SERVER_MAIN=1
 LDFLAGS += -lutil -ljemalloc_selva
