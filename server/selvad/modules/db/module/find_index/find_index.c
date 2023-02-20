@@ -1152,7 +1152,7 @@ static void SelvaFindIndex_NewCommand(struct selva_server_response_out *resp, co
     const int ARGV_NODE_ID = 4;
     const int ARGV_FILTER = 5;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 6) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -1259,7 +1259,7 @@ static void SelvaFindIndex_DelCommand(struct selva_server_response_out *resp, co
     const int ARGV_INDEX = 0;
     const int ARGV_OP = 1;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
@@ -1321,7 +1321,7 @@ static void SelvaFindIndex_DebugCommand(struct selva_server_response_out *resp, 
 
     const int ARGV_INDEX = 0; /* Numeric index. */
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");

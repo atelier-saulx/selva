@@ -273,7 +273,7 @@ void Edge_AddConstraintCommand(struct selva_server_response_out *resp, const voi
     const int ARGV_FWD_FIELD = 2;
     const int ARGV_BCK_FIELD = 3;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;

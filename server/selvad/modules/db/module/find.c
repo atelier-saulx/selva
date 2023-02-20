@@ -1680,7 +1680,7 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 3) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");

@@ -3498,7 +3498,7 @@ static void SelvaHierarchy_DelNodeCommand(struct selva_server_response_out *resp
     const int ARGV_FLAGS     = 0;
     const int ARGV_NODE_IDS  = 1;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -3580,7 +3580,7 @@ static void SelvaHierarchy_ParentsCommand(struct selva_server_response_out *resp
 
     finalizer_init(&fin);
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -3635,7 +3635,7 @@ static void SelvaHierarchy_ChildrenCommand(struct selva_server_response_out *res
 
     finalizer_init(&fin);
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -3676,7 +3676,7 @@ static void SelvaHierarchy_EdgeListCommand(struct selva_server_response_out *res
 
     finalizer_init(&fin);
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
@@ -3743,7 +3743,7 @@ static void SelvaHierarchy_EdgeGetCommand(struct selva_server_response_out *resp
     const int ARGV_NODE_ID   = 0;
     const int ARGV_KEY_NAME  = 1;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -3811,7 +3811,7 @@ static void SelvaHierarchy_EdgeGetMetadataCommand(struct selva_server_response_o
     const int ARGV_KEY_NAME     = 1;
     const int ARGV_DST_NODE_ID  = 2;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 3) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -3868,7 +3868,7 @@ static void SelvaHierarchy_CompressCommand(struct selva_server_response_out *res
     const int ARGV_NODE_ID  = 0;
     const int ARGV_TYPES    = 1;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 1 && argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");

@@ -34,7 +34,7 @@ static void SelvaRpn_Eval(enum SelvaRpnEvalType type, struct selva_server_respon
     const int ARGV_FILTER_EXPR = 1;
     const int ARGV_FILTER_ARGS = 2;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;

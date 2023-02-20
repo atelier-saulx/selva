@@ -1863,7 +1863,7 @@ void SelvaSubscriptions_AddMarkerCommand(struct selva_server_response_out *resp,
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
@@ -2082,7 +2082,7 @@ void SelvaSubscriptions_AddAliasCommand(struct selva_server_response_out *resp, 
     const int ARGV_MARKER_ID     = 1;
     const int ARGV_ALIAS_NAME    = 2;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
@@ -2148,7 +2148,7 @@ void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp
 
     finalizer_init(&fin);
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -2223,7 +2223,7 @@ void SelvaSubscriptions_AddTriggerCommand(struct selva_server_response_out *resp
     int ARGV_FILTER_EXPR         = 3;
     int ARGV_FILTER_ARGS         = 4;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
@@ -2363,7 +2363,7 @@ void SelvaSubscriptions_RefreshCommand(struct selva_server_response_out *resp, c
 
     const size_t ARGV_SUB_ID    = 0;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -2449,7 +2449,7 @@ void SelvaSubscriptions_DebugCommand(struct selva_server_response_out *resp, con
 
     const int ARGV_ID        = 0;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -2532,7 +2532,7 @@ void SelvaSubscriptions_DelCommand(struct selva_server_response_out *resp, const
 
     finalizer_init(&fin);
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -2577,7 +2577,7 @@ void SelvaSubscriptions_DelMarkerCommand(struct selva_server_response_out *resp,
 
     finalizer_init(&fin);
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");

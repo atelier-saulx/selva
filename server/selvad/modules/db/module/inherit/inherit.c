@@ -431,7 +431,7 @@ void SelvaInheritCommand(struct selva_server_response_out *resp, const void *buf
     const int ARGV_TYPES         = 4;
     const int ARGV_FIELD_NAMES   = 5;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;

@@ -17,11 +17,6 @@
 #include "subscriptions.h"
 #include "arg_parser.h"
 
-/* FIXME replace this or use an alias */
-int SelvaArgParser_buf2strings(struct finalizer *fin, const char *buf, size_t bsize, selva_stringList *out) {
-    return selva_proto_buf2strings(fin, buf, bsize, out);
-}
-
 int SelvaArgParser_IntOpt(ssize_t *value, const char *name, const struct selva_string *txt, const struct selva_string *num) {
     TO_STR(txt, num);
     char *end = NULL;

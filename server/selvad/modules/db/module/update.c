@@ -373,7 +373,7 @@ void SelvaCommand_Update(struct selva_server_response_out *resp, const void *buf
     ARGV_FILTER_EXPR += i; \
     ARGV_FILTER_ARGS += i
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 4) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");

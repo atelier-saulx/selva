@@ -1582,7 +1582,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
      */
     SVector_Init(&alias_query, 5, NULL);
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;

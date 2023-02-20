@@ -52,7 +52,7 @@ void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *
     const int ARGV_KEY = 0;
     const int ARGV_OKEY = 1;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -95,7 +95,7 @@ void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const voi
     const int ARGV_KEY = 0;
     const int ARGV_OKEY = 1;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -134,7 +134,7 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
     const int ARGV_KEY = 1;
     const int ARGV_OKEY = 2;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 2 && argc != 3) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -211,7 +211,7 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
     const int ARGV_TYPE = 2;
     const int ARGV_OVAL = 3;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc <= ARGV_TYPE) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -295,7 +295,7 @@ void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void 
     const int ARGV_KEY = 0;
     const int ARGV_OKEY = 1;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -392,7 +392,7 @@ void SelvaObject_LenCommand(struct selva_server_response_out *resp, const void *
     const int ARGV_KEY = 0;
     const int ARGV_OKEY = 1;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 1 && argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -435,7 +435,7 @@ void SelvaObject_GetMetaCommand(struct selva_server_response_out *resp, const vo
     const int ARGV_KEY = 0;
     const int ARGV_OKEY = 1;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -474,7 +474,7 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
     const int ARGV_OKEY = 1;
     const int ARGV_MVAL = 2;
 
-    argc = SelvaArgParser_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc != 3) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
