@@ -76,7 +76,7 @@ __constructor void init(void)
 
     libdeflate_set_memory_allocator(selva_malloc, selva_free);
 
-    err = config_resolve(cfg_map, num_elem(cfg_map));
+    err = config_resolve("db", cfg_map, num_elem(cfg_map));
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to parse config args: %s",
                   selva_strerror(err));

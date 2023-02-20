@@ -102,6 +102,7 @@ SELVA_SERVER_EXPORT(int, selva_send_string, struct selva_server_response_out *re
 SELVA_SERVER_EXPORT(int, selva_send_bin, struct selva_server_response_out *resp, const void *b, size_t len);
 
 /**
+ * Send an array.
  * If `len` is set negative then selva_proto_send_array_end() should be used to
  * terminate the array.
  * @param len Number if items in the array.

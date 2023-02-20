@@ -4,6 +4,9 @@
 #include "selva_error.h"
 #include "config.h"
 
+static struct config_list config_list[100];
+static size_t config_list_next;
+
 static int parse_size_t(void *dst, const char *src)
 {
     long long v;
@@ -36,7 +39,27 @@ static int parse_int(void *dst, const char *src)
     return 0;
 }
 
-int config_resolve(const struct config cfg_map[], size_t len)
+static void config_list_insert(const char *mod_name, const struct config cfg_map[], size_t len)
+{
+    if (config_list_next == num_elem(config_list)) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Config list full");
+        return;
+    }
+
+    config_list[config_list_next++] = (struct config_list){
+        .mod_name = mod_name,
+        .cfg_map = cfg_map,
+        .len = len,
+    };
+}
+
+size_t config_list_get(const struct config_list **out)
+{
+    *out = config_list;
+    return config_list_next;
+}
+
+int config_resolve(const char *mod_name, const struct config cfg_map[], size_t len)
 {
     for (size_t i = 0; i < len; i++) {
         const struct config * const cfg = &cfg_map[i];
@@ -67,27 +90,7 @@ int config_resolve(const struct config cfg_map[], size_t len)
         SELVA_LOG_DBG("Selva config changed: %s\n", cfg->name);
     }
 
-    /* TODO Add to the global config map */
+    config_list_insert(mod_name, cfg_map, len);
 
     return 0;
 }
-
-/* FIXME Implement SELVA_MODINFO */
-#if 0
-static void mod_info(RedisModuleInfoCtx *ctx)
-{
-    for (size_t i = 0; i < num_elem(cfg_map); i++) {
-        struct cfg const * const cfg = &cfg_map[i];
-        char *name = (char *)cfg->name;
-
-        if (cfg->parse == &parse_size_t) {
-            (void)RedisModule_InfoAddFieldULongLong(ctx, name, *(size_t *)cfg->dp);
-        } else if (cfg->parse == &parse_int) {
-            (void)RedisModule_InfoAddFieldLongLong(ctx, name, *(int *)cfg->dp);
-        } else {
-            (void)RedisModule_InfoAddFieldCString(ctx, name, "Unsupported type");
-        }
-    }
-}
-SELVA_MODINFO("config", mod_info);
-#endif

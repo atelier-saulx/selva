@@ -11,6 +11,7 @@
 #include "endian.h"
 #include "util/tcp.h"
 #include "event_loop.h"
+#include "config.h"
 #include "module.h"
 #include "selva_error.h"
 #include "selva_log.h"
@@ -190,6 +191,63 @@ static void hrt(struct selva_server_response_out *resp, const void *buf __unused
     selva_send_ll(resp, 1);
 }
 
+/**
+ * List config.
+ * Resp:
+ * [
+ *   [
+ *     mod_name,
+ *     cfg_name,
+ *     cfg_val,
+ *     cfg_name,
+ *     cfg_val,
+ *     ...
+ *   ],
+ *   [
+ *     mod_name,
+ *     ...
+ *   ]
+ * ]
+ */
+static void config(struct selva_server_response_out *resp, const void *buf __unused, size_t size)
+{
+    const struct config_list *list;
+    const size_t list_len = config_list_get(&list);
+
+    if (size) {
+        selva_send_error_arity(resp);
+        return;
+    }
+
+    selva_send_array(resp, list_len);
+    for (size_t i = 0; i < list_len; i++) {
+        const struct config *cfg_map = list[i].cfg_map;
+        const size_t len = list[i].len;
+
+        selva_send_array(resp, 1 + 2 * len);
+        selva_send_strf(resp, "%s", list[i].mod_name);
+
+        for (size_t j = 0; j < len; j++) {
+            const struct config *cfg = &cfg_map[j];
+
+            selva_send_strf(resp, "%s", cfg->name);
+            switch (cfg->type) {
+            case CONFIG_CSTRING:
+                selva_send_strf(resp, "%s", *(char **)cfg->dp);
+                break;
+            case CONFIG_INT:
+                selva_send_ll(resp, *(int *)cfg->dp);
+                break;
+            case CONFIG_SIZE_T:
+                selva_send_ll(resp, *(size_t *)cfg->dp);
+                break;
+            default:
+                selva_send_errorf(resp, SELVA_PROTO_ENOTSUP, "Unsupported type");
+            }
+        }
+    }
+}
+
 static int new_server(int port)
 {
     int sockfd;
@@ -338,6 +396,8 @@ void selva_server_run_cmd(int8_t cmd_id, void *msg, size_t msg_size)
 
 IMPORT() {
     evl_import_main(selva_log);
+    evl_import_main(config_resolve);
+    evl_import_main(config_list_get);
     evl_import_event_loop();
 }
 
@@ -359,6 +419,7 @@ __constructor void init(void)
     SELVA_MK_COMMAND(CMD_ECHO_ID, SELVA_CMD_MODE_PURE, echo);
     SELVA_MK_COMMAND(CMD_LSCMD_ID, SELVA_CMD_MODE_PURE, lscmd);
     SELVA_MK_COMMAND(CMD_HRT_ID, SELVA_CMD_MODE_PURE, hrt);
+    SELVA_MK_COMMAND(CMD_CONFIG_ID, SELVA_CMD_MODE_PURE, config);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(selva_port);

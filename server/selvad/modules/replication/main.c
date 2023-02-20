@@ -297,7 +297,7 @@ __constructor void init(void)
 {
     SELVA_LOG(SELVA_LOGL_INFO, "Init replication");
 
-	int err = config_resolve(cfg_map, num_elem(cfg_map));
+	int err = config_resolve("replication", cfg_map, num_elem(cfg_map));
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to parse config args: %s",
                   selva_strerror(err));
