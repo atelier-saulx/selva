@@ -165,7 +165,25 @@ ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t 
 
     off_t bytes_sent = sendfile(resp->ctx->fd, fd, &(off_t){0}, size);
     if (bytes_sent != (off_t)size) {
-        return SELVA_PROTO_EBADF; /* FIXME Proper error handling */
+        /*
+         * Some of the errors are not SELVA_PROTO but ¯\_(ツ)_/¯
+         */
+        switch (errno) {
+        case EBADF:
+            return SELVA_PROTO_EBADF;
+        case EFAULT:
+        case EINVAL:
+            return SELVA_EINVAL;
+        case EIO:
+            return SELVA_EIO;
+        case ENOMEM:
+        case EOVERFLOW:
+            return SELVA_PROTO_ENOBUFS;
+        case ESPIPE:
+            return SELVA_PROTO_EPIPE;
+        default:
+            return SELVA_EGENERAL;
+        }
     }
 
     return bytes_sent;
