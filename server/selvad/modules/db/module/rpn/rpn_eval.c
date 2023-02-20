@@ -8,7 +8,7 @@
 #include "util/selva_string.h"
 #include "selva_error.h"
 #include "selva_server.h"
-#include "arg_parser.h"
+#include "selva_proto.h"
 #include "selva_onload.h"
 #include "selva_set.h"
 #include "hierarchy.h"

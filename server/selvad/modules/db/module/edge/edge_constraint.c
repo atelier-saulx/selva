@@ -14,6 +14,7 @@
 #include "selva_error.h"
 #include "selva_io.h"
 #include "selva_log.h"
+#include "selva_proto.h"
 #include "selva_server.h"
 #include "hierarchy.h"
 #include "edge.h"

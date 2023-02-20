@@ -16,6 +16,7 @@
 #include "libdeflate.h"
 #include "selva_error.h"
 #include "selva_log.h"
+#include "selva_proto.h"
 #include "selva_server.h"
 #include "util/bitmap.h"
 #include "util/cstrings.h"

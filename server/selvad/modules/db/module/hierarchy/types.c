@@ -7,6 +7,7 @@
 #include "util/finalizer.h"
 #include "util/selva_string.h"
 #include "selva_error.h"
+#include "selva_proto.h"
 #include "selva_server.h"
 #include "selva_db.h"
 #include "selva_onload.h"

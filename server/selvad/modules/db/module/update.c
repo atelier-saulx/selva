@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -10,10 +10,11 @@
 #include "util/auto_free.h"
 #include "util/finalizer.h"
 #include "util/selva_string.h"
+#include "selva_db.h"
 #include "selva_error.h"
 #include "selva_log.h"
+#include "selva_proto.h"
 #include "selva_server.h"
-#include "selva_db.h"
 #include "jemalloc.h"
 #include "arg_parser.h"
 #include "hierarchy.h"
