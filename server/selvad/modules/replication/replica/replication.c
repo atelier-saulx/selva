@@ -337,7 +337,7 @@ static void on_data(struct event *event, void *arg)
                 continue;
             }
 
-            SELVA_LOG(SELVA_LOGL_INFO, "Replicating %d\n", sv->cmd_id);
+            SELVA_LOG(SELVA_LOGL_INFO, "Replicating cmd: %d\n", sv->cmd_id);
             selva_server_run_cmd(sv->cmd_id, sv->msg_buf, sv->cmd_size);
             sv->state = REPL_PROTO_STATE_FIN;
             continue;
