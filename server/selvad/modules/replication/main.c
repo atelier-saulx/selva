@@ -195,7 +195,7 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv = NULL;
     struct sockaddr_in origin_addr;
-    int argc, sock, err;
+    int argc, err;
 
     finalizer_init(&fin);
 
@@ -223,13 +223,7 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
         return;
     }
 
-    sock = replication_replica_connect_to_origin(&origin_addr);
-    if (sock < 0) {
-        selva_send_errorf(resp, sock, "Connection failed");
-        return;
-    }
-
-    err = replication_replica_start(sock);
+    err = replication_replica_start(&origin_addr);
     if (err) {
         selva_send_errorf(resp, err, "Connection failed");
         return;
@@ -282,6 +276,7 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
 IMPORT() {
     evl_import_main(selva_log);
     evl_import_main(config_resolve);
+    evl_import_main(evl_set_timeout);
     evl_import_event_loop();
     import_selva_server();
 }

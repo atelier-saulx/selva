@@ -61,40 +61,39 @@ struct replication_sock_state {
     char sdb_filename[sizeof("replica-") + 20 + sizeof(".sdb")]; /*!< Filename. `replica-[TS].sdb` */
     FILE *sdb_file;
 
+    size_t msg_buf_i; /*!< Index in buf. */
+
+    /**************************************************************************
+     * reinit_sv() should not touch things beyond this point.                 *
+     **************************************************************************/
+
+    struct sockaddr_in origin_addr;
+
     /*
      * Buffer for receiving data.
      */
-    size_t msg_buf_i;
     _Alignas(uintptr_t) uint8_t msg_buf[1048576];
 };
 
-static void init_sv(struct replication_sock_state *sv)
+static inline int restart_replication(struct replication_sock_state *sv, struct timespec *t);
+
+static struct timespec get_restart_t(void)
 {
-    /* Just clean the state variables and let the buffer as is. */
-    memset(sv, 0, sizeof(*sv) - sizeof(sv->msg_buf));
+    struct timespec t_retry = {
+        .tv_sec = 1, /* TODO randomize and exp backoff */
+        .tv_nsec = 0,
+    };
+
+    return t_retry;
+}
+
+static void reinit_sv(struct replication_sock_state *sv)
+{
+    /* Just clean the state variables and leave the origin_addr and buffer as is. */
+    memset(sv, 0, sizeof(*sv) - sizeof(sv->origin_addr) - sizeof(sv->msg_buf));
 
     sv->recv_next_frame = 1;
     sv->state = REPL_PROTO_STATE_PARSE_REPLICATION_HEADER;
-}
-
-int replication_replica_connect_to_origin(struct sockaddr_in *origin_addr)
-{
-    int sock;
-
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Could not create a socket");
-        return SELVA_ENOBUFS;
-    }
-
-    tcp_set_nodelay(sock);
-    tcp_set_keepalive(sock, TCP_KEEPALIVE_TIME, TCP_KEEPALIVE_INTVL, TCP_KEEPALIVE_PROBES);
-
-    if (connect(sock, (struct sockaddr*)origin_addr, sizeof(*origin_addr)) == -1) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed");
-        return SELVA_EIO;
-    }
-
-    return sock;
 }
 
 /* TODO Here we could send what we already have to avoid full sync */
@@ -397,7 +396,7 @@ state_err:
             if (sv->sdb_file) {
                 fclose(sv->sdb_file);
             }
-            init_sv(sv);
+            reinit_sv(sv);
             return;
         }
     }
@@ -407,41 +406,109 @@ static void on_close(struct event *event, void *arg)
 {
     const int fd = event->fd;
     struct replication_sock_state *sv = (struct replication_sock_state *)arg;
+    const int retry = 1;
 
     SELVA_LOG(SELVA_LOGL_WARN, "Replication has stopped due to connection reset");
 
-    selva_free(sv);
     (void)shutdown(fd, SHUT_RDWR);
     close(fd);
+    if (retry) {
+        int err;
+        struct timespec t_retry = get_restart_t();
 
-    /*
-     * TODO Retry replication.
-     * Currently we just exit immediately. Sometimes it could be useful to
-     * restart the sync communication. This could be implemented with a
-     * timer started here.
-     */
+        err = restart_replication(sv, &t_retry);
+        if (!err) {
+            return;
+        }
+        /* TODO LOG error */
+    }
+
+    selva_free(sv);
     exit(1);
 }
 
-int replication_replica_start(int sock)
+/**
+ * Connect to origin server for replication.
+ * @returns a socket to the origin.
+ */
+[[nodiscard]]
+static int connect_to_origin(struct sockaddr_in *origin_addr)
 {
-    struct replication_sock_state *sv;
-    int err;
+    int sock;
 
-    sv = selva_calloc(1, sizeof(*sv));
-    init_sv(sv);
-
-    err = send_sync_req(sock);
-    if (err) {
-        return err;
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Could not create a socket");
+        return SELVA_ENOBUFS;
     }
 
-    err = evl_wait_fd(sock, on_data, NULL, on_close, sv);
+    tcp_set_nodelay(sock);
+    tcp_set_keepalive(sock, TCP_KEEPALIVE_TIME, TCP_KEEPALIVE_INTVL, TCP_KEEPALIVE_PROBES);
+
+    if (connect(sock, (struct sockaddr*)origin_addr, sizeof(*origin_addr)) == -1) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed");
+        return SELVA_EIO;
+    }
+
+    return sock;
+}
+
+static int start_replication_handler(struct replication_sock_state *sv)
+{
+    int sock, err;
+
+    reinit_sv(sv);
+
+    sock = connect_to_origin(&sv->origin_addr);
+    if (sock < 0) {
+        return sock;
+    }
+
+    err = send_sync_req(sock);
+    if (!err) {
+        err = evl_wait_fd(sock, on_data, NULL, on_close, sv);
+    }
     if (err) {
-        selva_free(sv);
         shutdown(sock, SHUT_RDWR);
         close(sock);
     }
 
     return err;
+}
+
+static void start_replication_trampoline(struct event *, void *arg)
+{
+    struct replication_sock_state *sv = (struct replication_sock_state *)arg;
+    int err;
+
+    err = start_replication_handler(sv);
+    if (err) {
+        struct timespec t_retry = get_restart_t();
+
+        /* TODO log here too? */
+
+        /* Retry again later. */
+        restart_replication(sv, &t_retry);
+    }
+}
+
+static inline int restart_replication(struct replication_sock_state *sv, struct timespec *t)
+{
+    int tim;
+
+    tim = evl_set_timeout(t, start_replication_trampoline, sv);
+    if (tim < 0) {
+        return tim;
+    }
+
+    return 0;
+}
+
+int replication_replica_start(struct sockaddr_in *origin_addr)
+{
+    struct replication_sock_state *sv;
+
+    sv = selva_calloc(1, sizeof(*sv));
+    memcpy(&sv->origin_addr, origin_addr, sizeof(sv->origin_addr));
+
+    return restart_replication(sv, &(struct timespec){0});
 }
