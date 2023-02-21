@@ -127,6 +127,19 @@ int selva_send_ll(struct selva_server_response_out *resp, long long value)
     return (res < 0) ? (int)res : 0;
 }
 
+int selva_send_llx(struct selva_server_response_out *resp, long long value)
+{
+    struct selva_proto_longlong buf = {
+        .type = SELVA_PROTO_LONGLONG,
+        .flags = SELVA_PROTO_LONGLONG_FMT_HEX,
+        .v = htole64(value),
+    };
+    ssize_t res;
+
+    res = server_send_buf(resp, &buf, sizeof(buf));
+    return (res < 0) ? (int)res : 0;
+}
+
 int selva_send_str(struct selva_server_response_out *resp, const char *str, size_t len)
 {
     const size_t bsize = sizeof(struct selva_proto_string) + len;

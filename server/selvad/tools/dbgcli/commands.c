@@ -359,10 +359,17 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
             /* TODO ledouble to host double */
             printf("%*s%e,\n", tabs * TAB_WIDTH, "", d);
         } else if (type == SELVA_PROTO_LONGLONG) {
+            const uint8_t flags = *((const uint8_t *)msg + i - off + offsetof(struct selva_proto_longlong, flags));
             uint64_t ll;
 
             memcpy(&ll, (char *)msg + i - sizeof(ll), sizeof(ll));
-            printf("%*s%" PRIu64 ",\n", tabs * TAB_WIDTH, "", le64toh(ll));
+            ll = le64toh(ll);
+
+            if (flags & SELVA_PROTO_LONGLONG_FMT_HEX) {
+                printf("%*s%" PRIx64 ",\n", tabs * TAB_WIDTH, "", ll);
+            } else {
+                printf("%*s%" PRIu64 ",\n", tabs * TAB_WIDTH, "", ll);
+            }
         } else if (type == SELVA_PROTO_STRING) {
             struct selva_proto_string str_hdr;
 

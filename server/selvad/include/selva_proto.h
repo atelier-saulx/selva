@@ -64,6 +64,8 @@ struct selva_proto_header {
      */
     uint32_t chk;
 } __attribute__((packed,aligned(__alignof__(uint64_t))));
+static_assert(sizeof(struct selva_proto_header) == (2 * sizeof(uint64_t)), "Header must be 64 bits");
+static_assert(__alignof__(struct selva_proto_header) == __alignof__(uint64_t), "Header must be aligned as a 64-bit integer");
 
 /**
  * Selva protocol data types.
@@ -79,6 +81,7 @@ enum selva_proto_data_type {
     SELVA_PROTO_REPLICATION_CMD = 7, /*!< A replication message. */
     SELVA_PROTO_REPLICATION_SDB = 8, /*!< A replication db dump message. */
 } __attribute__((packed));
+static_assert(sizeof(enum selva_proto_data_type) == 1, "data_type must be an 8-bit integer");
 
 /**
  * Selva protocol null value.
@@ -128,9 +131,13 @@ struct selva_proto_longlong {
      * Type must be SELVA_PROTO_LONGLONG.
      */
     enum selva_proto_data_type type;
-    uint8_t _spare[7];
+    enum {
+        SELVA_PROTO_LONGLONG_FMT_HEX = 0x01, /*!< Suggested printing format is hex. */
+    } __attribute__((packed)) flags;
+    uint8_t _spare[6];
     uint64_t v; /*!< Value. */
 } __attribute__((packed));
+static_assert(sizeof(struct selva_proto_longlong) == 2 * sizeof(uint64_t), "Must be 128 bits");
 
 /**
  * Selva protocol string.
@@ -149,6 +156,8 @@ struct selva_proto_string {
     uint32_t bsize; /*!< Size of data in bytes. */
     char data[0]; /*!< A string of bytes. It's not expected to be terminated with anything. */
 } __attribute__((packed));
+static_assert(sizeof(struct selva_proto_string) == sizeof(uint64_t), "Must be 64 bits");
+static_assert(sizeof_field(struct selva_proto_string, flags) == 1, "string flags must be 8-bit wide");
 
 /**
  * Selva protocol array.
@@ -168,6 +177,7 @@ struct selva_proto_array {
     uint32_t length; /*!< Length of this array; number of items. */
     char data[0]; /*!< Data (if indicated by a flag). */
 } __attribute__((packed));
+static_assert(sizeof(struct selva_proto_array) == sizeof(uint64_t), "Must be 64 bits");
 
 /**
  * Selva protocol replication command header.
@@ -185,6 +195,7 @@ struct selva_proto_replication_cmd {
     uint64_t bsize; /*!< Size of data in bytes. */
     uint8_t data[0];
 };
+static_assert(sizeof(struct selva_proto_replication_cmd) == 3 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
 
 /**
  * Selva protocol replication db dump header.
@@ -200,6 +211,8 @@ struct selva_proto_replication_sdb {
     uint64_t eid; /*!< Element id of this message. */
     uint64_t bsize; /*!< Size of the dump. */
 };
+static_assert(sizeof(struct selva_proto_replication_sdb) == 3 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
+static_assert(sizeof(struct selva_proto_replication_cmd) == sizeof(struct selva_proto_replication_sdb), "Must be same size to allow easier parsing");
 
 /**
  * Selva protocol control.
@@ -223,14 +236,6 @@ struct selva_proto_control {
         struct selva_proto_string: "string", \
         struct selva_proto_array: "array", \
         struct selva_proto_control: "control")
-
-static_assert(sizeof(struct selva_proto_header) == (2 * sizeof(uint64_t)), "Header must be 64 bits");
-static_assert(__alignof__(struct selva_proto_header) == __alignof__(uint64_t), "Header must be aligned as a 64-bit integer");
-static_assert(sizeof(enum selva_proto_data_type) == 1, "data_type must be an 8-bit integer");
-static_assert(sizeof_field(struct selva_proto_string, flags) == 1, "string flags must be 8-bit wide");
-static_assert(sizeof(struct selva_proto_replication_cmd) == 3 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
-static_assert(sizeof(struct selva_proto_replication_sdb) == 3 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
-static_assert(sizeof(struct selva_proto_replication_cmd) == sizeof(struct selva_proto_replication_sdb), "Must be same size to allow easier parsing");
 
 /**
  * @addtogroup selva_proto_parse

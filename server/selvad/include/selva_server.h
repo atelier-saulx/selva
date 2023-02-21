@@ -97,7 +97,14 @@ SELVA_SERVER_EXPORT(int, selva_send_errorf, struct selva_server_response_out *re
 SELVA_SERVER_EXPORT(int, selva_send_error_arity, struct selva_server_response_out *resp);
 
 SELVA_SERVER_EXPORT(int, selva_send_double, struct selva_server_response_out *resp, double value);
+/**
+ * Send long long.
+ */
 SELVA_SERVER_EXPORT(int, selva_send_ll, struct selva_server_response_out *resp, long long value);
+/**
+ * Send long long and suggest hex print formatting.
+ */
+SELVA_SERVER_EXPORT(int, selva_send_llx, struct selva_server_response_out *resp, long long value);
 SELVA_SERVER_EXPORT(int, selva_send_str, struct selva_server_response_out *resp, const char *str, size_t len);
 SELVA_SERVER_EXPORT(int, selva_send_strf, struct selva_server_response_out *resp, const char *fmt, ...);
 SELVA_SERVER_EXPORT(int, selva_send_string, struct selva_server_response_out *resp, const struct selva_string *s);
@@ -147,6 +154,7 @@ SELVA_SERVER_EXPORT(void, selva_server_run_cmd, int8_t cmd_id, void *msg, size_t
     apply(selva_send_error_arity) \
     apply(selva_send_double) \
     apply(selva_send_ll) \
+    apply(selva_send_llx) \
     apply(selva_send_str) \
     apply(selva_send_strf) \
     apply(selva_send_string) \
