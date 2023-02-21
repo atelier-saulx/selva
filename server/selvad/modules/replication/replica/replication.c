@@ -27,6 +27,8 @@
 #include "replication.h"
 
 struct replication_sock_state {
+    int sock;
+    struct sockaddr_in origin_addr;
     int recv_next_frame;
     enum repl_proto_state {
         REPL_PROTO_STATE_PARSE_REPLICATION_HEADER,
@@ -77,12 +79,13 @@ static void init_sv(struct replication_sock_state *sv)
     sv->state = REPL_PROTO_STATE_PARSE_REPLICATION_HEADER;
 }
 
-int replication_replica_connect_to_origin(struct sockaddr_in *origin_addr)
+int replication_replica_connect_to_origin(struct replication_sock_state *sv, struct sockaddr_in *origin_addr)
 {
     int sock;
 
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         SELVA_LOG(SELVA_LOGL_ERR, "Could not create a socket");
+        free(sv);
         return SELVA_ENOBUFS;
     }
 
@@ -91,10 +94,14 @@ int replication_replica_connect_to_origin(struct sockaddr_in *origin_addr)
 
     if (connect(sock, (struct sockaddr*)origin_addr, sizeof(*origin_addr)) == -1) {
         SELVA_LOG(SELVA_LOGL_ERR, "Connection failed");
+        free(sv);
         return SELVA_EIO;
     }
 
-    return sock;
+    sv->sock = sock;
+    memcpy(&sv->origin_addr, origin_addr, sizeof(sv->origin_addr));
+
+    return 0;
 }
 
 /* TODO Here we could send what we already have to avoid full sync */
@@ -423,13 +430,20 @@ static void on_close(struct event *event, void *arg)
     exit(1);
 }
 
-int replication_replica_start(int sock)
+struct replication_sock_state *replication_replica_init(void)
 {
     struct replication_sock_state *sv;
-    int err;
 
     sv = selva_calloc(1, sizeof(*sv));
     init_sv(sv);
+
+    return sv;
+}
+
+int replication_replica_start(struct replication_sock_state *sv)
+{
+    int sock = sv->sock;
+    int err;
 
     err = send_sync_req(sock);
     if (err) {
