@@ -17,6 +17,7 @@
 #include "selva_proto.h"
 #include "selva_replication.h"
 #include "selva_server.h"
+#include "arg_parser.h"
 #include "hierarchy.h"
 #include "edge.h"
 #include "selva_onload.h"
