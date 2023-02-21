@@ -278,7 +278,7 @@ static enum repl_proto_state handle_recv_sdb_header(struct replication_sock_stat
 
     sv->sdb_file = fopen(sv->sdb_filename, "wbx");
     if (!sv->sdb_file) {
-        /* TODO Better error handling */
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to open a dump file for writing: \"%s\"", sv->sdb_filename);
         return REPL_PROTO_STATE_ERR;
     }
 
@@ -411,11 +411,15 @@ static void on_close(struct event *event, void *arg)
     SELVA_LOG(SELVA_LOGL_WARN, "Replication has stopped due to connection reset");
 
     selva_free(sv);
-
     (void)shutdown(fd, SHUT_RDWR);
     close(fd);
 
-    /* TODO Should we exit or retry? */
+    /*
+     * TODO Retry replication.
+     * Currently we just exit immediately. Sometimes it could be useful to
+     * restart the sync communication. This could be implemented with a
+     * timer started here.
+     */
     exit(1);
 }
 
