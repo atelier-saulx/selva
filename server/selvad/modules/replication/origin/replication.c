@@ -68,6 +68,7 @@ void replication_origin_new_sdb(const struct selva_string *filename, const uint8
 
     insert(sdb_eid, 0, sdb, sizeof(*sdb));
     origin_state.last_sdb_eid = sdb_eid;
+    origin_state.last_cmd_eid = 0;
 }
 
 uint64_t replication_origin_get_last_sdb_eid(void)
@@ -158,9 +159,13 @@ int replication_origin_register_replica(struct selva_server_response_out *resp, 
 
 static ring_buffer_eid_t next_eid(void)
 {
-    static ring_buffer_eid_t eid;
+    const ring_buffer_eid_t sdb_eid_um = origin_state.last_sdb_eid & ~EID_MSB_MASK;
+    ring_buffer_eid_t eid;
 
-    eid = origin_state.last_cmd_eid = (origin_state.last_cmd_eid + 1) & ~EID_MSB_MASK; /* TODO any better ideas? */
+    if (sdb_eid_um > origin_state.last_cmd_eid) {
+        origin_state.last_cmd_eid = sdb_eid_um;
+    }
+    eid = origin_state.last_cmd_eid = (origin_state.last_cmd_eid + 1) & ~EID_MSB_MASK;
 
     return eid;
 }
