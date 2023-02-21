@@ -38,7 +38,6 @@ static int sync_dump(struct selva_server_response_out *resp, struct ring_buffer 
 
     ring_buffer_get_current(rb, state, &e);
     if (!(e->id & EID_MSB_MASK)) {
-        /* TODO Better error message */
         SELVA_LOG(SELVA_LOGL_ERR, "Expected an SDB dump. eid: 0x%" PRIx64, e->id);
         err = SELVA_EINVAL;
         goto fail;

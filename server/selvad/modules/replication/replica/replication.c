@@ -4,6 +4,7 @@
  */
 #include <arpa/inet.h>
 #include <assert.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <netinet/tcp.h>
 #include <stddef.h>
@@ -119,12 +120,38 @@ static int send_sync_req(int sock)
     return 0;
 }
 
+static int recv_error(void) {
+    switch (errno) {
+        case EINTR:
+            return 0;
+        case EBADF:
+            return SELVA_PROTO_EBADF;
+        case ENOTCONN:
+        case ECONNREFUSED:
+            return SELVA_PROTO_ENOTCONN;
+        default:
+            return SELVA_PROTO_EINVAL;
+    }
+}
+
 static int recv_frame(struct replication_sock_state *sv, int fd)
 {
-    if (recv(fd, &sv->cur_hdr, sizeof(sv->cur_hdr), 0) != (ssize_t)sizeof(sv->cur_hdr)) {
-        /* TODO error handling */
-        SELVA_LOG(SELVA_LOGL_ERR, "Invalid selva_proto_header");
-        return SELVA_PROTO_EBADF;
+    ssize_t recv_res;
+
+retry_hdr:
+    recv_res = recv(fd, &sv->cur_hdr, sizeof(sv->cur_hdr), 0);
+    if (recv_res != (ssize_t)sizeof(sv->cur_hdr)) {
+        int err = SELVA_PROTO_EBADF;
+
+        if (recv_res == -1) {
+            err = recv_error();
+            if (!err) {
+                goto retry_hdr;
+            }
+        }
+
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to receive selva_proto_header");
+        return err;
     }
 
     if (!(sv->cur_hdr.flags & (SELVA_PROTO_HDR_FREQ_RES | SELVA_PROTO_HDR_STREAM))) {
@@ -137,13 +164,23 @@ static int recv_frame(struct replication_sock_state *sv, int fd)
 
     const size_t payload_size = le16toh(sv->cur_hdr.frame_bsize) - sizeof(sv->cur_hdr);
     if (sv->msg_buf_i + payload_size > sizeof(sv->msg_buf)) {
-        /* TODO */
         SELVA_LOG(SELVA_LOGL_ERR, "Buffer overflow");
         return SELVA_PROTO_ENOBUFS;
     } else if (payload_size > 0) {
-        if (recv(fd, sv->msg_buf + sv->msg_buf_i, payload_size, 0) != (ssize_t)payload_size) {
+retry_payload:
+        recv_res = recv(fd, sv->msg_buf + sv->msg_buf_i, payload_size, 0);
+        if (recv_res != (ssize_t)payload_size) {
+            int err = SELVA_PROTO_EBADF;
+
+            if (recv_res == -1) {
+                err = recv_error();
+                if (!err) {
+                    goto retry_payload;
+                }
+            }
+
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to receive a payload");
-            return SELVA_PROTO_EBADF;
+            return err;
         }
     }
 
@@ -162,7 +199,6 @@ static enum repl_proto_state parse_replication_header(struct replication_sock_st
 {
     struct selva_proto_control *ctrl = (struct selva_proto_control *)sv->msg_buf;
 
-    /* TODO check if type = err */
     if (ctrl->type == SELVA_PROTO_REPLICATION_CMD) {
         /*
          * The following calculation is only true if the replication header was
@@ -252,9 +288,17 @@ static enum repl_proto_state handle_recv_sdb_header(struct replication_sock_stat
 static enum repl_proto_state handle_recv_sdb(struct replication_sock_state *sv, int fd)
 {
     const size_t size = min(sv->sdb_size - sv->sdb_received_bytes, sizeof(sv->msg_buf));
+    ssize_t recv_res;
 
-    if (recv(fd, sv->msg_buf, size, 0) != (ssize_t)size) {
-        /* TODO err */
+retry:
+    recv_res = recv(fd, sv->msg_buf, size, 0);
+    if (recv_res != (ssize_t)size) {
+        if (recv_res == - 1) {
+            if (!recv_error()) {
+                goto retry;
+            }
+        }
+
         return REPL_PROTO_STATE_ERR;
     }
 
