@@ -21,12 +21,16 @@
 #include "replica.h"
 #include "replication.h"
 
-/* TODO public functions should be NOP if not origin */
-
 #define RING_BUFFER_SIZE 100
 #define MAX_REPLICAS 32
 
 static_assert(sizeof(ring_buffer_eid_t) >= sizeof(uint64_t));
+
+/**
+ * Request replica reader threaders in the mask to stop and release their data.
+ * This function will block until the threads exit.
+ */
+static void drop_replicas(unsigned replicas);
 
 static struct origin_state {
     /*!<
@@ -43,6 +47,14 @@ static struct origin_state {
     struct replica replicas[MAX_REPLICAS];
 } origin_state;
 
+static void insert(ring_buffer_eid_t eid, int8_t cmd, void *p, size_t p_size) {
+    unsigned not_replicated;
+
+    while ((not_replicated = ring_buffer_insert(&origin_state.rb, eid, cmd, p, p_size))) {
+        drop_replicas(not_replicated);
+    }
+}
+
 void replication_origin_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
 {
     struct sdb *sdb = selva_malloc(sizeof(struct sdb));
@@ -54,8 +66,7 @@ void replication_origin_new_sdb(const struct selva_string *filename, const uint8
 
     SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%lx)", selva_string_to_str(filename, NULL), sdb_eid);
 
-    /* TODO This may fail, handle error! */
-    ring_buffer_insert(&origin_state.rb, sdb_eid, 0, sdb, sizeof(*sdb));
+    insert(sdb_eid, 0, sdb, sizeof(*sdb));
     origin_state.last_sdb_eid = sdb_eid;
 }
 
@@ -110,10 +121,6 @@ static inline void release_replica(struct replica *r)
     r->in_use = 0;
 }
 
-/**
- * Request replica reader threaders in the mask to stop and release their data.
- * This function will block until the threads exit.
- */
 static void drop_replicas(unsigned replicas)
 {
     unsigned replica_id;
@@ -162,13 +169,9 @@ void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
 {
     /* TODO We'd really like to avoid at least malloc() here, preferrably also memcpy(). */
     void *p = selva_malloc(buf_size);
-    ring_buffer_eid_t eid = next_eid();
-    unsigned not_replicated;
 
     memcpy(p, buf, buf_size);
-    while ((not_replicated = ring_buffer_insert(&origin_state.rb, eid, cmd, p, buf_size))) {
-        drop_replicas(not_replicated);
-    }
+    insert(next_eid(), cmd, p, buf_size);
 }
 
 void replication_origin_init(void)
