@@ -6,6 +6,7 @@
 #pragma once
 
 #include "_evl_export.h"
+#include "_selva_io.h"
 
 #if SELVA_REPLICATION_MAIN
 #define SELVA_REPLICATION_EXPORT(_ret_, _fun_name_, ...) _ret_ _fun_name_(__VA_ARGS__) EVL_EXTERN
@@ -13,15 +14,12 @@
 #define SELVA_REPLICATION_EXPORT(_ret_, _fun_name_, ...) _ret_ (*_fun_name_)(__VA_ARGS__) EVL_COMMON
 #endif
 
-/* TODO This should be same as SDB HASH_SIZE and shouldn't be copy-pasted here */
-#define HASH_SIZE 32
-
 #define EID_MSB_MASK (~(~(typeof(uint64_t))0 >> 1))
 
 /**
  * Publish a new SDB dump to the replication.
  */
-SELVA_REPLICATION_EXPORT(void, selva_replication_new_sdb, const struct selva_string *filename, const uint8_t sdb_hash[HASH_SIZE]);
+SELVA_REPLICATION_EXPORT(void, selva_replication_new_sdb, const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE]);
 
 /**
  * Replicate a command buffer to the replicas.

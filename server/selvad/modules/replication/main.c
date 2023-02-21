@@ -46,7 +46,7 @@ static const struct config cfg_map[] = {
  * behaviour of these functions.
  */
 
-void selva_replication_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[HASH_SIZE])
+void selva_replication_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
 {
     switch (replication_mode) {
     case REPLICATION_MODE_ORIGIN:

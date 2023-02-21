@@ -43,14 +43,14 @@ static struct origin_state {
     struct replica replicas[MAX_REPLICAS];
 } origin_state;
 
-void replication_origin_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[HASH_SIZE])
+void replication_origin_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
 {
     struct sdb *sdb = selva_malloc(sizeof(struct sdb));
     uint64_t sdb_eid = ts_now() | EID_MSB_MASK; /* We assume there were no Selva DBs before 1970s. */
 
     /* RFE Do we really need to dup here? */
     sdb->filename = selva_string_dup(filename, 0);
-    memcpy(sdb->hash, sdb_hash, HASH_SIZE);
+    memcpy(sdb->hash, sdb_hash, SELVA_IO_HASH_SIZE);
 
     SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%lx)", selva_string_to_str(filename, NULL), sdb_eid);
 

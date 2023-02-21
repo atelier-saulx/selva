@@ -4,10 +4,7 @@
  */
 #pragma once
 
-/* TODO This should be same as SDB HASH_SIZE */
-#define HASH_SIZE 32
-
-void replication_origin_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[HASH_SIZE]);
+void replication_origin_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE]);
 
 /**
  * Get the EID of the newest SDB dump point.

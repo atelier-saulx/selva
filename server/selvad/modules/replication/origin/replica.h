@@ -27,7 +27,7 @@ struct sdb {
     /**
      * The hash of the dump.
      */
-    uint8_t hash[HASH_SIZE];
+    uint8_t hash[SELVA_IO_HASH_SIZE];
 };
 
 /* replica_thread.c */
