@@ -67,6 +67,10 @@ void *replication_thread(void *arg)
     struct ring_buffer_reader_state state;
     struct ring_buffer_element *e;
 
+    /*
+     * RFE It would be better to be able to retry with another sdb eid instead
+     * of letting the replica die but currently there is no easy way to do it.
+     */
     if (ring_buffer_init_state(&state, rb, replica->start_eid, replica->id)) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to initialize a ring_buffer_reader_state");
         goto out;
