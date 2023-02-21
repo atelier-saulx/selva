@@ -29,11 +29,6 @@ void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size);
 int replication_origin_register_replica(struct selva_server_response_out *resp, uint64_t start_eid);
 
 /**
- * Stop all replication activity.
- */
-void replication_origin_stop();
-
-/**
  * Initialize this node as an origin.
  * This is an irreversible operation.
  */

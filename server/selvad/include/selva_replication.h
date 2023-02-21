@@ -29,15 +29,9 @@ SELVA_REPLICATION_EXPORT(void, selva_replication_new_sdb, const struct selva_str
  */
 SELVA_REPLICATION_EXPORT(void, selva_replication_replicate, int8_t cmd, const void *buf, size_t buf_size);
 
-/**
- * Stop replication.
- */
-SELVA_REPLICATION_EXPORT(void, selva_replication_stop, void);
-
 #define _import_selva_replication(apply) \
     apply(selva_replication_new_sdb) \
-    apply(selva_replication_replicate) \
-    apply(selva_replication_stop)
+    apply(selva_replication_replicate)
 
 #define _import_selva_replication1(f) \
     evl_import(f, "mod_replication.so");

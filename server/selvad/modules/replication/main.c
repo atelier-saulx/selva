@@ -41,7 +41,7 @@ static const struct config cfg_map[] = {
 };
 
 /*
- * replication_new_sdb(), replication_replicate(), and replication_stop() can be
+ * replication_new_sdb() and replication_replicate() can be
  * called in any replication mode. However, the current mode affects the
  * behaviour of these functions.
  */
@@ -62,21 +62,6 @@ void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
     switch (replication_mode) {
     case REPLICATION_MODE_ORIGIN:
         replication_origin_replicate(cmd, buf, buf_size);
-        break;
-    default:
-        /* NOP */
-    }
-}
-
-void selva_replication_stop(void)
-{
-    switch (replication_mode) {
-    case REPLICATION_MODE_ORIGIN:
-        replication_origin_stop();
-        /* TODO */
-        break;
-    case REPLICATION_MODE_REPLICA:
-        /* TODO */
         break;
     default:
         /* NOP */

@@ -171,11 +171,6 @@ void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
     }
 }
 
-void replication_origin_stop()
-{
-    /* TODO Implement STOP */
-}
-
 void replication_origin_init(void)
 {
     for (unsigned i = 0; i < MAX_REPLICAS; i++) {
