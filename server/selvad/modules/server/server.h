@@ -67,11 +67,6 @@ void server_dispatch2worker(struct conn_ctx *restrict ctx, const char *restrict 
  * @{
  */
 
-#ifdef INET_ADDRSTRLEN
-/* addr + port + nul */
-#define CONN_STR_LEN (INET_ADDRSTRLEN + 5 + 1)
-#endif
-
 /**
  * Allocate a new client connection descriptor.
  * Caller must set `ctx->fd`.

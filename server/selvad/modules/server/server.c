@@ -9,6 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "endian.h"
+#include "util/net.h"
 #include "util/tcp.h"
 #include "event_loop.h"
 #include "config.h"

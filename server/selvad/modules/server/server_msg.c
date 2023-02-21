@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <arpa/inet.h>
+#include "util/net.h"
 #include "endian.h"
 #include "jemalloc.h"
 #include "selva_error.h"

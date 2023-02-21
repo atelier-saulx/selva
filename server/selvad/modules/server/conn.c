@@ -2,14 +2,14 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+/* FIXME Remove unused includes. */
 #include <arpa/inet.h>
 #include <assert.h>
-#include <errno.h>
 #include <stdatomic.h>
-#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include "util/bitmap.h"
+#include "util/net.h"
 #include "event_loop.h"
 #include "selva_proto.h"
 #include "selva_log.h"
@@ -110,46 +110,7 @@ void free_stream_resp(struct selva_server_response_out *stream_resp)
 
 size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize)
 {
-    struct sockaddr_in addr; /*!< Client/peer addr */
-    socklen_t addr_size = sizeof(struct sockaddr_in);
-
-    memset(buf, '\0', bsize); /* bc inet_ntop() may not terminate. */
-    if (unlikely(bsize < CONN_STR_LEN)) {
-        return 0;
-    }
-
-    if (getpeername(ctx->fd, (struct sockaddr *)&addr, &addr_size) == -1) {
-        const int e = errno;
-
-        static_assert(CONN_STR_LEN > 17);
-
-        switch (e) {
-        case ENOBUFS:
-            strcpy(buf, "<sys error>");
-            return 11;
-        case EBADF:
-        case ENOTCONN:
-        case ENOTSOCK:
-            strcpy(buf, "<not connected>");
-            return 15;
-        case EFAULT:
-        case EINVAL:
-        default:
-            strcpy(buf, "<internal error>");
-            return 16;
-        }
-    }
-
-    if (!inet_ntop(AF_INET, &addr.sin_addr, buf, bsize)) {
-        strcpy(buf, "<ntop failed>");
-        return 13;
-    }
-
-    const ssize_t end = strlen(buf);
-    const int n = bsize - end;
-    const int res = snprintf(buf + end, n, ":%d", ntohs(addr.sin_port));
-
-    return (res > 0 && res < n) ? end + n : end;
+    return fd_to_str(ctx->fd, buf, bsize);
 }
 
 __constructor void init_conn(void)

@@ -1,4 +1,4 @@
-# Copyright (c) 2022 SAULX
+# Copyright (c) 2022-2023 SAULX
 # SPDX-License-Identifier: MIT
 include ../../common.mk
 
@@ -15,6 +15,7 @@ OBJ := \
 	cstrings.o \
 	ctime.o \
 	eztrie.o \
+	fd_to_str.o \
 	finalizer.o \
 	ida.o \
 	mempool.o \
