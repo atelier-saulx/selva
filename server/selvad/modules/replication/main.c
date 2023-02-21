@@ -262,8 +262,8 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
         selva_send_null(resp);
         break;
     case REPLICATION_MODE_ORIGIN:
-        selva_send_ll(resp, (long long)replication_origin_get_last_sdb_eid());
-        selva_send_ll(resp, (long long)replication_origin_get_last_cmd_eid());
+        selva_send_llx(resp, (long long)replication_origin_get_last_sdb_eid());
+        selva_send_llx(resp, (long long)replication_origin_get_last_cmd_eid());
         break;
     case REPLICATION_MODE_REPLICA:
         selva_send_null(resp);
