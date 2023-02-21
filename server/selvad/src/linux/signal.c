@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <sys/signalfd.h>
@@ -23,13 +23,11 @@ int evl_create_sigfd(sigset_t *mask)
 	 * according to their default dispositions.
      */
 	if (sigprocmask(SIG_BLOCK, mask, NULL) == -1) {
-        /* TODO Log error? */
         return SELVA_EGENERAL;
     }
 
 	sfd = signalfd(-1, mask, SFD_NONBLOCK | SFD_CLOEXEC);
 	if (sfd == -1) {
-        /* TODO Log error? */
         return SELVA_EGENERAL;
     }
 
