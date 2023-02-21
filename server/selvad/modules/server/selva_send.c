@@ -3,7 +3,9 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#define _GNU_SOURCE
 #include <alloca.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -241,18 +243,48 @@ int selva_send_replication_cmd(struct selva_server_response_out *resp, uint64_t 
     return (res < 0) ? (int)res : 0;
 }
 
-/* FIXME */
 int selva_send_replication_sdb(struct selva_server_response_out *resp, uint64_t eid, const char *filename)
 {
+    int oflags = O_RDONLY | O_NOATIME;
+    int fd;
     struct selva_proto_replication_sdb buf = {
         .type = SELVA_PROTO_REPLICATION_SDB,
         .eid = eid,
     };
     ssize_t res;
 
-    int fd = open(filename, O_RDONLY);
-    if (fd == -1) {
-        /* TODO Handle error */
+    for (int retries = 3; retries; retries--) {
+        fd = open(filename, oflags);
+        if (fd != -1) {
+            break;
+        }
+
+        switch (errno) {
+        case EINTR:
+            continue;
+        case EPERM:
+            oflags ^= O_NOATIME;
+            continue;
+        case EACCES:
+        case EINVAL:
+        case EISDIR:
+        case ELOOP:
+        case ENAMETOOLONG:
+        case ENODEV:
+        case ENOENT:
+        case ENXIO:
+        case EROFS:
+            return SELVA_EINVAL;
+        case EFBIG:
+        case EMFILE:
+        case ENFILE:
+        case ENOMEM:
+        case ENOSPC:
+        case EOVERFLOW:
+            return SELVA_ENOMEM;
+        default:
+            return SELVA_EGENERAL;
+        }
     }
 
     off_t file_size = lseek(fd, 0, SEEK_END);
