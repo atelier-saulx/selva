@@ -280,7 +280,7 @@ int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_ou
 /**
  * parse selva_proto_replication.
  */
-int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, int8_t *cmd_id, size_t *data_size);
+int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, uint64_t *eid, int8_t *cmd_id, size_t *data_size);
 
 int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, uint64_t *eid, size_t *data_size);
 

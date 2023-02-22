@@ -27,7 +27,7 @@
 #include "../../../tunables.h"
 #include "replication.h"
 
-struct replication_sock_state {
+struct replica_state {
     int recv_next_frame;
     enum repl_proto_state {
         REPL_PROTO_STATE_PARSE_REPLICATION_HEADER,
@@ -71,22 +71,39 @@ struct replication_sock_state {
     struct sockaddr_in origin_addr;
     struct backoff_timeout backoff; /*!< Backoff state for reconn retries. */
 
+    uint64_t incoming_sdb_eid;
+    uint64_t incoming_cmd_eid;
+    uint64_t last_sdb_eid;
+    uint64_t last_cmd_eid;
+
     /*
      * Buffer for receiving data.
      */
     _Alignas(uintptr_t) uint8_t msg_buf[1048576];
 };
 
-extern void set_replica_stale(int s);
-static inline int restart_replication(struct replication_sock_state *sv, struct timespec *t);
+struct replica_state *replica_state;
 
-static void reinit_sv(struct replication_sock_state *sv)
+extern void set_replica_stale(int s);
+static inline int restart_replication(struct replica_state *sv, struct timespec *t);
+
+static void reinit_sv(struct replica_state *sv)
 {
     /* Just clean the state variables and leave the origin_addr and buffer as is. */
-    memset(sv, 0, offsetof(struct replication_sock_state, origin_addr));
+    memset(sv, 0, offsetof(struct replica_state, origin_addr));
 
     sv->recv_next_frame = 1;
     sv->state = REPL_PROTO_STATE_PARSE_REPLICATION_HEADER;
+}
+
+uint64_t replication_replica_get_last_sdb_eid(void)
+{
+    return replica_state->last_sdb_eid;
+}
+
+uint64_t replication_replica_get_last_cmd_eid(void)
+{
+    return replica_state->last_cmd_eid;
 }
 
 /* TODO Here we could send what we already have to avoid full sync */
@@ -126,7 +143,7 @@ static int recv_error(void) {
     }
 }
 
-static int recv_frame(struct replication_sock_state *sv, int fd)
+static int recv_frame(struct replica_state *sv, int fd)
 {
     ssize_t recv_res;
 
@@ -187,7 +204,7 @@ retry_payload:
     return 0;
 }
 
-static enum repl_proto_state parse_replication_header(struct replication_sock_state *sv)
+static enum repl_proto_state parse_replication_header(struct replica_state *sv)
 {
     struct selva_proto_control *ctrl = (struct selva_proto_control *)sv->msg_buf;
 
@@ -202,7 +219,7 @@ static enum repl_proto_state parse_replication_header(struct replication_sock_st
         sv->cur_payload_size -= sizeof(struct selva_proto_replication_cmd);
         int err;
 
-        err = selva_proto_parse_replication_cmd(sv->msg_buf, sizeof(struct selva_proto_replication_cmd), 0, &sv->cmd_id, &sv->cmd_size);
+        err = selva_proto_parse_replication_cmd(sv->msg_buf, sizeof(struct selva_proto_replication_cmd), 0, &sv->incoming_cmd_eid, &sv->cmd_id, &sv->cmd_size);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse the replication header: %s", selva_strerror(err));
             return REPL_PROTO_STATE_ERR;
@@ -216,6 +233,7 @@ static enum repl_proto_state parse_replication_header(struct replication_sock_st
         uint64_t sdb_eid;
 
         selva_proto_parse_replication_sdb(sv->msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sdb_eid, &sv->sdb_size);
+        sv->incoming_sdb_eid = sdb_eid;
         snprintf(sv->sdb_filename, sizeof(sv->sdb_filename), "replica-%" PRIu64 ".sdb", sdb_eid & ~EID_MSB_MASK);
 
         sv->recv_next_frame = 1;
@@ -239,7 +257,7 @@ static enum repl_proto_state parse_replication_header(struct replication_sock_st
     return REPL_PROTO_STATE_ERR;
 }
 
-static enum repl_proto_state handle_recv_cmd(struct replication_sock_state *sv)
+static enum repl_proto_state handle_recv_cmd(struct replica_state *sv)
 {
     sv->msg_buf_i += sv->cur_payload_size;
 
@@ -260,7 +278,7 @@ static enum repl_proto_state handle_recv_cmd(struct replication_sock_state *sv)
     return REPL_PROTO_STATE_EXEC_CMD;
 }
 
-static enum repl_proto_state handle_recv_sdb_header(struct replication_sock_state *sv)
+static enum repl_proto_state handle_recv_sdb_header(struct replica_state *sv)
 {
     if (sv->cur_hdr.msg_bsize != sv->sdb_size) {
         SELVA_LOG(SELVA_LOGL_ERR, "SDB size mismatch: header: %zu act: %zu", (size_t)sv->cur_hdr.msg_bsize, sv->sdb_size);
@@ -276,7 +294,7 @@ static enum repl_proto_state handle_recv_sdb_header(struct replication_sock_stat
     return REPL_PROTO_STATE_RECEIVING_SDB;
 }
 
-static enum repl_proto_state handle_recv_sdb(struct replication_sock_state *sv, int fd)
+static enum repl_proto_state handle_recv_sdb(struct replica_state *sv, int fd)
 {
     const size_t size = min(sv->sdb_size - sv->sdb_received_bytes, sizeof(sv->msg_buf));
     ssize_t recv_res;
@@ -306,7 +324,7 @@ retry:
     }
 }
 
-static enum repl_proto_state handle_exec_sdb(struct replication_sock_state *sv)
+static enum repl_proto_state handle_exec_sdb(struct replica_state *sv)
 {
     const size_t filename_len = strnlen(sv->sdb_filename, sizeof(sv->sdb_filename));
     _Alignas(struct selva_proto_string) uint8_t buf[sizeof(struct selva_proto_string) + filename_len];
@@ -324,7 +342,7 @@ static enum repl_proto_state handle_exec_sdb(struct replication_sock_state *sv)
 
 static void on_data(struct event *event, void *arg)
 {
-    struct replication_sock_state *sv = (struct replication_sock_state *)arg;
+    struct replica_state *sv = (struct replica_state *)arg;
     const int fd = event->fd;
 
     while (1) {
@@ -374,10 +392,18 @@ static void on_data(struct event *event, void *arg)
 
             SELVA_LOG(SELVA_LOGL_INFO, "Replicating cmd: %d\n", sv->cmd_id);
             selva_server_run_cmd(sv->cmd_id, sv->msg_buf, sv->cmd_size);
+
+            sv->last_cmd_eid = sv->incoming_cmd_eid;
+            sv->incoming_cmd_eid = 0;
             sv->state = REPL_PROTO_STATE_FIN;
             continue;
         case REPL_PROTO_STATE_EXEC_SDB:
             sv->state = handle_exec_sdb(sv);
+            if (sv->state == REPL_PROTO_STATE_FIN) {
+                sv->last_sdb_eid = sv->incoming_sdb_eid;
+                sv->last_cmd_eid = 0;
+                sv->incoming_sdb_eid = 0;
+            }
             continue;
 state_err:
         case REPL_PROTO_STATE_ERR:
@@ -397,7 +423,7 @@ state_err:
 static void on_close(struct event *event, void *arg)
 {
     const int fd = event->fd;
-    struct replication_sock_state *sv = (struct replication_sock_state *)arg;
+    struct replica_state *sv = (struct replica_state *)arg;
     const int retry = 1;
 
     SELVA_LOG(SELVA_LOGL_WARN, "Replication has stopped due to connection reset");
@@ -418,6 +444,7 @@ static void on_close(struct event *event, void *arg)
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to schedule a replication retry: %s", selva_strerror(err));
     }
 
+    replica_state = NULL;
     selva_free(sv);
     exit(EXIT_FAILURE);
 }
@@ -447,7 +474,7 @@ static int connect_to_origin(struct sockaddr_in *origin_addr)
     return sock;
 }
 
-static int start_replication_handler(struct replication_sock_state *sv)
+static int start_replication_handler(struct replica_state *sv)
 {
     int sock, err;
 
@@ -477,7 +504,7 @@ static inline double ts2sec(struct timespec *ts)
 
 static void start_replication_trampoline(struct event *, void *arg)
 {
-    struct replication_sock_state *sv = (struct replication_sock_state *)arg;
+    struct replica_state *sv = (struct replica_state *)arg;
     int err;
 
     err = start_replication_handler(sv);
@@ -496,7 +523,7 @@ static void start_replication_trampoline(struct event *, void *arg)
     }
 }
 
-static inline int restart_replication(struct replication_sock_state *sv, struct timespec *t)
+static inline int restart_replication(struct replica_state *sv, struct timespec *t)
 {
     int tim;
 
@@ -510,9 +537,13 @@ static inline int restart_replication(struct replication_sock_state *sv, struct 
 
 int replication_replica_start(struct sockaddr_in *origin_addr)
 {
-    struct replication_sock_state *sv;
+    struct replica_state *sv;
 
-    sv = selva_calloc(1, sizeof(*sv));
+    if (replica_state) {
+        return SELVA_EEXIST;
+    }
+
+    sv = replica_state = selva_calloc(1, sizeof(*sv));
     memcpy(&sv->origin_addr, origin_addr, sizeof(sv->origin_addr));
     sv->backoff = backoff_timeout_defaults;
     backoff_timeout_init(&sv->backoff);

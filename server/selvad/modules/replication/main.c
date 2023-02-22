@@ -169,7 +169,7 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
     err = replication_origin_register_replica(stream_resp, replication_origin_get_last_sdb_eid());
     if (err) {
         selva_cancel_stream(resp, stream_resp);
-        selva_send_error(resp, err, NULL, 0);
+        selva_send_errorf(resp, err, "Failed to register the replica");
         return;
     }
 }
@@ -272,8 +272,8 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
         break;
     case REPLICATION_MODE_REPLICA:
     case REPLICATION_MODE_REPLICA_STALE:
-        selva_send_null(resp);
-        selva_send_null(resp);
+        selva_send_llx(resp, (long long)replication_replica_get_last_sdb_eid());
+        selva_send_llx(resp, (long long)replication_replica_get_last_cmd_eid());
         break;
     }
 #if 0
