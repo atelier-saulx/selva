@@ -77,6 +77,7 @@ struct replication_sock_state {
     _Alignas(uintptr_t) uint8_t msg_buf[1048576];
 };
 
+extern void set_replica_stale(int s);
 static inline int restart_replication(struct replication_sock_state *sv, struct timespec *t);
 
 static void reinit_sv(struct replication_sock_state *sv)
@@ -401,12 +402,13 @@ static void on_close(struct event *event, void *arg)
     const int retry = 1;
 
     SELVA_LOG(SELVA_LOGL_WARN, "Replication has stopped due to connection reset");
+    set_replica_stale(1);
 
     (void)shutdown(fd, SHUT_RDWR);
     close(fd);
     if (retry) {
-        int err;
         struct timespec t_retry;
+        int err;
 
         backoff_timeout_next(&sv->backoff, &t_retry);
         err = restart_replication(sv, &t_retry);
@@ -484,6 +486,7 @@ static void start_replication_trampoline(struct event *, void *arg)
         restart_replication(sv, &t_retry);
     } else {
         sv->backoff.attempt = 0;
+        set_replica_stale(0);
     }
 }
 
@@ -507,6 +510,7 @@ int replication_replica_start(struct sockaddr_in *origin_addr)
     memcpy(&sv->origin_addr, origin_addr, sizeof(sv->origin_addr));
     sv->backoff = backoff_timeout_defaults;
     backoff_timeout_init(&sv->backoff);
+    set_replica_stale(1);
 
     return restart_replication(sv, &(struct timespec){0});
 }

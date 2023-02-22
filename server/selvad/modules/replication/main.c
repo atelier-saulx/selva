@@ -27,13 +27,15 @@ enum replication_mode {
     REPLICATION_MODE_NONE = 0,
     REPLICATION_MODE_ORIGIN,
     REPLICATION_MODE_REPLICA,
+    REPLICATION_MODE_REPLICA_STALE,
 };
 
 static enum replication_mode replication_mode = REPLICATION_MODE_NONE;
-static const char replication_mode_str[3][8] = {
+static const char replication_mode_str[4][2 * sizeof(size_t)] = {
     "NONE",
     "ORIGIN",
     "REPLICA",
+    "REPLICA_STALE"
 };
 
 static const struct config cfg_map[] = {
@@ -66,6 +68,11 @@ void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
     default:
         /* NOP */
     }
+}
+
+void set_replica_stale(int s)
+{
+    replication_mode = REPLICATION_MODE_REPLICA + !!s;
 }
 
 static void send_mode_error(struct selva_server_response_out *resp)
@@ -264,6 +271,7 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
         selva_send_llx(resp, (long long)replication_origin_get_last_cmd_eid());
         break;
     case REPLICATION_MODE_REPLICA:
+    case REPLICATION_MODE_REPLICA_STALE:
         selva_send_null(resp);
         selva_send_null(resp);
         break;
@@ -289,6 +297,11 @@ __constructor void init(void)
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to parse config args: %s",
                   selva_strerror(err));
+        exit(EXIT_FAILURE);
+    }
+
+    if (replication_mode > 2) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "Invalid replication mode");
         exit(EXIT_FAILURE);
     }
 
