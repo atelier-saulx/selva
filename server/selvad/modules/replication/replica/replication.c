@@ -470,6 +470,11 @@ static int start_replication_handler(struct replication_sock_state *sv)
     return err;
 }
 
+static inline double ts2sec(struct timespec *ts)
+{
+    return (double)ts->tv_sec + ts->tv_nsec / 1e9;
+}
+
 static void start_replication_trampoline(struct event *, void *arg)
 {
     struct replication_sock_state *sv = (struct replication_sock_state *)arg;
@@ -479,10 +484,11 @@ static void start_replication_trampoline(struct event *, void *arg)
     if (err) {
         struct timespec t_retry;
 
-        /* TODO log here too? */
+        backoff_timeout_next(&sv->backoff, &t_retry);
+
+        SELVA_LOG(SELVA_LOGL_WARN, "Connection to origin failed. Retrying in %.2F s", ts2sec(&t_retry));
 
         /* Retry again later. */
-        backoff_timeout_next(&sv->backoff, &t_retry);
         restart_replication(sv, &t_retry);
     } else {
         sv->backoff.attempt = 0;

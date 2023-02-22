@@ -9,9 +9,9 @@
 #include "util/backoff_timeout.h"
 
 const struct backoff_timeout backoff_timeout_defaults = {
-    .t_min = 1000.0,
-    .t_max = INFINITY,
-    .factor = 2.0,
+    .t_min = 500.0,
+    .t_max = 3000.0,
+    .factor = 1.5,
 };
 
 void backoff_timeout_init(struct backoff_timeout *s)
@@ -34,7 +34,7 @@ void backoff_timeout_next(struct backoff_timeout *s, struct timespec *ts)
     double random = (double)(get_rnd(&s->rnd_state) % 100) / 100.0 + 1.0;
     double timeout;
 
-    timeout = fmin(random * s->t_min * pow(s->factor, (double)s->attempt), s->t_max);
+    timeout = fmin(random * s->t_min * pow(s->factor, (double)s->attempt), s->t_max * (1.0 / random));
     s->attempt++;
 
     msec2timespec(ts, (int64_t)round(timeout));
