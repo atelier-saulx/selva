@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include "endian.h"
 #include "jemalloc.h"
+#include "util/backoff_timeout.h"
 #include "util/crc32c.h"
 #include "util/tcp.h"
 #include "event_loop.h"
@@ -68,6 +69,7 @@ struct replication_sock_state {
      **************************************************************************/
 
     struct sockaddr_in origin_addr;
+    struct backoff_timeout backoff; /*!< Backoff state for reconn retries. */
 
     /*
      * Buffer for receiving data.
@@ -77,20 +79,10 @@ struct replication_sock_state {
 
 static inline int restart_replication(struct replication_sock_state *sv, struct timespec *t);
 
-static struct timespec get_restart_t(void)
-{
-    struct timespec t_retry = {
-        .tv_sec = 1, /* TODO randomize and exp backoff */
-        .tv_nsec = 0,
-    };
-
-    return t_retry;
-}
-
 static void reinit_sv(struct replication_sock_state *sv)
 {
     /* Just clean the state variables and leave the origin_addr and buffer as is. */
-    memset(sv, 0, sizeof(*sv) - sizeof(sv->origin_addr) - sizeof(sv->msg_buf));
+    memset(sv, 0, offsetof(struct replication_sock_state, origin_addr));
 
     sv->recv_next_frame = 1;
     sv->state = REPL_PROTO_STATE_PARSE_REPLICATION_HEADER;
@@ -414,8 +406,9 @@ static void on_close(struct event *event, void *arg)
     close(fd);
     if (retry) {
         int err;
-        struct timespec t_retry = get_restart_t();
+        struct timespec t_retry;
 
+        backoff_timeout_next(&sv->backoff, &t_retry);
         err = restart_replication(sv, &t_retry);
         if (!err) {
             return;
@@ -482,12 +475,15 @@ static void start_replication_trampoline(struct event *, void *arg)
 
     err = start_replication_handler(sv);
     if (err) {
-        struct timespec t_retry = get_restart_t();
+        struct timespec t_retry;
 
         /* TODO log here too? */
 
         /* Retry again later. */
+        backoff_timeout_next(&sv->backoff, &t_retry);
         restart_replication(sv, &t_retry);
+    } else {
+        sv->backoff.attempt = 0;
     }
 }
 
@@ -509,6 +505,8 @@ int replication_replica_start(struct sockaddr_in *origin_addr)
 
     sv = selva_calloc(1, sizeof(*sv));
     memcpy(&sv->origin_addr, origin_addr, sizeof(sv->origin_addr));
+    sv->backoff = backoff_timeout_defaults;
+    backoff_timeout_init(&sv->backoff);
 
     return restart_replication(sv, &(struct timespec){0});
 }

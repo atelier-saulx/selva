@@ -9,6 +9,7 @@ LDFLAGS += -g -L../
 
 OBJ := \
 	auto_free.o \
+	backoff_timeout.o \
 	base64.o \
 	bitmap.o \
 	crc32c/crc32c.o \
