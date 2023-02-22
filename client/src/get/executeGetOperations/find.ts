@@ -1035,10 +1035,9 @@ const executeFindOperation = async (
             }
 
             if (targetField) {
-              // TODO This won't work?
-              // for (const f of targetField) {
-              //  setNestedResult(entryRes, f, casted)
-              // }
+              for (const f of targetField) {
+                setNestedResult(entryRes, f, casted)
+              }
             } else {
               if (isReferences) {
                 setNestedResult(entryRes, path.slice(0, -2), [
