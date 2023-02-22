@@ -234,7 +234,6 @@ static enum repl_proto_state parse_replication_header(struct replication_sock_st
         return REPL_PROTO_STATE_ERR;
     }
 
-    /* TODO cleanup? */
     SELVA_LOG(SELVA_LOGL_ERR, "Invalid replication header type: %s", selva_proto_type_to_str(ctrl->type, NULL));
 
     return REPL_PROTO_STATE_ERR;
@@ -415,11 +414,12 @@ static void on_close(struct event *event, void *arg)
         if (!err) {
             return;
         }
-        /* TODO LOG error */
+
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to schedule a replication retry: %s", selva_strerror(err));
     }
 
     selva_free(sv);
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 /**
