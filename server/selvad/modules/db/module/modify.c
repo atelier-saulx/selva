@@ -1902,6 +1902,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
         }
     }
 
+    selva_db_is_dirty = 1; /* TODO Not necessarily modified. */
     /* FIXME Replication */
 #if 0
     if (RedisModule_GetContextFlags() & REDISMODULE_CTX_FLAGS_MASTER) {

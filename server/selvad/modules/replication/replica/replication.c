@@ -60,7 +60,7 @@ struct replica_state {
             size_t sdb_received_bytes; /*!< Number of bytes already received. */
         };
     };
-    char sdb_filename[sizeof("replica-") + 20 + sizeof(".sdb")]; /*!< Filename. `replica-[TS].sdb` */
+    char sdb_filename[sizeof("replica") + SDB_NAME_MIN_BUF_SIZE]; /*!< Filename. `replica-[TS].sdb` */
     FILE *sdb_file;
 
     size_t msg_buf_i; /*!< Index in buf. */

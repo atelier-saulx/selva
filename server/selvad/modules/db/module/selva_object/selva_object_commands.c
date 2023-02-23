@@ -74,10 +74,10 @@ void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *
         selva_send_error(resp, err, NULL, 0);
         return;
     } else {
+        selva_db_is_dirty = 1;
         selva_send_ll(resp, 1);
+        selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
     }
-
-    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
 }
 
 void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
@@ -110,12 +110,11 @@ void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const voi
     err = SelvaObject_Exists(obj, argv[ARGV_OKEY]);
     if (err == SELVA_ENOENT) {
         selva_send_ll(resp, 0);
-        return;
     } else if (err) {
         selva_send_error(resp, err, NULL, 0);
-        return;
+    } else {
+        selva_send_ll(resp, 1);
     }
-    selva_send_ll(resp, 1);
 }
 
 
@@ -276,6 +275,7 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
     }
     selva_send_ll(resp, values_set);
 
+    selva_db_is_dirty = 1;
     selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
     return;
 }
@@ -500,7 +500,9 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
         return;
     }
 
+    selva_db_is_dirty = 1;
     selva_send_ll(resp, 1);
+    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
 }
 
 static int SelvaObject_OnLoad(void) {

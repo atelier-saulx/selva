@@ -19,9 +19,10 @@
 #include "selva_server.h"
 #include "arg_parser.h"
 #include "hierarchy.h"
-#include "edge.h"
-#include "selva_onload.h"
+#include "selva_db.h"
 #include "selva_object.h"
+#include "selva_onload.h"
+#include "edge.h"
 
 static void EdgeConstraint_Reply(struct selva_server_response_out *resp, void *p);
 static void *so_rdb_load(struct selva_io *io, int encver, void *load_data);
@@ -324,8 +325,8 @@ void Edge_AddConstraintCommand(struct selva_server_response_out *resp, const voi
         selva_send_error(resp, err, NULL, 0);
         return;
     } else {
+        selva_db_is_dirty = 1;
         selva_send_ll(resp, 1);
-
         selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
     }
 }

@@ -52,7 +52,7 @@ static void exit_read_error(struct selva_io *io, const char *type, const char *w
     abort();
 }
 
-int selva_io_new(const struct selva_string *filename, enum selva_io_flags flags, struct selva_io **io_out)
+int selva_io_new(const char *filename, enum selva_io_flags flags, struct selva_io **io_out)
 {
     const char *mode = (flags & SELVA_IO_FLAGS_WRITE) ? "wb" : "rb";
     struct selva_io *io;
@@ -63,7 +63,7 @@ int selva_io_new(const struct selva_string *filename, enum selva_io_flags flags,
 
     io = selva_malloc(sizeof(*io));
     io->flags = flags;
-    io->file = fopen(selva_string_to_str(filename, NULL), mode);
+    io->file = fopen(filename, mode);
     if (!io->file) {
         /*
          * fopen() can fail for a dozen reasons, the best we can do is to tell
@@ -80,7 +80,7 @@ int selva_io_new(const struct selva_string *filename, enum selva_io_flags flags,
         sdb_read_header(io);
     }
 
-    io->filename = selva_string_dup(filename, 0);
+    io->filename = selva_string_createf("%s", filename);
 
     *io_out = io;
     return 0;

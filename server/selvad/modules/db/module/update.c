@@ -577,6 +577,7 @@ void SelvaCommand_Update(struct selva_server_response_out *resp, const void *buf
         }
     }
 
+    selva_db_is_dirty = 1;
     selva_send_ll(resp, nr_nodes);
     selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
 #undef SHIFT_ARGS

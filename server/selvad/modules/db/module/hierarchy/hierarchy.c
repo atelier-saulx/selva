@@ -3549,7 +3549,10 @@ static void SelvaHierarchy_DelNodeCommand(struct selva_server_response_out *resp
         selva_send_ll(resp, nr_deleted);
     }
 
-    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
+    if (nr_deleted > 0) {
+        selva_db_is_dirty = 1;
+        selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
+    }
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
 }
 

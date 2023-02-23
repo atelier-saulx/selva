@@ -95,7 +95,7 @@ static int ensure_sdb(void)
         struct {
             struct selva_proto_array arr_hdr;
             struct selva_proto_string str_hdr;
-            char buf[20 + sizeof(".sdb")]; /*!< Filename. `[TS].sdb` */
+            char buf[SDB_NAME_MIN_BUF_SIZE]; /*!< Filename. */
         } msg = {
             .arr_hdr = {
                 .type = SELVA_PROTO_ARRAY,

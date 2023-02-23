@@ -13,6 +13,7 @@
 #include "module.h"
 #include "selva_error.h"
 #include "selva_log.h"
+#include "dump.h"
 #include "selva_onload.h"
 #include "selva_server.h"
 #include "selva_io.h"
@@ -35,6 +36,7 @@ struct selva_glob_config selva_glob_config = {
     .find_indexing_popularity_ave_period = 216000,
     .redis_addr = "127.0.0.1",
     .redis_port = 6379,
+    .auto_save_interval = 0,
 };
 
 static const struct config cfg_map[] = {
@@ -51,6 +53,7 @@ static const struct config cfg_map[] = {
     { "FIND_INDEXING_POPULARITY_AVE_PERIOD",    CONFIG_INT,     &selva_glob_config.find_indexing_popularity_ave_period },
     { "REDIS_ADDR",                             CONFIG_CSTRING, &selva_glob_config.redis_addr },
     { "REDIS_PORT",                             CONFIG_INT,     &selva_glob_config.redis_port },
+    { "AUTO_SAVE_INTERVAL",                     CONFIG_INT,     &selva_glob_config.auto_save_interval },
 };
 
 SET_DECLARE(selva_onload, Selva_Onload);
@@ -92,6 +95,11 @@ __constructor void init(void)
                       selva_strerror(err));
             exit(EXIT_FAILURE);
         }
+    }
+
+    if (selva_glob_config.auto_save_interval > 0 &&
+        dump_auto_sdb(selva_glob_config.auto_save_interval)) {
+        exit(EXIT_FAILURE);
     }
 }
 

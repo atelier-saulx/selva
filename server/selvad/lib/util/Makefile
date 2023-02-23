@@ -22,6 +22,7 @@ OBJ := \
 	mempool.o \
 	poptop.o \
 	queue_r.o \
+	sdb_name.o \
 	selva_error.o \
 	selva_proto.o \
 	selva_proto_buf.o \

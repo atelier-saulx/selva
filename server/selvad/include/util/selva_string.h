@@ -45,6 +45,7 @@ struct selva_string *selva_string_find_intern(const char *str, size_t len);
 
 /**
  * Create a new string.
+ * @param str can be NULL.
  */
 struct selva_string *selva_string_create(const char *str, size_t len, enum selva_string_flags flags);
 

@@ -39,7 +39,8 @@ struct selva_glob_config {
      */
     int hierarchy_auto_compress_old_age_lim;
     /**
-     * Maximum number of indices. 0 = disable indexing.
+     * Maximum number of indices.
+     * 0 = disable indexing.
      */
     int find_indices_max;
     /**
@@ -58,11 +59,18 @@ struct selva_glob_config {
      * [sec] Averaging period for indexing hint demand count. After this period the original value is reduced to 1/e * n.
      */
     int find_indexing_popularity_ave_period;
+
     /**
      * Redis used for publishing subscription changes.
      */
     const char *redis_addr;
     int redis_port;
+
+    /**
+     * [sec] Load the default SDB on startup and save a dump on interval.
+     * 0 = disabled.
+     */
+    int auto_save_interval;
 };
 
 extern struct selva_glob_config selva_glob_config;
