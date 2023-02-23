@@ -16,6 +16,7 @@
 #include "jemalloc.h"
 #include "util/backoff_timeout.h"
 #include "util/crc32c.h"
+#include "util/sdb_name.h"
 #include "util/tcp.h"
 #include "event_loop.h"
 #include "selva_error.h"
@@ -234,7 +235,7 @@ static enum repl_proto_state parse_replication_header(struct replica_state *sv)
 
         selva_proto_parse_replication_sdb(sv->msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sdb_eid, &sv->sdb_size);
         sv->incoming_sdb_eid = sdb_eid;
-        snprintf(sv->sdb_filename, sizeof(sv->sdb_filename), "replica-%" PRIu64 ".sdb", sdb_eid & ~EID_MSB_MASK);
+        sdb_name(sv->sdb_filename, sizeof(sv->sdb_filename), "replica", sdb_eid & ~EID_MSB_MASK);
 
         sv->recv_next_frame = 1;
         return REPL_PROTO_STATE_RECEIVING_SDB_HEADER;
@@ -398,6 +399,7 @@ static void on_data(struct event *event, void *arg)
             sv->state = REPL_PROTO_STATE_FIN;
             continue;
         case REPL_PROTO_STATE_EXEC_SDB:
+            /* FIXME what if load fails */
             sv->state = handle_exec_sdb(sv);
             if (sv->state == REPL_PROTO_STATE_FIN) {
                 sv->last_sdb_eid = sv->incoming_sdb_eid;

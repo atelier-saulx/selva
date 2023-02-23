@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "util/finalizer.h"
+#include "util/sdb_name.h"
 #include "util/selva_string.h"
 #include "util/timestamp.h"
 #include "module.h"
@@ -116,7 +117,7 @@ static int ensure_sdb(void)
          * replication/replication.c but it's definitely not
          * required.
          */
-        msg.str_hdr.bsize = snprintf(msg.buf, sizeof(msg.buf), "%" PRIu64 ".sdb", (uint64_t)ts_now());
+        msg.str_hdr.bsize = sdb_name(msg.buf, sizeof(msg.buf), NULL, (uint64_t)ts_now());
         msg_size = sizeof(msg.arr_hdr) + sizeof(msg.str_hdr) + msg.str_hdr.bsize;
         msg.str_hdr.bsize = htole16(msg.str_hdr.bsize);
 
