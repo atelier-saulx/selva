@@ -119,7 +119,8 @@ function parseGetOpts(
     }
   > = nestedMapping || {}
 
-  const $fieldOpt = props.$field
+  const $fieldOpt =
+    props.$list && props.$field && pathPrefix === '' ? undefined : props.$field
 
   const addMapping = ($field: string | string[], path: string) => {
     if (!$field) {
