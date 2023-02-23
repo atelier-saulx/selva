@@ -1030,42 +1030,42 @@ test.serial(
       ],
     })
 
-    // result = await client.get({
-    //   $id: 'root',
-    //   $language: 'en',
-    //   children: {
-    //     id: true,
-    //     title: true,
-    //     parents: true,
-    //     match: {
-    //       $field: 'specialMatch',
-    //       id: true,
-    //       title: true,
-    //     },
-    //     $list: {
-    //       $find: {
-    //         $filter: [
-    //           {
-    //             $field: 'type',
-    //             $operator: '=',
-    //             $value: 'club',
-    //           },
-    //         ],
-    //       },
-    //     },
-    //   },
-    // })
+    result = await client.get({
+      $id: 'root',
+      $language: 'en',
+      children: {
+        id: true,
+        title: true,
+        parents: true,
+        match: {
+          $field: 'specialMatch',
+          id: true,
+          title: true,
+        },
+        $list: {
+          $find: {
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'club',
+              },
+            ],
+          },
+        },
+      },
+    })
 
-    // console.log(JSON.stringify(result, null, 2))
-    // t.deepEqual(result, {
-    //   children: [
-    //     {
-    //       id: 'clA',
-    //       title: 'yesh club',
-    //       parents: ['root'],
-    //       match: { id: 'maA', title: 'yesh match' },
-    //     },
-    //   ],
-    // })
+    console.log(JSON.stringify(result, null, 2))
+    t.deepEqual(result, {
+      children: [
+        {
+          id: 'clA',
+          title: 'yesh club',
+          parents: ['root'],
+          match: { id: 'maA', title: 'yesh match' },
+        },
+      ],
+    })
   }
 )
