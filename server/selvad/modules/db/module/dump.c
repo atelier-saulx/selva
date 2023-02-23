@@ -97,7 +97,6 @@ static void auto_save(struct event *, void *arg)
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to autosave: %s", selva_strerror(err));
         }
 
-        selva_string_free(filename);
         selva_db_is_dirty = 0;
         SELVA_LOG(SELVA_LOGL_INFO, "Autosave complete");
     }
