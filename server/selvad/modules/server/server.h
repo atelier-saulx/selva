@@ -15,6 +15,7 @@ struct conn_ctx;
  */
 struct selva_server_response_out {
     struct conn_ctx *ctx;
+    int8_t cork; /*!< Cork the full response. Should not be used with streams. */
     typeof_field(struct selva_proto_header, cmd) cmd;
     typeof_field(struct selva_proto_header, flags) frame_flags;
     typeof_field(struct selva_proto_header, seqno) seqno;
@@ -110,6 +111,11 @@ size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize);
 int server_recv_message(struct conn_ctx *ctx);
 ssize_t server_recv_frame(struct conn_ctx *ctx);
 int server_flush_frame_buf(struct selva_server_response_out *resp, int last_frame);
+
+/**
+ * Uncork the underlying socket.
+ */
+void server_uncork_resp(struct selva_server_response_out *resp);
 
 /**
  * Send buffer as a part of the response resp.
