@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022-2023 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #include <stddef.h>
 #include <stdlib.h>
 #include "selva_log.h"
