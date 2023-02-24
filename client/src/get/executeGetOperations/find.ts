@@ -119,13 +119,51 @@ function parseGetOpts(
     }
   > = nestedMapping || {}
 
+  const $fieldOpt =
+    props.$list && props.$field && pathPrefix === '' ? undefined : props.$field
+
+  const addMapping = ($field: string | string[], path: string) => {
+    if (!$field) {
+      return
+    }
+
+    if (Array.isArray($field)) {
+      fields.get(type).add($field.join('|'))
+      $field.forEach((f) => {
+        if (!mapping[f]) {
+          mapping[f] = { targetField: [path] }
+          return
+        }
+        if (!mapping[f].targetField) {
+          mapping[f].targetField = [path]
+          return
+        }
+        mapping[f].targetField.push(path)
+      })
+    } else {
+      fields.get(type).add($field)
+      if (!mapping[$field]) {
+        mapping[$field] = { targetField: [path] }
+      } else if (!mapping[$field].targetField) {
+        mapping[$field].targetField = [path]
+      } else {
+        mapping[$field].targetField.push(path)
+      }
+    }
+  }
+
+  let hasKeys = false
   for (const k in props) {
     if ((k === '$list' || k === '$find') && pathPrefix === '') {
       // ignore
     } else if (props.$list && k === '$field' && pathPrefix === '') {
       // ignore
     } else if (!k.startsWith('$') && props[k] === true) {
-      fields.get(type).add(pathPrefix + k)
+      if ($fieldOpt) {
+        addMapping($fieldOpt + '.' + k, pathPrefix + k)
+      } else {
+        fields.get(type).add(pathPrefix + k)
+      }
     } else if (props[k] === false) {
       fields.get(type).add(`!${pathPrefix + k}`)
     } else if (k === '$inherit') {
@@ -138,15 +176,8 @@ function parseGetOpts(
       }
 
       let $field = props.$field as string
-      if ($field) {
-        if (!mapping[$field]) {
-          mapping[$field] = { targetField: [path] }
-        } else if (!mapping[$field].targetField) {
-          mapping[$field].targetField = [path]
-        } else {
-          mapping[$field].targetField.push(path)
-        }
-      } else {
+      addMapping($field, path)
+      if (!$field) {
         $field = path
       }
 
@@ -179,30 +210,7 @@ function parseGetOpts(
 
       isInherit = true
     } else if (k === '$field') {
-      const $field = props[k]
-      if (Array.isArray($field)) {
-        fields.get(type).add($field.join('|'))
-        $field.forEach((f) => {
-          if (!mapping[f]) {
-            mapping[f] = { targetField: [path] }
-            return
-          }
-          if (!mapping[f].targetField) {
-            mapping[f].targetField = [path]
-            return
-          }
-          mapping[f].targetField.push(path)
-        })
-      } else {
-        fields.get(type).add($field)
-        if (!mapping[$field]) {
-          mapping[$field] = { targetField: [path] }
-        } else if (!mapping[$field].targetField) {
-          mapping[$field].targetField = [path]
-        } else {
-          mapping[$field].targetField.push(path)
-        }
-      }
+      // no-op
     } else if (k === '$default') {
       fields.get(type).add(path)
       const $default = props[k]
@@ -241,6 +249,11 @@ function parseGetOpts(
     } else if (k.startsWith('$')) {
       return [fields, mapping, true, false]
     } else if (typeof props[k] === 'object') {
+      const nestedProps = Object.assign({}, props[k])
+      if ($fieldOpt) {
+        nestedProps.$field = $fieldOpt + '.' + k
+      }
+
       const [nestedFieldsMap, , hasSpecial, nestedInherit] = parseGetOpts(
         schema,
         props[k],
@@ -263,6 +276,14 @@ function parseGetOpts(
         fields.set(type, set)
       }
     }
+
+    if (k !== '$field') {
+      hasKeys = true
+    }
+  }
+
+  if (!hasKeys) {
+    addMapping($fieldOpt, path)
   }
 
   return [fields, mapping, false, isInherit]
@@ -1019,10 +1040,9 @@ const executeFindOperation = async (
             }
 
             if (targetField) {
-              // TODO This won't work?
-              // for (const f of targetField) {
-              //  setNestedResult(entryRes, f, casted)
-              // }
+              for (const f of targetField) {
+                setNestedResult(entryRes, f, casted)
+              }
             } else {
               if (isReferences) {
                 setNestedResult(entryRes, path.slice(0, -2), [
