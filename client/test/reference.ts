@@ -959,3 +959,113 @@ test.serial('simple singular bidirectional reference', async (t) => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial(
+  'list of simple singular reference with $field usage',
+  async (t) => {
+    const client = connect({ port }, { loglevel: 'info' })
+
+    // const match1 = await client.set({
+    //   $id: 'maA',
+    //   title: {
+    //     en: 'yesh match'
+    //   }
+    // })
+
+    // const club1 = await client.set({
+    //   $id: 'clA',
+    //   title: {
+    //     en: 'yesh club'
+    //   },
+    //   specialMatch: match1
+    // })
+
+    const club1 = await client.set({
+      $id: 'clA',
+      title: {
+        en: 'yesh club',
+      },
+      specialMatch: {
+        $id: 'maA',
+        title: {
+          en: 'yesh match',
+        },
+      },
+    })
+
+    let result = await client.get({
+      $id: 'root',
+      $language: 'en',
+      children: {
+        id: true,
+        title: true,
+        parents: true,
+        match: {
+          id: { $field: 'specialMatch.id' },
+          title: { $field: 'specialMatch.title' },
+        },
+        $list: {
+          $find: {
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'club',
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    console.log(JSON.stringify(result, null, 2))
+    t.deepEqual(result, {
+      children: [
+        {
+          id: 'clA',
+          title: 'yesh club',
+          parents: ['root'],
+          match: { id: 'maA', title: 'yesh match' },
+        },
+      ],
+    })
+
+    result = await client.get({
+      $id: 'root',
+      $language: 'en',
+      children: {
+        id: true,
+        title: true,
+        parents: true,
+        match: {
+          $field: 'specialMatch',
+          id: true,
+          title: true,
+        },
+        $list: {
+          $find: {
+            $filter: [
+              {
+                $field: 'type',
+                $operator: '=',
+                $value: 'club',
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    console.log(JSON.stringify(result, null, 2))
+    t.deepEqual(result, {
+      children: [
+        {
+          id: 'clA',
+          title: 'yesh club',
+          parents: ['root'],
+          match: { id: 'maA', title: 'yesh match' },
+        },
+      ],
+    })
+  }
+)
