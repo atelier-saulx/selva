@@ -27,7 +27,8 @@ struct selva_server_response_out {
  */
 struct conn_ctx {
     int fd; /*<! The socket associated with this connection. */
-    int inuse; /*!< Set if the connection is active. */
+    int8_t inuse; /*!< Set if the connection is active. */
+    int8_t corked; /*!< Set if we have corked the socket. (avoids some unnecessary syscalls) */
 #if 0
     pthread_t worker_id;
 #endif
@@ -53,6 +54,10 @@ struct conn_ctx {
     char *recv_msg_buf; /*!< Buffer for the currently incoming message. */
     size_t recv_msg_buf_size;
     size_t recv_msg_buf_i;
+};
+
+enum server_send_flags {
+    SERVER_SEND_MORE = 0x01,
 };
 
 #if 0
@@ -114,7 +119,7 @@ int server_flush_frame_buf(struct selva_server_response_out *resp, int last_fram
  * data within a sequence will be always delivered in the sending order.
  * @returns Return bytes sent; Otherwise an error.
  */
-ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len);
+ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len, enum server_send_flags flags);
 
 /**
  * Send contents of a file pointed by fd a part of the response resp.
@@ -124,4 +129,4 @@ ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const v
  * file sent and thus any integrity checking must be implemented separately.
  * @returns Return bytes sent; Otherwise an error.
  */
-ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t size);
+ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t size, enum server_send_flags flags);

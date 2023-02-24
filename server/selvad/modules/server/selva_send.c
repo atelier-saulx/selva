@@ -37,33 +37,25 @@ int selva_send_null(struct selva_server_response_out *resp)
     };
     ssize_t res;
 
-    res = server_send_buf(resp, &buf, sizeof(buf));
+    res = server_send_buf(resp, &buf, sizeof(buf), 0);
     return (res < 0) ? (int)res : 0;
 }
 
 int selva_send_error(struct selva_server_response_out *resp, int err, const char *msg_str, size_t msg_len)
 {
-    size_t bsize;
-    struct selva_proto_error *buf;
-    ssize_t res;
-
-    if (!msg_str) {
-        msg_len = 0;
-    }
-
-    bsize = sizeof(struct selva_proto_error) + msg_len;
-    buf = alloca(bsize);
-    *buf = (struct selva_proto_error){
+    msg_len = msg_str ? msg_len : 0;
+    const struct selva_proto_error hdr = {
         .type = SELVA_PROTO_ERROR,
         .err_code = htole16(err),
         .bsize = htole16(msg_len),
     };
+    int res;
 
-    if (msg_len > 0) {
-        memcpy(buf->msg, msg_str, msg_len);
+    res = server_send_buf(resp, &hdr, sizeof(hdr), SERVER_SEND_MORE);
+    if (res == sizeof(hdr) && msg_len > 0) {
+        res = server_send_buf(resp, msg_str, msg_len, 0);
     }
 
-    res = server_send_buf(resp, buf, bsize);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -93,7 +85,7 @@ int selva_send_errorf(struct selva_server_response_out *resp, int err, const cha
     (void)vsnprintf(buf->msg, len + 1, fmt, args);
     va_end(args);
 
-    res = server_send_buf(resp, buf, bsize);
+    res = server_send_buf(resp, buf, bsize, 0);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -111,7 +103,7 @@ int selva_send_double(struct selva_server_response_out *resp, double value)
 
     htoledouble((char *)&buf.v, value);
 
-    res = server_send_buf(resp, &buf, sizeof(buf));
+    res = server_send_buf(resp, &buf, sizeof(buf), 0);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -123,7 +115,7 @@ int selva_send_ll(struct selva_server_response_out *resp, long long value)
     };
     ssize_t res;
 
-    res = server_send_buf(resp, &buf, sizeof(buf));
+    res = server_send_buf(resp, &buf, sizeof(buf), 0);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -136,7 +128,7 @@ int selva_send_llx(struct selva_server_response_out *resp, long long value)
     };
     ssize_t res;
 
-    res = server_send_buf(resp, &buf, sizeof(buf));
+    res = server_send_buf(resp, &buf, sizeof(buf), 0);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -152,7 +144,7 @@ int selva_send_str(struct selva_server_response_out *resp, const char *str, size
     };
     memcpy(buf->data, str, len);
 
-    res = server_send_buf(resp, buf, bsize);
+    res = server_send_buf(resp, buf, bsize, 0);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -182,7 +174,7 @@ int selva_send_strf(struct selva_server_response_out *resp, const char *fmt, ...
     (void)vsnprintf(buf->data, len + 1, fmt, args);
     va_end(args);
 
-    res = server_send_buf(resp, buf, bsize);
+    res = server_send_buf(resp, buf, bsize, 0);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -206,7 +198,7 @@ int selva_send_bin(struct selva_server_response_out *resp, const void *b, size_t
     };
     memcpy(buf->data, b, len);
 
-    res = server_send_buf(resp, buf, bsize);
+    res = server_send_buf(resp, buf, bsize, 0);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -223,7 +215,7 @@ int selva_send_array(struct selva_server_response_out *resp, int len)
         buf.flags = SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH;
     }
 
-    res = server_send_buf(resp, &buf, sizeof(buf));
+    res = server_send_buf(resp, &buf, sizeof(buf), 0);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -234,7 +226,7 @@ int selva_send_array_end(struct selva_server_response_out *resp)
     };
     ssize_t res;
 
-    res = server_send_buf(resp, &buf, sizeof(buf));
+    res = server_send_buf(resp, &buf, sizeof(buf), 0);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -248,11 +240,11 @@ int selva_send_replication_cmd(struct selva_server_response_out *resp, uint64_t 
     };
     ssize_t res;
 
-    res = server_send_buf(resp, &buf, sizeof(buf));
+    res = server_send_buf(resp, &buf, sizeof(buf), SERVER_SEND_MORE);
     if (res < 0) {
         return (int)res;
     }
-    res = server_send_buf(resp, data, bsize);
+    res = server_send_buf(resp, data, bsize, 0);
     return (res < 0) ? (int)res : 0;
 }
 
@@ -304,13 +296,13 @@ int selva_send_replication_sdb(struct selva_server_response_out *resp, uint64_t 
     buf.bsize = htole64((uint64_t)file_size);
     lseek(fd, 0, SEEK_SET);
 
-    res = server_send_buf(resp, &buf, sizeof(buf));
+    res = server_send_buf(resp, &buf, sizeof(buf), SERVER_SEND_MORE);
     if (res < 0) {
         close(fd);
         return (int)res;
     }
 
-    res = server_send_file(resp, fd, file_size);
+    res = server_send_file(resp, fd, file_size, 0);
     close(fd);
 
     return (res < 0) ? (int)res : 0;

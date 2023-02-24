@@ -40,6 +40,7 @@ struct conn_ctx *alloc_conn_ctx(void)
         memset(ctx, 0, sizeof(*ctx));
         atomic_init(&ctx->streams.free_map, ALL_STREAMS_FREE);
         ctx->inuse = i;
+        ctx->corked = 0;
     }
 
     return ctx;

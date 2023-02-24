@@ -115,7 +115,23 @@ int server_flush_frame_buf(struct selva_server_response_out *resp, int last_fram
     return err;
 }
 
-ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len)
+static void maybe_cork(struct conn_ctx *ctx)
+{
+    if (!ctx->corked) {
+        tcp_cork(ctx->fd);
+        ctx->corked = 1;
+    }
+}
+
+static void maybe_uncork(struct conn_ctx *ctx, enum server_send_flags flags)
+{
+    if ((flags & SERVER_SEND_MORE) == 0) {
+        tcp_uncork(ctx->fd);
+        ctx->corked = 0;
+    }
+}
+
+ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const void *restrict buf, size_t len, enum server_send_flags flags)
 {
     size_t i = 0;
     ssize_t ret = (ssize_t)len;
@@ -124,7 +140,7 @@ ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const v
         return SELVA_PROTO_ENOTCONN;
     }
 
-    tcp_cork(resp->ctx->fd);
+    maybe_cork(resp->ctx);
     while (i < len) {
         if (resp->buf_i >= sizeof(resp->buf)) {
             int err;
@@ -145,15 +161,17 @@ ssize_t server_send_buf(struct selva_server_response_out *restrict resp, const v
     }
 
 out:
-    tcp_uncork(resp->ctx->fd);
+    maybe_uncork(resp->ctx, (ret < 0) ? flags & ~SERVER_SEND_MORE : flags);
     return ret;
 }
 
-ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t size)
+ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t size, enum server_send_flags flags)
 {
     if (!resp->ctx) {
         return SELVA_PROTO_ENOTCONN;
     }
+
+    maybe_cork(resp->ctx);
 
     /*
      * Create and send a new frame header with no payload and msg_bsize set.
@@ -170,22 +188,29 @@ ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t 
          */
         switch (errno) {
         case EBADF:
-            return SELVA_PROTO_EBADF;
+            bytes_sent = SELVA_PROTO_EBADF;
+            break;
         case EFAULT:
         case EINVAL:
-            return SELVA_EINVAL;
+            bytes_sent = SELVA_EINVAL;
+            break;
         case EIO:
-            return SELVA_EIO;
+            bytes_sent = SELVA_EIO;
+            break;
         case ENOMEM:
         case EOVERFLOW:
-            return SELVA_PROTO_ENOBUFS;
+            bytes_sent = SELVA_PROTO_ENOBUFS;
+            break;
         case ESPIPE:
-            return SELVA_PROTO_EPIPE;
+            bytes_sent = SELVA_PROTO_EPIPE;
+            break;
         default:
-            return SELVA_EGENERAL;
+            bytes_sent = SELVA_EGENERAL;
+            break;
         }
     }
 
+    maybe_uncork(resp->ctx, (bytes_sent < 0) ? flags & ~SERVER_SEND_MORE : flags);
     return bytes_sent;
 }
 
