@@ -134,17 +134,17 @@ int selva_send_llx(struct selva_server_response_out *resp, long long value)
 
 int selva_send_str(struct selva_server_response_out *resp, const char *str, size_t len)
 {
-    const size_t bsize = sizeof(struct selva_proto_string) + len;
-    struct selva_proto_string *buf = alloca(bsize);
-    ssize_t res;
-
-    *buf = (struct selva_proto_string){
+    struct selva_proto_string hdr = {
         .type = SELVA_PROTO_STRING,
         .bsize = htole32(len),
     };
-    memcpy(buf->data, str, len);
+    ssize_t res;
 
-    res = server_send_buf(resp, buf, bsize, 0);
+    res = server_send_buf(resp, &hdr, sizeof(hdr), SERVER_SEND_MORE);
+    if (res == sizeof(hdr)) {
+        res = server_send_buf(resp, str, len, 0);
+    }
+
     return (res < 0) ? (int)res : 0;
 }
 
@@ -187,18 +187,18 @@ int selva_send_string(struct selva_server_response_out *resp, const struct selva
 
 int selva_send_bin(struct selva_server_response_out *resp, const void *b, size_t len)
 {
-    const size_t bsize = sizeof(struct selva_proto_string) + len;
-    struct selva_proto_string *buf = alloca(bsize);
-    ssize_t res;
-
-    *buf = (struct selva_proto_string){
+    struct selva_proto_string hdr = {
         .type = SELVA_PROTO_STRING,
         .flags = SELVA_PROTO_STRING_FBINARY,
         .bsize = htole32(len),
     };
-    memcpy(buf->data, b, len);
+    ssize_t res;
 
-    res = server_send_buf(resp, buf, bsize, 0);
+    res = server_send_buf(resp, &hdr, sizeof(hdr), SERVER_SEND_MORE);
+    if (res == sizeof(hdr)) {
+        res = server_send_buf(resp, b, len, 0);
+    }
+
     return (res < 0) ? (int)res : 0;
 }
 
