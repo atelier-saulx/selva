@@ -38,9 +38,11 @@ static const char replication_mode_str[4][2 * sizeof(size_t)] = {
     "REPLICA",
     "REPLICA_STALE"
 };
+static int auto_save_interval;
 
 static const struct config cfg_map[] = {
     { "SELVA_REPLICATION_MODE", CONFIG_INT, &replication_mode },
+    { "AUTO_SAVE_INTERVAL",     CONFIG_INT, &auto_save_interval },
 };
 
 /*
@@ -309,6 +311,15 @@ __constructor void init(void)
     switch (replication_mode) {
     case REPLICATION_MODE_ORIGIN:
         replication_origin_init();
+        if (!auto_save_interval) {
+            SELVA_LOG(SELVA_LOGL_INFO, "\"AUTO_SAVE_INTERVAL\" is recommended with the \"%s\" replication mode", replication_mode_str[replication_mode]);
+        }
+        break;
+    case REPLICATION_MODE_REPLICA:
+        if (auto_save_interval) {
+            SELVA_LOG(SELVA_LOGL_CRIT, "The replication mode \"%s\" and \"AUTO_SAVE_INTERVAL\" are mutually exclusive", replication_mode_str[replication_mode]);
+            exit(EXIT_FAILURE);
+        }
         break;
     default:
         /* NOP */

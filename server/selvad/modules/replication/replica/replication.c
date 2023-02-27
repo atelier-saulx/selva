@@ -60,7 +60,10 @@ struct replica_state {
             size_t sdb_received_bytes; /*!< Number of bytes already received. */
         };
     };
+#if 0
     char sdb_filename[sizeof("replica") + SDB_NAME_MIN_BUF_SIZE]; /*!< Filename. `replica-[TS].sdb` */
+#endif
+    char sdb_filename[sizeof("dump.sdb")];
     FILE *sdb_file;
 
     size_t msg_buf_i; /*!< Index in buf. */
@@ -235,7 +238,10 @@ static enum repl_proto_state parse_replication_header(struct replica_state *sv)
 
         selva_proto_parse_replication_sdb(sv->msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sdb_eid, &sv->sdb_size);
         sv->incoming_sdb_eid = sdb_eid;
+#if 0
         sdb_name(sv->sdb_filename, sizeof(sv->sdb_filename), "replica", sdb_eid & ~EID_MSB_MASK);
+#endif
+        memcpy(sv->sdb_filename, "dump.sdb", 9);
 
         sv->recv_next_frame = 1;
         return REPL_PROTO_STATE_RECEIVING_SDB_HEADER;
