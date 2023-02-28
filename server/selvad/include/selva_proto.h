@@ -194,7 +194,7 @@ struct selva_proto_replication_cmd {
     uint64_t eid; /*!< Element id of this message. */
     uint64_t bsize; /*!< Size of data in bytes. */
     uint8_t data[0];
-};
+} __attribute__((packed));
 static_assert(sizeof(struct selva_proto_replication_cmd) == 3 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
 
 /**
@@ -210,7 +210,7 @@ struct selva_proto_replication_sdb {
     uint8_t _spare[7];
     uint64_t eid; /*!< Element id of this message. */
     uint64_t bsize; /*!< Size of the dump. */
-};
+} __attribute__((packed));
 static_assert(sizeof(struct selva_proto_replication_sdb) == 3 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
 static_assert(sizeof(struct selva_proto_replication_cmd) == sizeof(struct selva_proto_replication_sdb), "Must be same size to allow easier parsing");
 
@@ -296,6 +296,8 @@ int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, u
  * @returns If successful, returns the number of strings in out; Otherwise an error code is returned.
  */
 int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize, struct selva_string ***out);
+
+int selva_proto_scanf(struct finalizer * restrict fin, const void *restrict buf, size_t szbuf, const char * restrict fmt, ...) __attribute__((format(scanf, 4, 5)));
 
 /**
  * @}
