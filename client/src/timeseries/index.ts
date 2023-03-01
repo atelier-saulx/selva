@@ -265,7 +265,22 @@ async function execTimeseries(
   console.log('SQL', params, 'tsCtx', tsCtx)
 
   const result: any[] = await client.pg.pg.execute(params.text, params.values)
-  return result
+  console.log('RAW RESULTS', result)
+  if (['object', 'record'].includes(tsCtx?.fieldSchema?.type)) {
+    result.forEach((row) => {
+      try {
+        row.value = JSON.parse(row.value)
+      } catch (e) {}
+      row._ts = row._ts.value
+    })
+  } else {
+    result.forEach((row) => {
+      row._ts = row._ts.value
+    })
+  }
+
+  console.log('SQL RESULT', JSON.stringify(result, null, 2))
+  return { rows: result }
 }
 
 export class TimeseriesClient {
