@@ -150,7 +150,7 @@ test.serial('basic id based nested query subscriptions', async (t) => {
       $all: true,
       updatedAt: false,
       createdAt: false,
-      aliases: false
+      aliases: false,
     },
   })
   const sub2 = other.subscribe((d) => {
@@ -698,6 +698,84 @@ test.serial('basic id based reference subscriptions', async (t) => {
   sub.unsubscribe()
 
   await wait(500 * 2)
+
+  await client.delete('root')
+
+  await wait(1000)
+
+  await client.destroy()
+})
+
+test.serial('subscribe with timeout right away', async (t) => {
+  const client = connect({ port: port })
+
+  await client.updateSchema({
+    languages: ['en', 'de', 'nl'],
+    rootType: {
+      fields: { yesh: { type: 'string' }, no: { type: 'string' } },
+    },
+    types: {
+      hello: {
+        fields: {
+          name: { type: 'string' },
+          lol: {
+            type: 'record',
+            values: {
+              type: 'object',
+              properties: {
+                x: { type: 'string' },
+                y: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  t.plan(2)
+
+  const id = await client.set({
+    type: 'hello',
+    name: 'derp',
+    lol: {
+      yes: {
+        x: 'xxxxxxx',
+      },
+    },
+  })
+
+  const sub = client
+    .observe({
+      $id: id,
+      name: true,
+      lol: {
+        '*': {
+          x: true,
+          y: true,
+        },
+      },
+    })
+    .subscribe((data) => {
+      console.log(data)
+      // if (data.name && !data.lol) t.is(data.name, 'derp')
+      // if (data.name && data.lol) t.is(data.lol, 'haha')
+    })
+
+  await wait(200)
+
+  await client.set({
+    $id: id,
+    lol: {
+      yes: {
+        y: 'yyyyyyyyyyyyy',
+      },
+    },
+  })
+
+  await wait(1000)
+
+  sub.unsubscribe()
 
   await client.delete('root')
 
