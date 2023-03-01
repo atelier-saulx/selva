@@ -375,11 +375,12 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
 
             memcpy(&str_hdr, msg + i - off, sizeof(str_hdr));
             if (str_hdr.flags & SELVA_PROTO_STRING_FBINARY) {
+				static const char hex_map[] = "0123456789abcdef";
                 const char *p = (char *)msg + i - data_len;
 
                 printf("%*s\"", tabs * TAB_WIDTH, "");
                 for (size_t data_i = 0; data_i < data_len; data_i++) {
-                    printf("%x", p[data_i]);
+				    printf("%c%c", hex_map[(p[data_i] >> 4) % 16], hex_map[(p[data_i] & 0x0f) % 16]);
                 }
                 printf("\",\n");
             } else {
@@ -421,13 +422,14 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
             }
             printf("%*s]\n", tabs * TAB_WIDTH, "");
         } else if (type == SELVA_PROTO_REPLICATION_CMD) {
+            uint64_t eid;
             int8_t repl_cmd_id;
             const char *repl_cmd_str;
             char buf[5];
             size_t cmd_size;
             int err;
 
-            err = selva_proto_parse_replication_cmd(msg, msg_size, i - off, &repl_cmd_id, &cmd_size);
+            err = selva_proto_parse_replication_cmd(msg, msg_size, i - off, &eid, &repl_cmd_id, &cmd_size);
             if (err) {
                 fprintf(stderr, "Failed to parse an error received: %s\n", selva_strerror(err));
                 return;
