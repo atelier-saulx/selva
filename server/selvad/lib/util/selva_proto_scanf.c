@@ -140,6 +140,10 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
     enum type_specifier type = TYPE_void;
     int n = 0;
 
+    if (szbuf == 0) {
+        return 0;
+    }
+
     fmt--;
     va_start(args, fmt);
     while (*(++fmt) != '\0') {
