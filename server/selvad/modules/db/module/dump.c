@@ -102,6 +102,32 @@ static void auto_save(struct event *, void *arg)
     }
 }
 
+int dump_load_default_sdb(void)
+{
+    struct selva_string *filename;
+    int err;
+
+    if (access(last_good_name, F_OK)) {
+        return SELVA_ENOENT;
+    }
+
+    filename = myreadlink(last_good_name);
+    if (!filename) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to resolve the symlink: \"%s\"", last_good_name);
+        return SELVA_ENOENT;
+    }
+    err = dump_load(selva_string_to_str(filename, NULL));
+    if (err) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "SDB load failed: \"%s\" err: %s",
+                  last_good_name,
+                  selva_strerror(err));
+        return err;
+    }
+    selva_string_free(filename);
+
+    return 0;
+}
+
 int dump_auto_sdb(int interval_s)
 {
     static struct timespec ts;
@@ -111,25 +137,6 @@ int dump_auto_sdb(int interval_s)
     assert(ts.tv_sec == 0); /* Can be only called once. */
 
     ts.tv_sec = interval_s;
-
-    if(!access(last_good_name, F_OK)) {
-        struct selva_string *filename;
-        int err;
-
-        filename = myreadlink(last_good_name);
-        if (!filename) {
-            SELVA_LOG(SELVA_LOGL_CRIT, "Failed to resolve the symlink: \"%s\"", last_good_name);
-            return SELVA_ENOENT;
-        }
-        err = dump_load(selva_string_to_str(filename, NULL));
-        if (err) {
-            SELVA_LOG(SELVA_LOGL_CRIT, "SDB load failed: \"%s\" err: %s",
-                      last_good_name,
-                      selva_strerror(err));
-            return err;
-        }
-        selva_string_free(filename);
-    }
 
     /* TODO Add autosave timer */
     tim = evl_set_timeout(&ts, auto_save, &ts);

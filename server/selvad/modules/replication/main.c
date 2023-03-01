@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include "util/finalizer.h"
 #include "util/sdb_name.h"
 #include "util/selva_string.h"
@@ -21,6 +22,7 @@
 #include "selva_log.h"
 #include "selva_server.h"
 #include "selva_replication.h"
+#include "sync_mode.h"
 #include "origin/replication.h"
 #include "replica/replication.h"
 
@@ -39,6 +41,7 @@ static const char replication_mode_str[4][2 * sizeof(size_t)] = {
     "REPLICA_STALE"
 };
 static int auto_save_interval;
+static uint8_t last_sdb_hash[SELVA_IO_HASH_SIZE];
 
 static const struct config cfg_map[] = {
     { "SELVA_REPLICATION_MODE", CONFIG_INT, &replication_mode },
@@ -57,9 +60,15 @@ void selva_replication_new_sdb(const struct selva_string *filename, const uint8_
     case REPLICATION_MODE_ORIGIN:
         replication_origin_new_sdb(filename, sdb_hash);
         break;
+    case REPLICATION_MODE_REPLICA:
+    case REPLICATION_MODE_REPLICA_STALE:
+        replication_replica_new_sdb(filename, sdb_hash);
+        break;
     default:
         /* NOP */
     }
+
+    memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
 }
 
 void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
@@ -133,19 +142,27 @@ static int ensure_sdb(void)
     return 0;
 }
 
+#define XSTR(s) STR(s)
+#define STR(s) #s
+
 /**
  * Start sending replication traffic to the caller.
  */
 static void replicasync(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
     struct selva_server_response_out *stream_resp;
-    int err;
+    __auto_finalizer struct finalizer fin;
+    uint8_t sdb_hash[SELVA_IO_HASH_SIZE];
+    uint64_t sdb_eid;
+    int argc, err;
 
-    if (size) {
-        /*
-         * TODO We'd actually like to get the client's current hash and offset here
-         * to speed up the sync.
-         */
+    finalizer_init(&fin);
+
+    argc = selva_proto_scanf(&fin, buf, size, "{%" XSTR(SELVA_IO_HASH_SIZE) "s, %" PRIu64 "}", sdb_hash, &sdb_eid);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc > 0 && argc != 2) {
         selva_send_error_arity(resp);
         return;
     }
@@ -161,15 +178,25 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
-    err = ensure_sdb();
-    if (err) {
-        selva_cancel_stream(resp, stream_resp);
-        selva_send_errorf(resp, err, "Failed to write an SDB dump");
-        return;
-    }
+    if (argc) {
+        /*
+         * Try to start from the save point provided by the replica and
+         * do a partial sync.
+         */
+        err = replication_origin_register_replica(stream_resp, sdb_eid, sdb_hash, REPLICATION_SYNC_MODE_PARTIAL);
+    } else {
+        /*
+         * Start from whatever dump we know and do a full sync.
+         */
+        err = ensure_sdb();
+        if (err) {
+            selva_cancel_stream(resp, stream_resp);
+            selva_send_errorf(resp, err, "Failed to write an SDB dump");
+            return;
+        }
 
-    /* TODO Try to use an offset id provided by the replica. */
-    err = replication_origin_register_replica(stream_resp, replication_origin_get_last_sdb_eid());
+        err = replication_origin_register_replica(stream_resp, replication_origin_get_last_sdb_eid(), last_sdb_hash, REPLICATION_SYNC_MODE_FULL);
+    }
     if (err) {
         selva_cancel_stream(resp, stream_resp);
         selva_send_errorf(resp, err, "Failed to register the replica");
@@ -244,6 +271,7 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
     selva_send_ll(resp, 1);
 }
 
+/* FIXME Crassh if mode == none */
 static void replicainfo(struct selva_server_response_out *resp, const void *buf __unused, size_t size)
 {
 #if 0
@@ -256,14 +284,16 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
         return;
     }
 
-    selva_send_array(resp, 3);
+    selva_send_array(resp, 4);
 
     /*
      * - mode
      * - sdb_hash
+     * - sdb_eid
      * - cmd_eid
      */
     selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
+    selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
     switch (replication_mode) {
     case REPLICATION_MODE_NONE:
         selva_send_null(resp);
@@ -316,6 +346,7 @@ __constructor void init(void)
         }
         break;
     case REPLICATION_MODE_REPLICA:
+        replication_replica_init();
         if (auto_save_interval) {
             SELVA_LOG(SELVA_LOGL_CRIT, "The replication mode \"%s\" and \"AUTO_SAVE_INTERVAL\" are mutually exclusive", replication_mode_str[replication_mode]);
             exit(EXIT_FAILURE);

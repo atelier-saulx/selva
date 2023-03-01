@@ -97,6 +97,14 @@ __constructor void init(void)
         }
     }
 
+
+    err = dump_load_default_sdb();
+    if (err) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load the default dump: %s",
+                  selva_strerror(err));
+        exit(EXIT_FAILURE);
+    }
+
     if (selva_glob_config.auto_save_interval > 0 &&
         dump_auto_sdb(selva_glob_config.auto_save_interval)) {
         exit(EXIT_FAILURE);

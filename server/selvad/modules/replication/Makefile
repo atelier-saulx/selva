@@ -3,6 +3,7 @@
 
 OBJ := \
 	   main.o \
+	   eid.o \
 	   origin/replica_thread.o \
 	   origin/replication.o \
 	   origin/ring_buffer.o \

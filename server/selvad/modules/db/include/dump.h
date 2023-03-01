@@ -6,8 +6,10 @@
 
 struct selva_string;
 
+int dump_load_default_sdb(void);
+
 /**
- * Enable automatic SDB loading and saving.
+ * Enable automatic SDB saving.
  * Load the last good SDB on startup and autosave on interval.
  * This function can be only called once.
  * @param interval_s [sec] must be > 0.

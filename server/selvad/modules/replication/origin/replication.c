@@ -4,6 +4,7 @@
  */
 #define _GNU_SOURCE
 #include <assert.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stddef.h>
@@ -11,12 +12,13 @@
 #include <string.h>
 #include "jemalloc.h"
 #include "util/selva_string.h"
-#include "util/timestamp.h"
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_replication.h"
 #include "selva_server.h"
 #include "../selva_thread.h"
+#include "../eid.h"
+#include "../sync_mode.h"
 #include "ring_buffer.h"
 #include "replica.h"
 #include "replication.h"
@@ -58,13 +60,13 @@ static void insert(ring_buffer_eid_t eid, int8_t cmd, void *p, size_t p_size) {
 void replication_origin_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
 {
     struct sdb *sdb = selva_malloc(sizeof(struct sdb));
-    uint64_t sdb_eid = ts_now() | EID_MSB_MASK; /* We assume there were no Selva DBs before 1970s. */
+    uint64_t sdb_eid = replication_new_origin_eid(filename);
 
     /* RFE Do we really need to dup here? */
     sdb->filename = selva_string_dup(filename, 0);
     memcpy(sdb->hash, sdb_hash, SELVA_IO_HASH_SIZE);
 
-    SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%lx)", selva_string_to_str(filename, NULL), sdb_eid);
+    SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", selva_string_to_str(filename, NULL), sdb_eid);
 
     insert(sdb_eid, 0, sdb, sizeof(*sdb));
     origin_state.last_sdb_eid = sdb_eid;
@@ -141,7 +143,11 @@ static void drop_replicas(unsigned replicas)
     }
 }
 
-int replication_origin_register_replica(struct selva_server_response_out *resp, uint64_t start_eid)
+int replication_origin_register_replica(
+        struct selva_server_response_out *resp,
+        uint64_t start_eid,
+        const uint8_t start_sdb_hash[SELVA_IO_HASH_SIZE],
+        enum replication_sync_mode mode)
 {
     struct replica *replica;
 
@@ -150,7 +156,9 @@ int replication_origin_register_replica(struct selva_server_response_out *resp, 
         return SELVA_ENOBUFS;
     }
 
-    replica->start_eid = start_eid ?: origin_state.last_sdb_eid;
+    replica->start_eid = start_eid;
+    memcpy(replica->start_sdb_hash, start_sdb_hash, SELVA_IO_HASH_SIZE);
+    replica->sync_mode = mode;
     ring_buffer_add_reader(&origin_state.rb, replica->id);
     pthread_create(&replica->thread.pthread, NULL, replication_thread, replica);
 

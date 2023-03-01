@@ -8,6 +8,7 @@
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include "module.h"
 #include "util/selva_string.h"
 #include "selva_error.h"
@@ -15,6 +16,7 @@
 #include "selva_server.h"
 #include "selva_replication.h"
 #include "../selva_thread.h"
+#include "../sync_mode.h"
 #include "ring_buffer.h"
 #include "replica.h"
 
@@ -29,8 +31,14 @@ static void log_exit(struct selva_server_response_out *resp)
 
 /**
  * Send the initial dump to the replica.
+ * @param no_send can be set to indicate that the replica is already running on this sdb and it doesn't need to be sent again.
  */
-static int sync_dump(struct selva_server_response_out *resp, struct ring_buffer *rb, struct ring_buffer_reader_state *state)
+static int sync_dump(
+        struct selva_server_response_out *resp,
+        struct ring_buffer *rb,
+        struct ring_buffer_reader_state *state,
+        const uint8_t expected_sdb_hash[SELVA_IO_HASH_SIZE],
+        enum replication_sync_mode sync_mode)
 {
     struct ring_buffer_element *e;
     struct sdb *sdb;
@@ -46,10 +54,20 @@ static int sync_dump(struct selva_server_response_out *resp, struct ring_buffer 
     assert(e->data_size == sizeof(struct sdb));
     sdb = (struct sdb *)e->data;
 
-    err = selva_send_replication_sdb(resp, e->id, selva_string_to_str(sdb->filename, NULL));
-    if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to sync replica's initial state: %s", selva_strerror(err));
+    if (memcmp(sdb->hash, expected_sdb_hash, SELVA_IO_HASH_SIZE)) {
+        err = SELVA_ENOENT;
         goto fail;
+    }
+
+    if (sync_mode == REPLICATION_SYNC_MODE_FULL) {
+        SELVA_LOG(SELVA_LOGL_INFO, "Full sync");
+        err = selva_send_replication_sdb(resp, e->id, selva_string_to_str(sdb->filename, NULL));
+        if (err) {
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to sync replica's initial state: %s", selva_strerror(err));
+            goto fail;
+        }
+    } else {
+        SELVA_LOG(SELVA_LOGL_INFO, "Partial sync");
     }
 
     err = 0;
@@ -66,12 +84,15 @@ void *replication_thread(void *arg)
     struct ring_buffer_reader_state state;
     struct ring_buffer_element *e;
 
+    SELVA_LOG(SELVA_LOGL_INFO, "Thread started");
+
     /*
      * RFE It would be better to be able to retry with another sdb eid instead
      * of letting the replica die but currently there is no easy way to do it.
      */
     if (ring_buffer_init_state(&state, rb, replica->start_eid, replica->id)) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to initialize a ring_buffer_reader_state");
+        selva_send_errorf(resp, SELVA_ENOENT, "Initial state mismatch");
         goto out;
     }
 
@@ -80,7 +101,7 @@ void *replication_thread(void *arg)
     selva_thread_set_self_core(replica->core_id);
 #endif
 
-    if (sync_dump(resp, rb, &state)) {
+    if (sync_dump(resp, rb, &state, replica->start_sdb_hash, replica->sync_mode)) {
         goto out;
     }
 
