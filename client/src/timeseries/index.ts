@@ -1,5 +1,5 @@
 import { QueryResult } from 'pg'
-import BQConnection from '../connection/pg'
+import BQConnection, { getTableName } from '../connection/pg'
 
 import { FieldSchema } from '../schema/types'
 import { convertNow, isFork } from '@saulx/selva-query-ast-parser'
@@ -39,7 +39,7 @@ export const SELVA_TO_SQL_TYPE = {
   phone: 'STRING',
   geo: 'JSON',
   type: 'STRING',
-  timestamp: 'TIMESTAMP',
+  timestamp: 'INT64',
   reference: 'STRING',
   references: 'JSON',
   object: 'JSON',
@@ -49,7 +49,8 @@ export const SELVA_TO_SQL_TYPE = {
 
 const DEFAULT_QUERY_LIMIT = 500
 
-const sq = squel.useFlavour('postgres')
+// const sq = squel.useFlavour('postgres')
+const sq = squel
 
 function filterToExpr(
   exprCtx: TimeseriesContext,
@@ -73,7 +74,7 @@ function filterToExpr(
       }
     }
 
-    return sq.expr().and(`"ts" ${filter.$operator} to_timestamp(${v} / 1000.0)`)
+    return sq.expr().and(`ts ${filter.$operator} TIMESTAMP_MILLIS(${v})`)
   }
 
   const isObj = ['object', 'record'].includes(fieldSchema.type)
@@ -86,31 +87,44 @@ function filterToExpr(
   if (Array.isArray(filter.$value)) {
     let expr = sq.expr()
     for (const v of filter.$value) {
-      if (isObj) {
-        const split = f.split('.')
-        const col = split[0]
-        const path = split.slice(1).map((x) => `'${x}'::text`)
-        const eStr = `jsonb_extract_path_text(${col}::jsonb, ${path.join(
-          ', '
-        )})`
+      // if (isObj) {
+      //   const split = f.split('.')
+      //   const col = split[0]
+      //   const path = split.slice(1).map((x) => `'${x}'::text`)
+      //   const eStr = `jsonb_extract_path_text(${col}::jsonb, ${path.join(
+      //     ', '
+      //   )})`
+      //   expr = expr.or(`${eStr} ${filter.$operator} ?`, v)
+      // } else {
+      //   expr = expr.or(`"${f}" ${filter.$operator} ?`, v)
+      // }
 
-        expr = expr.or(`${eStr} ${filter.$operator} ?`, v)
+      if (isObj) {
+        expr = expr.or(`JSON_VALUE(${f}) ${filter.$operator} ?`, v)
       } else {
-        expr = expr.or(`"${f}" ${filter.$operator} ?`, v)
+        expr = expr.or(`${f} ${filter.$operator} ?`, v)
       }
     }
 
     return expr
   } else {
-    if (isObj) {
-      const split = f.split('.')
-      const col = split[0]
-      const path = split.slice(1).map((x) => `'${x}'::text`)
-      const eStr = `jsonb_extract_path_text(${col}::jsonb, ${path.join(', ')})`
+    // if (isObj) {
+    //   const split = f.split('.')
+    //   const col = split[0]
+    //   const path = split.slice(1).map((x) => `'${x}'::text`)
+    //   const eStr = `jsonb_extract_path_text(${col}::jsonb, ${path.join(', ')})`
 
-      return sq.expr().and(`${eStr} ${filter.$operator} ?`, filter.$value)
+    //   return sq.expr().and(`${eStr} ${filter.$operator} ?`, filter.$value)
+    // } else {
+    //   return sq.expr().and(`"${f}" ${filter.$operator} ?`, filter.$value)
+    // }
+
+    if (isObj) {
+      return sq
+        .expr()
+        .and(`JSON_VALUE(${f}) ${filter.$operator} ?`, filter.$value)
     } else {
-      return sq.expr().and(`"${f}" ${filter.$operator} ?`, filter.$value)
+      return sq.expr().and(`${f} ${filter.$operator} ?`, filter.$value)
     }
   }
 }
@@ -215,16 +229,18 @@ async function execTimeseries(
 
   let sql = sq
     .select({
-      autoQuoteTableNames: true,
-      autoQuoteAliasNames: true,
-      nameQuoteCharacter: '"',
+      // autoQuoteTableNames: true,
+      // autoQuoteAliasNames: true,
+      // nameQuoteCharacter: '"',
+      autoQuoteTableNames: false,
+      autoQuoteAliasNames: false,
+      autoQuoteFieldNames: false,
     })
-    .from(`${nodeType}$${op.sourceField}`)
+    .from(`selva_timeseries.${getTableName(tsCtx)}`)
     .field('ts', '_ts')
-    .where('"nodeId" = ?', op.id)
+    .where('nodeId = ?', op.id)
     .where(queryOptions.where)
     .limit(queryOptions.limit <= 0 ? null : queryOptions.limit)
-    .offset(queryOptions.offset <= 0 ? null : queryOptions.offset)
 
   let isObj = false
   if (
@@ -233,10 +249,11 @@ async function execTimeseries(
   ) {
     isObj = true
     for (const f of tsCtx.selectFields) {
-      const split = f.split('.')
-      const path = split.map((x) => `'${x}'::text`)
-      const eStr = `jsonb_extract_path_text(payload::jsonb, ${path.join(', ')})`
-      sql = sql.field(eStr, f)
+      //   const split = f.split('.')
+      //   const path = split.map((x) => `'${x}'::text`)
+      //   const eStr = `jsonb_extract_path_text(payload::jsonb, ${path.join(', ')})`
+      //   sql = sql.field(eStr, f)
+      sql.field(`payload.${f}`, f)
     }
   } else {
     sql = sql.field('payload', 'value')
@@ -244,8 +261,8 @@ async function execTimeseries(
 
   sql = sql.order('ts', tsCtx.order === 'asc')
 
-  const params = sql.toParam({ numberedParametersStartAt: 1 })
-  // console.log('SQL', params, 'tsCtx', tsCtx)
+  const params = sql.toParam()
+  console.log('SQL', params, 'tsCtx', tsCtx)
 
   const result: any[] = await client.pg.pg.execute(params.text, params.values)
   return result
@@ -289,8 +306,6 @@ export class TimeseriesClient {
   }
 
   async ensureTableExists(context: TimeseriesContext): Promise<void> {
-    const tsName = `${context.nodeType}$${context.field}`
-
     const bqSchema = [
       { name: 'nodeId', type: 'STRING', mode: 'REQUIRED' },
       { name: 'payload', type: SELVA_TO_SQL_TYPE[context.fieldSchema.type] },
@@ -298,9 +313,10 @@ export class TimeseriesClient {
       { name: 'fieldSchema', type: 'JSON', mode: 'REQUIRED' },
     ]
 
-    await this.pg.createTable(tsName, {
+    await this.pg.createTable(context, {
       schema: bqSchema,
-      location: 'EU',
+      location: 'europe-west3',
+      timePartitioning: { type: 'DAY', field: 'ts' },
     })
   }
 
@@ -308,10 +324,18 @@ export class TimeseriesClient {
     tsCtx: TimeseriesContext,
     entry: { nodeId: string; ts: number; payload: any }
   ): Promise<any[]> {
-    const tableName = `${tsCtx.nodeType}$${tsCtx.field}`
-
-    const { nodeId, ts, payload } = entry
-    return this.pg.insert(tableName, [entry])
+    try {
+      await this.ensureTableExists(tsCtx)
+    } catch (e) {
+      // console.error(e)
+    }
+    try {
+      const res = await this.pg.insert(tsCtx, [entry])
+      return res
+    } catch (e) {
+      console.error(e, JSON.stringify(e))
+      throw e
+    }
   }
 
   public async select<T>(
