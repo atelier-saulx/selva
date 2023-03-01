@@ -297,6 +297,14 @@ int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, u
  */
 int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize, struct selva_string ***out);
 
+/**
+ * Parse selva proto buffer in scanf-style.
+ * Format specifier: `%[width][length]specifier`
+ * - `{` and `}` marks an array and `,` advances the buffer index
+ * - Supported specifiers: i, d, u, f, c, s
+ * - Length specifiers: hh, h, l, ll, j, z, t, L
+ * - Using width specifier with `%s` changes output from `selva_string` to `char` buffer
+ */
 int selva_proto_scanf(struct finalizer * restrict fin, const void *restrict buf, size_t szbuf, const char * restrict fmt, ...) __attribute__((format(scanf, 4, 5)));
 
 /**
