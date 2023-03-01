@@ -38,7 +38,7 @@ export class TimeseriesWorker {
         const { type, context } = obj
 
         if (type === 'insert') {
-          await this.client.pg.insert<void>(context, context)
+          await this.client.pg.insert(context, context)
         } else {
           console.error(`Unknown schema event ${type} for ${row}`)
         }

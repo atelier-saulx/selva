@@ -1,60 +1,38 @@
-import { PG } from './client'
-import { QueryResult } from 'pg'
+import { BigQuery, TableMetadata } from '@google-cloud/bigquery'
 
-type PGGlobalOpts = { user: string; password: string }
-type PGSelector = string | { host: string; port: number }
+class BQConnection {
+  private client: BigQuery
 
-function selectorToId(selector: PGSelector): string {
-  if (typeof selector === 'object') {
-    const { host, port } = selector
-    return `${host}:${port}`
-  }
+  constructor() {
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      console.warn(
+        'GOOGLE_APPLICATION_CREDENTIALS must be set as an env variable'
+      )
 
-  return selector
-}
-
-// TODO: add cleanup based on this.lastUsed
-
-class PGConnection {
-  private opts: PGGlobalOpts
-  private lastUsed: {
-    [id: string]: number
-  }
-
-  private clients: {
-    [id: string]: PG
-  }
-
-  constructor(opts: PGGlobalOpts) {
-    this.opts = opts
-    this.clients = {}
-    this.lastUsed = {}
-  }
-
-  public getClient(selector: PGSelector) {
-    const id = selectorToId(selector)
-
-    if (!this.clients[id]) {
-      const connectionString = `postgres://${this.opts.user}:${this.opts.password}@${id}`
-      this.clients[id] = new PG({
-        id,
-        connectionString,
-      })
+      return
     }
 
-    this.lastUsed[id] = Date.now()
-    return this.clients[id]
+    this.client = new BigQuery()
   }
 
-  public async execute<T>(
-    selector: PGSelector,
-    query: string,
-    params: unknown[]
-  ): Promise<QueryResult<T>> {
-    // console.log('SQL', query, params)
-    const client = this.getClient(selector)
-    return client.execute(query, params)
+  public async execute(query: string, params: unknown[]): Promise<any[]> {
+    console.log('SQL', query, params)
+
+    const [job] = await this.client.createQueryJob({ query })
+    const [rows] = await job.getQueryResults()
+
+    return rows
+  }
+
+  public async insert(tableName: string, data: any[]) {
+    return this.client.dataset('selva_timeseries').table(tableName).insert(data)
+  }
+
+  public async createTable(tableName, schema: TableMetadata) {
+    return this.client
+      .dataset('selva_timeseries')
+      .createTable(tableName, schema)
   }
 }
 
-export default PGConnection
+export default BQConnection
