@@ -706,7 +706,7 @@ test.serial('basic id based reference subscriptions', async (t) => {
   await client.destroy()
 })
 
-test.serial('subscribe with timeout right away', async (t) => {
+test.serial('subscribe with timeout right away record', async (t) => {
   const client = connect({ port: port })
 
   await client.updateSchema({
@@ -757,9 +757,8 @@ test.serial('subscribe with timeout right away', async (t) => {
       },
     })
     .subscribe((data) => {
-      console.log(data)
-      // if (data.name && !data.lol) t.is(data.name, 'derp')
-      // if (data.name && data.lol) t.is(data.lol, 'haha')
+      if (data.name && !data.lol) t.is(data.name, 'derp')
+      if (data.name && data.lol) t.is(data.lol, 'haha')
     })
 
   await wait(200)
