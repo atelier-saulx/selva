@@ -30,22 +30,48 @@
 #include "replication.h"
 
 struct replica_state {
+    /**
+     * Receive a new frame.
+     * Set if the state machine should receive a new frame on the next cycle.
+     */
     int recv_next_frame;
+
+    /**
+     * Replication state machine state.
+     *
+     * Legal state flows:
+     * Receiving an SDB dump:
+     * 1.   REPL_PROTO_STATE_PARSE_REPLICATION_HEADER
+     * 2.   REPL_PROTO_STATE_RECEIVING_SDB_HEADER
+     * 3.   REPL_PROTO_STATE_RECEIVING_SDB
+     * n.   REPL_PROTO_STATE_EXEC_SDB
+     * n+1. REPL_PROTO_STATE_FIN
+     *
+     * Receiving a command:
+     * 1.   REPL_PROTO_STATE_PARSE_REPLICATION_HEADER
+     * 2.   REPL_PROTO_STATE_RECEIVING_CMD
+     * n.   REPL_PROTO_STATE_EXEC_CMD
+     * n+1. REPL_PROTO_STATE_FIN
+     *
+     * REPL_PROTO_STATE_ERR can be the next state of any other state except
+     * REPL_PROTO_STATE_FIN.
+     * REPL_PROTO_STATE_FIN is the only final state of the state machine.
+     */
     enum repl_proto_state {
         REPL_PROTO_STATE_PARSE_REPLICATION_HEADER,
         REPL_PROTO_STATE_RECEIVING_CMD, /*!< Receiving more frames for the replicated command. */
         REPL_PROTO_STATE_RECEIVING_SDB_HEADER,
-        REPL_PROTO_STATE_RECEIVING_SDB,
-        REPL_PROTO_STATE_EXEC_CMD,
-        REPL_PROTO_STATE_EXEC_SDB,
-        REPL_PROTO_STATE_ERR,
-        REPL_PROTO_STATE_FIN,
+        REPL_PROTO_STATE_RECEIVING_SDB, /*!< Receiving more chucks for an SDB dump. */
+        REPL_PROTO_STATE_EXEC_CMD, /*!< Execute the received command. */
+        REPL_PROTO_STATE_EXEC_SDB, /*!< Load the received SDB dump. */
+        REPL_PROTO_STATE_ERR, /*!< An error occurred. The replication terminates (after FIN). */
+        REPL_PROTO_STATE_FIN, /*!< Final state of receiving and replicating a message. */
     } state;
 
     /*
      * selva_proto frame handling.
      */
-    struct selva_proto_header cur_hdr;
+    struct selva_proto_header cur_hdr; /*!< Current header. */
     size_t cur_payload_size; /*! Size of the last received payload. */
 
     /*
@@ -53,14 +79,25 @@ struct replica_state {
      */
     union {
         struct {
-            int8_t cmd_id; /*!< Used if replicating a command. */
+            uint64_t incoming_cmd_eid; /*!< We are currently receiving this command. */
             size_t cmd_size; /*!< Size of the incoming command in bytes. */
+            int8_t cmd_id; /*!< Used if replicating a command. */
         };
         struct {
+            uint64_t incoming_sdb_eid; /*!< We are currently receiving this SDB. */
             size_t sdb_size; /*!< Size of the incoming SDB dump in bytes. */
             size_t sdb_received_bytes; /*!< Number of bytes already received. */
         };
     };
+
+    /*
+     * State used during receiving an SDB dump.
+     * States using this information:
+     * - REPL_PROTO_STATE_RECEIVING_SDB_HEADER,
+     * - REPL_PROTO_STATE_RECEIVING_SDB,
+     * - REPL_PROTO_STATE_EXEC_CMD,
+     * - REPL_PROTO_STATE_EXEC_SDB,
+     */
     char sdb_filename[sizeof("replica") + SDB_NAME_MIN_BUF_SIZE]; /*!< Filename. `replica-[TS].sdb` */
     FILE *sdb_file;
 
@@ -73,12 +110,17 @@ struct replica_state {
     struct sockaddr_in origin_addr;
     struct backoff_timeout backoff; /*!< Backoff state for reconn retries. */
 
-    uint64_t incoming_sdb_eid;
-    uint64_t incoming_cmd_eid;
+    /*
+     * Last complete transfers.
+     */
     uint64_t last_sdb_eid;
     uint64_t last_cmd_eid;
 
-    uint8_t last_sdb_hash[SELVA_IO_HASH_SIZE]; /*!< Last hash. Filled by replication_replica_new_sdb(); */
+    /**
+     * Last SDB hash.
+     * Filled by replication_replica_new_sdb();
+     */
+    uint8_t last_sdb_hash[SELVA_IO_HASH_SIZE];
 
     /*
      * Buffer for receiving data.
@@ -86,9 +128,25 @@ struct replica_state {
     _Alignas(uintptr_t) uint8_t msg_buf[1048576];
 };
 
-int partial_sync_fail;
+/**
+ * Here we store the current state of the replica replication protocol.
+ */
+static struct replica_state *replica_state;
 
-struct replica_state *replica_state;
+/**
+ * When `replicaof` command is executed on a replica, we send a `replicasync`
+ * command to the specified origin. At first we try to include the last good
+ * (loaded) SDB hash and sdb eid (if both are known) in the request payload.
+ * This is called a partial sync. If the origin recognizes the SDB then it
+ * will only send commands executed (changes made) after that (sync) point;
+ * If it doesn't recognize the SDB we have loaded then it will send the
+ * full db dump over the socket, which we'll save and load.
+ * This variable is used as a flag to mark that a partial sync has failed,
+ * which we know because the origin sent an error and reset the connection.
+ * Therefore, we know to send a full sync request on the next retry attempt,
+ * i.e. a `replicasync` command without the hash and eid.
+ */
+static int partial_sync_fail;
 
 extern void set_replica_stale(int s);
 static inline int restart_replication(struct replica_state *sv, struct timespec *t);
