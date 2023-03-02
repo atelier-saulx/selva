@@ -26,7 +26,7 @@
  * 1 = free.
  */
 static struct bitmap clients_map = BITMAP_INIT(SERVER_MAX_CLIENTS);
-static struct conn_ctx clients[SERVER_MAX_CLIENTS];
+static struct conn_ctx clients[SERVER_MAX_CLIENTS] __section("server_clients");
 
 struct conn_ctx *alloc_conn_ctx(void)
 {

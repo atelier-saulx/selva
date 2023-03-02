@@ -28,13 +28,7 @@
 
 static_assert(sizeof(ring_buffer_eid_t) >= sizeof(uint64_t));
 
-/**
- * Request replica reader threaders in the mask to stop and release their data.
- * This function will block until the threads exit.
- */
-static void drop_replicas(unsigned replicas);
-
-static struct origin_state {
+struct origin_state {
     /*!<
      * Id of the lastest sdb still in rb.
      * If this is zero then a new dump must be made before starting a
@@ -47,7 +41,15 @@ static struct origin_state {
     struct ring_buffer_element buffer[RING_BUFFER_SIZE];
 
     struct replica replicas[MAX_REPLICAS];
-} origin_state;
+};
+
+static struct origin_state origin_state __section("replication_state");
+
+/**
+ * Request replica reader threaders in the mask to stop and release their data.
+ * This function will block until the threads exit.
+ */
+static void drop_replicas(unsigned replicas);
 
 static void insert(ring_buffer_eid_t eid, int8_t cmd, void *p, size_t p_size) {
     unsigned not_replicated;
@@ -189,6 +191,8 @@ void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
 
 void replication_origin_init(void)
 {
+    memset(&origin_state, 0, sizeof(origin_state));
+
     for (unsigned i = 0; i < MAX_REPLICAS; i++) {
         struct replica *r = &origin_state.replicas[i];
 
