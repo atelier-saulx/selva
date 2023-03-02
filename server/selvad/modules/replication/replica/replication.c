@@ -131,7 +131,7 @@ struct replica_state {
 /**
  * Here we store the current state of the replica replication protocol.
  */
-static struct replica_state *replica_state;
+static struct replica_state sv __section("replication_state");
 
 /**
  * When `replicaof` command is executed on a replica, we send a `replicasync`
@@ -149,25 +149,25 @@ static struct replica_state *replica_state;
 static int partial_sync_fail;
 
 extern void set_replica_stale(int s);
-static inline int restart_replication(struct replica_state *sv, struct timespec *t);
+static inline int restart_replication(struct timespec *t);
 
-static void reinit_sv(struct replica_state *sv)
+static void reinit_sv(void)
 {
     /* Just clean the state variables and leave the origin_addr and buffer as is. */
-    memset(sv, 0, offsetof(struct replica_state, origin_addr));
+    memset(&sv, 0, offsetof(struct replica_state, origin_addr));
 
-    sv->recv_next_frame = 1;
-    sv->state = REPL_PROTO_STATE_PARSE_REPLICATION_HEADER;
+    sv.recv_next_frame = 1;
+    sv.state = REPL_PROTO_STATE_PARSE_REPLICATION_HEADER;
 }
 
 uint64_t replication_replica_get_last_sdb_eid(void)
 {
-    return replica_state->last_sdb_eid;
+    return sv.last_sdb_eid;
 }
 
 uint64_t replication_replica_get_last_cmd_eid(void)
 {
-    return replica_state->last_cmd_eid;
+    return sv.last_cmd_eid;
 }
 
 void replication_replica_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
@@ -175,11 +175,11 @@ void replication_replica_new_sdb(const struct selva_string *filename, const uint
     uint64_t sdb_eid = replication_new_replica_eid(filename);
 
     if (sdb_eid) {
-        replica_state->last_sdb_eid = sdb_eid;
-        replica_state->last_cmd_eid = 0;
-        memcpy(replica_state->last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
+        sv.last_sdb_eid = sdb_eid;
+        sv.last_cmd_eid = 0;
+        memcpy(sv.last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
 
-        SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%lx)", selva_string_to_str(filename, NULL), replica_state->last_sdb_eid);
+        SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%lx)", selva_string_to_str(filename, NULL), sv.last_sdb_eid);
     }
 }
 
@@ -216,8 +216,8 @@ static int send_sync_req(int sock)
     };
     static_assert(sizeof(buf) <= SELVA_PROTO_FRAME_SIZE_MAX);
 
-    memcpy(buf.sdb_hash, replica_state->last_sdb_hash, SELVA_IO_HASH_SIZE);
-    buf.sdb_eid.v = htole64(replica_state->last_sdb_eid);
+    memcpy(buf.sdb_hash, sv.last_sdb_hash, SELVA_IO_HASH_SIZE);
+    buf.sdb_eid.v = htole64(sv.last_sdb_eid);
     buf.hdr.chk = htole32(crc32c(0, &buf, sizeof(buf)));
 
     if (send(sock, &buf, sizeof(buf), 0) != (ssize_t)sizeof(buf)) {
@@ -268,13 +268,13 @@ static int recv_error(void) {
     }
 }
 
-static int recv_frame(struct replica_state *sv, int fd)
+static int recv_frame(int fd)
 {
     ssize_t recv_res;
 
 retry_hdr:
-    recv_res = recv(fd, &sv->cur_hdr, sizeof(sv->cur_hdr), 0);
-    if (recv_res != (ssize_t)sizeof(sv->cur_hdr)) {
+    recv_res = recv(fd, &sv.cur_hdr, sizeof(sv.cur_hdr), 0);
+    if (recv_res != (ssize_t)sizeof(sv.cur_hdr)) {
         int err = SELVA_PROTO_EBADF;
 
         if (recv_res == -1) {
@@ -288,21 +288,21 @@ retry_hdr:
         return err;
     }
 
-    if (!(sv->cur_hdr.flags & (SELVA_PROTO_HDR_FREQ_RES | SELVA_PROTO_HDR_STREAM))) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Unexpected frame flags: 0x%x", sv->cur_hdr.flags);
+    if (!(sv.cur_hdr.flags & (SELVA_PROTO_HDR_FREQ_RES | SELVA_PROTO_HDR_STREAM))) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Unexpected frame flags: 0x%x", sv.cur_hdr.flags);
         return SELVA_PROTO_EBADMSG;
-    } else if (sv->cur_hdr.cmd != CMD_REPLICASYNC_ID) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Unexpected command. received: %d expected: %d", sv->cur_hdr.cmd, CMD_REPLICASYNC_ID);
+    } else if (sv.cur_hdr.cmd != CMD_REPLICASYNC_ID) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Unexpected command. received: %d expected: %d", sv.cur_hdr.cmd, CMD_REPLICASYNC_ID);
         return SELVA_PROTO_EBADMSG;
     }
 
-    const size_t payload_size = le16toh(sv->cur_hdr.frame_bsize) - sizeof(sv->cur_hdr);
-    if (sv->msg_buf_i + payload_size > sizeof(sv->msg_buf)) {
+    const size_t payload_size = le16toh(sv.cur_hdr.frame_bsize) - sizeof(sv.cur_hdr);
+    if (sv.msg_buf_i + payload_size > sizeof(sv.msg_buf)) {
         SELVA_LOG(SELVA_LOGL_ERR, "Buffer overflow");
         return SELVA_PROTO_ENOBUFS;
     } else if (payload_size > 0) {
 retry_payload:
-        recv_res = recv(fd, sv->msg_buf + sv->msg_buf_i, payload_size, 0);
+        recv_res = recv(fd, sv.msg_buf + sv.msg_buf_i, payload_size, 0);
         if (recv_res != (ssize_t)payload_size) {
             int err = SELVA_PROTO_EBADF;
 
@@ -318,22 +318,22 @@ retry_payload:
         }
     }
 
-    sv->cur_payload_size = payload_size;
+    sv.cur_payload_size = payload_size;
 
-    if (!selva_proto_verify_frame_chk(&sv->cur_hdr, sv->msg_buf + sv->msg_buf_i, payload_size)) {
+    if (!selva_proto_verify_frame_chk(&sv.cur_hdr, sv.msg_buf + sv.msg_buf_i, payload_size)) {
         SELVA_LOG(SELVA_LOGL_ERR, "Frame checksum mismatch");
         return SELVA_PROTO_EBADMSG;
     }
 
-    sv->recv_next_frame = 0;
+    sv.recv_next_frame = 0;
     return 0;
 }
 
-static enum repl_proto_state parse_replication_header(struct replica_state *sv)
+static enum repl_proto_state parse_replication_header(void)
 {
-    struct selva_proto_control *ctrl = (struct selva_proto_control *)sv->msg_buf;
+    struct selva_proto_control *ctrl = (struct selva_proto_control *)sv.msg_buf;
 
-    if (sv->cur_payload_size < sizeof(*ctrl)) {
+    if (sv.cur_payload_size < sizeof(*ctrl)) {
         SELVA_LOG(SELVA_LOGL_ERR, "Invalid payload size");
         return REPL_PROTO_STATE_ERR;
     }
@@ -344,36 +344,36 @@ static enum repl_proto_state parse_replication_header(struct replica_state *sv)
          * located in the beginning of a frame, which we assume to be generally
          * true for a valid replication message. Currently we don't even end up
          * to this function in any other case nor ever after the initial frame
-         * of a message we are following in the stream using sv->state.
+         * of a message we are following in the stream using sv.state.
          */
-        sv->cur_payload_size -= sizeof(struct selva_proto_replication_cmd);
+        sv.cur_payload_size -= sizeof(struct selva_proto_replication_cmd);
         int err;
 
-        err = selva_proto_parse_replication_cmd(sv->msg_buf, sizeof(struct selva_proto_replication_cmd), 0, &sv->incoming_cmd_eid, &sv->cmd_id, &sv->cmd_size);
+        err = selva_proto_parse_replication_cmd(sv.msg_buf, sizeof(struct selva_proto_replication_cmd), 0, &sv.incoming_cmd_eid, &sv.cmd_id, &sv.cmd_size);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse the replication header: %s", selva_strerror(err));
             return REPL_PROTO_STATE_ERR;
         }
 
-        uint8_t *p = sv->msg_buf + sv->msg_buf_i;
-        memmove(p, p + sizeof(struct selva_proto_replication_cmd), sv->cur_payload_size);
+        uint8_t *p = sv.msg_buf + sv.msg_buf_i;
+        memmove(p, p + sizeof(struct selva_proto_replication_cmd), sv.cur_payload_size);
 
          return REPL_PROTO_STATE_RECEIVING_CMD;
     } else if (ctrl->type == SELVA_PROTO_REPLICATION_SDB) {
         uint64_t sdb_eid;
 
-        selva_proto_parse_replication_sdb(sv->msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sdb_eid, &sv->sdb_size);
-        sv->incoming_sdb_eid = sdb_eid;
-        sdb_name(sv->sdb_filename, sizeof(sv->sdb_filename), "replica", sdb_eid & ~EID_MSB_MASK);
+        selva_proto_parse_replication_sdb(sv.msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sdb_eid, &sv.sdb_size);
+        sv.incoming_sdb_eid = sdb_eid;
+        sdb_name(sv.sdb_filename, sizeof(sv.sdb_filename), "replica", sdb_eid & ~EID_MSB_MASK);
 
-        sv->recv_next_frame = 1;
+        sv.recv_next_frame = 1;
         return REPL_PROTO_STATE_RECEIVING_SDB_HEADER;
     } else if (ctrl->type == SELVA_PROTO_ERROR) {
         int err, origin_err;
         const char *msg_str;
         size_t msg_len;
 
-        err = selva_proto_parse_error(sv->msg_buf, sizeof(sv->msg_buf), 0, &origin_err, &msg_str, &msg_len);
+        err = selva_proto_parse_error(sv.msg_buf, sizeof(sv.msg_buf), 0, &origin_err, &msg_str, &msg_len);
         if (!err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Origin error: (%s) msg: \"%.*s\"", selva_strerror(origin_err), (int)msg_len, msg_str);
             if (origin_err == SELVA_ENOENT) {
@@ -390,12 +390,12 @@ static enum repl_proto_state parse_replication_header(struct replica_state *sv)
     return REPL_PROTO_STATE_ERR;
 }
 
-static enum repl_proto_state handle_recv_cmd(struct replica_state *sv)
+static enum repl_proto_state handle_recv_cmd(void)
 {
-    sv->msg_buf_i += sv->cur_payload_size;
+    sv.msg_buf_i += sv.cur_payload_size;
 
-    if (sv->cmd_size > sv->msg_buf_i) {
-        if (sv->cur_hdr.flags & SELVA_PROTO_HDR_FLAST && sv->msg_buf_i < sv->cmd_size) {
+    if (sv.cmd_size > sv.msg_buf_i) {
+        if (sv.cur_hdr.flags & SELVA_PROTO_HDR_FLAST && sv.msg_buf_i < sv.cmd_size) {
             /*
              * Replication command not fully read and the stream was terminated abruptly.
              */
@@ -404,36 +404,36 @@ static enum repl_proto_state handle_recv_cmd(struct replica_state *sv)
         }
 
         /* Still missing frame(s) for this command. */
-        sv->recv_next_frame = 1;
+        sv.recv_next_frame = 1;
         /* keep the state untouched */
     }
 
     return REPL_PROTO_STATE_EXEC_CMD;
 }
 
-static enum repl_proto_state handle_recv_sdb_header(struct replica_state *sv)
+static enum repl_proto_state handle_recv_sdb_header(void)
 {
-    if (sv->cur_hdr.msg_bsize != sv->sdb_size) {
-        SELVA_LOG(SELVA_LOGL_ERR, "SDB size mismatch: header: %zu act: %zu", (size_t)sv->cur_hdr.msg_bsize, sv->sdb_size);
+    if (sv.cur_hdr.msg_bsize != sv.sdb_size) {
+        SELVA_LOG(SELVA_LOGL_ERR, "SDB size mismatch: header: %zu act: %zu", (size_t)sv.cur_hdr.msg_bsize, sv.sdb_size);
         return REPL_PROTO_STATE_ERR;
     }
 
-    sv->sdb_file = fopen(sv->sdb_filename, "wb");
-    if (!sv->sdb_file) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to open a dump file for writing: \"%s\"", sv->sdb_filename);
+    sv.sdb_file = fopen(sv.sdb_filename, "wb");
+    if (!sv.sdb_file) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to open a dump file for writing: \"%s\"", sv.sdb_filename);
         return REPL_PROTO_STATE_ERR;
     }
 
     return REPL_PROTO_STATE_RECEIVING_SDB;
 }
 
-static enum repl_proto_state handle_recv_sdb(struct replica_state *sv, int fd)
+static enum repl_proto_state handle_recv_sdb(int fd)
 {
-    const size_t size = min(sv->sdb_size - sv->sdb_received_bytes, sizeof(sv->msg_buf));
+    const size_t size = min(sv.sdb_size - sv.sdb_received_bytes, sizeof(sv.msg_buf));
     ssize_t recv_res;
 
 retry:
-    recv_res = recv(fd, sv->msg_buf, size, 0);
+    recv_res = recv(fd, sv.msg_buf, size, 0);
     if (recv_res != (ssize_t)size) {
         if (recv_res == - 1) {
             if (!recv_error()) {
@@ -444,58 +444,57 @@ retry:
         return REPL_PROTO_STATE_ERR;
     }
 
-    (void)fwrite(sv->msg_buf, size, 1, sv->sdb_file);
-    sv->sdb_received_bytes += size;
+    (void)fwrite(sv.msg_buf, size, 1, sv.sdb_file);
+    sv.sdb_received_bytes += size;
 
-    assert(sv->sdb_received_bytes <= sv->sdb_size);
-    if (sv->sdb_received_bytes == sv->sdb_size) {
-        fclose(sv->sdb_file);
-        sv->sdb_file = NULL;
+    assert(sv.sdb_received_bytes <= sv.sdb_size);
+    if (sv.sdb_received_bytes == sv.sdb_size) {
+        fclose(sv.sdb_file);
+        sv.sdb_file = NULL;
         return REPL_PROTO_STATE_EXEC_SDB;
     } else {
         return REPL_PROTO_STATE_RECEIVING_SDB;
     }
 }
 
-static enum repl_proto_state handle_exec_sdb(struct replica_state *sv)
+static enum repl_proto_state handle_exec_sdb(void)
 {
-    const size_t filename_len = strnlen(sv->sdb_filename, sizeof(sv->sdb_filename));
+    const size_t filename_len = strnlen(sv.sdb_filename, sizeof(sv.sdb_filename));
     _Alignas(struct selva_proto_string) uint8_t buf[sizeof(struct selva_proto_string) + filename_len];
     struct selva_proto_string *ps = (struct selva_proto_string *)buf;
 
     memset(ps, 0, sizeof(*ps));
     ps->type = SELVA_PROTO_STRING;
     ps->bsize = filename_len;
-    memcpy(ps->data, sv->sdb_filename, filename_len);
+    memcpy(ps->data, sv.sdb_filename, filename_len);
 
     selva_server_run_cmd(CMD_LOAD_ID, buf, sizeof(buf));
 
     return REPL_PROTO_STATE_FIN;
 }
 
-static void on_data(struct event *event, void *arg)
+static void on_data(struct event *event, void *arg __unused)
 {
-    struct replica_state *sv = (struct replica_state *)arg;
     const int fd = event->fd;
 
     while (1) {
-        if (sv->recv_next_frame) {
+        if (sv.recv_next_frame) {
             int err;
 
-            err = recv_frame(sv, fd);
+            err = recv_frame(fd);
             if (err) {
-                sv->state = REPL_PROTO_STATE_ERR;
+                sv.state = REPL_PROTO_STATE_ERR;
                 goto state_err;
             }
         }
 
-        switch (sv->state) {
+        switch (sv.state) {
         case REPL_PROTO_STATE_PARSE_REPLICATION_HEADER:
-            sv->state = parse_replication_header(sv);
+            sv.state = parse_replication_header();
             continue;
         case REPL_PROTO_STATE_RECEIVING_CMD:
-            sv->state = handle_recv_cmd(sv);
-            if (sv->state == REPL_PROTO_STATE_RECEIVING_CMD) {
+            sv.state = handle_recv_cmd();
+            if (sv.state == REPL_PROTO_STATE_RECEIVING_CMD) {
                 /*
                  * Return for now to allow processing of other
                  * incoming connections.
@@ -504,11 +503,11 @@ static void on_data(struct event *event, void *arg)
             }
             continue;
         case REPL_PROTO_STATE_RECEIVING_SDB_HEADER:
-            sv->state = handle_recv_sdb_header(sv);
+            sv.state = handle_recv_sdb_header();
             continue;
         case REPL_PROTO_STATE_RECEIVING_SDB:
-            sv->state = handle_recv_sdb(sv, fd);
-            if (sv->state == REPL_PROTO_STATE_RECEIVING_SDB) {
+            sv.state = handle_recv_sdb(fd);
+            if (sv.state == REPL_PROTO_STATE_RECEIVING_SDB) {
                 /*
                  * Return for now to allow processing of other
                  * incoming connections.
@@ -517,26 +516,26 @@ static void on_data(struct event *event, void *arg)
             }
             continue;
         case REPL_PROTO_STATE_EXEC_CMD:
-            if (sv->msg_buf_i != sv->cmd_size) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Invalid replication payload size. received: %zu expected: %zu", sv->msg_buf_i, sv->cmd_size);
-                sv->state = REPL_PROTO_STATE_ERR;
+            if (sv.msg_buf_i != sv.cmd_size) {
+                SELVA_LOG(SELVA_LOGL_ERR, "Invalid replication payload size. received: %zu expected: %zu", sv.msg_buf_i, sv.cmd_size);
+                sv.state = REPL_PROTO_STATE_ERR;
                 continue;
             }
 
-            SELVA_LOG(SELVA_LOGL_INFO, "Replicating cmd: %d\n", sv->cmd_id);
-            selva_server_run_cmd(sv->cmd_id, sv->msg_buf, sv->cmd_size);
+            SELVA_LOG(SELVA_LOGL_INFO, "Replicating cmd: %d\n", sv.cmd_id);
+            selva_server_run_cmd(sv.cmd_id, sv.msg_buf, sv.cmd_size);
 
-            sv->last_cmd_eid = sv->incoming_cmd_eid;
-            sv->incoming_cmd_eid = 0;
-            sv->state = REPL_PROTO_STATE_FIN;
+            sv.last_cmd_eid = sv.incoming_cmd_eid;
+            sv.incoming_cmd_eid = 0;
+            sv.state = REPL_PROTO_STATE_FIN;
             continue;
         case REPL_PROTO_STATE_EXEC_SDB:
             /* FIXME what if load fails */
-            sv->state = handle_exec_sdb(sv);
-            if (sv->state == REPL_PROTO_STATE_FIN) {
-                sv->last_sdb_eid = sv->incoming_sdb_eid;
-                sv->last_cmd_eid = 0;
-                sv->incoming_sdb_eid = 0;
+            sv.state = handle_exec_sdb();
+            if (sv.state == REPL_PROTO_STATE_FIN) {
+                sv.last_sdb_eid = sv.incoming_sdb_eid;
+                sv.last_cmd_eid = 0;
+                sv.incoming_sdb_eid = 0;
             }
             continue;
 state_err:
@@ -545,19 +544,18 @@ state_err:
             evl_end_fd(fd);
             __attribute__((fallthrough));
         case REPL_PROTO_STATE_FIN:
-            if (sv->sdb_file) {
-                fclose(sv->sdb_file);
+            if (sv.sdb_file) {
+                fclose(sv.sdb_file);
             }
-            reinit_sv(sv);
+            reinit_sv();
             return;
         }
     }
 }
 
-static void on_close(struct event *event, void *arg)
+static void on_close(struct event *event, void *arg __unused)
 {
     const int fd = event->fd;
-    struct replica_state *sv = (struct replica_state *)arg;
     const int retry = 1;
 
     SELVA_LOG(SELVA_LOGL_WARN, "Replication has stopped due to connection reset");
@@ -569,8 +567,8 @@ static void on_close(struct event *event, void *arg)
         struct timespec t_retry;
         int err;
 
-        backoff_timeout_next(&sv->backoff, &t_retry);
-        err = restart_replication(sv, &t_retry);
+        backoff_timeout_next(&sv.backoff, &t_retry);
+        err = restart_replication(&t_retry);
         if (!err) {
             return;
         }
@@ -578,8 +576,6 @@ static void on_close(struct event *event, void *arg)
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to schedule a replication retry: %s", selva_strerror(err));
     }
 
-    replica_state = NULL;
-    selva_free(sv);
     exit(EXIT_FAILURE);
 }
 
@@ -608,18 +604,18 @@ static int connect_to_origin(struct sockaddr_in *origin_addr)
     return sock;
 }
 
-static int start_replication_handler(struct replica_state *sv)
+static int start_replication_handler(void)
 {
     int sock, err;
 
-    reinit_sv(sv);
+    reinit_sv();
 
-    sock = connect_to_origin(&sv->origin_addr);
+    sock = connect_to_origin(&sv.origin_addr);
     if (sock < 0) {
         return sock;
     }
 
-    if (replica_state->last_sdb_eid && !partial_sync_fail) {
+    if (sv.last_sdb_eid && !partial_sync_fail) {
         SELVA_LOG(SELVA_LOGL_INFO, "Partial sync req\n");
         err = send_sync_req(sock);
     } else {
@@ -628,7 +624,7 @@ static int start_replication_handler(struct replica_state *sv)
         partial_sync_fail = 0;
     }
     if (!err) {
-        err = evl_wait_fd(sock, on_data, NULL, on_close, sv);
+        err = evl_wait_fd(sock, on_data, NULL, on_close, NULL);
     }
     if (err) {
         shutdown(sock, SHUT_RDWR);
@@ -643,32 +639,31 @@ static inline double ts2sec(struct timespec *ts)
     return (double)ts->tv_sec + ts->tv_nsec / 1e9;
 }
 
-static void start_replication_trampoline(struct event *, void *arg)
+static void start_replication_trampoline(struct event *, void *arg __unused)
 {
-    struct replica_state *sv = (struct replica_state *)arg;
     int err;
 
-    err = start_replication_handler(sv);
+    err = start_replication_handler();
     if (err) {
         struct timespec t_retry;
 
-        backoff_timeout_next(&sv->backoff, &t_retry);
+        backoff_timeout_next(&sv.backoff, &t_retry);
 
         SELVA_LOG(SELVA_LOGL_WARN, "Connection to origin failed. Retrying in %.2F s", ts2sec(&t_retry));
 
         /* Retry again later. */
-        restart_replication(sv, &t_retry);
+        restart_replication(&t_retry);
     } else {
-        sv->backoff.attempt = 0;
+        sv.backoff.attempt = 0;
         set_replica_stale(0);
     }
 }
 
-static inline int restart_replication(struct replica_state *sv, struct timespec *t)
+static inline int restart_replication(struct timespec *t)
 {
     int tim;
 
-    tim = evl_set_timeout(t, start_replication_trampoline, sv);
+    tim = evl_set_timeout(t, start_replication_trampoline, NULL);
     if (tim < 0) {
         return tim;
     }
@@ -678,16 +673,15 @@ static inline int restart_replication(struct replica_state *sv, struct timespec 
 
 int replication_replica_start(struct sockaddr_in *origin_addr)
 {
-    struct replica_state *sv = replica_state;
-    memcpy(&sv->origin_addr, origin_addr, sizeof(sv->origin_addr));
-    sv->backoff = backoff_timeout_defaults;
-    backoff_timeout_init(&sv->backoff);
+    memcpy(&sv.origin_addr, origin_addr, sizeof(sv.origin_addr));
+    sv.backoff = backoff_timeout_defaults;
+    backoff_timeout_init(&sv.backoff);
     set_replica_stale(1);
 
-    return restart_replication(sv, &(struct timespec){0});
+    return restart_replication(&(struct timespec){0});
 }
 
 void replication_replica_init(void)
 {
-    replica_state = selva_calloc(1, sizeof(*replica_state));
+    memset(&sv, 0, sizeof(sv));
 }
