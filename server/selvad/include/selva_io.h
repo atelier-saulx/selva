@@ -30,6 +30,16 @@ enum selva_io_flags {
     SELVA_IO_FLAGS_COMPRESSED = 0x04, /* TODO */
 };
 
+#ifdef SELVA_IO_TYPE
+struct selva_io {
+    enum selva_io_flags flags;
+    struct selva_string *filename;
+    FILE *file;
+    sha3_context hash_c; /*!< Currently computed hash of the data. */
+    const uint8_t *computed_hash; /*!< Updated at the end of load/save. */
+};
+#endif
+
 #define SELVA_IO_FLAGS_MODE_MASK (SELVA_IO_FLAGS_READ | SELVA_IO_FLAGS_WRITE)
 
 /*
@@ -42,12 +52,12 @@ SELVA_IO_EXPORT(void, selva_io_get_ver, struct SelvaDbVersionInfo *nfo);
 /**
  * Open the last good SDB for reading.
  */
-SELVA_IO_EXPORT(int, selva_io_open_last_good, struct selva_io **io_out);
+SELVA_IO_EXPORT(int, selva_io_open_last_good, struct selva_io *io);
 
 /**
  * Start a new IO operation.
  */
-SELVA_IO_EXPORT(int, selva_io_new, const char *filename, enum selva_io_flags flags, struct selva_io **io_out);
+SELVA_IO_EXPORT(int, selva_io_init, struct selva_io *io, const char *filename, enum selva_io_flags flags);
 
 /**
  * End the IO operation.
@@ -71,7 +81,7 @@ SELVA_IO_EXPORT(struct selva_string *, selva_io_load_string, struct selva_io *io
 #define _import_selva_io(apply) \
     apply(selva_io_get_ver) \
     apply(selva_io_open_last_good) \
-    apply(selva_io_new) \
+    apply(selva_io_init) \
     apply(selva_io_end) \
     apply(selva_io_save_unsigned) \
     apply(selva_io_save_signed) \

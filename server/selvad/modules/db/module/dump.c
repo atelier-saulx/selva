@@ -2,15 +2,18 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#define SELVA_IO_TYPE
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include "util/finalizer.h"
 #include "util/sdb_name.h"
 #include "util/selva_string.h"
 #include "util/timestamp.h"
+#include "sha3iuf/sha3.h"
 #include "event_loop.h"
 #include "selva_error.h"
 #include "selva_io.h"
@@ -46,16 +49,16 @@ static int dump_load(struct selva_io *io)
 static int dump_save(const char *filename)
 {
     const enum selva_io_flags flags = SELVA_IO_FLAGS_WRITE;
-    struct selva_io *io;
+    struct selva_io io;
     int err;
 
-    err = selva_io_new(filename, flags, &io);
+    err = selva_io_init(&io, filename, flags);
     if (err) {
         return err;
     }
 
-    Hierarchy_RDBSave(io, main_hierarchy);
-    selva_io_end(io);
+    Hierarchy_RDBSave(&io, main_hierarchy);
+    selva_io_end(&io);
 
     return 0;
 }
@@ -88,7 +91,7 @@ static void auto_save(struct event *, void *arg)
 
 int dump_load_default_sdb(void)
 {
-    struct selva_io *io;
+    struct selva_io io;
     int err;
 
     err = selva_io_open_last_good(&io);
@@ -99,7 +102,7 @@ int dump_load_default_sdb(void)
         return err;
     }
 
-    err = dump_load(io);
+    err = dump_load(&io);
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load the last good SDB: %s",
                   selva_strerror(err));
@@ -149,14 +152,15 @@ static void load_db_cmd(struct selva_server_response_out *resp, const void *buf,
     }
 
     const enum selva_io_flags flags = SELVA_IO_FLAGS_READ;
-    struct selva_io *io;
-    err = selva_io_new(selva_string_to_str(argv[ARGV_FILENAME], NULL), flags, &io);
+    struct selva_io io;
+
+    err = selva_io_init(&io, selva_string_to_str(argv[ARGV_FILENAME], NULL), flags);
     if (err) {
         selva_send_errorf(resp, SELVA_EGENERAL, "Failed to open the dump file");
         return;
     }
 
-    err = dump_load(io);
+    err = dump_load(&io);
     if (err) {
         if (err == SELVA_EGENERAL) {
             selva_send_errorf(resp, SELVA_EGENERAL, "Failed to load main_hierarchy");

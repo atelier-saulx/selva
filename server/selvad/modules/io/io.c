@@ -60,11 +60,8 @@ static void exit_read_error(struct selva_io *io, const char *type, const char *w
  * Create a new io structure for a file.
  * Note that flags must be validated before calling this function.
  */
-static struct selva_io *new_io(FILE *file, const char *filename, enum selva_io_flags flags)
+static void init_io(struct selva_io *io, FILE *file, const char *filename, enum selva_io_flags flags)
 {
-    struct selva_io *io;
-
-    io = selva_malloc(sizeof(*io));
     io->filename = selva_string_createf("%s", filename);
     io->file = file;
     io->flags = flags;
@@ -75,11 +72,9 @@ static struct selva_io *new_io(FILE *file, const char *filename, enum selva_io_f
     } else {
         sdb_read_header(io);
     }
-
-    return io;
 }
 
-int selva_io_open_last_good(struct selva_io **io_out)
+int selva_io_open_last_good(struct selva_io *io)
 {
     struct selva_string *filename;
     FILE *file;
@@ -103,12 +98,13 @@ int selva_io_open_last_good(struct selva_io **io_out)
         return SELVA_EGENERAL;
     }
 
-    *io_out = new_io(file, selva_string_to_str(filename, NULL), SELVA_IO_FLAGS_READ);
+    init_io(io, file, selva_string_to_str(filename, NULL), SELVA_IO_FLAGS_READ);
     selva_string_free(filename);
+
     return 0;
 }
 
-int selva_io_new(const char *filename, enum selva_io_flags flags, struct selva_io **io_out)
+int selva_io_init(struct selva_io *io, const char *filename, enum selva_io_flags flags)
 {
     const char *mode = (flags & SELVA_IO_FLAGS_WRITE) ? "wb" : "rb";
     FILE *file;
@@ -126,7 +122,8 @@ int selva_io_new(const char *filename, enum selva_io_flags flags, struct selva_i
         return SELVA_EGENERAL;
     }
 
-    *io_out = new_io(file, filename, flags);
+    init_io(io, file, filename, flags);
+
     return 0;
 }
 
@@ -163,7 +160,6 @@ void selva_io_end(struct selva_io *io)
     }
 
     selva_string_free(io->filename);
-    selva_free(io);
 }
 
 void selva_io_save_unsigned(struct selva_io *io, uint64_t value)
