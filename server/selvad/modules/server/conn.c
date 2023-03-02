@@ -8,6 +8,7 @@
 #include <stdatomic.h>
 #include <string.h>
 #include <unistd.h>
+#include "jemalloc.h"
 #include "util/bitmap.h"
 #include "util/net.h"
 #include "event_loop.h"
@@ -62,6 +63,7 @@ void free_conn_ctx(struct conn_ctx *ctx)
 
         close(ctx->fd);
         ctx->inuse = 0;
+        selva_free(ctx->recv_msg_buf);
         bitmap_set(&clients_map, i);
     } else {
         /* Wait for stream writers to terminate. */
@@ -76,6 +78,12 @@ void free_conn_ctx(struct conn_ctx *ctx)
 
         (void)evl_set_timeout(&t, retry_free_con_ctx, ctx);
     }
+}
+
+void realloc_ctx_msg_buf(struct conn_ctx *ctx, size_t new_size)
+{
+    ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, new_size);
+    ctx->recv_msg_buf_size = new_size;
 }
 
 struct selva_server_response_out *alloc_stream_resp(struct conn_ctx *ctx)

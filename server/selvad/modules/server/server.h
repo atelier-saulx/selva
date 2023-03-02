@@ -86,6 +86,8 @@ struct conn_ctx *alloc_conn_ctx(void);
  */
 void free_conn_ctx(struct conn_ctx *ctx);
 
+void realloc_ctx_msg_buf(struct conn_ctx *ctx, size_t new_size);
+
 /**
  * Allocate a stream_resp structure.
  * Note that it's the callers responsibility to initialize the returned struct.

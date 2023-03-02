@@ -5,7 +5,6 @@
 #include <arpa/inet.h>
 #include "util/net.h"
 #include "endian.h"
-#include "jemalloc.h"
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_proto.h"
@@ -78,8 +77,7 @@ int server_recv_message(struct conn_ctx *ctx)
         if (msg_bsize > SELVA_PROTO_MSG_SIZE_MAX) {
             return SELVA_PROTO_EBADMSG;
         } else if (ctx->recv_msg_buf_size < msg_bsize) {
-            ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, msg_bsize);
-            ctx->recv_msg_buf_size = msg_bsize;
+            realloc_ctx_msg_buf(ctx, msg_bsize);
         }
     } else if (ctx->recv_state == CONN_CTX_RECV_STATE_FRAGMENT) {
         if (seqno != ctx->cur_seqno) {

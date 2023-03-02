@@ -12,7 +12,6 @@
 #include "util/crc32c.h"
 #include "util/tcp.h"
 #include "endian.h"
-#include "jemalloc.h"
 #include "selva_error.h"
 #include "selva_proto.h"
 #include "selva_server.h"
@@ -293,10 +292,7 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
          * Resize the message buffer if necessary.
          */
         if (frame_payload_size > ctx->recv_msg_buf_size - ctx->recv_msg_buf_i) {
-            const size_t new_buf_size = ctx->recv_msg_buf_size + frame_payload_size;
-
-            ctx->recv_msg_buf = selva_realloc(ctx->recv_msg_buf, new_buf_size);
-            ctx->recv_msg_buf_size = new_buf_size;
+            realloc_ctx_msg_buf(ctx, ctx->recv_msg_buf_size + frame_payload_size);
         }
 
         r = tcp_read(fd, ctx->recv_msg_buf + ctx->recv_msg_buf_i, frame_payload_size);
