@@ -27,7 +27,6 @@ OBJ := \
 	   module/inherit/send_field.o \
 	   module/inherit/send_field_find.o \
 	   module/modify.o \
-	   module/myreadlink.o \
 	   module/resolve.o \
 	   module/rpn/rpn.o \
 	   module/rpn/rpn_eval.o \

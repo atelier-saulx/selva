@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include "util/finalizer.h"
 #include "util/sdb_name.h"
 #include "util/selva_string.h"
@@ -20,24 +19,15 @@
 #include "selva_onload.h"
 #include "selva_proto.h"
 #include "selva_server.h"
-#include "myreadlink.h"
 #include "hierarchy.h"
 #include "dump.h"
 
-static const char last_good_name[] = "dump.sdb";
 int selva_db_is_dirty;
 
-static int dump_load(const char *filename)
+static int dump_load(struct selva_io *io)
 {
-    const enum selva_io_flags flags = SELVA_IO_FLAGS_READ;
-    struct selva_io *io;
     struct SelvaHierarchy *tmp_hierarchy = main_hierarchy;
-    int err;
-
-    err = selva_io_new(filename, flags, &io);
-    if (err) {
-        return err;
-    }
+    int err = 0;
 
     main_hierarchy = Hierarchy_RDBLoad(io);
     if (main_hierarchy) {
@@ -66,12 +56,6 @@ static int dump_save(const char *filename)
 
     Hierarchy_RDBSave(io, main_hierarchy);
     selva_io_end(io);
-
-    (void)unlink(last_good_name);
-    if (symlink(filename, last_good_name) == -1) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to symlink the last good dump \"%s\" as \"%s\"",
-                  filename, last_good_name);
-    }
 
     return 0;
 }
@@ -104,26 +88,23 @@ static void auto_save(struct event *, void *arg)
 
 int dump_load_default_sdb(void)
 {
-    struct selva_string *filename;
+    struct selva_io *io;
     int err;
 
-    if (access(last_good_name, F_OK)) {
-        return SELVA_ENOENT;
+    err = selva_io_open_last_good(&io);
+    if (err == SELVA_ENOENT) {
+        return 0;
+    } else if (err) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to open the last good SDB");
+        return err;
     }
 
-    filename = myreadlink(last_good_name);
-    if (!filename) {
-        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to resolve the symlink: \"%s\"", last_good_name);
-        return SELVA_ENOENT;
-    }
-    err = dump_load(selva_string_to_str(filename, NULL));
+    err = dump_load(io);
     if (err) {
-        SELVA_LOG(SELVA_LOGL_CRIT, "SDB load failed: \"%s\" err: %s",
-                  last_good_name,
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load the last good SDB: %s",
                   selva_strerror(err));
         return err;
     }
-    selva_string_free(filename);
 
     return 0;
 }
@@ -167,7 +148,15 @@ static void load_db_cmd(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
-    err = dump_load(selva_string_to_str(argv[ARGV_FILENAME], NULL));
+    const enum selva_io_flags flags = SELVA_IO_FLAGS_READ;
+    struct selva_io *io;
+    err = selva_io_new(selva_string_to_str(argv[ARGV_FILENAME], NULL), flags, &io);
+    if (err) {
+        selva_send_errorf(resp, SELVA_EGENERAL, "Failed to open the dump file");
+        return;
+    }
+
+    err = dump_load(io);
     if (err) {
         if (err == SELVA_EGENERAL) {
             selva_send_errorf(resp, SELVA_EGENERAL, "Failed to load main_hierarchy");

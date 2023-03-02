@@ -360,7 +360,7 @@ static enum repl_proto_state handle_recv_sdb_header(struct replica_state *sv)
         return REPL_PROTO_STATE_ERR;
     }
 
-    sv->sdb_file = fopen(sv->sdb_filename, "wbx");
+    sv->sdb_file = fopen(sv->sdb_filename, "wb");
     if (!sv->sdb_file) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to open a dump file for writing: \"%s\"", sv->sdb_filename);
         return REPL_PROTO_STATE_ERR;

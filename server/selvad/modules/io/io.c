@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "endian.h"
 #include "jemalloc.h"
 #include "sha3iuf/sha3.h"
@@ -17,11 +18,14 @@
 #include "selva_proto.h"
 #include "selva_replication.h"
 #include "selva_io.h"
+#include "myreadlink.h"
 #include "sdb.h"
 
 #define READ_WHENCE_READ_HEADER "read header"
 #define READ_WHENCE_HEADER_TYPE "type"
 #define READ_WHENCE_VALUE       "read value"
+
+static const char last_good_name[] = "dump.sdb";
 
 /**
  * Test that the IO mode is set as expected.
@@ -52,26 +56,18 @@ static void exit_read_error(struct selva_io *io, const char *type, const char *w
     abort();
 }
 
-int selva_io_new(const char *filename, enum selva_io_flags flags, struct selva_io **io_out)
+/**
+ * Create a new io structure for a file.
+ * Note that flags must be validated before calling this function.
+ */
+static struct selva_io *new_io(FILE *file, const char *filename, enum selva_io_flags flags)
 {
-    const char *mode = (flags & SELVA_IO_FLAGS_WRITE) ? "wb" : "rb";
     struct selva_io *io;
 
-    if (!(!(flags & SELVA_IO_FLAGS_READ) ^ !(flags & SELVA_IO_FLAGS_WRITE))) {
-        return SELVA_EINVAL;
-    }
-
     io = selva_malloc(sizeof(*io));
+    io->filename = selva_string_createf("%s", filename);
+    io->file = file;
     io->flags = flags;
-    io->file = fopen(filename, mode);
-    if (!io->file) {
-        /*
-         * fopen() can fail for a dozen reasons, the best we can do is to tell
-         * the caller that we failed to open the file.
-         */
-        return SELVA_EGENERAL;
-    }
-
     sdb_init(io);
 
     if (flags & SELVA_IO_FLAGS_WRITE) {
@@ -80,9 +76,57 @@ int selva_io_new(const char *filename, enum selva_io_flags flags, struct selva_i
         sdb_read_header(io);
     }
 
-    io->filename = selva_string_createf("%s", filename);
+    return io;
+}
 
-    *io_out = io;
+int selva_io_open_last_good(struct selva_io **io_out)
+{
+    struct selva_string *filename;
+    FILE *file;
+
+    if (access(last_good_name, F_OK)) {
+        return SELVA_ENOENT;
+    }
+
+    filename = myreadlink(last_good_name);
+    if (!filename) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to resolve the symlink: \"%s\"", last_good_name);
+        return SELVA_ENOENT;
+    }
+
+    file = fopen(selva_string_to_str(filename, NULL), "rb");
+    if (!file) {
+        /*
+         * fopen() can fail for a dozen reasons, the best we can do is to tell
+         * the caller that we failed to open the file.
+         */
+        return SELVA_EGENERAL;
+    }
+
+    *io_out = new_io(file, selva_string_to_str(filename, NULL), SELVA_IO_FLAGS_READ);
+    selva_string_free(filename);
+    return 0;
+}
+
+int selva_io_new(const char *filename, enum selva_io_flags flags, struct selva_io **io_out)
+{
+    const char *mode = (flags & SELVA_IO_FLAGS_WRITE) ? "wb" : "rb";
+    FILE *file;
+
+    if (!(!(flags & SELVA_IO_FLAGS_READ) ^ !(flags & SELVA_IO_FLAGS_WRITE))) {
+        return SELVA_EINVAL;
+    }
+
+    file = fopen(filename, mode);
+    if (!file) {
+        /*
+         * fopen() can fail for a dozen reasons, the best we can do is to tell
+         * the caller that we failed to open the file.
+         */
+        return SELVA_EGENERAL;
+    }
+
+    *io_out = new_io(file, filename, flags);
     return 0;
 }
 
@@ -103,10 +147,21 @@ void selva_io_end(struct selva_io *io)
              */
             abort();
         }
+
     }
 
     selva_replication_new_sdb(io->filename, io->computed_hash);
     fclose(io->file);
+
+    /*
+     * Mark as last good.
+     */
+    (void)unlink(last_good_name);
+    if (symlink(selva_string_to_str(io->filename, NULL), last_good_name) == -1) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to symlink the last good dump \"%s\" as \"%s\"",
+                  selva_string_to_str(io->filename, NULL), last_good_name);
+    }
+
     selva_string_free(io->filename);
     selva_free(io);
 }

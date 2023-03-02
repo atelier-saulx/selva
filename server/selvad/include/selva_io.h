@@ -40,6 +40,11 @@ enum selva_io_flags {
 SELVA_IO_EXPORT(void, selva_io_get_ver, struct SelvaDbVersionInfo *nfo);
 
 /**
+ * Open the last good SDB for reading.
+ */
+SELVA_IO_EXPORT(int, selva_io_open_last_good, struct selva_io **io_out);
+
+/**
  * Start a new IO operation.
  */
 SELVA_IO_EXPORT(int, selva_io_new, const char *filename, enum selva_io_flags flags, struct selva_io **io_out);
@@ -65,6 +70,7 @@ SELVA_IO_EXPORT(struct selva_string *, selva_io_load_string, struct selva_io *io
 
 #define _import_selva_io(apply) \
     apply(selva_io_get_ver) \
+    apply(selva_io_open_last_good) \
     apply(selva_io_new) \
     apply(selva_io_end) \
     apply(selva_io_save_unsigned) \
