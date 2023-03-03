@@ -18,10 +18,9 @@
 #include "selva_server.h"
 #include "../selva_thread.h"
 #include "../eid.h"
-#include "../sync_mode.h"
 #include "ring_buffer.h"
+#include "../replication.h"
 #include "replica.h"
-#include "replication.h"
 
 #define RING_BUFFER_SIZE 100
 #define MAX_REPLICAS 32
@@ -59,14 +58,14 @@ static void insert(ring_buffer_eid_t eid, int8_t cmd, void *p, size_t p_size) {
     }
 }
 
-void replication_origin_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
+void replication_origin_new_sdb(const struct selva_string *filename)
 {
     struct sdb *sdb = selva_malloc(sizeof(struct sdb));
     uint64_t sdb_eid = replication_new_origin_eid(filename);
 
     /* RFE Do we really need to dup here? */
     sdb->filename = selva_string_dup(filename, 0);
-    memcpy(sdb->hash, sdb_hash, SELVA_IO_HASH_SIZE);
+    memcpy(sdb->hash, last_sdb_hash, SELVA_IO_HASH_SIZE);
 
     SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", selva_string_to_str(filename, NULL), sdb_eid);
 

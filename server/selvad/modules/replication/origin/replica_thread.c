@@ -16,8 +16,8 @@
 #include "selva_server.h"
 #include "selva_replication.h"
 #include "../selva_thread.h"
-#include "../sync_mode.h"
 #include "ring_buffer.h"
+#include "../replication.h"
 #include "replica.h"
 
 static void log_exit(struct selva_server_response_out *resp)

@@ -27,7 +27,7 @@
 #include "../../../commands.h"
 #include "../../../tunables.h"
 #include "../eid.h"
-#include "replication.h"
+#include "../replication.h"
 
 struct replica_state {
     /**
@@ -116,12 +116,6 @@ struct replica_state {
     uint64_t last_sdb_eid;
     uint64_t last_cmd_eid;
 
-    /**
-     * Last SDB hash.
-     * Filled by replication_replica_new_sdb();
-     */
-    uint8_t last_sdb_hash[SELVA_IO_HASH_SIZE];
-
     /*
      * Buffer for receiving data.
      */
@@ -170,14 +164,13 @@ uint64_t replication_replica_get_last_cmd_eid(void)
     return sv.last_cmd_eid;
 }
 
-void replication_replica_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
+void replication_replica_new_sdb(const struct selva_string *filename)
 {
     uint64_t sdb_eid = replication_new_replica_eid(filename);
 
     if (sdb_eid) {
         sv.last_sdb_eid = sdb_eid;
         sv.last_cmd_eid = 0;
-        memcpy(sv.last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
 
         SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%lx)", selva_string_to_str(filename, NULL), sv.last_sdb_eid);
     }
@@ -216,7 +209,7 @@ static int send_sync_req(int sock)
     };
     static_assert(sizeof(buf) <= SELVA_PROTO_FRAME_SIZE_MAX);
 
-    memcpy(buf.sdb_hash, sv.last_sdb_hash, SELVA_IO_HASH_SIZE);
+    memcpy(buf.sdb_hash, last_sdb_hash, SELVA_IO_HASH_SIZE);
     buf.sdb_eid.v = htole64(sv.last_sdb_eid);
     buf.hdr.chk = htole32(crc32c(0, &buf, sizeof(buf)));
 

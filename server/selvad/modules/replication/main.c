@@ -22,9 +22,7 @@
 #include "selva_log.h"
 #include "selva_server.h"
 #include "selva_replication.h"
-#include "sync_mode.h"
-#include "origin/replication.h"
-#include "replica/replication.h"
+#include "replication.h"
 
 enum replication_mode {
     REPLICATION_MODE_NONE = 0,
@@ -41,7 +39,7 @@ static const char replication_mode_str[4][2 * sizeof(size_t)] = {
     "REPLICA_STALE"
 };
 static int auto_save_interval;
-static uint8_t last_sdb_hash[SELVA_IO_HASH_SIZE];
+uint8_t last_sdb_hash[SELVA_IO_HASH_SIZE];
 
 static const struct config cfg_map[] = {
     { "SELVA_REPLICATION_MODE", CONFIG_INT, &replication_mode },
@@ -58,17 +56,17 @@ void selva_replication_new_sdb(const struct selva_string *filename, const uint8_
 {
     switch (replication_mode) {
     case REPLICATION_MODE_ORIGIN:
-        replication_origin_new_sdb(filename, sdb_hash);
+        memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
+        replication_origin_new_sdb(filename);
         break;
     case REPLICATION_MODE_REPLICA:
     case REPLICATION_MODE_REPLICA_STALE:
-        replication_replica_new_sdb(filename, sdb_hash);
+        memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
+        replication_replica_new_sdb(filename);
         break;
     default:
         /* NOP */
     }
-
-    memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
 }
 
 void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
@@ -271,7 +269,6 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
     selva_send_ll(resp, 1);
 }
 
-/* FIXME Crassh if mode == none */
 static void replicainfo(struct selva_server_response_out *resp, const void *buf __unused, size_t size)
 {
 #if 0
@@ -293,18 +290,20 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
      * - cmd_eid
      */
     selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
-    selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
     switch (replication_mode) {
     case REPLICATION_MODE_NONE:
         selva_send_null(resp);
         selva_send_null(resp);
+        selva_send_null(resp);
         break;
     case REPLICATION_MODE_ORIGIN:
+        selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
         selva_send_llx(resp, (long long)replication_origin_get_last_sdb_eid());
         selva_send_llx(resp, (long long)replication_origin_get_last_cmd_eid());
         break;
     case REPLICATION_MODE_REPLICA:
     case REPLICATION_MODE_REPLICA_STALE:
+        selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
         selva_send_llx(resp, (long long)replication_replica_get_last_sdb_eid());
         selva_send_llx(resp, (long long)replication_replica_get_last_cmd_eid());
         break;
