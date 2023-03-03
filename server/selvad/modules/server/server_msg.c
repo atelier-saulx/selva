@@ -16,8 +16,6 @@ int server_recv_message(struct conn_ctx *ctx)
      * TODO Currently we don't do frame reassembly for multiple simultaneous
      *      sequences and expect the client to only send one message sequence
      *      at time.
-     * TODO Some commands would possibly benefit from streaming support instead
-     *      of buffering the whole request.
      */
 
     if (ctx->recv_state == CONN_CTX_RECV_STATE_NEW) {
