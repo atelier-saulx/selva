@@ -331,8 +331,9 @@ export class TimeseriesClient {
     try {
       await this.ensureTableExists(tsCtx)
     } catch (e) {
-      // console.error(e)
+      // console.error('TABLE CREATION ERROR', e)
     }
+
     try {
       // const res = await this.pg.insert(tsCtx, [entry])
       const res = await this.pg.insertStream(tsCtx, [entry])

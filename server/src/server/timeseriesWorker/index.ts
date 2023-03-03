@@ -26,23 +26,39 @@ export class TimeseriesWorker {
 
   async tick() {
     try {
-      const row = await this.client.redis.rpop(
+      const rows = await this.client.redis.rpop(
         { type: 'timeseriesQueue' },
-        'timeseries_inserts'
+        'timeseries_inserts',
+        100
       )
-      if (row) {
-        const obj: {
-          type: string
-          context: TimeSeriesInsertContext
-        } = JSON.parse(row)
-        const { type, context } = obj
 
-        if (type === 'insert') {
-          await this.client.pg.insert(context, context)
-        } else {
-          console.error(`Unknown schema event ${type} for ${row}`)
+      const ops: Record<string, any[]> = {}
+      rows.forEach((row) => {
+        if (row) {
+          const obj: {
+            type: string
+            context: TimeSeriesInsertContext
+          } = JSON.parse(row)
+          const { type, context } = obj
+
+          if (type === 'insert') {
+            const k = context.nodeType + '|' + context.field
+            if (!ops[k]) {
+              ops[k] = []
+            }
+
+            ops[k].push(context)
+          } else {
+            console.error(`Unknown schema event ${type} for ${row}`)
+          }
         }
-      }
+      })
+
+      await Promise.all(
+        Object.entries(ops).map((_table, rows) => {
+          return this.client.pg.insert(rows[0], rows)
+        })
+      )
     } catch (e: any) {
       console.error(e)
       //nop
