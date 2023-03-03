@@ -39,7 +39,6 @@ int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_b
     int j = (rb->tail) % rb->len;
     for (size_t i = 0; i < rb->len; i++) {
         if (rb->buf[j].id == id) {
-            //atomic_fetch_and(&rb->buf[j].not_read, ~mask);
             atomic_fetch_or(&rb->buf[j].not_read, mask);
             new_index = j;
         } else if (new_index >= 0) {
