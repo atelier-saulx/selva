@@ -29,6 +29,8 @@
 #include "../eid.h"
 #include "../replication.h"
 
+/* FIXME state state needs to reimplemented. */
+
 struct replica_state {
     /**
      * Receive a new frame.
@@ -126,6 +128,9 @@ struct replica_state {
  * Here we store the current state of the replica replication protocol.
  */
 static struct replica_state sv __section("replication_state");
+
+int replication_running;
+int replication_sock;
 
 /**
  * When `replicaof` command is executed on a replica, we send a `replicasync`
@@ -549,27 +554,22 @@ state_err:
 static void on_close(struct event *event, void *arg __unused)
 {
     const int fd = event->fd;
-    const int retry = 1;
+    struct timespec t_retry;
+    int err;
+
+    (void)shutdown(fd, SHUT_RDWR);
+    close(fd);
+    replication_sock = 0;
 
     SELVA_LOG(SELVA_LOGL_WARN, "Replication has stopped due to connection reset");
     set_replica_stale(1);
 
-    (void)shutdown(fd, SHUT_RDWR);
-    close(fd);
-    if (retry) {
-        struct timespec t_retry;
-        int err;
-
-        backoff_timeout_next(&sv.backoff, &t_retry);
-        err = restart_replication(&t_retry);
-        if (!err) {
-            return;
-        }
-
+    backoff_timeout_next(&sv.backoff, &t_retry);
+    err = restart_replication(&t_retry);
+    if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to schedule a replication retry: %s", selva_strerror(err));
+        exit(EXIT_FAILURE);
     }
-
-    exit(EXIT_FAILURE);
 }
 
 /**
@@ -608,7 +608,7 @@ static int start_replication_handler(void)
         return sock;
     }
 
-    if (sv.last_sdb_eid && !partial_sync_fail) {
+    if (sv.last_sdb_eid && sv.last_cmd_eid == 0 && !partial_sync_fail) {
         SELVA_LOG(SELVA_LOGL_INFO, "Partial sync req\n");
         err = send_sync_req(sock);
     } else {
@@ -622,6 +622,8 @@ static int start_replication_handler(void)
     if (err) {
         shutdown(sock, SHUT_RDWR);
         close(sock);
+    } else {
+        replication_sock = sock;
     }
 
     return err;
@@ -671,7 +673,17 @@ int replication_replica_start(struct sockaddr_in *origin_addr)
     backoff_timeout_init(&sv.backoff);
     set_replica_stale(1);
 
-    return restart_replication(&(struct timespec){0});
+    if (replication_sock) {
+        SELVA_LOG(SELVA_LOGL_INFO, "Close old replication connection");
+        shutdown(replication_sock, SHUT_RDWR);
+    }
+
+    if (!replication_running) {
+        replication_running = 1;
+        return restart_replication(&(struct timespec){0});
+    }
+
+    return 0;
 }
 
 void replication_replica_init(void)

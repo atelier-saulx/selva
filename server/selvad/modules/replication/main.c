@@ -28,7 +28,6 @@ enum replication_mode {
     REPLICATION_MODE_NONE = 0,
     REPLICATION_MODE_ORIGIN,
     REPLICATION_MODE_REPLICA,
-    REPLICATION_MODE_REPLICA_STALE,
 };
 
 static enum replication_mode replication_mode = REPLICATION_MODE_NONE;
@@ -60,7 +59,6 @@ void selva_replication_new_sdb(const struct selva_string *filename, const uint8_
         replication_origin_new_sdb(filename);
         break;
     case REPLICATION_MODE_REPLICA:
-    case REPLICATION_MODE_REPLICA_STALE:
         memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
         replication_replica_new_sdb(filename);
         break;
@@ -82,7 +80,7 @@ void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
 
 void set_replica_stale(int s)
 {
-    replication_mode = REPLICATION_MODE_REPLICA + !!s;
+    //replication_mode = REPLICATION_MODE_REPLICA + !!s;
 }
 
 static void send_mode_error(struct selva_server_response_out *resp)
@@ -264,8 +262,6 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
         return;
     }
 
-    selva_server_set_readonly();
-
     selva_send_ll(resp, 1);
 }
 
@@ -302,11 +298,6 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
         selva_send_llx(resp, (long long)replication_origin_get_last_cmd_eid());
         break;
     case REPLICATION_MODE_REPLICA:
-    case REPLICATION_MODE_REPLICA_STALE:
-        selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
-        selva_send_llx(resp, (long long)replication_replica_get_last_sdb_eid());
-        selva_send_llx(resp, (long long)replication_replica_get_last_cmd_eid());
-        break;
     }
 #if 0
     selva_send_str("%s", buf, (int)fd_to_str(origin_sock, buf, sizeof(buf)));
@@ -339,23 +330,26 @@ __constructor void init(void)
 
     switch (replication_mode) {
     case REPLICATION_MODE_ORIGIN:
-        replication_origin_init();
         if (!auto_save_interval) {
             SELVA_LOG(SELVA_LOGL_INFO, "\"AUTO_SAVE_INTERVAL\" is recommended with the \"%s\" replication mode", replication_mode_str[replication_mode]);
         }
+
+        replication_origin_init();
         break;
     case REPLICATION_MODE_REPLICA:
-        replication_replica_init();
         if (auto_save_interval) {
             SELVA_LOG(SELVA_LOGL_CRIT, "The replication mode \"%s\" and \"AUTO_SAVE_INTERVAL\" are mutually exclusive", replication_mode_str[replication_mode]);
             exit(EXIT_FAILURE);
         }
+
+        replication_replica_init();
+        selva_server_set_readonly();
         break;
     default:
         /* NOP */
     }
 
     SELVA_MK_COMMAND(CMD_REPLICASYNC_ID, SELVA_CMD_MODE_MUTATE, replicasync);
-    SELVA_MK_COMMAND(CMD_REPLICAOF_ID, SELVA_CMD_MODE_MUTATE, replicaof);
+    SELVA_MK_COMMAND(CMD_REPLICAOF_ID, SELVA_CMD_MODE_PURE, replicaof);
     SELVA_MK_COMMAND(CMD_REPLICAINFO_ID, SELVA_CMD_MODE_PURE, replicainfo);
 }
