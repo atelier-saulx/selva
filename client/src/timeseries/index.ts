@@ -320,19 +320,8 @@ export class TimeseriesClient {
     return this.pg.execute(query, params)
   }
 
-  async ensureTableExists(context: TimeseriesContext): Promise<void> {
-    const bqSchema = [
-      { name: 'nodeId', type: 'STRING', mode: 'REQUIRED' },
-      { name: 'payload', type: SELVA_TO_SQL_TYPE[context.fieldSchema.type] },
-      { name: 'ts', type: 'TIMESTAMP', mode: 'REQUIRED' },
-      { name: 'fieldSchema', type: 'JSON', mode: 'REQUIRED' },
-    ]
-
-    await this.pg.createTable(context, {
-      schema: bqSchema,
-      location: 'europe-west3',
-      timePartitioning: { type: 'DAY', field: 'ts' },
-    })
+  async ensureTableExists(tsCtx: TimeseriesContext): Promise<void> {
+    await this.pg.createTable(tsCtx)
   }
 
   public async insert(
@@ -345,7 +334,8 @@ export class TimeseriesClient {
       // console.error(e)
     }
     try {
-      const res = await this.pg.insert(tsCtx, [entry])
+      // const res = await this.pg.insert(tsCtx, [entry])
+      const res = await this.pg.insertStream(tsCtx, [entry])
       return res
     } catch (e) {
       console.error(e, JSON.stringify(e))
