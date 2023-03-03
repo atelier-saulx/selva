@@ -163,18 +163,18 @@ class BQConnection {
     )
 
     const responses: any[] = []
-    const errorIdx: number[] = []
     stream.on('data', (resp) => {
       console.log('RESP', resp)
-
-      if (resp.rowErrors.length) {
-        const idx = Number(resp?.appendResult?.offset?.value || -1)
-        if (idx >= 0) {
-          errorIdx.push(idx)
-        }
+      let idx = Number(resp?.appendResult?.offset?.value)
+      if (!idx && idx !== 0) {
+        idx = -1
       }
 
-      responses.push(responses)
+      if (resp.rowErrors.length) {
+        responses.push({ idx, error: resp })
+      } else {
+        responses.push({ idx, success: resp })
+      }
 
       if (responses.length === data.length) {
         stream.end()

@@ -326,7 +326,7 @@ export class TimeseriesClient {
 
   public async insert(
     tsCtx: TimeseriesContext,
-    entry: { nodeId: string; ts: number; payload: any }
+    entries: { nodeId: string; ts: number; payload: any }[]
   ): Promise<any[]> {
     try {
       await this.ensureTableExists(tsCtx)
@@ -336,7 +336,7 @@ export class TimeseriesClient {
 
     try {
       // const res = await this.pg.insert(tsCtx, [entry])
-      const res = await this.pg.insertStream(tsCtx, [entry])
+      const res = await this.pg.insertStream(tsCtx, entries)
       return res
     } catch (e) {
       console.error(e, JSON.stringify(e))

@@ -68,9 +68,17 @@ const wrapTimeseries: (fn: FieldParserFn) => FieldParserFn = (
         ts,
       }
 
-      client.redis.lpush(
+      const { nodeId } = timeseriesCtx
+      client.redis.xadd(
         { type: 'timeseriesQueue' },
         'timeseries_inserts',
+        'MAXLEN',
+        '~',
+        '100000',
+        '*',
+        'id',
+        [nodeId, field, ts].join('|'),
+        'ctx',
         JSON.stringify({ type: 'insert', context: timeseriesCtx })
       )
 
