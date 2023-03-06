@@ -14,6 +14,11 @@
 #define SELVA_REPLICATION_EXPORT(_ret_, _fun_name_, ...) _ret_ (*_fun_name_)(__VA_ARGS__) EVL_COMMON
 #endif
 
+/**
+ * Marks an EID used for SDB.
+ * Used to distinguish between an SDB and command, which is useful
+ * with data structures that can contain both using the same pointers.
+ */
 #define EID_MSB_MASK (~(~(typeof(uint64_t))0 >> 1))
 
 /**

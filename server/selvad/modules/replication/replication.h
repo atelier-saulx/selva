@@ -4,14 +4,17 @@
  */
 #pragma once
 
-enum replication_sync_mode {
-    REPLICATION_SYNC_MODE_FULL = 0,
-    REPLICATION_SYNC_MODE_PARTIAL,
-};
-
 struct selva_server_response_out;
 struct selva_string;
 struct sockaddr_in;
+
+/**
+ * Replication sync command mode.
+ */
+enum replication_sync_mode {
+    REPLICATION_SYNC_MODE_FULL = 0, /*!< Start by sending a full dump. */
+    REPLICATION_SYNC_MODE_PARTIAL, /*!< Start based on a previously sent dump. */
+};
 
 /**
  * Last SDB loaded.
@@ -31,6 +34,9 @@ void replication_origin_new_sdb(const struct selva_string *filename);
  */
 uint64_t replication_origin_get_last_sdb_eid(void);
 
+/**
+ * Get the EID if the last command received for replication.
+ */
 uint64_t replication_origin_get_last_cmd_eid(void);
 
 /**
@@ -69,10 +75,16 @@ void replication_origin_init(void);
  */
 uint64_t replication_replica_get_last_sdb_eid(void);
 
+/**
+ * Get the EID if the last replicated command.
+ */
 uint64_t replication_replica_get_last_cmd_eid(void);
 
 void replication_replica_new_sdb(const struct selva_string *filename);
 
+/**
+ * Returns 1 if the replica believes it's in a stale state.
+ */
 int replication_replica_is_stale(void);
 
 /**

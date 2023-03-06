@@ -36,6 +36,17 @@ struct origin_state {
     ring_buffer_eid_t last_sdb_eid;
     ring_buffer_eid_t last_cmd_eid; /*!< Last cmd eid. */
 
+    /**
+     * Ring buffer where the commands to be replicated to the replicas are kept.
+     * It's a single ring buffer with a single writer and multiple
+     * (multi-threaded) readers, each having their own read index.
+     * The writer can only advance if no reader is busy on the next element.
+     * However, the writer can force a reader to be dropped i.e. request it
+     * to stop blocking/exit.
+     * The ring buffer holds both commands and SDB dump references. The
+     * dump references are used as sync points to the replicas and if
+     * necessary the origin can send the latest full dump to a replica.
+     */
     struct ring_buffer rb;
     struct ring_buffer_element buffer[RING_BUFFER_SIZE];
 
