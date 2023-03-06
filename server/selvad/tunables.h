@@ -49,6 +49,20 @@
 #define SERVER_BACKLOG_SIZE 10
 
 /*
+ * Replication tunables.
+ */
+
+/**
+ * Size of the origin ring buffer for replication.
+ */
+#define REPLICATION_RING_BUFFER_SIZE 100
+
+/**
+ * Maximum number of replica clients to an origin.
+ */
+#define REPLICATION_MAX_REPLICAS 32
+
+/*
  * Hierarchy tunables.
  */
 

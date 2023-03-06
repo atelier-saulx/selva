@@ -22,9 +22,6 @@
 #include "../replication.h"
 #include "replica.h"
 
-#define RING_BUFFER_SIZE 100
-#define MAX_REPLICAS 32
-
 static_assert(sizeof(ring_buffer_eid_t) >= sizeof(uint64_t));
 
 struct origin_state {
@@ -48,9 +45,9 @@ struct origin_state {
      * necessary the origin can send the latest full dump to a replica.
      */
     struct ring_buffer rb;
-    struct ring_buffer_element buffer[RING_BUFFER_SIZE];
+    struct ring_buffer_element buffer[REPLICATION_RING_BUFFER_SIZE];
 
-    struct replica replicas[MAX_REPLICAS];
+    struct replica replicas[REPLICATION_MAX_REPLICAS];
 };
 
 static struct origin_state origin_state __section("replication_state");
@@ -115,7 +112,7 @@ static void free_replbuf(void *buf, ring_buffer_eid_t eid)
  */
 static struct replica *new_replica(struct selva_server_response_out *resp)
 {
-    for (int i = 0; i < MAX_REPLICAS; i++) {
+    for (int i = 0; i < REPLICATION_MAX_REPLICAS; i++) {
         if (!origin_state.replicas[i].in_use) {
             struct replica *r = &origin_state.replicas[i];
 
@@ -203,7 +200,7 @@ void replication_origin_init(void)
 {
     memset(&origin_state, 0, sizeof(origin_state));
 
-    for (unsigned i = 0; i < MAX_REPLICAS; i++) {
+    for (unsigned i = 0; i < REPLICATION_MAX_REPLICAS; i++) {
         struct replica *r = &origin_state.replicas[i];
 
         r->id = i;
