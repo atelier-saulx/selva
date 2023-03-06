@@ -73,6 +73,8 @@ uint64_t replication_replica_get_last_cmd_eid(void);
 
 void replication_replica_new_sdb(const struct selva_string *filename);
 
+int replication_replica_is_stale(void);
+
 /**
  * Start replicating from an origin server.
  */

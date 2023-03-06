@@ -78,11 +78,6 @@ void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
     }
 }
 
-void set_replica_stale(int s)
-{
-    //replication_mode = REPLICATION_MODE_REPLICA + !!s;
-}
-
 static void send_mode_error(struct selva_server_response_out *resp)
 {
     selva_send_errorf(resp, SELVA_ENOTSUP, "Already configured as %s", replication_mode_str[replication_mode]);
@@ -285,19 +280,25 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
      * - sdb_eid
      * - cmd_eid
      */
-    selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
     switch (replication_mode) {
     case REPLICATION_MODE_NONE:
+        selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
         selva_send_null(resp);
         selva_send_null(resp);
         selva_send_null(resp);
         break;
     case REPLICATION_MODE_ORIGIN:
+        selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
         selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
         selva_send_llx(resp, (long long)replication_origin_get_last_sdb_eid());
         selva_send_llx(resp, (long long)replication_origin_get_last_cmd_eid());
         break;
     case REPLICATION_MODE_REPLICA:
+        selva_send_strf(resp, "%s_%s", replication_mode_str[replication_mode], replication_replica_is_stale() ? "STALE" : "ACTIVE");
+        selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
+        selva_send_llx(resp, (long long)replication_replica_get_last_sdb_eid());
+        selva_send_llx(resp, (long long)replication_replica_get_last_cmd_eid());
+        break;
     }
 #if 0
     selva_send_str("%s", buf, (int)fd_to_str(origin_sock, buf, sizeof(buf)));
