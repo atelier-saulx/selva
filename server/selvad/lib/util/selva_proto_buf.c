@@ -52,6 +52,11 @@ int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize
             /* NOP */
         } else {
             buf2strings_cleanup(fin, list, list_len);
+            /*
+             * This is more proper error than SELVA_PROTO_EINVAL because the
+             * data could be correct according to the protocol spec but we just
+             * can't parse it in the way the caller expects.
+             */
             return SELVA_EINVAL;
         }
     }

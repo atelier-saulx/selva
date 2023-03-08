@@ -21,13 +21,18 @@
 #define TAB_WIDTH 2
 #define TABS_MAX (80 / TAB_WIDTH / 2)
 
+/**
+ * Modify a single node.
+ */
+extern int cmd_modify_string_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
+
 /*
  * Ping is special because it has no body/payload.
  */
 static int cmd_ping_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 static void cmd_ping_res(const struct cmd *cmd, const void *msg, size_t msg_size);
 
-/*
+/**
  * lscmd request is similar to ping.
  */
 static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
@@ -65,7 +70,13 @@ static struct cmd commands[255] = {
         .cmd_req = cmd_lscmd_req,
         .cmd_res = generic_res,
     },
-    [254] = { /* Pseudo-command to read the socket */
+    [253] = {
+        .cmd_id = 63,
+        .cmd_name = "!modify.string",
+        .cmd_req = cmd_modify_string_req,
+        .cmd_res = generic_res,
+    },
+    [254] = { /* Pseudo-command: read the socket */
         .cmd_id = 254,
         .cmd_name = "!listen",
         .cmd_req = NULL,
@@ -73,7 +84,7 @@ static struct cmd commands[255] = {
     }
 };
 
-int send_message(int fd, void *buf, size_t size, int flags)
+int send_message(int fd, const void *buf, size_t size, int flags)
 {
     if (send(fd, buf, size, flags) != (ssize_t)size) {
         fprintf(stderr, "Send failed\n");

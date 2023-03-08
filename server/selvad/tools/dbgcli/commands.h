@@ -19,7 +19,7 @@ struct cmd {
 /**
  * Send a message.
  */
-int send_message(int fd, void *buf, size_t size, int flags);
+int send_message(int fd, const void *buf, size_t size, int flags);
 
 /**
  * Receive a message.

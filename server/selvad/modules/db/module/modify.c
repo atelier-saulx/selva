@@ -1547,7 +1547,7 @@ void replicateModify(struct finalizer *fin, const struct bitmap *replset, struct
 
 /*
  * Request:
- * id, FLAGS type, field, value [, ... type, field, value]]
+ * {node_id, FLAGS, type, field, value [, ... type, field, value]]}
  * N = No root
  * M = Merge
  *
@@ -1588,7 +1588,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
-    } else if (argc < 6 || (argc - 3) % 3) {
+    } else if (argc < 5 || (argc - 2) % 3) {
         /*
          * We expect two fixed arguments and a number of [type, field, value] triplets.
          */
@@ -1601,7 +1601,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
      * on if an $alias entry is found then the following value will be discarded.
      */
     Selva_NodeId nodeId;
-    err = selva_string2node_id(nodeId, argv[1]);
+    err = selva_string2node_id(nodeId, argv[0]);
     if (err) {
         selva_send_errorf(resp, err, "Invalid nodeId");
         return;
@@ -1610,7 +1610,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
     /*
      * Look for $alias that would replace id.
      */
-    parse_alias_query(argv + 3, argc - 3, &alias_query);
+    parse_alias_query(argv + 2, argc - 2, &alias_query);
     if (SVector_Size(&alias_query) > 0) {
         struct SVectorIterator it;
         char *str;
@@ -1643,7 +1643,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
     }
 
     struct SelvaHierarchyNode *node;
-    const unsigned flags = parse_flags(argv[2]);
+    const unsigned flags = parse_flags(argv[1]);
 
     node = SelvaHierarchy_FindNode(hierarchy, nodeId);
     if (!node) {
@@ -1681,7 +1681,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
      * 1    replicate the second triplet
      * ...  ...
      */
-    const int nr_triplets = (argc - 3) / 3;
+    const int nr_triplets = (argc - 2) / 3;
     struct bitmap *replset = selva_calloc(1, BITMAP_ALLOC_SIZE(nr_triplets));
 
     finalizer_add(&fin, replset, selva_free);
@@ -1699,7 +1699,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
     selva_send_array(resp, 1 + nr_triplets);
     selva_send_str(resp, nodeId, SELVA_NODE_ID_SIZE);
 
-    for (int i = 3; i < argc; i += 3) {
+    for (int i = 2; i < argc; i += 3) {
         struct selva_string *type = argv[i];
         struct selva_string *field = argv[i + 1];
         struct selva_string *value = argv[i + 2];

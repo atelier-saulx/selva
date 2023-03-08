@@ -1,8 +1,9 @@
-# Copyright (c) 2022 SAULX
+# Copyright (c) 2022-2023 SAULX
 # SPDX-License-Identifier: MIT
 
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 OBJ := \
+	   cmd_modify.o \
 	   commands.o \
 	   dbgcli.o \
 	   split.o
