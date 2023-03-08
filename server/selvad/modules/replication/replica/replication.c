@@ -273,7 +273,7 @@ static int recv_frame(int fd)
     ssize_t recv_res;
 
 retry_hdr:
-    recv_res = recv(fd, &sv.cur_hdr, sizeof(sv.cur_hdr), 0);
+    recv_res = tcp_recv(fd, &sv.cur_hdr, sizeof(sv.cur_hdr), 0);
     if (recv_res != (ssize_t)sizeof(sv.cur_hdr)) {
         int err = SELVA_PROTO_EBADF;
 
@@ -302,7 +302,7 @@ retry_hdr:
         return SELVA_PROTO_ENOBUFS;
     } else if (payload_size > 0) {
 retry_payload:
-        recv_res = recv(fd, sv.msg_buf + sv.msg_buf_i, payload_size, 0);
+        recv_res = tcp_recv(fd, sv.msg_buf + sv.msg_buf_i, payload_size, 0);
         if (recv_res != (ssize_t)payload_size) {
             int err = SELVA_PROTO_EBADF;
 
@@ -433,7 +433,7 @@ static enum repl_proto_state handle_recv_sdb(int fd)
     ssize_t recv_res;
 
 retry:
-    recv_res = recv(fd, sv.msg_buf, size, 0);
+    recv_res = tcp_recv(fd, sv.msg_buf, size, 0);
     if (recv_res != (ssize_t)size) {
         if (recv_res == - 1) {
             if (!recv_error()) {

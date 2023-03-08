@@ -9,6 +9,7 @@
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include "util/tcp.h"
 
 static const int use_tcp_nodelay = 1;
@@ -56,4 +57,40 @@ void tcp_uncork(int fd)
     tcp_set_nodelay(fd);
     send(fd, buf, 0, 0);
 #endif
+}
+
+ssize_t tcp_recv(int fd, void *buf, size_t n, int flags)
+{
+	ssize_t i = 0;
+
+	while (i < (ssize_t)n) {
+		ssize_t res;
+
+		res = recv(fd, (char *)buf + i, n - i, flags);
+		if (res <= 0) {
+			return i;
+		}
+
+		i += res;
+	}
+
+	return i;
+}
+
+ssize_t tcp_read(int fd, void *buf, size_t n)
+{
+	ssize_t i = 0;
+
+	while (i < (ssize_t)n) {
+		ssize_t res;
+
+		res = read(fd, (char *)buf + i, n - i);
+		if (res <= 0) {
+			return i;
+		}
+
+		i += res;
+	}
+
+	return i;
 }

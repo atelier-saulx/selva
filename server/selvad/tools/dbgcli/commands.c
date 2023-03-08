@@ -118,9 +118,36 @@ static void recv_int_handler(int sig __unused)
     flag_stop_recv = 1;
 }
 
+static ssize_t recvn(int fd, void *buf, size_t n)
+{
+    ssize_t i = 0;
+
+    while (i < (ssize_t)n) {
+        ssize_t res;
+
+        errno = 0;
+        res = recv(fd, (char *)buf + i, n - i, 0);
+        if (res <= 0) {
+            if (errno == EINTR) {
+                if (flag_stop_recv) {
+                    fprintf(stderr, "Interrupted\n");
+                    return res;
+                }
+                continue;
+            }
+
+            return res;
+        }
+
+        i += res;
+    }
+
+    return (ssize_t)i;
+}
+
 void recv_message(int fd)
 {
-    static _Alignas(uintptr_t) uint8_t msg_buf[1048576];
+    static _Alignas(uintptr_t) uint8_t msg_buf[10 * 1048576] __section("lazy");
     struct selva_proto_header resp_hdr;
     size_t i = 0;
 
@@ -133,16 +160,9 @@ void recv_message(int fd)
     do {
         ssize_t r;
 
-        r = recv(fd, &resp_hdr, sizeof(resp_hdr), 0);
+        r = recvn(fd, &resp_hdr, sizeof(resp_hdr));
         if (r != (ssize_t)sizeof(resp_hdr)) {
-            if (errno == EINTR) {
-                if (flag_stop_recv) {
-                    fprintf(stderr, "Interrupted\n");
-                    return;
-                }
-                continue;
-            }
-            fprintf(stderr, "recv() returned %d\n", (int)r);
+            fprintf(stderr, "Reading selva_proto header failed. result: %d\n", (int)r);
             exit(1);
         } else {
             size_t frame_bsize = le16toh(resp_hdr.frame_bsize);
@@ -157,16 +177,9 @@ void recv_message(int fd)
             }
 
             if (payload_size > 0) {
-                r = recv(fd, msg_buf + i, payload_size, 0);
+                r = recvn(fd, msg_buf + i, payload_size);
                 if (r != (ssize_t)payload_size) {
-                    if (errno == EINTR) {
-                        if (flag_stop_recv) {
-                            fprintf(stderr, "Interrupted\n");
-                            return;
-                        }
-                        continue;
-                    }
-                    fprintf(stderr, "recv() returned %d\n", (int)r);
+                    fprintf(stderr, "Reading payload failed: result: %d expected: %d\n", (int)r, (int)payload_size);
                     return;
                 }
 
