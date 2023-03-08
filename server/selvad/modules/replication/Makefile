@@ -10,7 +10,7 @@ OBJ := \
 	   replica/replication.o \
 	   selva_thread.o
 DEP := $(OBJ:%.o=%.d)
-CFLAGS += -DSELVA_REPLICATION_MAIN=1
+CFLAGS += -DSELVA_REPLICATION_MAIN=1 -include ../../tunables.h
 LDFLAGS += -lutil -ljemalloc_selva
 TARGET := ../mod_replication$(MOD_SUFFIX)
 
