@@ -147,7 +147,7 @@ static ssize_t recvn(int fd, void *buf, size_t n)
 
 void recv_message(int fd)
 {
-    static _Alignas(uintptr_t) uint8_t msg_buf[10 * 1048576] __section("lazy");
+    static _Alignas(uintptr_t) uint8_t msg_buf[100 * 1048576] __section("lazy");
     struct selva_proto_header resp_hdr;
     size_t i = 0;
 

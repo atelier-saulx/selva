@@ -140,12 +140,16 @@ static void drop_replicas(unsigned replicas)
     ring_buffer_del_readers_mask(&origin_state.rb, replicas);
     while ((replica_id = __builtin_ffs(replicas))) {
         struct replica *r;
+        int err;
 
         replica_id--;
         assert(replica_id < num_elem(origin_state.replicas));
         r = &origin_state.replicas[replica_id];
 
-        pthread_join(r->thread.pthread, NULL);
+        err = pthread_join(r->thread.pthread, NULL);
+        if (err) {
+            SELVA_LOG(SELVA_LOGL_ERR, "pthread_join() failed: %d", err);
+        }
         release_replica(r);
 
         replicas ^= 1 << replica_id;

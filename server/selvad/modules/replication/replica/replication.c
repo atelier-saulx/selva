@@ -522,7 +522,9 @@ static void on_data(struct event *event, void *arg __unused)
                 continue;
             }
 
+#if 0
             SELVA_LOG(SELVA_LOGL_INFO, "Replicating cmd: %d\n", sv.cmd_id);
+#endif
             selva_server_run_cmd(sv.cmd_id, sv.msg_buf, sv.cmd_size);
 
             sv.last_cmd_eid = sv.incoming_cmd_eid;

@@ -109,7 +109,9 @@ void *replication_thread(void *arg)
         ssize_t res;
 
         if (!(e->id & EID_MSB_MASK)) { /* Skip dumps. */
+#if 0
             SELVA_LOG(SELVA_LOGL_INFO, "Sending data");
+#endif
 
             res = selva_send_replication_cmd(resp, e->id, e->cmd_id, e->data, e->data_size);
             if (res < 0) {

@@ -41,10 +41,12 @@ int server_recv_message(struct conn_ctx *ctx)
     char peer[CONN_STR_LEN];
 
     conn_to_str(ctx, peer, sizeof(peer));
+#if 0
     SELVA_LOG(SELVA_LOGL_INFO, "Received a frame. client: %s seqno: %d bytes: %d",
               peer,
               (int)seqno,
               (int)frame_bsize);
+#endif
 
     if (ctx->recv_state == CONN_CTX_RECV_STATE_NEW) {
         ctx->cur_seqno = seqno;
