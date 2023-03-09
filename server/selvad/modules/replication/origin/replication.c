@@ -148,7 +148,8 @@ static void drop_replicas(unsigned replicas)
 
         err = pthread_join(r->thread.pthread, NULL);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "pthread_join() failed: %d", err);
+            SELVA_LOG(SELVA_LOGL_ERR, "pthread_join() failed: %s",
+                      strerrorname_np(err) ?: "Unknown error");
         }
         release_replica(r);
 

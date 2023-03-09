@@ -34,6 +34,8 @@ int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_b
     const unsigned mask = 1 << reader_id;
     ssize_t new_index = -1;
 
+    state->reader_id = reader_id;
+
     pthread_mutex_lock(&rb->lock);
 
     int j = (rb->tail) % rb->len;
@@ -54,7 +56,6 @@ int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_b
     }
 
     state->index = new_index;
-    state->reader_id = reader_id;
 
     return 0;
 }
