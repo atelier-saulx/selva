@@ -24,7 +24,7 @@
 
 struct selva_glob_config selva_glob_config = {
     .debug_modify_replication_delay_ns = 0,
-    .hierarchy_initial_vector_len = 50,
+    .hierarchy_initial_vector_len = 0,
     .hierarchy_expected_resp_len = 5000,
     .hierarchy_compression_level = 6,
     .hierarchy_auto_compress_period_ms = 0,
