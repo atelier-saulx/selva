@@ -235,7 +235,7 @@ int selva_send_replication_cmd(struct selva_server_response_out *resp, uint64_t 
     struct selva_proto_replication_cmd buf = {
         .type = SELVA_PROTO_REPLICATION_CMD,
         .cmd = cmd,
-        .eid = eid,
+        .eid = htole64(eid),
         .bsize = htole64(bsize),
     };
     ssize_t res;
@@ -254,7 +254,8 @@ int selva_send_replication_sdb(struct selva_server_response_out *resp, uint64_t 
     int fd;
     struct selva_proto_replication_sdb buf = {
         .type = SELVA_PROTO_REPLICATION_SDB,
-        .eid = eid,
+        .flags = 0,
+        .eid = htole64(eid),
     };
     ssize_t res;
 
@@ -305,6 +306,20 @@ int selva_send_replication_sdb(struct selva_server_response_out *resp, uint64_t 
     res = server_send_file(resp, fd, file_size, 0);
     close(fd);
 
+    return (res < 0) ? (int)res : 0;
+}
+
+int selva_send_replication_pseudo_sdb(struct selva_server_response_out *resp, uint64_t eid)
+{
+    struct selva_proto_replication_sdb buf = {
+        .type = SELVA_PROTO_REPLICATION_SDB,
+        .flags = 0,
+        .eid = htole64(eid),
+        .bsize = 0,
+    };
+    int res;
+
+    res = server_send_buf(resp, &buf, sizeof(buf), 0);
     return (res < 0) ? (int)res : 0;
 }
 

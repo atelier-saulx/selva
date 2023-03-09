@@ -207,7 +207,15 @@ struct selva_proto_replication_sdb {
      * Type must be SELVA_PROTO_REPLICATION_SDB.
      */
     enum selva_proto_data_type type;
-    uint8_t _spare[7];
+    enum {
+        /**
+         * Pseudo-dump.
+         * This message is sent to let the replica know that it's in sync with
+         * the sdb_eid given in this message. The dump is omitted.
+         */
+        SELVA_PROTO_REPLICATION_SDB_FPSEUDO,
+    } __attribute__((packed)) flags;
+    uint8_t _spare[6];
     uint64_t eid; /*!< Element id of this message. */
     uint64_t bsize; /*!< Size of the dump. */
 } __attribute__((packed));

@@ -361,13 +361,22 @@ static enum repl_proto_state parse_replication_header(void)
          return REPL_PROTO_STATE_RECEIVING_CMD;
     } else if (ctrl->type == SELVA_PROTO_REPLICATION_SDB) {
         uint64_t sdb_eid;
+        size_t sdb_size;
 
-        selva_proto_parse_replication_sdb(sv.msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sdb_eid, &sv.sdb_size);
-        sv.incoming_sdb_eid = sdb_eid;
-        sdb_name(sv.sdb_filename, sizeof(sv.sdb_filename), "replica", sdb_eid & ~EID_MSB_MASK);
+        selva_proto_parse_replication_sdb(sv.msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sdb_eid, &sdb_size);
+        if (sdb_size > 0) {
+            sv.incoming_sdb_eid = sdb_eid;
+            sv.sdb_size = sdb_size;
+            sdb_name(sv.sdb_filename, sizeof(sv.sdb_filename), "replica", sdb_eid & ~EID_MSB_MASK);
 
-        sv.recv_next_frame = 1;
-        return REPL_PROTO_STATE_RECEIVING_SDB_HEADER;
+            sv.recv_next_frame = 1;
+            return REPL_PROTO_STATE_RECEIVING_SDB_HEADER;
+        } else { /* RFE We assume this is a pseudo-sdb because sdb_size was 0 */
+            sv.last_sdb_eid = sdb_eid;
+            sv.last_cmd_eid = 0;
+
+            return REPL_PROTO_STATE_FIN;
+        }
     } else if (ctrl->type == SELVA_PROTO_ERROR) {
         int err, origin_err;
         const char *msg_str;

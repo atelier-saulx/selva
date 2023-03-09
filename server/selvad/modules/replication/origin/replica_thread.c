@@ -106,21 +106,20 @@ void *replication_thread(void *arg)
     }
 
     while (ring_buffer_get_next(rb, &state, &e)) {
-        ssize_t res;
+        int res;
 
-        if (!(e->id & EID_MSB_MASK)) { /* Skip dumps. */
-#if 0
-            SELVA_LOG(SELVA_LOGL_INFO, "Sending data");
-#endif
-
+        if (e->id & EID_MSB_MASK) {
+            res = selva_send_replication_pseudo_sdb(resp, e->id);
+        } else {
             res = selva_send_replication_cmd(resp, e->id, e->cmd_id, e->data, e->data_size);
-            if (res < 0) {
-                break;
-            }
+        }
 
-            if (selva_send_flush(resp)) {
-                break;
-            }
+        if (res < 0) {
+            break;
+        }
+
+        if (selva_send_flush(resp)) {
+            break;
         }
 
         ring_buffer_release(&state, e);

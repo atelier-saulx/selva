@@ -134,6 +134,8 @@ SELVA_SERVER_EXPORT(int, selva_send_replication_cmd, struct selva_server_respons
  */
 SELVA_SERVER_EXPORT(int, selva_send_replication_sdb, struct selva_server_response_out *resp, uint64_t eid, const char *filename);
 
+SELVA_SERVER_EXPORT(int, selva_send_replication_pseudo_sdb, struct selva_server_response_out *resp, uint64_t eid);
+
 /**
  * Run command.
  */
@@ -163,6 +165,7 @@ SELVA_SERVER_EXPORT(void, selva_server_run_cmd, int8_t cmd_id, void *msg, size_t
     apply(selva_send_array_end) \
     apply(selva_send_replication_cmd) \
     apply(selva_send_replication_sdb) \
+    apply(selva_send_replication_pseudo_sdb) \
     apply(selva_server_run_cmd)
 
 #define _import_selva_server1(f) \
