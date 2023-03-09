@@ -54,11 +54,18 @@
 #define CMD_CONFIG_ID 6
 
 /**
- * Show malloc statis.
+ * Show malloc stats.
  * module: server
  * cmd: mallocstats
  */
 #define CMD_MALLOCSTATS_ID 7
+
+/**
+ * Dump a jemalloc prof file.
+ * module: server
+ * cmd: mallocstats
+ */
+#define CMD_MALLOCPROFDUMP_ID 8
 
 /**
  * Load db.
