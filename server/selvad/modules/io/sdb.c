@@ -116,8 +116,8 @@ static char *sha3_to_hex(char s[64], const uint8_t hash[SELVA_IO_HASH_SIZE])
     char *p = s;
 
     for (size_t i = 0; i < SELVA_IO_HASH_SIZE; i++) {
-        *p++ = map[(hash[i] >> 4) % 16];
-        *p++ = map[(hash[i] & 0x0f) % 16];
+        *p++ = map[(hash[i] >> 4) % sizeof(map)];
+        *p++ = map[(hash[i] & 0x0f) % sizeof(map)];
     }
 
     return s;

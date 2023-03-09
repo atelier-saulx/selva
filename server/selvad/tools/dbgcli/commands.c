@@ -400,11 +400,13 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
             memcpy(&str_hdr, msg + i - off, sizeof(str_hdr));
             if (str_hdr.flags & SELVA_PROTO_STRING_FBINARY) {
 				static const char hex_map[] = "0123456789abcdef";
-                const char *p = (char *)msg + i - data_len;
+                const uint8_t *p = (char *)msg + i - data_len;
 
                 printf("%*s\"", tabs * TAB_WIDTH, "");
                 for (size_t data_i = 0; data_i < data_len; data_i++) {
-				    printf("%c%c", hex_map[(p[data_i] >> 4) % 16], hex_map[(p[data_i] & 0x0f) % 16]);
+				    printf("%c%c",
+                           hex_map[(p[data_i] >> 4) % sizeof(hex_map)],
+                           hex_map[(p[data_i] & 0x0f) % sizeof(hex_map)]);
                 }
                 printf("\",\n");
             } else {
