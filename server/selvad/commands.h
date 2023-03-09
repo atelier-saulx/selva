@@ -47,11 +47,18 @@
 #define CMD_MODINFO_ID 5
 
 /**
- * Show configuration.
+ * Show running configuration.
  * module: server
  * cmd: config
  */
 #define CMD_CONFIG_ID 6
+
+/**
+ * Show malloc statis.
+ * module: server
+ * cmd: mallocstats
+ */
+#define CMD_MALLOCSTATS_ID 7
 
 /**
  * Load db.

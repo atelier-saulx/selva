@@ -8,8 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "jemalloc.h"
 #include "endian.h"
+#include "util/finalizer.h"
 #include "util/net.h"
+#include "util/selva_string.h"
 #include "util/tcp.h"
 #include "event_loop.h"
 #include "config.h"
@@ -254,6 +257,32 @@ static void config(struct selva_server_response_out *resp, const void *buf __unu
     }
 }
 
+static void mallocstats_send(void *arg, const char *buf)
+{
+    struct selva_server_response_out *resp = (struct selva_server_response_out *)arg;
+
+    selva_send_strf(resp, "%s", buf);
+}
+
+static void mallocstats(struct selva_server_response_out *resp, const void *buf, size_t size)
+{
+    __auto_finalizer struct finalizer fin;
+    struct selva_string *opts = NULL;
+    int argc;
+
+    finalizer_init(&fin);
+    argc = selva_proto_scanf(&fin, buf, size, "%s", &opts);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc > 1) {
+        selva_send_error_arity(resp);
+        return;
+    }
+
+    selva_malloc_stats_print(mallocstats_send, resp, opts ? selva_string_to_str(opts, NULL) : NULL);
+}
+
 static int new_server(int port)
 {
     int sockfd;
@@ -427,6 +456,7 @@ __constructor void init(void)
     SELVA_MK_COMMAND(CMD_LSCMD_ID, SELVA_CMD_MODE_PURE, lscmd);
     SELVA_MK_COMMAND(CMD_HRT_ID, SELVA_CMD_MODE_PURE, hrt);
     SELVA_MK_COMMAND(CMD_CONFIG_ID, SELVA_CMD_MODE_PURE, config);
+    SELVA_MK_COMMAND(CMD_MALLOCSTATS_ID, SELVA_CMD_MODE_PURE, mallocstats);
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(selva_port);
