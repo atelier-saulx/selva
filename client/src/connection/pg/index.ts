@@ -133,8 +133,6 @@ class BQConnection {
   }
 
   public async execute(query: string, params: unknown[]): Promise<any[]> {
-    console.log('SQL', query, params)
-
     const [job] = await this.client.createQueryJob({
       query,
       location: 'europe-west3',
@@ -164,7 +162,6 @@ class BQConnection {
 
     const responses: any[] = []
     stream.on('data', (resp) => {
-      console.log('RESP', resp)
       let idx = Number(resp?.appendResult?.offset?.value)
       if (!idx && idx !== 0) {
         idx = -1
@@ -183,22 +180,18 @@ class BQConnection {
 
     const p = new Promise((resolve, reject) => {
       stream.on('end', async () => {
-        console.log('stream end')
         // API call completed.
         try {
           const [{ rowCount }] = await writeClient.finalizeWriteStream({
             name: writeStream,
           })
-          console.log(`Row count: ${rowCount}`)
           const [response] = await writeClient.batchCommitWriteStreams({
             parent: `projects/based-310210/datasets/selva_timeseries/tables/${tableName}`,
             writeStreams: [writeStream],
           })
 
-          console.log(response)
           resolve(response)
         } catch (err) {
-          console.log('COMMIT ERROR', err)
           reject(err)
         }
       })
@@ -235,8 +228,6 @@ class BQConnection {
         fieldSchema: JSON.stringify(tsCtx.fieldSchema || {}),
       }
     })
-
-    console.log('INSERTINg', JSON.stringify(transformed, null, 2))
 
     return this.client
       .dataset('selva_timeseries', { location: 'europe-west3' })

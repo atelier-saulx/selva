@@ -156,8 +156,6 @@ export class TimeseriesWorker {
         rows = await this.checkPending()
       }
 
-      console.log('ROWS', rows)
-
       const ops: Record<string, { rows: any[]; ids: string[] }> = {}
       rows.forEach((row, i) => {
         if (row) {

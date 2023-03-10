@@ -262,10 +262,8 @@ async function execTimeseries(
   sql = sql.order('ts', tsCtx.order === 'asc')
 
   const params = sql.toParam()
-  console.log('SQL', params, 'tsCtx', tsCtx)
 
   const result: any[] = await client.pg.pg.execute(params.text, params.values)
-  console.log('RAW RESULTS', result)
   if (['object', 'record'].includes(tsCtx?.fieldSchema?.type)) {
     result.forEach((row) => {
       try {
@@ -279,7 +277,6 @@ async function execTimeseries(
     })
   }
 
-  console.log('SQL RESULT', JSON.stringify(result, null, 2))
   return { rows: result }
 }
 
