@@ -22,6 +22,7 @@
 #include "util/bitmap.h"
 #include "util/cstrings.h"
 #include "util/finalizer.h"
+#include "util/selva_proto_builder.h"
 #include "util/selva_string.h"
 #include "util/svector.h"
 #include "util/timestamp.h"
@@ -1441,77 +1442,70 @@ static enum selva_op_repl_state modify_edge_meta_op(
     return SELVA_OP_REPL_STATE_UPDATED;
 }
 
-/*
- * Replicate the selva.modify command.
- * This function depends on the argument order of selva.modify.
- */
-void replicateModify(struct finalizer *fin, const struct bitmap *replset, struct selva_string **orig_argv, const struct replicate_ts *rs) {
-    const int leading_args = 3; /* [cmd_name, key, flags] */
+static void replicate_modify(struct selva_server_response_out *resp, const struct bitmap *replset, struct selva_string **orig_argv, const struct replicate_ts *rs)
+{
+    const int leading_args = 2; /* [key, flags] */
     const long long count = bitmap_popcount(replset);
-    struct selva_string **argv;
+    struct selva_proto_builder_msg msg;
 
     if (count == 0 && !rs->created && !rs->updated) {
         return; /* Skip. */
     }
 
-    argv = selva_calloc(1, ((size_t)((long long)leading_args + 3 * count + (rs->created + rs->updated) * 3)) * sizeof(struct selva_string *));
-    finalizer_add(fin, argv, selva_free);
+    selva_proto_builder_init(&msg);
 
     /*
-     * Copy the leading args.
+     * Insert the leading args.
      */
-    int argc = leading_args;
-    for (int i = 0; i < argc; i++) {
-        argv[i] = orig_argv[i];
+    for (int i = 0; i < leading_args; i++) {
+        size_t len;
+        const char *str = selva_string_to_str(orig_argv[i], &len);
+
+        selva_proto_builder_insert_string(&msg, str, len);
     }
 
+    /*
+     * Insert changes.
+     */
     int i_arg_type = leading_args;
     for (int i = 0; i < (int)replset->nbits; i++) {
         if (bitmap_get(replset, i)) {
-            argv[argc++] = orig_argv[i_arg_type];
-            argv[argc++] = orig_argv[i_arg_type + 1];
-            argv[argc++] = orig_argv[i_arg_type + 2];
+            for (int j = 0; j < 3; j++) {
+                size_t len;
+                const char *str = selva_string_to_str(orig_argv[i_arg_type + j], &len);
+
+                selva_proto_builder_insert_string(&msg, str, len);
+            }
         }
         i_arg_type += 3;
     }
 
+    /*
+     * Make sure created_at field is always in sync on all nodes.
+     */
     if (rs->created) {
         const char op[2] = { SELVA_MODIFY_ARG_LONGLONG, '\0' };
-        const size_t size = sizeof(rs->created_at);
-        char v[size];
-        struct selva_string *s1, *s2, *s3;
+        size_t size = sizeof(rs->created_at);
+        char value[size];
 
-        memcpy(v, &rs->created_at, size);
-        s1 = selva_string_create(op, 1, 0);
-        s2 = selva_string_create(SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1, 0);
-        s3 = selva_string_create(v, size, 0);
-
-        finalizer_add(fin, s1, selva_string_free);
-        finalizer_add(fin, s2, selva_string_free);
-        finalizer_add(fin, s3, selva_string_free);
-
-        argv[argc++] = s1;
-        argv[argc++] = s2;
-        argv[argc++] = s3;
+        memcpy(value, &rs->created_at, size);
+        selva_proto_builder_insert_string(&msg, op, sizeof(op) - 1);
+        selva_proto_builder_insert_string(&msg, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1);
+        selva_proto_builder_insert_string(&msg, value, size);
     }
+
+    /*
+     * Make sure updated_at field is always in sync on all nodes.
+     */
     if (rs->updated) {
         const char op[2] = { SELVA_MODIFY_ARG_LONGLONG, '\0' };
-        const size_t size = sizeof(rs->updated_at);
-        char v[size];
-        struct selva_string *s1, *s2, *s3;
+        size_t size = sizeof(rs->updated_at);
+        char value[size];
 
-        memcpy(v, &rs->updated_at, size);
-        s1 = selva_string_create(op, 1, 0);
-        s2 = selva_string_create(SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, 0);
-        s3 = selva_string_create(v, size, 0);
-
-        finalizer_add(fin, s1, selva_string_free);
-        finalizer_add(fin, s2, selva_string_free);
-        finalizer_add(fin, s3, selva_string_free);
-
-        argv[argc++] = s1;
-        argv[argc++] = s2;
-        argv[argc++] = s3;
+        memcpy(value, &rs->updated_at, size);
+        selva_proto_builder_insert_string(&msg, op, sizeof(op) - 1);
+        selva_proto_builder_insert_string(&msg, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1);
+        selva_proto_builder_insert_string(&msg, value, size);
     }
 
     /*
@@ -1529,12 +1523,9 @@ void replicateModify(struct finalizer *fin, const struct bitmap *replset, struct
         nanosleep(&tim, NULL);
     }
 
-    /*
-     * FIXME Replicate
-     */
-#if 0
-    RedisModule_ReplicateVerbatimArgs(ctx, argv, argc);
-#endif
+    selva_proto_builder_end(&msg);
+    selva_replication_replicate(selva_resp_to_cmd_id(resp), msg.buf, msg.bsize);
+    selva_proto_builder_deinit(&msg);
 }
 
 /*
@@ -1895,16 +1886,14 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
     }
 
     selva_db_is_dirty = 1; /* TODO Not necessarily modified. */
-    /* FIXME Replication */
-#if 0
-    if (RedisModule_GetContextFlags() & REDISMODULE_CTX_FLAGS_MASTER) {
+
+    /* TODO Would be nice to skip if not origin */
+    if (1 /* RedisModule_GetContextFlags() & REDISMODULE_CTX_FLAGS_MASTER */) {
         struct replicate_ts replicate_ts;
 
         get_replicate_ts(&replicate_ts, node, created, updated);
-        replicateModify(&fin, replset, argv, &replicate_ts);
+        replicate_modify(resp, replset, argv, &replicate_ts);
     }
-#endif
-    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len); /* FIXME This replication is incorrect */
 
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
 

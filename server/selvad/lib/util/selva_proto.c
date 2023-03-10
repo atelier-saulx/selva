@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -10,9 +10,9 @@
 #include "cdefs.h"
 #include "endian.h"
 #include "util/crc32c.h"
+#include "util/selva_string.h"
 #include "selva_error.h"
 #include "selva_proto.h"
-#include "util/selva_string.h"
 
 int selva_proto_verify_frame_chk(
         struct selva_proto_header * restrict hdr,
