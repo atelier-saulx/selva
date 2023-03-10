@@ -1,4 +1,3 @@
-import { QueryResult } from 'pg'
 import BQConnection, { getTableName } from '../connection/pg'
 
 import { FieldSchema } from '../schema/types'
@@ -196,12 +195,12 @@ async function getInsertQueue(
   }
 }
 
-async function runSelect<T>(
+async function runSelect(
   tsCtx: TimeseriesContext,
   client: SelvaClient,
   op: GetOperationFind | GetOperationAggregate,
   where: squel.Expression
-): Promise<QueryResult<T>> {
+): Promise<any> {
   let limit = tsCtx.limit
   // TODO: offset
   // let offset = tsCtx.offset
@@ -341,10 +340,10 @@ export class TimeseriesClient {
     }
   }
 
-  public async select<T>(
+  public async select(
     tsCtx: TimeseriesContext,
     op: GetOperationFind | GetOperationAggregate
-  ): Promise<QueryResult<T>> {
+  ): Promise<any> {
     // order is important
     const where = toExpr(tsCtx, tsCtx.fieldSchema, op.filter)
 
