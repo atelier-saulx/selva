@@ -63,7 +63,7 @@
 /**
  * Dump a jemalloc prof file.
  * module: server
- * cmd: mallocstats
+ * cmd: mallocprofdump
  */
 #define CMD_MALLOCPROFDUMP_ID 8
 
