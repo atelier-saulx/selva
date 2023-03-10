@@ -1790,7 +1790,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
             }
 
             /* This triplet needs to be replicated. */
-            bitmap_set(replset, i / 3 - 1);
+            bitmap_set(replset, (i - 2) / 3);
             continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_EDGE_META) {
             repl_state = modify_edge_meta_op(&fin, resp, node, field, value);
@@ -1800,12 +1800,12 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
 
         if (repl_state == SELVA_OP_REPL_STATE_REPLICATE) {
             /* This triplet needs to be replicated. */
-            bitmap_set(replset, i / 3 - 1);
+            bitmap_set(replset, (i - 2) / 3);
 
             selva_send_str(resp, "OK", 2);
         } else if (repl_state == SELVA_OP_REPL_STATE_UPDATED) {
             /* This triplet needs to be replicated. */
-            bitmap_set(replset, i / 3 - 1);
+            bitmap_set(replset, (i - 2) / 3);
 
             /*
              * Publish that the field was changed.

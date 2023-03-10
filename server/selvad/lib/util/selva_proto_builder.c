@@ -26,13 +26,14 @@ static void encapsulate_with_array(struct selva_proto_builder_msg * restrict msg
     };
 
     msg->buf = selva_realloc(msg->buf, msg->bsize + sizeof(arr));
-    memcpy(msg->buf + msg->bsize, &arr, sizeof(arr));
+    memmove(msg->buf + sizeof(arr), msg->buf, msg->bsize);
+    memcpy(msg->buf, &arr, sizeof(arr));
     msg->bsize += sizeof(arr);
 }
 
 static void selva_proto_builder_insert_header(struct selva_proto_builder_msg * restrict msg, const void * restrict hdr, size_t hsize)
 {
-    if (msg->nr_values++  == 1) {
+    if (msg->nr_values++ == 1) {
         encapsulate_with_array(msg);
     }
 
