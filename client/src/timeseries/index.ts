@@ -1,4 +1,4 @@
-import BQConnection, { getTableName } from '../connection/pg'
+import BQConnection, { getTableName } from '../connection/bq'
 
 import { FieldSchema } from '../schema/types'
 import { convertNow, isFork } from '@saulx/selva-query-ast-parser'
@@ -262,7 +262,7 @@ async function execTimeseries(
 
   const params = sql.toParam()
 
-  const result: any[] = await client.pg.pg.execute(params.text, params.values)
+  const result: any[] = await client.bq.bq.execute(params.text, params.values)
   if (['object', 'record'].includes(tsCtx?.fieldSchema?.type)) {
     result.forEach((row) => {
       try {
@@ -281,14 +281,14 @@ async function execTimeseries(
 
 export class TimeseriesClient {
   private client: SelvaClient
-  public pg: BQConnection
+  public bq: BQConnection
 
   private isConnected: boolean = false
 
   constructor(client: SelvaClient) {
     // TODO: credentials
     this.client = client
-    this.pg = new BQConnection()
+    this.bq = new BQConnection()
   }
 
   async connect() {
@@ -313,11 +313,11 @@ export class TimeseriesClient {
     query: string,
     params: unknown[]
   ): Promise<any[]> {
-    return this.pg.execute(query, params)
+    return this.bq.execute(query, params)
   }
 
   async ensureTableExists(tsCtx: TimeseriesContext): Promise<void> {
-    await this.pg.createTable(tsCtx)
+    await this.bq.createTable(tsCtx)
   }
 
   public async insert(
@@ -331,8 +331,7 @@ export class TimeseriesClient {
     }
 
     try {
-      // const res = await this.pg.insert(tsCtx, [entry])
-      const res = await this.pg.insertStream(tsCtx, entries)
+      const res = await this.bq.insertStream(tsCtx, entries)
       return res
     } catch (e) {
       console.error(e, JSON.stringify(e))

@@ -49,7 +49,7 @@ let clientId = 0
 
 export class SelvaClient extends EventEmitter {
   public redis: Redis
-  public pg: TimeseriesClient
+  public bq: TimeseriesClient
 
   public selvaId: string
 
@@ -143,7 +143,7 @@ export class SelvaClient extends EventEmitter {
     this.selvaId = ++clientId + ''
     this.redis = new Redis(this)
     connectRegistry(this, opts)
-    this.pg = new TimeseriesClient(this)
+    this.bq = new TimeseriesClient(this)
   }
 
   connect(opts: ConnectOptions) {

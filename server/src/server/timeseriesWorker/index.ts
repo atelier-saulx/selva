@@ -24,7 +24,7 @@ export class TimeseriesWorker {
 
   async start() {
     this.client = connect(this.opts.registry)
-    await this.client.pg.connect()
+    await this.client.bq.connect()
 
     await this.client.redis.xgroup(
       { type: 'timeseriesQueue' },
@@ -181,7 +181,7 @@ export class TimeseriesWorker {
 
       const resps = await Promise.all(
         Object.entries(ops).map(async ([_table, { rows, ids }]) => {
-          const insertResp = await this.client.pg.insert(rows[0], rows)
+          const insertResp = await this.client.bq.insert(rows[0], rows)
           return { insertResp, ids }
         })
       )

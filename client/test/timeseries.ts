@@ -243,7 +243,7 @@ test[
   const client = connect({ port })
 
   // TODO: removet his manual step
-  await client.pg.connect()
+  await client.bq.connect()
 
   await client.set({
     $id: 'viA',
