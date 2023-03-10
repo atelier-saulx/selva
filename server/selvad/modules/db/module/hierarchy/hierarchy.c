@@ -373,9 +373,8 @@ static SelvaHierarchyNode *newNode(struct SelvaHierarchy *hierarchy, const Selva
     memset(node, 0, sizeof(*node));
 
 #if 0
-    fprintf(stderr, "%s:%d: Creating node %.*s\n",
-            __FILE__, __LINE__,
-            (int)SELVA_NODE_ID_SIZE, id);
+    SELVA_LOG(SELVA_LOGL_DBG, "Creating node %.*s",
+              (int)SELVA_NODE_ID_SIZE, id);
 #endif
 
     memcpy(node->id, id, SELVA_NODE_ID_SIZE);
@@ -833,10 +832,9 @@ static int cross_insert_children(
             (void)SVector_InsertFast(&child->parents, node);
 
 #if 0
-            fprintf(stderr, "%s:%d: Inserted %.*s.children <= %.*s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node->id,
-                    (int)SELVA_NODE_ID_SIZE, child->id);
+            SELVA_LOG(SELVA_LOGL_DBG, "Inserted %.*s.children <= %.*s",
+                      (int)SELVA_NODE_ID_SIZE, node->id,
+                      (int)SELVA_NODE_ID_SIZE, child->id);
 #endif
 
             /*
@@ -937,10 +935,9 @@ static int cross_insert_parents(
             (void)SVector_InsertFast(&parent->children, node);
 
 #if 0
-            fprintf(stderr, "%s:%d: Inserted %.*s.parents <= %.*s\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node->id,
-                    (int)SELVA_NODE_ID_SIZE, parent->id);
+            SELVA_LOG(SELVA_LOGL_DBG, "Inserted %.*s.parents <= %.*s",
+                      (int)SELVA_NODE_ID_SIZE, node->id,
+                      (int)SELVA_NODE_ID_SIZE, parent->id);
 #endif
 
             /*
@@ -1315,7 +1312,7 @@ static int remove_missing(
             Selva_NodeId arr[1];
 
 #if 0
-            fprintf(stderr, "%s:%d: Removing %.*s.%s.%.*s\n", __FILE__, __LINE__,
+            SELVA_LOG(SELVA_LOGL_DBG, "Removing %.*s.%s.%.*s",
                     (int)SELVA_NODE_ID_SIZE, node->id,
                     rel == RELATIONSHIP_CHILD ? SELVA_PARENTS_FIELD : SELVA_CHILDREN_FIELD,
                     (int)SELVA_NODE_ID_SIZE, adj->id);
@@ -2142,7 +2139,7 @@ static int bfs_edge(
         edge_field = Edge_GetField(node, field_name_str, field_name_len);
         if (!edge_field) {
 #if 0
-            fprintf(stderr, "Edge field %.*s not found in %.*s\n",
+            SELVA_LOG(SELVA_LOGL_DBG, "Edge field %.*s not found in %.*s",
                     (int)field_name_len, field_name_str,
                     (int)SELVA_NODE_ID_SIZE, node->id);
 #endif
@@ -2735,10 +2732,9 @@ static struct compressed_rms *compress_subtree(SelvaHierarchy *hierarchy, struct
     if (err) {
         /* Not a valid subtree. */
 #if 0
-        fprintf(stderr, "%s:%d: %.*s is not a valid subtree for compression: %s\n",
-                __FILE__, __LINE__,
-                (int)SELVA_NODE_ID_SIZE, node->id,
-                selva_strerror(err));
+        SELVA_LOG(SELVA_LOGL_DBG, "%.*s is not a valid subtree for compression: %s",
+                  (int)SELVA_NODE_ID_SIZE, node->id,
+                  selva_strerror(err));
 #endif
         return NULL;
     }
@@ -2882,9 +2878,8 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
     SELVA_TRACE_END(restore_subtree);
 
 #if 0
-    fprintf(stderr, "%s:%d: Restored the subtree of %.*s\n",
-            __FILE__, __LINE__,
-            (int)SELVA_NODE_ID_SIZE, id);
+    SELVA_LOG(SELVA_LOGL_DBG, "Restored the subtree of %.*s",
+              (int)SELVA_NODE_ID_SIZE, id);
 #endif
 
     return err;
@@ -2924,9 +2919,8 @@ static void auto_compress_proc(struct RedisModuleCtx *ctx, void *data) {
             if (!node || node->flags & SELVA_NODE_FLAGS_DETACHED) {
                 /* This should be unlikely to occur at this point. */
 #if 0
-                fprintf(stderr, "%s:%d Ignoring (%p) %.*s\n",
-                        __FILE__, __LINE__,
-                        node, (int)SELVA_NODE_ID_SIZE, node_id);
+                SELVA_LOG(SELVA_LOGL_DBG, "Ignoring (%p) %.*s",
+                          node, (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
                 continue;
             }
@@ -2939,9 +2933,8 @@ static void auto_compress_proc(struct RedisModuleCtx *ctx, void *data) {
             (void)detach_subtree(hierarchy, node, SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM);
 #if 0
             if (!err) {
-                fprintf(stderr, "%s:%d: Auto-compressed %.*s\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, node_id);
+                SELVA_LOG(SELVA_LOGL_DBG, "Auto-compressed %.*s",
+                          (int)SELVA_NODE_ID_SIZE, node_id);
             }
 #endif
         }

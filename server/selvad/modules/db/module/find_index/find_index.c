@@ -178,9 +178,8 @@ static void update_index(
             Selva_NodeId node_id;
 
             SelvaHierarchy_GetNodeId(node_id, node);
-            fprintf(stderr, "%s:%d: The index must be purged and refreshed because %.*s was removed\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node_id);
+            SELVA_LOG(SELVA_LOGL_DBG, "The index must be purged and refreshed because %.*s was removed",
+                      (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
 
             icb_res_destroy(icb);
@@ -213,9 +212,8 @@ static void update_index(
                 Selva_NodeId node_id;
 
                 SelvaHierarchy_GetNodeId(node_id, node);
-                fprintf(stderr, "%s:%d: Adding node %.*s to the index after refresh\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, node_id);
+                SELVA_LOG(SELVA_LOGL_DBG, "Adding node %.*s to the index after refresh",
+                          (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
                 icb_res_add(icb, node);
             }
@@ -249,9 +247,8 @@ static void update_index(
                 Selva_NodeId node_id;
 
                 SelvaHierarchy_GetNodeId(node_id, node);
-                fprintf(stderr, "%s:%d: Adding node %.*s to the index\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, node_id);
+                SELVA_LOG(SELVA_LOGL_DBG, "Adding node %.*s to the index",
+                          (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
             }
         }
@@ -260,9 +257,8 @@ static void update_index(
         Selva_NodeId node_id;
 
         SelvaHierarchy_GetNodeId(node_id, node);
-        fprintf(stderr, "%s:%d: NOP %x for node %.*s\n",
-                __FILE__, __LINE__,
-                (unsigned)event_flags, (int)SELVA_NODE_ID_SIZE, node_id);
+        SELVA_LOG(SELVA_LOGL_DBG, "NOP %x for node %.*s",
+                  (unsigned)event_flags, (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
     }
 }
@@ -372,9 +368,8 @@ __attribute__((nonnull (1, 2))) static int destroy_icb(
     int err;
 
 #if 0
-    fprintf(stderr, "%s:%d: Destroying icb for %.*s\n",
-            __FILE__, __LINE__,
-            (int)icb->name_len, icb->name_str);
+    SELVA_LOG(SELVA_LOGL_DBG, "Destroying icb for %.*s",
+              (int)icb->name_len, icb->name_str);
 #endif
 
     err = discard_index(hierarchy, icb);
@@ -431,7 +426,7 @@ static void make_indexing_decission_proc(struct event *e __unused, void *data) {
     struct poptop_list_el *el;
 
 #if 0
-    fprintf(stderr, "TOCK\n");
+    SELVA_LOG(SELVA_LOGL_DBG, "TOCK");
 #endif
 
     hierarchy->dyn_index.proc_timer_active = 0;
@@ -581,7 +576,7 @@ static void icb_proc(struct event *e __unused, void *data) {
     struct SelvaFindIndexControlBlock *icb = (struct SelvaFindIndexControlBlock *)data;
 
 #if 0
-    fprintf(stderr, "TICK\n");
+    SELVA_LOG(SELVA_LOGL_DBG, "TICK");
 #endif
 
     /* Recreate the timer. */
@@ -631,11 +626,10 @@ static void icb_proc(struct event *e __unused, void *data) {
          */
         poptop_maybe_add(&icb->hierarchy->dyn_index.top_indices, score, icb);
 #if 0
-        fprintf(stderr, "%s:%d: Maybe added %.*s:%p to poptop with score: %f\n",
-                __FILE__, __LINE__,
-                (int)icb->name_len, icb->name_str,
-                icb,
-                score);
+        SELVA_LOG(SELVA_LOGL_DBG, "Maybe added %.*s:%p to poptop with score: %f",
+                  (int)icb->name_len, icb->name_str,
+                  icb,
+                  score);
 #endif
     }
 }
@@ -1100,9 +1094,8 @@ static int _debug_index(struct selva_server_response_out *resp, struct SelvaHier
                 return n;
             }
         } else {
-            fprintf(stderr, "%s:%d: Unsupported index type: %s\n",
-                    __FILE__, __LINE__,
-                    SelvaObject_Type2String(type, NULL));
+            SELVA_LOG(SELVA_LOGL_ERR, "Unsupported index type: %s",
+                      SelvaObject_Type2String(type, NULL));
         }
     }
 

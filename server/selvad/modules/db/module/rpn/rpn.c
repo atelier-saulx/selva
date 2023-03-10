@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #define _GNU_SOURCE
@@ -699,10 +699,9 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
                 return push_selva_string_result(ctx, any.str);
             } else {
 #if 0
-                fprintf(stderr, "%s:%d: Field \"%s\" not found in node: \"%.*s\"\n",
-                        __FILE__, __LINE__,
-                        OPERAND_GET_S(field),
-                        (int)SELVA_NODE_ID_SIZE, (const void *)OPERAND_GET_S(ctx->reg[0]));
+                SELVA_LOG(SELVA_LOGL_DBG, "Field \"%s\" not found in node: \"%.*s\"\n",
+                          OPERAND_GET_S(field),
+                          (int)SELVA_NODE_ID_SIZE, (const void *)OPERAND_GET_S(ctx->reg[0]));
 #endif
                 return push_empty_value(ctx);
             }

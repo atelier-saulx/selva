@@ -111,30 +111,26 @@ static int update_hierarchy(
 
         if (isFieldParents) { /* parents */
 #if 0
-            fprintf(stderr, "%s:%d: Set parents of %.*s nr_nodes: %zu ",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node_id,
-                    nr_nodes);
+            SELVA_LOG(SELVA_LOGL_DBG, "Set parents of %.*s nr_nodes: %zu ",
+                      (int)SELVA_NODE_ID_SIZE, node_id,
+                      nr_nodes);
             for (size_t i = 0; i < nr_nodes; i++) {
-                fprintf(stderr, "%.*s, ", (int)SELVA_NODE_ID_SIZE, ((const Selva_NodeId *)setOpts->$value)[i]);
+                SELVA_LOG(SELVA_LOGL_DBG, "%.*s, ", (int)SELVA_NODE_ID_SIZE, ((const Selva_NodeId *)setOpts->$value)[i]);
 
             }
-            fprintf(stderr, "\n");
 #endif
 
             err = SelvaModify_SetHierarchyParents(hierarchy, node_id,
                     nr_nodes, (const Selva_NodeId *)setOpts->$value);
         } else { /* children */
 #if 0
-            fprintf(stderr, "%s:%d: Set children of %.*s nr_nodes: %zu\n",
-                    __FILE__, __LINE__,
-                    (int)SELVA_NODE_ID_SIZE, node_id,
-                    nr_nodes);
+            SELVA_LOG(SELVA_LOGL_DBG, "Set children of %.*s nr_nodes: %zu",
+                      (int)SELVA_NODE_ID_SIZE, node_id,
+                      nr_nodes);
             for (size_t i = 0; i < nr_nodes; i++) {
-                fprintf(stderr, "%.*s, ", (int)SELVA_NODE_ID_SIZE, ((const Selva_NodeId *)setOpts->$value)[i]);
+                SELVA_LOG(SELVA_LOGL_DBG, "%.*s, ", (int)SELVA_NODE_ID_SIZE, ((const Selva_NodeId *)setOpts->$value)[i]);
 
             }
-            fprintf(stderr, "\n");
 #endif
 
             err = SelvaModify_SetHierarchyChildren(hierarchy, node_id,
@@ -155,10 +151,9 @@ static int update_hierarchy(
 
             if (isFieldParents) { /* parents */
 #if 0
-                fprintf(stderr, "%s:%d: Add to parents of %.*s nr_nodes: %zu\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, node_id,
-                        nr_nodes);
+                SELVA_LOG(SELVA_LOGL_DBG, "Add to parents of %.*s nr_nodes: %zu",
+                          (int)SELVA_NODE_ID_SIZE, node_id,
+                          nr_nodes);
 #endif
 
                 err = SelvaModify_AddHierarchy(hierarchy, node_id,
@@ -166,10 +161,9 @@ static int update_hierarchy(
                         0, NULL);
             } else { /* children */
 #if 0
-                fprintf(stderr, "%s:%d: Add to children of %.*s nr_nodes: %zu\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, node_id,
-                        nr_nodes);
+                SELVA_LOG(SELVA_LOGL_DBG, "Add to children of %.*s nr_nodes: %zu",
+                          (int)SELVA_NODE_ID_SIZE, node_id,
+                          nr_nodes);
 #endif
 
                 err = SelvaModify_AddHierarchy(hierarchy, node_id,
@@ -286,12 +280,11 @@ static int update_edge(
                  * the constraints don't match.
                  */
 #if 0
-                fprintf(stderr, "%s:%d: Adding an edge from %.*s.%.*s to %.*s failed with an error: %s\n",
-                        __FILE__, __LINE__,
-                        (int)SELVA_NODE_ID_SIZE, node_id,
-                        (int)field_len, field_str,
-                        (int)SELVA_NODE_ID_SIZE, dst_node_id,
-                        selva_strerror(err));
+                SELVA_LOG(SELVA_LOGL_DBG, "Adding an edge from %.*s.%.*s to %.*s failed with an error: %s",
+                          (int)SELVA_NODE_ID_SIZE, node_id,
+                          (int)field_len, field_str,
+                          (int)SELVA_NODE_ID_SIZE, dst_node_id,
+                          selva_strerror(err));
 #endif
                 return err;
             }
@@ -328,12 +321,11 @@ static int update_edge(
                      * the constraints don't match.
                      */
 #if 0
-                    fprintf(stderr, "%s:%d: Adding an edge from %.*s.%.*s to %.*s failed with an error: %s\n",
-                            __FILE__, __LINE__,
-                            (int)SELVA_NODE_ID_SIZE, node_id,
-                            (int)field_len, field_str,
-                            (int)SELVA_NODE_ID_SIZE, dst_node_id,
-                            selva_strerror(err));
+                    SELVA_LOG(SELVA_LOGL_DBG, "Adding an edge from %.*s.%.*s to %.*s failed with an error: %s",
+                              (int)SELVA_NODE_ID_SIZE, node_id,
+                              (int)field_len, field_str,
+                              (int)SELVA_NODE_ID_SIZE, dst_node_id,
+                              selva_strerror(err));
 #endif
                     return err;
                 }

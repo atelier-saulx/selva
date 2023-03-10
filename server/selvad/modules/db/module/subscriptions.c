@@ -262,8 +262,7 @@ Selva_SubscriptionMarkerId Selva_GenSubscriptionMarkerId(Selva_SubscriptionMarke
  */
 __attribute__((nonnull (1))) static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
 #if 0
-    fprintf(stderr, "%s:%d: Destroying marker %p %" PRImrkId " %.*s\n",
-            __FILE__, __LINE__,
+    SELVA_LOG(SELVA_LOGL_DBG, "Destroying marker %p %" PRImrkId " %.*s",
             marker, marker->marker_id,
             (int)SELVA_NODE_ID_SIZE, marker->node_id);
 #endif
@@ -388,7 +387,7 @@ static void destroy_sub(SelvaHierarchy *hierarchy, struct Selva_Subscription *su
 
 #if 0
     char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
-    fprintf(stderr, "Destroying sub_id %s\n", Selva_SubscriptionId2str(str, sub->sub_id));
+    SELVA_LOG(SELVA_LOGL_DBG, "Destroying sub_id %s", Selva_SubscriptionId2str(str, sub->sub_id));
 #endif
 
     /* Remove missing accessor markers. */
@@ -541,11 +540,10 @@ static int set_node_marker_cb(
     Selva_NodeId node_id;
 
     SelvaHierarchy_GetNodeId(node_id, node);
-    fprintf(stderr, "%s:%d: Set sub marker %s:%" PRImrkId " to %.*s\n",
-            __FILE__, __LINE__,
-            Selva_SubscriptionId2str(str, marker->sub->sub_id),
-            marker->marker_id,
-            (int)SELVA_NODE_ID_SIZE, node_id);
+    SELVA_LOG(SELVA_LOGL_DBG, "Set sub marker %s:%" PRImrkId " to %.*s",
+              Selva_SubscriptionId2str(str, marker->sub->sub_id),
+              marker->marker_id,
+              (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
 
     metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
@@ -572,14 +570,13 @@ static int clear_node_marker_cb(
     Selva_NodeId id;
 
     SelvaHierarchy_GetNodeId(id, node);
-    fprintf(stderr, "%s:%d: Clear sub marker %s:%" PRImrkId " (%p start_node_id: %.*s) from node %.*s (nr_subs: %zd)\n",
-            __FILE__, __LINE__,
-            Selva_SubscriptionId2str(str, marker->sub->sub_id),
-            marker->marker_id,
-            marker,
-            (int)SELVA_NODE_ID_SIZE, marker->node_id,
-            (int)SELVA_NODE_ID_SIZE, id,
-            SVector_Size(&metadata->sub_markers.vec));
+    SELVA_LOG(SELVA_LOGL_DBG, "Clear sub marker %s:%" PRImrkId " (%p start_node_id: %.*s) from node %.*s (nr_subs: %zd)",
+              Selva_SubscriptionId2str(str, marker->sub->sub_id),
+              marker->marker_id,
+              marker,
+              (int)SELVA_NODE_ID_SIZE, marker->node_id,
+              (int)SELVA_NODE_ID_SIZE, id,
+              SVector_Size(&metadata->sub_markers.vec));
 #endif
 
     clear_marker(&metadata->sub_markers, marker);
@@ -950,10 +947,9 @@ static int SelvaSubscriptions_TraverseMarker(
 #if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-        fprintf(stderr, "%s:%d: Could not fully apply a subscription marker: %s:%" PRImrkId " err: %s\n",
-                __FILE__, __LINE__,
-                Selva_SubscriptionId2str(str, marker->sub->sub_id), marker->marker_id,
-                selva_strerror(err));
+        SELVA_LOG(SELVA_LOGL_DBG, "Could not fully apply a subscription marker: %s:%" PRImrkId " err: %s",
+                  Selva_SubscriptionId2str(str, marker->sub->sub_id), marker->marker_id,
+                  selva_strerror(err));
 #endif
 
         /*
@@ -1079,11 +1075,10 @@ static void clear_node_sub(struct SelvaHierarchy *hierarchy, struct Selva_Subscr
 #if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-        fprintf(stderr, "%s:%d: Clear sub marker %s:%" PRImrkId " from node %.*s\n",
-                __FILE__, __LINE__,
-                Selva_SubscriptionId2str(str, marker->sub->sub_id),
-                marker->marker_id,
-                (int)SELVA_NODE_ID_SIZE, node_id);
+        SELVA_LOG(SELVA_LOGL_DBG, "Clear sub marker %s:%" PRImrkId " from node %.*s",
+                  Selva_SubscriptionId2str(str, marker->sub->sub_id),
+                  marker->marker_id,
+                  (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
 
         rpn_ctx = rpn_init(1);
@@ -1143,9 +1138,8 @@ void SelvaSubscriptions_ClearAllMarkers(
     }
 
 #if 0
-    fprintf(stderr, "%s:%d: Removing %zu subscription markers from %.*s\n",
-            __FILE__, __LINE__,
-            nr_markers, (int)SELVA_NODE_ID_SIZE, node_id);
+    SELVA_LOG(SELVA_LOGL_DBG, "Removing %zu subscription markers from %.*s",
+              nr_markers, (int)SELVA_NODE_ID_SIZE, node_id);
 #endif
 
     if (unlikely(!SVector_Clone(&markers, &metadata->sub_markers.vec, NULL))) {
@@ -1202,7 +1196,7 @@ void SelvaSubscriptions_InheritParent(
         SVector_ForeachBegin(&it, markers_vec);
         while ((marker = SVector_Foreach(&it))) {
 #if 0
-            fprintf(stderr, "Inherit marker %d %.*s <- %.*s\n",
+            SELVA_LOG(SELVA_LOGL_DBG, "Inherit marker %d %.*s <- %.*s",
                     (int)marker->dir,
                     (int)SELVA_NODE_ID_SIZE, node_id,
                     (int)SELVA_NODE_ID_SIZE, parent_id);
@@ -1774,9 +1768,8 @@ static void send_update_events(struct SelvaHierarchy *hierarchy) {
 #if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-        fprintf(stderr, "%s:%d: publish update event %s\n",
-                __FILE__, __LINE__,
-                Selva_SubscriptionId2str(str, sub->sub_id));
+        SELVA_LOG(SELVA_LOGL_DBG, "Publish update event %s",
+                  Selva_SubscriptionId2str(str, sub->sub_id));
 #endif
 
         AsyncTask_PublishSubscriptionUpdate(sub->sub_id);
@@ -1794,9 +1787,8 @@ static void send_trigger_events(struct SelvaHierarchy *hierarchy) {
 #if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-        fprintf(stderr, "%s:%d: publish trigger event %s\n",
-                __FILE__, __LINE__,
-                Selva_SubscriptionId2str(str, marker->sub->sub_id));
+        SELVA_LOG(SELVA_LOGL_DBG, "Publish trigger event %s",
+                  Selva_SubscriptionId2str(str, marker->sub->sub_id));
 #endif
 
         AsyncTask_PublishSubscriptionTrigger(marker->sub->sub_id, marker->filter_history.node_id);

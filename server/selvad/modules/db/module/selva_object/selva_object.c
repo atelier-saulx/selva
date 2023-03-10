@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #define _GNU_SOURCE
@@ -425,7 +425,7 @@ static int insert_new_key(struct SelvaObject *obj, const char *name_str, size_t 
     }
 #if 0
     if ((char *)key >= obj->emb_keys && (char *)key < obj->emb_keys + sizeof(obj->emb_keys)) {
-        fprintf(stderr, "Key \"%.*s\" is embedded %zu\n", (int)name_len, name_str, EMBEDDED_NAME_MAX);
+        SELVA_LOG(SELVA_LOGL_DBG, "Key \"%.*s\" is embedded %zu", (int)name_len, name_str, EMBEDDED_NAME_MAX);
     }
 #endif
 
@@ -2447,8 +2447,7 @@ int SelvaObject_ReplyWithWildcardStr(
                  * but if it happens we must skip to avoid segfaulting.
                  */
 #if 0
-                fprintf(stderr, "%s:%d: Failed to get value for \"%.*s\"\n",
-                        __FILE__, __LINE__,
+                SELVA_LOG(SELVA_LOGL_DBG, "Failed to get value for \"%.*s\"",
                         (int)new_field_len, new_field);
 #endif
                 continue;
