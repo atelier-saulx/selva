@@ -71,10 +71,10 @@
     "get-port": "^5.1.1",
     "mkdirp": "1.0.4",
     "os-utils": "^0.0.14",
-    "pg": "8.7.1",
     "pidusage": "^2.0.21",
     "redis": "^2.8.0",
     "rimraf": "^3.0.2",
     "@saulx/redis-client": "^1.0.0"
   }
 }
+

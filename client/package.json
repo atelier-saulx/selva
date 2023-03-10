@@ -50,35 +50,35 @@
     ]
   },
   "devDependencies": {
-    "@types/pg": "^8.6.1",
     "@saulx/selva-server": "20.1.3",
-    "before-exit": "1.0.0",
-    "async-exec": "^1.1.0",
     "@sindresorhus/fnv1a": "^2.0.1",
     "@types/redis": "^2.8.28",
+    "async-exec": "^1.1.0",
     "async-sema": "^3.1.0",
     "ava": "3.15.0",
+    "before-exit": "1.0.0",
     "cli-spinners": "^2.5.0",
-    "rimraf": "^3.0.2",
     "get-port": "^5.1.1",
     "husky": "^5.0.9",
     "lint-staged": "^10.5.4",
+    "rimraf": "^3.0.2",
     "ts-node": "^9.1.1",
     "typescript": "^4.1.4",
     "typescript-to-lua": "^0.30.1"
   },
   "dependencies": {
-    "@saulx/validators": "^1.1.0",
-    "pg": "8.7.1",
-    "pg-native": "3.0.0",
-    "squel": "^5.13.0",
-    "data-record": "^1.0.0",
+    "@google-cloud/bigquery": "^6.1.0",
+    "@google-cloud/bigquery-storage": "^3.3.0",
+    "@saulx/diff": "^1.1.3",
+    "@saulx/redis-client": "^1.0.0",
     "@saulx/selva-query-ast-parser": "^4.0.2",
+    "@saulx/utils": "^2.0.1",
+    "@saulx/validators": "^1.1.0",
     "@types/uuid": "^8.3.0",
     "chalk": "^4.1.0",
-    "@saulx/redis-client": "^1.0.0",
-    "uuid": "^8.3.2",
-    "@saulx/utils": "^2.0.1",
-    "@saulx/diff": "^1.1.3"
+    "data-record": "^1.0.0",
+    "google-protobuf": "^3.21.2",
+    "squel": "^5.13.0",
+    "uuid": "^8.3.2"
   }
 }

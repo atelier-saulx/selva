@@ -32,7 +32,7 @@ export default async function execTimeseries(
   lang: string,
   ctx: ExecContext
 ): Promise<any> {
-  await client.pg.connect()
+  await client.bq.connect()
 
   const fieldSchema = getNestedSchema(
     client.schemas[ctx.db],
@@ -165,7 +165,7 @@ export default async function execTimeseries(
     tsCtx.selectFields = fields
   }
 
-  const result: any = await client.pg.select(tsCtx, op)
+  const result: any = await client.bq.select(tsCtx, op)
   return result.rows.map((row) => {
     if (fields.size) {
       const r: any = { value: {} }

@@ -1,7 +1,4 @@
-import { QueryResult } from 'pg'
-import PGConnection from '../connection/pg'
-import TimeseriesCache from './timeseriesCache'
-import { PG } from '../connection/pg/client'
+import BQConnection, { getTableName } from '../connection/bq'
 
 import { FieldSchema } from '../schema/types'
 import { convertNow, isFork } from '@saulx/selva-query-ast-parser'
@@ -13,12 +10,6 @@ import {
   GetOperationAggregate,
   GetOperationFind,
 } from '../get/types'
-
-export type Shard = {
-  ts: number
-  descriptor: ServerDescriptor
-  size: { relationSizeBytes: number; tableSizeBytes: number }
-}
 
 export type TimeseriesContext = {
   nodeType: string
@@ -33,37 +24,32 @@ export type TimeseriesContext = {
 }
 
 export const SELVA_TO_SQL_TYPE = {
-  float: 'DOUBLE PRECISION',
+  float: 'FLOAT64',
   boolean: 'BOOLEAN',
-  number: 'DOUBLE PRECISION',
-  int: 'integer',
-  string: 'text',
-  text: 'jsonb', // because of localization
-  json: 'jsonb',
-  id: 'text',
-  digest: 'text',
-  url: 'text',
-  email: 'text',
-  phone: 'text',
-  geo: 'jsonb',
-  type: 'text',
-  timestamp: 'TIMESTAMP',
-  reference: 'test',
-  references: 'JSONB',
-  object: 'JSONB',
-  record: 'JSONB',
-  array: 'JSONB',
+  number: 'FLOAT64',
+  int: 'INT64',
+  string: 'STRING',
+  STRING: 'JSON', // because of localization
+  json: 'JSON',
+  id: 'STRING',
+  digest: 'STRING',
+  url: 'STRING',
+  email: 'STRING',
+  phone: 'STRING',
+  geo: 'JSON',
+  type: 'STRING',
+  timestamp: 'INT64',
+  reference: 'STRING',
+  references: 'JSON',
+  object: 'JSON',
+  record: 'JSON',
+  array: 'JSON',
 }
-
-// for testing
-// const MAX_SHARD_SIZE_BYTES = -1
-// const NEXT_SHARD_OFFSET = 0
-const MAX_SHARD_SIZE_BYTES = 1e9 // 1 GB
-const NEXT_SHARD_OFFSET = 2 * 60 * 1e3
 
 const DEFAULT_QUERY_LIMIT = 500
 
-const sq = squel.useFlavour('postgres')
+// const sq = squel.useFlavour('postgres')
+const sq = squel
 
 function filterToExpr(
   exprCtx: TimeseriesContext,
@@ -87,7 +73,7 @@ function filterToExpr(
       }
     }
 
-    return sq.expr().and(`"ts" ${filter.$operator} to_timestamp(${v} / 1000.0)`)
+    return sq.expr().and(`ts ${filter.$operator} TIMESTAMP_MILLIS(${v})`)
   }
 
   const isObj = ['object', 'record'].includes(fieldSchema.type)
@@ -100,31 +86,44 @@ function filterToExpr(
   if (Array.isArray(filter.$value)) {
     let expr = sq.expr()
     for (const v of filter.$value) {
-      if (isObj) {
-        const split = f.split('.')
-        const col = split[0]
-        const path = split.slice(1).map((x) => `'${x}'::text`)
-        const eStr = `jsonb_extract_path_text(${col}::jsonb, ${path.join(
-          ', '
-        )})`
+      // if (isObj) {
+      //   const split = f.split('.')
+      //   const col = split[0]
+      //   const path = split.slice(1).map((x) => `'${x}'::text`)
+      //   const eStr = `jsonb_extract_path_text(${col}::jsonb, ${path.join(
+      //     ', '
+      //   )})`
+      //   expr = expr.or(`${eStr} ${filter.$operator} ?`, v)
+      // } else {
+      //   expr = expr.or(`"${f}" ${filter.$operator} ?`, v)
+      // }
 
-        expr = expr.or(`${eStr} ${filter.$operator} ?`, v)
+      if (isObj) {
+        expr = expr.or(`JSON_VALUE(${f}) ${filter.$operator} ?`, v)
       } else {
-        expr = expr.or(`"${f}" ${filter.$operator} ?`, v)
+        expr = expr.or(`${f} ${filter.$operator} ?`, v)
       }
     }
 
     return expr
   } else {
-    if (isObj) {
-      const split = f.split('.')
-      const col = split[0]
-      const path = split.slice(1).map((x) => `'${x}'::text`)
-      const eStr = `jsonb_extract_path_text(${col}::jsonb, ${path.join(', ')})`
+    // if (isObj) {
+    //   const split = f.split('.')
+    //   const col = split[0]
+    //   const path = split.slice(1).map((x) => `'${x}'::text`)
+    //   const eStr = `jsonb_extract_path_text(${col}::jsonb, ${path.join(', ')})`
 
-      return sq.expr().and(`${eStr} ${filter.$operator} ?`, filter.$value)
+    //   return sq.expr().and(`${eStr} ${filter.$operator} ?`, filter.$value)
+    // } else {
+    //   return sq.expr().and(`"${f}" ${filter.$operator} ?`, filter.$value)
+    // }
+
+    if (isObj) {
+      return sq
+        .expr()
+        .and(`JSON_VALUE(${f}) ${filter.$operator} ?`, filter.$value)
     } else {
-      return sq.expr().and(`"${f}" ${filter.$operator} ?`, filter.$value)
+      return sq.expr().and(`${f} ${filter.$operator} ?`, filter.$value)
     }
   }
 }
@@ -196,176 +195,31 @@ async function getInsertQueue(
   }
 }
 
-async function runSelect<T>(
+async function runSelect(
   tsCtx: TimeseriesContext,
-  shards: Shard[],
   client: SelvaClient,
   op: GetOperationFind | GetOperationAggregate,
   where: squel.Expression
-): Promise<QueryResult<T>> {
-  if (!shards.length) {
-    return { rows: [], command: 'select', rowCount: 0, oid: 0, fields: [] }
-  }
-
+): Promise<any> {
   let limit = tsCtx.limit
   // TODO: offset
   // let offset = tsCtx.offset
-  let hasLimit = limit > 0
 
-  let i = 0
-
-  let result: QueryResult<T>
-  if (tsCtx.order === 'desc') {
-    result = await queryInsertQueue(shards[0].descriptor, tsCtx, client, op, {
-      shard: shards[0].ts,
-      where,
-      limit,
-      offset: 0,
-    })
-  } else {
-    i = 1
-    result = await execTimeseries(shards[0].descriptor, tsCtx, client, op, {
-      shard: shards[0].ts,
-      where,
-      limit,
-      offset: 0,
-    })
-  }
-
-  limit -= result.rows.length
-
-  if (limit === 0) {
-    return result
-  } else if (limit < 0) {
-    result.rows = result.rows.slice(0, limit)
-    return result
-  }
-
-  for (; i < shards.length; i++) {
-    const { ts, descriptor } = shards[i]
-
-    const res = await execTimeseries(descriptor, tsCtx, client, op, {
-      shard: ts,
-      where,
-      limit,
-      offset: 0,
-    })
-
-    for (const row of res.rows) {
-      result.rows.push(row)
-      --limit
-
-      if (hasLimit && limit <= 0) {
-        return result
-      }
-    }
-  }
-
-  if (tsCtx.order === 'asc' && i >= shards.length) {
-    const res = await queryInsertQueue(
-      shards[0].descriptor,
-      tsCtx,
-      client,
-      op,
-      {
-        shard: shards[0].ts,
-        where,
-        limit,
-        offset: 0,
-      }
-    )
-
-    for (const row of res.rows) {
-      result.rows.push(row)
-      --limit
-
-      if (hasLimit && limit <= 0) {
-        break
-      }
-    }
-  }
-
-  return result
-}
-
-async function queryInsertQueue<T>(
-  pgDescriptor: string | ServerDescriptor,
-  tsCtx: TimeseriesContext,
-  client: SelvaClient,
-  op: GetOperationFind | GetOperationAggregate,
-  queryOptions: {
-    where: squel.Expression
-    shard: number | string
-    limit: number
-    offset: number
-  }
-): Promise<any> {
-  const { fieldSchema } = tsCtx
-
-  const insertQueue = await getInsertQueue(client, tsCtx, op.id, tsCtx.field)
-  if (!insertQueue.length) {
-    return { rows: [] }
-  }
-
-  const insertQueueSqlValues = insertQueue.map((e) => {
-    if (['object', 'record'].includes(e.context.fieldSchema.type)) {
-      return `(to_timestamp(${e.context.ts} / 1000.0), '${JSON.stringify(
-        e.context.payload
-      )}'::jsonb)`
-    } else if (e.context.fieldSchema.type === 'string') {
-      return `(to_timestamp(${e.context.ts} / 1000.0), '${e.context.payload}')`
-    } else {
-      return `(to_timestamp(${e.context.ts} / 1000.0), ${e.context.payload})`
-    }
+  const result = await execTimeseries(tsCtx, client, op, {
+    where,
+    limit,
+    offset: 0,
   })
-
-  let sql = sq
-    .select({
-      autoQuoteTableNames: false,
-      autoQuoteAliasNames: true,
-      nameQuoteCharacter: '"',
-    })
-    .from(`(VALUES ${insertQueueSqlValues.join(', ')}) AS t (ts, payload)`)
-    .field('ts', '_ts')
-    .where(queryOptions.where)
-
-  let isObj = false
-  if (
-    tsCtx?.selectFields?.size &&
-    ['object', 'record'].includes(fieldSchema.type)
-  ) {
-    isObj = true
-    for (const f of tsCtx.selectFields) {
-      const split = f.split('.')
-      const path = split.map((x) => `'${x}'::text`)
-      const eStr = `jsonb_extract_path_text(payload::jsonb, ${path.join(', ')})`
-      sql = sql.field(eStr, f)
-    }
-  } else {
-    sql = sql.field('payload', 'value')
-  }
-
-  sql = sql.order('ts', tsCtx.order === 'asc')
-
-  const params = sql.toParam({ numberedParametersStartAt: 1 })
-
-  const result: QueryResult<T> = await client.pg.pg.execute(
-    pgDescriptor,
-    params.text,
-    params.values
-  )
 
   return result
 }
 
 async function execTimeseries(
-  pgDescriptor: string | ServerDescriptor,
   tsCtx: TimeseriesContext,
   client: SelvaClient,
   op: GetOperationFind | GetOperationAggregate,
   queryOptions: {
     where: squel.Expression
-    shard: number | string
     limit: number
     offset: number
   }
@@ -374,16 +228,18 @@ async function execTimeseries(
 
   let sql = sq
     .select({
-      autoQuoteTableNames: true,
-      autoQuoteAliasNames: true,
-      nameQuoteCharacter: '"',
+      // autoQuoteTableNames: true,
+      // autoQuoteAliasNames: true,
+      // nameQuoteCharacter: '"',
+      autoQuoteTableNames: false,
+      autoQuoteAliasNames: false,
+      autoQuoteFieldNames: false,
     })
-    .from(`${nodeType}$${op.sourceField}$${queryOptions.shard}`)
+    .from(`selva_timeseries.${getTableName(tsCtx)}`)
     .field('ts', '_ts')
-    .where('"nodeId" = ?', op.id)
+    .where('nodeId = ?', op.id)
     .where(queryOptions.where)
     .limit(queryOptions.limit <= 0 ? null : queryOptions.limit)
-    .offset(queryOptions.offset <= 0 ? null : queryOptions.offset)
 
   let isObj = false
   if (
@@ -392,10 +248,11 @@ async function execTimeseries(
   ) {
     isObj = true
     for (const f of tsCtx.selectFields) {
-      const split = f.split('.')
-      const path = split.map((x) => `'${x}'::text`)
-      const eStr = `jsonb_extract_path_text(payload::jsonb, ${path.join(', ')})`
-      sql = sql.field(eStr, f)
+      //   const split = f.split('.')
+      //   const path = split.map((x) => `'${x}'::text`)
+      //   const eStr = `jsonb_extract_path_text(payload::jsonb, ${path.join(', ')})`
+      //   sql = sql.field(eStr, f)
+      sql.field(`payload.${f}`, f)
     }
   } else {
     sql = sql.field('payload', 'value')
@@ -403,30 +260,35 @@ async function execTimeseries(
 
   sql = sql.order('ts', tsCtx.order === 'asc')
 
-  const params = sql.toParam({ numberedParametersStartAt: 1 })
-  // console.log('SQL', params, 'tsCtx', tsCtx)
+  const params = sql.toParam()
 
-  const result: QueryResult<any> = await client.pg.pg.execute(
-    pgDescriptor,
-    params.text,
-    params.values
-  )
+  const result: any[] = await client.bq.bq.execute(params.text, params.values)
+  if (['object', 'record'].includes(tsCtx?.fieldSchema?.type)) {
+    result.forEach((row) => {
+      try {
+        row.value = JSON.parse(row.value)
+      } catch (e) {}
+      row._ts = row._ts.value
+    })
+  } else {
+    result.forEach((row) => {
+      row._ts = row._ts.value
+    })
+  }
 
-  return result
+  return { rows: result }
 }
 
 export class TimeseriesClient {
   private client: SelvaClient
-  public pg: PGConnection
-  public tsCache: TimeseriesCache
+  public bq: BQConnection
 
   private isConnected: boolean = false
 
   constructor(client: SelvaClient) {
     // TODO: credentials
     this.client = client
-    this.pg = new PGConnection({ user: 'postgres', password: 'baratta' })
-    this.tsCache = new TimeseriesCache(this.client)
+    this.bq = new BQConnection()
   }
 
   async connect() {
@@ -434,7 +296,6 @@ export class TimeseriesClient {
       return
     }
 
-    await this.tsCache.subscribe()
     this.isConnected = true
   }
 
@@ -444,232 +305,52 @@ export class TimeseriesClient {
       return
     }
 
-    this.tsCache.unsubscribe()
     this.isConnected = false
   }
 
-  public getMinInstance(): PG {
-    const instances = Object.keys(this.tsCache.instances)
-    if (!instances.length) {
-      return null
-    }
-
-    let minId = instances[0]
-    let minVal =
-      this.tsCache.instances[instances[0]].meta.totalRelationSizeBytes
-    for (let i = 1; i < instances.length; i++) {
-      const id = instances[i]
-      const { meta } = this.tsCache.instances[id]
-
-      if (meta.totalRelationSizeBytes < minVal) {
-        minId = id
-        minVal = meta.totalRelationSizeBytes
-      }
-    }
-
-    return this.pg.getClient(minId)
-  }
-
-  public hasTimeseries(tsCtx: TimeseriesContext): boolean {
-    const tsName = `${tsCtx.nodeType}$${tsCtx.field}`
-    return !!this.tsCache.index[tsName]
-  }
-
-  public async execute<T>(
+  public async execute(
     tsCtx: string,
     query: string,
     params: unknown[]
-  ): Promise<QueryResult<T>> {
-    const [nodeType, field, shard] = tsCtx.split('$')
-
-    const { descriptor } = this.getShards({ nodeType, field })[shard]
-    return this.pg.execute(descriptor, query, params)
+  ): Promise<any[]> {
+    return this.bq.execute(query, params)
   }
 
-  private getShards(tsCtx: TimeseriesContext): Shard[] {
-    const tsName = `${tsCtx.nodeType}$${tsCtx.field}`
-    const shards = this.tsCache.index[tsName]
-    if (!shards || !shards[0]) {
-      return []
-    }
-
-    let shardList = Object.keys(shards)
-      .map((k) => Number(k))
-      .sort((a, b) => a - b)
-      .map((ts) => {
-        return {
-          ts,
-          descriptor: shards[ts].descriptor,
-          size: shards[ts].meta.size,
-        }
-      })
-
-    return shardList
+  async ensureTableExists(tsCtx: TimeseriesContext): Promise<void> {
+    await this.bq.createTable(tsCtx)
   }
 
-  async ensureTableExists(
-    context: TimeseriesContext,
-    ts: number = 0
-  ): Promise<void> {
-    const tsName = `${context.nodeType}$${context.field}`
-    const tableName = `${tsName}$${ts}`
-
-    const createTable = `
-    CREATE TABLE IF NOT EXISTS "${tableName}" (
-      "nodeId" text,
-      payload ${SELVA_TO_SQL_TYPE[context.fieldSchema.type]},
-      ts TIMESTAMP,
-      "fieldSchema" jsonb
-    );
-    `
-    const pg = this.client.pg.getMinInstance()
-
-    const createNodeIdIndex = `CREATE INDEX IF NOT EXISTS "${tableName}_node_id_idx" ON "${tableName}" ("nodeId");`
-
-    const { meta: current, tableMeta } = this.client.pg.tsCache.instances[pg.id]
-    const stats = {
-      cpu: current.cpu,
-      memory: current.memory,
-      timestamp: Date.now(),
-      tableMeta: Object.assign({}, tableMeta || {}, {
-        [tableName]: {
-          tableName,
-          tableSizeBytes: 0,
-          relationSizeBytes: 0,
-        },
-      }),
-    }
-
-    this.client.pg.tsCache.updateIndexByInstance(pg.id, { stats })
-    await this.client.redis.hset(
-      { type: 'timeseriesRegistry' },
-      'servers',
-      pg.id,
-      JSON.stringify({ stats })
-    )
-    this.client.redis.publish(
-      { type: 'timeseriesRegistry' },
-      constants.TS_REGISTRY_UPDATE,
-      JSON.stringify({
-        event: 'new_shard',
-        ts: Date.now(),
-        id: pg.id,
-        data: { stats },
-      })
-    )
-
-    await pg.execute<void>(createTable, [])
-    await pg.execute<void>(createNodeIdIndex, [])
-  }
-
-  private async insertShard(
+  public async insert(
     tsCtx: TimeseriesContext,
-    ts: number
-  ): Promise<Shard> {
-    const shards = this.getShards(tsCtx)
-    if (!shards.length) {
+    entries: { nodeId: string; ts: number; payload: any }[]
+  ): Promise<any[]> {
+    try {
       await this.ensureTableExists(tsCtx)
-      return this.insertShard(tsCtx, ts)
+    } catch (e) {
+      // console.error('TABLE CREATION ERROR', e)
     }
 
-    let i = shards.length - 1
-    for (; i >= 0; i--) {
-      if (ts > shards[i].ts) {
-        break
-      }
+    try {
+      const res = await this.bq.insertStream(tsCtx, entries)
+      return res
+    } catch (e) {
+      console.error(e, JSON.stringify(e))
+      throw e
     }
-
-    if (
-      i === shards.length - 1 &&
-      shards[i].size.relationSizeBytes > MAX_SHARD_SIZE_BYTES
-    ) {
-      // the new shard becomes valid in 2 minutes
-      await this.ensureTableExists(tsCtx, Date.now() + NEXT_SHARD_OFFSET)
-    }
-
-    return shards[i]
   }
 
-  public async insert<T>(
-    tsCtx: TimeseriesContext,
-    entry: { nodeId: string; ts: number; payload: any }
-  ): Promise<QueryResult<T>> {
-    const shard = await this.insertShard(tsCtx, entry.ts)
-    const tableName = `${tsCtx.nodeType}$${tsCtx.field}$${shard.ts}`
-
-    const { nodeId, ts, payload } = entry
-    return this.pg.execute(
-      shard.descriptor,
-      `INSERT INTO "${tableName}" ("nodeId", payload, ts, "fieldSchema") VALUES ($1, $2, $3, $4)`,
-      [nodeId, payload, new Date(ts), tsCtx.fieldSchema]
-    )
-  }
-
-  private selectShards(tsCtx: TimeseriesContext): Shard[] {
-    let shards = this.getShards(tsCtx)
-
-    if (tsCtx.startTime) {
-      let startIdx = 0
-      let endIdx = shards.length - 1
-      for (let i = 1; i < shards.length; i++) {
-        const shard = shards[i]
-
-        if (shard.ts > tsCtx.startTime) {
-          break
-        }
-
-        startIdx = i
-      }
-
-      if (tsCtx.endTime) {
-        endIdx = startIdx
-        for (let i = startIdx + 1; i++; i < shards.length) {
-          const shard = shards[i]
-
-          if (shard.ts > tsCtx.endTime) {
-            break
-          }
-
-          endIdx = i
-        }
-      }
-
-      shards = shards.slice(startIdx, endIdx + 1)
-    } else if (tsCtx.endTime) {
-      let endIdx = shards.length - 1
-
-      for (let i = shards.length - 1; i >= 0; i--) {
-        const shard = shards[i]
-        if (tsCtx.endTime > shard.ts) {
-          break
-        }
-
-        endIdx = i
-      }
-
-      shards = shards.slice(0, endIdx + 1)
-    }
-
-    if (tsCtx.order === 'desc') {
-      shards.reverse()
-    }
-
-    return shards
-  }
-
-  public async select<T>(
+  public async select(
     tsCtx: TimeseriesContext,
     op: GetOperationFind | GetOperationAggregate
-  ): Promise<QueryResult<T>> {
+  ): Promise<any> {
     // order is important
     const where = toExpr(tsCtx, tsCtx.fieldSchema, op.filter)
-    const shards = this.selectShards(tsCtx)
 
     // apply context defaults for limiting result set size
     if (!(tsCtx.startTime && tsCtx.endTime) && tsCtx.limit === -1) {
       tsCtx.limit = DEFAULT_QUERY_LIMIT
     }
 
-    return runSelect<T>(tsCtx, shards, this.client, op, where)
+    return runSelect(tsCtx, this.client, op, where)
   }
 }
