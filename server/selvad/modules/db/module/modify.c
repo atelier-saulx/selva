@@ -1893,8 +1893,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
 
     selva_db_is_dirty = 1; /* TODO Not necessarily modified. */
 
-    /* TODO Would be nice to skip if not origin */
-    if (1 /* RedisModule_GetContextFlags() & REDISMODULE_CTX_FLAGS_MASTER */) {
+    if (selva_replication_get_mode() == SELVA_REPLICATION_MODE_ORIGIN) {
         struct replicate_ts replicate_ts;
 
         get_replicate_ts(&replicate_ts, node, created, updated);

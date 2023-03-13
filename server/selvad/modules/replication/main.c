@@ -24,13 +24,7 @@
 #include "selva_replication.h"
 #include "replication.h"
 
-enum replication_mode {
-    REPLICATION_MODE_NONE = 0,
-    REPLICATION_MODE_ORIGIN,
-    REPLICATION_MODE_REPLICA,
-};
-
-static enum replication_mode replication_mode = REPLICATION_MODE_NONE;
+static enum replication_mode replication_mode = SELVA_REPLICATION_MODE_NONE;
 static const char replication_mode_str[4][2 * sizeof(size_t)] = {
     "NONE",
     "ORIGIN",
@@ -45,6 +39,11 @@ static const struct config cfg_map[] = {
     { "AUTO_SAVE_INTERVAL",     CONFIG_INT, &auto_save_interval },
 };
 
+enum replication_mode selva_replication_get_mode(void)
+{
+    return replication_mode;
+}
+
 /*
  * replication_new_sdb() and replication_replicate() can be
  * called in any replication mode. However, the current mode affects the
@@ -54,11 +53,11 @@ static const struct config cfg_map[] = {
 void selva_replication_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
 {
     switch (replication_mode) {
-    case REPLICATION_MODE_ORIGIN:
+    case SELVA_REPLICATION_MODE_ORIGIN:
         memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
         replication_origin_new_sdb(filename);
         break;
-    case REPLICATION_MODE_REPLICA:
+    case SELVA_REPLICATION_MODE_REPLICA:
         memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
         replication_replica_new_sdb(filename);
         break;
@@ -70,7 +69,7 @@ void selva_replication_new_sdb(const struct selva_string *filename, const uint8_
 void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
 {
     switch (replication_mode) {
-    case REPLICATION_MODE_ORIGIN:
+    case SELVA_REPLICATION_MODE_ORIGIN:
         replication_origin_replicate(cmd, buf, buf_size);
         break;
     default:
@@ -81,7 +80,7 @@ void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
 void selva_replication_replicate_pass(int8_t cmd, void *buf, size_t buf_size)
 {
     switch (replication_mode) {
-    case REPLICATION_MODE_ORIGIN:
+    case SELVA_REPLICATION_MODE_ORIGIN:
         replication_origin_replicate_pass(cmd, buf, buf_size);
         break;
     default:
@@ -169,7 +168,7 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
-    if (replication_mode != REPLICATION_MODE_ORIGIN) {
+    if (replication_mode != SELVA_REPLICATION_MODE_ORIGIN) {
         send_mode_error(resp);
         return;
     }
@@ -251,7 +250,7 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
         return;
     }
 
-    if (replication_mode != REPLICATION_MODE_REPLICA) {
+    if (replication_mode != SELVA_REPLICATION_MODE_REPLICA) {
         send_mode_error(resp);
         return;
     }
@@ -292,19 +291,19 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
      * - cmd_eid
      */
     switch (replication_mode) {
-    case REPLICATION_MODE_NONE:
+    case SELVA_REPLICATION_MODE_NONE:
         selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
         selva_send_null(resp);
         selva_send_null(resp);
         selva_send_null(resp);
         break;
-    case REPLICATION_MODE_ORIGIN:
+    case SELVA_REPLICATION_MODE_ORIGIN:
         selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
         selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
         selva_send_llx(resp, (long long)replication_origin_get_last_sdb_eid());
         selva_send_llx(resp, (long long)replication_origin_get_last_cmd_eid());
         break;
-    case REPLICATION_MODE_REPLICA:
+    case SELVA_REPLICATION_MODE_REPLICA:
         selva_send_strf(resp, "%s_%s", replication_mode_str[replication_mode], replication_replica_is_stale() ? "STALE" : "ACTIVE");
         selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
         selva_send_llx(resp, (long long)replication_replica_get_last_sdb_eid());
@@ -341,14 +340,14 @@ __constructor void init(void)
     }
 
     switch (replication_mode) {
-    case REPLICATION_MODE_ORIGIN:
+    case SELVA_REPLICATION_MODE_ORIGIN:
         if (!auto_save_interval) {
             SELVA_LOG(SELVA_LOGL_INFO, "\"AUTO_SAVE_INTERVAL\" is recommended with the \"%s\" replication mode", replication_mode_str[replication_mode]);
         }
 
         replication_origin_init();
         break;
-    case REPLICATION_MODE_REPLICA:
+    case SELVA_REPLICATION_MODE_REPLICA:
         if (auto_save_interval) {
             SELVA_LOG(SELVA_LOGL_CRIT, "The replication mode \"%s\" and \"AUTO_SAVE_INTERVAL\" are mutually exclusive", replication_mode_str[replication_mode]);
             exit(EXIT_FAILURE);
