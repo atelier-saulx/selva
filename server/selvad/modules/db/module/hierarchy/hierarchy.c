@@ -166,11 +166,11 @@ static int isDecompressingSubtree;
  * Are we executing an RDB save.
  * TODO This should be technically per hierarchy structure.
  */
-static int flag_isRdbSaving;
-static int flag_isRdbLoading;
+static int flag_isSaving;
+static int flag_isLoading;
 
-static int isRdbLoading(void) {
-     return flag_isRdbLoading || isDecompressingSubtree;
+static int isLoading(void) {
+    return flag_isLoading || isDecompressingSubtree;
 }
 
 /* FIXME Only needed for subtree compression. */
@@ -382,7 +382,7 @@ static SelvaHierarchyNode *newNode(struct SelvaHierarchy *hierarchy, const Selva
     SVector_Init(&node->children, selva_glob_config.hierarchy_initial_vector_len, SVector_HierarchyNode_id_compare);
 
     /* The SelvaObject is created elsewhere if we are loading. */
-    if (likely(!isRdbLoading())) {
+    if (likely(!isLoading())) {
         int err;
 
         err = create_node_object(hierarchy, node);
@@ -620,7 +620,7 @@ static void delete_node_aliases(SelvaHierarchy *hierarchy, struct SelvaObject *o
 }
 
 static void del_node(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
-    const int send_events = !isRdbLoading();
+    const int send_events = !isLoading();
     struct SelvaObject *obj = GET_NODE_OBJ(node);
     Selva_NodeId id;
     int is_root;
@@ -684,7 +684,7 @@ static void del_node(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
 static void updateDepth(SelvaHierarchy *hierarchy, SelvaHierarchyNode *head) {
     SVector q;
 
-    if (unlikely(isRdbLoading())) {
+    if (unlikely(isLoading())) {
         /*
          * Skip updates for now as it would require a full BFS pass for every new node.
          */
@@ -743,7 +743,7 @@ ssize_t SelvaModify_GetHierarchyDepth(SelvaHierarchy *hierarchy, const Selva_Nod
 static inline void publishAncestorsUpdate(
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node) {
-    if (!isRdbLoading()) {
+    if (!isLoading()) {
         const char *field_str = SELVA_ANCESTORS_FIELD;
         const size_t field_len = sizeof(SELVA_ANCESTORS_FIELD) - 1;
 
@@ -754,7 +754,7 @@ static inline void publishAncestorsUpdate(
 static inline void publishDescendantsUpdate(
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node) {
-    if (!isRdbLoading()) {
+    if (!isLoading()) {
         const char *field_str = SELVA_DESCENDANTS_FIELD;
         const size_t field_len = sizeof(SELVA_DESCENDANTS_FIELD) - 1;
 
@@ -765,7 +765,7 @@ static inline void publishDescendantsUpdate(
 static inline void publishChildrenUpdate(
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node) {
-    if (!isRdbLoading()) {
+    if (!isLoading()) {
         const char *field_str = SELVA_CHILDREN_FIELD;
         const size_t field_len = sizeof(SELVA_CHILDREN_FIELD) - 1;
 
@@ -776,7 +776,7 @@ static inline void publishChildrenUpdate(
 static inline void publishParentsUpdate(
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node) {
-    if (!isRdbLoading()) {
+    if (!isLoading()) {
         const char *field_str = SELVA_PARENTS_FIELD;
         const size_t field_len = sizeof(SELVA_PARENTS_FIELD) - 1;
 
@@ -789,7 +789,7 @@ static int cross_insert_children(
         SelvaHierarchyNode *node,
         size_t n,
         const Selva_NodeId *nodes) {
-    const int send_events = !isRdbLoading();
+    const int send_events = !isLoading();
     int res = 0;
 
     if (n == 0) {
@@ -897,7 +897,7 @@ static int cross_insert_parents(
         SelvaHierarchyNode *node,
         size_t n,
         const Selva_NodeId *nodes) {
-    const int send_events = isRdbLoading();
+    const int send_events = isLoading();
     int res = 0;
 
     if (n == 0) {
@@ -1218,7 +1218,7 @@ int SelvaModify_SetHierarchy(
             return SELVA_HIERARCHY_ENOMEM;
         }
 
-        if (!isRdbLoading()) {
+        if (!isLoading()) {
             new_node_events(hierarchy, node);
         }
         isNewNode = 1;
@@ -1411,7 +1411,7 @@ int SelvaHierarchy_UpsertNode(
         SelvaHierarchyNode **out) {
     SelvaHierarchyNode *node = SelvaHierarchy_FindNode(hierarchy, id);
     SelvaHierarchyNode *prev_node;
-    const int isLoading = isRdbLoading();
+    const int fIsLoading = isLoading();
 
     if (node) {
         if (out) {
@@ -1430,7 +1430,7 @@ int SelvaHierarchy_UpsertNode(
       * No need to check if we have event registrations while loading the
       * database.
       */
-     if (!isLoading) {
+     if (!fIsLoading) {
         new_node_events(hierarchy, node);
      }
 
@@ -1851,7 +1851,7 @@ static int full_dfs(
     /**
      * Set if we should track inactive nodes for auto compression.
      */
-    const int enAutoCompression = selva_glob_config.hierarchy_auto_compress_period_ms > 0 && flag_isRdbSaving;
+    const int enAutoCompression = selva_glob_config.hierarchy_auto_compress_period_ms > 0 && flag_isSaving;
     const long long old_age_threshold = selva_glob_config.hierarchy_auto_compress_old_age_lim;
 
     SVector_ForeachBegin(&it, &hierarchy->heads);
@@ -2972,7 +2972,7 @@ static int load_metadata(struct selva_io *io, int encver, SelvaHierarchy *hierar
 
     /*
      * node object is currently empty because it's not created when
-     * isRdbLoading() is true.
+     * isLoading() is true.
      */
     if (!SelvaObjectTypeRDBLoadTo(io, encver, SelvaObject_Init(node->_obj_data), NULL)) {
         return SELVA_ENOENT;
@@ -3208,7 +3208,7 @@ SelvaHierarchy *Hierarchy_RDBLoad(struct selva_io *io) {
     int encver;
     int err;
 
-    flag_isRdbLoading = 1;
+    flag_isLoading = 1;
 
     encver = selva_io_load_signed(io);
     if (encver > HIERARCHY_ENCODING_VERSION) {
@@ -3244,13 +3244,14 @@ SelvaHierarchy *Hierarchy_RDBLoad(struct selva_io *io) {
         goto error;
     }
 
+    flag_isLoading = 0;
     return hierarchy;
 error:
     if (hierarchy) {
         SelvaModify_DestroyHierarchy(hierarchy);
     }
-    flag_isRdbLoading = 0;
 
+    flag_isLoading = 0;
     return NULL;
 }
 
@@ -3379,12 +3380,12 @@ void Hierarchy_RDBSave(struct selva_io *io, SelvaHierarchy *hierarchy) {
      * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
      * HIERARCHY_RDB_EOF
      */
-    flag_isRdbSaving = 1;
+    flag_isSaving = 1;
     selva_io_save_signed(io, HIERARCHY_ENCODING_VERSION);
     SelvaObjectTypeRDBSave(io, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL);
     EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
     save_hierarchy(io, hierarchy);
-    flag_isRdbSaving = 0;
+    flag_isSaving = 0;
 }
 
 static int load_nodeId(struct selva_io *io, Selva_NodeId nodeId) {
