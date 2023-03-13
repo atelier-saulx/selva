@@ -10,6 +10,7 @@
 #include "libdeflate.h"
 #include "linker_set.h"
 #include "event_loop.h"
+#include "evl_signal.h"
 #include "module.h"
 #include "selva_error.h"
 #include "selva_log.h"
@@ -65,6 +66,7 @@ IMPORT() {
     evl_import_main(evl_clear_timeout);
     evl_import_main(config_resolve);
     evl_import_event_loop();
+	evl_import_signal();
     import_selva_server();
     import_selva_io();
     import_selva_replication();
@@ -96,7 +98,6 @@ __constructor void init(void)
             exit(EXIT_FAILURE);
         }
     }
-
 
     err = dump_load_default_sdb();
     if (err) {

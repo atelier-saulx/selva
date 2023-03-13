@@ -4,16 +4,19 @@
  */
 #define SELVA_IO_TYPE
 #include <assert.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include "util/finalizer.h"
 #include "util/sdb_name.h"
 #include "util/selva_string.h"
 #include "util/timestamp.h"
 #include "sha3iuf/sha3.h"
+#include "evl_signal.h"
 #include "event_loop.h"
 #include "selva_error.h"
 #include "selva_io.h"
@@ -22,10 +25,62 @@
 #include "selva_onload.h"
 #include "selva_proto.h"
 #include "selva_server.h"
+#include "selva_replication.h"
 #include "hierarchy.h"
 #include "dump.h"
 
 int selva_db_is_dirty;
+
+static void handle_last_good(void)
+{
+    uint8_t hash[SELVA_IO_HASH_SIZE];
+    struct selva_string *filename;
+    int err;
+
+    err = selva_io_last_good_info(hash, &filename);
+    if (err) {
+        return;
+    }
+
+    SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
+    selva_replication_new_sdb(filename, hash);
+}
+
+static void handle_signal(struct event *ev, void *arg __unused)
+{
+    struct evl_siginfo esig;
+    int signo;
+
+    if (evl_read_sigfd(&esig, ev->fd)) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to read sigfd");
+        return;
+    }
+
+    signo = esig.esi_signo;
+
+    switch (signo) {
+    case SIGCHLD:
+        SELVA_LOG(SELVA_LOGL_INFO, "Suppose the dump is ready");
+        handle_last_good();
+        break;
+    default:
+        SELVA_LOG(SELVA_LOGL_WARN, "Received unexpected signal (%d): %s", signo, strsignal(esig.esi_signo));
+    }
+}
+
+static void setup_sigchld(void)
+{
+    sigset_t mask;
+    int sfd;
+
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGCHLD);
+
+    sfd = evl_create_sigfd(&mask);
+    if (sfd >= 0) {
+        evl_wait_fd(sfd, handle_signal, NULL, NULL, NULL);
+    }
+}
 
 static int dump_load(struct selva_io *io)
 {
@@ -43,6 +98,7 @@ static int dump_load(struct selva_io *io)
     }
 
     selva_io_end(io);
+    handle_last_good(); /* RFE This is a bit heavy and we could just extract the info from `io`. */
     return err;
 }
 
@@ -50,15 +106,21 @@ static int dump_save(const char *filename)
 {
     const enum selva_io_flags flags = SELVA_IO_FLAGS_WRITE;
     struct selva_io io;
+    pid_t pid;
     int err;
 
-    err = selva_io_init(&io, filename, flags);
-    if (err) {
-        return err;
-    }
+    pid = fork();
+    if (pid == 0) {
+        err = selva_io_init(&io, filename, flags);
+        if (err) {
+            return err;
+        }
 
-    Hierarchy_RDBSave(&io, main_hierarchy);
-    selva_io_end(&io);
+        Hierarchy_RDBSave(&io, main_hierarchy);
+        selva_io_end(&io);
+
+        exit(0);
+    }
 
     return 0;
 }
@@ -206,6 +268,8 @@ static void save_db_cmd(struct selva_server_response_out *resp, const void *buf,
 static int dump_onload(void) {
     selva_mk_command(CMD_LOAD_ID, SELVA_CMD_MODE_MUTATE, "load", load_db_cmd);
     selva_mk_command(CMD_SAVE_ID, SELVA_CMD_MODE_PURE, "save", save_db_cmd);
+
+    setup_sigchld();
 
     return 0;
 }

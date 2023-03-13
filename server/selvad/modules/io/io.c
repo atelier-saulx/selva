@@ -16,7 +16,6 @@
 #include "selva_error.h"
 #include "selva_log.h"
 #include "selva_proto.h"
-#include "selva_replication.h"
 #include "selva_io.h"
 #include "myreadlink.h"
 #include "sdb.h"
@@ -57,11 +56,12 @@ static void exit_read_error(struct selva_io *io, const char *type, const char *w
 }
 
 /**
- * Create a new io structure for a file.
+ * Init an io structure for a file.
  * Note that flags must be validated before calling this function.
  */
 static void init_io(struct selva_io *io, FILE *file, const char *filename, enum selva_io_flags flags)
 {
+    memset(io, 0, sizeof(*io));
     io->filename = selva_string_createf("%s", filename);
     io->file = file;
     io->flags = flags;
@@ -104,6 +104,27 @@ int selva_io_open_last_good(struct selva_io *io)
     return 0;
 }
 
+int selva_io_last_good_info(uint8_t hash[SELVA_IO_HASH_SIZE], struct selva_string **filename_out)
+{
+    struct selva_io io;
+    int err;
+
+    selva_io_open_last_good(&io);
+    fseek(io.file, -(SELVA_IO_HASH_SIZE + 8), SEEK_END);
+    err = sdb_read_footer(&io);
+    if (err) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to read the last good file");
+        selva_string_free(io.filename);
+    } else {
+        memcpy(hash, io.stored_hash, SELVA_IO_HASH_SIZE);
+        *filename_out = io.filename;
+    }
+
+    fclose(io.file);
+
+    return err;
+}
+
 int selva_io_init(struct selva_io *io, const char *filename, enum selva_io_flags flags)
 {
     const char *mode = (flags & SELVA_IO_FLAGS_WRITE) ? "wb" : "rb";
@@ -127,6 +148,19 @@ int selva_io_init(struct selva_io *io, const char *filename, enum selva_io_flags
     return 0;
 }
 
+static char *sha3_to_hex(char s[64], const uint8_t hash[SELVA_IO_HASH_SIZE])
+{
+    static const char map[] = "0123456789abcdef";
+    char *p = s;
+
+    for (size_t i = 0; i < SELVA_IO_HASH_SIZE; i++) {
+        *p++ = map[(hash[i] >> 4) % sizeof(map)];
+        *p++ = map[(hash[i] & 0x0f) % sizeof(map)];
+    }
+
+    return s;
+}
+
 void selva_io_end(struct selva_io *io)
 {
     if (io->flags & SELVA_IO_FLAGS_WRITE) {
@@ -136,6 +170,15 @@ void selva_io_end(struct selva_io *io)
         int err;
 
         err = sdb_read_footer(io);
+        if (!err && memcmp(io->computed_hash, io->stored_hash, SELVA_IO_HASH_SIZE)) {
+            char act[64];
+            char expected[64];
+
+            SELVA_LOG(SELVA_LOGL_ERR, "Hash mismatch. act: %.*s. expected: %.*s",
+                      64, sha3_to_hex(act, io->computed_hash),
+                      64, sha3_to_hex(expected, io->stored_hash));
+            err = SELVA_EINVAL;
+        }
         if (err) {
             SELVA_LOG(SELVA_LOGL_CRIT, "SDB deserialization failed: %s", selva_strerror(err));
             /*
@@ -147,7 +190,6 @@ void selva_io_end(struct selva_io *io)
 
     }
 
-    selva_replication_new_sdb(io->filename, io->computed_hash);
     fclose(io->file);
 
     /*
@@ -325,7 +367,6 @@ struct selva_string *selva_io_load_string(struct selva_io *io)
 
 IMPORT() {
     evl_import_main(selva_log);
-    evl_import(selva_replication_new_sdb, "mod_replication.so");
 }
 
 __constructor static void init(void)

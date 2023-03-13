@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <dlfcn.h>
@@ -29,9 +29,9 @@ static void handle_signal(struct event *ev, void *arg __unused)
     fprintf(stderr, "Received signal (%d): %s\n", signo, strsignal(esig.esi_signo));
 
     switch (signo) {
-        case SIGINT:
-        case SIGTERM:
-            exit(EXIT_SUCCESS);
+    case SIGINT:
+    case SIGTERM:
+        exit(EXIT_SUCCESS);
     }
 }
 
@@ -61,6 +61,7 @@ static void setup_async_signals(void)
     sigdelset(&mask, sig);
     TERM_SIGNALS(DEL_SIGNAL);
     sigdelset(&mask, SIGPIPE);
+    sigdelset(&mask, SIGCHLD); /* We want to catch this where we use fork(). */
 #undef DEL_SIGNAL
 
     sfd = evl_create_sigfd(&mask);

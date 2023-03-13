@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -110,43 +110,25 @@ int sdb_write_footer(struct selva_io *io)
     return 0;
 }
 
-static char *sha3_to_hex(char s[64], const uint8_t hash[SELVA_IO_HASH_SIZE])
-{
-    static const char map[] = "0123456789abcdef";
-    char *p = s;
-
-    for (size_t i = 0; i < SELVA_IO_HASH_SIZE; i++) {
-        *p++ = map[(hash[i] >> 4) % sizeof(map)];
-        *p++ = map[(hash[i] & 0x0f) % sizeof(map)];
-    }
-
-    return s;
-}
-
 int sdb_read_footer(struct selva_io *io)
 {
-    char magic[sizeof(magic_start)];
-    uint8_t stored_hash[SELVA_IO_HASH_SIZE];
+    char magic[sizeof(magic_end)];
     size_t res;
 
     res = sdb_read(magic, sizeof(char), sizeof(magic), io);
     if (res != sizeof(magic) || memcmp(magic, magic_end, sizeof(magic))) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Bad magic");
+        SELVA_LOG(SELVA_LOGL_ERR, "Bad magic: %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x",
+                  (uint8_t)magic[0], (uint8_t)magic[1],
+                  (uint8_t)magic[2], (uint8_t)magic[3],
+                  (uint8_t)magic[4], (uint8_t)magic[5],
+                  (uint8_t)magic[6], (uint8_t)magic[7]);
         return SELVA_EINVAL;
     }
 
     io->computed_hash = sha3_Finalize(&io->hash_c);
-    res = fread(stored_hash, sizeof(uint8_t), sizeof(stored_hash), io->file);
+    res = fread(io->stored_hash, sizeof(uint8_t), sizeof(io->stored_hash), io->file);
     if (res != SELVA_IO_HASH_SIZE) {
         SELVA_LOG(SELVA_LOGL_ERR, "Hash size invalid. act: %zu expected: %zu", res, (size_t)SELVA_IO_HASH_SIZE);
-    }
-    if (memcmp(io->computed_hash, stored_hash, SELVA_IO_HASH_SIZE)) {
-        char act[64];
-        char expected[64];
-
-        SELVA_LOG(SELVA_LOGL_ERR, "Hash mismatch. act: %.*s. expected: %.*s",
-                  64, sha3_to_hex(act, io->computed_hash),
-                  64, sha3_to_hex(expected, stored_hash));
         return SELVA_EINVAL;
     }
 

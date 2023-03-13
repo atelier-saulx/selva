@@ -15,8 +15,8 @@ static const char *modules[] = {
     "mod_demo_sock.so",
 #endif
     "mod_server.so",
-    "mod_replication.so",
     "mod_io.so",
+    "mod_replication.so",
     "mod_db.so",
 };
 
