@@ -1524,8 +1524,14 @@ static void replicate_modify(struct selva_server_response_out *resp, const struc
     }
 
     selva_proto_builder_end(&msg);
-    selva_replication_replicate(selva_resp_to_cmd_id(resp), msg.buf, msg.bsize);
+    selva_replication_replicate_pass(selva_resp_to_cmd_id(resp), msg.buf, msg.bsize);
+    /*
+     * Deinit can be omitted because selva_replication_replicate_pass() will
+     * free the buffer.
+     */
+#if 0
     selva_proto_builder_deinit(&msg);
+#endif
 }
 
 /*

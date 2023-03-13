@@ -194,11 +194,15 @@ static ring_buffer_eid_t next_eid(void)
 
 void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
 {
-    /* TODO We'd really like to avoid at least malloc() here, preferrably also memcpy(). */
     void *p = selva_malloc(buf_size);
 
     memcpy(p, buf, buf_size);
     insert(next_eid(), cmd, p, buf_size);
+}
+
+void replication_origin_replicate_pass(int8_t cmd, void *buf, size_t buf_size)
+{
+    insert(next_eid(), cmd, buf, buf_size);
 }
 
 void replication_origin_init(void)

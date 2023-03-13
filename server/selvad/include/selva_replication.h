@@ -27,14 +27,22 @@
 SELVA_REPLICATION_EXPORT(void, selva_replication_new_sdb, const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE]);
 
 /**
- * Replicate a command buffer to the replicas.
+ * Replicate a command buffer to replicas.
  * This is a NOP for replication modes other than ORIGIN.
  */
 SELVA_REPLICATION_EXPORT(void, selva_replication_replicate, int8_t cmd, const void *buf, size_t buf_size);
 
+/**
+ * Replicate a command to replicas.
+ * Pass the ownership of buf to the replication module. Avoids one malloc.
+ * buf must be allocated with `selva_malloc` or `selva_realloc`.
+ */
+SELVA_REPLICATION_EXPORT(void, selva_replication_replicate_pass, int8_t cmd, void *buf, size_t buf_size);
+
 #define _import_selva_replication(apply) \
     apply(selva_replication_new_sdb) \
-    apply(selva_replication_replicate)
+    apply(selva_replication_replicate) \
+    apply(selva_replication_replicate_pass)
 
 #define _import_selva_replication1(f) \
     evl_import(f, "mod_replication.so");

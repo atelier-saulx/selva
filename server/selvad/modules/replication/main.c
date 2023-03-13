@@ -78,6 +78,17 @@ void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
     }
 }
 
+void selva_replication_replicate_pass(int8_t cmd, void *buf, size_t buf_size)
+{
+    switch (replication_mode) {
+    case REPLICATION_MODE_ORIGIN:
+        replication_origin_replicate_pass(cmd, buf, buf_size);
+        break;
+    default:
+        /* NOP */
+    }
+}
+
 static void send_mode_error(struct selva_server_response_out *resp)
 {
     selva_send_errorf(resp, SELVA_ENOTSUP, "Already configured as %s", replication_mode_str[replication_mode]);
