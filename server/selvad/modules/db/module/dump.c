@@ -94,19 +94,20 @@ static void handle_signal(struct event *ev, void *arg __unused)
 
     switch (signo) {
     case SIGCHLD:
-        waitpid(esig.esi_pid, &status, 0);
-        if (esig.esi_pid == save_pid) {
-            int err;
+        if (waitpid(esig.esi_pid, &status, 0) != -1) {
+            if (esig.esi_pid == save_pid) {
+                int err;
 
-            err = handle_child_status(esig.esi_pid, status, "SDB");
-            if (!err) {
-                handle_last_good();
+                err = handle_child_status(esig.esi_pid, status, "SDB");
+                if (!err) {
+                    handle_last_good();
+                }
+
+                save_pid = 0;
+                selva_db_dump_state = SELVA_DB_DUMP_NONE;
+            } else {
+                (void)handle_child_status(esig.esi_pid, status, "Unknown");
             }
-
-            save_pid = 0;
-            selva_db_dump_state = SELVA_DB_DUMP_NONE;
-        } else {
-            (void)handle_child_status(esig.esi_pid, status, "Unknown");
         }
         break;
     default:
