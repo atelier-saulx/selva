@@ -39,16 +39,11 @@ static void handle_last_good(void)
 {
     uint8_t hash[SELVA_IO_HASH_SIZE];
     struct selva_string *filename;
-    int err;
 
-    err = selva_io_last_good_info(hash, &filename);
-    if (err) {
-        return;
+    if (!selva_io_last_good_info(hash, &filename)) {
+        SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
+        selva_replication_new_sdb(filename, hash);
     }
-
-    SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
-    selva_replication_new_sdb(filename, hash);
-    save_pid = 0;
 }
 
 static int handle_child_status(pid_t pid, int status, const char *name)
