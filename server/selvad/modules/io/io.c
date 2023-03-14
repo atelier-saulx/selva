@@ -104,16 +104,30 @@ int selva_io_open_last_good(struct selva_io *io)
     return 0;
 }
 
+static int read_hash(struct selva_io *io)
+{
+    fpos_t position;
+    int err;
+
+    fgetpos(io->file, &position);
+    fseek(io->file, -(SELVA_IO_HASH_SIZE + 8), SEEK_END);
+    err = sdb_read_footer(io);
+    fsetpos(io->file, &position);
+    if (err) {
+        return err;
+    }
+
+    return 0;
+}
+
 int selva_io_last_good_info(uint8_t hash[SELVA_IO_HASH_SIZE], struct selva_string **filename_out)
 {
     struct selva_io io;
     int err;
 
     selva_io_open_last_good(&io);
-    fseek(io.file, -(SELVA_IO_HASH_SIZE + 8), SEEK_END);
-    err = sdb_read_footer(&io);
+    err = read_hash(&io);
     if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to read the last good file");
         selva_string_free(io.filename);
     } else {
         memcpy(hash, io.stored_hash, SELVA_IO_HASH_SIZE);
@@ -122,6 +136,21 @@ int selva_io_last_good_info(uint8_t hash[SELVA_IO_HASH_SIZE], struct selva_strin
 
     fclose(io.file);
 
+    return err;
+}
+
+int selva_io_read_hash(const char *filename, uint8_t hash[SELVA_IO_HASH_SIZE])
+{
+    struct selva_io io;
+    int err;
+
+    err = selva_io_init(&io, filename, SELVA_IO_FLAGS_READ);
+    if (!err) {
+        memcpy(hash, io.stored_hash, SELVA_IO_HASH_SIZE);
+    }
+
+    fclose(io.file);
+    selva_string_free(io.filename);
     return err;
 }
 

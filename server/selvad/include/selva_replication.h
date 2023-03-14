@@ -32,7 +32,10 @@ SELVA_REPLICATION_EXPORT(enum replication_mode, selva_replication_get_mode, void
 /**
  * Publish a new SDB dump to the replication.
  */
-SELVA_REPLICATION_EXPORT(void, selva_replication_new_sdb, const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE]);
+SELVA_REPLICATION_EXPORT(void, selva_replication_new_sdb, const char *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE]);
+
+SELVA_REPLICATION_EXPORT(uint64_t, selva_replication_incomplete_sdb, const char *filename);
+SELVA_REPLICATION_EXPORT(void, selva_replication_complete_sdb, uint64_t sdb_eid, uint8_t sdb_hash[SELVA_IO_HASH_SIZE]);
 
 /**
  * Replicate a command buffer to replicas.
@@ -50,6 +53,8 @@ SELVA_REPLICATION_EXPORT(void, selva_replication_replicate_pass, int8_t cmd, voi
 #define _import_selva_replication(apply) \
     apply(selva_replication_get_mode) \
     apply(selva_replication_new_sdb) \
+    apply(selva_replication_incomplete_sdb) \
+    apply(selva_replication_complete_sdb) \
     apply(selva_replication_replicate) \
     apply(selva_replication_replicate_pass)
 

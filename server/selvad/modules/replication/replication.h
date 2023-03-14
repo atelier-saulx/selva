@@ -27,7 +27,20 @@ extern uint8_t last_sdb_hash[SELVA_IO_HASH_SIZE];
  * @{
  */
 
-void replication_origin_new_sdb(const struct selva_string *filename);
+void replication_origin_new_sdb(const char *filename, uint8_t sdb_hash[SELVA_IO_HASH_SIZE]);
+
+/**
+ * Insert a new sdb structure that is marked as incomplete.
+ * The intention is that we can keep replicating commands for existing replicas
+ * while a new SDB dump is being created asynchronously.
+ * @returns sdb_eid.
+ */
+uint64_t replication_origin_new_incomplete_sdb(const char *filename);
+
+/**
+ * Finalize an incomplete sdb structure.
+ */
+void replication_origin_complete_sdb(uint64_t sdb_eid, uint8_t sdb_hash[SELVA_IO_HASH_SIZE]);
 
 /**
  * Get the EID of the newest SDB dump point.
@@ -87,7 +100,11 @@ uint64_t replication_replica_get_last_sdb_eid(void);
  */
 uint64_t replication_replica_get_last_cmd_eid(void);
 
-void replication_replica_new_sdb(const struct selva_string *filename);
+/**
+ * Register new sdb dump.
+ * @returns sdb_eid.
+ */
+uint64_t replication_replica_new_sdb(const char *filename);
 
 /**
  * Returns 1 if the replica believes it's in a stale state.

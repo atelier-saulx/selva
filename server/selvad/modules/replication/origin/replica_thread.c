@@ -41,7 +41,7 @@ static int sync_dump(
         enum replication_sync_mode sync_mode)
 {
     struct ring_buffer_element *e;
-    struct sdb *sdb;
+    struct selva_replication_sdb *sdb;
     int err;
 
     ring_buffer_get_current(rb, state, &e);
@@ -51,8 +51,14 @@ static int sync_dump(
         goto fail;
     }
 
-    assert(e->data_size == sizeof(struct sdb));
-    sdb = (struct sdb *)e->data;
+    assert(e->data_size == sizeof(struct selva_replication_sdb));
+    sdb = (struct selva_replication_sdb *)e->data;
+
+    if (sdb->status != SDB_STATUS_COMPLETE) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid or incomplete SDB structure. eid: 0x%" PRIx64, e->id);
+        err = SELVA_EINVAL;
+        goto fail;
+    }
 
     if (memcmp(sdb->hash, expected_sdb_hash, SELVA_IO_HASH_SIZE)) {
         err = SELVA_ENOENT;
@@ -109,6 +115,10 @@ void *replication_thread(void *arg)
         int res;
 
         if (e->id & EID_MSB_MASK) {
+            /*
+             * This is a bit opportunistic because we don't know whether
+             * incomplete sdb structs will ever be completed.
+             */
             res = selva_send_replication_pseudo_sdb(resp, e->id);
         } else {
             res = selva_send_replication_cmd(resp, e->id, e->cmd_id, e->data, e->data_size);

@@ -33,17 +33,36 @@
 #include "dump.h"
 
 int selva_db_is_dirty;
-static pid_t save_pid;
 enum selva_db_dump_state selva_db_dump_state;
+static pid_t save_pid;
+static uint64_t save_sdb_eid;
 
-static void handle_last_good(void)
+static void handle_last_good_sync(void)
 {
     uint8_t hash[SELVA_IO_HASH_SIZE];
     struct selva_string *filename;
 
     if (!selva_io_last_good_info(hash, &filename)) {
         SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
-        selva_replication_new_sdb(filename, hash);
+        selva_replication_new_sdb(selva_string_to_str(filename, NULL), hash);
+        selva_string_free(filename);
+    } else {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to read the last good file");
+    }
+}
+
+static void handle_last_good_async(void)
+{
+    uint8_t hash[SELVA_IO_HASH_SIZE];
+    struct selva_string *filename;
+
+    if (!selva_io_last_good_info(hash, &filename)) {
+        SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
+        /* TODO Should this function also verify the filename? */
+        selva_replication_complete_sdb(save_sdb_eid, hash);
+        selva_string_free(filename);
+    } else {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to read the last good file");
     }
 }
 
@@ -100,11 +119,13 @@ static void handle_signal(struct event *ev, void *arg __unused)
 
                 err = handle_child_status(esig.esi_pid, status, "SDB");
                 if (!err) {
-                    handle_last_good();
+                    /* FIXME last_good isn't necessarily the right file. */
+                    handle_last_good_async();
                 }
 
-                save_pid = 0;
                 selva_db_dump_state = SELVA_DB_DUMP_NONE;
+                save_pid = 0;
+                save_sdb_eid = 0;
             } else {
                 (void)handle_child_status(esig.esi_pid, status, "Unknown");
             }
@@ -145,18 +166,26 @@ static int dump_load(struct selva_io *io)
     }
 
     selva_io_end(io);
-    handle_last_good(); /* RFE This is a bit heavy and we could just extract the info from `io`. */
+    handle_last_good_sync(); /* RFE This is a bit heavy and we could just extract the info from `io`. */
     return err;
 }
 
 static int dump_save(const char *filename)
 {
-    const enum selva_io_flags flags = SELVA_IO_FLAGS_WRITE;
     pid_t pid;
     int err;
 
+    if (save_pid) {
+        /* Already saving */
+        return SELVA_EINPROGRESS;
+    }
+
+
+    save_sdb_eid = selva_replication_incomplete_sdb(filename);
+
     pid = fork();
     if (pid == 0) {
+        const enum selva_io_flags flags = SELVA_IO_FLAGS_WRITE;
         struct selva_io io;
 
         selva_db_dump_state = SELVA_DB_DUMP_IS_CHILD;
@@ -171,6 +200,7 @@ static int dump_save(const char *filename)
 
         exit(0);
     } else if (pid < 0) {
+        save_sdb_eid = 0;
         return SELVA_EGENERAL;
     }
 
@@ -313,7 +343,7 @@ static void save_db_cmd(struct selva_server_response_out *resp, const void *buf,
 
     err = dump_save(selva_string_to_str(argv[ARGV_FILENAME], NULL));
     if (err) {
-        selva_send_errorf(resp, err, "Failed to open a new sdb file for write");
+        selva_send_errorf(resp, err, "Save failed");
         return;
     }
 

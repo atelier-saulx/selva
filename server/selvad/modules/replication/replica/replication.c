@@ -166,7 +166,7 @@ uint64_t replication_replica_get_last_cmd_eid(void)
     return sv.last_cmd_eid;
 }
 
-void replication_replica_new_sdb(const struct selva_string *filename)
+uint64_t replication_replica_new_sdb(const char *filename)
 {
     uint64_t sdb_eid = replication_new_replica_eid(filename);
 
@@ -174,8 +174,10 @@ void replication_replica_new_sdb(const struct selva_string *filename)
         sv.last_sdb_eid = sdb_eid;
         sv.last_cmd_eid = 0;
 
-        SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%lx)", selva_string_to_str(filename, NULL), sv.last_sdb_eid);
+        SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%lx)", filename, sv.last_sdb_eid);
     }
+
+    return sdb_eid;
 }
 
 int replication_replica_is_stale(void)

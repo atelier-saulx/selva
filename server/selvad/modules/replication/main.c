@@ -50,16 +50,49 @@ enum replication_mode selva_replication_get_mode(void)
  * behaviour of these functions.
  */
 
-void selva_replication_new_sdb(const struct selva_string *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
+void selva_replication_new_sdb(const char *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
 {
     switch (replication_mode) {
     case SELVA_REPLICATION_MODE_ORIGIN:
         memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
-        replication_origin_new_sdb(filename);
+        replication_origin_new_sdb(filename, last_sdb_hash);
         break;
     case SELVA_REPLICATION_MODE_REPLICA:
         memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
-        replication_replica_new_sdb(filename);
+        (void)replication_replica_new_sdb(filename);
+        break;
+    default:
+        /* NOP */
+    }
+}
+
+uint64_t selva_replication_incomplete_sdb(const char *filename)
+{
+    uint64_t sdb_eid = 0;
+
+    switch (replication_mode) {
+    case SELVA_REPLICATION_MODE_ORIGIN:
+        sdb_eid = replication_origin_new_incomplete_sdb(filename);
+        break;
+    case SELVA_REPLICATION_MODE_REPLICA:
+        sdb_eid = replication_replica_new_sdb(filename);
+        break;
+    default:
+        /* NOP */
+    }
+
+    return sdb_eid;
+}
+
+void selva_replication_complete_sdb(uint64_t sdb_eid, uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
+{
+    switch (replication_mode) {
+    case SELVA_REPLICATION_MODE_ORIGIN:
+        memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
+        replication_origin_complete_sdb(sdb_eid, sdb_hash);
+        break;
+    case SELVA_REPLICATION_MODE_REPLICA:
+        memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
         break;
     default:
         /* NOP */
@@ -101,6 +134,8 @@ static void send_mode_error(struct selva_server_response_out *resp)
  */
 static int ensure_sdb(void)
 {
+    /* TODO If currently saving, wait for a new sdb */
+
     if (replication_origin_get_last_sdb_eid()) {
         return 0;
     } else {
@@ -135,9 +170,16 @@ static int ensure_sdb(void)
 
         selva_server_run_cmd(CMD_SAVE_ID, &msg, msg_size);
 
+        /*
+         * TODO wait for the new sdb to appear
+         * Right now we just fail and hope that we have a dump once the replica reconnects.
+         */
+        return SELVA_EINPROGRESS;
+#if 0
         if (!replication_origin_get_last_sdb_eid()) {
             return SELVA_EIO;
         }
+#endif
     }
 
     return 0;

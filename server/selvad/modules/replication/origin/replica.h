@@ -16,10 +16,16 @@ struct replica {
 };
 
 /**
- * SDB info stored in the rb.
+ * SDB info stored in the origin rb.
  * The EID of this structure must be OR'ed with EID_MSB_MASK.
  */
-struct sdb {
+struct selva_replication_sdb {
+    enum {
+        SDB_STATUS_INVALID = 0x00,
+        SDB_STATUS_INCOMPLETE = 0x01,
+        SDB_STATUS_COMPLETE = 0x02,
+    } status;
+
     /**
      * Filename of the dump.
      * This file most not be overwritten.

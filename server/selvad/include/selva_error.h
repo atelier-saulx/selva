@@ -51,124 +51,128 @@
  */
 #define SELVA_ENOBUFS                   (-10)
 /**
+ * Operation already in progress.
+ */
+#define SELVA_EINPROGRESS               (-11)
+/**
  * Input/output error.
  */
-#define SELVA_EIO                       (-11)
+#define SELVA_EIO                       (-12)
 
 /**
  * Operation already in progress.
  */
-#define SELVA_PROTO_EALREADY            (-12)
+#define SELVA_PROTO_EALREADY            (-13)
 /**
  * Operation not supported.
  */
-#define SELVA_PROTO_ENOTSUP             (-13)
+#define SELVA_PROTO_ENOTSUP             (-14)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_PROTO_EINVAL              (-14)
+#define SELVA_PROTO_EINVAL              (-15)
 /**
  * Invalid type.
  */
-#define SELVA_PROTO_EINTYPE             (-15)
+#define SELVA_PROTO_EINTYPE             (-16)
 /**
  * Out of memory.
  */
-#define SELVA_PROTO_ENOMEM              (-16)
+#define SELVA_PROTO_ENOMEM              (-17)
 /**
  * Node or entity not found.
  */
-#define SELVA_PROTO_ENOENT              (-17)
+#define SELVA_PROTO_ENOENT              (-18)
 /**
  * Entity already exist.
  */
-#define SELVA_PROTO_EEXIST              (-18)
+#define SELVA_PROTO_EEXIST              (-19)
 /**
  * No buffer or resource space available.
  */
-#define SELVA_PROTO_ENOBUFS             (-19)
+#define SELVA_PROTO_ENOBUFS             (-20)
 /**
  * Bad message.
  */
-#define SELVA_PROTO_EBADMSG             (-20)
+#define SELVA_PROTO_EBADMSG             (-21)
 /**
  * Not a valid open file descriptor.
  */
-#define SELVA_PROTO_EBADF               (-21)
+#define SELVA_PROTO_EBADF               (-22)
 /**
  * Connection reset by peer.
  */
-#define SELVA_PROTO_ECONNRESET          (-22)
+#define SELVA_PROTO_ECONNRESET          (-23)
 /**
  * The socket is not connected.
  */
-#define SELVA_PROTO_ENOTCONN            (-23)
+#define SELVA_PROTO_ENOTCONN            (-24)
 /**
  * The local end has been shutdown.
  */
-#define SELVA_PROTO_EPIPE               (-24)
+#define SELVA_PROTO_EPIPE               (-25)
 
 /**
  * General error.
  */
-#define SELVA_HIERARCHY_EGENERAL        (-25)
+#define SELVA_HIERARCHY_EGENERAL        (-26)
 /**
  * Operation not supported.
  */
-#define SELVA_HIERARCHY_ENOTSUP         (-26)
+#define SELVA_HIERARCHY_ENOTSUP         (-27)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_HIERARCHY_EINVAL          (-27)
+#define SELVA_HIERARCHY_EINVAL          (-28)
 /**
  * Out of memory.
  */
-#define SELVA_HIERARCHY_ENOMEM          (-28)
+#define SELVA_HIERARCHY_ENOMEM          (-29)
 /**
  * Node or entity not found.
  */
-#define SELVA_HIERARCHY_ENOENT          (-29)
+#define SELVA_HIERARCHY_ENOENT          (-30)
 /**
  * Node or entity already exist.
  */
-#define SELVA_HIERARCHY_EEXIST          (-30)
+#define SELVA_HIERARCHY_EEXIST          (-31)
 /**
  * Maximum number of recursive traversal calls reached.
  */
-#define SELVA_HIERARCHY_ETRMAX          (-31)
+#define SELVA_HIERARCHY_ETRMAX          (-32)
 
 /**
  * General error.
  */
-#define SELVA_SUBSCRIPTIONS_EGENERAL    (-32)
+#define SELVA_SUBSCRIPTIONS_EGENERAL    (-33)
 /**
  * Invalid argument/input value.
  */
-#define SELVA_SUBSCRIPTIONS_EINVAL      (-33)
+#define SELVA_SUBSCRIPTIONS_EINVAL      (-34)
 /**
  * Out of memory.
  */
-#define SELVA_SUBSCRIPTIONS_ENOMEM      (-34)
+#define SELVA_SUBSCRIPTIONS_ENOMEM      (-35)
 /**
  * Node or entity not found.
  */
-#define SELVA_SUBSCRIPTIONS_ENOENT      (-35)
+#define SELVA_SUBSCRIPTIONS_ENOENT      (-36)
 /**
  * Node or entity already exist.
  */
-#define SELVA_SUBSCRIPTIONS_EEXIST      (-36)
+#define SELVA_SUBSCRIPTIONS_EEXIST      (-37)
 
 /**
  * RPN compilation error.
  */
-#define SELVA_RPN_ECOMP                 (-37)
+#define SELVA_RPN_ECOMP                 (-38)
 
 /**
  * Selva object has reached the maximum size.
  */
-#define SELVA_OBJECT_EOBIG              (-38)
+#define SELVA_OBJECT_EOBIG              (-39)
 /* This must be the last error */
-#define SELVA_INVALID_ERROR             (-39)
+#define SELVA_INVALID_ERROR             (-40)
 
 /**
  * Selva error code to string.

@@ -56,6 +56,7 @@ SELVA_IO_EXPORT(void, selva_io_get_ver, struct SelvaDbVersionInfo *nfo);
 SELVA_IO_EXPORT(int, selva_io_open_last_good, struct selva_io *io);
 
 SELVA_IO_EXPORT(int, selva_io_last_good_info, uint8_t hash[SELVA_IO_HASH_SIZE], struct selva_string **filename_out);
+SELVA_IO_EXPORT(int, selva_io_read_hash, const char *filename, uint8_t hash[SELVA_IO_HASH_SIZE]);
 
 /**
  * Start a new IO operation.
@@ -85,6 +86,7 @@ SELVA_IO_EXPORT(struct selva_string *, selva_io_load_string, struct selva_io *io
     apply(selva_io_get_ver) \
     apply(selva_io_open_last_good) \
     apply(selva_io_last_good_info) \
+    apply(selva_io_read_hash) \
     apply(selva_io_init) \
     apply(selva_io_end) \
     apply(selva_io_save_unsigned) \

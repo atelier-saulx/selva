@@ -7,7 +7,7 @@
 /**
  * Generate a new EID for a new SDB dump on origin.
  */
-uint64_t replication_new_origin_eid(const struct selva_string *filename);
+uint64_t replication_new_origin_eid(const char *filename);
 
 /**
  * Extract the EID of an SDB dump.
@@ -15,4 +15,4 @@ uint64_t replication_new_origin_eid(const struct selva_string *filename);
  * was just loaded. This can only work if the EID is present in the filename,
  * as such information is not stored in the file itself.
  */
-uint64_t replication_new_replica_eid(const struct selva_string *filename);
+uint64_t replication_new_replica_eid(const char *filename);

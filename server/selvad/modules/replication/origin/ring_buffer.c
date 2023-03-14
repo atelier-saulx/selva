@@ -60,6 +60,27 @@ int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_b
     return 0;
 }
 
+struct ring_buffer_element *ring_buffer_writer_find(struct ring_buffer *rb, ring_buffer_eid_t id)
+{
+    struct ring_buffer_element *e = NULL;
+
+    /* TODO Lock shouldn't be necessary? */
+    pthread_mutex_lock(&rb->lock);
+
+    int j = (rb->tail) % rb->len;
+    for (size_t i = 0; i < rb->len; i++) {
+        if (rb->buf[j].id == id) {
+            e = &rb->buf[j];
+            break;
+        }
+        j = (j + 1) % rb->len;
+    }
+
+    pthread_mutex_unlock(&rb->lock);
+
+    return e;
+}
+
 void ring_buffer_add_reader(struct ring_buffer *rb, unsigned reader_id)
 {
     const unsigned mask = 1 << reader_id;

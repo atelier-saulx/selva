@@ -11,11 +11,11 @@
 #include "selva_replication.h"
 #include "eid.h"
 
-uint64_t replication_new_origin_eid(const struct selva_string *filename)
+uint64_t replication_new_origin_eid(const char *filename)
 {
     uint64_t eid;
 
-    if (sscanf(selva_string_to_str(filename, NULL), "%" PRIu64 ".sdb", &eid) != 1) {
+    if (sscanf(filename, "%" PRIu64 ".sdb", &eid) != 1) {
         eid = ts_now();
     }
 
@@ -23,11 +23,11 @@ uint64_t replication_new_origin_eid(const struct selva_string *filename)
     return eid | EID_MSB_MASK;
 }
 
-uint64_t replication_new_replica_eid(const struct selva_string *filename)
+uint64_t replication_new_replica_eid(const char *filename)
 {
     uint64_t eid;
 
-    if (sscanf(selva_string_to_str(filename, NULL), "replica-%" PRIu64 ".sdb", &eid) == 1) {
+    if (sscanf(filename, "replica-%" PRIu64 ".sdb", &eid) == 1) {
         return eid | EID_MSB_MASK;
     }
 

@@ -66,20 +66,66 @@ static void insert(ring_buffer_eid_t eid, int8_t cmd, void *p, size_t p_size) {
     }
 }
 
-void replication_origin_new_sdb(const struct selva_string *filename)
+void replication_origin_new_sdb(const char *filename, uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
 {
-    struct sdb *sdb = selva_malloc(sizeof(struct sdb));
+    struct selva_replication_sdb *sdb = selva_malloc(sizeof(struct selva_replication_sdb));
     uint64_t sdb_eid = replication_new_origin_eid(filename);
 
     /* RFE Do we really need to dup here? */
-    sdb->filename = selva_string_dup(filename, 0);
-    memcpy(sdb->hash, last_sdb_hash, SELVA_IO_HASH_SIZE);
+    sdb->status = SDB_STATUS_COMPLETE;
+    sdb->filename = selva_string_createf("%s", filename);
+    memcpy(sdb->hash, sdb_hash, SELVA_IO_HASH_SIZE);
 
-    SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", selva_string_to_str(filename, NULL), sdb_eid);
+    SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", filename, sdb_eid);
 
     insert(sdb_eid, 0, sdb, sizeof(*sdb));
     origin_state.last_sdb_eid = sdb_eid;
     origin_state.last_cmd_eid = 0;
+}
+
+uint64_t replication_origin_new_incomplete_sdb(const char *filename)
+{
+    struct selva_replication_sdb *sdb = selva_malloc(sizeof(struct selva_replication_sdb));
+    uint64_t sdb_eid = replication_new_origin_eid(filename);
+
+    sdb->status = SDB_STATUS_INCOMPLETE;
+    sdb->filename = selva_string_createf("%s", filename);
+    insert(sdb_eid, 0, sdb, sizeof(*sdb));
+
+    return sdb_eid;
+}
+
+void replication_origin_complete_sdb(uint64_t sdb_eid, uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
+{
+    struct ring_buffer_element *rb_elem;
+    struct selva_replication_sdb *sdb;
+
+    assert(sdb_eid & EID_MSB_MASK);
+
+    rb_elem = ring_buffer_writer_find(&origin_state.rb, sdb_eid);
+    if (!rb_elem) {
+        SELVA_LOG(SELVA_LOGL_WARN,
+                  "Ring buffer elem for an SDB (0x%" PRIx64 ") is already gone",
+                  sdb_eid);
+
+        return;
+    }
+
+    sdb = (struct selva_replication_sdb *)rb_elem->data;
+    assert(rb_elem->data_size == sizeof(struct selva_replication_sdb));
+    assert(sdb && sdb->status == SDB_STATUS_INCOMPLETE);
+
+    sdb->status = SDB_STATUS_COMPLETE;
+    memcpy(sdb->hash, sdb_hash, SELVA_IO_HASH_SIZE);
+
+    SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", selva_string_to_str(sdb->filename, NULL), sdb_eid);
+
+    origin_state.last_sdb_eid = sdb_eid;
+    /*
+     * Don't touch origin_state.last_cmd_eid as we might have new commands that
+     * came after async save.
+     * FIXME But if we don't have then we should probably update it!
+     */
 }
 
 uint64_t replication_origin_get_last_sdb_eid(void)
@@ -95,16 +141,17 @@ uint64_t replication_origin_get_last_cmd_eid(void)
 static void free_replbuf(void *buf, ring_buffer_eid_t eid)
 {
     if (eid & EID_MSB_MASK) {
-        struct sdb *sdb = (struct sdb *)buf;
+        struct selva_replication_sdb *sdb = (struct selva_replication_sdb *)buf;
 
         if (eid == origin_state.last_sdb_eid) {
             origin_state.last_sdb_eid = 0;
         }
 
         selva_string_free(sdb->filename);
+        selva_free(sdb);
+    } else {
+        selva_free(buf);
     }
-
-    selva_free(buf);
 }
 
 /**
