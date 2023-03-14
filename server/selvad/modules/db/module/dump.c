@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include "util/finalizer.h"
 #include "util/sdb_name.h"
@@ -30,6 +32,8 @@
 #include "dump.h"
 
 int selva_db_is_dirty;
+static pid_t save_pid;
+enum selva_db_dump_state selva_db_dump_state;
 
 static void handle_last_good(void)
 {
@@ -44,12 +48,46 @@ static void handle_last_good(void)
 
     SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
     selva_replication_new_sdb(filename, hash);
+    save_pid = 0;
+}
+
+static int handle_child_status(pid_t pid, int status, const char *name)
+{
+    if (WIFEXITED(status)) {
+        int code = WEXITSTATUS(status);
+
+        if (code != 0) {
+            SELVA_LOG(SELVA_LOGL_ERR,
+                      "%s child %d terminated with exit code: %d",
+                      name, (int)pid, code);
+
+            return SELVA_EGENERAL;
+        }
+    } else if (WIFSIGNALED(status)) {
+        int termsig = WTERMSIG(status);
+
+        SELVA_LOG(SELVA_LOGL_ERR,
+                  "%s child %d killed by signal %d (%s)%s",
+                  name, (int)pid, termsig, strsignal(termsig),
+                  (WCOREDUMP(status)) ? " (core dumped)" : NULL);
+
+        return SELVA_EGENERAL;
+    } else {
+        SELVA_LOG(SELVA_LOGL_ERR,
+                  "%s child %d terminated abnormally",
+                  name, pid);
+
+        return SELVA_EGENERAL;
+    }
+
+    return 0;
 }
 
 static void handle_signal(struct event *ev, void *arg __unused)
 {
     struct evl_siginfo esig;
     int signo;
+    int status;
 
     if (evl_read_sigfd(&esig, ev->fd)) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to read sigfd");
@@ -60,8 +98,20 @@ static void handle_signal(struct event *ev, void *arg __unused)
 
     switch (signo) {
     case SIGCHLD:
-        SELVA_LOG(SELVA_LOGL_INFO, "Suppose the dump is ready");
-        handle_last_good();
+        waitpid(esig.esi_pid, &status, 0);
+        if (esig.esi_pid == save_pid) {
+            int err;
+
+            err = handle_child_status(esig.esi_pid, status, "SDB");
+            if (!err) {
+                handle_last_good();
+            }
+
+            save_pid = 0;
+            selva_db_dump_state = SELVA_DB_DUMP_NONE;
+        } else {
+            (void)handle_child_status(esig.esi_pid, status, "Unknown");
+        }
         break;
     default:
         SELVA_LOG(SELVA_LOGL_WARN, "Received unexpected signal (%d): %s", signo, strsignal(esig.esi_signo));
@@ -105,12 +155,15 @@ static int dump_load(struct selva_io *io)
 static int dump_save(const char *filename)
 {
     const enum selva_io_flags flags = SELVA_IO_FLAGS_WRITE;
-    struct selva_io io;
     pid_t pid;
     int err;
 
     pid = fork();
     if (pid == 0) {
+        struct selva_io io;
+
+        selva_db_dump_state = SELVA_DB_DUMP_IS_CHILD;
+
         err = selva_io_init(&io, filename, flags);
         if (err) {
             return err;
@@ -120,7 +173,12 @@ static int dump_save(const char *filename)
         selva_io_end(&io);
 
         exit(0);
+    } else if (pid < 0) {
+        return SELVA_EGENERAL;
     }
+
+    selva_db_dump_state = SELVA_DB_DUMP_ACTIVE_CHILD;
+    save_pid = pid;
 
     return 0;
 }
@@ -262,6 +320,10 @@ static void save_db_cmd(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
+    /*
+     * TODO async response using a stream.
+     * TODO queue or dedup saves.
+     */
     selva_send_ll(resp, 1);
 }
 
