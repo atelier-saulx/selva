@@ -2,6 +2,7 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#define _GNU_SOURCE
 #define SELVA_IO_TYPE
 #include <assert.h>
 #include <signal.h>
@@ -62,8 +63,8 @@ static int handle_child_status(pid_t pid, int status, const char *name)
         int termsig = WTERMSIG(status);
 
         SELVA_LOG(SELVA_LOGL_ERR,
-                  "%s child %d killed by signal %d (%s)%s",
-                  name, (int)pid, termsig, strsignal(termsig),
+                  "%s child %d killed by signal SIG%s (%s)%s",
+                  name, (int)pid, sigabbrev_np(termsig), sigdescr_np(termsig),
                   (WCOREDUMP(status)) ? " (core dumped)" : NULL);
 
         return SELVA_EGENERAL;
