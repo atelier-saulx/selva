@@ -30,6 +30,7 @@ struct origin_state {
      * If this is zero then a new dump must be made before starting a
      * new replica.
      */
+    ring_buffer_eid_t last_pending_sdb_eid;
     ring_buffer_eid_t last_sdb_eid;
     ring_buffer_eid_t last_cmd_eid; /*!< Last cmd eid. */
 
@@ -69,7 +70,7 @@ static void insert(ring_buffer_eid_t eid, int8_t cmd, void *p, size_t p_size) {
 void replication_origin_new_sdb(const char *filename, uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
 {
     struct selva_replication_sdb *sdb = selva_malloc(sizeof(struct selva_replication_sdb));
-    uint64_t sdb_eid = replication_new_origin_eid(filename);
+    uint64_t sdb_eid = replication_new_origin_sdb_eid(filename);
 
     /* RFE Do we really need to dup here? */
     sdb->status = SDB_STATUS_COMPLETE;
@@ -86,11 +87,18 @@ void replication_origin_new_sdb(const char *filename, uint8_t sdb_hash[SELVA_IO_
 uint64_t replication_origin_new_incomplete_sdb(const char *filename)
 {
     struct selva_replication_sdb *sdb = selva_malloc(sizeof(struct selva_replication_sdb));
-    uint64_t sdb_eid = replication_new_origin_eid(filename);
+    uint64_t sdb_eid = replication_new_origin_sdb_eid(filename);
 
     sdb->status = SDB_STATUS_INCOMPLETE;
     sdb->filename = selva_string_createf("%s", filename);
     insert(sdb_eid, 0, sdb, sizeof(*sdb));
+
+    /*
+     * This is set so that we can always have cmd_eids be greater than sdb dumps
+     * created previously in time. It's not an issue if the dump fails and this
+     * ends up never being used because eids grow monotonically anyway.
+     */
+    origin_state.last_pending_sdb_eid = sdb_eid;
 
     return sdb_eid;
 }
@@ -121,11 +129,15 @@ void replication_origin_complete_sdb(uint64_t sdb_eid, uint8_t sdb_hash[SELVA_IO
     SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", selva_string_to_str(sdb->filename, NULL), sdb_eid);
 
     origin_state.last_sdb_eid = sdb_eid;
+
     /*
-     * Don't touch origin_state.last_cmd_eid as we might have new commands that
-     * came after async save.
-     * FIXME But if we don't have then we should probably update it!
+     * Not a perfect solution but this way we'll usually show rhe right info for
+     * `replicainfo` and it's unlikely that we'd zero it if there were new
+     * commands after this sdb_eid was issued.
      */
+    if (origin_state.last_cmd_eid < (sdb_eid & ~EID_MSB_MASK)) {
+        origin_state.last_cmd_eid = 0;
+    }
 }
 
 uint64_t replication_origin_get_last_sdb_eid(void)
@@ -229,9 +241,12 @@ int replication_origin_register_replica(
 static ring_buffer_eid_t next_eid(void)
 {
     const ring_buffer_eid_t sdb_eid_um = origin_state.last_sdb_eid & ~EID_MSB_MASK;
+    const ring_buffer_eid_t pending_sdb_eid_um = origin_state.last_pending_sdb_eid & ~EID_MSB_MASK;
     ring_buffer_eid_t eid;
 
-    if (sdb_eid_um > origin_state.last_cmd_eid) {
+    if (pending_sdb_eid_um > sdb_eid_um && pending_sdb_eid_um > origin_state.last_cmd_eid) {
+        origin_state.last_cmd_eid = origin_state.last_pending_sdb_eid;
+    } else if (sdb_eid_um > origin_state.last_cmd_eid) {
         origin_state.last_cmd_eid = sdb_eid_um;
     }
     eid = origin_state.last_cmd_eid = (origin_state.last_cmd_eid + 1) & ~EID_MSB_MASK;

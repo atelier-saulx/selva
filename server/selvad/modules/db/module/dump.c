@@ -224,7 +224,7 @@ static void auto_save(struct event *, void *arg)
     if (selva_db_is_dirty) {
         char filename[SDB_NAME_MIN_BUF_SIZE];
 
-        sdb_name(filename, SDB_NAME_MIN_BUF_SIZE, NULL, (uint64_t)ts_now());
+        sdb_name(filename, SDB_NAME_MIN_BUF_SIZE, NULL, (uint64_t)ts_monorealtime_now());
 
         err = dump_save(filename);
         if (err) {

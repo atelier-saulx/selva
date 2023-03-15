@@ -164,7 +164,7 @@ static int ensure_sdb(void)
          * replication/replication.c but it's definitely not
          * required.
          */
-        msg.str_hdr.bsize = sdb_name(msg.buf, sizeof(msg.buf), NULL, (uint64_t)ts_now());
+        msg.str_hdr.bsize = sdb_name(msg.buf, sizeof(msg.buf), NULL, (uint64_t)ts_monorealtime_now());
         msg_size = sizeof(msg.arr_hdr) + sizeof(msg.str_hdr) + msg.str_hdr.bsize;
         msg.str_hdr.bsize = htole16(msg.str_hdr.bsize);
 

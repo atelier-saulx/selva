@@ -168,7 +168,7 @@ uint64_t replication_replica_get_last_cmd_eid(void)
 
 uint64_t replication_replica_new_sdb(const char *filename)
 {
-    uint64_t sdb_eid = replication_new_replica_eid(filename);
+    uint64_t sdb_eid = replication_new_replica_sdb_eid(filename);
 
     if (sdb_eid) {
         sv.last_sdb_eid = sdb_eid;
