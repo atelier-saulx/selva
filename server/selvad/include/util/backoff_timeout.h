@@ -11,7 +11,9 @@ struct backoff_timeout {
     double t_max; /*!< Max time. [ms] */
     double factor;
     int attempt; /*!< Current attempt nr. */
+#ifndef __APPLE__
     struct random_data rnd_state;
+#endif
     char rnd_state_buf[32];
 };
 

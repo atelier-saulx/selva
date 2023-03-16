@@ -16,10 +16,16 @@ const struct backoff_timeout backoff_timeout_defaults = {
 
 void backoff_timeout_init(struct backoff_timeout *s)
 {
-    initstate_r((unsigned int)time(NULL), s->rnd_state_buf, sizeof(s->rnd_state_buf), &s->rnd_state);
+    unsigned int seed = time(NULL);
+#if __APPLE__
+    initstate(seed, s->rnd_state_buf, sizeof(s->rnd_state_buf));
+#else
+    initstate_r(seed, s->rnd_state_buf, sizeof(s->rnd_state_buf), &s->rnd_state);
+#endif
     s->attempt = 0;
 }
 
+#ifndef __APPLE__
 static int get_rnd(struct random_data *rnd_state)
 {
     int32_t r;
@@ -28,13 +34,19 @@ static int get_rnd(struct random_data *rnd_state)
 
     return (int)r;
 }
+#endif
 
 void backoff_timeout_next(struct backoff_timeout *s, struct timespec *ts)
 {
-    double random = (double)(get_rnd(&s->rnd_state) % 100) / 100.0 + 1.0;
+    double rv;
     double timeout;
 
-    timeout = fmin(random * s->t_min * pow(s->factor, (double)s->attempt), s->t_max * (1.0 / random));
+#if __APPLE__
+    rv = (double)(random() % 100) / 100.0 + 1.0;
+#else
+    rv = (double)(get_rnd(&s->rnd_state) % 100) / 100.0 + 1.0;
+#endif
+    timeout = fmin(rv * s->t_min * pow(s->factor, (double)s->attempt), s->t_max * (1.0 / rv));
     s->attempt++;
 
     msec2timespec(ts, (int64_t)round(timeout));
