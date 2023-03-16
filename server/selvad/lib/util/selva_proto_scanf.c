@@ -308,7 +308,11 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                         *va_arg(args, size_t *) = v;
                          break;
                     default:
-                         /* not reached */
+                         __builtin_unreachable();
+                         /* FIXME C23 would allow this */
+#if 0
+                         unreachable();
+#endif
                     }
                 } else if (found_type == SELVA_PROTO_DOUBLE) {
                     char vbuf[8];
@@ -327,7 +331,11 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                         *va_arg(args, long double *) = v;
                         break;
                     default:
-                        /* not reached */
+                        __builtin_unreachable();
+                        /* FIXME C23 would allow this */
+#if 0
+                        unreachable();
+#endif
                     }
                 } else if (found_type == SELVA_PROTO_STRING) {
                     const char *str = (char *)buf + buf_i + offsetof(struct selva_proto_string, data);
