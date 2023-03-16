@@ -79,6 +79,7 @@ int config_resolve(const char *mod_name, const struct config cfg_map[], size_t l
         switch (cfg->type) {
         case CONFIG_CSTRING:
             *((char **)cfg->dp) = str;
+            err = 0;
             break;
         case CONFIG_INT:
             err = parse_int(cfg->dp, str);
