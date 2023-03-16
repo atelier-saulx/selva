@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #if __linux__
@@ -35,6 +35,11 @@ void tcp_set_keepalive(int fd, int time, int intvl, int probes)
     (void)setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &time, sizeof(time));
     (void)setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &intvl, sizeof(intvl));
     (void)setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &probes, sizeof(probes));
+#else
+    (void)fd;
+    (void)time;
+    (void)intvl;
+    (void)probes;
 #endif
 }
 
