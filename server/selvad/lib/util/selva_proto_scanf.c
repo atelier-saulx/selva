@@ -344,7 +344,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                     memcpy(&len, (char *)buf + buf_i + offsetof(struct selva_proto_string, bsize), sizeof(len));
 
                     if (width >= 0) {
-                        char **dest = va_arg(args, char **);
+                        char *dest = va_arg(args, char *);
                         size_t copy_size = min((size_t)width, (size_t)len);
 
                         memcpy(dest, str, copy_size);
