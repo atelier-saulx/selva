@@ -16,6 +16,12 @@
 #define MONOTIME_SOURCE CLOCK_REALTIME
 #endif
 
+#if __linux__
+#define TAI_SOURCE CLOCK_TAI
+#else
+#define TAI_SOURCE CLOCK_REALTIME
+#endif
+
 long long ts_now(void) {
     struct timespec ts;
     long long now;
@@ -37,7 +43,7 @@ void ts_monotime(struct timespec *spec)
 
 void ts_monorealtime(struct timespec *spec)
 {
-    clock_gettime(CLOCK_TAI, spec);
+    clock_gettime(TAI_SOURCE, spec);
 }
 
 long long ts_monorealtime_now(void)
@@ -45,7 +51,7 @@ long long ts_monorealtime_now(void)
     struct timespec ts;
     long long now;
 
-    clock_gettime(CLOCK_TAI, &ts);
+    clock_gettime(TAI_SOURCE, &ts);
     now = ts.tv_sec * 1000 + lround((double)ts.tv_nsec / 1.0e6);
 
     return now;
