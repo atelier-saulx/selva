@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "util/sigstr.h"
 #include "util/finalizer.h"
 #include "util/sdb_name.h"
 #include "util/selva_string.h"
@@ -83,7 +84,7 @@ static int handle_child_status(pid_t pid, int status, const char *name)
 
         SELVA_LOG(SELVA_LOGL_ERR,
                   "%s child %d killed by signal SIG%s (%s)%s",
-                  name, (int)pid, sigabbrev_np(termsig), sigdescr_np(termsig),
+                  name, (int)pid, sigstr_abbrev(termsig), sigstr_descr(termsig),
                   (WCOREDUMP(status)) ? " (core dumped)" : NULL);
 
         return SELVA_EGENERAL;

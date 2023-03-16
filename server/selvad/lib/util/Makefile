@@ -29,6 +29,7 @@ OBJ := \
 	selva_proto_builder.o \
 	selva_proto_scanf.o \
 	selva_string.o \
+	sigstr.o \
 	svector.o \
 	tcp.o \
 	timestamp.o \
