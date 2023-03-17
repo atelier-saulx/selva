@@ -21,6 +21,10 @@
 #include "selva_server.h"
 #include "server.h"
 
+#ifndef O_NOATIME
+#define O_NOATIME 00
+#endif
+
 int selva_send_flush(struct selva_server_response_out *restrict resp)
 {
     if (!resp->ctx) {
