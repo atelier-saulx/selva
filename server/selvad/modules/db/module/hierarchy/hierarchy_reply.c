@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include "selva_server.h"
 #include "selva_db.h"

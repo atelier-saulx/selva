@@ -14,6 +14,7 @@
 #include "util/sdb_name.h"
 #include "util/selva_string.h"
 #include "util/timestamp.h"
+#include "endian.h"
 #include "module.h"
 #include "config.h"
 #include "event_loop.h"
