@@ -3,12 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 #if __linux__
-/* Linux defines IPPROTO_TCP in here */
-#include <arpa/inet.h>
+#include <arpa/inet.h> /* Linux defines IPPROTO_TCP in here */
+#include <sys/sendfile.h>
 #endif
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#if __APPLE__ /* sendfile on MacOs */
+#include <sys/types.h>
+#include <sys/uio.h>
+#endif
 #include <unistd.h>
 #include "util/tcp.h"
 
@@ -98,4 +102,25 @@ ssize_t tcp_read(int fd, void *buf, size_t n)
 	}
 
 	return i;
+}
+
+off_t tcp_sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
+{
+    off_t bytes_sent;
+
+#if __APPLE__
+    int err;
+
+    bytes_sent = count;
+    err = sendfile(in_fd, out_fd, *offset, &bytes_sent, NULL, 0);
+    if (err) {
+        bytes_sent = -1;
+    }
+#elif __linux__
+    off_t bytes_sent = sendfile(out_fd, in_fd, offset, count);
+#else
+    /* FIXME sendfile */
+#endif
+
+    return bytes_sent;
 }

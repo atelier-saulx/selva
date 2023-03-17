@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
-#include <sys/sendfile.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include "util/crc32c.h"
@@ -202,7 +201,7 @@ ssize_t server_send_file(struct selva_server_response_out *resp, int fd, size_t 
     set_resp_msg_len(resp, size);
     server_flush_frame_buf(resp, 0);
 
-    off_t bytes_sent = sendfile(resp->ctx->fd, fd, &(off_t){0}, size);
+    off_t bytes_sent = tcp_sendfile(resp->ctx->fd, fd, &(off_t){0}, size);
     if (bytes_sent != (off_t)size) {
         /*
          * Some of the errors are not SELVA_PROTO but ¯\_(ツ)_/¯

@@ -12,6 +12,11 @@ void tcp_uncork(int fd);
 ssize_t tcp_recv(int fd, void *buf, size_t n, int flags);
 ssize_t tcp_read(int fd, void *buf, size_t n);
 
+/**
+ * Send a regular file over a TCP socket.
+ */
+off_t tcp_sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+
 /* TODO fix fuzzer with tcp_read() */
 
 #ifndef FUZZER
