@@ -63,7 +63,7 @@ void selva_replication_new_sdb(const char *filename, const uint8_t sdb_hash[SELV
         (void)replication_replica_new_sdb(filename);
         break;
     default:
-        /* NOP */
+        ; /* NOP */
     }
 }
 
@@ -79,7 +79,7 @@ uint64_t selva_replication_incomplete_sdb(const char *filename)
         sdb_eid = replication_replica_new_sdb(filename);
         break;
     default:
-        /* NOP */
+        ; /* NOP */
     }
 
     return sdb_eid;
@@ -96,7 +96,7 @@ void selva_replication_complete_sdb(uint64_t sdb_eid, uint8_t sdb_hash[SELVA_IO_
         memcpy(last_sdb_hash, sdb_hash, SELVA_IO_HASH_SIZE);
         break;
     default:
-        /* NOP */
+        ; /* NOP */
     }
 }
 
@@ -107,7 +107,7 @@ void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
         replication_origin_replicate(cmd, buf, buf_size);
         break;
     default:
-        /* NOP */
+        ; /* NOP */
     }
 }
 
@@ -118,7 +118,7 @@ void selva_replication_replicate_pass(int8_t cmd, void *buf, size_t buf_size)
         replication_origin_replicate_pass(cmd, buf, buf_size);
         break;
     default:
-        /* NOP */
+        ; /* NOP */
     }
 }
 
@@ -157,8 +157,10 @@ static int ensure_sdb(void)
         size_t msg_size;
 
         /* Check that it's packed properly. */
+#if !defined(__clang__)
         static_assert((char *)(&msg.arr_hdr) + sizeof(msg.arr_hdr) == (char *)(&msg.str_hdr));
         static_assert((char *)(&msg.str_hdr) + sizeof(msg.str_hdr) == msg.buf);
+#endif
 
         /*
          * This happens to be the almost the same as in
@@ -400,7 +402,7 @@ __constructor void init(void)
         selva_server_set_readonly();
         break;
     default:
-        /* NOP */
+        ; /* NOP */
     }
 
     SELVA_MK_COMMAND(CMD_REPLICASYNC_ID, SELVA_CMD_MODE_MUTATE, replicasync);
