@@ -126,7 +126,7 @@ struct replica_state {
 /**
  * Here we store the current state of the replica replication protocol.
  */
-static struct replica_state sv __section("replication_state");
+static struct replica_state sv __lazy_alloc_glob;
 
 int replication_running;
 

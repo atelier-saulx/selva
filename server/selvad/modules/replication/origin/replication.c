@@ -51,7 +51,7 @@ struct origin_state {
     struct replica replicas[REPLICATION_MAX_REPLICAS];
 };
 
-static struct origin_state origin_state __section("replication_state");
+static struct origin_state origin_state __lazy_alloc_glob;
 
 /**
  * Request replica reader threaders in the mask to stop and release their data.

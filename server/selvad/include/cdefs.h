@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 SAULX
+ * Copyright (c) 2020-2023 SAULX
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
@@ -122,6 +122,18 @@
  * Store the variable or function in a named section.
  */
 #define __section(x) __attribute__((__section__(x)))
+#endif
+
+#if __APPLE__
+#define __lazy_alloc_glob
+#else
+/**
+ * Lazy alloc global variable.
+ * On many system (especially Linux) user defined sections are not zeroed on
+ * startup and thus implicitly neither allocated until accessed. This allows
+ * us to create global variables that are allocated lazily.
+ */
+#define __lazy_alloc_glob __attribute__((__section__("lazy")))
 #endif
 
 /**
