@@ -90,7 +90,7 @@ int sdb_read_header(struct selva_io *io)
     }
 
     SELVA_LOG(SELVA_LOGL_INFO,
-              "sdb loading. created_with: %.*s updated_with: %.*s",
+              "created_with: %.*s updated_with: %.*s",
               SELVA_DB_VERSION_SIZE, selva_db_version_info.created_with,
               SELVA_DB_VERSION_SIZE, selva_db_version_info.updated_with);
 

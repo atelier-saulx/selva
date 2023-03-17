@@ -38,6 +38,7 @@ enum selva_db_dump_state selva_db_dump_state;
 static pid_t save_pid;
 static uint64_t save_sdb_eid;
 
+/* TODO It's not necessary to do any of this if replication is not enabled. */
 static void handle_last_good_sync(void)
 {
     uint8_t hash[SELVA_IO_HASH_SIZE];
