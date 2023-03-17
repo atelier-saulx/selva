@@ -2264,7 +2264,6 @@ static void replyWithKeyValue(struct selva_server_response_out *resp, struct sel
 
 static void replyWithObject(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObject *obj, const char *excluded) {
     struct SelvaObjectKey *key;
-    size_t n = 0;
 
     selva_send_array(resp, -1);
 
@@ -2278,8 +2277,6 @@ static void replyWithObject(struct selva_server_response_out *resp, struct selva
 
         selva_send_str(resp, key->name, key->name_len);
         replyWithKeyValue(resp, lang, key);
-
-        n += 2;
     }
 
     selva_send_array_end(resp);
