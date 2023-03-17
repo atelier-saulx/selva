@@ -6,6 +6,8 @@
 #ifndef SELVA_TIMESTAMP_H
 #define SELVA_TIMESTAMP_H
 
+struct timespec;
+
 /**
  * Get current UNIX time in ms.
  */
