@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <netinet/tcp.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -174,7 +175,7 @@ uint64_t replication_replica_new_sdb(const char *filename)
         sv.last_sdb_eid = sdb_eid;
         sv.last_cmd_eid = 0;
 
-        SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%lx)", filename, sv.last_sdb_eid);
+        SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", filename, sv.last_sdb_eid);
     }
 
     return sdb_eid;
