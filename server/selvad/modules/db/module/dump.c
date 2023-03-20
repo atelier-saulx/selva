@@ -123,6 +123,7 @@ static void handle_signal(struct event *ev, void *arg __unused)
                 if (!err) {
                     /* FIXME last_good isn't necessarily the right file. */
                     handle_last_good_async();
+                    selva_db_is_dirty = 0;
                 }
 
                 selva_db_dump_state = SELVA_DB_DUMP_NONE;
@@ -172,7 +173,7 @@ static int dump_load(struct selva_io *io)
     return err;
 }
 
-static int dump_save(const char *filename)
+static int dump_save_async(const char *filename)
 {
     pid_t pid;
     int err;
@@ -181,7 +182,6 @@ static int dump_save(const char *filename)
         /* Already saving */
         return SELVA_EINPROGRESS;
     }
-
 
     save_sdb_eid = selva_replication_incomplete_sdb(filename);
 
@@ -212,6 +212,31 @@ static int dump_save(const char *filename)
     return 0;
 }
 
+static int dump_save_sync(const char *filename)
+{
+    const enum selva_io_flags flags = SELVA_IO_FLAGS_WRITE;
+    struct selva_io io;
+    int err;
+
+    if (save_pid) {
+        /* Already saving */
+        return SELVA_EINPROGRESS;
+    }
+
+    err = selva_io_init(&io, filename, flags);
+    if (err) {
+        return err;
+    }
+
+    Hierarchy_RDBSave(&io, main_hierarchy);
+    selva_io_end(&io);
+
+    handle_last_good_sync();
+    selva_db_is_dirty = 0;
+
+    return 0;
+}
+
 static void auto_save(struct event *, void *arg)
 {
     struct timespec *ts = (struct timespec *)arg;
@@ -228,13 +253,10 @@ static void auto_save(struct event *, void *arg)
 
         sdb_name(filename, SDB_NAME_MIN_BUF_SIZE, NULL, (uint64_t)ts_monorealtime_now());
 
-        err = dump_save(filename);
+        err = dump_save_async(filename);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to autosave: %s", selva_strerror(err));
         }
-
-        selva_db_is_dirty = 0;
-        SELVA_LOG(SELVA_LOGL_INFO, "Autosave complete");
     }
 }
 
@@ -343,7 +365,7 @@ static void save_db_cmd(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
-    err = dump_save(selva_string_to_str(argv[ARGV_FILENAME], NULL));
+    err = dump_save_async(selva_string_to_str(argv[ARGV_FILENAME], NULL));
     if (err) {
         selva_send_errorf(resp, err, "Save failed");
         return;
@@ -356,11 +378,34 @@ static void save_db_cmd(struct selva_server_response_out *resp, const void *buf,
     selva_send_ll(resp, 1);
 }
 
+static void dump_on_exit(int code, void *)
+{
+    char filename[SDB_NAME_MIN_BUF_SIZE];
+    int err;
+
+    if (code != 0 || !selva_db_is_dirty) {
+        return;
+    }
+
+    SELVA_LOG(SELVA_LOGL_INFO, "Dumping before exit...");
+    sdb_name(filename, SDB_NAME_MIN_BUF_SIZE, NULL, (uint64_t)ts_monorealtime_now());
+
+    err = dump_save_sync(filename);
+    if (err) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Dump on exit failed: %s", selva_strerror(err));
+    }
+}
+
 static int dump_onload(void) {
     selva_mk_command(CMD_LOAD_ID, SELVA_CMD_MODE_MUTATE, "load", load_db_cmd);
     selva_mk_command(CMD_SAVE_ID, SELVA_CMD_MODE_PURE, "save", save_db_cmd);
 
     setup_sigchld();
+
+    if (on_exit(dump_on_exit, NULL)) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "Can't register an exit function");
+        return SELVA_ENOBUFS;
+    }
 
     return 0;
 }
