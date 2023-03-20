@@ -117,9 +117,10 @@ off_t tcp_sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
         bytes_sent = -1;
     }
 #elif __linux__
-    off_t bytes_sent = sendfile(out_fd, in_fd, offset, count);
+    bytes_sent = sendfile(out_fd, in_fd, offset, count);
 #else
     /* FIXME sendfile */
+#error "Not implemented"
 #endif
 
     return bytes_sent;
