@@ -135,11 +135,7 @@ static void send_mode_error(struct selva_server_response_out *resp)
  */
 static int ensure_sdb(void)
 {
-    /* TODO If currently saving, wait for a new sdb */
-
-    if (replication_origin_get_last_sdb_eid()) {
-        return 0;
-    } else {
+    if (!replication_origin_get_last_sdb_eid()) {
         struct {
             struct selva_proto_array arr_hdr;
             struct selva_proto_string str_hdr;
@@ -174,15 +170,11 @@ static int ensure_sdb(void)
         selva_server_run_cmd(CMD_SAVE_ID, &msg, msg_size);
 
         /*
-         * TODO wait for the new sdb to appear
-         * Right now we just fail and hope that we have a dump once the replica reconnects.
+         * Let the replica retry later.
+         * This is much easier than trying to wait async for the dump or error
+         * to appear.
          */
         return SELVA_EINPROGRESS;
-#if 0
-        if (!replication_origin_get_last_sdb_eid()) {
-            return SELVA_EIO;
-        }
-#endif
     }
 
     return 0;
@@ -200,6 +192,7 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
     __auto_finalizer struct finalizer fin;
     uint8_t sdb_hash[SELVA_IO_HASH_SIZE];
     uint64_t sdb_eid;
+    enum replication_sync_mode sync_mode;
     int argc, err;
 
     finalizer_init(&fin);
@@ -226,14 +219,16 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
 
     if (argc) {
         /*
-         * Try to start from the save point provided by the replica and
+         * Try to start from a save point provided by the replica and
          * do a partial sync.
          */
-        err = replication_origin_register_replica(stream_resp, sdb_eid, sdb_hash, REPLICATION_SYNC_MODE_PARTIAL);
+        sync_mode = REPLICATION_SYNC_MODE_PARTIAL;
     } else {
         /*
          * Start from whatever dump we know and do a full sync.
          */
+        sync_mode = REPLICATION_SYNC_MODE_FULL;
+
         err = ensure_sdb();
         if (err) {
             selva_cancel_stream(resp, stream_resp);
@@ -241,12 +236,14 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
             return;
         }
 
-        err = replication_origin_register_replica(stream_resp, replication_origin_get_last_sdb_eid(), last_sdb_hash, REPLICATION_SYNC_MODE_FULL);
+        sdb_eid = replication_origin_get_last_sdb_eid();
+        memcpy(sdb_hash, last_sdb_hash, sizeof(sdb_hash));
     }
+
+    err = replication_origin_register_replica(stream_resp, sdb_eid, sdb_hash, sync_mode);
     if (err) {
         selva_cancel_stream(resp, stream_resp);
         selva_send_errorf(resp, err, "Failed to register the replica");
-        return;
     }
 }
 
