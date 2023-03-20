@@ -39,6 +39,7 @@ enum type_specifier {
     TYPE_double,
     TYPE_longdouble,
     TYPE_string,
+    TYPE_pointer, /* read as a string */
 };
 
 /**
@@ -95,7 +96,7 @@ static enum type_specifier type_map_f[LENGTH_L + 1] = {
 /**
  * All the supported types are sent over just a few selva_proto value types.
  */
-static enum selva_proto_data_type type_to_selva_proto_type_map[TYPE_string + 1] = {
+static enum selva_proto_data_type type_to_selva_proto_type_map[TYPE_pointer + 1] = {
     [TYPE_char] = SELVA_PROTO_LONGLONG,
     [TYPE_short] = SELVA_PROTO_LONGLONG,
     [TYPE_int] = SELVA_PROTO_LONGLONG,
@@ -114,6 +115,7 @@ static enum selva_proto_data_type type_to_selva_proto_type_map[TYPE_string + 1] 
     [TYPE_double] = SELVA_PROTO_DOUBLE,
     [TYPE_longdouble] = SELVA_PROTO_DOUBLE,
     [TYPE_string] = SELVA_PROTO_STRING,
+    [TYPE_pointer] = SELVA_PROTO_STRING,
 };
 
 static char *parse_width(const char *fmt, int *width)
@@ -238,6 +240,12 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 }
                 type = TYPE_string;
                 break;
+            case 'p':
+                if (length != LENGTH_none) {
+                    return SELVA_PROTO_EINVAL;
+                }
+                type = TYPE_pointer;
+                break;
             default:
                 return SELVA_PROTO_EINVAL;
             }
@@ -349,7 +357,15 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
 
                         memcpy(dest, str, copy_size);
                         dest[copy_size] = '\0';
-                    } else { /* no width specifier, assume selva_string */
+                    } else {
+                        /*
+                         * no width specifier, assume selva_string.
+                         *
+                         * This would be a great case for %s -> selva_string but
+                         * unfortunately there is no way to make
+                         * `__attribute__((format(scanf...` work with that,
+                         * hence we actually expect %p to be used.
+                         */
                         /* TODO support SElVA_PROTO_STRING_FDEFLATE */
                         struct selva_string *s;
 

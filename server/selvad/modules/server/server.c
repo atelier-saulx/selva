@@ -271,7 +271,7 @@ static void mallocstats(struct selva_server_response_out *resp, const void *buf,
     int argc;
 
     finalizer_init(&fin);
-    argc = selva_proto_scanf(&fin, buf, size, "%s", &opts);
+    argc = selva_proto_scanf(&fin, buf, size, "%p", &opts);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
@@ -290,7 +290,7 @@ static void mallocprofdump(struct selva_server_response_out *resp, const void *b
     int argc;
 
     finalizer_init(&fin);
-    argc = selva_proto_scanf(&fin, buf, size, "%s", &filename);
+    argc = selva_proto_scanf(&fin, buf, size, "%p", &filename);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
