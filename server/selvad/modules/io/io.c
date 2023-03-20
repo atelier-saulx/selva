@@ -43,12 +43,7 @@ static void test_io_mode(struct selva_io *io, enum selva_io_flags mode)
  * Log a read error and exit.
  * @param whence should be one of WHENCE_ macros.
  */
-#if __has_c_attribute(noreturn)
-[[noreturn]]
-#else
-__attribute__((noreturn))
-#endif
-static void exit_read_error(struct selva_io *io, const char *type, const char *whence)
+__noreturn static void exit_read_error(struct selva_io *io, const char *type, const char *whence)
 {
     SELVA_LOG(SELVA_LOGL_CRIT, "Invalid read. offset: %ld whence: \"%s\" type: %s",
               ftell(io->file), whence, type);

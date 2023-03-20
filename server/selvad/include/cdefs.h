@@ -38,6 +38,12 @@
 #define __constfn
 #endif
 
+#if __has_c_attribute(noreturn)
+#define __noreturn [[noreturn]]
+#else
+#define __noreturn __attribute__((noreturn))
+#endif
+
 #define CONCATENATE(arg1, arg2)   CONCATENATE1(arg1, arg2)
 #define CONCATENATE1(arg1, arg2)  CONCATENATE2(arg1, arg2)
 #define CONCATENATE2(arg1, arg2)  arg1##arg2
