@@ -1890,7 +1890,9 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
         }
     }
 
-    selva_db_is_dirty = 1; /* TODO Not necessarily modified. */
+    if (created || updated) {
+        selva_db_is_dirty = 1;
+    }
 
     if (selva_replication_get_mode() == SELVA_REPLICATION_MODE_ORIGIN) {
         struct replicate_ts replicate_ts;
