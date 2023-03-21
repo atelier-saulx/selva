@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2023 SAULX
+ * SPDX-License-Identifier: MIT
+ */
 #if __linux__
 #define _GNU_SOURCE
 #endif
