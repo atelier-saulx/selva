@@ -71,7 +71,7 @@ static struct cmd commands[255] = {
         .cmd_res = generic_res,
     },
     [253] = {
-        .cmd_id = 63,
+        .cmd_id = 65,
         .cmd_name = "!modify.string",
         .cmd_req = cmd_modify_string_req,
         .cmd_res = generic_res,

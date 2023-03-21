@@ -1086,7 +1086,7 @@ int SelvaObject_SetString(struct SelvaObject *obj, const struct selva_string *ke
     return SelvaObject_SetStringStr(obj, key_name_str, key_name_len, value);
 }
 
-int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double default_value, double incr) {
+int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double default_value, double incr, double *prev) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -1098,6 +1098,9 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
     }
 
     if (key->type == SELVA_OBJECT_DOUBLE) {
+        if (prev) {
+            *prev = key->emb_double_value;
+        }
         key->emb_double_value += incr;
     } else {
         err = clear_key_value(key);
@@ -1107,18 +1110,21 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
 
         key->type = SELVA_OBJECT_DOUBLE;
         key->emb_double_value = default_value;
+        if (prev) {
+            *prev = 0.0;
+        }
     }
 
     return 0;
 }
 
-int SelvaObject_IncrementDouble(struct SelvaObject *obj, const struct selva_string *key_name, double default_value, double incr) {
+int SelvaObject_IncrementDouble(struct SelvaObject *obj, const struct selva_string *key_name, double default_value, double incr, double *prev) {
     TO_STR(key_name);
 
-    return SelvaObject_IncrementDoubleStr(obj, key_name_str, key_name_len, default_value, incr);
+    return SelvaObject_IncrementDoubleStr(obj, key_name_str, key_name_len, default_value, incr, prev);
 }
 
-int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long default_value, long long incr) {
+int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long default_value, long long incr, long long *prev) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -1130,6 +1136,9 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
     }
 
     if (key->type == SELVA_OBJECT_LONGLONG) {
+        if (prev) {
+            *prev = key->emb_ll_value;
+        }
         key->emb_ll_value += incr;
     } else {
         err = clear_key_value(key);
@@ -1139,15 +1148,18 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
 
         key->type = SELVA_OBJECT_LONGLONG;
         key->emb_ll_value = default_value;
+        if (prev) {
+            *prev = 0;
+        }
     }
 
     return 0;
 }
 
-int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long default_value, long long incr) {
+int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long default_value, long long incr, long long *prev) {
     TO_STR(key_name);
 
-    return SelvaObject_IncrementLongLongStr(obj, key_name_str, key_name_len, default_value, incr);
+    return SelvaObject_IncrementLongLongStr(obj, key_name_str, key_name_len, default_value, incr, prev);
 }
 
 int SelvaObject_GetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject **out) {

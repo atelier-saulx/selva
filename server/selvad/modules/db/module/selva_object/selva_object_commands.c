@@ -19,7 +19,8 @@
 #include "selva_set.h"
 #include "selva_object.h"
 
-static struct SelvaObject *SelvaObject_Open(struct selva_server_response_out *resp, struct selva_string *key_name) {
+static struct SelvaObject *SelvaObject_Open(struct selva_server_response_out *resp, struct selva_string *key_name)
+{
     struct SelvaHierarchy *hierarchy = main_hierarchy;
     Selva_NodeId nodeId;
     const struct SelvaHierarchyNode *node;
@@ -40,7 +41,21 @@ static struct SelvaObject *SelvaObject_Open(struct selva_server_response_out *re
     return SelvaHierarchy_GetNodeObject(node);
 }
 
-void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+static struct SelvaObject *node_id_to_obj(Selva_NodeId nodeId)
+{
+    struct SelvaHierarchy *hierarchy = main_hierarchy;
+    const struct SelvaHierarchyNode *node;
+
+    node = SelvaHierarchy_FindNode(hierarchy, nodeId);
+    if (!node) {
+        return NULL;
+    }
+
+    return SelvaHierarchy_GetNodeObject(node);
+}
+
+void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
@@ -80,7 +95,8 @@ void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *
     }
 }
 
-void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
@@ -118,7 +134,8 @@ void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const voi
 }
 
 
-void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
@@ -192,7 +209,8 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
     selva_send_null(resp);
 }
 
-void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
@@ -280,7 +298,80 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
     return;
 }
 
-void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
+    __auto_finalizer struct finalizer fin;
+    Selva_NodeId node_id;
+    struct selva_string *okey;
+    long long incr, prev;
+    int argc, err;
+    struct SelvaObject *obj;
+
+    finalizer_init(&fin);
+
+    /* FIXME Hardcoded SELVA_NODE_ID_SIZE */
+    argc = selva_proto_scanf(&fin, buf, len, "{%10s, %p, %lld}", node_id, &okey, &incr);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc != 3) {
+        selva_send_error_arity(resp);
+        return;
+    }
+
+    obj = node_id_to_obj(node_id);
+    if (!obj) {
+        selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
+        return;
+    }
+
+    err = SelvaObject_IncrementLongLong(obj, okey, 1, incr, &prev);
+    if (err) {
+        selva_send_errorf(resp, err, "Failed to increment");
+        return;
+    }
+
+    selva_send_ll(resp, prev);
+}
+
+void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
+    __auto_finalizer struct finalizer fin;
+    Selva_NodeId node_id;
+    struct selva_string *okey;
+    double incr, prev;
+    int argc, err;
+    struct SelvaObject *obj;
+
+    finalizer_init(&fin);
+
+    /* FIXME Hardcoded SELVA_NODE_ID_SIZE */
+    argc = selva_proto_scanf(&fin, buf, len, "{%10s, %p, %lf}", node_id, &okey, &incr);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+        return;
+    } else if (argc != 3) {
+        selva_send_error_arity(resp);
+        return;
+    }
+
+    obj = node_id_to_obj(node_id);
+    if (!obj) {
+        selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
+        return;
+    }
+
+    err = SelvaObject_IncrementDouble(obj, okey, 1.0, incr, &prev);
+    if (err) {
+        selva_send_errorf(resp, err, "Failed to increment");
+        return;
+    }
+
+    selva_send_double(resp, prev);
+}
+
+void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
@@ -377,7 +468,8 @@ void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void 
     }
 }
 
-void SelvaObject_LenCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+void SelvaObject_LenCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
@@ -419,7 +511,8 @@ void SelvaObject_LenCommand(struct selva_server_response_out *resp, const void *
     selva_send_ll(resp, obj_len);
 }
 
-void SelvaObject_GetMetaCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+void SelvaObject_GetMetaCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
@@ -456,7 +549,8 @@ void SelvaObject_GetMetaCommand(struct selva_server_response_out *resp, const vo
     selva_send_ll(resp, user_meta);
 }
 
-void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
@@ -505,13 +599,16 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
     selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
 }
 
-static int SelvaObject_OnLoad(void) {
+static int SelvaObject_OnLoad(void)
+{
     selva_mk_command(CMD_OBJECT_DEL_ID, SELVA_CMD_MODE_MUTATE, "object.del", SelvaObject_DelCommand);
     selva_mk_command(CMD_OBJECT_EXIST_ID, SELVA_CMD_MODE_PURE, "object.exists", SelvaObject_ExistsCommand);
     selva_mk_command(CMD_OBJECT_GET_ID, SELVA_CMD_MODE_PURE, "object.get", SelvaObject_GetCommand);
-    selva_mk_command(CMD_OBJECT_LEN_ID, SELVA_CMD_MODE_PURE, "object.len", SelvaObject_LenCommand);
     selva_mk_command(CMD_OBJECT_SET_ID, SELVA_CMD_MODE_MUTATE, "object.set", SelvaObject_SetCommand);
+    selva_mk_command(CMD_OBJECT_INCR_BY_ID, SELVA_CMD_MODE_MUTATE, "object.incrby", SelvaObject_IncrbyCommand);
+    selva_mk_command(CMD_OBJECT_INCR_BY_DOUBLE_ID, SELVA_CMD_MODE_MUTATE, "object.incrbydouble", SelvaObject_IncrbyDoubleCommand);
     selva_mk_command(CMD_OBJECT_TYPE_ID, SELVA_CMD_MODE_PURE, "object.type", SelvaObject_TypeCommand);
+    selva_mk_command(CMD_OBJECT_LEN_ID, SELVA_CMD_MODE_PURE, "object.len", SelvaObject_LenCommand);
     selva_mk_command(CMD_OBJECT_GETMETA_ID, SELVA_CMD_MODE_PURE, "object.getMeta", SelvaObject_GetMetaCommand);
     selva_mk_command(CMD_OBJECT_SETMETA_ID, SELVA_CMD_MODE_MUTATE, "object.setMeta", SelvaObject_SetMetaCommand);
 

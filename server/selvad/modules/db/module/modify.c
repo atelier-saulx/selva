@@ -1147,7 +1147,7 @@ static enum selva_op_repl_state modify_op(
         const struct SelvaModify_OpIncrement *incrementOpts = (const struct SelvaModify_OpIncrement *)value_str;
         int err;
 
-        err = SelvaObject_IncrementLongLong(obj, field, incrementOpts->$default, incrementOpts->$increment);
+        err = SelvaObject_IncrementLongLong(obj, field, incrementOpts->$default, incrementOpts->$increment, NULL);
         if (err) {
             selva_send_error(resp, err, NULL, 0);
             return SELVA_OP_REPL_STATE_UNCHANGED;
@@ -1156,7 +1156,7 @@ static enum selva_op_repl_state modify_op(
         const struct SelvaModify_OpIncrementDouble *incrementOpts = (const struct SelvaModify_OpIncrementDouble*)value_str;
         int err;
 
-        err = SelvaObject_IncrementDouble(obj, field, incrementOpts->$default, incrementOpts->$increment);
+        err = SelvaObject_IncrementDouble(obj, field, incrementOpts->$default, incrementOpts->$increment, NULL);
         if (err) {
             selva_send_error(resp, err, NULL, 0);
             return SELVA_OP_REPL_STATE_UNCHANGED;
