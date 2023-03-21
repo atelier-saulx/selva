@@ -331,6 +331,7 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
         return;
     }
 
+    selva_db_is_dirty = 1;
     selva_send_ll(resp, prev);
 }
 
@@ -367,6 +368,7 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
         return;
     }
 
+    selva_db_is_dirty = 1;
     selva_send_double(resp, prev);
 }
 
