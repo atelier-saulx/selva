@@ -1876,8 +1876,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
          */
         SelvaSubscriptions_DeferTriggerEvents(hierarchy, node, SELVA_SUBSCRIPTION_TRIGGER_TYPE_UPDATED);
 
-        /* FIXME Replication */
-        if (1 /* !(RedisModule_GetContextFlags() & REDISMODULE_CTX_FLAGS_REPLICATED) */) {
+        if (selva_replication_get_mode() == SELVA_REPLICATION_MODE_REPLICA) {
             struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
             const long long now = ts_now();
 
