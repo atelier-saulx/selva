@@ -25,7 +25,6 @@
 #include "util/selva_proto_builder.h"
 #include "util/selva_string.h"
 #include "util/svector.h"
-#include "util/timestamp.h"
 #include "arg_parser.h"
 #include "async_task.h"
 #include "comparator.h"
@@ -1524,7 +1523,7 @@ static void replicate_modify(struct selva_server_response_out *resp, const struc
     }
 
     selva_proto_builder_end(&msg);
-    selva_replication_replicate_pass(selva_resp_to_cmd_id(resp), msg.buf, msg.bsize);
+    selva_replication_replicate_pass(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), msg.buf, msg.bsize);
     /*
      * Deinit can be omitted because selva_replication_replicate_pass() will
      * free the buffer.
@@ -1878,7 +1877,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
 
         if (selva_replication_get_mode() == SELVA_REPLICATION_MODE_REPLICA) {
             struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
-            const long long now = ts_now();
+            const int64_t now = selva_resp_to_ts(resp);
 
             /*
              * If the node was created then the field was already updated by hierarchy.

@@ -100,22 +100,22 @@ void selva_replication_complete_sdb(uint64_t sdb_eid, uint8_t sdb_hash[SELVA_IO_
     }
 }
 
-void selva_replication_replicate(int8_t cmd, const void *buf, size_t buf_size)
+void selva_replication_replicate(int64_t ts, int8_t cmd, const void *buf, size_t buf_size)
 {
     switch (replication_mode) {
     case SELVA_REPLICATION_MODE_ORIGIN:
-        replication_origin_replicate(cmd, buf, buf_size);
+        replication_origin_replicate(ts, cmd, buf, buf_size);
         break;
     default:
         ; /* NOP */
     }
 }
 
-void selva_replication_replicate_pass(int8_t cmd, void *buf, size_t buf_size)
+void selva_replication_replicate_pass(int64_t ts, int8_t cmd, void *buf, size_t buf_size)
 {
     switch (replication_mode) {
     case SELVA_REPLICATION_MODE_ORIGIN:
-        replication_origin_replicate_pass(cmd, buf, buf_size);
+        replication_origin_replicate_pass(ts, cmd, buf, buf_size);
         break;
     default:
         ; /* NOP */
@@ -167,7 +167,7 @@ static int ensure_sdb(void)
         msg_size = sizeof(msg.arr_hdr) + sizeof(msg.str_hdr) + msg.str_hdr.bsize;
         msg.str_hdr.bsize = htole16(msg.str_hdr.bsize);
 
-        selva_server_run_cmd(CMD_SAVE_ID, &msg, msg_size);
+        selva_server_run_cmd(CMD_SAVE_ID, ts_now(), &msg, msg_size);
 
         /*
          * Let the replica retry later.

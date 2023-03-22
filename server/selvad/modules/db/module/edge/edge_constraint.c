@@ -327,7 +327,7 @@ void Edge_AddConstraintCommand(struct selva_server_response_out *resp, const voi
     } else {
         selva_db_is_dirty = 1;
         selva_send_ll(resp, 1);
-        selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
+        selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
     }
 }
 

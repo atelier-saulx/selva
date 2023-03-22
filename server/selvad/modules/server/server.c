@@ -14,6 +14,7 @@
 #include "util/net.h"
 #include "util/selva_string.h"
 #include "util/tcp.h"
+#include "util/timestamp.h"
 #include "event_loop.h"
 #include "config.h"
 #include "module.h"
@@ -78,6 +79,11 @@ size_t selva_resp_to_str(struct selva_server_response_out *resp, char *buf, size
 int selva_resp_to_cmd_id(struct selva_server_response_out *resp)
 {
     return resp->cmd;
+}
+
+int64_t selva_resp_to_ts(struct selva_server_response_out *resp)
+{
+    return resp->ts;
 }
 
 static void ping(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused)
@@ -362,6 +368,7 @@ static void on_data(struct event *event, void *arg)
             .cmd = ctx->recv_frame_hdr_buf.cmd,
             .frame_flags = SELVA_PROTO_HDR_FFIRST,
             .seqno = seqno,
+            .ts = ts_now(),
             .buf_i = 0,
         };
         struct command *cmd;
@@ -438,11 +445,12 @@ static void on_connection(struct event *event, void *arg __unused)
     evl_wait_fd(new_sockfd, on_data, NULL, on_close, conn_ctx);
 }
 
-void selva_server_run_cmd(int8_t cmd_id, void *msg, size_t msg_size)
+void selva_server_run_cmd(int8_t cmd_id, int64_t ts, void *msg, size_t msg_size)
 {
     struct selva_server_response_out resp = {
         .ctx = NULL,
         .cmd = cmd_id,
+        .ts = ts ? ts : ts_now(),
     };
     struct command *cmd;
 

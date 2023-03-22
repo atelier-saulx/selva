@@ -60,6 +60,11 @@ SELVA_SERVER_EXPORT(size_t, selva_resp_to_str, struct selva_server_response_out 
 SELVA_SERVER_EXPORT(int, selva_resp_to_cmd_id, struct selva_server_response_out *resp);
 
 /**
+ * Get start ts of the command execution.
+ */
+SELVA_SERVER_EXPORT(int64_t, selva_resp_to_ts, struct selva_server_response_out *resp);
+
+/**
  * Flush the response buffer.
  */
 SELVA_SERVER_EXPORT(int, selva_send_flush, struct selva_server_response_out *restrict resp);
@@ -127,7 +132,7 @@ SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out 
 /**
  * Send a replication command.
  */
-SELVA_SERVER_EXPORT(int, selva_send_replication_cmd, struct selva_server_response_out *resp, uint64_t eid, int8_t cmd, const void *data, size_t bsize);
+SELVA_SERVER_EXPORT(int, selva_send_replication_cmd, struct selva_server_response_out *resp, uint64_t eid, int64_t ts, int8_t cmd, const void *data, size_t bsize);
 
 /**
  * Send a replication SDB dump.
@@ -139,13 +144,14 @@ SELVA_SERVER_EXPORT(int, selva_send_replication_pseudo_sdb, struct selva_server_
 /**
  * Run command.
  */
-SELVA_SERVER_EXPORT(void, selva_server_run_cmd, int8_t cmd_id, void *msg, size_t msg_size);
+SELVA_SERVER_EXPORT(void, selva_server_run_cmd, int8_t cmd_id, int64_t ts, void *msg, size_t msg_size);
 
 #define _import_selva_server(apply) \
     apply(selva_server_set_readonly) \
     apply(selva_mk_command) \
     apply(selva_resp_to_str) \
     apply(selva_resp_to_cmd_id) \
+    apply(selva_resp_to_ts) \
     apply(selva_send_flush) \
     apply(selva_start_stream) \
     apply(selva_cancel_stream) \

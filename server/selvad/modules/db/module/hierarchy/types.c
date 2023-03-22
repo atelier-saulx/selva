@@ -83,7 +83,7 @@ void SelvaHierarchyTypes_AddCommand(struct selva_server_response_out *resp, cons
 
     selva_db_is_dirty = 1;
     selva_send_ll(resp, 1);
-    selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
+    selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
 }
 
 void SelvaHierarchyTypes_ClearCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
@@ -94,7 +94,7 @@ void SelvaHierarchyTypes_ClearCommand(struct selva_server_response_out *resp, co
 
         selva_db_is_dirty = 1;
         selva_send_ll(resp, 1);
-        selva_replication_replicate(selva_resp_to_cmd_id(resp), buf, len);
+        selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
     }
 }
 

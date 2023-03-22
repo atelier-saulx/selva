@@ -59,10 +59,10 @@ static struct origin_state origin_state __lazy_alloc_glob;
  */
 static void drop_replicas(unsigned replicas);
 
-static void insert(ring_buffer_eid_t eid, int8_t cmd, void *p, size_t p_size) {
+static void insert(ring_buffer_eid_t eid, int64_t ts, int8_t cmd, void *p, size_t p_size) {
     unsigned not_replicated;
 
-    while ((not_replicated = ring_buffer_insert(&origin_state.rb, eid, cmd, p, p_size))) {
+    while ((not_replicated = ring_buffer_insert(&origin_state.rb, eid, ts, cmd, p, p_size))) {
         drop_replicas(not_replicated);
     }
 }
@@ -79,7 +79,7 @@ void replication_origin_new_sdb(const char *filename, uint8_t sdb_hash[SELVA_IO_
 
     SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", filename, sdb_eid);
 
-    insert(sdb_eid, 0, sdb, sizeof(*sdb));
+    insert(sdb_eid, (sdb_eid & ~EID_MSB_MASK), 0, sdb, sizeof(*sdb));
     origin_state.last_sdb_eid = sdb_eid;
     origin_state.last_cmd_eid = 0;
 }
@@ -91,7 +91,7 @@ uint64_t replication_origin_new_incomplete_sdb(const char *filename)
 
     sdb->status = SDB_STATUS_INCOMPLETE;
     sdb->filename = selva_string_createf("%s", filename);
-    insert(sdb_eid, 0, sdb, sizeof(*sdb));
+    insert(sdb_eid, (sdb_eid & ~EID_MSB_MASK), 0, sdb, sizeof(*sdb));
 
     /*
      * This is set so that we can always have cmd_eids be greater than sdb dumps
@@ -259,17 +259,17 @@ static ring_buffer_eid_t next_eid(void)
     return eid;
 }
 
-void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size)
+void replication_origin_replicate(int64_t ts, int8_t cmd, const void *buf, size_t buf_size)
 {
     void *p = selva_malloc(buf_size);
 
     memcpy(p, buf, buf_size);
-    insert(next_eid(), cmd, p, buf_size);
+    insert(next_eid(), ts, cmd, p, buf_size);
 }
 
-void replication_origin_replicate_pass(int8_t cmd, void *buf, size_t buf_size)
+void replication_origin_replicate_pass(int64_t ts, int8_t cmd, void *buf, size_t buf_size)
 {
-    insert(next_eid(), cmd, buf, buf_size);
+    insert(next_eid(), ts, cmd, buf, buf_size);
 }
 
 void replication_origin_init(void)

@@ -122,7 +122,7 @@ void ring_buffer_reader_exit(struct ring_buffer *rb, struct ring_buffer_reader_s
     }
 }
 
-unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t id, int8_t cmd_id, void * restrict p, size_t size)
+unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t id, int64_t ts, int8_t cmd_id, void * restrict p, size_t size)
 {
     unsigned not_read;
     struct ring_buffer_element *e;
@@ -150,6 +150,7 @@ unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t 
     }
 
     e->id = id;
+    e->ts = ts;
     e->cmd_id = cmd_id;
     e->data = p;
     e->data_size = size;

@@ -449,13 +449,14 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
             printf("%*s]\n", tabs * TAB_WIDTH, "");
         } else if (type == SELVA_PROTO_REPLICATION_CMD) {
             uint64_t eid;
+            int64_t ts;
             int8_t repl_cmd_id;
             const char *repl_cmd_str;
             char buf[5];
             size_t cmd_size;
             int err;
 
-            err = selva_proto_parse_replication_cmd(msg, msg_size, i - off, &eid, &repl_cmd_id, &cmd_size);
+            err = selva_proto_parse_replication_cmd(msg, msg_size, i - off, &eid, &ts, &repl_cmd_id, &cmd_size);
             if (err) {
                 fprintf(stderr, "Failed to parse an error received: %s\n", selva_strerror(err));
                 return;

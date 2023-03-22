@@ -55,14 +55,14 @@ uint64_t replication_origin_get_last_cmd_eid(void);
 /**
  * Replicate a command to replicas.
  */
-void replication_origin_replicate(int8_t cmd, const void *buf, size_t buf_size);
+void replication_origin_replicate(int64_t ts, int8_t cmd, const void *buf, size_t buf_size);
 
 /**
  * Replicate a command to replicas.
  * Pass the ownership of buf to the replication module. Avoids one malloc.
  * buf must be allocated with `selva_malloc` or `selva_realloc`.
  */
-void replication_origin_replicate_pass(int8_t cmd, void *buf, size_t buf_size);
+void replication_origin_replicate_pass(int64_t ts, int8_t cmd, void *buf, size_t buf_size);
 
 /**
  * Register a new replication client aka replica.

@@ -234,12 +234,13 @@ int selva_send_array_end(struct selva_server_response_out *resp)
     return (res < 0) ? (int)res : 0;
 }
 
-int selva_send_replication_cmd(struct selva_server_response_out *resp, uint64_t eid, int8_t cmd, const void *data, size_t bsize)
+int selva_send_replication_cmd(struct selva_server_response_out *resp, uint64_t eid, int64_t ts, int8_t cmd, const void *data, size_t bsize)
 {
     struct selva_proto_replication_cmd buf = {
         .type = SELVA_PROTO_REPLICATION_CMD,
         .cmd = cmd,
         .eid = htole64(eid),
+        .ts = ts,
         .bsize = htole64(bsize),
     };
     ssize_t res;

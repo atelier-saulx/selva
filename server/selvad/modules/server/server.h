@@ -19,6 +19,7 @@ struct selva_server_response_out {
     typeof_field(struct selva_proto_header, cmd) cmd;
     typeof_field(struct selva_proto_header, flags) frame_flags;
     typeof_field(struct selva_proto_header, seqno) seqno;
+    int64_t ts; /* Timestamp when the command execution started. */
     size_t buf_i;
     _Alignas(struct selva_proto_header) char buf[SELVA_PROTO_FRAME_SIZE_MAX];
 };

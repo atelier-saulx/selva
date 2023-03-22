@@ -81,6 +81,7 @@ struct replica_state {
     union {
         struct {
             uint64_t incoming_cmd_eid; /*!< We are currently receiving this command. */
+            int64_t cmd_ts; /*!< Time stamp when the origin executed this command. */
             size_t cmd_size; /*!< Size of the incoming command in bytes. */
             int8_t cmd_id; /*!< Used if replicating a command. */
         };
@@ -352,7 +353,7 @@ static enum repl_proto_state parse_replication_header(void)
         sv.cur_payload_size -= sizeof(struct selva_proto_replication_cmd);
         int err;
 
-        err = selva_proto_parse_replication_cmd(sv.msg_buf, sizeof(struct selva_proto_replication_cmd), 0, &sv.incoming_cmd_eid, &sv.cmd_id, &sv.cmd_size);
+        err = selva_proto_parse_replication_cmd(sv.msg_buf, sizeof(struct selva_proto_replication_cmd), 0, &sv.incoming_cmd_eid, &sv.cmd_ts, &sv.cmd_id, &sv.cmd_size);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse the replication header: %s", selva_strerror(err));
             return REPL_PROTO_STATE_ERR;
@@ -480,7 +481,7 @@ static enum repl_proto_state handle_exec_sdb(void)
     ps->bsize = filename_len;
     memcpy(ps->data, sv.sdb_filename, filename_len);
 
-    selva_server_run_cmd(CMD_LOAD_ID, buf, sizeof(buf));
+    selva_server_run_cmd(CMD_LOAD_ID, 0, buf, sizeof(buf));
 
     return REPL_PROTO_STATE_FIN;
 }
@@ -537,7 +538,7 @@ static void on_data(struct event *event, void *arg __unused)
 #if 0
             SELVA_LOG(SELVA_LOGL_INFO, "Replicating cmd: %d\n", sv.cmd_id);
 #endif
-            selva_server_run_cmd(sv.cmd_id, sv.msg_buf, sv.cmd_size);
+            selva_server_run_cmd(sv.cmd_id, sv.cmd_ts, sv.msg_buf, sv.cmd_size);
 
             sv.last_cmd_eid = sv.incoming_cmd_eid;
             sv.incoming_cmd_eid = 0;

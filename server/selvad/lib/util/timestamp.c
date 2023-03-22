@@ -22,7 +22,8 @@
 #define TAI_SOURCE CLOCK_REALTIME
 #endif
 
-long long ts_now(void) {
+long long ts_now(void)
+{
     struct timespec ts;
     long long now;
 
