@@ -383,7 +383,9 @@ static void dump_on_exit(int code, void *)
     char filename[SDB_NAME_MIN_BUF_SIZE];
     int err;
 
-    if (code != 0 || !selva_db_is_dirty) {
+    if (code != 0 ||
+        !selva_db_is_dirty ||
+        selva_replication_get_mode() == SELVA_REPLICATION_MODE_REPLICA) {
         return;
     }
 
