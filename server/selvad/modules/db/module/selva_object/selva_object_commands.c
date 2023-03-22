@@ -15,43 +15,34 @@
 #include "selva_server.h"
 #include "selva_db.h"
 #include "hierarchy.h"
+#include "subscriptions.h"
 #include "selva_onload.h"
 #include "selva_set.h"
 #include "selva_object.h"
 
-static struct SelvaObject *SelvaObject_Open(struct selva_server_response_out *resp, struct selva_string *key_name)
+static int get_node(struct selva_string *key_name, struct SelvaHierarchyNode **node)
 {
-    struct SelvaHierarchy *hierarchy = main_hierarchy;
     Selva_NodeId nodeId;
-    const struct SelvaHierarchyNode *node;
     int err;
 
     err = selva_string2node_id(nodeId, key_name);
     if (err) {
-        selva_send_error(resp, err, NULL, 0);
-        return NULL;
+        return err;
     }
 
-    node = SelvaHierarchy_FindNode(hierarchy, nodeId);
-    if (!node) {
-        selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
-        return NULL;
+    *node = SelvaHierarchy_FindNode(main_hierarchy, nodeId);
+    if (!(*node)) {
+        return SELVA_HIERARCHY_ENOENT;
     }
 
-    return SelvaHierarchy_GetNodeObject(node);
+    return 0;
 }
 
-static struct SelvaObject *node_id_to_obj(Selva_NodeId nodeId)
+static void publish_field_change(struct SelvaHierarchyNode *node, struct selva_string *field)
 {
-    struct SelvaHierarchy *hierarchy = main_hierarchy;
-    const struct SelvaHierarchyNode *node;
+    TO_STR(field);
 
-    node = SelvaHierarchy_FindNode(hierarchy, nodeId);
-    if (!node) {
-        return NULL;
-    }
-
-    return SelvaHierarchy_GetNodeObject(node);
+    SelvaSubscriptions_DeferFieldChangeEvents(main_hierarchy, node, field_str, field_len);
 }
 
 static void touch_updated_at(struct selva_server_response_out *resp, struct SelvaObject *root_obj)
@@ -64,6 +55,7 @@ void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
     int err;
 
@@ -82,10 +74,14 @@ void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *
         return;
     }
 
-    obj = SelvaObject_Open(resp, argv[ARGV_KEY]);
-    if (!obj) {
+    err = get_node(argv[ARGV_KEY], &node);
+    if (err) {
+        selva_send_error(resp, err, NULL, 0);
         return;
     }
+
+    obj = SelvaHierarchy_GetNodeObject(node);
+    SelvaSubscriptions_FieldChangePrecheck(main_hierarchy, node);
 
     err = SelvaObject_DelKey(obj, argv[ARGV_OKEY]);
     if (err == SELVA_ENOENT) {
@@ -95,9 +91,10 @@ void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *
         return;
     } else {
         touch_updated_at(resp, obj);
-        selva_db_is_dirty = 1;
         selva_send_ll(resp, 1);
+        selva_db_is_dirty = 1;
         selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
+        publish_field_change(node, argv[ARGV_OKEY]);
     }
 }
 
@@ -106,6 +103,7 @@ void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const voi
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
     int err;
 
@@ -124,10 +122,13 @@ void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const voi
         return;
     }
 
-    obj = SelvaObject_Open(resp, argv[ARGV_KEY]);
-    if (!obj) {
+    err = get_node(argv[ARGV_KEY], &node);
+    if (err) {
+        selva_send_error(resp, err, NULL, 0);
         return;
     }
+
+    obj = SelvaHierarchy_GetNodeObject(node);
 
     err = SelvaObject_Exists(obj, argv[ARGV_OKEY]);
     if (err == SELVA_ENOENT) {
@@ -144,7 +145,8 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
 {
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
-    int argc;
+    int argc, err;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
     finalizer_init(&fin);
@@ -164,10 +166,14 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
     }
 
     struct selva_string *lang = argv[ARGV_LANG];
-    obj = SelvaObject_Open(resp, argv[ARGV_KEY]);
-    if (!obj) {
+
+    err = get_node(argv[ARGV_KEY], &node);
+    if (err) {
+        selva_send_error(resp, err, NULL, 0);
         return;
     }
+
+    obj = SelvaHierarchy_GetNodeObject(node);
 
     if (argc == 2) {
         (void)SelvaObject_ReplyWithObjectStr(resp, lang, obj, NULL, 0, 0);
@@ -220,6 +226,7 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
     size_t values_set = 0;
     int err;
@@ -254,10 +261,14 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
         return;
     }
 
-    obj = SelvaObject_Open(resp, argv[ARGV_KEY]);
-    if (!obj) {
+    err = get_node(argv[ARGV_KEY], &node);
+    if (err) {
+        selva_send_error(resp, err, NULL, 0);
         return;
     }
+
+    obj = SelvaHierarchy_GetNodeObject(node);
+    SelvaSubscriptions_FieldChangePrecheck(main_hierarchy, node);
 
     switch (type) {
     case 'f': /* SELVA_OBJECT_DOUBLE */
@@ -297,11 +308,12 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
         selva_send_error(resp, err, NULL, 0);
         return;
     }
-    selva_send_ll(resp, values_set);
 
     touch_updated_at(resp, obj);
+    selva_send_ll(resp, values_set);
     selva_db_is_dirty = 1;
     selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
+    publish_field_change(node, argv[ARGV_OKEY]);
     return;
 }
 
@@ -312,6 +324,7 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
     struct selva_string *okey;
     long long incr, prev;
     int argc, err;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
     finalizer_init(&fin);
@@ -326,12 +339,14 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
         return;
     }
 
-    obj = node_id_to_obj(node_id);
-    if (!obj) {
+    node = SelvaHierarchy_FindNode(main_hierarchy, node_id);
+    if (!node) {
         selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
         return;
     }
 
+    SelvaSubscriptions_FieldChangePrecheck(main_hierarchy, node);
+    obj = SelvaHierarchy_GetNodeObject(node);
     err = SelvaObject_IncrementLongLong(obj, okey, 1, incr, &prev);
     if (err) {
         selva_send_errorf(resp, err, "Failed to increment");
@@ -339,8 +354,10 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
     }
 
     touch_updated_at(resp, obj);
-    selva_db_is_dirty = 1;
     selva_send_ll(resp, prev);
+    selva_db_is_dirty = 1;
+    selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
+    publish_field_change(node, okey);
 }
 
 void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
@@ -350,6 +367,7 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
     struct selva_string *okey;
     double incr, prev;
     int argc, err;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
     finalizer_init(&fin);
@@ -364,12 +382,14 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
         return;
     }
 
-    obj = node_id_to_obj(node_id);
-    if (!obj) {
+    node = SelvaHierarchy_FindNode(main_hierarchy, node_id);
+    if (!node) {
         selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
         return;
     }
 
+    node = SelvaHierarchy_FindNode(main_hierarchy, node_id);
+    obj = SelvaHierarchy_GetNodeObject(node);
     err = SelvaObject_IncrementDouble(obj, okey, 1.0, incr, &prev);
     if (err) {
         selva_send_errorf(resp, err, "Failed to increment");
@@ -377,15 +397,18 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
     }
 
     touch_updated_at(resp, obj);
-    selva_db_is_dirty = 1;
     selva_send_double(resp, prev);
+    selva_db_is_dirty = 1;
+    selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
+    publish_field_change(node, okey);
 }
 
 void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
 {
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
-    int argc;
+    int argc, err;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
     finalizer_init(&fin);
@@ -403,10 +426,13 @@ void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void 
         return;
     }
 
-    obj = SelvaObject_Open(resp, argv[ARGV_KEY]);
-    if (!obj) {
+    err = get_node(argv[ARGV_KEY], &node);
+    if (err) {
+        selva_send_error(resp, err, NULL, 0);
         return;
     }
+
+    obj = SelvaHierarchy_GetNodeObject(node);
 
     const struct selva_string *okey = argv[ARGV_OKEY];
     enum SelvaObjectType type;
@@ -483,7 +509,8 @@ void SelvaObject_LenCommand(struct selva_server_response_out *resp, const void *
 {
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
-    int argc;
+    int argc, err;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
     finalizer_init(&fin);
@@ -501,10 +528,13 @@ void SelvaObject_LenCommand(struct selva_server_response_out *resp, const void *
         return;
     }
 
-    obj = SelvaObject_Open(resp, argv[ARGV_KEY]);
-    if (!obj) {
+    err = get_node(argv[ARGV_KEY], &node);
+    if (err) {
+        selva_send_error(resp, err, NULL, 0);
         return;
     }
+
+    obj = SelvaHierarchy_GetNodeObject(node);
 
     const ssize_t obj_len = SelvaObject_Len(obj, argc == 1 ? NULL : argv[ARGV_OKEY]);
     if (obj_len < 0) {
@@ -527,6 +557,7 @@ void SelvaObject_GetMetaCommand(struct selva_server_response_out *resp, const vo
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
     int err;
 
@@ -545,10 +576,13 @@ void SelvaObject_GetMetaCommand(struct selva_server_response_out *resp, const vo
         return;
     }
 
-    obj = SelvaObject_Open(resp, argv[ARGV_KEY]);
-    if (!obj) {
+    err = get_node(argv[ARGV_KEY], &node);
+    if (err) {
+        selva_send_error(resp, err, NULL, 0);
         return;
     }
+
+    obj = SelvaHierarchy_GetNodeObject(node);
 
     SelvaObjectMeta_t user_meta;
     err = SelvaObject_GetUserMeta(obj, argv[ARGV_OKEY], &user_meta);
@@ -565,6 +599,7 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
     __auto_finalizer struct finalizer fin;
     struct selva_string **argv;
     int argc;
+    struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
     SelvaObjectMeta_t user_meta;
     int err;
@@ -593,10 +628,13 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
         return;
     }
 
-    obj = SelvaObject_Open(resp, argv[ARGV_KEY]);
-    if (!obj) {
+    err = get_node(argv[ARGV_KEY], &node);
+    if (err) {
+        selva_send_error(resp, err, NULL, 0);
         return;
     }
+
+    obj = SelvaHierarchy_GetNodeObject(node);
 
     memcpy(&user_meta, mval_str, sizeof(SelvaObjectMeta_t));
     err = SelvaObject_SetUserMeta(obj, argv[ARGV_OKEY], user_meta, NULL);
@@ -606,9 +644,10 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
     }
 
     touch_updated_at(resp, obj);
-    selva_db_is_dirty = 1;
     selva_send_ll(resp, 1);
+    selva_db_is_dirty = 1;
     selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
+    publish_field_change(node, argv[ARGV_OKEY]);
 }
 
 static int SelvaObject_OnLoad(void)
