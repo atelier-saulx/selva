@@ -254,18 +254,17 @@ static void cmd_ping_res(const struct cmd *, const void *msg, size_t msg_size)
 
 static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno, int argc __unused, char *argv[] __unused)
 {
-    _Alignas(struct selva_proto_header) char buf[sizeof(struct selva_proto_header)];
-    struct selva_proto_header *hdr = (struct selva_proto_header *)buf;
+    struct selva_proto_header buf = {
+        .cmd = cmd->cmd_id,
+        .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
+        .seqno = htole32(seqno),
+        .frame_bsize = htole16(sizeof(buf)),
+        .msg_bsize = 0,
+    };
 
-    memset(hdr, 0, sizeof(*hdr));
-    hdr->cmd = cmd->cmd_id;
-    hdr->flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST;
-    hdr->seqno = htole32(seqno);
-    hdr->frame_bsize = htole16(sizeof(buf));
-    hdr->msg_bsize = 0;
-    hdr->chk = htole32(crc32c(0, buf, sizeof(buf)));
+    buf.chk = htole32(crc32c(0, &buf, sizeof(buf)));
 
-    if (send_message(sock, buf, sizeof(buf), 0)) {
+    if (send_message(sock, &buf, sizeof(buf), 0)) {
         return -1;
     }
 
