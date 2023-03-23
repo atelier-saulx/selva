@@ -240,7 +240,7 @@ int selva_send_replication_cmd(struct selva_server_response_out *resp, uint64_t 
         .type = SELVA_PROTO_REPLICATION_CMD,
         .cmd = cmd,
         .eid = htole64(eid),
-        .ts = ts,
+        .ts = htole64(ts),
         .bsize = htole64(bsize),
     };
     ssize_t res;
