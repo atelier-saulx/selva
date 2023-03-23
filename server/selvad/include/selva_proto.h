@@ -135,7 +135,8 @@ struct selva_proto_longlong {
         SELVA_PROTO_LONGLONG_FMT_HEX = 0x01, /*!< Suggested printing format is hex. */
     } __attribute__((packed)) flags;
     uint8_t _spare[6];
-    uint64_t v; /*!< Value. */
+    /* RFE Should it be signed or unsigned?? */
+    int64_t v; /*!< Value. */
 } __attribute__((packed));
 static_assert(sizeof(struct selva_proto_longlong) == 2 * sizeof(uint64_t), "Must be 128 bits");
 
