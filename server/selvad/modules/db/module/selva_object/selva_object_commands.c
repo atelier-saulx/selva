@@ -330,7 +330,7 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
     finalizer_init(&fin);
 
     /* FIXME Hardcoded SELVA_NODE_ID_SIZE */
-    argc = selva_proto_scanf(&fin, buf, len, "{%10s, %p, %lld}", node_id, &okey, &incr);
+    argc = selva_proto_scanf(&fin, buf, len, "%10s, %p, %lld", node_id, &okey, &incr);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
