@@ -53,19 +53,19 @@ static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size)
  * using `lscmd`.
  */
 static struct cmd commands[255] = {
-    [0] = {
-        .cmd_id = 0,
+    [CMD_ID_PING] = {
+        .cmd_id = CMD_ID_PING,
         .cmd_name = "ping",
         .cmd_req = cmd_ping_req,
         .cmd_res = cmd_ping_res,
     },
-    [1] = {
-        .cmd_id = 1,
+    [CMD_ID_ECHO] = {
+        .cmd_id = CMD_ID_ECHO,
         .cmd_name = "echo",
         .cmd_req = generic_req,
         .cmd_res = generic_res,
     },
-    [2] = {
+    [CMD_ID_LSCMD] = {
         .cmd_id = CMD_ID_LSCMD,
         .cmd_name = "lscmd",
         .cmd_req = cmd_lscmd_req,
