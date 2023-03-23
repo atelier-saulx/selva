@@ -11,9 +11,9 @@
 #include <sys/types.h>
 #include "cdefs.h"
 #include "endian.h"
+#include "util/selva_string.h"
 #include "selva_error.h"
 #include "selva_proto.h"
-#include "util/selva_string.h"
 
 /**
  * Supported final types.
@@ -135,9 +135,9 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
 {
     va_list args;
     size_t buf_i = 0;
-    int width = -1;
     int on_placeholder = 0;
     int postponed_array_end = 0;
+    int width = -1;
     enum length_specifier length = LENGTH_none;
     enum type_specifier type = TYPE_void;
     int n = 0;
@@ -438,6 +438,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 buf_i += off;
             } else if (ch == '%') {
                 on_placeholder = 1;
+                width = -1;
                 length = LENGTH_none;
                 type = TYPE_void;
             }
