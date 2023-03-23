@@ -167,7 +167,7 @@ static int ensure_sdb(void)
         msg_size = sizeof(msg.arr_hdr) + sizeof(msg.str_hdr) + msg.str_hdr.bsize;
         msg.str_hdr.bsize = htole16(msg.str_hdr.bsize);
 
-        selva_server_run_cmd(CMD_SAVE_ID, ts_now(), &msg, msg_size);
+        selva_server_run_cmd(CMD_ID_SAVE, ts_now(), &msg, msg_size);
 
         /*
          * Let the replica retry later.
@@ -402,7 +402,7 @@ __constructor void init(void)
         ; /* NOP */
     }
 
-    SELVA_MK_COMMAND(CMD_REPLICASYNC_ID, SELVA_CMD_MODE_MUTATE, replicasync);
-    SELVA_MK_COMMAND(CMD_REPLICAOF_ID, SELVA_CMD_MODE_PURE, replicaof);
-    SELVA_MK_COMMAND(CMD_REPLICAINFO_ID, SELVA_CMD_MODE_PURE, replicainfo);
+    SELVA_MK_COMMAND(CMD_ID_REPLICASYNC, SELVA_CMD_MODE_MUTATE, replicasync);
+    SELVA_MK_COMMAND(CMD_ID_REPLICAOF, SELVA_CMD_MODE_PURE, replicaof);
+    SELVA_MK_COMMAND(CMD_ID_REPLICAINFO, SELVA_CMD_MODE_PURE, replicainfo);
 }

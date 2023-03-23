@@ -16,6 +16,7 @@
 #include "selva_error.h"
 #include "selva_proto.h"
 #include "util/crc32c.h"
+#include "../../commands.h"
 #include "commands.h"
 
 #define TAB_WIDTH 2
@@ -65,13 +66,13 @@ static struct cmd commands[255] = {
         .cmd_res = generic_res,
     },
     [2] = {
-        .cmd_id = 2,
+        .cmd_id = CMD_ID_LSCMD,
         .cmd_name = "lscmd",
         .cmd_req = cmd_lscmd_req,
         .cmd_res = generic_res,
     },
     [253] = {
-        .cmd_id = 65,
+        .cmd_id = CMD_ID_MODIFY,
         .cmd_name = "!modify.string",
         .cmd_req = cmd_modify_string_req,
         .cmd_res = generic_res,

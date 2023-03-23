@@ -348,8 +348,8 @@ void Edge_ListConstraintsCommand(struct selva_server_response_out *resp, const v
 }
 
 static int EdgeConstraints_OnLoad(void) {
-    selva_mk_command(CMD_HIERARCHY_ADDCONSTRAINT_ID, SELVA_CMD_MODE_MUTATE, "hierarchy.addConstraint", Edge_AddConstraintCommand);
-    selva_mk_command(CMD_HIERARCHY_LIST_CONSTRAINTS_ID, SELVA_CMD_MODE_PURE, "hierarchy.listConstraints", Edge_ListConstraintsCommand);
+    selva_mk_command(CMD_ID_HIERARCHY_ADDCONSTRAINT, SELVA_CMD_MODE_MUTATE, "hierarchy.addConstraint", Edge_AddConstraintCommand);
+    selva_mk_command(CMD_ID_HIERARCHY_LIST_CONSTRAINTS, SELVA_CMD_MODE_PURE, "hierarchy.listConstraints", Edge_ListConstraintsCommand);
 
     return 0;
 }

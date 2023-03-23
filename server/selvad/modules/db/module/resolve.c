@@ -129,7 +129,7 @@ void SelvaResolve_NodeIdCommand(struct selva_server_response_out *resp, const vo
 }
 
 static int SelvaResolve_OnLoad(void) {
-    selva_mk_command(CMD_RESOLVE_NODEID_ID, SELVA_CMD_MODE_PURE, "resolve.nodeid", SelvaResolve_NodeIdCommand);
+    selva_mk_command(CMD_ID_RESOLVE_NODEID, SELVA_CMD_MODE_PURE, "resolve.nodeid", SelvaResolve_NodeIdCommand);
 
     return 0;
 }

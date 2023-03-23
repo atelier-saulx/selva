@@ -399,8 +399,8 @@ static void dump_on_exit(int code, void *)
 }
 
 static int dump_onload(void) {
-    selva_mk_command(CMD_LOAD_ID, SELVA_CMD_MODE_MUTATE, "load", load_db_cmd);
-    selva_mk_command(CMD_SAVE_ID, SELVA_CMD_MODE_PURE, "save", save_db_cmd);
+    selva_mk_command(CMD_ID_LOAD, SELVA_CMD_MODE_MUTATE, "load", load_db_cmd);
+    selva_mk_command(CMD_ID_SAVE, SELVA_CMD_MODE_PURE, "save", save_db_cmd);
 
     setup_sigchld();
 

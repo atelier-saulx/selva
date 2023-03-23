@@ -652,16 +652,16 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
 
 static int SelvaObject_OnLoad(void)
 {
-    selva_mk_command(CMD_OBJECT_DEL_ID, SELVA_CMD_MODE_MUTATE, "object.del", SelvaObject_DelCommand);
-    selva_mk_command(CMD_OBJECT_EXIST_ID, SELVA_CMD_MODE_PURE, "object.exists", SelvaObject_ExistsCommand);
-    selva_mk_command(CMD_OBJECT_GET_ID, SELVA_CMD_MODE_PURE, "object.get", SelvaObject_GetCommand);
-    selva_mk_command(CMD_OBJECT_SET_ID, SELVA_CMD_MODE_MUTATE, "object.set", SelvaObject_SetCommand);
-    selva_mk_command(CMD_OBJECT_INCR_BY_ID, SELVA_CMD_MODE_MUTATE, "object.incrby", SelvaObject_IncrbyCommand);
-    selva_mk_command(CMD_OBJECT_INCR_BY_DOUBLE_ID, SELVA_CMD_MODE_MUTATE, "object.incrbydouble", SelvaObject_IncrbyDoubleCommand);
-    selva_mk_command(CMD_OBJECT_TYPE_ID, SELVA_CMD_MODE_PURE, "object.type", SelvaObject_TypeCommand);
-    selva_mk_command(CMD_OBJECT_LEN_ID, SELVA_CMD_MODE_PURE, "object.len", SelvaObject_LenCommand);
-    selva_mk_command(CMD_OBJECT_GETMETA_ID, SELVA_CMD_MODE_PURE, "object.getMeta", SelvaObject_GetMetaCommand);
-    selva_mk_command(CMD_OBJECT_SETMETA_ID, SELVA_CMD_MODE_MUTATE, "object.setMeta", SelvaObject_SetMetaCommand);
+    selva_mk_command(CMD_ID_OBJECT_DEL, SELVA_CMD_MODE_MUTATE, "object.del", SelvaObject_DelCommand);
+    selva_mk_command(CMD_ID_OBJECT_EXIST, SELVA_CMD_MODE_PURE, "object.exists", SelvaObject_ExistsCommand);
+    selva_mk_command(CMD_ID_OBJECT_GET, SELVA_CMD_MODE_PURE, "object.get", SelvaObject_GetCommand);
+    selva_mk_command(CMD_ID_OBJECT_SET, SELVA_CMD_MODE_MUTATE, "object.set", SelvaObject_SetCommand);
+    selva_mk_command(CMD_ID_OBJECT_INCR_BY, SELVA_CMD_MODE_MUTATE, "object.incrby", SelvaObject_IncrbyCommand);
+    selva_mk_command(CMD_ID_OBJECT_INCR_BY_DOUBLE, SELVA_CMD_MODE_MUTATE, "object.incrbydouble", SelvaObject_IncrbyDoubleCommand);
+    selva_mk_command(CMD_ID_OBJECT_TYPE, SELVA_CMD_MODE_PURE, "object.type", SelvaObject_TypeCommand);
+    selva_mk_command(CMD_ID_OBJECT_LEN, SELVA_CMD_MODE_PURE, "object.len", SelvaObject_LenCommand);
+    selva_mk_command(CMD_ID_OBJECT_GETMETA, SELVA_CMD_MODE_PURE, "object.getMeta", SelvaObject_GetMetaCommand);
+    selva_mk_command(CMD_ID_OBJECT_SETMETA, SELVA_CMD_MODE_MUTATE, "object.setMeta", SelvaObject_SetMetaCommand);
 
     return 0;
 }

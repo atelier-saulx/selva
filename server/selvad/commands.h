@@ -9,14 +9,14 @@
  * module: server
  * cmd: ping
  */
-#define CMD_PING_ID 0
+#define CMD_ID_PING 0
 
 /**
  * Echoes back the same strings that were present in the request.
  * module: server
  * cmd: echo
  */
-#define CMD_ECHO_ID 1
+#define CMD_ID_ECHO 1
 
 /**
  * List all currently registered commands.
@@ -24,437 +24,430 @@
  * module: server
  * cmd: lscmd
  */
-#define CMD_LSCMD_ID 2
+#define CMD_ID_LSCMD 2
 
 /**
  * Start a server heartbeat.
  * module: server
  * cmd: hrt
  */
-#define CMD_HRT_ID 3
+#define CMD_ID_HRT 3
 
 /**
  * List supported languages.
  * module: db
  * cmd: lslang
  */
-#define CMD_LSLANG_ID 4
+#define CMD_ID_LSLANG 4
 
 /**
  * TODO
  * cmd: modinfo
  */
-#define CMD_MODINFO_ID 5
+#define CMD_ID_MODINFO 5
 
 /**
  * Show running configuration.
  * module: server
  * cmd: config
  */
-#define CMD_CONFIG_ID 6
+#define CMD_ID_CONFIG 6
 
 /**
  * Show malloc stats.
  * module: server
  * cmd: mallocstats
  */
-#define CMD_MALLOCSTATS_ID 7
+#define CMD_ID_MALLOCSTATS 7
 
 /**
  * Dump a jemalloc prof file.
  * module: server
  * cmd: mallocprofdump
  */
-#define CMD_MALLOCPROFDUMP_ID 8
+#define CMD_ID_MALLOCPROFDUMP 8
 
 /**
  * Load db.
  * module: db
  * cmd: load
  */
-#define CMD_LOAD_ID 14
+#define CMD_ID_LOAD 14
 
 /**
  * Save db.
  * module: db
  * cmd: save
  */
-#define CMD_SAVE_ID 15
+#define CMD_ID_SAVE 15
 
 /**
  * Resolve name to a nodeid.
  * module: db
  * cmd: resolve.nodeid
  */
-#define CMD_RESOLVE_NODEID_ID 16
+#define CMD_ID_RESOLVE_NODEID 16
 
 /**
  * Find.
  * module: db
  * cmd: hierarchy.find
  */
-#define CMD_HIERARCHY_FIND_ID 17
+#define CMD_ID_HIERARCHY_FIND 17
 
 /**
  * Inherit.
  * module: db
  * cmd: hierarchy.inherit
  */
-#define CMD_HIERARCHY_INHERIT_ID 18
+#define CMD_ID_HIERARCHY_INHERIT 18
 
 /**
  * Aggregate.
  * module: db
  * cmd: hierarchy.aggregate
  */
-#define CMD_HIERARCHY_AGGREGATE_ID 19
+#define CMD_ID_HIERARCHY_AGGREGATE 19
 
 /**
  * Aggregate in list.
  * module: db
  * cmd: hierarchy.aggregateIn
  */
-#define CMD_HIERARCHY_AGGREGATE_IN_ID 20
+#define CMD_ID_HIERARCHY_AGGREGATE_IN 20
 
 /**
  * Edge add constraints.
  * module: db
  * cmd: hierarchy.addConstraint
  */
-#define CMD_HIERARCHY_ADDCONSTRAINT_ID 21
+#define CMD_ID_HIERARCHY_ADDCONSTRAINT 21
 
 /**
  * Edge list constraints.
  * module: db
  * cmd: hierarchy.listConstraints
  */
-#define CMD_HIERARCHY_LIST_CONSTRAINTS_ID 22
+#define CMD_ID_HIERARCHY_LIST_CONSTRAINTS 22
 
 /**
  * Delete node.
  * module: db
  * cmd: hierarchy.del
  */
-#define CMD_HIERARCHY_DEL_ID 23
+#define CMD_ID_HIERARCHY_DEL 23
 
 /**
  * List hierarchy heads.
  * module: db
  * cmd: hierarchy.heads
  */
-#define CMD_HIERARCHY_HEADS_ID 24
+#define CMD_ID_HIERARCHY_HEADS 24
 
 /**
  * List node parents.
  * module: db
  * cmd: hierarchy.parents
  */
-#define CMD_HIERARCHY_PARENTS_ID 25
+#define CMD_ID_HIERARCHY_PARENTS 25
 
 /**
  * List node children.
  * module: db
  * cmd: hierarchy.children
  */
-#define CMD_HIERARCHY_CHILDREN_ID 26
+#define CMD_ID_HIERARCHY_CHILDREN 26
 
 /**
  * List node edges.
  * module: db
  * cmd: hierarchy.edgeList
  */
-#define CMD_HIERARCHY_EDGE_LIST_ID 27
+#define CMD_ID_HIERARCHY_EDGE_LIST 27
 
 /**
  * Get node edges.
  * module: db
  * cmd: hierarchy.edgeGet
  */
-#define CMD_HIERARCHY_EDGE_GET_ID 28
+#define CMD_ID_HIERARCHY_EDGE_GET 28
 
 /**
  * Get node edge metadata.
  * module: db
  * cmd: hierarchy.edgeGetMetadata
  */
-#define CMD_HIERARCHY_EDGE_GET_METADATA_ID 29
+#define CMD_ID_HIERARCHY_EDGE_GET_METADATA 29
 
 /**
  * Compress a hierarchy subtree.
  * module: db
  * cmd: hierarchy.compress
  */
-#define CMD_HIERARCHY_COMPRESS_ID 30
+#define CMD_ID_HIERARCHY_COMPRESS 30
 
 /**
  * List compressed hierarchy subtrees.
  * module: db
  * cmd: hierarchy.listCompressed
  */
-#define CMD_HIERARCHY_LIST_COMPRESSED_ID 31
+#define CMD_ID_HIERARCHY_LIST_COMPRESSED 31
 
 /**
  * Get hierarchy version information.
  * module: db
  * cmd: hierarchy.ver
  */
-#define CMD_HIERARCHY_VER_ID 32
+#define CMD_ID_HIERARCHY_VER 32
 
 /**
  * Add a new node type.
  * module: db
  * cmd: hierarchy.types.add
  */
-#define CMD_HIERARCHY_TYPES_ADD_ID 33
+#define CMD_ID_HIERARCHY_TYPES_ADD 33
 
 /**
  * Clear all node types.
  * module: db
  * cmd: hierarchy.types.clear
  */
-#define CMD_HIERARCHY_TYPES_CLEAR_ID 34
+#define CMD_ID_HIERARCHY_TYPES_CLEAR 34
 
 /**
  * List all known node types.
  * module: db
  * cmd: hierarchy.types.list
  */
-#define CMD_HIERARCHY_TYPES_LIST_ID 35
+#define CMD_ID_HIERARCHY_TYPES_LIST 35
 
 /**
  * List find indices.
  * module: db
  * cmd: index.list
  */
-#define CMD_INDEX_LIST_ID 36
+#define CMD_ID_INDEX_LIST 36
 
 /**
  * Create a new find index.
  * module: db
  * cmd: index.new
  */
-#define CMD_INDEX_NEW_ID 37
+#define CMD_ID_INDEX_NEW 37
 
 /**
  * Delete a find index.
  * module: db
  * cmd: index.del
  */
-#define CMD_INDEX_DEL_ID 38
+#define CMD_ID_INDEX_DEL 38
 
 /**
  * Describe a find index.
  * module: db
  * cmd: index.debug
  */
-#define CMD_INDEX_DEBUG_ID 39
+#define CMD_ID_INDEX_DEBUG 39
 
 /**
  * Evaluate an RPN expression into a bool.
  * module: db
  * cmd: rpn.evalBool
  */
-#define CMD_RPN_EVAL_BOOL_ID 41
+#define CMD_ID_RPN_EVAL_BOOL 41
 
 /**
  * Evaluate an RPN expression into a double.
  * module: db
  * cmd: rpn.evalDouble
  */
-#define CMD_RPN_EVAL_DOUBLE_ID 42
+#define CMD_ID_RPN_EVAL_DOUBLE 42
 
 /**
  * Evaluate an RPN expression into a string.
  * module: db
  * cmd: rpn.evalString
  */
-#define CMD_RPN_EVAL_STRING_ID 43
+#define CMD_ID_RPN_EVAL_STRING 43
 
 /**
  * Evaluate an RPN expression into a set.
  * module: db
  * cmd: rpn.evalSet
  */
-#define CMD_RPN_EVAL_SET_ID 44
+#define CMD_ID_RPN_EVAL_SET 44
 
 /**
  * Delete a node data object field value.
  * module: db
  * cmd: object.del
  */
-#define CMD_OBJECT_DEL_ID 45
+#define CMD_ID_OBJECT_DEL 45
 
 /**
  * Check if a node data object field exists.
  * module: db
  * cmd: object.exists
  */
-#define CMD_OBJECT_EXIST_ID 46
+#define CMD_ID_OBJECT_EXIST 46
 
 /**
  * Get node data object or field.
  * module: db
  * cmd: object.get
  */
-#define CMD_OBJECT_GET_ID 47
+#define CMD_ID_OBJECT_GET 47
 
 /**
  * Increment field value by long long.
  * module: db
  * cmd: object.incrby
  */
-#define CMD_OBJECT_INCR_BY_ID 48
+#define CMD_ID_OBJECT_INCR_BY 48
 
 /**
  * Increment field value by double.
  * module: db
  * cmd: object.incrbydouble
  */
-#define CMD_OBJECT_INCR_BY_DOUBLE_ID 49
+#define CMD_ID_OBJECT_INCR_BY_DOUBLE 49
 
 /**
  * Get the length of a node data object field value.
  * module: db
  * cmd: object.len
  */
-#define CMD_OBJECT_LEN_ID 50
+#define CMD_ID_OBJECT_LEN 50
 
 /**
  * Set the value of a node data object field.
  * module: db
  * cmd: object.set
  */
-#define CMD_OBJECT_SET_ID 51
+#define CMD_ID_OBJECT_SET 51
 
 /**
  * Get the type of a node data object field.
  * module: db
  * cmd: object.type
  */
-#define CMD_OBJECT_TYPE_ID 52
+#define CMD_ID_OBJECT_TYPE 52
 
 /**
  * Get the metadata associated with a node data object field.
  * module: db
  * cmd: object.getMeta
  */
-#define CMD_OBJECT_GETMETA_ID 53
+#define CMD_ID_OBJECT_GETMETA 53
 
 /**
  * Set the metadata associated with a node data object field.
  * module: db
  * cmd: object.setMeta
  */
-#define CMD_OBJECT_SETMETA_ID 54
+#define CMD_ID_OBJECT_SETMETA 54
 
 /**
  * Add subscription marker.
  * module: db
  * cmd: subscriptions.add
  */
-#define CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_ADD_ID 55
+#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADD 55
 
 /**
  * Add subscription marker.
  * module: db
  * cmd: subscriptions.addAlias
  */
-#define CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDALIAS_ID 56
+#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDALIAS 56
 
 /**
  * Add subscription marker.
  * module: db
  * cmd: subscriptions.addMissing
  */
-#define CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDMISSING_ID 57
+#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDMISSING 57
 
 /**
  * Add subscription trigger.
  * module: db
  * cmd: subscriptions.addTrigger
  */
-#define CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDTRIGGER_ID 58
+#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDTRIGGER 58
 
 /**
  * Refresh subscription.
  * module: db
  * cmd: subscriptions.refresh
  */
-#define CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_REFRESH_ID 59
+#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_REFRESH 59
 
 /**
  * List all current subscriptions on this server.
  * module: db
  * cmd: subscriptions.list
  */
-#define CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_LIST_ID 60
+#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_LIST 60
 
 /**
  * List triggers for missing nodes.
  * module: db
  * cmd: subscriptions.listMissing
  */
-#define CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_LISTMISSING_ID 61
+#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_LISTMISSING 61
 
 /**
  * Describe a subscription or marker.
  * module: db
  * cmd: subscriptions.debug
  */
-#define CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_DEBUG_ID 62
+#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DEBUG 62
 
 /**
  * Delete a subscription.
  * module: db
  * cmd: subscriptions.del
  */
-#define CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_DEL_ID 63
+#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DEL 63
 
 /**
  * Delete a subscription marker.
  * module: db
  * cmd: subscriptions.delmarker
  */
-#define CMD_SUBSCRIPTIONS_SUBSCRIPTIONS_DELMARKER_ID 64
+#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DELMARKER 64
 
 /**
  * Modify a single node.
  * module: db
  * cmd: modify
  */
-#define CMD_MODIFY_ID 65
+#define CMD_ID_MODIFY 65
 
 /**
  * Update nodes using a query.
  * module: db
  * cmd: update
  */
-#define CMD_UPDATE_ID 66
-
-/**
- * Initialize this node as an origin.
- * module: replication
- * cmd: replicainit
- */
-#define CMD_REPLICAINIT_ID 67
+#define CMD_ID_UPDATE 66
 
 /**
  * Start replication stream.
  * module: replication
  * cmd: replicasync
  */
-#define CMD_REPLICASYNC_ID 68
+#define CMD_ID_REPLICASYNC 67
 
 /**
  * Set this node as a replica of another node.
  * module: replication
  * cmd: replicaof
  */
-#define CMD_REPLICAOF_ID 69
+#define CMD_ID_REPLICAOF 68
 
 /**
  * Show the current status of the replication module.
  * module: replication
  * cmd: replicainfo
  */
-#define CMD_REPLICAINFO_ID 70
+#define CMD_ID_REPLICAINFO 69

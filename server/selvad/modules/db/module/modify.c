@@ -1906,7 +1906,7 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
 }
 
 static int Modify_OnLoad(void) {
-    selva_mk_command(CMD_MODIFY_ID, SELVA_CMD_MODE_MUTATE, "modify", SelvaCommand_Modify);
+    selva_mk_command(CMD_ID_MODIFY, SELVA_CMD_MODE_MUTATE, "modify", SelvaCommand_Modify);
 
     return 0;
 }

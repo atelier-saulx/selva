@@ -201,7 +201,7 @@ static int SelvaLang_OnLoad(void) {
 
     FORALL_LANGS(LOAD_LANG)
 
-    SELVA_MK_COMMAND(CMD_LSLANG_ID, SELVA_CMD_MODE_PURE, lslang);
+    SELVA_MK_COMMAND(CMD_ID_LSLANG, SELVA_CMD_MODE_PURE, lslang);
 
     return 0;
 }

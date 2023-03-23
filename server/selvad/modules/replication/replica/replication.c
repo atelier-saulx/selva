@@ -198,7 +198,7 @@ static int send_sync_req(int sock)
         struct selva_proto_longlong sdb_eid;
     } __attribute__((packed,aligned(__alignof__(uint64_t)))) buf = { /* TODO alignof might lead to padding */
         .hdr = {
-            .cmd = CMD_REPLICASYNC_ID,
+            .cmd = CMD_ID_REPLICASYNC,
             .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
             .seqno = htole32(seqno),
             .frame_bsize = htole16(sizeof(buf)),
@@ -239,7 +239,7 @@ static int send_full_sync_req(int sock)
         struct selva_proto_header hdr;
     } __attribute__((packed,aligned(__alignof__(uint64_t)))) buf = { /* TODO alignof might lead to padding */
         .hdr = {
-            .cmd = CMD_REPLICASYNC_ID,
+            .cmd = CMD_ID_REPLICASYNC,
             .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
             .seqno = htole32(seqno),
             .frame_bsize = htole16(sizeof(buf)),
@@ -295,8 +295,8 @@ retry_hdr:
     if (!(sv.cur_hdr.flags & (SELVA_PROTO_HDR_FREQ_RES | SELVA_PROTO_HDR_STREAM))) {
         SELVA_LOG(SELVA_LOGL_ERR, "Unexpected frame flags: 0x%x", sv.cur_hdr.flags);
         return SELVA_PROTO_EBADMSG;
-    } else if (sv.cur_hdr.cmd != CMD_REPLICASYNC_ID) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Unexpected command. received: %d expected: %d", sv.cur_hdr.cmd, CMD_REPLICASYNC_ID);
+    } else if (sv.cur_hdr.cmd != CMD_ID_REPLICASYNC) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Unexpected command. received: %d expected: %d", sv.cur_hdr.cmd, CMD_ID_REPLICASYNC);
         return SELVA_PROTO_EBADMSG;
     }
 
@@ -481,7 +481,7 @@ static enum repl_proto_state handle_exec_sdb(void)
     ps->bsize = filename_len;
     memcpy(ps->data, sv.sdb_filename, filename_len);
 
-    selva_server_run_cmd(CMD_LOAD_ID, 0, buf, sizeof(buf));
+    selva_server_run_cmd(CMD_ID_LOAD, 0, buf, sizeof(buf));
 
     return REPL_PROTO_STATE_FIN;
 }
