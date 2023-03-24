@@ -839,6 +839,7 @@ int SelvaModify_ModifyDel(
     TO_STR(field);
     int err;
 
+    /* RFE should it be possible to delete the aliases field? */
     if (!strcmp(field_str, "children")) {
         err = SelvaHierarchy_DelChildren(hierarchy, node);
     } else if (!strcmp(field_str, "parents")) {
