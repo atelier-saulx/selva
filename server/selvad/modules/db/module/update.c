@@ -48,6 +48,7 @@ struct update_node_cb {
     struct selva_server_response_out *resp;
     struct rpn_ctx *rpn_ctx;
     const struct rpn_expression *filter;
+    int64_t cmd_ts;
     int nr_update_ops;
     struct update_op *update_ops;
 };
@@ -328,6 +329,7 @@ static int update_node_cb(
      * - SELVA_MODIFY_ARG_STRING_ARRAY
      * - SELVA_MODIFY_ARG_OP_EDGE_META
      */
+    int updated = 0;
     for (int i = 0; i < nr_update_ops; i++) {
         const struct update_op *op = &update_ops[i];
         enum selva_op_repl_state repl_state;
@@ -340,7 +342,12 @@ static int update_node_cb(
             if (strcmp(field_str, SELVA_PARENTS_FIELD) && strcmp(field_str, SELVA_CHILDREN_FIELD)) {
                 SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, node, field_str, field_len);
             }
+            updated = 1;
         }
+    }
+
+    if (updated) {
+        SelvaObject_SetLongLongStr(SelvaHierarchy_GetNodeObject(node), SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, args->cmd_ts);
     }
 
     /*
@@ -519,7 +526,6 @@ void SelvaCommand_Update(struct selva_server_response_out *resp, const void *buf
             continue;
         }
 
-        /* TODO */
         struct update_node_cb args = {
             .resp = resp,
             .nr_update_ops = nr_update_ops,
