@@ -157,6 +157,10 @@ static enum selva_op_repl_state update_op(
     struct selva_string *field = op->field;
     TO_STR(field);
 
+    if (!selva_field_prot_check(field, (type_code == SELVA_MODIFY_ARG_OP_DEL) ? SELVA_FIELD_PROT_DEL : SELVA_FIELD_PROT_WRITE)) {
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
     if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
         const struct SelvaModify_OpIncrement *incrementOpts = &op->increment_opts_int64;
         int err;
