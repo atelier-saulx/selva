@@ -26,17 +26,28 @@
  * 0 = in use;
  * 1 = free.
  */
-static struct bitmap clients_map = BITMAP_INIT(SERVER_MAX_CLIENTS);
-static struct conn_ctx clients[SERVER_MAX_CLIENTS] __lazy_alloc_glob;
+static struct bitmap *clients_map;
+static struct conn_ctx *clients;
+
+void conn_init(int max_clients)
+{
+    clients_map = selva_malloc(BITMAP_ALLOC_SIZE(max_clients));
+    clients_map->nbits = max_clients;
+    for (int i = 0; i < max_clients; i++) {
+        bitmap_set(clients_map, i);
+    }
+
+    clients = selva_calloc(max_clients, sizeof(struct conn_ctx));
+}
 
 struct conn_ctx *alloc_conn_ctx(void)
 {
     int i;
     struct conn_ctx *ctx = NULL;
 
-    i = bitmap_ffs(&clients_map);
+    i = bitmap_ffs(clients_map);
     if (i >= 0) {
-        bitmap_clear(&clients_map, i);
+        bitmap_clear(clients_map, i);
         ctx = &clients[i];
         memset(ctx, 0, sizeof(*ctx));
         atomic_init(&ctx->streams.free_map, ALL_STREAMS_FREE);
@@ -64,7 +75,7 @@ void free_conn_ctx(struct conn_ctx *ctx)
         close(ctx->fd);
         ctx->inuse = 0;
         selva_free(ctx->recv_msg_buf);
-        bitmap_set(&clients_map, i);
+        bitmap_set(clients_map, i);
     } else {
         /* Wait for stream writers to terminate. */
         const struct timespec t = {
@@ -120,11 +131,4 @@ void free_stream_resp(struct selva_server_response_out *stream_resp)
 size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize)
 {
     return fd_to_str(ctx->fd, buf, bsize);
-}
-
-__constructor void init_conn(void)
-{
-    for (size_t i = 0; i < SERVER_MAX_CLIENTS; i++) {
-        bitmap_set(&clients_map, i);
-    }
 }

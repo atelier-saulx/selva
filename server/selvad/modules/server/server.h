@@ -74,6 +74,8 @@ void server_dispatch2worker(struct conn_ctx *restrict ctx, const char *restrict 
  * @{
  */
 
+void conn_init(int max_clients);
+
 /**
  * Allocate a new client connection descriptor.
  * Caller must set `ctx->fd`.

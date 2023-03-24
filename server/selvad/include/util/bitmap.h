@@ -47,9 +47,6 @@ struct bitmap {
 #define BITMAP_ALLOC_SIZE(nbits) \
     (sizeof(struct bitmap) + BITMAP_D_SIZE(nbits))
 
-#define BITMAP_INIT(_nbits_) \
-    { .nbits = _nbits_, .d = { [BITMAP_D_SIZE(_nbits_) / sizeof(bitmap_t) - 1] = 0 } }
-
 /**
  * Get the status of a bit in a bitmap pointed by bitmap.
  * @param bitmap            is a pointer to a bitmap.

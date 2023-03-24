@@ -27,6 +27,8 @@
 
 #define ENV_PORT_NAME "SELVA_PORT"
 static int selva_port = 3000;
+static int server_backlog_size = 10;
+static int max_clients = 100;
 static int server_sockfd;
 static int readonly_server;
 static struct command {
@@ -34,6 +36,12 @@ static struct command {
     enum selva_cmd_mode cmd_mode;
     const char *cmd_name;
 } commands[254];
+
+static const struct config server_cfg_map[] = {
+    { "SELVA_PORT",             CONFIG_INT, &selva_port },
+    { "SERVER_BACKLOG_SIZE",    CONFIG_INT, &server_backlog_size },
+    { "SERVER_MAX_CLIENTS",     CONFIG_INT, &max_clients },
+};
 
 void selva_server_set_readonly(void)
 {
@@ -339,7 +347,7 @@ static int new_server(int port)
         exit(EXIT_FAILURE);
     }
 
-    listen(sockfd, SERVER_BACKLOG_SIZE);
+    listen(sockfd, server_backlog_size);
     SELVA_LOG(SELVA_LOGL_INFO, "Listening on port: %d", port);
 
     return sockfd;
@@ -478,6 +486,13 @@ __constructor void init(void)
 
     SELVA_LOG(SELVA_LOGL_INFO, "Init server");
 
+	int err = config_resolve("server", server_cfg_map, num_elem(server_cfg_map));
+    if (err) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to parse config args: %s",
+                  selva_strerror(err));
+        exit(EXIT_FAILURE);
+    }
+
     if (selva_port_str) {
         selva_port = strtol(selva_port_str, NULL, 10);
     }
@@ -495,6 +510,7 @@ __constructor void init(void)
     SELVA_MK_COMMAND(CMD_ID_MALLOCPROFDUMP, SELVA_CMD_MODE_PURE, mallocprofdump);
 
     /* Async server for receiving messages. */
+    conn_init(max_clients);
     server_sockfd = new_server(selva_port);
     evl_wait_fd(server_sockfd, on_connection, NULL, NULL, NULL);
 }
