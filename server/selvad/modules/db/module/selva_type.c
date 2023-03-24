@@ -26,14 +26,27 @@ size_t Selva_NodeIdLen(const Selva_NodeId nodeId) {
 int selva_string2node_id(Selva_NodeId nodeId, const struct selva_string *s)
 {
     TO_STR(s);
+    int err = 0;
 
     if (s_len < SELVA_NODE_TYPE_SIZE + 1 || s_len > SELVA_NODE_ID_SIZE) {
         return SELVA_EINVAL;
     }
 
-    Selva_NodeIdCpy(nodeId, s_str);
+    /*
+     * This may look fancy but if there is no `return` inside the loop
+     * then the compiler can unroll the loop.
+     */
+    for (int i = 0; i <= SELVA_NODE_TYPE_SIZE; i++) {
+        if (s_str[i] == '\0') {
+            err = SELVA_EINVAL;
+        }
+    }
 
-    return 0;
+    if (!err) {
+        Selva_NodeIdCpy(nodeId, s_str);
+    }
+
+    return err;
 }
 
 /*
