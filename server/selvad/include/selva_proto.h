@@ -135,8 +135,13 @@ struct selva_proto_longlong {
         SELVA_PROTO_LONGLONG_FMT_HEX = 0x01, /*!< Suggested printing format is hex. */
     } __attribute__((packed)) flags;
     uint8_t _spare[6];
-    /* RFE Should it be signed or unsigned?? */
-    int64_t v; /*!< Value. */
+    /**
+     * Value.
+     * This can be unsigned even if we support signed values because the struct
+     * is only used for storing/passing the bits and endian conversion is
+     * expected to happen before using the value.
+     */
+    uint64_t v;
 } __attribute__((packed));
 static_assert(sizeof(struct selva_proto_longlong) == 2 * sizeof(uint64_t), "Must be 128 bits");
 
