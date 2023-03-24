@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -97,6 +97,28 @@ typedef unsigned char Selva_SubscriptionId[SELVA_SUBSCRIPTION_ID_SIZE];
 typedef int64_t Selva_SubscriptionMarkerId;
 
 #define PRImrkId PRId64
+
+/**
+ * Field protection modes.
+ */
+enum selva_field_prot_mode {
+    /**
+     * Allows writing to the field.
+     */
+    SELVA_FIELD_PROT_WRITE = 0x01,
+    /**
+     * Allows deleting the field.
+     */
+    SELVA_FIELD_PROT_DEL   = 0x02,
+};
+
+/**
+ * Test if a field is protected.
+ * E.g. if mode = SELVA_FIELD_PROT_WRITE and the function returns 1,
+ * it means that the field can be written to.
+ */
+int selva_field_prot_check(const struct selva_string *s, enum selva_field_prot_mode mode);
+int selva_field_prot_check_str(const char *field_str, size_t field_len, enum selva_field_prot_mode mode);
 
 /**
  * Get the length of nodeId ignoring nul bytes at the end of the string.

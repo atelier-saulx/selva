@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -8,6 +8,45 @@
 #include "util/selva_string.h"
 #include "selva_error.h"
 #include "selva_db.h"
+
+struct protected_field {
+    const char * const name;
+    size_t len;
+    enum selva_field_prot_mode en_mode;
+};
+
+#define PROT_FIELD(fname, mode) \
+    { .name = fname, .len = sizeof(fname) - 1, .en_mode = mode }
+
+static const struct  protected_field protected_fields[] = {
+    PROT_FIELD(SELVA_ID_FIELD, 0),
+    PROT_FIELD(SELVA_TYPE_FIELD, 0),
+    PROT_FIELD(SELVA_CREATED_AT_FIELD, SELVA_FIELD_PROT_WRITE),
+    PROT_FIELD(SELVA_UPDATED_AT_FIELD, SELVA_FIELD_PROT_WRITE),
+};
+
+int selva_field_prot_check(const struct selva_string *s, enum selva_field_prot_mode mode)
+{
+    TO_STR(s);
+
+    return selva_field_prot_check_str(s_str, s_len, mode);
+}
+
+int selva_field_prot_check_str(const char *field_str, size_t field_len, enum selva_field_prot_mode mode)
+{
+    int res = 1;
+
+    for (size_t i = 0; i < num_elem(protected_fields); i++) {
+        if (field_len == protected_fields[i].len && !memcmp(field_str, protected_fields[i].name, field_len)) {
+            if (!(mode & protected_fields[i].en_mode)) {
+                res = 0;
+            }
+            break;
+        }
+    }
+
+    return res;
+}
 
 /*
  * Technically a nodeId is always 10 bytes but sometimes a printable

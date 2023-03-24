@@ -74,6 +74,11 @@ void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *
         return;
     }
 
+    if (!selva_field_prot_check(argv[ARGV_OKEY], SELVA_FIELD_PROT_DEL)) {
+        selva_send_errorf(resp, SELVA_ENOTSUP, "Protected field");
+        return;
+    }
+
     err = get_node(argv[ARGV_KEY], &node);
     if (err) {
         selva_send_error(resp, err, NULL, 0);
@@ -248,6 +253,11 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
         return;
     }
 
+    if (!selva_field_prot_check(argv[ARGV_OKEY], SELVA_FIELD_PROT_WRITE)) {
+        selva_send_errorf(resp, SELVA_ENOTSUP, "Protected field");
+        return;
+    }
+
     size_t type_len;
     const char type = selva_string_to_str(argv[ARGV_TYPE], &type_len)[0];
 
@@ -339,6 +349,11 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
         return;
     }
 
+    if (!selva_field_prot_check(okey, SELVA_FIELD_PROT_WRITE)) {
+        selva_send_errorf(resp, SELVA_ENOTSUP, "Protected field");
+        return;
+    }
+
     node = SelvaHierarchy_FindNode(main_hierarchy, node_id);
     if (!node) {
         selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
@@ -379,6 +394,11 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
         return;
     } else if (argc != 3) {
         selva_send_error_arity(resp);
+        return;
+    }
+
+    if (!selva_field_prot_check(okey, SELVA_FIELD_PROT_WRITE)) {
+        selva_send_errorf(resp, SELVA_ENOTSUP, "Protected field");
         return;
     }
 
@@ -617,6 +637,11 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
         } else {
             selva_send_error_arity(resp);
         }
+        return;
+    }
+
+    if (!selva_field_prot_check(argv[ARGV_OKEY], SELVA_FIELD_PROT_WRITE)) {
+        selva_send_errorf(resp, SELVA_ENOTSUP, "Protected field");
         return;
     }
 

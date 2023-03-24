@@ -1552,7 +1552,7 @@ static void replicate_modify(struct selva_server_response_out *resp, const struc
  * OK = the triplet made no changes
  * UPDATED = changes made and replicated
  */
-void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf, size_t len) {
+static void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf, size_t len) {
     SELVA_TRACE_BEGIN_AUTO(cmd_modify);
     __auto_finalizer struct finalizer fin;
     SelvaHierarchy *hierarchy = main_hierarchy;
@@ -1694,6 +1694,11 @@ void SelvaCommand_Modify(struct selva_server_response_out *resp, const void *buf
         TO_STR(type, field);
         const char type_code = type_str[0]; /* [0] always points to a valid char in RM_String. */
         enum selva_op_repl_state repl_state = SELVA_OP_REPL_STATE_UNCHANGED;
+
+        if (!selva_field_prot_check_str(field_str, field_len, (type_code == SELVA_MODIFY_ARG_OP_DEL) ? SELVA_FIELD_PROT_DEL : SELVA_FIELD_PROT_WRITE)) {
+            selva_send_errorf(resp, SELVA_ENOTSUP, "Protected field");
+            continue;
+        }
 
         if (get_array_field_index(field_str, field_len, NULL) >= 0) {
             repl_state = modify_array_op(&fin, resp, node, &active_insert_idx, has_push, type_code, field, value);
