@@ -2,7 +2,6 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
-/* FIXME Remove unused includes. */
 #include <arpa/inet.h>
 #include <assert.h>
 #include <stdatomic.h>
