@@ -55,6 +55,8 @@ int selva_send_error(struct selva_server_response_out *resp, int err, const char
     };
     int res;
 
+    resp->last_error = err;
+
     res = server_send_buf(resp, &hdr, sizeof(hdr), SERVER_SEND_MORE);
     if (res == sizeof(hdr) && msg_len > 0) {
         res = server_send_buf(resp, msg_str, msg_len, 0);
@@ -68,6 +70,8 @@ int selva_send_errorf(struct selva_server_response_out *resp, int err, const cha
     va_list args;
     int len;
     ssize_t res;
+
+    resp->last_error = err;
 
     va_start(args, fmt);
     len = vsnprintf(NULL, 0, fmt, args);

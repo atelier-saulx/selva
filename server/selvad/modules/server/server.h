@@ -14,11 +14,12 @@ struct conn_ctx;
  * Outgoing response.
  */
 struct selva_server_response_out {
-    struct conn_ctx *ctx;
+    struct conn_ctx *ctx; /*!< Can be NULL. */
     int8_t cork; /*!< Cork the full response. Should not be used with streams. */
     typeof_field(struct selva_proto_header, cmd) cmd;
     typeof_field(struct selva_proto_header, flags) frame_flags;
     typeof_field(struct selva_proto_header, seqno) seqno;
+    int last_error; /*!< Last error. Set by send_error functions. 0 if none. */
     int64_t ts; /* Timestamp when the command execution started. */
     size_t buf_i;
     _Alignas(struct selva_proto_header) char buf[SELVA_PROTO_FRAME_SIZE_MAX];

@@ -475,13 +475,17 @@ static enum repl_proto_state handle_exec_sdb(void)
     const size_t filename_len = strnlen(sv.sdb_filename, sizeof(sv.sdb_filename));
     _Alignas(struct selva_proto_string) uint8_t buf[sizeof(struct selva_proto_string) + filename_len];
     struct selva_proto_string *ps = (struct selva_proto_string *)buf;
+    int err;
 
     memset(ps, 0, sizeof(*ps));
     ps->type = SELVA_PROTO_STRING;
     ps->bsize = filename_len;
     memcpy(ps->data, sv.sdb_filename, filename_len);
 
-    selva_server_run_cmd(CMD_ID_LOAD, 0, buf, sizeof(buf));
+    err = selva_server_run_cmd(CMD_ID_LOAD, 0, buf, sizeof(buf));
+    if (err) {
+        return REPL_PROTO_STATE_ERR;
+    }
 
     return REPL_PROTO_STATE_FIN;
 }
@@ -491,9 +495,9 @@ static void on_data(struct event *event, void *arg __unused)
     const int fd = event->fd;
 
     while (1) {
-        if (sv.recv_next_frame) {
-            int err;
+        int err;
 
+        if (sv.recv_next_frame) {
             err = recv_frame(fd);
             if (err) {
                 sv.state = REPL_PROTO_STATE_ERR;
@@ -538,14 +542,13 @@ static void on_data(struct event *event, void *arg __unused)
 #if 0
             SELVA_LOG(SELVA_LOGL_INFO, "Replicating cmd: %d\n", sv.cmd_id);
 #endif
-            selva_server_run_cmd(sv.cmd_id, sv.cmd_ts, sv.msg_buf, sv.cmd_size);
+            err = selva_server_run_cmd(sv.cmd_id, sv.cmd_ts, sv.msg_buf, sv.cmd_size);
 
             sv.last_cmd_eid = sv.incoming_cmd_eid;
             sv.incoming_cmd_eid = 0;
-            sv.state = REPL_PROTO_STATE_FIN;
+            sv.state = err ? REPL_PROTO_STATE_ERR : REPL_PROTO_STATE_FIN;
             continue;
         case REPL_PROTO_STATE_EXEC_SDB:
-            /* FIXME what if load fails */
             sv.state = handle_exec_sdb();
             if (sv.state == REPL_PROTO_STATE_FIN) {
                 sv.last_sdb_eid = sv.incoming_sdb_eid;

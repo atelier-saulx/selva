@@ -376,6 +376,7 @@ static void on_data(struct event *event, void *arg)
             .cmd = ctx->recv_frame_hdr_buf.cmd,
             .frame_flags = SELVA_PROTO_HDR_FFIRST,
             .seqno = seqno,
+            .last_error = 0,
             .ts = ts_now(),
             .buf_i = 0,
         };
@@ -453,14 +454,16 @@ static void on_connection(struct event *event, void *arg __unused)
     evl_wait_fd(new_sockfd, on_data, NULL, on_close, conn_ctx);
 }
 
-void selva_server_run_cmd(int8_t cmd_id, int64_t ts, void *msg, size_t msg_size)
+int selva_server_run_cmd(int8_t cmd_id, int64_t ts, void *msg, size_t msg_size)
 {
     struct selva_server_response_out resp = {
         .ctx = NULL,
         .cmd = cmd_id,
+        .last_error = 0,
         .ts = ts ? ts : ts_now(),
     };
     struct command *cmd;
+    int err;
 
     cmd = get_command(cmd_id);
     if (cmd) {
@@ -468,9 +471,13 @@ void selva_server_run_cmd(int8_t cmd_id, int64_t ts, void *msg, size_t msg_size)
          * Note that we don't care here whether the server is in read-only mode.
          */
         cmd->cmd_fn(&resp, msg, msg_size);
+        err = resp.last_error;
     } else {
-        SELVA_LOG(SELVA_LOGL_ERR, "Invalid cmd_id");
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid cmd_id: %d", cmd_id);
+        err = SELVA_EINVAL;
     }
+
+    return err;
 }
 
 IMPORT() {

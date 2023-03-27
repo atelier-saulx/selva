@@ -144,7 +144,7 @@ SELVA_SERVER_EXPORT(int, selva_send_replication_pseudo_sdb, struct selva_server_
 /**
  * Run command.
  */
-SELVA_SERVER_EXPORT(void, selva_server_run_cmd, int8_t cmd_id, int64_t ts, void *msg, size_t msg_size);
+SELVA_SERVER_EXPORT(int, selva_server_run_cmd, int8_t cmd_id, int64_t ts, void *msg, size_t msg_size);
 
 #define _import_selva_server(apply) \
     apply(selva_server_set_readonly) \
