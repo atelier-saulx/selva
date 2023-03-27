@@ -452,8 +452,7 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
         } else if (type == SELVA_PROTO_DOUBLE) {
             double d;
 
-            memcpy(&d, (char *)msg + i - sizeof(d), sizeof(d));
-            /* TODO ledouble to host double */
+            d = ledoubletoh((char *)msg + i - sizeof(d));
             printf("%*s%e,\n", tabs * TAB_WIDTH, "", d);
         } else if (type == SELVA_PROTO_LONGLONG) {
             const uint8_t flags = *((const uint8_t *)msg + i - off + offsetof(struct selva_proto_longlong, flags));
