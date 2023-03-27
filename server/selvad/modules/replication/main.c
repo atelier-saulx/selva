@@ -25,6 +25,9 @@
 #include "selva_replication.h"
 #include "replication.h"
 
+#define XSTR(s) STR(s)
+#define STR(s) #s
+
 static enum replication_mode replication_mode = SELVA_REPLICATION_MODE_NONE;
 static const char replication_mode_str[4][2 * sizeof(size_t)] = {
     "NONE",
@@ -129,7 +132,6 @@ static void send_mode_error(struct selva_server_response_out *resp)
 
 /**
  * Ensure that we have an SDB dump in the ring buffer.
- * RFE Should this be in origin/replication.c?
  * RFE There is still a race if we'd write new data before the replication
  *     thread registers itself.
  */
@@ -179,9 +181,6 @@ static int ensure_sdb(void)
 
     return 0;
 }
-
-#define XSTR(s) STR(s)
-#define STR(s) #s
 
 /**
  * Start sending replication traffic to the caller.
