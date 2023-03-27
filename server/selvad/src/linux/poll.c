@@ -1,7 +1,8 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <errno.h>
 #include <signal.h>
 #include <stddef.h>
 #include <string.h>
@@ -37,11 +38,29 @@ int evl_poll_add_fd(struct event_loop_state *state, int fd, enum event_type mask
             .fd = fd,
         },
     };
+    int res;
 
     state->fds[fd].mask = mask;
 
-    /* TODO Better error codes. */
-    return epoll_ctl(state->epfd, op, fd, &ee) == -1 ? SELVA_EGENERAL : 0;
+    res = epoll_ctl(state->epfd, op, fd, &ee);
+    switch (res) {
+    case 0:
+        return 0;
+    case EBADF:
+    case EINVAL:
+    case ELOOP:
+    case EPERM:
+        return SELVA_EINVAL;
+    case EEXIST:
+        return SELVA_EEXIST;
+    case ENOENT:
+        return SELVA_ENOENT;
+    case ENOMEM:
+    case ENOSPC:
+        return SELVA_ENOBUFS;
+    default:
+        return SELVA_EGENERAL;
+    }
 }
 
 void evl_poll_del_fd(struct event_loop_state *state, int fd, enum event_type mask)
