@@ -112,7 +112,13 @@ static void echo(struct selva_server_response_out *resp, const void *buf, size_t
         return;
     }
 
-    /* TODO Could also support receiving an array */
+    /*
+     * We could also support receiving an array like many other commands that
+     * support explicit and implicit arrays at the top-level. However, it's
+     * quite pointless to implement the support here because this command is not
+     * very useful in production. It might be also better to go for simplicity
+     * over formalism.
+     */
     while (left > sizeof(hdr)) {
         size_t bsize;
 
