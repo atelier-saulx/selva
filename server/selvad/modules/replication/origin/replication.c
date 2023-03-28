@@ -69,12 +69,12 @@ static void insert(ring_buffer_eid_t eid, int64_t ts, int8_t cmd, void *p, size_
 
 void replication_origin_new_sdb(const char *filename, uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
 {
-    struct selva_replication_sdb *sdb = selva_malloc(sizeof(struct selva_replication_sdb));
+    size_t filename_len = strlen(filename);
+    struct selva_replication_sdb *sdb = selva_malloc(sizeof(struct selva_replication_sdb) + filename_len + 1);
     uint64_t sdb_eid = replication_new_origin_sdb_eid(filename);
 
-    /* RFE Do we really need to dup here? */
     sdb->status = SDB_STATUS_COMPLETE;
-    sdb->filename = selva_string_createf("%s", filename);
+    strcpy(sdb->filename, filename);
     memcpy(sdb->hash, sdb_hash, SELVA_IO_HASH_SIZE);
 
     SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", filename, sdb_eid);
@@ -86,11 +86,12 @@ void replication_origin_new_sdb(const char *filename, uint8_t sdb_hash[SELVA_IO_
 
 uint64_t replication_origin_new_incomplete_sdb(const char *filename)
 {
-    struct selva_replication_sdb *sdb = selva_malloc(sizeof(struct selva_replication_sdb));
+    size_t filename_len = strlen(filename);
+    struct selva_replication_sdb *sdb = selva_malloc(sizeof(struct selva_replication_sdb) + filename_len + 1);
     uint64_t sdb_eid = replication_new_origin_sdb_eid(filename);
 
     sdb->status = SDB_STATUS_INCOMPLETE;
-    sdb->filename = selva_string_createf("%s", filename);
+    strcpy(sdb->filename, filename);
     insert(sdb_eid, (sdb_eid & ~EID_MSB_MASK), 0, sdb, sizeof(*sdb));
 
     /*
@@ -126,7 +127,7 @@ void replication_origin_complete_sdb(uint64_t sdb_eid, uint8_t sdb_hash[SELVA_IO
     sdb->status = SDB_STATUS_COMPLETE;
     memcpy(sdb->hash, sdb_hash, SELVA_IO_HASH_SIZE);
 
-    SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", selva_string_to_str(sdb->filename, NULL), sdb_eid);
+    SELVA_LOG(SELVA_LOGL_INFO, "New SDB: %s (0x%" PRIx64 ")", sdb->filename, sdb_eid);
 
     origin_state.last_sdb_eid = sdb_eid;
 
@@ -159,7 +160,6 @@ static void free_replbuf(void *buf, ring_buffer_eid_t eid)
             origin_state.last_sdb_eid = 0;
         }
 
-        selva_string_free(sdb->filename);
         selva_free(sdb);
     } else {
         selva_free(buf);
@@ -211,7 +211,11 @@ static void drop_replicas(unsigned replicas)
             SELVA_LOG(SELVA_LOGL_ERR, "pthread_join() failed: %s",
                       strerrorname_np(err) ?: "Unknown error");
 #else
-            /* TODO Error desc */
+            /*
+             * There is a library called errnoname that would print the proper
+             * name but it's probably overkill to use it for just one line in
+             * the whole project.
+             */
             SELVA_LOG(SELVA_LOGL_ERR, "pthread_join() failed: %d", err);
 #endif
         }

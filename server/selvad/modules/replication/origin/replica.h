@@ -27,15 +27,15 @@ struct selva_replication_sdb {
     } status;
 
     /**
-     * Filename of the dump.
-     * This file most not be overwritten.
-     */
-    struct selva_string *filename;
-
-    /**
      * The hash of the dump.
      */
     uint8_t hash[SELVA_IO_HASH_SIZE];
+
+    /**
+     * Filename of the dump.
+     * This file must not be overwritten.
+     */
+    char filename[];
 };
 
 /* replica_thread.c */

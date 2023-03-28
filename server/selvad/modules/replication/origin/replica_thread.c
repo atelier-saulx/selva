@@ -67,7 +67,7 @@ static int sync_dump(
 
     if (sync_mode == REPLICATION_SYNC_MODE_FULL) {
         SELVA_LOG(SELVA_LOGL_INFO, "Full sync");
-        err = selva_send_replication_sdb(resp, e->id, selva_string_to_str(sdb->filename, NULL));
+        err = selva_send_replication_sdb(resp, e->id, sdb->filename);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to sync replica's initial state: %s", selva_strerror(err));
             goto fail;
