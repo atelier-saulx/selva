@@ -65,6 +65,11 @@ void replication_origin_replicate(int64_t ts, int8_t cmd, const void *buf, size_
 void replication_origin_replicate_pass(int64_t ts, int8_t cmd, void *buf, size_t buf_size);
 
 /**
+ * Check that the eid exists in the rb and the file still exists.
+ */
+int replication_origin_check_sdb(uint64_t eid);
+
+/**
  * Register a new replication client aka replica.
  * @param resp is a selva_server_response_out that allows sending data to the replica.
  * @returns 0 if successful; Otherwise a selva error is returned.

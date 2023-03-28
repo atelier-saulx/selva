@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
 #include "jemalloc.h"
 #include "util/selva_string.h"
 #include "selva_error.h"
@@ -275,6 +276,29 @@ void replication_origin_replicate_pass(int64_t ts, int8_t cmd, void *buf, size_t
 {
     insert(next_eid(), ts, cmd, buf, buf_size);
 }
+
+int replication_origin_check_sdb(uint64_t eid)
+{
+    struct ring_buffer_element *el;
+    struct selva_replication_sdb *sdb;
+
+    el = ring_buffer_writer_find(&origin_state.rb, eid);
+    if (!el) {
+        return SELVA_ENOENT;
+    }
+
+    assert((el->id & EID_MSB_MASK) &&
+           el->data &&
+           el->data_size == sizeof(struct selva_replication_sdb));
+
+    sdb = (struct selva_replication_sdb *)el->data;
+    if (access(sdb->filename, F_OK)) {
+        return SELVA_ENOENT;
+    }
+
+    return 0;
+}
+
 
 void replication_origin_init(void)
 {

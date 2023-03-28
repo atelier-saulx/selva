@@ -130,6 +130,42 @@ static void send_mode_error(struct selva_server_response_out *resp)
     selva_send_errorf(resp, SELVA_ENOTSUP, "Already configured as %s", replication_mode_str[replication_mode]);
 }
 
+static void req_dump(void)
+{
+    struct {
+        struct selva_proto_array arr_hdr;
+        struct selva_proto_string str_hdr;
+        char buf[SDB_NAME_MIN_BUF_SIZE]; /*!< Filename. */
+    } msg = {
+        .arr_hdr = {
+            .type = SELVA_PROTO_ARRAY,
+            .length = 1,
+        },
+        .str_hdr = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+        },
+    };
+    size_t msg_size;
+
+    /* Check that it's packed properly. */
+#if !defined(__clang__)
+    static_assert((char *)(&msg.arr_hdr) + sizeof(msg.arr_hdr) == (char *)(&msg.str_hdr));
+    static_assert((char *)(&msg.str_hdr) + sizeof(msg.str_hdr) == msg.buf);
+#endif
+
+    /*
+     * This happens to be the almost the same as in
+     * replication/replication.c but it's definitely not
+     * required.
+     */
+    msg.str_hdr.bsize = sdb_name(msg.buf, sizeof(msg.buf), NULL, (uint64_t)ts_monorealtime_now());
+    msg_size = sizeof(msg.arr_hdr) + sizeof(msg.str_hdr) + msg.str_hdr.bsize;
+    msg.str_hdr.bsize = htole16(msg.str_hdr.bsize);
+
+    selva_server_run_cmd(CMD_ID_SAVE, ts_now(), &msg, msg_size);
+}
+
 /**
  * Ensure that we have an SDB dump in the ring buffer.
  * RFE There is still a race if we'd write new data before the replication
@@ -137,39 +173,11 @@ static void send_mode_error(struct selva_server_response_out *resp)
  */
 static int ensure_sdb(void)
 {
-    if (!replication_origin_get_last_sdb_eid()) {
-        struct {
-            struct selva_proto_array arr_hdr;
-            struct selva_proto_string str_hdr;
-            char buf[SDB_NAME_MIN_BUF_SIZE]; /*!< Filename. */
-        } msg = {
-            .arr_hdr = {
-                .type = SELVA_PROTO_ARRAY,
-                .length = 1,
-            },
-            .str_hdr = {
-                .type = SELVA_PROTO_STRING,
-                .flags = 0,
-            },
-        };
-        size_t msg_size;
+    uint64_t eid;
 
-        /* Check that it's packed properly. */
-#if !defined(__clang__)
-        static_assert((char *)(&msg.arr_hdr) + sizeof(msg.arr_hdr) == (char *)(&msg.str_hdr));
-        static_assert((char *)(&msg.str_hdr) + sizeof(msg.str_hdr) == msg.buf);
-#endif
-
-        /*
-         * This happens to be the almost the same as in
-         * replication/replication.c but it's definitely not
-         * required.
-         */
-        msg.str_hdr.bsize = sdb_name(msg.buf, sizeof(msg.buf), NULL, (uint64_t)ts_monorealtime_now());
-        msg_size = sizeof(msg.arr_hdr) + sizeof(msg.str_hdr) + msg.str_hdr.bsize;
-        msg.str_hdr.bsize = htole16(msg.str_hdr.bsize);
-
-        selva_server_run_cmd(CMD_ID_SAVE, ts_now(), &msg, msg_size);
+    eid = replication_origin_get_last_sdb_eid();
+    if (!eid || replication_origin_check_sdb(eid)) {
+        req_dump();
 
         /*
          * Let the replica retry later.
