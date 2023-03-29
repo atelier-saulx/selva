@@ -1561,7 +1561,10 @@ static void postprocess_inherit(
             SelvaHierarchy_GetNodeId(node_id, node);
             err = Inherit_FieldValue(hierarchy, lang, node_id, NULL, 0, order_by_field_str, order_by_field_len, &fv);
             if (err) {
-                /* TODO Error handling */
+                SELVA_LOG(SELVA_LOGL_ERR, "Inherit_FieldValue(%.*s, NULL, %.*s) failed: %s",
+                          (int)SELVA_NODE_ID_SIZE, node_id,
+                          (int)order_by_field_len, order_by_field_str,
+                          selva_strerror(err));
                 continue;
             }
 
@@ -1569,11 +1572,8 @@ static void postprocess_inherit(
             if (item) {
                 SVector_InsertFast(&order_result, item);
             } else {
-                Selva_NodeId nodeId;
-
-                SelvaHierarchy_GetNodeId(nodeId, node);
                 SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order item for %.*s\n",
-                          (int)SELVA_NODE_ID_SIZE, nodeId);
+                          (int)SELVA_NODE_ID_SIZE, node_id);
             }
 
         }
