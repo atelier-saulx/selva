@@ -79,6 +79,8 @@ struct SelvaHierarchy {
      */
     struct trx_state trx_state;
 
+    int flag_isSaving;
+
     /**
      * Index of all hierarchy nodes by ID.
      */

@@ -161,39 +161,11 @@ SELVA_TRACE_HANDLE(auto_compress_proc);
  */
 static SelvaHierarchy *subtree_hierarchy;
 static int isDecompressingSubtree;
-
-/**
- * Are we executing an RDB save.
- * TODO This should be technically per hierarchy structure.
- */
-static int flag_isSaving;
 static int flag_isLoading;
 
 static int isLoading(void) {
     return flag_isLoading || isDecompressingSubtree;
 }
-
-/* FIXME Only needed for subtree compression. */
-#if 0
-/**
- * Returns 1 on both the RDB process and the parent if we are currently
- * executing an RDB save.
- */
-static int isRdbChildRunning(void) {
-    /* FIXME */
-    const int ctx_flags = RedisModule_GetContextFlags(ctx);
-
-    /*
-     * We also want to know if there is an ongoing save. Redis doesn't provide such
-     * information but we can try to guess by checking if we have a child process,
-     * as typically a child process should be the RDB process.
-     */
-    return (ctx_flags & (REDISMODULE_CTX_FLAGS_RDB)) &&
-           (ctx_flags & (REDISMODULE_CTX_FLAGS_ACTIVE_CHILD | REDISMODULE_CTX_FLAGS_IS_CHILD));
-
-    return 0;
-}
-#endif
 
 static int SVector_HierarchyNode_id_compare(const void ** restrict a_raw, const void ** restrict b_raw) {
     const SelvaHierarchyNode *a = *(const SelvaHierarchyNode **)a_raw;
@@ -1851,7 +1823,7 @@ static int full_dfs(
     /**
      * Set if we should track inactive nodes for auto compression.
      */
-    const int enAutoCompression = selva_glob_config.hierarchy_auto_compress_period_ms > 0 && flag_isSaving;
+    const int enAutoCompression = selva_glob_config.hierarchy_auto_compress_period_ms > 0 && hierarchy->flag_isSaving;
     const long long old_age_threshold = selva_glob_config.hierarchy_auto_compress_old_age_lim;
 
     SVector_ForeachBegin(&it, &hierarchy->heads);
@@ -2904,7 +2876,7 @@ static void auto_compress_proc(struct RedisModuleCtx *ctx, void *data) {
     SelvaHierarchy *hierarchy = (struct SelvaHierarchy *)data;
     struct timespec timer_period = MSEC2TIMESPEC(selva_glob_config.hierarchy_auto_compress_period_ms);
 
-    if (!isRdbChildRunning()) {
+    if (selva_db_dump_state == SELVA_DB_DUMP_NONE) {
         const size_t n = hierarchy->inactive.nr_nodes;
 
         for (size_t i = 0; i < n; i++) {
@@ -3380,12 +3352,12 @@ void Hierarchy_RDBSave(struct selva_io *io, SelvaHierarchy *hierarchy) {
      * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
      * HIERARCHY_RDB_EOF
      */
-    flag_isSaving = 1;
+    hierarchy->flag_isSaving = 1;
     selva_io_save_signed(io, HIERARCHY_ENCODING_VERSION);
     SelvaObjectTypeRDBSave(io, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL);
     EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
     save_hierarchy(io, hierarchy);
-    flag_isSaving = 0;
+    hierarchy->flag_isSaving = 0;
 }
 
 static int load_nodeId(struct selva_io *io, Selva_NodeId nodeId) {
