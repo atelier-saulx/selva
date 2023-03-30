@@ -8,7 +8,6 @@ OBJ := \
 	   module/arg_parser.o \
 	   module/async_task.o \
 	   module/comparator.o \
-	   module/compressor.o \
 	   module/dump.o \
 	   module/edge/edge.o \
 	   module/edge/edge_constraint.o \
@@ -18,6 +17,8 @@ OBJ := \
 	   module/find_index/pick_icb.o \
 	   module/hierarchy/field_set.o \
 	   module/hierarchy/hierarchy.o \
+	   module/hierarchy/hierarchy_detached.o \
+	   module/hierarchy/hierarchy_inactive.o \
 	   module/hierarchy/hierarchy_reply.o \
 	   module/hierarchy/traversal.o \
 	   module/hierarchy/traversal_order.o \

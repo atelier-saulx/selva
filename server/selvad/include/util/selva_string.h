@@ -33,7 +33,11 @@ enum selva_string_flags {
      * Implies SELVA_STRING_FREEZE.
      */
     SELVA_STRING_INTERN = 0x10,
-    _SELVA_STRING_LAST_FLAG = 0x20,
+    /**
+     * Compressed string.
+     */
+    SELVA_STRING_COMPRESS = 0x02,
+    _SELVA_STRING_LAST_FLAG = 0x40,
 };
 
 struct selva_string;
@@ -53,6 +57,36 @@ struct selva_string *selva_string_create(const char *str, size_t len, enum selva
  * Create a string using a printf format string.
  */
 struct selva_string *selva_string_createf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+
+#ifdef _STDIO_H
+/**
+ * Read a string from a file directly into a new selva_string.
+ * If the resulting string is shorter than `size` an errno is set. Use the
+ * ferror() and feof() functions to distinguish between a read error and an
+ * end-of-file.
+ * @param flags can be SELVA_STRING_CRC | SELVA_STRING_COMPRESS.
+ */
+struct selva_string *selva_string_fread(FILE *fp, size_t size, enum selva_string_flags flags);
+#endif
+
+/**
+ * Create a compressed string.
+ * Note that most of the selva_string functions don't know how to handle with
+ * compressed strings and will just assume it's a regular string.
+ * @param flags Compressed strings can't handle most of the flags but notably
+ *              SELVA_STRING_CRC is supported.
+ */
+struct selva_string *selva_string_createz(const char *in_str, size_t in_len, enum selva_string_flags flags);
+
+/**
+ * Decompress a compressed string.
+ * @param s is a pointer to a compressed selva_string.
+ * @param buf is where the decompressed string will be copied to.
+ * @returns 0 if succeeded;
+ *          SELVA_PROTO_EINTYPE if not a compressed string;
+ *          SELVA_EINVAL if the string cannot be decompressed.
+ */
+int selva_string_decompress(const struct selva_string *s, char *buf);
 
 /**
  * Duplicate a string.
@@ -112,6 +146,16 @@ void selva_string_auto_finalize(struct finalizer *finalizer, struct selva_string
  * @param s is a pointer to a selva_string.
  */
 enum selva_string_flags selva_string_get_flags(const struct selva_string *s);
+
+/**
+ * Get uncompressed length.
+ */
+size_t selva_string_getz_ulen(const struct selva_string *s);
+
+/**
+ * Get compression ratio.
+ */
+int selva_string_getz_cratio(const struct selva_string *s);
 
 /**
  * Get a pointer to the contained C-string.
@@ -175,6 +219,13 @@ void selva_string_en_crc(struct selva_string *s);
  * @param s is a pointer to a selva_string.
  */
 int selva_string_verify_crc(struct selva_string *s);
+
+/**
+ * Set SELVA_STRING_COMPRESS flag on an existing string.
+ * Setting the flag wont compress the string but mark it as compressed;
+ * i.e. a metadata update.
+ */
+void selva_string_set_compress(struct selva_string *s);
 
 /**
  * Compare two strings.

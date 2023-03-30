@@ -41,7 +41,7 @@ endif
 ifeq ($(uname_S),Darwin)
 	OBJ += memrchr.o
 	LDFLAGS += -shared -Wl,-install_name,@rpath/libutil$(LIB_SUFFIX)
-	LDFLAGS += -ljemalloc_selva
+	LDFLAGS += -ljemalloc_selva -ldeflate
 endif
 
 ifndef LIB_SUFFIX
