@@ -596,6 +596,8 @@ __constructor static void init_compressor(void)
     }
 }
 
+/* FIXME freeing the compressor crashes the io child process at exit.
+#if 0
 __destructor static void deinit_compressor(void)
 {
     libdeflate_free_compressor(compressor);
@@ -604,3 +606,4 @@ __destructor static void deinit_compressor(void)
     libdeflate_free_decompressor(decompressor);
     decompressor = NULL;
 }
+#endif
