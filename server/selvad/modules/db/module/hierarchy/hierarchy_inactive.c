@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <sys/mman.h>
 #include <unistd.h>
-#include "selva.h"
+#include "selva_error.h"
+#include "selva_db.h"
 #include "hierarchy.h"
 #include "hierarchy_inactive.h"
 

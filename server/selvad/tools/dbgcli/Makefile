@@ -8,7 +8,7 @@ OBJ := \
 	   dbgcli.o \
 	   split.o
 CFLAGS := -Wall -Wextra -g3 -std=gnu2x -I../../include
-LDFLAGS := -L../../lib -lutil -ljemalloc_selva
+LDFLAGS := -L../../lib -lutil -ljemalloc_selva -ldeflate
 ifeq ($(uname_S),Linux)
 LDFLAGS += -Wl,-rpath,'$$ORIGIN'/../../lib
 endif

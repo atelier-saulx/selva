@@ -10,7 +10,7 @@ struct backoff_timeout {
     double t_min; /*!< Min time. [ms] */
     double t_max; /*!< Max time. [ms] */
     double factor;
-    int attempt; /*!< Current attempt nr. */
+    int attempt; /*!< Current attempt nr. Can be reset by caller. */
 #ifndef __APPLE__
     struct random_data rnd_state;
 #endif

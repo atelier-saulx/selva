@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -20,9 +20,8 @@ enum SelvaHierarchyDetachedType {
     SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK = 2,
 };
 
-struct RedisModuleCtx;
 struct SelvaHierarchy;
-struct compressed_rms;
+struct selva_string;
 
 /**
  * Check if a detached index exists.
@@ -45,7 +44,7 @@ static inline int SelvaHierarchyDetached_IndexExists(const struct SelvaHierarchy
  */
 void *SelvaHierarchyDetached_Store(
         const Selva_NodeId node_id,
-        struct compressed_rms *compressed,
+        struct selva_string *compressed,
         enum SelvaHierarchyDetachedType type);
 
 /**
@@ -55,7 +54,7 @@ void *SelvaHierarchyDetached_Store(
 int SelvaHierarchyDetached_Get(
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId node_id,
-        struct compressed_rms **compressed,
+        struct selva_string **compressed,
         enum SelvaHierarchyDetachedType *type);
 
 /**
@@ -64,19 +63,17 @@ int SelvaHierarchyDetached_Get(
  * Ideally all the pointers to the `compressed` string returned by
  * SelvaHierarchyDetached_Get() should be deleted once the subtree restore is
  * complete.
- * Note that this function doesn't free the compressed_rms, that should be
+ * Note that this function doesn't free the selva_string, that should be
  * done by the caller.
  */
-void SelvaHierarchyDetached_RemoveNode(
-        struct SelvaHierarchy *hierarchy,
-        const Selva_NodeId node_id);
+void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id);
 
 /**
  * Add a node_id to subtree mapping to the detached nodes map.
  * Obviously the serialized subtree cannot be ready yet when this function is
  * called, therefore the string must be appended at the end of the serialization
  * process.
- * @param tag_compressed is a struct compressed_rms that has been tagged with a SelvaHierarchyDetachedType.
+ * @param tag_compressed is a struct selva_string that has been tagged with a SelvaHierarchyDetachedType.
  */
 int SelvaHierarchyDetached_AddNode(
         struct SelvaHierarchy *hierarchy,

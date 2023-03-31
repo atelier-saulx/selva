@@ -1,17 +1,20 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
 #include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include "jemalloc.h"
-#include "ptag.h"
-#include "selva.h"
-#include "rms.h"
+#include "util/ptag.h"
+#include "util/selva_string.h"
+#include "selva_error.h"
+#include "selva_log.h"
+#include "selva_db.h"
 #include "selva_object.h"
 #include "hierarchy.h"
 #include "hierarchy_detached.h"
@@ -20,54 +23,49 @@
  * Management for detached (and compressed) hierarchy subtrees.
  */
 
+#define DISK_SUBTREE_PREFIX_SIZE 5
+
+static void gen_prefix(char str[DISK_SUBTREE_PREFIX_SIZE])
+{
+    static const char *hex_digits = "0123456789abcdef";
+
+    for (int i = 0; i < DISK_SUBTREE_PREFIX_SIZE; i++) {
+        str[i] = hex_digits[(rand() % 16)];
+    }
+}
+
 /**
  * Get path for a compressed subtree of node_id.
  */
-static RedisModuleString *get_zpath(const Selva_NodeId node_id) {
-    static char disk_subtree_prefix[5];
+static struct selva_string *get_zpath(const Selva_NodeId node_id)
+{
+    static char disk_subtree_prefix[DISK_SUBTREE_PREFIX_SIZE];
     pid_t pid = getpid();
 
     if (disk_subtree_prefix[0] == '\0') {
-        RedisModule_GetRandomHexChars(disk_subtree_prefix, sizeof(disk_subtree_prefix));
+        gen_prefix(disk_subtree_prefix);
     }
 
     /*
-     * Presumably the CWD is where the current Redis dump goes, we assume that's
+     * Presumably the CWD is where the current regular dump goes, we assume that's
      * where these compressed subtrees should go too.
      * We attempt to create a filename pattern that can never repeat after
      * crashes or involuntary restarts.
      */
-    return RedisModule_CreateStringPrintf(NULL, "selva_%jd_%.*s_%.*s.z",
-            (intmax_t)pid,
-            (int)(sizeof(disk_subtree_prefix)), disk_subtree_prefix,
-            (int)SELVA_NODE_ID_SIZE, node_id);
+    return selva_string_createf("selva_%jd_%.*s_%.*s.z",
+                                (intmax_t)pid,
+                                (int)(sizeof(disk_subtree_prefix)), disk_subtree_prefix,
+                                (int)SELVA_NODE_ID_SIZE, node_id);
 }
 
-/**
- * Write a compressed subtree to the disk.
- * @param zpath is a pointer to the destination path.
- * @param compressed is a pointer to the compressed subtree.
- */
-static int fwrite_compressed_subtree(RedisModuleString *zpath, const struct compressed_rms *compressed) {
-    const char *zpath_str = RedisModule_StringPtrLen(zpath, NULL);
-    FILE *fp;
-    int err;
+static ssize_t get_file_size(FILE *fp) {
+    long int size;
 
-    /*
-     * `x` will reject the operation if the file already exists.
-     */
-    fp = fopen(zpath_str, "wbx");
-    if (!fp) {
-        /*
-         * This could be also SELVA_EINVAL, it's hard to say what's better.
-         */
-        return SELVA_EEXIST;
-    }
+    fseek(fp, 0L, SEEK_END);
+    size = ftell(fp);
+    rewind(fp);
 
-    err = rms_fwrite_compressed(compressed, fp);
-
-    fclose(fp);
-    return err;
+    return size == -1L ? SELVA_EGENERAL : (ssize_t)size;
 }
 
 /**
@@ -76,10 +74,12 @@ static int fwrite_compressed_subtree(RedisModuleString *zpath, const struct comp
  * @param zpath is a pointer to the source path of the subtree.
  * @param[out] compressed_out is the output.
  */
-static int fread_compressed_subtree(RedisModuleString *zpath, struct compressed_rms **compressed_out) {
-    const char *zpath_str = RedisModule_StringPtrLen(zpath, NULL);
+static int fread_compressed_subtree(struct selva_string *zpath, struct selva_string **compressed_out)
+{
+    const char *zpath_str = selva_string_to_str(zpath, NULL);
     FILE *fp;
-    struct compressed_rms *compressed;
+    ssize_t size;
+    struct selva_string *compressed;
     int err;
 
     fp = fopen(zpath_str, "rb");
@@ -97,16 +97,18 @@ static int fread_compressed_subtree(RedisModuleString *zpath, struct compressed_
         return SELVA_EINVAL;
     }
 
-    compressed = rms_alloc_compressed();
-    err = rms_fread_compressed(compressed, fp);
-    fclose(fp);
-
-    if (err) {
-        rms_free_compressed(compressed);
-        compressed = NULL;
+    size = get_file_size(fp);
+    if (size <= 0) {
+        err = SELVA_EINVAL;
+        goto fail;
     }
 
+    compressed = selva_string_fread(fp, size, SELVA_STRING_COMPRESS);
+    /* TODO check errors */
+
     *compressed_out = compressed;
+fail:
+    fclose(fp);
     return err;
 }
 
@@ -114,30 +116,43 @@ static int fread_compressed_subtree(RedisModuleString *zpath, struct compressed_
  * Store a compressed subtree on disk.
  * @returns a pointer to the filename.
  */
-static RedisModuleString *store_compressed(const Selva_NodeId node_id, struct compressed_rms *compressed) {
-    RedisModuleString *zpath = get_zpath(node_id);
-    int err;
+static struct selva_string *store_compressed(const Selva_NodeId node_id, struct selva_string *compressed)
+{
+    struct selva_string *zpath = get_zpath(node_id);
+    FILE *fp;
+    TO_STR(compressed, zpath);
 
-    err = fwrite_compressed_subtree(zpath, compressed);
-    if (err) {
-        RedisModule_FreeString(NULL, zpath);
+    /*
+     * `x` will reject the operation if the file already exists.
+     */
+    fp = fopen(zpath_str, "wbx");
+    if (!fp) {
+        NULL;
+    }
+
+    if (fwrite(compressed_str, compressed_len, 1, fp) != 1) {
+        selva_string_free(zpath);
+        fclose(fp);
         return NULL;
     }
 
+    fclose(fp);
+
     /*
      * It's slightly unorthodox to free `compressed` here and not where it was
-     * allocated but you should this it as if the caller passed the ownership of
+     * allocated but you should think it as if the caller passed the ownership of
      * the data to us, which is what this whole thing should be all about.
      */
-    rms_free_compressed(compressed);
+    selva_string_free(compressed);
 
     return zpath;
 }
 
 void *SelvaHierarchyDetached_Store(
         const Selva_NodeId node_id,
-        struct compressed_rms *compressed,
-        enum SelvaHierarchyDetachedType type) {
+        struct selva_string *compressed,
+        enum SelvaHierarchyDetachedType type)
+{
     void *p;
 
     if (!compressed) {
@@ -163,8 +178,9 @@ void *SelvaHierarchyDetached_Store(
 int SelvaHierarchyDetached_Get(
         struct SelvaHierarchy *hierarchy,
         const Selva_NodeId node_id,
-        struct compressed_rms **compressed,
-        enum SelvaHierarchyDetachedType *type) {
+        struct selva_string **compressed,
+        enum SelvaHierarchyDetachedType *type)
+{
     struct SelvaObject *index = hierarchy->detached.obj;
     void *p;
     int err;
@@ -191,7 +207,7 @@ int SelvaHierarchyDetached_Get(
 
         return 0;
     } else if (tag == SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK) {
-        RedisModuleString *zpath = PTAG_GETP(p);
+        struct selva_string *zpath = PTAG_GETP(p);
 
         return fread_compressed_subtree(zpath, compressed);
     } else {
@@ -201,7 +217,8 @@ int SelvaHierarchyDetached_Get(
     }
 }
 
-void SelvaHierarchyDetached_RemoveNode(RedisModuleCtx *ctx, SelvaHierarchy *hierarchy, const Selva_NodeId node_id) {
+void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id)
+{
     struct SelvaObject *index = hierarchy->detached.obj;
     void *p;
 
@@ -216,25 +233,28 @@ void SelvaHierarchyDetached_RemoveNode(RedisModuleCtx *ctx, SelvaHierarchy *hier
 
     const int tag = PTAG_GETTAG(p);
     if (tag == SELVA_HIERARCHY_DETACHED_COMPRESSED_DISK) {
-        RedisModuleString *zpath = PTAG_GETP(p);
-        TO_STR(zpath);
+        struct selva_string *zpath = PTAG_GETP(p);
+        const char *zpath_str = selva_string_to_str(zpath, NULL);
 
         /* Remove the file. */
         (void)remove(zpath_str);
 
         /*
-         * Trick Redis into using lazy free for zpath.
-         * We know that we probably have multiple references to zpath, but we
-         * also know that they'll be all cleaned up during this ctx.
+         * Lazy free zpath.
+         * We know that we still have one or more references to zpath, but
+         * we also know that they'll be all cleaned up during this callstack.
          */
-        RedisModule_HoldString(ctx, zpath);
-        RedisModule_FreeString(NULL, zpath);
+        /*
+         * FIXME Leaking zpath.
+         * We need to create a finalizer somewhere.
+         */
     }
 
     (void)SelvaObject_DelKeyStr(index, node_id, SELVA_NODE_ID_SIZE);
 }
 
-int SelvaHierarchyDetached_AddNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id, void *tag_compressed) {
+int SelvaHierarchyDetached_AddNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id, void *tag_compressed)
+{
     struct SelvaObject *index = hierarchy->detached.obj;
 
     if (!index) {
