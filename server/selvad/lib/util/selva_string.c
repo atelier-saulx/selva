@@ -596,7 +596,7 @@ __constructor static void init_compressor(void)
     }
 }
 
-/* FIXME freeing the compressor crashes the io child process at exit.
+/* FIXME freeing the compressor crashes the io child process at exit. */
 #if 0
 __destructor static void deinit_compressor(void)
 {
