@@ -353,7 +353,11 @@ static int new_server(int port)
         exit(EXIT_FAILURE);
     }
 
-    listen(sockfd, server_backlog_size);
+    if (listen(sockfd, server_backlog_size)) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to listen on port: %d",
+                  port);
+        exit(EXIT_FAILURE);
+    }
     SELVA_LOG(SELVA_LOGL_INFO, "Listening on port: %d", port);
 
     return sockfd;
