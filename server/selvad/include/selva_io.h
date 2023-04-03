@@ -28,16 +28,39 @@ enum selva_io_flags {
     SELVA_IO_FLAGS_READ = 0x01,
     SELVA_IO_FLAGS_WRITE = 0x02,
     SELVA_IO_FLAGS_COMPRESSED = 0x04, /* TODO */
+    SELVA_IO_FLAGS_FILE_IO = 0x10, /*! Save to/Load from a file. Not set by caller. */
+    SELVA_IO_FLAGS_STRING_IO = 0x20, /*!< Save to/Load from a file. Not set by caller. */
 };
 
 #ifdef SELVA_IO_TYPE
 struct selva_io {
     enum selva_io_flags flags;
-    struct selva_string *filename;
-    FILE *file;
+    union {
+        struct {
+            struct selva_string *filename;
+            FILE *file;
+        } file_io;
+        struct {
+            int err;
+            size_t offset;
+            struct selva_string *data;
+        } string_io;
+    };
+
     sha3_context hash_c; /*!< Currently computed hash of the data. */
     const uint8_t *computed_hash; /*!< Updated at the end of load/save. */
     uint8_t stored_hash[SELVA_IO_HASH_SIZE]; /*!< The hash found in the footer. */
+
+    size_t (*sdb_write)(const void * restrict ptr, size_t size, size_t count, struct selva_io * restrict io);
+    size_t (*sdb_read)(void * restrict ptr, size_t size, size_t count, struct selva_io *restrict io);
+    off_t (*sdb_tell)(struct selva_io *io);
+    int (*sdb_seek)(struct selva_io *io, off_t offset, int whence);
+
+    /**
+     * Return the last IO error.
+     */
+    int (*sdb_error)(struct selva_io *restrict io);
+    void (*sdb_clearerr)(struct selva_io *restrict io);
 };
 #endif
 
@@ -62,6 +85,9 @@ SELVA_IO_EXPORT(int, selva_io_read_hash, const char *filename, uint8_t hash[SELV
  * Start a new IO operation.
  */
 SELVA_IO_EXPORT(int, selva_io_init, struct selva_io *io, const char *filename, enum selva_io_flags flags);
+
+SELVA_IO_EXPORT(struct selva_string *, selva_io_init_string_write, struct selva_io *io, enum selva_io_flags flags);
+SELVA_IO_EXPORT(int, selva_io_init_string_read, struct selva_io * restrict io, struct selva_string * restrict s, enum selva_io_flags flags);
 
 /**
  * End the IO operation.
@@ -88,6 +114,8 @@ SELVA_IO_EXPORT(struct selva_string *, selva_io_load_string, struct selva_io *io
     apply(selva_io_last_good_info) \
     apply(selva_io_read_hash) \
     apply(selva_io_init) \
+    apply(selva_io_init_string_write) \
+    apply(selva_io_init_string_read) \
     apply(selva_io_end) \
     apply(selva_io_save_unsigned) \
     apply(selva_io_save_signed) \

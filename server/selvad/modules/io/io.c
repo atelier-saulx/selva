@@ -2,6 +2,7 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <assert.h>
 #include <dlfcn.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -46,7 +47,7 @@ static void test_io_mode(struct selva_io *io, enum selva_io_flags mode)
 __noreturn static void exit_read_error(struct selva_io *io, const char *type, const char *whence)
 {
     SELVA_LOG(SELVA_LOGL_CRIT, "Invalid read. offset: %ld whence: \"%s\" type: %s",
-              ftell(io->file), whence, type);
+              io->sdb_tell(io), whence, type);
     abort();
 }
 
@@ -54,12 +55,26 @@ __noreturn static void exit_read_error(struct selva_io *io, const char *type, co
  * Init an io structure for a file.
  * Note that flags must be validated before calling this function.
  */
-static void init_io(struct selva_io *io, FILE *file, const char *filename, enum selva_io_flags flags)
+static void init_io_file(struct selva_io *io, FILE *file, const char *filename, enum selva_io_flags flags)
 {
     memset(io, 0, sizeof(*io));
-    io->filename = selva_string_createf("%s", filename);
-    io->file = file;
-    io->flags = flags;
+    io->file_io.filename = selva_string_createf("%s", filename);
+    io->file_io.file = file;
+    io->flags = (flags & ~SELVA_IO_FLAGS_STRING_IO) | SELVA_IO_FLAGS_FILE_IO;
+    sdb_init(io);
+
+    if (flags & SELVA_IO_FLAGS_WRITE) {
+        sdb_write_header(io);
+    } else {
+        sdb_read_header(io);
+    }
+}
+
+static void init_io_string(struct selva_io *io, struct selva_string *s, enum selva_io_flags flags)
+{
+    memset(io, 0, sizeof(*io));
+    io->string_io.data = s;
+    io->flags = (flags & ~SELVA_IO_FLAGS_FILE_IO) | SELVA_IO_FLAGS_STRING_IO;
     sdb_init(io);
 
     if (flags & SELVA_IO_FLAGS_WRITE) {
@@ -93,7 +108,7 @@ int selva_io_open_last_good(struct selva_io *io)
         return SELVA_EGENERAL;
     }
 
-    init_io(io, file, selva_string_to_str(filename, NULL), SELVA_IO_FLAGS_READ);
+    init_io_file(io, file, selva_string_to_str(filename, NULL), SELVA_IO_FLAGS_READ);
     selva_string_free(filename);
 
     return 0;
@@ -101,13 +116,13 @@ int selva_io_open_last_good(struct selva_io *io)
 
 static int read_hash(struct selva_io *io)
 {
-    fpos_t position;
+    off_t pos;
     int err;
 
-    fgetpos(io->file, &position);
-    fseek(io->file, -(SELVA_IO_HASH_SIZE + 8), SEEK_END);
+    pos = io->sdb_tell(io);
+    io->sdb_seek(io, -(SELVA_IO_HASH_SIZE + 8), SEEK_END);
     err = sdb_read_footer(io);
-    fsetpos(io->file, &position);
+    io->sdb_seek(io, pos, SEEK_SET);
     if (err) {
         return err;
     }
@@ -120,16 +135,22 @@ int selva_io_last_good_info(uint8_t hash[SELVA_IO_HASH_SIZE], struct selva_strin
     struct selva_io io;
     int err;
 
-    selva_io_open_last_good(&io);
-    err = read_hash(&io);
+    err = selva_io_open_last_good(&io);
     if (err) {
-        selva_string_free(io.filename);
-    } else {
-        memcpy(hash, io.stored_hash, SELVA_IO_HASH_SIZE);
-        *filename_out = io.filename;
+        return err;
     }
 
-    fclose(io.file);
+    assert(io.flags & SELVA_IO_FLAGS_FILE_IO);
+
+    err = read_hash(&io);
+    if (err) {
+        selva_string_free(io.file_io.filename);
+    } else {
+        memcpy(hash, io.stored_hash, SELVA_IO_HASH_SIZE);
+        *filename_out = io.file_io.filename;
+    }
+
+    fclose(io.file_io.file);
 
     return err;
 }
@@ -144,9 +165,16 @@ int selva_io_read_hash(const char *filename, uint8_t hash[SELVA_IO_HASH_SIZE])
         memcpy(hash, io.stored_hash, SELVA_IO_HASH_SIZE);
     }
 
-    fclose(io.file);
-    selva_string_free(io.filename);
+    assert(io.flags & SELVA_IO_FLAGS_FILE_IO);
+
+    fclose(io.file_io.file);
+    selva_string_free(io.file_io.filename);
     return err;
+}
+
+static int valid_flags(enum selva_io_flags flags)
+{
+    return (!(flags & SELVA_IO_FLAGS_READ) ^ !(flags & SELVA_IO_FLAGS_WRITE));
 }
 
 int selva_io_init(struct selva_io *io, const char *filename, enum selva_io_flags flags)
@@ -154,7 +182,7 @@ int selva_io_init(struct selva_io *io, const char *filename, enum selva_io_flags
     const char *mode = (flags & SELVA_IO_FLAGS_WRITE) ? "wb" : "rb";
     FILE *file;
 
-    if (!(!(flags & SELVA_IO_FLAGS_READ) ^ !(flags & SELVA_IO_FLAGS_WRITE))) {
+    if (!valid_flags(flags)) {
         return SELVA_EINVAL;
     }
 
@@ -167,7 +195,33 @@ int selva_io_init(struct selva_io *io, const char *filename, enum selva_io_flags
         return SELVA_EGENERAL;
     }
 
-    init_io(io, file, filename, flags);
+    init_io_file(io, file, filename, flags);
+
+    return 0;
+}
+
+struct selva_string *selva_io_init_string_write(struct selva_io *io, enum selva_io_flags flags)
+{
+    struct selva_string *s = selva_string_create(NULL, 0, SELVA_STRING_MUTABLE);
+
+    flags |= SELVA_IO_FLAGS_WRITE;
+    if (!valid_flags(flags)) {
+        return NULL;
+    }
+
+    init_io_string(io, s, flags);
+
+    return s;
+}
+
+int selva_io_init_string_read(struct selva_io * restrict io, struct selva_string * restrict s, enum selva_io_flags flags)
+{
+    flags |= SELVA_IO_FLAGS_READ;
+    if (!valid_flags(flags)) {
+        return SELVA_EINVAL;
+    }
+
+    init_io_string(io, s, flags);
 
     return 0;
 }
@@ -189,7 +243,9 @@ void selva_io_end(struct selva_io *io)
 {
     if (io->flags & SELVA_IO_FLAGS_WRITE) {
         sdb_write_footer(io);
-        fflush(io->file);
+        if (io->flags & SELVA_IO_FLAGS_FILE_IO) {
+            fflush(io->file_io.file);
+        }
     } else {
         int err;
 
@@ -214,18 +270,20 @@ void selva_io_end(struct selva_io *io)
 
     }
 
-    fclose(io->file);
+    if (io->flags & SELVA_IO_FLAGS_FILE_IO) {
+        fclose(io->file_io.file);
 
-    /*
-     * Mark as last good.
-     */
-    (void)unlink(last_good_name);
-    if (symlink(selva_string_to_str(io->filename, NULL), last_good_name) == -1) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to symlink the last good dump \"%s\" as \"%s\"",
-                  selva_string_to_str(io->filename, NULL), last_good_name);
+        /*
+         * Mark as last good.
+         */
+        (void)unlink(last_good_name);
+        if (symlink(selva_string_to_str(io->file_io.filename, NULL), last_good_name) == -1) {
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to symlink the last good dump \"%s\" as \"%s\"",
+                      selva_string_to_str(io->file_io.filename, NULL), last_good_name);
+        }
+
+        selva_string_free(io->file_io.filename);
     }
-
-    selva_string_free(io->filename);
 }
 
 void selva_io_save_unsigned(struct selva_io *io, uint64_t value)
@@ -236,7 +294,7 @@ void selva_io_save_unsigned(struct selva_io *io, uint64_t value)
         .v = htole64(value),
     };
 
-    sdb_write(&buf, sizeof(buf), 1, io);
+    io->sdb_write(&buf, sizeof(buf), 1, io);
 }
 
 void selva_io_save_signed(struct selva_io *io, int64_t value)
@@ -247,7 +305,7 @@ void selva_io_save_signed(struct selva_io *io, int64_t value)
         .v = htole64(value),
     };
 
-    sdb_write(&buf, sizeof(buf), 1, io);
+    io->sdb_write(&buf, sizeof(buf), 1, io);
 }
 
 void selva_io_save_double(struct selva_io *io, double value)
@@ -259,7 +317,7 @@ void selva_io_save_double(struct selva_io *io, double value)
 
     htoledouble((char *)&buf.v, value);
 
-    sdb_write(&buf, sizeof(buf), 1, io);
+    io->sdb_write(&buf, sizeof(buf), 1, io);
 }
 
 void selva_io_save_str(struct selva_io *io, const char *str, size_t len)
@@ -270,8 +328,8 @@ void selva_io_save_str(struct selva_io *io, const char *str, size_t len)
         .bsize = htole32(len),
     };
 
-    sdb_write(&buf, sizeof(buf), 1, io);
-    sdb_write(str, sizeof(char), len, io);
+    io->sdb_write(&buf, sizeof(buf), 1, io);
+    io->sdb_write(str, sizeof(char), len, io);
 }
 
 void selva_io_save_string(struct selva_io *io, const struct selva_string *s)
@@ -284,8 +342,8 @@ void selva_io_save_string(struct selva_io *io, const struct selva_string *s)
         .bsize = htole32(len),
     };
 
-    sdb_write(&buf, sizeof(buf), 1, io);
-    sdb_write(str, sizeof(char), len, io);
+    io->sdb_write(&buf, sizeof(buf), 1, io);
+    io->sdb_write(str, sizeof(char), len, io);
 }
 
 uint64_t selva_io_load_unsigned(struct selva_io *io)
@@ -293,7 +351,7 @@ uint64_t selva_io_load_unsigned(struct selva_io *io)
     test_io_mode(io, SELVA_IO_FLAGS_READ);
     struct selva_proto_longlong buf;
 
-    if (sdb_read(&buf, sizeof(buf), 1, io) != 1) {
+    if (io->sdb_read(&buf, sizeof(buf), 1, io) != 1) {
         exit_read_error(io, selva_proto_typeof_str(buf), READ_WHENCE_READ_HEADER);
     }
 
@@ -309,7 +367,7 @@ int64_t selva_io_load_signed(struct selva_io *io)
     test_io_mode(io, SELVA_IO_FLAGS_READ);
     struct selva_proto_longlong buf;
 
-    if (sdb_read(&buf, sizeof(buf), 1, io) != 1) {
+    if (io->sdb_read(&buf, sizeof(buf), 1, io) != 1) {
         exit_read_error(io, selva_proto_typeof_str(buf), READ_WHENCE_READ_HEADER);
     }
 
@@ -325,7 +383,7 @@ double selva_io_load_double(struct selva_io *io)
     test_io_mode(io, SELVA_IO_FLAGS_READ);
     struct selva_proto_double buf;
 
-    if (sdb_read(&buf, sizeof(buf), 1, io) != 1) {
+    if (io->sdb_read(&buf, sizeof(buf), 1, io) != 1) {
         exit_read_error(io, selva_proto_typeof_str(buf), READ_WHENCE_READ_HEADER);
     }
 
@@ -342,7 +400,7 @@ const char *selva_io_load_str(struct selva_io *io, size_t *len)
     struct selva_proto_string buf;
     char *str;
 
-    if (sdb_read(&buf, sizeof(buf), 1, io) != 1) {
+    if (io->sdb_read(&buf, sizeof(buf), 1, io) != 1) {
         exit_read_error(io, selva_proto_typeof_str(buf), READ_WHENCE_READ_HEADER);
     }
 
@@ -352,7 +410,7 @@ const char *selva_io_load_str(struct selva_io *io, size_t *len)
 
     buf.bsize = letoh(buf.bsize);
     str = selva_malloc(buf.bsize);
-    if (sdb_read(str, sizeof(char), buf.bsize, io) != buf.bsize * sizeof(char)) {
+    if (io->sdb_read(str, sizeof(char), buf.bsize, io) != buf.bsize * sizeof(char)) {
         selva_free(str);
         exit_read_error(io, selva_proto_typeof_str(buf), READ_WHENCE_VALUE);
     }
@@ -371,7 +429,7 @@ struct selva_string *selva_io_load_string(struct selva_io *io)
     size_t len;
     struct selva_string *s;
 
-    if (sdb_read(&buf, sizeof(buf), 1, io) != 1) {
+    if (io->sdb_read(&buf, sizeof(buf), 1, io) != 1) {
         exit_read_error(io, selva_proto_typeof_str(buf), READ_WHENCE_READ_HEADER);
     }
 
@@ -381,7 +439,7 @@ struct selva_string *selva_io_load_string(struct selva_io *io)
 
     len = letoh(buf.bsize);
     s = selva_string_create(NULL, len, SELVA_STRING_MUTABLE_FIXED);
-    if (sdb_read(selva_string_to_mstr(s, NULL), sizeof(char), len, io) != len * sizeof(char)) {
+    if (io->sdb_read(selva_string_to_mstr(s, NULL), sizeof(char), len, io) != len * sizeof(char)) {
         selva_string_free(s);
         exit_read_error(io, selva_proto_typeof_str(buf), READ_WHENCE_VALUE);
     }
