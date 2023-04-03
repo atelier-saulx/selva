@@ -2,6 +2,7 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#define SELVA_IO_TYPE
 #include <alloca.h>
 #include <assert.h>
 #include <errno.h>
@@ -19,6 +20,7 @@
 #include "util/selva_string.h"
 #include "util/svector.h"
 #include "util/timestamp.h"
+#include "sha3iuf/sha3.h"
 #include "event_loop.h"
 #include "selva_db.h"
 #include "selva_error.h"
@@ -112,14 +114,6 @@ struct verifyDetachableSubtree {
 };
 
 /**
- * Type used by subtree serialization traversal functions.
- */
-struct SelvaHierarchySubtree {
-    SelvaHierarchy *hierarchy;
-    struct SelvaHierarchyNode *node;
-};
-
-/**
  * HierarchyRDBSaveNode() args struct.
  */
 struct HierarchyRDBSaveNode {
@@ -137,6 +131,7 @@ RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaHierarchyNode, _index_entry, Selv
 static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, enum SelvaHierarchyDetachedType type);
 static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 static void auto_compress_proc(struct event *, void *data);
+static struct selva_string *Hierarchy_SubtreeSave(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node);
 
 /* Node metadata constructors. */
 SET_DECLARE(selva_HMCtor, SelvaHierarchyMetadataConstructorHook);
@@ -2702,18 +2697,7 @@ static struct selva_string *compress_subtree(SelvaHierarchy *hierarchy, struct S
     }
 
 
-    struct SelvaHierarchySubtree subtree = {
-        .hierarchy = hierarchy,
-        .node = node,
-    };
-
-    /* FIXME Get serialized string */
-#if 0
-    raw = RedisModule_SaveDataTypeToString(ctx, &subtree, HierarchySubtreeType);
-    if (!raw) {
-        return NULL;
-    }
-#endif
+    raw = Hierarchy_SubtreeSave(hierarchy, node);
 
     TO_STR(raw);
     compressed = selva_string_createz(raw_str, raw_len, 0);
@@ -3250,7 +3234,7 @@ static int HierarchyRDBSaveNode(
 
 /**
  * Save a node from a subtree.
- * Used by Hierarchy_SubtreeRDBSave() when saving a subtree into a string.
+ * Used by Hierarchy_SubtreeSave() when saving a subtree into a string.
  * This function should match with HierarchyRDBSaveNode() but we don't want
  * to do save_detached() here.
  */
@@ -3373,21 +3357,18 @@ static void *Hierarchy_SubtreeRDBLoad(struct selva_io *io, int encver) {
 }
 
 /**
- * DO NOT CALL.
  * Serialize a subtree of a hierarchy.
- * This function should never be called directly.
  */
-static void Hierarchy_SubtreeRDBSave(struct selva_io *io, void *value) {
-    struct SelvaHierarchySubtree *subtree = (struct SelvaHierarchySubtree *)value;
-    SelvaHierarchy *hierarchy = subtree->hierarchy;
-    struct SelvaHierarchyNode *node = subtree->node;
+static struct selva_string *Hierarchy_SubtreeSave(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
+    struct selva_io io;
+    struct selva_string *raw = selva_io_init_string_write(&io, 0);
     const struct SelvaHierarchyCallback cb = {
         .head_cb = NULL,
         .head_arg = NULL,
         .node_cb = HierarchyRDBSaveSubtreeNode,
-        .node_arg = io,
+        .node_arg = &io,
         .child_cb = HierarchyRDBSaveChild,
-        .child_arg = io,
+        .child_arg = &io,
     };
 
     /*
@@ -3396,16 +3377,20 @@ static void Hierarchy_SubtreeRDBSave(struct selva_io *io, void *value) {
      * compressed subtrees from the disk and those files don't contain the
      * encoding version and Redis gives us version 0 on read.
      */
-    selva_io_save_signed(io, HIERARCHY_ENCODING_VERSION);
+    selva_io_save_signed(&io, HIERARCHY_ENCODING_VERSION);
 
     /* Save nodeId. */
-    selva_io_save_str(io, node->id, SELVA_NODE_ID_SIZE);
+    selva_io_save_str(&io, node->id, SELVA_NODE_ID_SIZE);
 
     /*
      * Save the children.
      */
     (void)dfs(hierarchy, node, RELATIONSHIP_CHILD, &cb);
-    selva_io_save_str(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
+    selva_io_save_str(&io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
+
+    selva_io_end(&io);
+
+    return raw;
 }
 
 /*

@@ -83,10 +83,22 @@ SELVA_IO_EXPORT(int, selva_io_read_hash, const char *filename, uint8_t hash[SELV
 
 /**
  * Start a new IO operation.
+ * @param io is a pointer to the io state. Can be allocated from the stack.
  */
 SELVA_IO_EXPORT(int, selva_io_init, struct selva_io *io, const char *filename, enum selva_io_flags flags);
 
+/**
+ * Start a new IO operation writing to a selva_string.
+ * @param io is a pointer to the io state. Can be allocated from the stack.
+ * @returns the selva string that will be appended.
+ */
 SELVA_IO_EXPORT(struct selva_string *, selva_io_init_string_write, struct selva_io *io, enum selva_io_flags flags);
+
+
+/**
+ * Start a new IO operation reading from a selva_string.
+ * @param io is a pointer to the io state. Can be allocated from the stack.
+ */
 SELVA_IO_EXPORT(int, selva_io_init_string_read, struct selva_io * restrict io, struct selva_string * restrict s, enum selva_io_flags flags);
 
 /**
