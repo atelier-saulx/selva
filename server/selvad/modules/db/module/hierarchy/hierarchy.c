@@ -131,6 +131,7 @@ RB_PROTOTYPE_STATIC(hierarchy_index_tree, SelvaHierarchyNode, _index_entry, Selv
 static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node, enum SelvaHierarchyDetachedType type);
 static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id);
 static void auto_compress_proc(struct event *, void *data);
+static void Hierarchy_SubtreeLoad(SelvaHierarchy *hierarchy, struct selva_string *s);
 static struct selva_string *Hierarchy_SubtreeSave(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node);
 
 /* Node metadata constructors. */
@@ -150,9 +151,8 @@ SELVA_TRACE_HANDLE(auto_compress_proc);
 /**
  * A pointer to the hierarchy subtree being loaded.
  * Redis doesn't allow passing any pointers when loading a stringified RDB so a
- * global variable is needed for Hierarchy_SubtreeRDBLoad().
+ * global variable is needed for Hierarchy_SubtreeLoad().
  */
-static SelvaHierarchy *subtree_hierarchy;
 static int isDecompressingSubtree;
 static int flag_isLoading;
 
@@ -2768,31 +2768,25 @@ static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *
 }
 
 static int restore_compressed_subtree(SelvaHierarchy *hierarchy, struct selva_string *compressed) {
-    char *decompressed_str;
-    size_t decompressed_len = selva_string_getz_ulen(compressed);
-    const void *load_res;
+    struct selva_string *decompressed = selva_string_create(NULL, selva_string_getz_ulen(compressed), SELVA_STRING_MUTABLE_FIXED);
+    char *decompressed_str = selva_string_to_mstr(decompressed, NULL);
     int err;
 
-    if (!decompressed_len) {
+    if (!decompressed) {
         return SELVA_EINTYPE;
     }
 
-    decompressed_str = selva_malloc(decompressed_len);
     err = selva_string_decompress(compressed, decompressed_str);
     if (err) {
         return err;
     }
 
     isDecompressingSubtree = 1;
-    subtree_hierarchy = hierarchy;
-    /* FIXME Fix restoring compressed subtree */
-#if 0
-    load_res = RedisModule_LoadDataTypeFromString(decompressed_str, decompressed_len, HierarchySubtreeType);
-#endif
+    Hierarchy_SubtreeLoad(hierarchy, decompressed);
     isDecompressingSubtree = 0;
-    selva_free(decompressed_str);
+    selva_string_free(decompressed);
 
-    return (!load_res) ? SELVA_HIERARCHY_EINVAL : 0;
+    return 0;
 }
 
 /**
@@ -3318,14 +3312,14 @@ static int load_nodeId(struct selva_io *io, Selva_NodeId nodeId) {
 }
 
 /**
- * DO NOT CALL.
  * Load a subtree from the RDB serialization format back into the hierarchy.
  * This function should never be called directly.
  */
-static void *Hierarchy_SubtreeRDBLoad(struct selva_io *io, int encver) {
-    SelvaHierarchy *hierarchy = subtree_hierarchy;
+static void Hierarchy_SubtreeLoad(SelvaHierarchy *hierarchy, struct selva_string *s) {
+    struct selva_io io;
+    selva_io_init_string_read(&io, s, 0);
     Selva_NodeId nodeId;
-    int err;
+    int encver, err;
 
     /*
      * 1. Load encoding version
@@ -3333,27 +3327,27 @@ static void *Hierarchy_SubtreeRDBLoad(struct selva_io *io, int encver) {
      * 3. Load the children normally
      */
 
-    encver = selva_io_load_signed(io);
+    encver = selva_io_load_signed(&io);
     if (encver > HIERARCHY_ENCODING_VERSION) {
         SELVA_LOG(SELVA_LOGL_CRIT, "selva_hierarchy encoding version %d not supported", encver);
-        return NULL;
+        return;
     }
 
     /*
      * Read nodeId.
      */
-    if (load_nodeId(io, nodeId)) {
-        return NULL;
+    if (load_nodeId(&io, nodeId)) {
+        return;
     }
 
     SelvaHierarchyDetached_RemoveNode(hierarchy, nodeId);
 
-    err = load_tree(io, encver, hierarchy);
+    err = load_tree(&io, encver, hierarchy);
     if (err) {
-        return NULL;
+        return;
     }
 
-    return (void *)1;
+    selva_io_end(&io);
 }
 
 /**
@@ -3464,7 +3458,7 @@ static void SelvaHierarchy_DelNodeCommand(struct selva_server_response_out *resp
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
 }
 
-static void SelvaHierarchy_HeadsCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
+static void SelvaHierarchy_HeadsCommand(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
 
     if (len != 0) {
