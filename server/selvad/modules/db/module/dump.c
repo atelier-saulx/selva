@@ -384,6 +384,7 @@ static void dump_on_exit(int code, void *)
     int err;
 
     if (code != 0 ||
+        selva_db_dump_state == SELVA_DB_DUMP_IS_CHILD ||
         !selva_db_is_dirty ||
         selva_replication_get_mode() == SELVA_REPLICATION_MODE_REPLICA) {
         return;
