@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -205,7 +205,7 @@ int SelvaArgsParser_StringSetList(
                         /*
                          * Add to the list.
                          */
-                        SelvaObject_AddArrayStr(obj, key_str, key_len, SELVA_OBJECT_STRING, el);
+                        SelvaObject_InsertArrayStr(obj, key_str, key_len, SELVA_OBJECT_STRING, el);
                         nr_el++;
                     }
                 }

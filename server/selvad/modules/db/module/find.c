@@ -1151,7 +1151,7 @@ static int exec_fields_expression(
             char key_str[key_len + 1];
 
             snprintf(key_str, key_len + 1, "%zu", i_fields);
-            SelvaObject_AddArrayStr(fields, key_str, key_len, SELVA_OBJECT_STRING, field_name);
+            SelvaObject_InsertArrayStr(fields, key_str, key_len, SELVA_OBJECT_STRING, field_name);
             i_fields++;
         }
     }

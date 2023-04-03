@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
@@ -257,9 +257,9 @@ static void insert_edge(struct EdgeField *src_edge_field, struct SelvaHierarchyN
         dst_node_metadata->edge_fields.origins = SelvaObject_New();
     }
 
-    err = SelvaObject_AddArrayStr(dst_node_metadata->edge_fields.origins,
-                                  src_edge_field->src_node_id, SELVA_NODE_ID_SIZE,
-                                  SELVA_OBJECT_POINTER, src_edge_field);
+    err = SelvaObject_InsertArrayStr(dst_node_metadata->edge_fields.origins,
+                                    src_edge_field->src_node_id, SELVA_NODE_ID_SIZE,
+                                    SELVA_OBJECT_POINTER, src_edge_field);
     if (err) {
         SELVA_LOG(SELVA_LOGL_ERR, "Edge origin update failed: %s",
                   selva_strerror(err));
