@@ -347,13 +347,22 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                     }
                 } else if (found_type == SELVA_PROTO_STRING) {
                     const char *str = (char *)buf + buf_i + offsetof(struct selva_proto_string, data);
+                    typeof_field(struct selva_proto_string, flags) flags;
                     typeof_field(struct selva_proto_string, bsize) len;
 
+                    memcpy(&flags, (char *)buf + buf_i + offsetof(struct selva_proto_string, flags), sizeof(flags));
                     memcpy(&len, (char *)buf + buf_i + offsetof(struct selva_proto_string, bsize), sizeof(len));
 
                     if (width >= 0) {
                         char *dest = va_arg(args, char *);
                         size_t copy_size = min((size_t)width, (size_t)len);
+
+                        if (flags & SElVA_PROTO_STRING_FDEFLATE) {
+                            /*
+                             * A compressed string must be captured as a selva_string with %p.
+                             */
+                            return SELVA_EINTYPE;
+                        }
 
                         memcpy(dest, str, copy_size);
                         dest[copy_size] = '\0';
@@ -366,10 +375,9 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                          * `__attribute__((format(scanf...` work with that,
                          * hence we actually expect %p to be used.
                          */
-                        /* TODO support SElVA_PROTO_STRING_FDEFLATE */
                         struct selva_string *s;
 
-                        s = selva_string_create(str, len, 0);
+                        s = selva_string_create(str, len, (flags & SElVA_PROTO_STRING_FDEFLATE) ? SELVA_STRING_COMPRESS : 0);
                         selva_string_auto_finalize(fin, s);
                         *va_arg(args, struct selva_string **) = s;
                     }

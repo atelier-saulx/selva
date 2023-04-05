@@ -4,6 +4,7 @@
  */
 #include <assert.h>
 #include <stddef.h>
+#include <string.h>
 #include "jemalloc.h"
 #include "cdefs.h"
 #include "util/finalizer.h"
@@ -39,9 +40,11 @@ int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize
         i += off;
 
         if (type == SELVA_PROTO_STRING) {
+            typeof_field(struct selva_proto_string, flags) flags;
             struct selva_string *s;
 
-            s = selva_string_create(buf + i - data_len, data_len, 0);
+            memcpy(&flags, buf + i - off + offsetof(struct selva_proto_string, flags), sizeof(flags));
+            s = selva_string_create(buf + i - data_len, data_len, (flags & SElVA_PROTO_STRING_FDEFLATE) ? SELVA_STRING_COMPRESS : 0);
             selva_string_auto_finalize(fin, s);
 
             list_len++;

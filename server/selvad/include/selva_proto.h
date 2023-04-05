@@ -156,7 +156,7 @@ struct selva_proto_string {
     enum selva_proto_data_type type;
     enum {
         SELVA_PROTO_STRING_FBINARY = 0x01, /*!< Expect binary data. */
-        SElVA_PROTO_STRING_FDEFLATE = 0x02, /*!< Compressed with deflate. TODO Not implemented. */
+        SElVA_PROTO_STRING_FDEFLATE = 0x02, /*!< Compressed with deflate. */
     } __attribute__((packed)) flags; /*! String flags. */
     uint8_t _spare[2];
     uint32_t bsize; /*!< Size of data in bytes. */

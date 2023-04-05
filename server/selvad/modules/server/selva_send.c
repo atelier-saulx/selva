@@ -140,10 +140,11 @@ int selva_send_llx(struct selva_server_response_out *resp, long long value)
     return (res < 0) ? (int)res : 0;
 }
 
-int selva_send_str(struct selva_server_response_out *resp, const char *str, size_t len)
+static int selva_send_str_wflags(struct selva_server_response_out *resp, const char *str, size_t len, typeof_field(struct selva_proto_string, flags) flags)
 {
     struct selva_proto_string hdr = {
         .type = SELVA_PROTO_STRING,
+        .flags = flags,
         .bsize = htole32(len),
     };
     ssize_t res;
@@ -154,6 +155,11 @@ int selva_send_str(struct selva_server_response_out *resp, const char *str, size
     }
 
     return (res < 0) ? (int)res : 0;
+}
+
+int selva_send_str(struct selva_server_response_out *resp, const char *str, size_t len)
+{
+    return selva_send_str_wflags(resp, str, len, 0);
 }
 
 int selva_send_strf(struct selva_server_response_out *resp, const char *fmt, ...)
@@ -189,25 +195,14 @@ int selva_send_strf(struct selva_server_response_out *resp, const char *fmt, ...
 int selva_send_string(struct selva_server_response_out *resp, const struct selva_string *s)
 {
     TO_STR(s);
+    typeof_field(struct selva_proto_string, flags) flags = (selva_string_get_flags(s) & SELVA_STRING_COMPRESS) ? SElVA_PROTO_STRING_FDEFLATE : 0;
 
-    return selva_send_str(resp, s_str, s_len);
+    return selva_send_str_wflags(resp, s_str, s_len, flags);
 }
 
 int selva_send_bin(struct selva_server_response_out *resp, const void *b, size_t len)
 {
-    struct selva_proto_string hdr = {
-        .type = SELVA_PROTO_STRING,
-        .flags = SELVA_PROTO_STRING_FBINARY,
-        .bsize = htole32(len),
-    };
-    ssize_t res;
-
-    res = server_send_buf(resp, &hdr, sizeof(hdr), SERVER_SEND_MORE);
-    if (res == sizeof(hdr)) {
-        res = server_send_buf(resp, b, len, 0);
-    }
-
-    return (res < 0) ? (int)res : 0;
+    return selva_send_str_wflags(resp, b, len, SELVA_PROTO_STRING_FBINARY);
 }
 
 int selva_send_array(struct selva_server_response_out *resp, int len)
