@@ -14,6 +14,9 @@
 #define SELVA_REPLICATION_EXPORT(_ret_, _fun_name_, ...) _ret_ (*_fun_name_)(__VA_ARGS__) EVL_COMMON
 #endif
 
+/**
+ * Replication mode.
+ */
 enum replication_mode {
     SELVA_REPLICATION_MODE_NONE = 0,
     SELVA_REPLICATION_MODE_ORIGIN,
@@ -27,6 +30,9 @@ enum replication_mode {
  */
 #define EID_MSB_MASK (~(~(typeof(uint64_t))0 >> 1))
 
+/**
+ * Get the replication mode.
+ */
 SELVA_REPLICATION_EXPORT(enum replication_mode, selva_replication_get_mode, void);
 
 /**
@@ -34,7 +40,17 @@ SELVA_REPLICATION_EXPORT(enum replication_mode, selva_replication_get_mode, void
  */
 SELVA_REPLICATION_EXPORT(void, selva_replication_new_sdb, const char *filename, const uint8_t sdb_hash[SELVA_IO_HASH_SIZE]);
 
+/**
+ * Let the module know that a new dump should be coming.
+ * The new dump is added to the replication ring buffer and marked as
+ * incomplete.
+ * @returns an sdb_eid.
+ */
 SELVA_REPLICATION_EXPORT(uint64_t, selva_replication_incomplete_sdb, const char *filename);
+
+/**
+ * Mark the previously registered incomplete dump sdb_eid as complete.
+ */
 SELVA_REPLICATION_EXPORT(void, selva_replication_complete_sdb, uint64_t sdb_eid, uint8_t sdb_hash[SELVA_IO_HASH_SIZE]);
 
 /**

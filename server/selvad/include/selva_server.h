@@ -55,8 +55,14 @@ SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, enum selva_cmd_mode mode, con
 #define SELVA_MK_COMMAND(nr, mode, cmd) \
     selva_mk_command(nr, mode, #cmd, cmd)
 
+/**
+ * Describe the connection related to this response as a string.
+ */
 SELVA_SERVER_EXPORT(size_t, selva_resp_to_str, struct selva_server_response_out *resp, char *buf, size_t bsize);
 
+/**
+ * Get the command id related to this response.
+ */
 SELVA_SERVER_EXPORT(int, selva_resp_to_cmd_id, struct selva_server_response_out *resp);
 
 /**
@@ -98,21 +104,44 @@ SELVA_SERVER_EXPORT(int, selva_send_null, struct selva_server_response_out *resp
  * @param msg_str can be NULL.
  */
 SELVA_SERVER_EXPORT(int, selva_send_error, struct selva_server_response_out *resp, int err, const char *msg_str, size_t msg_len);
+/**
+ * Send a printf formatted error.
+ */
 SELVA_SERVER_EXPORT(int, selva_send_errorf, struct selva_server_response_out *resp, int err, const char *fmt, ...);
+/**
+ * Send an arity error.
+ */
 SELVA_SERVER_EXPORT(int, selva_send_error_arity, struct selva_server_response_out *resp);
 
-SELVA_SERVER_EXPORT(int, selva_send_double, struct selva_server_response_out *resp, double value);
 /**
- * Send long long.
+ * send a double value.
+ */
+SELVA_SERVER_EXPORT(int, selva_send_double, struct selva_server_response_out *resp, double value);
+
+/**
+ * Send a long long value.
  */
 SELVA_SERVER_EXPORT(int, selva_send_ll, struct selva_server_response_out *resp, long long value);
 /**
  * Send long long and suggest hex print formatting.
  */
 SELVA_SERVER_EXPORT(int, selva_send_llx, struct selva_server_response_out *resp, long long value);
+
+/**
+ * Send a string.
+ */
 SELVA_SERVER_EXPORT(int, selva_send_str, struct selva_server_response_out *resp, const char *str, size_t len);
+/**
+ * Send a printf formatted string.
+ */
 SELVA_SERVER_EXPORT(int, selva_send_strf, struct selva_server_response_out *resp, const char *fmt, ...);
+/**
+ * Send a selva_string.
+ */
 SELVA_SERVER_EXPORT(int, selva_send_string, struct selva_server_response_out *resp, const struct selva_string *s);
+/**
+ * Send a binary buffer.
+ */
 SELVA_SERVER_EXPORT(int, selva_send_bin, struct selva_server_response_out *resp, const void *b, size_t len);
 
 /**
@@ -139,6 +168,9 @@ SELVA_SERVER_EXPORT(int, selva_send_replication_cmd, struct selva_server_respons
  */
 SELVA_SERVER_EXPORT(int, selva_send_replication_sdb, struct selva_server_response_out *resp, uint64_t eid, const char *filename);
 
+/**
+ * Send SDB dump metadata.
+ */
 SELVA_SERVER_EXPORT(int, selva_send_replication_pseudo_sdb, struct selva_server_response_out *resp, uint64_t eid);
 
 /**

@@ -67,6 +67,7 @@ static int handle_last_good_async(void)
     if (!selva_io_last_good_info(hash, &filename)) {
         SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
         /* TODO Should this function also verify the filename? */
+        /* It's safe to call this function even if replication is not enabled. */
         selva_replication_complete_sdb(save_sdb_eid, hash);
         selva_string_free(filename);
         saved = 1;
@@ -77,6 +78,9 @@ static int handle_last_good_async(void)
     return saved;
 }
 
+/**
+ * Translate child exit status into a selva_error and log messages.
+ */
 static int handle_child_status(pid_t pid, int status, const char *name)
 {
     if (WIFEXITED(status)) {
@@ -109,6 +113,11 @@ static int handle_child_status(pid_t pid, int status, const char *name)
     return 0;
 }
 
+/**
+ * Handle registered signals.
+ * A SIGCHLD should mean that either a new dump is ready or the child crashed
+ * while dumping.
+ */
 static void handle_signal(struct event *ev, void *arg __unused)
 {
     struct evl_siginfo esig;
@@ -161,6 +170,11 @@ static void handle_signal(struct event *ev, void *arg __unused)
     }
 }
 
+/**
+ * Setup catching SIGCHLD with the event_loop.
+ * We want to catch SIGCHLD here as we use a child process to make hierarchy
+ * dumps asynchronously. Hopefully no other module will need the same signal.
+ */
 static void setup_sigchld(void)
 {
     sigset_t mask;
@@ -175,6 +189,9 @@ static void setup_sigchld(void)
     }
 }
 
+/**
+ * Load a hierarchy dump from io.
+ */
 static int dump_load(struct selva_io *io)
 {
     struct SelvaHierarchy *tmp_hierarchy = main_hierarchy;
@@ -195,6 +212,9 @@ static int dump_load(struct selva_io *io)
     return err;
 }
 
+/**
+ * Save a hierarchy dump asynchronously in a child process.
+ */
 static int dump_save_async(const char *filename)
 {
     pid_t pid;
@@ -234,6 +254,9 @@ static int dump_save_async(const char *filename)
     return 0;
 }
 
+/**
+ * Save a hierarchy dump synchronously.
+ */
 static int dump_save_sync(const char *filename)
 {
     const enum selva_io_flags flags = SELVA_IO_FLAGS_WRITE;
@@ -259,6 +282,11 @@ static int dump_save_sync(const char *filename)
     return 0;
 }
 
+/**
+ * Trigger async dump periodically.
+ * This function shouldn't be called directly but by a selva timer. The
+ * initializer for periodic dumps is dump_auto_sdb().
+ */
 static void auto_save(struct event *, void *arg)
 {
     struct timespec *ts = (struct timespec *)arg;
@@ -401,8 +429,7 @@ static void save_db_cmd(struct selva_server_response_out *resp, const void *buf,
     }
 
     /*
-     * Response to the command will be sent in handle_last_good_async() once the
-     * dump is ready.
+     * Response to the command will be sent once the dump is ready.
      */
 }
 
@@ -415,10 +442,11 @@ static void dump_on_exit(int code, void *)
         selva_db_dump_state == SELVA_DB_DUMP_IS_CHILD ||
         !selva_db_is_dirty ||
         selva_replication_get_mode() == SELVA_REPLICATION_MODE_REPLICA) {
+        /* A dump shall not be made in several cases. */
         return;
     }
 
-    SELVA_LOG(SELVA_LOGL_INFO, "Dumping before exit...");
+    SELVA_LOG(SELVA_LOGL_INFO, "Dumping the hierarchy before exit...");
     sdb_name(filename, SDB_NAME_MIN_BUF_SIZE, NULL, (uint64_t)ts_monorealtime_now());
 
     err = dump_save_sync(filename);
