@@ -51,6 +51,9 @@ typedef void (*selva_cmd_function)(struct selva_server_response_out *resp, const
  */
 SELVA_SERVER_EXPORT(void, selva_server_set_readonly, void);
 
+/**
+ * Register a command.
+ */
 SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, enum selva_cmd_mode mode, const char *name, selva_cmd_function cmd);
 #define SELVA_MK_COMMAND(nr, mode, cmd) \
     selva_mk_command(nr, mode, #cmd, cmd)
@@ -119,30 +122,59 @@ SELVA_SERVER_EXPORT(int, selva_send_error_arity, struct selva_server_response_ou
 SELVA_SERVER_EXPORT(int, selva_send_double, struct selva_server_response_out *resp, double value);
 
 /**
+ * @addtogroup selva_proto_longlong
+ * Long long values.
+ * @{
+ */
+
+/**
  * Send a long long value.
  */
 SELVA_SERVER_EXPORT(int, selva_send_ll, struct selva_server_response_out *resp, long long value);
+
 /**
  * Send long long and suggest hex print formatting.
  */
 SELVA_SERVER_EXPORT(int, selva_send_llx, struct selva_server_response_out *resp, long long value);
 
 /**
+ * @}
+ */
+
+/**
+ * @addtogroup selva_proto_string
+ * String values.
+ * @{
+ */
+
+/**
  * Send a string.
  */
 SELVA_SERVER_EXPORT(int, selva_send_str, struct selva_server_response_out *resp, const char *str, size_t len);
+
 /**
  * Send a printf formatted string.
  */
 SELVA_SERVER_EXPORT(int, selva_send_strf, struct selva_server_response_out *resp, const char *fmt, ...);
+
 /**
  * Send a selva_string.
  */
 SELVA_SERVER_EXPORT(int, selva_send_string, struct selva_server_response_out *resp, const struct selva_string *s);
+
 /**
  * Send a binary buffer.
  */
 SELVA_SERVER_EXPORT(int, selva_send_bin, struct selva_server_response_out *resp, const void *b, size_t len);
+
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup selva_send_array
+ * Array handling.
+ */
 
 /**
  * Send an array.
@@ -157,6 +189,10 @@ SELVA_SERVER_EXPORT(int, selva_send_array, struct selva_server_response_out *res
  * Call this only if len was set -1.
  */
 SELVA_SERVER_EXPORT(int, selva_send_array_end, struct selva_server_response_out *res);
+
+/**
+ * @}
+ */
 
 /**
  * Send a replication command.
