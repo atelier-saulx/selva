@@ -37,35 +37,44 @@ int selva_db_is_dirty;
 enum selva_db_dump_state selva_db_dump_state;
 static pid_t save_pid;
 static uint64_t save_sdb_eid;
+static struct selva_server_response_out *save_stream_resp;
 
-/* TODO It's not necessary to do any of this if replication is not enabled. */
 static void handle_last_good_sync(void)
 {
-    uint8_t hash[SELVA_IO_HASH_SIZE];
-    struct selva_string *filename;
+    /*
+     * Let mod_replication know about the the new last good dump.
+     */
+    if (selva_replication_get_mode() != SELVA_REPLICATION_MODE_NONE) {
+        uint8_t hash[SELVA_IO_HASH_SIZE];
+        struct selva_string *filename;
 
-    if (!selva_io_last_good_info(hash, &filename)) {
-        SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
-        selva_replication_new_sdb(selva_string_to_str(filename, NULL), hash);
-        selva_string_free(filename);
-    } else {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to read the last good file");
+        if (!selva_io_last_good_info(hash, &filename)) {
+            SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
+            selva_replication_new_sdb(selva_string_to_str(filename, NULL), hash);
+            selva_string_free(filename);
+        } else {
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to read the last good file");
+        }
     }
 }
 
-static void handle_last_good_async(void)
+static int handle_last_good_async(void)
 {
     uint8_t hash[SELVA_IO_HASH_SIZE];
     struct selva_string *filename;
+    int saved = 0;
 
     if (!selva_io_last_good_info(hash, &filename)) {
         SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
         /* TODO Should this function also verify the filename? */
         selva_replication_complete_sdb(save_sdb_eid, hash);
         selva_string_free(filename);
+        saved = 1;
     } else {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to read the last good file");
     }
+
+    return saved;
 }
 
 static int handle_child_status(pid_t pid, int status, const char *name)
@@ -117,18 +126,31 @@ static void handle_signal(struct event *ev, void *arg __unused)
     case SIGCHLD:
         if (waitpid(esig.esi_pid, &status, 0) != -1) {
             if (esig.esi_pid == save_pid) {
-                int err;
+                int err, saved;
 
                 err = handle_child_status(esig.esi_pid, status, "SDB");
                 if (!err) {
                     /* FIXME last_good isn't necessarily the right file. */
-                    handle_last_good_async();
+                    saved = handle_last_good_async();
                     selva_db_is_dirty = 0;
                 }
 
                 selva_db_dump_state = SELVA_DB_DUMP_NONE;
                 save_pid = 0;
                 save_sdb_eid = 0;
+
+                /*
+                 * E.g. auto-save doesn't have a response stream.
+                 */
+                if (save_stream_resp) {
+                    if (err) {
+                        selva_send_errorf(save_stream_resp, err, "Save failed");
+                    } else {
+                        selva_send_ll(save_stream_resp, saved);
+                    }
+                    selva_send_end(save_stream_resp);
+                    save_stream_resp = NULL;
+                }
             } else {
                 (void)handle_child_status(esig.esi_pid, status, "Unknown");
             }
@@ -289,11 +311,10 @@ int dump_auto_sdb(int interval_s)
     int tim;
 
     assert(interval_s > 0);
-    assert(ts.tv_sec == 0); /* Can be only called once. */
+    assert(ts.tv_sec == 0); /* This function should be only called once. */
 
     ts.tv_sec = interval_s;
 
-    /* TODO Add autosave timer */
     tim = evl_set_timeout(&ts, auto_save, &ts);
     if (tim < 0) {
         return tim;
@@ -365,17 +386,24 @@ static void save_db_cmd(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
+    err = selva_start_stream(resp, &save_stream_resp);
+    if (err) {
+        selva_send_errorf(resp, err, "Failed to create a stream");
+        return;
+    }
+
     err = dump_save_async(selva_string_to_str(argv[ARGV_FILENAME], NULL));
     if (err) {
+        selva_cancel_stream(resp, save_stream_resp);
+        save_stream_resp = NULL;
         selva_send_errorf(resp, err, "Save failed");
         return;
     }
 
     /*
-     * TODO async response using a stream.
-     * TODO queue or dedup saves.
+     * Response to the command will be sent in handle_last_good_async() once the
+     * dump is ready.
      */
-    selva_send_ll(resp, 1);
 }
 
 static void dump_on_exit(int code, void *)
