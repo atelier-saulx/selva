@@ -415,15 +415,17 @@ static void save_db_cmd(struct selva_server_response_out *resp, const void *buf,
     }
 
     err = selva_start_stream(resp, &save_stream_resp);
-    if (err) {
+    if (err && err != SELVA_PROTO_ENOTCONN) {
         selva_send_errorf(resp, err, "Failed to create a stream");
         return;
     }
 
     err = dump_save_async(selva_string_to_str(argv[ARGV_FILENAME], NULL));
     if (err) {
-        selva_cancel_stream(resp, save_stream_resp);
-        save_stream_resp = NULL;
+        if (save_stream_resp) {
+            selva_cancel_stream(resp, save_stream_resp);
+            save_stream_resp = NULL;
+        }
         selva_send_errorf(resp, err, "Save failed");
         return;
     }
