@@ -48,13 +48,12 @@ struct compressed_string_header {
     uint32_t uncompressed_size;
 } __packed;
 
-static struct libdeflate_compressor *compressor;
-static struct libdeflate_decompressor *decompressor;
-
 RB_HEAD(selva_string_rbtree, selva_string);
 RB_PROTOTYPE_STATIC(selva_string_rbtree ,selva_string, intern_entry, selva_string_cmp)
 
-static struct selva_string_rbtree intern_head;
+static struct selva_string_rbtree intern_head = RB_INITIALIZER(&intern_head);
+static struct libdeflate_compressor *compressor;
+static struct libdeflate_decompressor *decompressor;
 
 RB_GENERATE_STATIC(selva_string_rbtree, selva_string, intern_entry, selva_string_cmp)
 
@@ -81,7 +80,7 @@ static char *get_comparable_buf(const struct selva_string *s, size_t *buf_len, i
 
     if (s->flags & SELVA_STRING_COMPRESS) {
         buf = selva_malloc(len + 1);
-        selva_string_decompress(s, buf);
+        selva_string_decompress(s, buf); /* RFE Should we return a NULL on error? */
         buf[len] = '\0';
         *must_free = 1;
     } else {
@@ -150,7 +149,7 @@ static struct selva_string *alloc_immutable(size_t len)
     return s;
 }
 
-static void set_string(struct selva_string *s, const char *str, size_t len, enum selva_string_flags flags)
+static struct selva_string *set_string(struct selva_string *s, const char *str, size_t len, enum selva_string_flags flags)
 {
     char *buf;
 
@@ -166,6 +165,7 @@ static void set_string(struct selva_string *s, const char *str, size_t len, enum
     }
 
     update_crc(s);
+    return s;
 }
 
 struct selva_string *selva_string_find_intern(const char *str, size_t len)
@@ -198,18 +198,15 @@ struct selva_string *selva_string_create(const char *str, size_t len, enum selva
     }
 
     if (flags & SELVA_STRING_MUTABLE) {
-        s = alloc_mutable(len);
-        set_string(s, str, len, flags);
+        s = set_string(alloc_mutable(len), str, len, flags);
     } else if (flags & SELVA_STRING_INTERN) {
         s = selva_string_find_intern(str, len);
         if (!s) {
-            s = alloc_immutable(len);
-            set_string(s, str, len, flags);
+            s = set_string(alloc_immutable(len), str, len, flags);
             intern(s);
         }
     } else {
-        s = alloc_immutable(len);
-        set_string(s, str, len, flags);
+        s = set_string(alloc_immutable(len), str, len, flags);
     }
 
     return s;
