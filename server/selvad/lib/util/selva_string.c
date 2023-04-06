@@ -43,10 +43,8 @@ struct selva_string {
 struct compressed_string_header {
     /**
      * Uncompressed size of the string.
-     * If equal or greater than zero then the string is compressed; Otherwise
-     * the string is uncompressed.
      */
-    int32_t uncompressed_size;
+    uint32_t uncompressed_size;
 
     /**
      * Compression ratio.
@@ -272,21 +270,15 @@ struct selva_string *selva_string_createz(const char *in_str, size_t in_len, enu
 
 int selva_string_decompress(const struct selva_string *s, char *buf)
 {
-    struct compressed_string_header hdr;
-    const void *data;
-    size_t data_len;
+    if (s->flags & SELVA_STRING_COMPRESS) {
+        struct compressed_string_header hdr;
+        const void *data;
+        size_t data_len;
 
-    if (!(s->flags & SELVA_STRING_COMPRESS)) {
-        return SELVA_PROTO_EINTYPE;
-    }
+        memcpy(&hdr, get_buf(s), sizeof(hdr));
+        data = get_buf(s) + sizeof(hdr);
+        data_len = s->len - sizeof(hdr);
 
-    memcpy(&hdr, get_buf(s), sizeof(hdr));
-    data = get_buf(s) + sizeof(hdr);
-    data_len = s->len - sizeof(hdr);
-
-    if (hdr.uncompressed_size == -1) {
-        memcpy(buf, data, data_len);
-    } else {
         size_t nbytes_out = 0;
         enum libdeflate_result res;
 
@@ -294,6 +286,8 @@ int selva_string_decompress(const struct selva_string *s, char *buf)
         if (res != 0 || nbytes_out != (size_t)hdr.uncompressed_size) {
             return SELVA_EINVAL;
         }
+    } else {
+        memcpy(buf, get_buf(s), s->len);
     }
 
     return 0;
