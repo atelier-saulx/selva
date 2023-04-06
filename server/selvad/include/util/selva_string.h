@@ -36,7 +36,7 @@ enum selva_string_flags {
     /**
      * Compressed string.
      */
-    SELVA_STRING_COMPRESS = 0x02,
+    SELVA_STRING_COMPRESS = 0x20,
     _SELVA_STRING_LAST_FLAG = 0x40,
 };
 
