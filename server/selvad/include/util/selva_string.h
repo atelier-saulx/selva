@@ -155,7 +155,7 @@ size_t selva_string_getz_ulen(const struct selva_string *s);
 /**
  * Get compression ratio.
  */
-int selva_string_getz_cratio(const struct selva_string *s);
+double selva_string_getz_cratio(const struct selva_string *s);
 
 /**
  * Get a pointer to the contained C-string.

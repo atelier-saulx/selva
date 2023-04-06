@@ -46,11 +46,6 @@ struct compressed_string_header {
      * Uncompressed size of the string.
      */
     uint32_t uncompressed_size;
-
-    /**
-     * Compression ratio.
-     */
-    int32_t cratio;
 } __packed;
 
 static struct libdeflate_compressor *compressor;
@@ -256,7 +251,6 @@ struct selva_string *selva_string_createz(const char *in_str, size_t in_len, enu
         memset(get_buf(s) + s->len, '\0', sizeof(char));
 
         hdr.uncompressed_size = in_len;
-        hdr.cratio = in_len / compressed_size;
         memcpy(get_buf(s), &hdr, sizeof(hdr));
     }
 
@@ -409,13 +403,14 @@ size_t selva_string_getz_ulen(const struct selva_string *s)
     }
 }
 
-int selva_string_getz_cratio(const struct selva_string *s)
+double selva_string_getz_cratio(const struct selva_string *s)
 {
     if (s->flags & SELVA_STRING_COMPRESS) {
         struct compressed_string_header hdr;
 
         memcpy(&hdr, get_buf(s), sizeof(hdr));
-        return hdr.cratio;
+
+        return (double)hdr.uncompressed_size / (double)(s->len - sizeof(hdr));
     } else {
         return 1;
     }
