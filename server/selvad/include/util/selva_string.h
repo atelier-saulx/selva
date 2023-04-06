@@ -236,3 +236,5 @@ void selva_string_set_compress(struct selva_string *s);
  *          > 0 if the first character that does not match has a greater value in ptr1 than in ptr2.
  */
 int selva_string_cmp(const struct selva_string *a, const struct selva_string *b);
+
+ssize_t selva_string_strstr(struct selva_string *s, const char *sub_str, size_t sub_len);

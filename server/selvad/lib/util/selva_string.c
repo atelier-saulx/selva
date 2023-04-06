@@ -2,6 +2,7 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#define _GNU_SOURCE
 #include <errno.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -569,9 +570,62 @@ void selva_string_set_compress(struct selva_string *s)
     s->flags |= SELVA_STRING_COMPRESS;
 }
 
+static char *get_comparable_buf(const struct selva_string *s, size_t *buf_len, int *must_free)
+{
+    size_t len = selva_string_getz_ulen(s);
+    char *buf;
+
+    if (s->flags & SELVA_STRING_COMPRESS) {
+        buf = selva_malloc(len + 1);
+        selva_string_decompress(s, buf);
+        buf[len] = '\0';
+        *must_free = 1;
+    } else {
+        buf = get_buf((struct selva_string *)s);
+        *must_free = 0;
+    }
+
+    if (buf_len) {
+        *buf_len = len;
+    }
+    return buf;
+}
+
 int selva_string_cmp(const struct selva_string *a, const struct selva_string *b)
 {
-    return strcmp(get_buf(a), get_buf(b));
+    int must_free_a, must_free_b;
+    char *a_str = get_comparable_buf(a, NULL, &must_free_a);
+    char *b_str = get_comparable_buf(b, NULL, &must_free_b);
+    int res;
+
+    res = strcmp(a_str, b_str);
+
+    if (must_free_a) {
+        selva_free(a_str);
+    }
+    if (must_free_b) {
+        selva_free(b_str);
+    }
+
+    return res;
+}
+
+ssize_t selva_string_strstr(struct selva_string *s, const char *sub_str, size_t sub_len)
+{
+    int must_free;
+    size_t len;
+    char *str = get_comparable_buf(s, &len, &must_free);
+    char *pos;
+    ssize_t i;
+
+    pos = memmem(str, len, sub_str, sub_len);
+    i = pos ? (ssize_t)(pos - str) : -1;
+
+    if (must_free) {
+        selva_free(str);
+    }
+
+    return i;
 }
 
 __constructor static void init_compressor(void)
