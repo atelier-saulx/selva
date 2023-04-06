@@ -261,26 +261,20 @@ struct selva_string *selva_string_createz(const char *in_str, size_t in_len, enu
     }
 
     s = alloc_immutable(sizeof(struct compressed_string_header) + in_len);
-    s->flags = flags | SELVA_STRING_COMPRESS;
-    compressed_size = libdeflate_deflate_compress(compressor, in_str, in_len, get_buf(s), in_len);
+    compressed_size = libdeflate_deflate_compress(compressor, in_str, in_len, get_buf(s) + sizeof(struct compressed_string_header), in_len);
     if (compressed_size == 0) {
         /*
          * No compression was achieved.
          * Therefore we use the original uncompressed string.
          */
-        char *buf = get_buf(s);
-
-        s->flags ^= SELVA_STRING_COMPRESS;
-
-        memcpy(buf, in_str, in_len);
-        s->len = in_len;
-        buf[s->len] = '\0';
+        set_string(s, in_str, in_len, (flags & ~SELVA_STRING_COMPRESS));
     } else {
         /*
          * The string was compressed.
          */
         struct compressed_string_header hdr;
 
+        s->flags = flags | SELVA_STRING_COMPRESS;
         s->len = sizeof(hdr) + compressed_size;
         memset(get_buf(s) + s->len, '\0', sizeof(char));
 
