@@ -152,16 +152,17 @@ static struct selva_string *alloc_immutable(size_t len)
 
 static void set_string(struct selva_string *s, const char *str, size_t len, enum selva_string_flags flags)
 {
+    char *buf;
+
     s->flags = flags;
     s->len = len;
 
+    buf = get_buf(s);
     if (str && len > 0) {
-        char *buf = get_buf(s);
-
         memcpy(buf, str, len);
         buf[s->len] = '\0';
     } else {
-        memset(get_buf(s), '\0', s->len + 1);
+        memset(buf, '\0', s->len + 1);
     }
 
     update_crc(s);
