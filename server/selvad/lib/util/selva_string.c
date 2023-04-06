@@ -225,14 +225,14 @@ struct selva_string *selva_string_createz(const char *in_str, size_t in_len, enu
 {
     struct selva_string *s;
     size_t compressed_size;
-    struct compressed_string_header hdr;
+    struct selva_string *tmp;
 
     if ((flags & (SELVA_STRING_MUTABLE || SELVA_STRING_INTERN || SELVA_STRING_MUTABLE_FIXED)) ||
         (flags & INVALID_FLAGS_MASK)) {
         return NULL; /* Invalid flags */
     }
 
-    s = alloc_immutable(sizeof(hdr) + in_len);
+    s = alloc_immutable(sizeof(struct compressed_string_header) + in_len);
     s->flags = flags | SELVA_STRING_COMPRESS;
     compressed_size = libdeflate_deflate_compress(compressor, in_str, in_len, get_buf(s), in_len);
     if (compressed_size == 0) {
@@ -242,33 +242,31 @@ struct selva_string *selva_string_createz(const char *in_str, size_t in_len, enu
          */
         char *buf = get_buf(s);
 
-        memcpy(buf + sizeof(hdr), in_str, in_len);
-        s->len = sizeof(hdr) + in_len;
-        buf[s->len] = '\0';
+        s->flags ^= SELVA_STRING_COMPRESS;
 
-        compressed_size = in_len;
-        hdr.uncompressed_size = -1;
+        memcpy(buf, in_str, in_len);
+        s->len = in_len;
+        buf[s->len] = '\0';
     } else {
         /*
          * The string was compressed.
          */
-        struct selva_string *tmp;
+        struct compressed_string_header hdr;
 
         s->len = sizeof(hdr) + compressed_size;
         memset(get_buf(s) + s->len, '\0', sizeof(char));
 
-        tmp = selva_realloc(s, calc_immutable_alloc_size(s->len));
-        if (tmp) {
-            s = tmp;
-        }
-
         hdr.uncompressed_size = in_len;
+        hdr.cratio = in_len / compressed_size;
+        memcpy(get_buf(s), &hdr, sizeof(hdr));
     }
 
-    hdr.cratio = in_len / compressed_size;
-    memcpy(get_buf(s), &hdr, sizeof(hdr));
-    update_crc(s);
+    tmp = selva_realloc(s, calc_immutable_alloc_size(s->len));
+    if (tmp) {
+        s = tmp;
+    }
 
+    update_crc(s);
     return s;
 }
 
