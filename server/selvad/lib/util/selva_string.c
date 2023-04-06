@@ -69,6 +69,33 @@ static inline char *get_buf(const struct selva_string *s)
 #define get_buf(S) SELVA_STRING_QP(char, get_buf, (S))
 
 /**
+ * Get a buffer that can be compared with standard string functions.
+ * If the string s is compressed then it's first decompressed into a temporary
+ * buffer. must_free is set to indicate that the returned buffer must be freed
+ * with selva_free().
+ */
+static char *get_comparable_buf(const struct selva_string *s, size_t *buf_len, int *must_free)
+{
+    size_t len = selva_string_getz_ulen(s);
+    char *buf;
+
+    if (s->flags & SELVA_STRING_COMPRESS) {
+        buf = selva_malloc(len + 1);
+        selva_string_decompress(s, buf);
+        buf[len] = '\0';
+        *must_free = 1;
+    } else {
+        buf = get_buf((struct selva_string *)s);
+        *must_free = 0;
+    }
+
+    if (buf_len) {
+        *buf_len = len;
+    }
+    return buf;
+}
+
+/**
  * Calculate the CRC of a selva_string.
  * @param hdr is the header part of a selva_string i.e. without the actual string.
  */
@@ -563,27 +590,6 @@ int selva_string_verify_crc(struct selva_string *s)
 void selva_string_set_compress(struct selva_string *s)
 {
     s->flags |= SELVA_STRING_COMPRESS;
-}
-
-static char *get_comparable_buf(const struct selva_string *s, size_t *buf_len, int *must_free)
-{
-    size_t len = selva_string_getz_ulen(s);
-    char *buf;
-
-    if (s->flags & SELVA_STRING_COMPRESS) {
-        buf = selva_malloc(len + 1);
-        selva_string_decompress(s, buf);
-        buf[len] = '\0';
-        *must_free = 1;
-    } else {
-        buf = get_buf((struct selva_string *)s);
-        *must_free = 0;
-    }
-
-    if (buf_len) {
-        *buf_len = len;
-    }
-    return buf;
 }
 
 int selva_string_cmp(const struct selva_string *a, const struct selva_string *b)
