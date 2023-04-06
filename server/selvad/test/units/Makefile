@@ -23,7 +23,7 @@ CFLAGS := $(CFLAGS) \
 		   -g3 \
 		   -include ../../tunables.h \
 
-LDFLAGS := -Wl,-rpath,'$$ORIGIN'/../../../lib -L ../../lib -ljemalloc_selva
+LDFLAGS := -Wl,-rpath,'$$ORIGIN'/../../../lib -L ../../lib -ljemalloc_selva -ldeflate
 
 #export LD_LIBRARY_PATH=`echo $LD_LIBRARY_PATH`:$(LIBDIR)
 
