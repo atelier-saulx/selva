@@ -53,6 +53,24 @@ static char * test_createf(void)
     return NULL;
 }
 
+static char * test_createz(void)
+{
+    static char uncompressed[1048576];
+    struct selva_string *s1;
+    struct selva_string *s2;
+
+    memset(uncompressed, 'u', sizeof(uncompressed));
+
+    s1 = selva_string_create(uncompressed, sizeof(uncompressed), 0);
+    s2 = selva_string_createz(uncompressed, sizeof(uncompressed), 0);
+
+    pu_assert_equal("compressed flag is set", selva_string_get_flags(s2), SELVA_STRING_COMPRESS);
+    pu_assert("cratio looks good", selva_string_getz_cratio(s2) > 1);
+    pu_assert_equal("cmp", selva_string_cmp(s1, s2), 0);
+
+    return NULL;
+}
+
 static char * test_dup(void)
 {
     struct selva_string *s1;
@@ -183,6 +201,7 @@ void all_tests(void)
 {
     pu_def_test(test_create, PU_RUN);
     pu_def_test(test_createf, PU_RUN);
+    pu_def_test(test_createz, PU_RUN);
     pu_def_test(test_dup, PU_RUN);
     pu_def_test(test_truncate, PU_RUN);
     pu_def_test(test_append, PU_RUN);

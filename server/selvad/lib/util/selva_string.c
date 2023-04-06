@@ -270,13 +270,14 @@ struct selva_string *selva_string_createz(const char *in_str, size_t in_len, enu
          * The string was compressed.
          */
         struct compressed_string_header hdr;
+        char *buf = get_buf(s);
 
         s->flags = flags | SELVA_STRING_COMPRESS;
         s->len = sizeof(hdr) + compressed_size;
-        memset(get_buf(s) + s->len, '\0', sizeof(char));
+        memset(buf + s->len, '\0', sizeof(char));
 
         hdr.uncompressed_size = in_len;
-        memcpy(get_buf(s), &hdr, sizeof(hdr));
+        memcpy(buf, &hdr, sizeof(hdr));
     }
 
     tmp = selva_realloc(s, calc_immutable_alloc_size(s->len));
