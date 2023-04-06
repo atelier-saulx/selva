@@ -126,6 +126,9 @@ static struct selva_string *alloc_mutable(size_t len)
     return s;
 }
 
+/**
+ * Calculate the buffer size needed for an immuatable selva_string.
+ */
 static size_t calc_immutable_alloc_size(size_t len)
 {
     const size_t emb_size = sizeof_field(struct selva_string, emb);
@@ -134,6 +137,9 @@ static size_t calc_immutable_alloc_size(size_t len)
     return sizeof(struct selva_string) + add;
 }
 
+/**
+ * Allocate an immutable selva_string.
+ */
 static struct selva_string *alloc_immutable(size_t len)
 {
     struct selva_string *s;

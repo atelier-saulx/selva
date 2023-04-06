@@ -149,6 +149,8 @@ enum selva_string_flags selva_string_get_flags(const struct selva_string *s);
 
 /**
  * Get uncompressed length.
+ * The function will return the right size regardless whether the string is
+ * actually compressed.
  */
 size_t selva_string_getz_ulen(const struct selva_string *s);
 
@@ -159,6 +161,8 @@ double selva_string_getz_cratio(const struct selva_string *s);
 
 /**
  * Get a pointer to the contained C-string.
+ * If the string is compressed then the compressed string is returned.
+ * selva_string_decompress() can be used to retrieve the original string.
  * @param s is a pointer to a selva_string.
  * @param[out] len is a pointer to a variable to store the length of s.
  * @retruns Returns a pointer to the C-string.
@@ -210,25 +214,32 @@ void selva_string_freeze(struct selva_string *s);
 /**
  * Enable CRC checking for the strings s.
  * This function can be called even if the string is immutable.
+ * If the string is compressed the CRC is computed from the compressed data.
  * @param s is a pointer to a selva_string.
  */
 void selva_string_en_crc(struct selva_string *s);
 
 /**
  * Verify the CRC of the string s.
+ * If the string is compressed the CRC is computed from the compressed data.
  * @param s is a pointer to a selva_string.
  */
 int selva_string_verify_crc(struct selva_string *s);
 
 /**
  * Set SELVA_STRING_COMPRESS flag on an existing string.
- * Setting the flag wont compress the string but mark it as compressed;
- * i.e. a metadata update.
+ * Setting the flag won't compress the string but mark it as compressed;
+ * i.e. it's only a metadata update.
+ * This function should be used if you know that you have a selva_string
+ * that has been marked as uncompressed but it actually contains data that
+ * the selva_string compression utility will recognize properly. Usually
+ * meaning that the data was originally compressed using selva_string.
  */
 void selva_string_set_compress(struct selva_string *s);
 
 /**
  * Compare two strings.
+ * This function works correctly with compressed strings.
  * @param a is a pointer to the first string to be compared.
  * @param b is a pointer to the second strings to be compared.
  * @returns < 0 if the first character that does not match has a lower value in ptr1 than in ptr2;
@@ -237,4 +248,8 @@ void selva_string_set_compress(struct selva_string *s);
  */
 int selva_string_cmp(const struct selva_string *a, const struct selva_string *b);
 
+/**
+ * Find a substring sub_str in s.
+ * This function works correctly with compressed strings.
+ */
 ssize_t selva_string_strstr(struct selva_string *s, const char *sub_str, size_t sub_len);
