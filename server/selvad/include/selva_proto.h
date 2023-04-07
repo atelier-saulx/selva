@@ -4,7 +4,12 @@
  */
 #pragma once
 
-#define SELVA_PROTO_FRAME_SIZE_MAX 4096
+/**
+ * Maximum frame size including selva_proto_header.
+ * This should probably be a multiple of 1460 bytes
+ * for optimal network utilization.
+ */
+#define SELVA_PROTO_FRAME_SIZE_MAX 5840
 #define SELVA_PROTO_MSG_SIZE_MAX   1073741824
 
 struct finalizer;
