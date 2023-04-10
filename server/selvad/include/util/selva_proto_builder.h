@@ -10,6 +10,11 @@ struct selva_proto_builder_msg {
     uint8_t *buf;
 };
 
+/**
+ * Initialize a proto message builder struct.
+ * This function allocates msg->buf in a way that it can be freed with either
+ * using selva_proto_builder_deinit() or optionally with selva_free().
+ */
 void selva_proto_builder_init(struct selva_proto_builder_msg *msg);
 void selva_proto_builder_end(struct selva_proto_builder_msg *msg);
 void selva_proto_builder_deinit(struct selva_proto_builder_msg *msg);

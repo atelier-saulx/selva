@@ -1524,14 +1524,27 @@ static void replicate_modify(struct selva_server_response_out *resp, const struc
     }
 
     selva_proto_builder_end(&msg);
-    selva_replication_replicate_pass(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), msg.buf, msg.bsize);
     /*
-     * Deinit can be omitted because selva_replication_replicate_pass() will
-     * free the buffer.
+     * The size here is a bit arbitrary. 512 is probably compressible already
+     * but 1412 would be closer to the minimum frame that will be sent anyway.
      */
-#if 0
-    selva_proto_builder_deinit(&msg);
-#endif
+    if (msg.bsize > 512) {
+        /*
+         * This will add some malloc overhead but hopefully we'll be able to
+         * compress the message a little bit.
+         */
+        selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), msg.buf, msg.bsize);
+        selva_proto_builder_deinit(&msg);
+    } else {
+        /*
+         * Just pass the ownership of the buffer.
+         */
+        selva_replication_replicate_pass(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), msg.buf, msg.bsize);
+        /*
+         * Deinit can be omitted because selva_replication_replicate_pass() will
+         * free the buffer.
+         */
+    }
 }
 
 /*

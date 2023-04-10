@@ -425,6 +425,9 @@ static enum repl_proto_state handle_recv_cmd(void)
         sv.recv_next_frame = 1;
         /* keep the state untouched */
     } else {
+#if 0
+            SELVA_LOG(SELVA_LOGL_DBG, "Compressed cmd: %d", sv.cmd_compress);
+#endif
         if (sv.cmd_compress) {
             struct selva_string *s = selva_string_create((const char *)sv.msg_buf, sv.cmd_size, SELVA_STRING_COMPRESS);
             size_t new_len = selva_string_getz_ulen(s);
