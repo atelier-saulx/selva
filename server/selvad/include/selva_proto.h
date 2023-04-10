@@ -200,8 +200,11 @@ struct selva_proto_replication_cmd {
      * Type must be SELVA_PROTO_REPLICATION_CMD.
      */
     enum selva_proto_data_type type;
+    enum {
+        SElVA_PROTO_REPLICATION_CMD_FDEFLATE = 0x02, /*!< Compressed with deflate. */
+    } __attribute__((packed)) flags; /*! String flags. */
+    uint8_t _spare[5];
     int8_t cmd; /*!< Command identifier. */
-    uint8_t _spare[6];
     uint64_t eid; /*!< Element id of this message. */
     int64_t ts; /*!< Original command timestamp. */
     uint64_t bsize; /*!< Size of data in bytes. */
@@ -300,7 +303,7 @@ int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_ou
 /**
  * parse selva_proto_replication.
  */
-int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, uint64_t *eid, int64_t *ts, int8_t *cmd_id, size_t *data_size);
+int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, uint64_t *eid, int64_t *ts, int8_t *cmd_id, int *compressed, size_t *data_size);
 
 int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, uint64_t *eid, size_t *data_size);
 

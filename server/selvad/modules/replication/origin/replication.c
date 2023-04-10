@@ -266,10 +266,10 @@ static ring_buffer_eid_t next_eid(void)
 
 void replication_origin_replicate(int64_t ts, int8_t cmd, const void *buf, size_t buf_size)
 {
-    void *p = selva_malloc(buf_size);
+    struct selva_string *p = selva_string_createz(buf, buf_size, 0);
 
-    memcpy(p, buf, buf_size);
-    insert(next_eid(), ts, cmd, p, buf_size);
+    /* We mark it to be a selva_string by settings the size to 0. */
+    insert(next_eid(), ts, cmd, p, 0);
 }
 
 void replication_origin_replicate_pass(int64_t ts, int8_t cmd, void *buf, size_t buf_size)

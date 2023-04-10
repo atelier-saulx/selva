@@ -84,6 +84,7 @@ struct replica_state {
             int64_t cmd_ts; /*!< Time stamp when the origin executed this command. */
             size_t cmd_size; /*!< Size of the incoming command in bytes. */
             int8_t cmd_id; /*!< Used if replicating a command. */
+            int8_t cmd_compress;
         };
         struct {
             uint64_t incoming_sdb_eid; /*!< We are currently receiving this SDB. */
@@ -351,13 +352,14 @@ static enum repl_proto_state parse_replication_header(void)
          * of a message we are following in the stream using sv.state.
          */
         sv.cur_payload_size -= sizeof(struct selva_proto_replication_cmd);
-        int err;
+        int err, cmd_compress;
 
-        err = selva_proto_parse_replication_cmd(sv.msg_buf, sizeof(struct selva_proto_replication_cmd), 0, &sv.incoming_cmd_eid, &sv.cmd_ts, &sv.cmd_id, &sv.cmd_size);
+        err = selva_proto_parse_replication_cmd(sv.msg_buf, sizeof(struct selva_proto_replication_cmd), 0, &sv.incoming_cmd_eid, &sv.cmd_ts, &sv.cmd_id, &cmd_compress, &sv.cmd_size);
         if (err) {
             SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse the replication header: %s", selva_strerror(err));
             return REPL_PROTO_STATE_ERR;
         }
+        sv.cmd_compress = cmd_compress;
 
         uint8_t *p = sv.msg_buf + sv.msg_buf_i;
         memmove(p, p + sizeof(struct selva_proto_replication_cmd), sv.cur_payload_size);
@@ -387,13 +389,13 @@ static enum repl_proto_state parse_replication_header(void)
         size_t msg_len;
 
         err = selva_proto_parse_error(sv.msg_buf, sizeof(sv.msg_buf), 0, &origin_err, &msg_str, &msg_len);
-        if (!err) {
+        if (err) {
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse incoming error: %s", selva_strerror(err));
+        } else {
             SELVA_LOG(SELVA_LOGL_ERR, "Origin error: (%s) msg: \"%.*s\"", selva_strerror(origin_err), (int)msg_len, msg_str);
             if (origin_err == SELVA_ENOENT) {
                 partial_sync_fail = 1;
             }
-        } else {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse incoming error: %s", selva_strerror(err));
         }
         return REPL_PROTO_STATE_ERR;
     }
@@ -407,7 +409,10 @@ static enum repl_proto_state handle_recv_cmd(void)
 {
     sv.msg_buf_i += sv.cur_payload_size;
 
-    if (sv.cmd_size > sv.msg_buf_i) {
+    if (sv.msg_buf_i < sv.cmd_size) {
+        /*
+         * Continue receiving.
+         */
         if (sv.cur_hdr.flags & SELVA_PROTO_HDR_FLAST && sv.msg_buf_i < sv.cmd_size) {
             /*
              * Replication command not fully read and the stream was terminated abruptly.
@@ -419,6 +424,30 @@ static enum repl_proto_state handle_recv_cmd(void)
         /* Still missing frame(s) for this command. */
         sv.recv_next_frame = 1;
         /* keep the state untouched */
+    } else {
+        if (sv.cmd_compress) {
+            struct selva_string *s = selva_string_create((const char *)sv.msg_buf, sv.cmd_size, SELVA_STRING_COMPRESS);
+            size_t new_len = selva_string_getz_ulen(s);
+
+            if (new_len >= sizeof(sv.msg_buf)) {
+                SELVA_LOG(SELVA_LOGL_ERR, "Replicated cmd too big");
+                selva_string_free(s);
+                return REPL_PROTO_STATE_ERR;
+            }
+
+#if 0
+            SELVA_LOG(SELVA_LOGL_DBG, "Decompressing cmd");
+#endif
+
+            selva_string_decompress(s, (char *)sv.msg_buf);
+            selva_string_free(s);
+            sv.cmd_size = new_len;
+        } else {
+            if (sv.msg_buf_i != sv.cmd_size) {
+                SELVA_LOG(SELVA_LOGL_ERR, "Invalid replication payload size. received: %zu expected: %zu", sv.msg_buf_i, sv.cmd_size);
+                return REPL_PROTO_STATE_ERR;
+            }
+        }
     }
 
     return REPL_PROTO_STATE_EXEC_CMD;
@@ -448,10 +477,17 @@ static enum repl_proto_state handle_recv_sdb(int fd)
 retry:
     recv_res = tcp_recv(fd, sv.msg_buf, size, 0);
     if (recv_res != (ssize_t)size) {
-        if (recv_res == - 1) {
-            if (!recv_error()) {
+        if (recv_res == -1) {
+            int recv_err = recv_error();
+
+            if (recv_err) {
+                SELVA_LOG(SELVA_LOGL_ERR, "recv error: %s", selva_strerror(recv_err));
+            } else {
                 goto retry;
             }
+        } else {
+            SELVA_LOG(SELVA_LOGL_ERR, "Invalid message size returned by tcp_recv. act: %zu exp: %zu",
+                      (ssize_t)size, recv_res);
         }
 
         return REPL_PROTO_STATE_ERR;
@@ -484,6 +520,7 @@ static enum repl_proto_state handle_exec_sdb(void)
 
     err = selva_server_run_cmd(CMD_ID_LOAD, 0, buf, sizeof(buf));
     if (err) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to load SDB sent by the origin: %s", selva_strerror(err));
         return REPL_PROTO_STATE_ERR;
     }
 
@@ -533,16 +570,13 @@ static void on_data(struct event *event, void *arg __unused)
             }
             continue;
         case REPL_PROTO_STATE_EXEC_CMD:
-            if (sv.msg_buf_i != sv.cmd_size) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Invalid replication payload size. received: %zu expected: %zu", sv.msg_buf_i, sv.cmd_size);
-                sv.state = REPL_PROTO_STATE_ERR;
-                continue;
-            }
-
 #if 0
             SELVA_LOG(SELVA_LOGL_INFO, "Replicating cmd: %d\n", sv.cmd_id);
 #endif
             err = selva_server_run_cmd(sv.cmd_id, sv.cmd_ts, sv.msg_buf, sv.cmd_size);
+            if (err) {
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to replicate a command: %s", selva_strerror(err));
+            }
 
             sv.last_cmd_eid = sv.incoming_cmd_eid;
             sv.incoming_cmd_eid = 0;

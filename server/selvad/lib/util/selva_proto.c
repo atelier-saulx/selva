@@ -234,7 +234,7 @@ int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_ou
     return 0;
 }
 
-int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, uint64_t *eid, int64_t *ts, int8_t *cmd_id, size_t *data_size)
+int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, uint64_t *eid, int64_t *ts, int8_t *cmd_id, int *compressed, size_t *data_size)
 {
     size_t val_size = bsize - i;
     struct selva_proto_replication_cmd hdr;
@@ -251,6 +251,7 @@ int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, u
     *eid = le64toh(hdr.eid);
     *ts = le64toh(hdr.ts);
     *cmd_id = hdr.cmd;
+    *compressed = !!(hdr.flags & SElVA_PROTO_REPLICATION_CMD_FDEFLATE);
     *data_size = le64toh(hdr.bsize);
     return 0;
 }

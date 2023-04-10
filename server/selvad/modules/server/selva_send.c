@@ -25,6 +25,22 @@
 #define O_NOATIME 00
 #endif
 
+static int send_hdr_and_payload(
+        struct selva_server_response_out *resp,
+        const void *hdr_buf, size_t hdr_size,
+        const void *p_buf, size_t p_size)
+{
+    const int more = p_size > 0;
+    ssize_t res;
+
+    res = server_send_buf(resp, hdr_buf, hdr_size, more ? SERVER_SEND_MORE : 0);
+    if (res == (ssize_t)hdr_size && more) {
+        res = server_send_buf(resp, p_buf, p_size, 0);
+    }
+
+    return (res < 0) ? (int)res : 0;
+}
+
 int selva_send_flush(struct selva_server_response_out *restrict resp)
 {
     if (!resp->ctx) {
@@ -53,16 +69,10 @@ int selva_send_error(struct selva_server_response_out *resp, int err, const char
         .err_code = htole16(err),
         .bsize = htole16(msg_len),
     };
-    int res;
 
     resp->last_error = err;
 
-    res = server_send_buf(resp, &hdr, sizeof(hdr), SERVER_SEND_MORE);
-    if (res == sizeof(hdr) && msg_len > 0) {
-        res = server_send_buf(resp, msg_str, msg_len, 0);
-    }
-
-    return (res < 0) ? (int)res : 0;
+    return send_hdr_and_payload(resp, &hdr, sizeof(hdr), msg_str, msg_len);
 }
 
 int selva_send_errorf(struct selva_server_response_out *resp, int err, const char *fmt, ...)
@@ -147,14 +157,8 @@ static int selva_send_str_wflags(struct selva_server_response_out *resp, const c
         .flags = flags,
         .bsize = htole32(len),
     };
-    ssize_t res;
 
-    res = server_send_buf(resp, &hdr, sizeof(hdr), SERVER_SEND_MORE);
-    if (res == sizeof(hdr)) {
-        res = server_send_buf(resp, str, len, 0);
-    }
-
-    return (res < 0) ? (int)res : 0;
+    return send_hdr_and_payload(resp, &hdr, sizeof(hdr), str, len);
 }
 
 int selva_send_str(struct selva_server_response_out *resp, const char *str, size_t len)
@@ -237,19 +241,30 @@ int selva_send_replication_cmd(struct selva_server_response_out *resp, uint64_t 
 {
     struct selva_proto_replication_cmd buf = {
         .type = SELVA_PROTO_REPLICATION_CMD,
+        .flags = 0,
         .cmd = cmd,
         .eid = htole64(eid),
         .ts = htole64(ts),
         .bsize = htole64(bsize),
     };
-    ssize_t res;
 
-    res = server_send_buf(resp, &buf, sizeof(buf), SERVER_SEND_MORE);
-    if (res < 0) {
-        return (int)res;
-    }
-    res = server_send_buf(resp, data, bsize, 0);
-    return (res < 0) ? (int)res : 0;
+    return send_hdr_and_payload(resp, &buf, sizeof(buf), data, bsize);
+}
+
+int selva_send_replication_cmd_s(struct selva_server_response_out *resp, uint64_t eid, int64_t ts, int8_t cmd, const struct selva_string *s)
+{
+    size_t bsize;
+    const char *data = selva_string_to_str(s, &bsize);
+    struct selva_proto_replication_cmd buf = {
+        .type = SELVA_PROTO_REPLICATION_CMD,
+        .flags = (selva_string_get_flags(s) & SELVA_STRING_COMPRESS) ? SElVA_PROTO_REPLICATION_CMD_FDEFLATE : 0,
+        .cmd = cmd,
+        .eid = htole64(eid),
+        .ts = htole64(ts),
+        .bsize = htole64(bsize),
+    };
+
+    return send_hdr_and_payload(resp, &buf, sizeof(buf), data, bsize);
 }
 
 int selva_send_replication_sdb(struct selva_server_response_out *resp, uint64_t eid, const char *filename)
