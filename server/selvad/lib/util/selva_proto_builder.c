@@ -64,11 +64,6 @@ void selva_proto_builder_end(struct selva_proto_builder_msg *msg)
     }
 }
 
-void selva_proto_builder_deinit(struct selva_proto_builder_msg *msg)
-{
-    selva_free(msg->buf);
-}
-
 void selva_proto_builder_insert_null(struct selva_proto_builder_msg *msg)
 {
     struct selva_proto_null hdr = {

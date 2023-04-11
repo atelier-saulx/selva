@@ -16,8 +16,21 @@ struct selva_proto_builder_msg {
  * using selva_proto_builder_deinit() or optionally with selva_free().
  */
 void selva_proto_builder_init(struct selva_proto_builder_msg *msg);
+
+/**
+ * Deinitialize a message buffer.
+ */
+static inline void selva_proto_builder_deinit(struct selva_proto_builder_msg *msg)
+{
+    void selva_free(void *); /* YOLO */
+    selva_free(msg->buf);
+}
+
+/**
+ * Finalize a message buffer for sending.
+ */
 void selva_proto_builder_end(struct selva_proto_builder_msg *msg);
-void selva_proto_builder_deinit(struct selva_proto_builder_msg *msg);
+
 void selva_proto_builder_insert_null(struct selva_proto_builder_msg *msg);
 void selva_proto_builder_insert_double(struct selva_proto_builder_msg *msg, double v);
 void selva_proto_builder_insert_longlong(struct selva_proto_builder_msg *msg, long long v);
