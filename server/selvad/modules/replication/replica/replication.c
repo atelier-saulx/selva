@@ -597,7 +597,7 @@ state_err:
         case REPL_PROTO_STATE_ERR:
             SELVA_LOG(SELVA_LOGL_WARN, "Closing connection to origin");
             evl_end_fd(fd);
-            __attribute__((fallthrough));
+            [[fallthrough]];
         case REPL_PROTO_STATE_FIN:
             if (sv.sdb_file) {
                 fclose(sv.sdb_file);

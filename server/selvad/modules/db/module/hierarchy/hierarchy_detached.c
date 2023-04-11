@@ -166,7 +166,7 @@ void *SelvaHierarchyDetached_Store(
             break;
         }
         SELVA_LOG(SELVA_LOGL_WARN, "Fallback to inmem compression");
-        __attribute__((fallthrough));
+        [[fallthrough]];
     case SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM:
     default:
         p = PTAG(compressed, SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM);

@@ -2301,7 +2301,7 @@ int SelvaObject_ReplyWithObjectStr(
                 break;
             case SELVA_OBJECT_POINTER: /* ptr opts not supported. */
                 k.ptr_opts = &default_ptr_opts;
-                __attribute__((fallthrough));
+                [[fallthrough]];
             case SELVA_OBJECT_STRING:
             case SELVA_OBJECT_OBJECT:
             case SELVA_OBJECT_SET:
