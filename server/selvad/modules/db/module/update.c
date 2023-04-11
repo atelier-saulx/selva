@@ -53,6 +53,11 @@ struct update_node_cb {
     struct update_op *update_ops;
 };
 
+static int (*update_op_fn[256])(
+        SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op);
+
 SELVA_TRACE_HANDLE(cmd_update_bfs_expression);
 SELVA_TRACE_HANDLE(cmd_update_refs);
 SELVA_TRACE_HANDLE(cmd_update_rest);
@@ -148,138 +153,208 @@ static int parse_update_ops(struct finalizer *fin, struct selva_string **argv, i
     return (int)nr_update_ops;
 }
 
-static enum selva_op_repl_state update_op(
-        struct selva_server_response_out *resp,
+/**
+ * Operation not supported or invalid.
+ */
+static int op_notsup(
+        SelvaHierarchy *,
+        struct SelvaHierarchyNode *,
+        const struct update_op *)
+{
+    /* TODO Signal the error somehow? */
+    return SELVA_OP_REPL_STATE_UNCHANGED;
+}
+
+static int op_increment_longlong(
+        SelvaHierarchy *,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op)
+{
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    const struct SelvaModify_OpIncrement *incrementOpts = &op->increment_opts_int64;
+    int err;
+
+    err = SelvaObject_IncrementLongLong(obj, op->field, incrementOpts->$default, incrementOpts->$increment, NULL);
+    return (err) ? SELVA_OP_REPL_STATE_UNCHANGED : SELVA_OP_REPL_STATE_UPDATED;
+}
+
+static int op_increment_double(
+        SelvaHierarchy *,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op)
+{
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    const struct SelvaModify_OpIncrementDouble *incrementOpts = &op->increment_opts_double;
+    int err;
+
+    err = SelvaObject_IncrementDouble(obj, op->field, incrementOpts->$default, incrementOpts->$increment, NULL);
+    return (err) ? SELVA_OP_REPL_STATE_UNCHANGED : SELVA_OP_REPL_STATE_UPDATED;
+}
+
+static int op_default_longlong(
+        SelvaHierarchy *,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op)
+{
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    long long ll = op->ll;
+    int err;
+
+    err = SelvaObject_SetLongLongDefault(obj, op->field, ll);
+    return (err) ? SELVA_OP_REPL_STATE_UNCHANGED : SELVA_OP_REPL_STATE_UPDATED;
+}
+
+static int op_longlong(
+        SelvaHierarchy *,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op)
+{
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    long long ll = op->ll;
+    int err;
+
+    err = SelvaObject_UpdateLongLong(obj, op->field, ll);
+    return (err) ? SELVA_OP_REPL_STATE_UNCHANGED : SELVA_OP_REPL_STATE_UPDATED;
+}
+
+static int op_default_double(
+        SelvaHierarchy *,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op)
+{
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    double d = op->d;
+    int err;
+
+    err = SelvaObject_SetDoubleDefault(obj, op->field, d);
+    return (err) ? SELVA_OP_REPL_STATE_UNCHANGED : SELVA_OP_REPL_STATE_UPDATED;
+    if (err) {
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+}
+
+static int op_double(
+        SelvaHierarchy *,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op)
+{
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    double d = op->d;
+    int err;
+
+    err = SelvaObject_UpdateDouble(obj, op->field, d);
+    return (err) ? SELVA_OP_REPL_STATE_UNCHANGED : SELVA_OP_REPL_STATE_UPDATED;
+}
+
+static int op_set(
         SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
-        const struct update_op *op) {
-    const char type_code = op->type_code;
+        const struct update_op *op)
+{
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    Selva_NodeId node_id;
+    int err;
+
+    SelvaHierarchy_GetNodeId(node_id, node);
+
+    err = SelvaModify_ModifySet(hierarchy, node_id, node, obj, op->field, op->set_opts);
+    return (err) ? SELVA_OP_REPL_STATE_UNCHANGED : SELVA_OP_REPL_STATE_UPDATED;
+}
+
+static int op_string(
+        SelvaHierarchy *,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op)
+{
     struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
     struct selva_string *field = op->field;
-    TO_STR(field);
+    size_t field_len;
+    const char *field_str = selva_string_to_str(field, &field_len);
+    const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
+    struct selva_string *value = op->value;
+    size_t value_len;
+    const char *value_str = selva_string_to_str(value, &value_len);
+    struct selva_string *old_value;
 
-    if (!selva_field_prot_check(field, (type_code == SELVA_MODIFY_ARG_OP_DEL) ? SELVA_FIELD_PROT_DEL : SELVA_FIELD_PROT_WRITE)) {
+    if (op->type_code == SELVA_MODIFY_ARG_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
         return SELVA_OP_REPL_STATE_UNCHANGED;
     }
 
-    if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT) {
-        const struct SelvaModify_OpIncrement *incrementOpts = &op->increment_opts_int64;
-        int err;
+    if (old_type == SELVA_OBJECT_STRING && !SelvaObject_GetString(obj, field, &old_value)) {
+        TO_STR(old_value);
 
-        err = SelvaObject_IncrementLongLong(obj, field, incrementOpts->$default, incrementOpts->$increment, NULL);
-        if (err) {
+        if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
-    } else if (type_code == SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE) {
-        const struct SelvaModify_OpIncrementDouble *incrementOpts = &op->increment_opts_double;
+    }
+
+    if (SELVA_IS_TYPE_FIELD(field_str, field_len)) {
+        struct selva_string *shared;
         int err;
 
-        err = SelvaObject_IncrementDouble(obj, field, incrementOpts->$default, incrementOpts->$increment, NULL);
-        if (err) {
-            return SELVA_OP_REPL_STATE_UNCHANGED;
-        }
-    } else if (type_code == SELVA_MODIFY_ARG_OP_SET) {
-        Selva_NodeId node_id;
-        int err;
-
-        SelvaHierarchy_GetNodeId(node_id, node);
-
-        err = SelvaModify_ModifySet(hierarchy, node_id, node, obj, field, op->set_opts);
-        if (err <= 0) {
-            return SELVA_OP_REPL_STATE_UNCHANGED;
-        }
-    } else if (type_code == SELVA_MODIFY_ARG_OP_DEL) {
-        int err;
-
-        err = SelvaModify_ModifyDel(hierarchy, node, obj, field);
-        if (err) {
-            return SELVA_OP_REPL_STATE_UNCHANGED;
-        }
-    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING ||
-               type_code == SELVA_MODIFY_ARG_STRING) {
-        const enum SelvaObjectType old_type = SelvaObject_GetTypeStr(obj, field_str, field_len);
-        struct selva_string *value = op->value;
-        size_t value_len;
-        const char *value_str = selva_string_to_str(value, &value_len);
-        struct selva_string *old_value;
-
-        if (type_code == SELVA_MODIFY_ARG_DEFAULT_STRING && old_type != SELVA_OBJECT_NULL) {
-            return SELVA_OP_REPL_STATE_UNCHANGED;
-        }
-
-        if (old_type == SELVA_OBJECT_STRING && !SelvaObject_GetString(obj, field, &old_value)) {
-            TO_STR(old_value);
-
-            if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
-                return SELVA_OP_REPL_STATE_UNCHANGED;
-            }
-        }
-
-        if (SELVA_IS_TYPE_FIELD(field_str, field_len)) {
-            struct selva_string *shared;
-            int err;
-
-            shared = selva_string_create(value_str, value_len, SELVA_STRING_INTERN);
-            err = SelvaObject_SetString(obj, field, shared);
-            if (err) {
-                return SELVA_OP_REPL_STATE_UNCHANGED;
-            }
-        } else {
-            int err;
-
-            /* FIXME Do we really need to dup here? */
-            err = SelvaObject_SetString(obj, field, selva_string_dup(value, 0));
-            if (err) {
-                return SELVA_OP_REPL_STATE_UNCHANGED;
-            }
-        }
-    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_LONGLONG) {
-        long long ll = op->ll;
-        int err;
-
-        err = SelvaObject_SetLongLongDefault(obj, field, ll);
-        if (err) {
-            return SELVA_OP_REPL_STATE_UNCHANGED;
-        }
-    } else if (type_code == SELVA_MODIFY_ARG_LONGLONG) {
-        long long ll = op->ll;
-        int err;
-
-        err = SelvaObject_UpdateLongLong(obj, field, ll);
-        if (err) {
-            return SELVA_OP_REPL_STATE_UNCHANGED;
-        }
-    } else if (type_code == SELVA_MODIFY_ARG_DEFAULT_DOUBLE) {
-        double d = op->d;
-        int err;
-
-        err = SelvaObject_SetDoubleDefault(obj, field, d);
-        if (err) {
-            return SELVA_OP_REPL_STATE_UNCHANGED;
-        }
-    } else if (type_code == SELVA_MODIFY_ARG_DOUBLE) {
-        double d = op->d;
-        int err;
-
-        err = SelvaObject_UpdateDouble(obj, field, d);
-        if (err) {
-            return SELVA_OP_REPL_STATE_UNCHANGED;
-        }
-    } else if (type_code == SELVA_MODIFY_ARG_OP_OBJ_META) {
-        return SelvaModify_ModifyMetadata(resp, obj, field, op->value);
-    } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_REMOVE) {
-        int err;
-
-        err = SelvaObject_RemoveArrayIndexStr(obj, field_str, field_len, op->u32);
+        shared = selva_string_create(value_str, value_len, SELVA_STRING_INTERN);
+        err = SelvaObject_SetString(obj, field, shared);
         if (err) {
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     } else {
-        /* TODO Invalid type. */
-        return SELVA_OP_REPL_STATE_UNCHANGED;
+        int err;
+
+        /* FIXME Do we really need to dup here? */
+        err = SelvaObject_SetString(obj, field, selva_string_dup(value, 0));
+        if (err) {
+            return SELVA_OP_REPL_STATE_UNCHANGED;
+        }
     }
 
     return SELVA_OP_REPL_STATE_UPDATED;
+}
+
+static int op_del(
+        SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op)
+{
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    int err;
+
+    err = SelvaModify_ModifyDel(hierarchy, node, obj, op->field);
+    return (err) ? SELVA_OP_REPL_STATE_UNCHANGED : SELVA_OP_REPL_STATE_UPDATED;
+}
+
+static int op_meta(
+        SelvaHierarchy *,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op)
+{
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    size_t value_len;
+    const char *value_str = selva_string_to_str(op->value, &value_len);
+    SelvaObjectMeta_t new_user_meta;
+    SelvaObjectMeta_t old_user_meta;
+    int err;
+
+    if (value_len < sizeof(SelvaObjectMeta_t)) {
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
+    memcpy(&new_user_meta, value_str, sizeof(SelvaObjectMeta_t));
+    err = SelvaObject_SetUserMeta(obj, op->field, new_user_meta, &old_user_meta);
+    return (err || new_user_meta == old_user_meta) ? SELVA_OP_REPL_STATE_UNCHANGED : SELVA_OP_REPL_STATE_UPDATED;
+}
+
+static int op_array_remove(
+        SelvaHierarchy *,
+        struct SelvaHierarchyNode *node,
+        const struct update_op *op)
+{
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    size_t field_len;
+    const char *field_str = selva_string_to_str(op->field, &field_len);
+    int err;
+
+    err = SelvaObject_RemoveArrayIndexStr(obj, field_str, field_len, op->u32);
+    return (err) ? SELVA_OP_REPL_STATE_UNCHANGED : SELVA_OP_REPL_STATE_UPDATED;
 }
 
 static int update_node_cb(
@@ -329,12 +404,18 @@ static int update_node_cb(
      * - SELVA_MODIFY_ARG_STRING_ARRAY
      * - SELVA_MODIFY_ARG_OP_EDGE_META
      */
-    int updated = 0;
+    bool node_updated = false;
     for (int i = 0; i < nr_update_ops; i++) {
         const struct update_op *op = &update_ops[i];
+        const char type_code = op->type_code;
         enum selva_op_repl_state repl_state;
 
-        repl_state = update_op(args->resp, hierarchy, node, op);
+        if (!selva_field_prot_check(op->field, (type_code == SELVA_MODIFY_ARG_OP_DEL) ? SELVA_FIELD_PROT_DEL : SELVA_FIELD_PROT_WRITE)) {
+            repl_state = SELVA_OP_REPL_STATE_UNCHANGED;
+            continue;
+        }
+
+        repl_state = update_op_fn[(uint8_t)type_code](hierarchy, node, op);
         if (repl_state == SELVA_OP_REPL_STATE_UPDATED) {
             size_t field_len;
             const char *field_str = selva_string_to_str(op->field, &field_len);
@@ -342,11 +423,11 @@ static int update_node_cb(
             if (strcmp(field_str, SELVA_PARENTS_FIELD) && strcmp(field_str, SELVA_CHILDREN_FIELD)) {
                 SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, node, field_str, field_len);
             }
-            updated = 1;
+            node_updated = true;
         }
     }
 
-    if (updated) {
+    if (node_updated) {
         SelvaObject_SetLongLongStr(SelvaHierarchy_GetNodeObject(node), SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, args->cmd_ts);
     }
 
@@ -594,6 +675,23 @@ void SelvaCommand_Update(struct selva_server_response_out *resp, const void *buf
 }
 
 static int Update_OnLoad(void) {
+    for (size_t i = 0; i < num_elem(update_op_fn); i++) {
+        update_op_fn[i] = op_notsup;
+    }
+
+    update_op_fn[SELVA_MODIFY_ARG_OP_INCREMENT] = op_increment_longlong;
+    update_op_fn[SELVA_MODIFY_ARG_OP_INCREMENT_DOUBLE] = op_increment_double;
+    update_op_fn[SELVA_MODIFY_ARG_DEFAULT_LONGLONG] = op_default_longlong;
+    update_op_fn[SELVA_MODIFY_ARG_LONGLONG] = op_longlong;
+    update_op_fn[SELVA_MODIFY_ARG_DEFAULT_DOUBLE] = op_default_double;
+    update_op_fn[SELVA_MODIFY_ARG_DOUBLE] = op_double;
+    update_op_fn[SELVA_MODIFY_ARG_DEFAULT_STRING] = op_string;
+    update_op_fn[SELVA_MODIFY_ARG_STRING] = op_string;
+    update_op_fn[SELVA_MODIFY_ARG_OP_SET] = op_set;
+    update_op_fn[SELVA_MODIFY_ARG_OP_DEL] = op_del;
+    update_op_fn[SELVA_MODIFY_ARG_OP_OBJ_META] = op_meta;
+    update_op_fn[SELVA_MODIFY_ARG_OP_ARRAY_REMOVE] = op_array_remove;
+
     selva_mk_command(CMD_ID_UPDATE, SELVA_CMD_MODE_MUTATE, "update", SelvaCommand_Update);
 
     return 0;

@@ -988,7 +988,7 @@ void get_replicate_ts(struct replicate_ts *rs, struct SelvaHierarchyNode *node, 
     }
 }
 
-enum selva_op_repl_state SelvaModify_ModifyMetadata(
+static enum selva_op_repl_state SelvaModify_ModifyMetadata(
         struct selva_server_response_out *resp,
         struct SelvaObject *obj,
         const struct selva_string *field,

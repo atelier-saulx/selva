@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -106,12 +106,6 @@ enum selva_op_repl_state {
     SELVA_OP_REPL_STATE_UPDATED,    /*!< Value changed, replicate, reply with UPDATED */
     SELVA_OP_REPL_STATE_REPLICATE,  /*!< Value might have changed, replicate, reply with OK */
 };
-
-enum selva_op_repl_state SelvaModify_ModifyMetadata(
-        struct selva_server_response_out *resp,
-        struct SelvaObject *obj,
-        const struct selva_string *field,
-        const struct selva_string *value);
 
 struct SelvaModify_OpSet *SelvaModify_OpSet_align(
         struct finalizer *fin,
