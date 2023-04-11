@@ -299,7 +299,6 @@ int replication_origin_check_sdb(uint64_t eid)
     return 0;
 }
 
-
 void replication_origin_init(void)
 {
     memset(&origin_state, 0, sizeof(origin_state));
