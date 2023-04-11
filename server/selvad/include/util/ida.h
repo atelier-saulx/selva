@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 SAULX
+ * Copyright (c) 2021-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -23,6 +23,7 @@ void ida_destroy(struct ida *ida);
 /**
  * Allocate an unique id.
  */
+[[nodiscard]]
 ida_t ida_alloc(struct ida *ida) __attribute__ ((warn_unused_result));
 
 /**

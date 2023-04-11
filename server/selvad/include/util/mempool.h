@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 SAULX
+ * Copyright (c) 2020-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -62,6 +62,7 @@ void mempool_gc(struct mempool *mempool);
 /**
  * Get a new object from the pool.
  */
+[[nodiscard]]
 void *mempool_get(struct mempool *mempool);
 
 /**
