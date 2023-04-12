@@ -27,9 +27,6 @@
 #include "traversal.h"
 #include "modify.h"
 
-/*
- * TODO Update ops could be implemented with function pointers for improved perf.
- */
 struct update_op {
     char type_code;
     struct selva_string *field;
@@ -300,7 +297,6 @@ static int op_string(
     } else {
         int err;
 
-        /* FIXME Do we really need to dup here? */
         err = SelvaObject_SetString(obj, field, selva_string_dup(value, 0));
         if (err) {
             return SELVA_OP_REPL_STATE_UNCHANGED;
