@@ -89,6 +89,28 @@ static ssize_t string2selva_string(struct finalizer *fin, int8_t type, const cha
     return len;
 }
 
+/**
+ * Find first alias from alias_query that points to an existing node_id.
+ * @param[in] alias_query contains a list of alias names that may or may not exist.
+ * @param[out] dest_node_id Returns the node_id an alias is pointing to.
+ * @return 0 if no match; 1 if match found.
+ */
+static int find_first_alias(SelvaHierarchy *hierarchy, const SVector *alias_query, Selva_NodeId dest_node_id) {
+    struct SVectorIterator it;
+    char *str;
+
+    SVector_ForeachBegin(&it, alias_query);
+    while ((str = SVector_Foreach(&it))) {
+        if (!get_alias_str(hierarchy, str, strlen(str), dest_node_id)) {
+            if (SelvaHierarchy_NodeExists(hierarchy, dest_node_id)) {
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int update_hierarchy(
     SelvaHierarchy *hierarchy,
     const Selva_NodeId node_id,
@@ -1614,34 +1636,23 @@ static void SelvaCommand_Modify(struct selva_server_response_out *resp, const vo
      */
     parse_alias_query(argv + 2, argc - 2, &alias_query);
     if (SVector_Size(&alias_query) > 0) {
-        struct SVectorIterator it;
-        char *str;
+        Selva_NodeId tmp_id;
 
-        /*
-         * Replace id with the first match from alias_query.
-         */
-        SVector_ForeachBegin(&it, &alias_query);
-        while ((str = SVector_Foreach(&it))) {
-            Selva_NodeId tmp_id;
+        new_alias = true;
+        if (find_first_alias(hierarchy, &alias_query, tmp_id)) {
+            /*
+             * Replace id with the first match from alias_query.
+             */
+            memcpy(nodeId, tmp_id, SELVA_NODE_ID_SIZE);
 
-            if (!get_alias_str(hierarchy, str, strlen(str), tmp_id)) {
-                if (SelvaHierarchy_NodeExists(hierarchy, tmp_id)) {
-                    memcpy(nodeId, tmp_id, SELVA_NODE_ID_SIZE);
-
-                    /*
-                     * If no match was found all the aliases should be assigned.
-                     * If a match was found the query vector can be cleared now
-                     * to prevent any new aliases from being created.
-                     */
-                    SVector_Clear(&alias_query);
-
-                    break;
-                }
-            }
+            /*
+             * If no match was found all the aliases should be assigned.
+             * If a match was found the query vector should be cleared now to
+             * prevent any new aliases from being created.
+             */
+            SVector_Clear(&alias_query);
+            new_alias = false;
         }
-    }
-    if (SVector_Size(&alias_query) > 0) {
-            new_alias = true;
     }
 
     struct SelvaHierarchyNode *node;
