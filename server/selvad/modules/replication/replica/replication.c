@@ -344,32 +344,30 @@ static enum repl_proto_state parse_replication_header(void)
     }
 
     if (ctrl->type == SELVA_PROTO_REPLICATION_CMD) {
-        /*
-         * The following calculation is only true if the replication header was
-         * located in the beginning of a frame, which we assume to be generally
-         * true for a valid replication message. Currently we don't even end up
-         * to this function in any other case nor ever after the initial frame
-         * of a message we are following in the stream using sv.state.
-         */
-        sv.cur_payload_size -= sizeof(struct selva_proto_replication_cmd);
         int err, cmd_compress;
 
-        err = selva_proto_parse_replication_cmd(sv.msg_buf, sizeof(struct selva_proto_replication_cmd), 0, &sv.incoming_cmd_eid, &sv.cmd_ts, &sv.cmd_id, &cmd_compress, &sv.cmd_size);
+        err = selva_proto_parse_replication_cmd(sv.msg_buf, sv.cur_payload_size, 0, &sv.incoming_cmd_eid, &sv.cmd_ts, &sv.cmd_id, &cmd_compress, &sv.cmd_size);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse the replication header: %s", selva_strerror(err));
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse the replication cmd header: %s", selva_strerror(err));
             return REPL_PROTO_STATE_ERR;
         }
         sv.cmd_compress = cmd_compress;
 
         uint8_t *p = sv.msg_buf + sv.msg_buf_i;
+        sv.cur_payload_size -= sizeof(struct selva_proto_replication_cmd);
         memmove(p, p + sizeof(struct selva_proto_replication_cmd), sv.cur_payload_size);
 
          return REPL_PROTO_STATE_RECEIVING_CMD;
     } else if (ctrl->type == SELVA_PROTO_REPLICATION_SDB) {
         uint64_t sdb_eid;
         size_t sdb_size;
+        int err;
 
-        selva_proto_parse_replication_sdb(sv.msg_buf, sizeof(struct selva_proto_replication_sdb), 0, &sdb_eid, &sdb_size);
+        err = selva_proto_parse_replication_sdb(sv.msg_buf, sv.cur_payload_size, 0, &sdb_eid, &sdb_size);
+        if (err) {
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse the replication sdb header: %s", selva_strerror(err));
+            return REPL_PROTO_STATE_ERR;
+        }
         if (sdb_size > 0) {
             sv.incoming_sdb_eid = sdb_eid;
             sv.sdb_size = sdb_size;
@@ -377,7 +375,13 @@ static enum repl_proto_state parse_replication_header(void)
 
             sv.recv_next_frame = 1;
             return REPL_PROTO_STATE_RECEIVING_SDB_HEADER;
-        } else { /* RFE We assume this is a pseudo-sdb because sdb_size was 0 */
+        } else {
+            /*
+             * We could verify whether this was a pseudo-sdb by checking the
+             * SELVA_PROTO_REPLICATION_SDB_FPSEUDO flag but in either case
+             * we should be able to assume that we are in sync with this
+             * sdb_eid.
+             */
             sv.last_sdb_eid = sdb_eid;
             sv.last_cmd_eid = 0;
 

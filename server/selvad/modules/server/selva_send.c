@@ -332,7 +332,7 @@ int selva_send_replication_pseudo_sdb(struct selva_server_response_out *resp, ui
 {
     struct selva_proto_replication_sdb buf = {
         .type = SELVA_PROTO_REPLICATION_SDB,
-        .flags = 0,
+        .flags = SELVA_PROTO_REPLICATION_SDB_FPSEUDO,
         .eid = htole64(eid),
         .bsize = 0,
     };
