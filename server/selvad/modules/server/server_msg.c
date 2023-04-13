@@ -38,10 +38,10 @@ int server_recv_message(struct conn_ctx *ctx)
     struct selva_proto_header *hdr = &ctx->recv_frame_hdr_buf;
     const uint32_t seqno = le32toh(hdr->seqno);
     const unsigned frame_state = hdr->flags & SELVA_PROTO_HDR_FFMASK;
+#if 0
     char peer[CONN_STR_LEN];
 
     conn_to_str(ctx, peer, sizeof(peer));
-#if 0
     SELVA_LOG(SELVA_LOGL_INFO, "Received a frame. client: %s seqno: %d bytes: %d",
               peer,
               (int)seqno,
