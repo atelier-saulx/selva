@@ -75,7 +75,7 @@ static int send_message(int fd, const void *buf, size_t size, int flags)
     return 0;
 }
 
-static int send_modify(int fd, int seqno, char node_id[NODE_ID_SIZE])
+static int send_modify(int fd, int seqno, typeof_field(struct selva_proto_header, flags) frame_extra_flags, char node_id[NODE_ID_SIZE])
 {
     struct {
         struct selva_proto_header hdr;
@@ -100,7 +100,7 @@ static int send_modify(int fd, int seqno, char node_id[NODE_ID_SIZE])
     } __packed buf = {
         .hdr = {
             .cmd = 65, /* TODO hardcoded cmd_id */
-            .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
+            .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST | frame_extra_flags,
             .seqno = htole32(seqno),
             .frame_bsize = htole16(sizeof(buf)),
             .msg_bsize = 0,
@@ -291,26 +291,16 @@ int main(int argc, char *argv[])
     char *addr = "127.0.0.1";
     int port = 3000;
     int sock;
-    int n = 1000000;
     int seqno = 0;
+    int batch = 0;
     int threaded = 0;
     int single_node = 0;
+    int n = 1000000;
+
 
     opterr = 0;
-    while ((c = getopt(argc, argv, "p:N:ts")) != -1) {
+    while ((c = getopt(argc, argv, "N:p:bts")) != -1) {
         switch (c) {
-        case 'p':
-            port = (int)strtol(optarg, NULL, 10);
-            break;
-        case 'N':
-            n = (int)strtol(optarg, NULL, 10);
-            break;
-        case 't':
-            threaded = 1;
-            break;
-        case 's':
-            single_node = 1;
-            break;
         case '?':
             if (optopt == 'p' || optopt == 'N') {
                 fprintf(stderr, "Option -%c requires an argument.\n", optopt);
@@ -320,6 +310,21 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
             }
             return 1;
+        case 'N':
+            n = (int)strtol(optarg, NULL, 10);
+            break;
+        case 'b':
+            batch = 1;
+            break;
+        case 'p':
+            port = (int)strtol(optarg, NULL, 10);
+            break;
+        case 's':
+            single_node = 1;
+            break;
+        case 't':
+            threaded = 1;
+            break;
         default:
             abort();
         }
@@ -339,16 +344,18 @@ int main(int argc, char *argv[])
             .sa_flags = SA_NODEFER | SA_RESETHAND
             }, NULL);
 
+    pthread_t thread;
     struct timespec ts_start, ts_end, ts_diff;
     double t, v;
     const char *unit = "ms";
 
     if (threaded) {
-        start_recv(sock);
+        thread = start_recv(sock);
     }
 
     ts_monotime(&ts_start);
     while (!flag_stop && seqno < n) {
+        typeof_field(struct selva_proto_header, flags) frame_extra_flags = (batch && (seqno < n - 1)) ? SELVA_PROTO_HDR_BATCH : 0;
         char node_id[NODE_ID_SIZE + 1];
 
         if (single_node) {
@@ -357,7 +364,7 @@ int main(int argc, char *argv[])
             snprintf(node_id, sizeof(node_id), "ma%.*x", NODE_ID_SIZE - 2, seqno);
         }
 
-        send_modify(sock, seqno++, node_id);
+        send_modify(sock, seqno++, frame_extra_flags, node_id);
         if (!threaded) {
             flag_stop |= recv_message(sock);
         }
@@ -372,6 +379,11 @@ int main(int argc, char *argv[])
         t /= 1000.0;
         unit = "s";
     }
+
+    if (threaded) {
+        pthread_join(thread, NULL);
+    }
+    shutdown(sock, SHUT_RDWR);
 
     printf("N: %d modify commands\nt: %.2f %s\nv: %.0f modify/s\n",
            seqno,

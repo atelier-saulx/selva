@@ -32,6 +32,13 @@ struct conn_ctx {
     int fd; /*<! The socket associated with this connection. */
     int8_t inuse; /*!< Set if the connection is active. */
     int8_t corked; /*!< Set if we have corked the socket. (avoids some unnecessary syscalls) */
+    /**
+     * Batch mode activated.
+     * When set the server attempts to pack more responses together before
+     * sending (uncorking the socket). This adds some latency to receiving the
+     * responses but makes processing on the server-side more efficient.
+     */
+    int8_t batch_active;
 #if 0
     pthread_t worker_id;
 #endif
@@ -119,7 +126,14 @@ ssize_t server_recv_frame(struct conn_ctx *ctx);
 int server_flush_frame_buf(struct selva_server_response_out *resp, int last_frame);
 
 /**
+ * Cork the underlying socket.
+ */
+void server_cork_resp(struct selva_server_response_out *resp);
+
+/**
  * Uncork the underlying socket.
+ * The actual uncorking might not happen immediately if corking the socket is
+ * requested through some other mean. E.g. batch processing.
  */
 void server_uncork_resp(struct selva_server_response_out *resp);
 

@@ -46,6 +46,13 @@ struct selva_proto_header {
          * See selva_start_stream().
          */
         SELVA_PROTO_HDR_STREAM   = 0x10,
+        /**
+         * Keep batching responses as long as this flag is set.
+         * Batch processing works independently from the current frame, cmd, and
+         * seqno. Therefore, batching will happen even if any of these changes,
+         * as long as the connection is not interrupted.
+         */
+        SELVA_PROTO_HDR_BATCH    = 0x08,
         SELVA_PROTO_HDR_FDEFLATE = 0x01, /*!< Compressed with deflate. TODO Not implemented. */
     } __attribute__((packed)) flags;
     /**

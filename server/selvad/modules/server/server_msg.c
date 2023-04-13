@@ -109,11 +109,22 @@ int server_recv_message(struct conn_ctx *ctx)
         return SELVA_PROTO_EBADMSG; /* Drop the connection. */
     }
 
+    if (hdr->flags & SELVA_PROTO_HDR_BATCH) {
+        /*
+         * Setting the flag is enough because we'll eventually cork the socket
+         * and further uncorking attempts will be blocked as long as this flag
+         * is set.
+         */
+        ctx->batch_active = 1;
+    } else {
+        ctx->batch_active = 0;
+    }
+
     if (!(frame_state & SELVA_PROTO_HDR_FLAST)) {
         ctx->recv_state = CONN_CTX_RECV_STATE_FRAGMENT;
         return 0;
+    } else {
+        ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
+        return 1;
     }
-
-    ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
-    return 1;
 }

@@ -135,19 +135,26 @@ static void maybe_uncork(struct selva_server_response_out *resp, enum server_sen
 {
     struct conn_ctx *ctx = resp->ctx;
 
-    if ((flags & SERVER_SEND_MORE) == 0 && resp->cork == 0) {
+    if ((flags & SERVER_SEND_MORE) == 0 && resp->cork == 0 && ctx && !ctx->batch_active) {
         tcp_uncork(ctx->fd);
         ctx->corked = 0;
     }
 }
 
+void server_cork_resp(struct selva_server_response_out *resp)
+{
+    resp->cork = 1;
+    maybe_cork(resp);
+}
+
 void server_uncork_resp(struct selva_server_response_out *resp)
 {
-    if (resp->cork && resp->ctx) {
-        tcp_uncork(resp->ctx->fd);
-        resp->ctx->corked = 0;
+    if (resp->cork) {
+        resp->cork = 0;
+        if (resp->ctx) {
+            maybe_uncork(resp, 0);
+        }
     }
-    resp->cork = 0;
 }
 
 
