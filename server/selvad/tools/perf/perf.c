@@ -24,6 +24,11 @@
 
 #define NODE_ID_SIZE 10
 
+struct thread_args {
+    int fd;
+    int n;
+};
+
 static int flag_stop;
 
 static void sigint_handler(int sig __unused)
@@ -266,18 +271,24 @@ int recv_message(int fd)
 
 void *recv_thread(void *arg)
 {
-    int fd = (size_t)arg;
+    struct thread_args *args = (struct thread_args *)arg;
+    int fd = args->fd;
+    int n = args->n;
 
-    while (!flag_stop && !recv_message(fd));
+    while (!flag_stop && n-- && !recv_message(fd));
 
     return NULL;
 }
 
-pthread_t start_recv(int fd)
+pthread_t start_recv(int fd, int n)
 {
     pthread_t thread;
+    static struct thread_args args;
 
-    if (pthread_create(&thread, NULL, &recv_thread, (void *)(size_t){fd})) {
+    args.fd = fd;
+    args.n = n;
+
+    if (pthread_create(&thread, NULL, &recv_thread, &args)) {
         fprintf(stderr, "Failed to create a thread\n");
         exit(EXIT_FAILURE);
     }
@@ -350,7 +361,7 @@ int main(int argc, char *argv[])
     const char *unit = "ms";
 
     if (threaded) {
-        thread = start_recv(sock);
+        thread = start_recv(sock, n);
     }
 
     ts_monotime(&ts_start);
@@ -369,7 +380,6 @@ int main(int argc, char *argv[])
             flag_stop |= recv_message(sock);
         }
     }
-    flag_stop = 1;
     ts_monotime(&ts_end);
     timespec_sub(&ts_diff, &ts_end, &ts_start);
     t = ts2ms(&ts_diff);
@@ -383,13 +393,14 @@ int main(int argc, char *argv[])
     if (threaded) {
         pthread_join(thread, NULL);
     }
+
     shutdown(sock, SHUT_RDWR);
+    close(sock);
 
     printf("N: %d modify commands\nt: %.2f %s\nv: %.0f modify/s\n",
            seqno,
            t, unit,
            v);
 
-    close(sock);
     return EXIT_SUCCESS;
 }
