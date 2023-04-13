@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <netinet/tcp.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +21,8 @@
 #include "util/timestamp.h"
 #include "selva_error.h"
 #include "selva_proto.h"
+
+#define NODE_ID_SIZE 10
 
 static int flag_stop;
 
@@ -72,20 +75,28 @@ static int send_message(int fd, const void *buf, size_t size, int flags)
     return 0;
 }
 
-static int send_modify(int fd, int seqno)
+static int send_modify(int fd, int seqno, char node_id[NODE_ID_SIZE])
 {
     struct {
         struct selva_proto_header hdr;
         struct selva_proto_array arr;
         struct selva_proto_string id_hdr;
-        char id_str[10];
+        char id_str[NODE_ID_SIZE];
         struct selva_proto_string flags_hdr;
+        /* field 1 */
         struct selva_proto_string type1_hdr;
         char type1_str[1];
         struct selva_proto_string field1_hdr;
         char field1_str[5];
         struct selva_proto_string value1_hdr;
         char value1_str[3];
+        /* field 2 */
+        struct selva_proto_string type2_hdr;
+        char type2_str[1];
+        struct selva_proto_string field2_hdr;
+        char field2_str[3];
+        struct selva_proto_string value2_hdr;
+        char value2_str[sizeof(uint64_t)];
     } __packed buf = {
         .hdr = {
             .cmd = 65, /* TODO hardcoded cmd_id */
@@ -110,6 +121,7 @@ static int send_modify(int fd, int seqno)
             .flags = 0,
             .bsize = htole32(0),
         },
+        /* Field 1 */
         .type1_hdr = {
             .type = SELVA_PROTO_STRING,
             .flags = 0,
@@ -128,16 +140,35 @@ static int send_modify(int fd, int seqno)
             .bsize = htole32(sizeof(buf.value1_str)),
         },
         .value1_str = {'l', 'o', 'l'},
+        /* Field 2 */
+        .type2_hdr = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+            .bsize = htole32(sizeof(buf.type2_str)),
+        },
+        .type2_str = {'3'},
+        .field2_hdr = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+            .bsize = htole32(sizeof(buf.field2_str)),
+        },
+        .field2_str = {'n', 'u', 'm'},
+        .value2_hdr = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+            .bsize = htole32(sizeof(buf.value2_str)),
+        },
     };
 
-    snprintf(buf.id_str, 10, "ma%d", seqno);
+    memcpy(buf.id_str, node_id, NODE_ID_SIZE);
+    memcpy(buf.value2_str, &(uint64_t){seqno}, sizeof(uint64_t));
 
     buf.hdr.chk = htole32(crc32c(0, &buf, sizeof(buf)));
 
     return send_message(fd, &buf, sizeof(buf), 0);
 }
 
-static void handle_response(struct selva_proto_header *resp_hdr, void *msg, size_t msg_size)
+static void handle_response(struct selva_proto_header *resp_hdr, void *msg __unused, size_t msg_size __unused)
 {
     if (resp_hdr->cmd < 0) {
         fprintf(stderr, "Invalid cmd_id: %d\n", resp_hdr->cmd);
@@ -173,7 +204,7 @@ static ssize_t recvn(int fd, void *buf, size_t n)
     return (ssize_t)i;
 }
 
-void recv_message(int fd)
+int recv_message(int fd)
 {
     static _Alignas(uintptr_t) uint8_t msg_buf[100 * 1048576] __lazy_alloc_glob;
     struct selva_proto_header resp_hdr;
@@ -185,24 +216,24 @@ void recv_message(int fd)
         r = recvn(fd, &resp_hdr, sizeof(resp_hdr));
         if (r != (ssize_t)sizeof(resp_hdr)) {
             fprintf(stderr, "Reading selva_proto header failed. result: %d\n", (int)r);
-            exit(1);
+            return 1;
         } else {
             size_t frame_bsize = le16toh(resp_hdr.frame_bsize);
             const size_t payload_size = frame_bsize - sizeof(resp_hdr);
 
             if (!(resp_hdr.flags & SELVA_PROTO_HDR_FREQ_RES)) {
                 fprintf(stderr, "Invalid response: response bit not set\n");
-                return;
+                return 1;
             } else if (i + payload_size > sizeof(msg_buf)) {
                 fprintf(stderr, "Buffer overflow\n");
-                return;
+                return 1;
             }
 
             if (payload_size > 0) {
                 r = recvn(fd, msg_buf + i, payload_size);
                 if (r != (ssize_t)payload_size) {
                     fprintf(stderr, "Reading payload failed: result: %d expected: %d\n", (int)r, (int)payload_size);
-                    return;
+                    return 1;
                 }
 
                 i += payload_size;
@@ -210,7 +241,7 @@ void recv_message(int fd)
 
             if (!selva_proto_verify_frame_chk(&resp_hdr, msg_buf + i - payload_size, payload_size)) {
                 fprintf(stderr, "Checksum mismatch\n");
-                return;
+                return 1;
             }
         }
 
@@ -221,7 +252,7 @@ void recv_message(int fd)
          */
         if (resp_hdr.flags & SELVA_PROTO_HDR_STREAM) {
             if (resp_hdr.flags & SELVA_PROTO_HDR_FLAST) {
-                return;
+                return 0;
             }
 
             handle_response(&resp_hdr, msg_buf, i);
@@ -230,6 +261,28 @@ void recv_message(int fd)
     } while (!(resp_hdr.flags & SELVA_PROTO_HDR_FLAST));
 
     handle_response(&resp_hdr, msg_buf, i);
+    return 0;
+}
+
+void *recv_thread(void *arg)
+{
+    int fd = (size_t)arg;
+
+    while (!flag_stop && !recv_message(fd));
+
+    return NULL;
+}
+
+pthread_t start_recv(int fd)
+{
+    pthread_t thread;
+
+    if (pthread_create(&thread, NULL, &recv_thread, (void *)(size_t){fd})) {
+        fprintf(stderr, "Failed to create a thread\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return thread;
 }
 
 int main(int argc, char *argv[])
@@ -240,15 +293,23 @@ int main(int argc, char *argv[])
     int sock;
     int n = 1000000;
     int seqno = 0;
+    int threaded = 0;
+    int single_node = 0;
 
     opterr = 0;
-    while ((c = getopt(argc, argv, "p:N:")) != -1) {
+    while ((c = getopt(argc, argv, "p:N:ts")) != -1) {
         switch (c) {
         case 'p':
             port = (int)strtol(optarg, NULL, 10);
             break;
         case 'N':
             n = (int)strtol(optarg, NULL, 10);
+            break;
+        case 't':
+            threaded = 1;
+            break;
+        case 's':
+            single_node = 1;
             break;
         case '?':
             if (optopt == 'p' || optopt == 'N') {
@@ -282,23 +343,38 @@ int main(int argc, char *argv[])
     double t, v;
     const char *unit = "ms";
 
+    if (threaded) {
+        start_recv(sock);
+    }
+
     ts_monotime(&ts_start);
     while (!flag_stop && seqno < n) {
-        send_modify(sock, seqno++);
-        recv_message(sock);
+        char node_id[NODE_ID_SIZE + 1];
+
+        if (single_node) {
+            memcpy(node_id, "ma00000001", NODE_ID_SIZE);
+        } else {
+            snprintf(node_id, sizeof(node_id), "ma%.*x", NODE_ID_SIZE - 2, seqno);
+        }
+
+        send_modify(sock, seqno++, node_id);
+        if (!threaded) {
+            flag_stop |= recv_message(sock);
+        }
     }
+    flag_stop = 1;
     ts_monotime(&ts_end);
     timespec_sub(&ts_diff, &ts_end, &ts_start);
     t = ts2ms(&ts_diff);
 
-    v = ((double)n / t) * 1000.0;
+    v = ((double)seqno / t) * 1000.0;
     if (t > 1000.0) {
         t /= 1000.0;
         unit = "s";
     }
 
     printf("N: %d modify commands\nt: %.2f %s\nv: %.0f modify/s\n",
-           n,
+           seqno,
            t, unit,
            v);
 
