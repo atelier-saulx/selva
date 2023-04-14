@@ -14,7 +14,7 @@ export ZERO_AR_DATE := 1
 
 # CFLAGS shared with all compilation units.
 # TODO gnu23 when available
-CFLAGS := -std=gnu2x -MMD -Wall -Wextra
+CFLAGS := -std=gnu2x -O2 -fno-strict-aliasing -MMD -Wall -Wextra
 
 ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
 	CFLAGS += -g -ggdb3 -fno-math-errno -ftree-vectorize

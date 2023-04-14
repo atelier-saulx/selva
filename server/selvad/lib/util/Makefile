@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 include ../../common.mk
 
-CFLAGS += -fPIC -O2 -Wno-unused-function -fno-strict-aliasing -I../../include
+CFLAGS += -fPIC -Wno-unused-function -fno-strict-aliasing -I../../include
 # To remove warnings about asserts
 CFLAGS += -Wno-unused-value
 LDFLAGS += -g -L../
