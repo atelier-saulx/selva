@@ -55,6 +55,7 @@ struct selva_io {
     size_t (*sdb_read)(void * restrict ptr, size_t size, size_t count, struct selva_io *restrict io);
     off_t (*sdb_tell)(struct selva_io *io);
     int (*sdb_seek)(struct selva_io *io, off_t offset, int whence);
+    int (*sdb_flush)(struct selva_io *io);
 
     /**
      * Return the last IO error.

@@ -118,6 +118,16 @@ static int sdb_seek_string(struct selva_io *io, off_t offset, int whence)
     return 0;
 }
 
+static int sdb_flush_file(struct selva_io *io)
+{
+    return fflush(io->file_io.file);
+}
+
+static int sdb_flush_string(struct selva_io *)
+{
+    return 0;
+}
+
 static int sdb_error_file(struct selva_io *restrict io)
 {
     if (ferror(io->file_io.file)) {
@@ -150,6 +160,7 @@ void sdb_init(struct selva_io *io)
         io->sdb_read = sdb_read_file;
         io->sdb_tell = sdb_tell_file;
         io->sdb_seek = sdb_seek_file;
+        io->sdb_flush = sdb_flush_file;
         io->sdb_error = sdb_error_file;
         io->sdb_clearerr = sdb_clearerr_file;
     } else if (io->flags & SELVA_IO_FLAGS_STRING_IO) {
@@ -157,6 +168,7 @@ void sdb_init(struct selva_io *io)
         io->sdb_read = sdb_read_string;
         io->sdb_tell = sdb_tell_string;
         io->sdb_seek = sdb_seek_string;
+        io->sdb_flush = sdb_flush_string;
         io->sdb_error = sdb_error_string;
         io->sdb_clearerr = sdb_clearerr_string;
     }

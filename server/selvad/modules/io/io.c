@@ -243,9 +243,7 @@ void selva_io_end(struct selva_io *io)
 {
     if (io->flags & SELVA_IO_FLAGS_WRITE) {
         sdb_write_footer(io);
-        if (io->flags & SELVA_IO_FLAGS_FILE_IO) {
-            fflush(io->file_io.file);
-        }
+        io->sdb_flush(io);
     } else {
         int err;
 
