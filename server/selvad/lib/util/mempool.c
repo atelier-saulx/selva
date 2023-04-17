@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2020-2022 SAULX
+ * Copyright (c) 2020-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <assert.h>
-#include <stdalign.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

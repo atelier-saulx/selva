@@ -75,9 +75,9 @@ struct selva_proto_header {
      * set to their final values and this field zeroed.
      */
     uint32_t chk;
-} __attribute__((packed,aligned(__alignof__(uint64_t))));
+} __attribute__((packed,aligned(alignof(uint64_t))));
 static_assert(sizeof(struct selva_proto_header) == (2 * sizeof(uint64_t)), "Header must be 64 bits");
-static_assert(__alignof__(struct selva_proto_header) == __alignof__(uint64_t), "Header must be aligned as a 64-bit integer");
+static_assert(_Alignof(struct selva_proto_header) == alignof(uint64_t), "Header must be aligned as a 64-bit integer");
 
 /**
  * Selva protocol data types.

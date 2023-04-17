@@ -178,6 +178,16 @@
 #define __packed __attribute__((packed))
 #endif
 
+/* This should come with C23 */
+#ifndef alignas
+#define alignas(x) _Alignas(x)
+#endif
+
+/* This should come with C23 */
+#ifndef alignof
+#define alignof(x) _Alignof(x)
+#endif
+
 /**
  * Get the number of elements in an array.
  */
