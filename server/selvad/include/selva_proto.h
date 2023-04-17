@@ -54,7 +54,7 @@ struct selva_proto_header {
          */
         SELVA_PROTO_HDR_BATCH    = 0x08,
         SELVA_PROTO_HDR_FDEFLATE = 0x01, /*!< Compressed with deflate. TODO Not implemented. */
-    } __attribute__((packed)) flags;
+    } __packed flags;
     /**
      * Sequence number selected by the request sender (typically client).
      * The sequence number doesn't change within a message (between frames) and
@@ -92,7 +92,7 @@ enum selva_proto_data_type {
     SELVA_PROTO_ARRAY_END = 6, /*!< Terminates an array of unknown length. Uses selva_proto_control. */
     SELVA_PROTO_REPLICATION_CMD = 7, /*!< A replication message. */
     SELVA_PROTO_REPLICATION_SDB = 8, /*!< A replication db dump message. */
-} __attribute__((packed));
+} __packed;
 static_assert(sizeof(enum selva_proto_data_type) == 1, "data_type must be an 8-bit integer");
 
 /**
@@ -104,7 +104,7 @@ struct selva_proto_null {
      * Type must be SELVA_PROTO_NULL.
      */
     enum selva_proto_data_type type;
-} __attribute__((packed));
+} __packed;
 
 /**
  * Selva protocol error message.
@@ -119,7 +119,7 @@ struct selva_proto_error {
     int16_t err_code; /*!< Error code. Typically from selva_error.h. */
     uint16_t bsize; /*!< Size of msg in bytes. */
     char msg[0]; /*!< Free form error message. Typically a human-readable string. */
-} __attribute__((packed));
+} __packed;
 
 /**
  * Selva protocol double value.
@@ -132,7 +132,7 @@ struct selva_proto_double {
     enum selva_proto_data_type type;
     uint8_t _spare[7];
     double v; /*!< Value. */
-} __attribute__((packed));
+} __packed;
 
 /**
  * Selva protocol long long.
@@ -145,7 +145,7 @@ struct selva_proto_longlong {
     enum selva_proto_data_type type;
     enum {
         SELVA_PROTO_LONGLONG_FMT_HEX = 0x01, /*!< Suggested printing format is hex. */
-    } __attribute__((packed)) flags;
+    } __packed flags;
     uint8_t _spare[6];
     /**
      * Value.
@@ -154,7 +154,7 @@ struct selva_proto_longlong {
      * expected to happen before using the value.
      */
     uint64_t v;
-} __attribute__((packed));
+} __packed;
 static_assert(sizeof(struct selva_proto_longlong) == 2 * sizeof(uint64_t), "Must be 128 bits");
 
 /**
@@ -169,11 +169,11 @@ struct selva_proto_string {
     enum {
         SELVA_PROTO_STRING_FBINARY = 0x01, /*!< Expect binary data. */
         SElVA_PROTO_STRING_FDEFLATE = 0x02, /*!< Compressed with deflate. */
-    } __attribute__((packed)) flags; /*! String flags. */
+    } __packed flags; /*! String flags. */
     uint8_t _spare[2];
     uint32_t bsize; /*!< Size of data in bytes. */
     char data[0]; /*!< A string of bytes. It's not expected to be terminated with anything. */
-} __attribute__((packed));
+} __packed;
 static_assert(sizeof(struct selva_proto_string) == sizeof(uint64_t), "Must be 64 bits");
 static_assert(sizeof_field(struct selva_proto_string, flags) == 1, "string flags must be 8-bit wide");
 
@@ -190,11 +190,11 @@ struct selva_proto_array {
         SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH = 0x80, /*!< Start an array of unknown length and terminate it with a special token. */
         SELVA_PROTO_ARRAY_FLONGLONG = 0x01, /*!< A fixed size long long array follows. No encapsulation is used. */
         SELVA_PROTO_ARRAY_FDOUBLE = 0x02, /*!< A fixed size double array follows. No encapsulation is used. */
-    } __attribute__((packed)) flags; /*! Array flags. */
+    } __packed flags; /*! Array flags. */
     uint8_t _spare[2];
     uint32_t length; /*!< Length of this array; number of items. */
     char data[0]; /*!< Data (if indicated by a flag). */
-} __attribute__((packed));
+} __packed;
 static_assert(sizeof(struct selva_proto_array) == sizeof(uint64_t), "Must be 64 bits");
 
 /**
@@ -209,14 +209,14 @@ struct selva_proto_replication_cmd {
     enum selva_proto_data_type type;
     enum {
         SElVA_PROTO_REPLICATION_CMD_FDEFLATE = 0x02, /*!< Compressed with deflate. */
-    } __attribute__((packed)) flags; /*! String flags. */
+    } __packed flags; /*! String flags. */
     uint8_t _spare[5];
     int8_t cmd; /*!< Command identifier. */
     uint64_t eid; /*!< Element id of this message. */
     int64_t ts; /*!< Original command timestamp. */
     uint64_t bsize; /*!< Size of data in bytes. */
     uint8_t data[0];
-} __attribute__((packed));
+} __packed;
 static_assert(sizeof(struct selva_proto_replication_cmd) == 4 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
 
 /**
@@ -236,11 +236,11 @@ struct selva_proto_replication_sdb {
          * the sdb_eid given in this message. The dump is omitted.
          */
         SELVA_PROTO_REPLICATION_SDB_FPSEUDO,
-    } __attribute__((packed)) flags;
+    } __packed flags;
     uint8_t _spare[14];
     uint64_t eid; /*!< Element id of this message. */
     uint64_t bsize; /*!< Size of the dump. */
-} __attribute__((packed));
+} __packed;
 static_assert(sizeof(struct selva_proto_replication_sdb) == 4 * sizeof(uint64_t), "Replication header should be a multiple of 64-bits");
 static_assert(sizeof(struct selva_proto_replication_cmd) == sizeof(struct selva_proto_replication_sdb), "Must be same size to allow easier parsing");
 
@@ -256,7 +256,7 @@ struct selva_proto_control {
      * - SELVA_PROTO_ARRAY_END
      */
     enum selva_proto_data_type type;
-} __attribute__((packed));
+} __packed;
 
 #define selva_proto_typeof_str(v) _Generic((v), \
         struct selva_proto_null: "null", \
