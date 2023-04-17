@@ -544,7 +544,7 @@ void SelvaCommand_Update(struct selva_server_response_out *resp, const void *buf
     /*
      * Parse the update ops.
      */
-    struct update_op *update_ops;
+    struct update_op *update_ops = NULL;
     const int nr_update_ops = parse_update_ops(&fin, argv + ARGV_NR_UPDATE_OPS, argc - ARGV_NR_UPDATE_OPS, &update_ops);
     if (nr_update_ops < 0 || !update_ops) {
         selva_send_errorf(resp, nr_update_ops, "update_ops");

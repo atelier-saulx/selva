@@ -126,7 +126,7 @@ unsigned ring_buffer_insert(struct ring_buffer * restrict rb, ring_buffer_eid_t 
 {
     unsigned not_read;
     struct ring_buffer_element *e;
-    typeof(e->id) old_id;
+    typeof(e->id) old_id = 0;
     typeof(e->data) old_data = NULL;
 
     /*

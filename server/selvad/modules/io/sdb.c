@@ -220,7 +220,7 @@ int sdb_read_header(struct selva_io *io)
 
 int sdb_write_footer(struct selva_io *io)
 {
-    int err;
+    int err = SELVA_EINTYPE;
 
     io->sdb_write(magic_end, sizeof(char), sizeof(magic_end), io);
 
@@ -276,7 +276,8 @@ int sdb_read_footer(struct selva_io *io)
 
 __constructor static void init(void)
 {
-    strncpy(selva_db_version_info.running, selva_db_version, min((int)strlen(selva_db_version), SELVA_DB_VERSION_SIZE));
+    strncpy(selva_db_version_info.running, selva_db_version, sizeof(selva_db_version_info.running));
 
-    SELVA_LOG(SELVA_LOGL_INFO, "Selva db version running: %.*s", SELVA_DB_VERSION_SIZE, selva_db_version_info.running);
+    SELVA_LOG(SELVA_LOGL_INFO, "Selva db version running: %.*s",
+              (int)sizeof(selva_db_version_info.running), selva_db_version_info.running);
 }
