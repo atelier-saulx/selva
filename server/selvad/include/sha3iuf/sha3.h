@@ -31,7 +31,7 @@
 /* 'Words' here refers to uint64_t */
 #define SHA3_KECCAK_SPONGE_WORDS \
 	(((1600)/8/*bits to byte*/)/sizeof(uint64_t))
-typedef struct sha3_context_ {
+struct sha3_context {
     uint64_t saved;             /* the portion of the input message that we
                                  * didn't consume yet */
     union {                     /* Keccak's state */
@@ -45,20 +45,20 @@ typedef struct sha3_context_ {
     unsigned capacityWords;     /* the double size of the hash output in
                                  * words (e.g. 16 for Keccak 512) */
     int keccak_rounds;
-} sha3_context;
+};
 
-enum SHA3_FLAGS {
+enum sha3_flags {
     SHA3_FLAGS_NONE=0,
     SHA3_FLAGS_KECCAK=1
 };
 
-enum SHA3_RETURN {
+enum sha3_return {
     SHA3_RETURN_OK=0,
     SHA3_RETURN_BAD_PARAMS=1
 };
-typedef enum SHA3_RETURN sha3_return_t;
+typedef enum sha3_return sha3_return_t;
 
-void sha3_Init256(void *priv);
+void sha3_Init256(struct sha3_context *ctx);
 
 /**
  * SHA-3 KitTen variant.
@@ -69,20 +69,20 @@ void sha3_Init256(void *priv);
  * https://eprint.iacr.org/2019/1492.pdf
  */
 void
-sha3_Init256KitTen(void *priv);
-void sha3_Init384(void *priv);
-void sha3_Init512(void *priv);
+sha3_Init256KitTen(struct sha3_context *ctx);
+void sha3_Init384(struct sha3_context *ctx);
+void sha3_Init512(struct sha3_context *ctx);
 
-enum SHA3_FLAGS sha3_SetFlags(void *priv, enum SHA3_FLAGS);
+enum sha3_flags sha3_SetFlags(struct sha3_context *ctx, enum sha3_flags);
 
-void sha3_Update(void *priv, void const *bufIn, size_t len);
+void sha3_Update(struct sha3_context *ctx, void const *bufIn, size_t len);
 
-void const *sha3_Finalize(void *priv);
+void const *sha3_Finalize(struct sha3_context *ctx);
 
 /* Single-call hashing */
 sha3_return_t sha3_HashBuffer(
     unsigned bitSize,   /* 256, 384, 512 */
-    enum SHA3_FLAGS flags, /* SHA3_FLAGS_NONE or SHA3_FLAGS_KECCAK */
+    enum sha3_flags flags, /* SHA3_FLAGS_NONE or SHA3_FLAGS_KECCAK */
     const void *in, unsigned inBytes,
     void *out, unsigned outBytes );     /* up to bitSize/8; truncation OK */
 

@@ -1,16 +1,16 @@
 /* -------------------------------------------------------------------------
- * Works when compiled for either 32-bit or 64-bit targets, optimized for 
+ * Works when compiled for either 32-bit or 64-bit targets, optimized for
  * 64 bit.
  *
- * Canonical implementation of Init/Update/Finalize for SHA-3 byte input. 
+ * Canonical implementation of Init/Update/Finalize for SHA-3 byte input.
  *
  * SHA3-256, SHA3-384, SHA-512 are implemented. SHA-224 can easily be added.
  *
  * Based on code from http://keccak.noekeon.org/ .
  *
- * I place the code that I wrote into public domain, free to use. 
+ * I place the code that I wrote into public domain, free to use.
  *
- * I would appreciate if you give credits to this work if you used it to 
+ * I would appreciate if you give credits to this work if you used it to
  * write or test * your code.
  *
  * Aug 2015. Andrey Jivsov. crypto@brainhub.org
@@ -18,7 +18,7 @@
 
 /* *************************** Self Tests ************************ */
 
-/* 
+/*
  * There are two set of mutually exclusive tests, based on SHA3_USE_KECCAK,
  * which is undefined in the production version.
  *
@@ -28,10 +28,10 @@
  * SHA3-256:
  *   http://csrc.nist.gov/groups/ST/toolkit/documents/Examples/SHA3-256_Msg0.pdf
  *   http://csrc.nist.gov/groups/ST/toolkit/documents/Examples/SHA3-256_1600.pdf
- * SHA3-384: 
- *   http://csrc.nist.gov/groups/ST/toolkit/documents/Examples/SHA3-384_1600.pdf 
- * SHA3-512: 
- *   http://csrc.nist.gov/groups/ST/toolkit/documents/Examples/SHA3-512_1600.pdf 
+ * SHA3-384:
+ *   http://csrc.nist.gov/groups/ST/toolkit/documents/Examples/SHA3-384_1600.pdf
+ * SHA3-512:
+ *   http://csrc.nist.gov/groups/ST/toolkit/documents/Examples/SHA3-512_1600.pdf
  *
  * These are refered to as [FIPS 202] tests.
  *
@@ -39,7 +39,7 @@
  *
  * A few Keccak algorithm tests (when M and not M||01 is hashed) are
  * added here. These are from http://keccak.noekeon.org/KeccakKAT-3.zip,
- * ShortMsgKAT_256.txt for sizes even to 8. There is also one test for 
+ * ShortMsgKAT_256.txt for sizes even to 8. There is also one test for
  * ExtremelyLongMsgKAT_256.txt.
  *
  * These will work with this code when SHA3_USE_KECCAK converts Finalize
@@ -66,7 +66,7 @@ int
 main()
 {
     uint8_t buf[200];
-    sha3_context c;
+    struct sha3_context c;
     const void *hash;
     unsigned i;
     const uint8_t c1 = 0xa3;
@@ -75,7 +75,7 @@ main()
     static const uint8_t sha3_256_empty[256 / 8] = {
         0xa7, 0xff, 0xc6, 0xf8, 0xbf, 0x1e, 0xd7, 0x66,
 	0x51, 0xc1, 0x47, 0x56, 0xa0, 0x61, 0xd6, 0x62,
-	0xf5, 0x80, 0xff, 0x4d, 0xe4, 0x3b, 0x49, 0xfa, 
+	0xf5, 0x80, 0xff, 0x4d, 0xe4, 0x3b, 0x49, 0xfa,
 	0x82, 0xd8, 0x0a, 0x4b, 0x80, 0xf8, 0x43, 0x4a
     };
     static const uint8_t sha3_256_0xa3_200_times[256 / 8] = {
@@ -215,7 +215,7 @@ main()
     }
 
     sha3_HashBuffer(256, SHA3_FLAGS_NONE, "abc", 3, buf, sizeof(buf));
-    if(memcmp(buf, 
+    if(memcmp(buf,
                     "\x3a\x98\x5d\xa7\x4f\xe2\x25\xb2"
                     "\x04\x5c\x17\x2d\x6b\xd3\x90\xbd"
                     "\x85\x5f\x08\x6e\x3e\x9d\x52\x5b"

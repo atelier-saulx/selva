@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     }
 
     if( use_keccak ) {
-        enum SHA3_FLAGS flags2 = sha3_SetFlags(&c, SHA3_FLAGS_KECCAK);
+        enum sha3_flags flags2 = sha3_SetFlags(&c, SHA3_FLAGS_KECCAK);
         if( flags2 != SHA3_FLAGS_KECCAK )  {
 	    printf("Failed to set Keccak mode");
             return 2;

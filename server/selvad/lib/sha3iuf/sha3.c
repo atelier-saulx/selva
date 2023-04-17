@@ -21,6 +21,7 @@
  * SPDX-License-Identifier: MIT
  * ---------------------------------------------------------------------- */
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -81,34 +82,33 @@ static const unsigned keccakf_piln[24] = {
 static void
 keccakf(uint64_t s[25], int keccak_rounds)
 {
-    int i, j, round;
     uint64_t t, bc[5];
 
-    for(round = 0; round < keccak_rounds; round++) {
+    for (int round = 0; round < keccak_rounds; round++) {
         /* Theta */
-        for(i = 0; i < 5; i++)
+        for (int i = 0; i < 5; i++)
             bc[i] = s[i] ^ s[i + 5] ^ s[i + 10] ^ s[i + 15] ^ s[i + 20];
 
-        for(i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             t = bc[(i + 4) % 5] ^ SHA3_ROTL64(bc[(i + 1) % 5], 1);
-            for(j = 0; j < 25; j += 5)
+            for (int j = 0; j < 25; j += 5)
                 s[j + i] ^= t;
         }
 
         /* Rho Pi */
         t = s[1];
-        for(i = 0; i < 24; i++) {
-            j = keccakf_piln[i];
+        for (int i = 0; i < 24; i++) {
+            int j = keccakf_piln[i];
             bc[0] = s[j];
             s[j] = SHA3_ROTL64(t, keccakf_rotc[i]);
             t = bc[0];
         }
 
         /* Chi */
-        for(j = 0; j < 25; j += 5) {
-            for(i = 0; i < 5; i++)
+        for (int j = 0; j < 25; j += 5) {
+            for (int i = 0; i < 5; i++)
                 bc[i] = s[j + i];
-            for(i = 0; i < 5; i++)
+            for (int i = 0; i < 5; i++)
                 s[j + i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
         }
 
@@ -120,55 +120,50 @@ keccakf(uint64_t s[25], int keccak_rounds)
 /* *************************** Public Inteface ************************ */
 
 /* For Init or Reset call these: */
-static sha3_return_t
-sha3_Init(void *priv, unsigned bitSize, int keccak_rounds) {
-    sha3_context *ctx = (sha3_context *) priv;
-    if((bitSize != 256 && bitSize != 384 && bitSize != 512) || keccak_rounds <= 8)
-        return SHA3_RETURN_BAD_PARAMS;
+static void
+sha3_Init(struct sha3_context *ctx, unsigned bitSize, int keccak_rounds) {
+    assert((bitSize == 256 || bitSize == 384 || bitSize == 512) && keccak_rounds > 8);
+
     memset(ctx, 0, sizeof(*ctx));
     ctx->capacityWords = 2 * bitSize / (8 * sizeof(uint64_t));
     ctx->keccak_rounds = keccak_rounds;
-    return SHA3_RETURN_OK;
 }
 
 void
-sha3_Init256(void *priv)
+sha3_Init256(struct sha3_context *ctx)
 {
-    sha3_Init(priv, 256, KECCAK_ROUNDS);
+    sha3_Init(ctx, 256, KECCAK_ROUNDS);
 }
 
 void
-sha3_Init256KitTen(void *priv)
+sha3_Init256KitTen(struct sha3_context *ctx)
 {
-    sha3_Init(priv, 256, 10);
+    sha3_Init(ctx, 256, 10);
 }
 
 void
-sha3_Init384(void *priv)
+sha3_Init384(struct sha3_context *ctx)
 {
-    sha3_Init(priv, 384, KECCAK_ROUNDS);
+    sha3_Init(ctx, 384, KECCAK_ROUNDS);
 }
 
 void
-sha3_Init512(void *priv)
+sha3_Init512(struct sha3_context *ctx)
 {
-    sha3_Init(priv, 512, KECCAK_ROUNDS);
+    sha3_Init(ctx, 512, KECCAK_ROUNDS);
 }
 
-enum SHA3_FLAGS
-sha3_SetFlags(void *priv, enum SHA3_FLAGS flags)
+enum sha3_flags
+sha3_SetFlags(struct sha3_context *ctx, enum sha3_flags flags)
 {
-    sha3_context *ctx = (sha3_context *) priv;
     flags &= SHA3_FLAGS_KECCAK;
     ctx->capacityWords |= (flags == SHA3_FLAGS_KECCAK ? SHA3_USE_KECCAK_FLAG : 0);
     return flags;
 }
 
 void
-sha3_Update(void *priv, void const *bufIn, size_t len)
+sha3_Update(struct sha3_context *ctx, void const *bufIn, size_t len)
 {
-    sha3_context *ctx = (sha3_context *) priv;
-
     /* 0...7 -- how much is needed to have a word */
     unsigned old_tail = (8 - ctx->byteIndex) & 7;
 
@@ -259,10 +254,8 @@ sha3_Update(void *priv, void const *bufIn, size_t len)
  * bytes are always present, but they can be the same byte.
  */
 void const *
-sha3_Finalize(void *priv)
+sha3_Finalize(struct sha3_context *ctx)
 {
-    sha3_context *ctx = (sha3_context *) priv;
-
     SHA3_TRACE("called with %d bytes in the buffer", ctx->byteIndex);
 
     /* Append 2-bit suffix 01, per SHA-3 spec. Instead of 1 for padding we
@@ -292,20 +285,17 @@ sha3_Finalize(void *priv)
      * || !defined(__ORDER_LITTLE_ENDIAN__) || __BYTE_ORDER__!=__ORDER_LITTLE_ENDIAN__
      *    ... the conversion below ...
      * #endif */
-    {
-        unsigned i;
-        for(i = 0; i < SHA3_KECCAK_SPONGE_WORDS; i++) {
-            const unsigned t1 = (uint32_t) ctx->u.s[i];
-            const unsigned t2 = (uint32_t) ((ctx->u.s[i] >> 16) >> 16);
-            ctx->u.sb[i * 8 + 0] = (uint8_t) (t1);
-            ctx->u.sb[i * 8 + 1] = (uint8_t) (t1 >> 8);
-            ctx->u.sb[i * 8 + 2] = (uint8_t) (t1 >> 16);
-            ctx->u.sb[i * 8 + 3] = (uint8_t) (t1 >> 24);
-            ctx->u.sb[i * 8 + 4] = (uint8_t) (t2);
-            ctx->u.sb[i * 8 + 5] = (uint8_t) (t2 >> 8);
-            ctx->u.sb[i * 8 + 6] = (uint8_t) (t2 >> 16);
-            ctx->u.sb[i * 8 + 7] = (uint8_t) (t2 >> 24);
-        }
+    for (unsigned i = 0; i < SHA3_KECCAK_SPONGE_WORDS; i++) {
+        const unsigned t1 = (uint32_t) ctx->u.s[i];
+        const unsigned t2 = (uint32_t) ((ctx->u.s[i] >> 16) >> 16);
+        ctx->u.sb[i * 8 + 0] = (uint8_t) (t1);
+        ctx->u.sb[i * 8 + 1] = (uint8_t) (t1 >> 8);
+        ctx->u.sb[i * 8 + 2] = (uint8_t) (t1 >> 16);
+        ctx->u.sb[i * 8 + 3] = (uint8_t) (t1 >> 24);
+        ctx->u.sb[i * 8 + 4] = (uint8_t) (t2);
+        ctx->u.sb[i * 8 + 5] = (uint8_t) (t2 >> 8);
+        ctx->u.sb[i * 8 + 6] = (uint8_t) (t2 >> 16);
+        ctx->u.sb[i * 8 + 7] = (uint8_t) (t2 >> 24);
     }
 
     SHA3_TRACE_BUF("Hash: (first 32 bytes)", ctx->u.sb, 256 / 8);
@@ -313,16 +303,15 @@ sha3_Finalize(void *priv)
     return (ctx->u.sb);
 }
 
-sha3_return_t sha3_HashBuffer( unsigned bitSize, enum SHA3_FLAGS flags, const void *in, unsigned inBytes, void *out, unsigned outBytes ) {
-    sha3_return_t err;
-    sha3_context c;
+sha3_return_t sha3_HashBuffer( unsigned bitSize, enum sha3_flags flags, const void *in, unsigned inBytes, void *out, unsigned outBytes ) {
+    struct sha3_context c;
 
-    err = sha3_Init(&c, bitSize, KECCAK_ROUNDS);
-    if( err != SHA3_RETURN_OK )
-        return err;
+    sha3_Init(&c, bitSize, KECCAK_ROUNDS);
+
     if( sha3_SetFlags(&c, flags) != flags ) {
         return SHA3_RETURN_BAD_PARAMS;
     }
+
     sha3_Update(&c, in, inBytes);
     const void *h = sha3_Finalize(&c);
 
