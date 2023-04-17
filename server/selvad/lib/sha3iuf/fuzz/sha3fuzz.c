@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2020 brainhub
+ *
+ * SPDX-License-Identifier: MIT
+ */
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -32,8 +37,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 			break;
 		case 3:
 			if(Size >= 2)
-				sha3_HashBuffer((unsigned)Data[0] << 1, 
-						Data[1]/*SHA3_FLAGS_KECCAK or NONE*/, 
+				sha3_HashBuffer((unsigned)Data[0] << 1,
+						Data[1]/*SHA3_FLAGS_KECCAK or NONE*/,
 						Data + 2, Size-2, buf, sizeof(buf));
 			return 0;
 	}

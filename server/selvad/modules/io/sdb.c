@@ -154,7 +154,7 @@ static void sdb_clearerr_string(struct selva_io *restrict io)
 
 void sdb_init(struct selva_io *io)
 {
-    sha3_Init256(&io->hash_c);
+    sha3_Init256KitTen(&io->hash_c);
     if (io->flags & SELVA_IO_FLAGS_FILE_IO) {
         io->sdb_write = sdb_write_file;
         io->sdb_read = sdb_read_file;

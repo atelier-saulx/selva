@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020 brainhub
+ * Copyright (c) 2023 SAULX
  *
  * SPDX-License-Identifier: MIT
  */
@@ -43,6 +44,7 @@ typedef struct sha3_context_ {
                                  * (starts from 0) */
     unsigned capacityWords;     /* the double size of the hash output in
                                  * words (e.g. 16 for Keccak 512) */
+    int keccak_rounds;
 } sha3_context;
 
 enum SHA3_FLAGS {
@@ -56,10 +58,18 @@ enum SHA3_RETURN {
 };
 typedef enum SHA3_RETURN sha3_return_t;
 
-/* For Init or Reset call these: */
-sha3_return_t sha3_Init(void *priv, unsigned bitSize);
-
 void sha3_Init256(void *priv);
+
+/**
+ * SHA-3 KitTen variant.
+ * Not that this is totally incompatible with the standard SHA-3 but it's fine
+ * as long as it's only used internally.
+ *
+ * Too Much Crypto, Jean-Philippe Aumasson
+ * https://eprint.iacr.org/2019/1492.pdf
+ */
+void
+sha3_Init256KitTen(void *priv);
 void sha3_Init384(void *priv);
 void sha3_Init512(void *priv);
 

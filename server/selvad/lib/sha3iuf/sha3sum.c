@@ -1,13 +1,17 @@
 /* -------------------------------------------------------------------------
- * Run SHA-3 (NIST FIPS 202) on the given file. 
+ * Run SHA-3 (NIST FIPS 202) on the given file.
  *
  * Call as
  *
  * sha3sum 256|384|512 file_path
  *
- * See sha3.c for additional details. 
+ * See sha3.c for additional details.
  *
  * Jun 2018. Andrey Jivsov. crypto@brainhub.org
+ *
+ * Copyright (c) 2020 brainhub
+ *
+ * SPDX-License-Identifier: MIT
  * ---------------------------------------------------------------------- */
 
 #include <stdio.h>

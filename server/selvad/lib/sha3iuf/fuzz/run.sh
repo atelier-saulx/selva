@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright (c) 2020 brainhub
+# SPDX-License-Identifier: MIT
 
 THIS_SCRIPT=$(readlink -f $0)
 P=`dirname $THIS_SCRIPT`
