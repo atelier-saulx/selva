@@ -3,8 +3,6 @@ on:
   push:
     paths:
       - 'server/selvad/**'
-    branches-ignore:
-      - 'ng*'
   workflow_dispatch:
 jobs:
   build:
