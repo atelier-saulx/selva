@@ -84,6 +84,7 @@ keccakf(uint64_t s[25], int keccak_rounds)
 {
     for (int round = 0; round < keccak_rounds; round++) {
         uint64_t t, bc[5], bd[5];
+        uint64_t tmp[25];
 
         /* Theta */
         for (int i = 0; i < 5; i++)
@@ -96,30 +97,29 @@ keccakf(uint64_t s[25], int keccak_rounds)
         bd[4] = bc[3] ^ SHA3_ROTL64(bc[0], 1);
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 25; j += 5) {
-                s[j + i] ^= bd[i];
+                tmp[j + i] = s[j + i] ^ bd[i];
             }
         }
 
         /* Rho Pi */
-        t = s[1];
+        t = tmp[1];
         for (int i = 0; i < 24; i++) {
             int j = keccakf_piln[i];
-            bc[0] = s[j];
-            s[j] = SHA3_ROTL64(t, keccakf_rotc[i]);
-            t = bc[0];
+            uint64_t prev = tmp[j];
+
+            tmp[j] = SHA3_ROTL64(t, keccakf_rotc[i]);
+            t = prev;
         }
 
         /* Chi */
         for (int j = 0; j < 25; j += 5) {
-            for (int i = 0; i < 5; i++) {
-                bc[i] = s[j + i];
-            }
+            uint64_t *p = &tmp[j];
 
-            s[j + 0] ^= (~bc[1]) & bc[2];
-            s[j + 1] ^= (~bc[2]) & bc[3];
-            s[j + 2] ^= (~bc[3]) & bc[4];
-            s[j + 3] ^= (~bc[4]) & bc[0];
-            s[j + 4] ^= (~bc[0]) & bc[1];
+            s[j + 0] = p[0] ^ ((~p[1]) & p[2]);
+            s[j + 1] = p[1] ^ ((~p[2]) & p[3]);
+            s[j + 2] = p[2] ^ ((~p[3]) & p[4]);
+            s[j + 3] = p[3] ^ ((~p[4]) & p[0]);
+            s[j + 4] = p[4] ^ ((~p[0]) & p[1]);
         }
 
         /* Iota */
