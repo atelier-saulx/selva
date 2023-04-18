@@ -82,17 +82,20 @@ static const unsigned keccakf_piln[24] = {
 static void
 keccakf(uint64_t s[25], int keccak_rounds)
 {
-    uint64_t t, bc[5];
-
     for (int round = 0; round < keccak_rounds; round++) {
+        uint64_t t, bc[5], bd[5];
+
         /* Theta */
         for (int i = 0; i < 5; i++)
             bc[i] = s[i] ^ s[i + 5] ^ s[i + 10] ^ s[i + 15] ^ s[i + 20];
 
         for (int i = 0; i < 5; i++) {
-            t = bc[(i + 4) % 5] ^ SHA3_ROTL64(bc[(i + 1) % 5], 1);
-            for (int j = 0; j < 25; j += 5)
-                s[j + i] ^= t;
+            bd[i] = bc[(i + 4) % 5] ^ SHA3_ROTL64(bc[(i + 1) % 5], 1);
+        }
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 25; j += 5) {
+                s[j + i] ^= bd[i];
+            }
         }
 
         /* Rho Pi */
