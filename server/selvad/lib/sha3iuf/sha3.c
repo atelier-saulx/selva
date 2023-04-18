@@ -89,9 +89,11 @@ keccakf(uint64_t s[25], int keccak_rounds)
         for (int i = 0; i < 5; i++)
             bc[i] = s[i] ^ s[i + 5] ^ s[i + 10] ^ s[i + 15] ^ s[i + 20];
 
-        for (int i = 0; i < 5; i++) {
-            bd[i] = bc[(i + 4) % 5] ^ SHA3_ROTL64(bc[(i + 1) % 5], 1);
-        }
+        bd[0] = bc[4] ^ SHA3_ROTL64(bc[1], 1);
+        bd[1] = bc[0] ^ SHA3_ROTL64(bc[2], 1);
+        bd[2] = bc[1] ^ SHA3_ROTL64(bc[3], 1);
+        bd[3] = bc[2] ^ SHA3_ROTL64(bc[4], 1);
+        bd[4] = bc[3] ^ SHA3_ROTL64(bc[0], 1);
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 25; j += 5) {
                 s[j + i] ^= bd[i];
@@ -109,10 +111,15 @@ keccakf(uint64_t s[25], int keccak_rounds)
 
         /* Chi */
         for (int j = 0; j < 25; j += 5) {
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 5; i++) {
                 bc[i] = s[j + i];
-            for (int i = 0; i < 5; i++)
-                s[j + i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
+            }
+
+            s[j + 0] ^= (~bc[1]) & bc[2];
+            s[j + 1] ^= (~bc[2]) & bc[3];
+            s[j + 2] ^= (~bc[3]) & bc[4];
+            s[j + 3] ^= (~bc[4]) & bc[0];
+            s[j + 4] ^= (~bc[0]) & bc[1];
         }
 
         /* Iota */
@@ -120,9 +127,6 @@ keccakf(uint64_t s[25], int keccak_rounds)
     }
 }
 
-/* *************************** Public Inteface ************************ */
-
-/* For Init or Reset call these: */
 static void
 sha3_Init(struct sha3_context *ctx, unsigned bitSize, int keccak_rounds) {
     assert((bitSize == 256 || bitSize == 384 || bitSize == 512) && keccak_rounds > 8);
