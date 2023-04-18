@@ -47,7 +47,7 @@ struct selva_io {
         } string_io;
     };
 
-    sha3_context hash_c; /*!< Currently computed hash of the data. */
+    struct sha3_context hash_c; /*!< Currently computed hash of the data. */
     const uint8_t *computed_hash; /*!< Updated at the end of load/save. */
     uint8_t stored_hash[SELVA_IO_HASH_SIZE]; /*!< The hash found in the footer. */
 
