@@ -66,7 +66,6 @@ static int handle_last_good_async(void)
 
     if (!selva_io_last_good_info(hash, &filename)) {
         SELVA_LOG(SELVA_LOGL_INFO, "Found last good: \"%s\"", selva_string_to_str(filename, NULL));
-        /* TODO Should this function also verify the filename? */
         /* It's safe to call this function even if replication is not enabled. */
         selva_replication_complete_sdb(save_sdb_eid, hash);
         selva_string_free(filename);
@@ -139,7 +138,11 @@ static void handle_signal(struct event *ev, void *arg __unused)
 
                 err = handle_child_status(esig.esi_pid, status, "SDB");
                 if (!err) {
-                    /* FIXME last_good isn't necessarily the right file. */
+                    /*
+                     * last_good isn't necessarily the same file the child saved
+                     * but it's the last good so we report it. Could this result
+                     * an incomplete SDB to be left? Yes.
+                     */
                     saved = handle_last_good_async();
                     selva_db_is_dirty = 0;
                 }
