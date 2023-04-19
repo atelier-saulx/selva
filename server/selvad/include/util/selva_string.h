@@ -152,6 +152,13 @@ void selva_string_auto_finalize(struct finalizer *finalizer, struct selva_string
 enum selva_string_flags selva_string_get_flags(const struct selva_string *s);
 
 /**
+ * Get string length.
+ * If the string is compressed then the length returned is the compressed
+ * length including any metadata related to the compression algorithm.
+ */
+size_t selva_string_get_len(const struct selva_string *s);
+
+/**
  * Get uncompressed length.
  * The function will return the right size regardless whether the string is
  * actually compressed.

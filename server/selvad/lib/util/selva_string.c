@@ -243,6 +243,7 @@ struct selva_string *selva_string_fread(FILE *fp, size_t size, enum selva_string
     s = selva_string_create(NULL, size, flags);
     s->len = fread(get_buf(s), 1, size, fp);
 
+    update_crc(s);
     return s;
 }
 
@@ -415,6 +416,11 @@ void selva_string_auto_finalize(struct finalizer *finalizer, struct selva_string
 enum selva_string_flags selva_string_get_flags(const struct selva_string *s)
 {
     return s->flags;
+}
+
+size_t selva_string_get_len(const struct selva_string *s)
+{
+    return s->len;
 }
 
 size_t selva_string_getz_ulen(const struct selva_string *s)
