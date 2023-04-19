@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 SAULX
+ * Copyright (c) 2021-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -15,35 +15,21 @@
 #include "icb.h"
 
 size_t SelvaFindIndexICB_CalcNameLen(const Selva_NodeId node_id, const struct icb_descriptor *desc) {
-    size_t filter_len;
+    const size_t filter_len = desc->filter ? selva_string_get_len(desc->filter) : 0;
     size_t n;
-
-    if (desc->filter) {
-        (void)selva_string_to_str(desc->filter, &filter_len);
-    } else {
-        filter_len = 0;
-    }
 
     n = Selva_NodeIdLen(node_id) + base64_out_len(filter_len, 0) + 3;
 
     if (desc->dir == SELVA_HIERARCHY_TRAVERSAL_BFS_EXPRESSION) {
-        size_t dir_expression_len;
-
-        (void)selva_string_to_str(desc->dir_expression, &dir_expression_len);
-
         /*
          * Currently only expressions are supported in addition to fixed
          * field name traversals.
          */
-        n += base64_out_len(dir_expression_len, 0) + 1;
+        n += base64_out_len(selva_string_get_len(desc->dir_expression), 0) + 1;
     }
 
     if (desc->sort.order != SELVA_RESULT_ORDER_NONE) {
-        size_t order_field_len;
-
-        (void)selva_string_to_str(desc->sort.order_field, &order_field_len);
-
-        n += base64_out_len(order_field_len, 0) + 3;
+        n += base64_out_len(selva_string_get_len(desc->sort.order_field), 0) + 3;
     }
 
     return n;

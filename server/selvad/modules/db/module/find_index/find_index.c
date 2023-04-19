@@ -826,12 +826,10 @@ int SelvaFindIndex_Auto(
     SELVA_TRACE_BEGIN_AUTO(FindIndex_AutoIndex);
     __auto_finalizer struct finalizer fin;
     struct SelvaFindIndexControlBlock *icb;
-    size_t filter_len;
 
     finalizer_init(&fin);
 
-    (void)selva_string_to_str(filter, &filter_len);
-    if (filter_len == 0 || selva_glob_config.find_indices_max == 0) {
+    if (selva_string_get_len(filter) == 0 || selva_glob_config.find_indices_max == 0) {
         /* TODO should it be: find_indices_max == 0 => SELVA_ENOTSUP? */
         return SELVA_EINVAL;
     }

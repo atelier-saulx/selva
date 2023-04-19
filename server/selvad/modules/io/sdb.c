@@ -97,9 +97,8 @@ static int sdb_seek_file(struct selva_io *io, off_t offset, int whence)
 
 static int sdb_seek_string(struct selva_io *io, off_t offset, int whence)
 {
-    size_t data_len;
+    const size_t data_len = selva_string_get_len(io->string_io.data);
 
-    (void)selva_string_to_str(io->string_io.data, &data_len);
     if (whence == SEEK_SET) {
         /* NOP */
     } else if (whence == SEEK_CUR) {

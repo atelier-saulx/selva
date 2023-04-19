@@ -391,10 +391,7 @@ size_t SelvaObject_MemUsage(const void *value) {
         switch (key->type) {
         case SELVA_OBJECT_STRING:
             if (key->value) {
-                size_t len;
-
-                (void)selva_string_to_str(key->value, &len);
-                size += len + 1;
+                size += selva_string_get_len(key->value) + 1;
             }
             break;
         case SELVA_OBJECT_OBJECT:
@@ -1862,18 +1859,12 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
         /* Obviously this is more than one byte but the user doesn't need to care about that. */
         return 1;
     case SELVA_OBJECT_STRING:
-        if (key->value) {
-            size_t len;
-
-            /*
-             * Now we don't exactly know if the value is some utf8 text string
-             * or a binary buffer, so we just return the byte size.
-             */
-            (void)selva_string_to_str(key->value, &len);
-            return len;
-        } else {
-            return 0;
-        }
+        /*
+         * Now we don't exactly know if the value is some utf8 text string
+         * or a binary buffer Heck, we don't even know what the caller
+         * expects. So, we'll just return the byte size.
+         */
+        return (key->value) ? selva_string_get_len(key->value) : 0;
     case SELVA_OBJECT_OBJECT:
         if (key->value) {
             const struct SelvaObject *obj2 = (const struct SelvaObject *)key->value;
