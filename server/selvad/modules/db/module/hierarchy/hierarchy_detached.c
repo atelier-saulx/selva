@@ -104,9 +104,22 @@ static int fread_compressed_subtree(struct selva_string *zpath, struct selva_str
     }
 
     compressed = selva_string_fread(fp, size, SELVA_STRING_COMPRESS);
-    /* TODO check errors */
+    if ((ssize_t)selva_string_get_len(compressed) != size) {
+        if (ferror(fp)) {
+            SELVA_LOG(SELVA_LOGL_ERR, "An error occurred while reading a compressed subtree \"%s\"",
+                      zpath_str);
+            err = SELVA_EIO;
+            goto fail;
+        } else { /* EOF */
+            SELVA_LOG(SELVA_LOGL_ERR, "Unexpected EOF while reading a compressed subtree \"%s\"",
+                      zpath_str);
+            err = SELVA_EIO;
+            goto fail;
+        }
+    }
 
     *compressed_out = compressed;
+    err = 0;
 fail:
     fclose(fp);
     return err;
