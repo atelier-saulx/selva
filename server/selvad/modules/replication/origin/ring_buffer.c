@@ -64,7 +64,6 @@ struct ring_buffer_element *ring_buffer_writer_find(struct ring_buffer *rb, ring
 {
     struct ring_buffer_element *e = NULL;
 
-    /* TODO Lock shouldn't be necessary? */
     pthread_mutex_lock(&rb->lock);
 
     int j = (rb->tail) % rb->len;
