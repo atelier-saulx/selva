@@ -1878,7 +1878,7 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
 
             SHIFT_ARGS(2);
         } else if (!strcmp("fields_rpn", argv_fields_txt)) {
-            const char *expr_str;
+            const char *expr_str = selva_string_to_str(argv[ARGV_FIELDS_VAL], NULL);
 
             /*
              * Note that fields_rpn and merge can't work together because the
@@ -1886,12 +1886,6 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
              */
             if (merge_strategy != MERGE_STRATEGY_NONE) {
                 selva_send_errorf(resp, SELVA_EINVAL, "fields_rpn with merge not supported");
-                return;
-            }
-
-            err = SelvaArgParser_StrOpt(&expr_str, "fields_rpn", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
-            if (err) {
-                selva_send_errorf(resp, err, "Parsing fields_rpn argument failed");
                 return;
             }
 
@@ -1904,17 +1898,10 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
 
             SHIFT_ARGS(2);
         } else if (!strcmp("inherit_rpn", argv_fields_txt)) {
-            const char *expr_str;
+            const char *expr_str = selva_string_to_str(argv[ARGV_FIELDS_VAL], NULL);
 
             if (merge_strategy != MERGE_STRATEGY_NONE) {
                 selva_send_errorf(resp, SELVA_EINVAL, "inherit with merge not supported");
-                return;
-            }
-
-            /* TODO arg parser isn't technically needed here */
-            err = SelvaArgParser_StrOpt(&expr_str, "inherit_rpn", argv[ARGV_FIELDS_TXT], argv[ARGV_FIELDS_VAL]);
-            if (err) {
-                selva_send_errorf(resp, err, "Parsing inherit_rpn argument failed");
                 return;
             }
 
