@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 #include "util/crc32c.h"
 #include "util/tcp.h"
@@ -32,10 +33,22 @@ retry:
         case EWOULDBLOCK:
 #endif
         case ENOBUFS:
-            /* TODO Should we sleep here? */
             if (retry_count++ > MAX_RETRIES) {
                 return SELVA_PROTO_ENOBUFS; /* Not quite exact for EAGAIN but good enough. */
+            } else {
+                /*
+                 * The safest thing to do is a blocking sleep so this
+                 * thread/process will give the kernel some time to
+                 * flush its buffers.
+                 */
+                const struct timespec tim = {
+                    .tv_sec = 0,
+                    .tv_nsec = 500, /* *sleeve-shaking* */
+                };
+
+                nanosleep(&tim, NULL);
             }
+
             goto retry;
         case EINTR:
             goto retry;
