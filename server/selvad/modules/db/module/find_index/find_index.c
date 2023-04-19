@@ -747,6 +747,10 @@ static void create_icb_timer(struct SelvaFindIndexControlBlock *icb) {
     assert(icb->flags.valid_timer_id == 0);
     icb->timer_id = evl_set_timeout(&period, icb_proc, icb);
     icb->flags.valid_timer_id = 1;
+
+    if (icb->timer_id < 0) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to setup an ICB timer");
+    }
 }
 
 /**
@@ -759,6 +763,10 @@ static void create_indexing_timer(struct SelvaHierarchy *hierarchy) {
     assert(hierarchy->dyn_index.proc_timer_active == 0);
     hierarchy->dyn_index.proc_timer_id = evl_set_timeout(&period, make_indexing_decission_proc, hierarchy);
     hierarchy->dyn_index.proc_timer_active = 1;
+
+    if (hierarchy->dyn_index.proc_timer_id < 0) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to setup the indexing timer");
+    }
 }
 
 void SelvaFindIndex_Init(SelvaHierarchy *hierarchy) {

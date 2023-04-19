@@ -220,7 +220,10 @@ SelvaHierarchy *SelvaModify_NewHierarchy(void) {
 
         msec2timespec(&timeout, selva_glob_config.hierarchy_auto_compress_period_ms);
         hierarchy->inactive.auto_compress_timer = evl_set_timeout(&timeout, auto_compress_proc, hierarchy);
-        /* TODO Check error */
+        if (hierarchy->inactive.auto_compress_timer < 0) {
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to setup a timer for auto compression: %s",
+                      selva_strerror(hierarchy->inactive.auto_compress_timer));
+        }
     }
 
 fail:
@@ -2880,7 +2883,10 @@ static void auto_compress_proc(struct event *, void *data) {
 
     backoff_timeout_next(&backoff, &timeout);
     hierarchy->inactive.auto_compress_timer = evl_set_timeout(&timeout, auto_compress_proc, hierarchy);
-    /* TODO Check error */
+    if (hierarchy->inactive.auto_compress_timer < 0) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to setup a timer for auto compression: %s",
+                  selva_strerror(hierarchy->inactive.auto_compress_timer));
+    }
 }
 
 static int load_metadata(struct selva_io *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
