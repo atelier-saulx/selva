@@ -41,7 +41,7 @@
 /**
  * Size of the origin ring buffer for replication.
  */
-#define REPLICATION_RING_BUFFER_SIZE 100
+#define REPLICATION_RING_BUFFER_SIZE 1024
 
 /**
  * Maximum number of replica clients to an origin.
