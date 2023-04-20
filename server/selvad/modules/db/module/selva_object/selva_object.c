@@ -75,7 +75,7 @@ struct SelvaObjectKey {
 
 struct SelvaObject {
     uint32_t obj_size;
-    uint16_t emb_res;
+    uint16_t emb_res; /*!< Bitmap for reserved embedded fields. */
     uint16_t flags;
     struct SelvaObjectKeys keys_head;
     _Alignas(struct SelvaObjectKey) char emb_keys[NR_EMBEDDED_KEYS * EMBEDDED_KEY_SIZE];
