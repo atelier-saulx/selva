@@ -9,9 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include "jemalloc.h"
 #include "util/auto_free.h"
 #include "util/backoff_timeout.h"
