@@ -5,12 +5,15 @@
 #pragma once
 
 struct replica {
+    /* -- Origin writes -- */
     int in_use; /*!< Used for alloc. See new_replica() and release_replica(). */
     unsigned id; /*!< Replica id. */
     struct selva_thread thread;
+    enum replication_sync_mode sync_mode;
     ring_buffer_eid_t start_eid; /*!< Must point to an sdb dump. */
     uint8_t start_sdb_hash[SELVA_IO_HASH_SIZE];
-    enum replication_sync_mode sync_mode;
+    /* -- Replica writes -- */
+    ring_buffer_eid_t current_eid;
     struct ring_buffer *rb; /*!< Pointer to the shared ring_buffer. */
     struct selva_server_response_out *resp; /*!< Response stream to the replica (client). */
 };

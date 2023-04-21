@@ -235,7 +235,7 @@ struct selva_proto_replication_sdb {
          * This message is sent to let the replica know that it's in sync with
          * the sdb_eid given in this message. The dump is omitted.
          */
-        SELVA_PROTO_REPLICATION_SDB_FPSEUDO,
+        SELVA_PROTO_REPLICATION_SDB_FPSEUDO = 0x01,
     } __packed flags;
     uint8_t _spare[14];
     uint64_t eid; /*!< Element id of this message. */

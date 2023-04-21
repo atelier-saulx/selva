@@ -451,3 +451,11 @@
  * cmd: replicainfo
  */
 #define CMD_ID_REPLICAINFO 69
+
+/**
+ * Replica status message.
+ * Sent by a replica to the origin.
+ * module: replication
+ * cmd: replicastatus
+ */
+#define CMD_ID_REPLICASTATUS 70

@@ -336,7 +336,7 @@ int selva_send_replication_pseudo_sdb(struct selva_server_response_out *resp, ui
         .eid = htole64(eid),
         .bsize = 0,
     };
-    int res;
+    ssize_t res;
 
     res = server_send_buf(resp, &buf, sizeof(buf), 0);
     return (res < 0) ? (int)res : 0;

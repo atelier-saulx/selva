@@ -364,6 +364,34 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
 #endif
 }
 
+static void replicastatus(struct selva_server_response_out *resp, const void *buf, size_t size)
+{
+    __auto_finalizer struct finalizer fin;
+    uint64_t eid;
+    int argc;
+
+    finalizer_init(&fin);
+
+    if (replication_mode != SELVA_REPLICATION_MODE_ORIGIN) {
+        selva_send_errorf(resp, SELVA_ENOTSUP, "Not an origin");
+        return;
+    }
+
+    argc = selva_proto_scanf(&fin, buf, size, "%" PRIu64, &eid);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Invalid arguments");
+        return;
+    } else if (argc != 1) {
+        selva_send_error_arity(resp);
+        return;
+    }
+
+    /* TODO update */
+#if 0
+    SELVA_LOG(SELVA_LOGL_INFO, "replica at %" PRIu64, eid);
+#endif
+}
+
 IMPORT() {
     evl_import_main(selva_log);
     evl_import_main(config_resolve);
@@ -412,4 +440,5 @@ __constructor void init(void)
     SELVA_MK_COMMAND(CMD_ID_REPLICASYNC, SELVA_CMD_MODE_MUTATE, replicasync);
     SELVA_MK_COMMAND(CMD_ID_REPLICAOF, SELVA_CMD_MODE_PURE, replicaof);
     SELVA_MK_COMMAND(CMD_ID_REPLICAINFO, SELVA_CMD_MODE_PURE, replicainfo);
+    SELVA_MK_COMMAND(CMD_ID_REPLICASTATUS, SELVA_CMD_MODE_MUTATE, replicastatus);
 }
