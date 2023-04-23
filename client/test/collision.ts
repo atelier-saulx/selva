@@ -48,10 +48,10 @@ test.serial.only('collision', async (t) => {
     )
 
     allIds.push(...ids)
-    const expectedIds = allIds.length
-    const uniqueIds = new Set(allIds).size
-    if (expectedIds !== uniqueIds) {
-      console.log({ expectedIds, uniqueIds })
+    const expectedUniqueIds = allIds.length
+    const actualUniqueIds = new Set(allIds).size
+    if (expectedUniqueIds !== actualUniqueIds) {
+      console.log({ expectedUniqueIds, actualUniqueIds })
       t.fail()
       break
     }
