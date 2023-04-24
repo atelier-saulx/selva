@@ -61,7 +61,7 @@ SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, enum selva_cmd_mode mode, con
 /**
  * Describe the connection related to this response as a string.
  */
-SELVA_SERVER_EXPORT(size_t, selva_resp_to_str, struct selva_server_response_out *resp, char *buf, size_t bsize);
+SELVA_SERVER_EXPORT(size_t, selva_resp_to_str, const struct selva_server_response_out *resp, char *buf, size_t bsize);
 
 /**
  * Get the command id related to this response.

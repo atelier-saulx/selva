@@ -70,13 +70,13 @@ static struct command *get_command(int nr)
     return (nr >= 0 && nr < (int)num_elem(commands)) ? &commands[nr] : NULL;
 }
 
-size_t selva_resp_to_str(struct selva_server_response_out *resp, char *buf, size_t bsize)
+size_t selva_resp_to_str(const struct selva_server_response_out *resp, char *buf, size_t bsize)
 {
     if (bsize < CONN_STR_LEN) {
         return 0;
     }
 
-    if (!resp || resp->ctx) {
+    if (!resp || !resp->ctx) {
         strcpy(buf, "<not connected>");
         return 15;
     }
