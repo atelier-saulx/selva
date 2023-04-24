@@ -11,6 +11,7 @@ struct replica {
     struct selva_thread thread;
     enum replication_sync_mode sync_mode;
     ring_buffer_eid_t start_eid; /*!< Must point to an sdb dump. */
+    uint64_t ack_eid; /*!< Last ack'd eid by the replica. */
     uint8_t start_sdb_hash[SELVA_IO_HASH_SIZE];
     /* -- Replica writes -- */
     ring_buffer_eid_t current_eid;

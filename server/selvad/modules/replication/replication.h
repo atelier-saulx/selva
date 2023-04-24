@@ -81,7 +81,26 @@ int replication_origin_register_replica(
         enum replication_sync_mode mode);
 
 unsigned replication_origin_get_replicas_mask(void);
+
+/**
+ * Find replica by resp connection.
+ * The resp structure doesn't need to be the one registered with
+ * replication_origin_register_replica() but any selva_server_response_out that
+ * utilizes the same connection.
+ */
+int replication_origin_find_replica(struct selva_server_response_out *resp, unsigned *replication_id);
+
 struct selva_server_response_out *replication_origin_get_replica_resp(unsigned replica_id);
+
+/**
+ * Update current eid as reported by the replica.
+ */
+void replication_origin_update_replica_last_ack(unsigned replica_id, uint64_t eid);
+
+/**
+ * Returns the last ack'd eid.
+ */
+uint64_t replication_origin_get_replica_last_ack(unsigned replica_id);
 
 /**
  * Initialize this node as an origin.

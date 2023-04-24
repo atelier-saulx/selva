@@ -84,6 +84,13 @@ size_t selva_resp_to_str(const struct selva_server_response_out *resp, char *buf
     return conn_to_str(resp->ctx, buf, bsize);
 }
 
+int selva_resp_cmp_conn(
+        const struct selva_server_response_out *resp_a,
+        const struct selva_server_response_out *resp_b)
+{
+    return resp_a->ctx && resp_b->ctx && resp_a->ctx == resp_b->ctx;
+}
+
 int selva_resp_to_cmd_id(struct selva_server_response_out *resp)
 {
     return resp->cmd;

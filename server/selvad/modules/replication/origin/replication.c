@@ -266,11 +266,41 @@ unsigned replication_origin_get_replicas_mask(void)
     return ring_buffer_get_readers_mask(&origin_state.rb);
 }
 
+int replication_origin_find_replica(struct selva_server_response_out *resp, unsigned *replication_id)
+{
+    for (unsigned i = 0; i < REPLICATION_MAX_REPLICAS; i++) {
+        const struct replica *replica = &origin_state.replicas[i];
+
+        if (replica->in_use && selva_resp_cmp_conn(replica->resp, resp)) {
+            *replication_id = replica->id;
+            return 0;
+        }
+    }
+
+    return SELVA_ENOENT;
+}
+
 struct selva_server_response_out *replication_origin_get_replica_resp(unsigned replica_id)
 {
     const struct replica *replica = &origin_state.replicas[replica_id];
 
     return (replica->in_use) ? replica->resp : NULL;
+}
+
+void replication_origin_update_replica_last_ack(unsigned replica_id, uint64_t eid)
+{
+    struct replica *replica = &origin_state.replicas[replica_id];
+
+    if (replica->in_use) {
+        replica->ack_eid = eid;
+    }
+}
+
+uint64_t replication_origin_get_replica_last_ack(unsigned replica_id)
+{
+    const struct replica *replica = &origin_state.replicas[replica_id];
+
+    return (replica->in_use) ? replica->ack_eid : 0;
 }
 
 static ring_buffer_eid_t next_eid(void)

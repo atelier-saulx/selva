@@ -64,6 +64,15 @@ SELVA_SERVER_EXPORT(int, selva_mk_command, int nr, enum selva_cmd_mode mode, con
 SELVA_SERVER_EXPORT(size_t, selva_resp_to_str, const struct selva_server_response_out *resp, char *buf, size_t bsize);
 
 /**
+ * Compares connections of two response structures.
+ * If the connections are equal (i.e. same client) then the function returns true;
+ * Otherwise returns false.
+ */
+SELVA_SERVER_EXPORT(int, selva_resp_cmp_conn,
+        const struct selva_server_response_out *resp_a,
+        const struct selva_server_response_out *resp_b);
+
+/**
  * Get the command id related to this response.
  */
 SELVA_SERVER_EXPORT(int, selva_resp_to_cmd_id, struct selva_server_response_out *resp);
@@ -223,6 +232,7 @@ SELVA_SERVER_EXPORT(int, selva_server_run_cmd, int8_t cmd_id, int64_t ts, void *
     apply(selva_server_set_readonly) \
     apply(selva_mk_command) \
     apply(selva_resp_to_str) \
+    apply(selva_resp_cmp_conn) \
     apply(selva_resp_to_cmd_id) \
     apply(selva_resp_to_ts) \
     apply(selva_send_flush) \

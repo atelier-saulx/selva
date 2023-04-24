@@ -355,9 +355,10 @@ static void replicainfo_origin(struct selva_server_response_out *resp)
 
             resp_replica = replication_origin_get_replica_resp(replica_id);
 
-            selva_send_array(resp, 2);
+            selva_send_array(resp, 3);
             selva_send_ll(resp, replica_id);
             selva_send_str(resp, buf, (int)selva_resp_to_str(resp_replica, buf, sizeof(buf)));
+            selva_send_llx(resp, (long long)replication_origin_get_replica_last_ack(replica_id));
         }
     }
 }
@@ -405,7 +406,8 @@ static void replicastatus(struct selva_server_response_out *resp, const void *bu
 {
     __auto_finalizer struct finalizer fin;
     uint64_t eid;
-    int argc;
+    int argc, err;
+    unsigned replication_id;
 
     finalizer_init(&fin);
 
@@ -423,7 +425,14 @@ static void replicastatus(struct selva_server_response_out *resp, const void *bu
         return;
     }
 
-    /* TODO update */
+    err = replication_origin_find_replica(resp, &replication_id);
+    if (err) {
+        selva_send_errorf(resp, err, "replica lookup failed");
+        return;
+    }
+
+    replication_origin_update_replica_last_ack(replication_id, eid);
+
 #if 0
     SELVA_LOG(SELVA_LOGL_INFO, "replica at %" PRIu64, eid);
 #endif
