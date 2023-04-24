@@ -167,17 +167,30 @@ static void free_replbuf(void *buf, ring_buffer_eid_t eid)
     }
 }
 
+static unsigned next_replica_id(unsigned replica_id)
+{
+    return (replica_id == (REPLICATION_MAX_REPLICAS - 1))
+       ? 0
+       : replica_id + 1;
+}
+
 /**
  * Allocate a new replica_id.
  */
 static struct replica *new_replica(struct selva_server_response_out *resp)
 {
-    for (int i = 0; i < REPLICATION_MAX_REPLICAS; i++) {
-        if (!origin_state.replicas[i].in_use) {
-            struct replica *r = &origin_state.replicas[i];
+    static unsigned last_replica_id;
+    unsigned replica_id = last_replica_id;
 
+    for (int i = 0; i < REPLICATION_MAX_REPLICAS; i++) {
+        struct replica *r = &origin_state.replicas[replica_id];
+
+        replica_id = next_replica_id(replica_id);
+
+        if (!r->in_use) {
             r->in_use = 1;
             r->resp = resp;
+            last_replica_id = replica_id;
             return r;
         }
     }
