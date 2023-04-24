@@ -248,6 +248,18 @@ int replication_origin_register_replica(
     return 0;
 }
 
+unsigned replication_origin_get_replicas_mask(void)
+{
+    return ring_buffer_get_readers_mask(&origin_state.rb);
+}
+
+struct selva_server_response_out *replication_origin_get_replica_resp(unsigned replica_id)
+{
+    const struct replica *replica = &origin_state.replicas[replica_id];
+
+    return (replica->in_use) ? replica->resp : NULL;
+}
+
 static ring_buffer_eid_t next_eid(void)
 {
     const ring_buffer_eid_t sdb_eid_um = origin_state.last_sdb_eid & ~EID_MSB_MASK;

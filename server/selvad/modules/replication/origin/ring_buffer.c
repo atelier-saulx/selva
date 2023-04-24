@@ -107,6 +107,11 @@ void ring_buffer_del_reader(struct ring_buffer *rb, unsigned reader_id)
     ring_buffer_del_readers_mask(rb, mask);
 }
 
+unsigned ring_buffer_get_readers_mask(struct ring_buffer *rb)
+{
+    return atomic_load(&rb->readers_mask);
+}
+
 void ring_buffer_reader_exit(struct ring_buffer *rb, struct ring_buffer_reader_state *state)
 {
     const unsigned mask = 1 << state->reader_id;

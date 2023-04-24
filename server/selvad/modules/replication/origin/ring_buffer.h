@@ -109,6 +109,8 @@ void ring_buffer_del_readers_mask(struct ring_buffer *rb, unsigned readers);
  */
 void ring_buffer_del_reader(struct ring_buffer *rb, unsigned reader_id);
 
+unsigned ring_buffer_get_readers_mask(struct ring_buffer *rb);
+
 /**
  * Release all elements assigned for this reader.
  * Can be called by the the writer thread. If called by the

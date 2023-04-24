@@ -80,6 +80,9 @@ int replication_origin_register_replica(
         const uint8_t start_sdb_hash[SELVA_IO_HASH_SIZE],
         enum replication_sync_mode mode);
 
+unsigned replication_origin_get_replicas_mask(void);
+struct selva_server_response_out *replication_origin_get_replica_resp(unsigned replica_id);
+
 /**
  * Initialize this node as an origin.
  * This is an irreversible operation.
@@ -115,6 +118,10 @@ uint64_t replication_replica_new_sdb(const char *filename);
  * Returns 1 if the replica believes it's in a stale state.
  */
 int replication_replica_is_stale(void);
+
+#ifdef CONN_STR_LEN
+size_t replication_replica_origin2str(char buf[CONN_STR_LEN]);
+#endif
 
 /**
  * Start replicating from an origin server.

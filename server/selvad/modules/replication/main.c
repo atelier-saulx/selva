@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "util/finalizer.h"
+#include "util/net.h"
 #include "util/sdb_name.h"
 #include "util/selva_string.h"
 #include "util/timestamp.h"
@@ -319,49 +320,85 @@ static void replicaof(struct selva_server_response_out *resp, const void *buf, s
     selva_send_ll(resp, 1);
 }
 
-static void replicainfo(struct selva_server_response_out *resp, const void *buf __unused, size_t size)
+static void replicainfo_none(struct selva_server_response_out *resp)
 {
-#if 0
-    int origic_sock;
-    char buf[CONN_STR_LEN]
-#endif
+    /*
+     * - mode
+     */
+    selva_send_array(resp, 1);
+    selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
+}
 
-    if (size) {
-        selva_send_error_arity(resp);
-        return;
-    }
-
-    selva_send_array(resp, 4);
+static void replicainfo_origin(struct selva_server_response_out *resp)
+{
+    const unsigned replicas_mask = replication_origin_get_replicas_mask();
+    const int nr_replicas = __builtin_popcount(replicas_mask);
 
     /*
      * - mode
      * - sdb_hash
      * - sdb_eid
      * - cmd_eid
+     * - [[replica_id, addr], ...]
      */
+    selva_send_array(resp, 5);
+    selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
+    selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
+    selva_send_llx(resp, (long long)replication_origin_get_last_sdb_eid());
+    selva_send_llx(resp, (long long)replication_origin_get_last_cmd_eid());
+
+    selva_send_array(resp, nr_replicas);
+    for (unsigned replica_id = 0; replica_id < REPLICATION_MAX_REPLICAS; replica_id++) {
+        if (replicas_mask & (1 << replica_id)) {
+            const struct selva_server_response_out *resp_replica;
+            char buf[CONN_STR_LEN];
+
+            resp_replica = replication_origin_get_replica_resp(replica_id);
+
+            selva_send_array(resp, 2);
+            selva_send_ll(resp, replica_id);
+            selva_send_str(resp, buf, (int)selva_resp_to_str(resp_replica, buf, sizeof(buf)));
+        }
+    }
+}
+
+static void replicainfo_replica(struct selva_server_response_out *resp)
+{
+    char buf[CONN_STR_LEN];
+
+    /*
+     * - mode
+     * - sdb_hash
+     * - sdb_eid
+     * - cmd_eid
+     * - origin
+     */
+    selva_send_array(resp, 5);
+    selva_send_strf(resp, "%s_%s", replication_mode_str[replication_mode], replication_replica_is_stale() ? "STALE" : "ACTIVE");
+    selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
+    selva_send_llx(resp, (long long)replication_replica_get_last_sdb_eid());
+    selva_send_llx(resp, (long long)replication_replica_get_last_cmd_eid());
+    selva_send_str(resp, buf, (int)replication_replica_origin2str(buf));
+}
+
+static void replicainfo(struct selva_server_response_out *resp, const void *buf __unused, size_t size)
+{
+    if (size) {
+        selva_send_error_arity(resp);
+        return;
+    }
+
     switch (replication_mode) {
     case SELVA_REPLICATION_MODE_NONE:
-        selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
-        selva_send_null(resp);
-        selva_send_null(resp);
-        selva_send_null(resp);
+        replicainfo_none(resp);
         break;
     case SELVA_REPLICATION_MODE_ORIGIN:
-        selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
-        selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
-        selva_send_llx(resp, (long long)replication_origin_get_last_sdb_eid());
-        selva_send_llx(resp, (long long)replication_origin_get_last_cmd_eid());
+        replicainfo_origin(resp);
         break;
     case SELVA_REPLICATION_MODE_REPLICA:
-        selva_send_strf(resp, "%s_%s", replication_mode_str[replication_mode], replication_replica_is_stale() ? "STALE" : "ACTIVE");
-        selva_send_bin(resp, last_sdb_hash, SELVA_IO_HASH_SIZE);
-        selva_send_llx(resp, (long long)replication_replica_get_last_sdb_eid());
-        selva_send_llx(resp, (long long)replication_replica_get_last_cmd_eid());
+        replicainfo_replica(resp);
         break;
     }
-#if 0
-    selva_send_str("%s", buf, (int)fd_to_str(origin_sock, buf, sizeof(buf)));
-#endif
 }
 
 static void replicastatus(struct selva_server_response_out *resp, const void *buf, size_t size)

@@ -16,6 +16,7 @@
 #include "jemalloc.h"
 #include "util/backoff_timeout.h"
 #include "util/crc32c.h"
+#include "util/net.h"
 #include "util/sdb_name.h"
 #include "util/selva_string.h"
 #include "util/tcp.h"
@@ -235,6 +236,11 @@ uint64_t replication_replica_new_sdb(const char *filename)
 int replication_replica_is_stale(void)
 {
     return !sv.sock;
+}
+
+size_t replication_replica_origin2str(char buf[CONN_STR_LEN])
+{
+    return fd_to_str(sv.sock, buf, CONN_STR_LEN);
 }
 
 static int send_sync_req(int sock)
