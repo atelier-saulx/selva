@@ -52,6 +52,8 @@ uint64_t replication_origin_get_last_sdb_eid(void);
  */
 uint64_t replication_origin_get_last_cmd_eid(void);
 
+uint64_t replication_origin_get_last_eid(void);
+
 /**
  * Replicate a command to replicas.
  */

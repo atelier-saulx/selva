@@ -459,3 +459,12 @@
  * cmd: replicastatus
  */
 #define CMD_ID_REPLICASTATUS 70
+
+/**
+ * Wait for replicas to sync.
+ * Waits until all replicas are at current or newer eid (if new sync points are
+ * created during the execution of this command).
+ * module: replication
+ * cmd: replicawait
+ */
+#define CMD_ID_REPLICAWAIT 71

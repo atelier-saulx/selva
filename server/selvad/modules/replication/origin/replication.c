@@ -34,6 +34,7 @@ struct origin_state {
     ring_buffer_eid_t last_pending_sdb_eid;
     ring_buffer_eid_t last_sdb_eid;
     ring_buffer_eid_t last_cmd_eid; /*!< Last cmd eid. */
+    ring_buffer_eid_t last_eid; /*!< Last eid written to rb. */
 
     /**
      * Ring buffer where the commands to be replicated to the replicas are kept.
@@ -66,6 +67,8 @@ static void insert(ring_buffer_eid_t eid, int64_t ts, int8_t cmd, void *p, size_
     while ((not_replicated = ring_buffer_insert(&origin_state.rb, eid, ts, cmd, p, p_size))) {
         drop_replicas(not_replicated);
     }
+
+    origin_state.last_eid = eid;
 }
 
 void replication_origin_new_sdb(const char *filename, uint8_t sdb_hash[SELVA_IO_HASH_SIZE])
@@ -150,6 +153,11 @@ uint64_t replication_origin_get_last_sdb_eid(void)
 uint64_t replication_origin_get_last_cmd_eid(void)
 {
     return origin_state.last_cmd_eid;
+}
+
+uint64_t replication_origin_get_last_eid(void)
+{
+    return origin_state.last_eid;
 }
 
 static void free_replbuf(void *buf, ring_buffer_eid_t eid)

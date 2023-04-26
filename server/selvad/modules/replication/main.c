@@ -44,6 +44,28 @@ static const struct config cfg_map[] = {
     { "AUTO_SAVE_INTERVAL",     CONFIG_INT, &auto_save_interval },
 };
 
+static const struct timespec replicawait_interval = {
+    .tv_sec = 1,
+    .tv_nsec = 0,
+};
+
+struct replicawait_arg {
+    uint64_t eid;
+    struct selva_server_response_out *stream_resp;
+};
+
+static void *new_struct(size_t size, void *v)
+{
+    void *p = malloc(size);
+
+    memcpy(p, v, size);
+
+    return p;
+}
+
+#define NEW_STRUCT(_value_) \
+    (typeof(_value_))new_struct(sizeof(*(_value_)), (_value_))
+
 enum replication_mode selva_replication_get_mode(void)
 {
     return replication_mode;
@@ -339,7 +361,7 @@ static void replicainfo_origin(struct selva_server_response_out *resp)
      * - sdb_hash
      * - sdb_eid
      * - cmd_eid
-     * - [[replica_id, addr], ...]
+     * - [[replica_id, addr, last_ack], ...]
      */
     selva_send_array(resp, 5);
     selva_send_strf(resp, "%s", replication_mode_str[replication_mode]);
@@ -438,6 +460,61 @@ static void replicastatus(struct selva_server_response_out *resp, const void *bu
 #endif
 }
 
+static void replicawait_cb(struct event *, void *arg)
+{
+    struct replicawait_arg *args = (struct replicawait_arg *)arg;
+    const unsigned replicas_mask = replication_origin_get_replicas_mask();
+    const int nr_replicas = __builtin_popcount(replicas_mask);
+    const uint64_t expected_eid = args->eid & ~EID_MSB_MASK;
+    int i = 0;
+
+    for (unsigned replica_id = 0; replica_id < REPLICATION_MAX_REPLICAS; replica_id++) {
+        if (replicas_mask & (1 << replica_id)) {
+            const uint64_t last_ack = replication_origin_get_replica_last_ack(replica_id) & ~EID_MSB_MASK;
+
+            i += last_ack >= expected_eid;
+        }
+    }
+
+#if 0
+    SELVA_LOG(SELVA_LOGL_INFO, "last_eid: %" PRIx64 ", %d of %d in sync", args->eid, i, nr_replicas);
+#endif
+    if (i == nr_replicas) {
+        selva_send_ll(args->stream_resp, 1);
+        selva_send_end(args->stream_resp);
+        free(args);
+    } else {
+        evl_set_timeout(&replicawait_interval, replicawait_cb, arg);
+    }
+}
+
+static void replicawait(struct selva_server_response_out *resp, const void *buf __unused, size_t size)
+{
+    struct selva_server_response_out *stream_resp;
+    int err;
+
+    if (size) {
+        selva_send_error_arity(resp);
+        return;
+    }
+
+    if (replication_mode != SELVA_REPLICATION_MODE_ORIGIN) {
+        selva_send_errorf(resp, SELVA_ENOTSUP, "Not an origin");
+        return;
+    }
+
+    err = selva_start_stream(resp, &stream_resp);
+    if (err && err != SELVA_PROTO_ENOTCONN) {
+        selva_send_errorf(resp, err, "Failed to create a stream");
+        return;
+    }
+
+    evl_set_timeout(&replicawait_interval, replicawait_cb, NEW_STRUCT((&(struct replicawait_arg){
+        .eid = replication_origin_get_last_eid(),
+        .stream_resp = stream_resp,
+    })));
+}
+
 IMPORT() {
     evl_import_main(selva_log);
     evl_import_main(config_resolve);
@@ -487,4 +564,5 @@ __constructor void init(void)
     SELVA_MK_COMMAND(CMD_ID_REPLICAOF, SELVA_CMD_MODE_PURE, replicaof);
     SELVA_MK_COMMAND(CMD_ID_REPLICAINFO, SELVA_CMD_MODE_PURE, replicainfo);
     SELVA_MK_COMMAND(CMD_ID_REPLICASTATUS, SELVA_CMD_MODE_MUTATE, replicastatus);
+    SELVA_MK_COMMAND(CMD_ID_REPLICAWAIT, SELVA_CMD_MODE_PURE, replicawait);
 }

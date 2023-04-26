@@ -83,6 +83,9 @@ void ring_buffer_init(struct ring_buffer* rb, struct ring_buffer_element *buf, s
  */
 int ring_buffer_init_state(struct ring_buffer_reader_state* state, struct ring_buffer* rb, ring_buffer_eid_t id, unsigned reader_id);
 
+/**
+ * Find element corresponding to id in the ring buffer.
+ */
 struct ring_buffer_element *ring_buffer_writer_find(struct ring_buffer *rb, ring_buffer_eid_t id);
 
 /**
