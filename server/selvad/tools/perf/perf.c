@@ -21,6 +21,7 @@
 #include "util/timestamp.h"
 #include "selva_error.h"
 #include "selva_proto.h"
+#include "../../commands.h"
 
 #define NODE_ID_SIZE 10
 
@@ -104,7 +105,7 @@ static int send_modify(int fd, int seqno, typeof_field(struct selva_proto_header
         char value2_str[sizeof(uint64_t)];
     } __packed buf = {
         .hdr = {
-            .cmd = 65, /* TODO hardcoded cmd_id */
+            .cmd = CMD_ID_MODIFY,
             .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST | frame_extra_flags,
             .seqno = htole32(seqno),
             .frame_bsize = htole16(sizeof(buf)),

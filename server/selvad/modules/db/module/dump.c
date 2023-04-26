@@ -438,6 +438,24 @@ static void save_db_cmd(struct selva_server_response_out *resp, const void *buf,
      */
 }
 
+static void flush_db_cmd(struct selva_server_response_out *resp, const void *buf __unused, size_t len)
+{
+    if (len) {
+        selva_send_error_arity(resp);
+        return;
+    }
+
+    SelvaModify_DestroyHierarchy(main_hierarchy);
+    main_hierarchy = SelvaModify_NewHierarchy();
+    if (!main_hierarchy) {
+        SELVA_LOG(SELVA_LOGL_CRIT, "Failed to create a new main_hierarchy");
+        exit(1);
+    }
+
+    selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
+    selva_send_ll(resp, 1);
+}
+
 static void dump_on_exit(int code, void *)
 {
     char filename[SDB_NAME_MIN_BUF_SIZE];
@@ -463,6 +481,7 @@ static void dump_on_exit(int code, void *)
 static int dump_onload(void) {
     selva_mk_command(CMD_ID_LOAD, SELVA_CMD_MODE_MUTATE, "load", load_db_cmd);
     selva_mk_command(CMD_ID_SAVE, SELVA_CMD_MODE_PURE, "save", save_db_cmd);
+    selva_mk_command(CMD_ID_FLUSH, SELVA_CMD_MODE_MUTATE, "flush", flush_db_cmd);
 
     setup_sigchld();
 

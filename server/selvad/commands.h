@@ -81,173 +81,175 @@
  */
 #define CMD_ID_SAVE 15
 
+#define CMD_ID_FLUSH 16
+
 /**
  * Resolve name to a nodeid.
  * module: db
  * cmd: resolve.nodeid
  */
-#define CMD_ID_RESOLVE_NODEID 16
+#define CMD_ID_RESOLVE_NODEID 17
 
 /**
  * Find.
  * module: db
  * cmd: hierarchy.find
  */
-#define CMD_ID_HIERARCHY_FIND 17
+#define CMD_ID_HIERARCHY_FIND 18
 
 /**
  * Inherit.
  * module: db
  * cmd: hierarchy.inherit
  */
-#define CMD_ID_HIERARCHY_INHERIT 18
+#define CMD_ID_HIERARCHY_INHERIT 19
 
 /**
  * Aggregate.
  * module: db
  * cmd: hierarchy.aggregate
  */
-#define CMD_ID_HIERARCHY_AGGREGATE 19
+#define CMD_ID_HIERARCHY_AGGREGATE 20
 
 /**
  * Aggregate in list.
  * module: db
  * cmd: hierarchy.aggregateIn
  */
-#define CMD_ID_HIERARCHY_AGGREGATE_IN 20
+#define CMD_ID_HIERARCHY_AGGREGATE_IN 21
 
 /**
  * Edge add constraints.
  * module: db
  * cmd: hierarchy.addConstraint
  */
-#define CMD_ID_HIERARCHY_ADDCONSTRAINT 21
+#define CMD_ID_HIERARCHY_ADDCONSTRAINT 22
 
 /**
  * Edge list constraints.
  * module: db
  * cmd: hierarchy.listConstraints
  */
-#define CMD_ID_HIERARCHY_LIST_CONSTRAINTS 22
+#define CMD_ID_HIERARCHY_LIST_CONSTRAINTS 23
 
 /**
  * Delete node.
  * module: db
  * cmd: hierarchy.del
  */
-#define CMD_ID_HIERARCHY_DEL 23
+#define CMD_ID_HIERARCHY_DEL 24
 
 /**
  * List hierarchy heads.
  * module: db
  * cmd: hierarchy.heads
  */
-#define CMD_ID_HIERARCHY_HEADS 24
+#define CMD_ID_HIERARCHY_HEADS 25
 
 /**
  * List node parents.
  * module: db
  * cmd: hierarchy.parents
  */
-#define CMD_ID_HIERARCHY_PARENTS 25
+#define CMD_ID_HIERARCHY_PARENTS 26
 
 /**
  * List node children.
  * module: db
  * cmd: hierarchy.children
  */
-#define CMD_ID_HIERARCHY_CHILDREN 26
+#define CMD_ID_HIERARCHY_CHILDREN 27
 
 /**
  * List node edges.
  * module: db
  * cmd: hierarchy.edgeList
  */
-#define CMD_ID_HIERARCHY_EDGE_LIST 27
+#define CMD_ID_HIERARCHY_EDGE_LIST 28
 
 /**
  * Get node edges.
  * module: db
  * cmd: hierarchy.edgeGet
  */
-#define CMD_ID_HIERARCHY_EDGE_GET 28
+#define CMD_ID_HIERARCHY_EDGE_GET 29
 
 /**
  * Get node edge metadata.
  * module: db
  * cmd: hierarchy.edgeGetMetadata
  */
-#define CMD_ID_HIERARCHY_EDGE_GET_METADATA 29
+#define CMD_ID_HIERARCHY_EDGE_GET_METADATA 30
 
 /**
  * Compress a hierarchy subtree.
  * module: db
  * cmd: hierarchy.compress
  */
-#define CMD_ID_HIERARCHY_COMPRESS 30
+#define CMD_ID_HIERARCHY_COMPRESS 31
 
 /**
  * List compressed hierarchy subtrees.
  * module: db
  * cmd: hierarchy.listCompressed
  */
-#define CMD_ID_HIERARCHY_LIST_COMPRESSED 31
+#define CMD_ID_HIERARCHY_LIST_COMPRESSED 32
 
 /**
  * Get hierarchy version information.
  * module: db
  * cmd: hierarchy.ver
  */
-#define CMD_ID_HIERARCHY_VER 32
+#define CMD_ID_HIERARCHY_VER 33
 
 /**
  * Add a new node type.
  * module: db
  * cmd: hierarchy.types.add
  */
-#define CMD_ID_HIERARCHY_TYPES_ADD 33
+#define CMD_ID_HIERARCHY_TYPES_ADD 34
 
 /**
  * Clear all node types.
  * module: db
  * cmd: hierarchy.types.clear
  */
-#define CMD_ID_HIERARCHY_TYPES_CLEAR 34
+#define CMD_ID_HIERARCHY_TYPES_CLEAR 35
 
 /**
  * List all known node types.
  * module: db
  * cmd: hierarchy.types.list
  */
-#define CMD_ID_HIERARCHY_TYPES_LIST 35
+#define CMD_ID_HIERARCHY_TYPES_LIST 36
 
 /**
  * List find indices.
  * module: db
  * cmd: index.list
  */
-#define CMD_ID_INDEX_LIST 36
+#define CMD_ID_INDEX_LIST 37
 
 /**
  * Create a new find index.
  * module: db
  * cmd: index.new
  */
-#define CMD_ID_INDEX_NEW 37
+#define CMD_ID_INDEX_NEW 38
 
 /**
  * Delete a find index.
  * module: db
  * cmd: index.del
  */
-#define CMD_ID_INDEX_DEL 38
+#define CMD_ID_INDEX_DEL 39
 
 /**
  * Describe a find index.
  * module: db
  * cmd: index.debug
  */
-#define CMD_ID_INDEX_DEBUG 39
+#define CMD_ID_INDEX_DEBUG 40
 
 /**
  * Evaluate an RPN expression into a bool.
