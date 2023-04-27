@@ -456,7 +456,7 @@ static void flush_db_cmd(struct selva_server_response_out *resp, const void *buf
     selva_send_ll(resp, 1);
 }
 
-static void dump_on_exit(int code, void *)
+__used static void dump_on_exit(int code, void *)
 {
     char filename[SDB_NAME_MIN_BUF_SIZE];
     int err;
@@ -485,10 +485,14 @@ static int dump_onload(void) {
 
     setup_sigchld();
 
+#ifdef __GLIBC__
     if (on_exit(dump_on_exit, NULL)) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Can't register an exit function");
         return SELVA_ENOBUFS;
     }
+#else
+    SELVA_LOG(SELVA_LOGL_WARN, "Not registering an exit function (GLIBC-only feat)");
+#endif
 
     return 0;
 }
