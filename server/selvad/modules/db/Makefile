@@ -31,6 +31,7 @@ OBJ := \
 	   module/resolve.o \
 	   module/rpn/rpn.o \
 	   module/rpn/rpn_eval.o \
+	   module/sdb_purge.o \
 	   module/selva_lang.o \
 	   module/selva_object/selva_object.o \
 	   module/selva_object/selva_object_commands.o \
@@ -45,7 +46,6 @@ OBJ := \
 	   module/shared_strings.o \
 	   module/subscriptions.o \
 	   module/update.o
-#	   module/selva_object/selva_object_commands.o
 #	   module/modinfo.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -I./include -include ../../tunables.h

@@ -19,6 +19,8 @@ char *selva_strdup(const char *s) __attribute__((access(read_only, 1), returns_n
  */
 int strrnchr(const char *str, size_t len, char c) __attribute__((pure, access(read_only, 1, 2)));
 
+int str_endswith(const char *str, const char *suffix) __attribute__((pure));
+
 int stringlist_search(const char *list, const char *str) __attribute__((pure, access(read_only, 1), access(read_only, 2)));
 int stringlist_searchn(const char *list, const char *str, size_t n) __attribute__((pure, access(read_only, 1), access(read_only, 2, 3)));
 size_t substring_count(const char *string, const char *substring, size_t n) __attribute__((pure, access(read_only, 1), access(read_only, 2, 3)));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 SAULX
+ * Copyright (c) 2020-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #define _GNU_SOURCE
@@ -42,6 +42,16 @@ int strrnchr(const char *str, size_t len, char c) {
     }
 
     return i;
+}
+
+int str_endswith(const char *str, const char *suffix)
+{
+    const size_t lenstr = strlen(str);
+    const size_t lensuffix = strlen(suffix);
+
+    return (lensuffix > lenstr)
+        ? 0
+        : !strcmp(str + lenstr - lensuffix, suffix);
 }
 
 int stringlist_search(const char *list, const char *str) {
