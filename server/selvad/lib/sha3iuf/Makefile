@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 include ../../common.mk
 
+# -fopt-info-vec-all
 CFLAGS += -fPIC -I../../include/sha3iuf
 ifeq ($(uname_S),Linux)
 	LDFLAGS += -shared -fPIC
