@@ -638,6 +638,7 @@ static int send_node_fields(
         }
 
         /* Sent 2 * nr_fields */
+        (void)nr_fields;
         selva_send_array_end(resp);
     }
 
@@ -770,6 +771,7 @@ static int send_array_object_fields(
         }
 
         /* Sent 2 * nr_fields */
+        (void)nr_fields;
         selva_send_array_end(resp);
     }
 
