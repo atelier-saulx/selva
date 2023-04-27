@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "util/finalizer.h"
 #include "util/net.h"
 #include "util/sdb_name.h"
