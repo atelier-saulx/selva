@@ -59,7 +59,7 @@ struct selva_string *selva_string_create(const char *str, size_t len, enum selva
 [[nodiscard]]
 struct selva_string *selva_string_createf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
-#ifdef _STDIO_H
+#if defined(_STDIO_H) || defined(_STDIO_H_)
 /**
  * Read a string from a file directly into a new selva_string.
  * If the resulting string is shorter than `size` an errno is set. Use the
