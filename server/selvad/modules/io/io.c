@@ -46,8 +46,8 @@ static void test_io_mode(struct selva_io *io, enum selva_io_flags mode)
  */
 __noreturn static void exit_read_error(struct selva_io *io, const char *type, const char *whence)
 {
-    SELVA_LOG(SELVA_LOGL_CRIT, "Invalid read. offset: %ld whence: \"%s\" type: %s",
-              io->sdb_tell(io), whence, type);
+    SELVA_LOG(SELVA_LOGL_CRIT, "Invalid read. offset: %lld whence: \"%s\" type: %s",
+              (long long)io->sdb_tell(io), whence, type);
     abort();
 }
 
