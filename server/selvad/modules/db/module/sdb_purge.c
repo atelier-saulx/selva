@@ -54,7 +54,6 @@ static void purge_sdb_cmd(struct selva_server_response_out *resp, const void *bu
         selva_send_error_arity(resp);
         return;
     }
-    SELVA_LOG(SELVA_LOGL_INFO, "argc: %d", argc);
 
     struct selva_string *last_good = get_last_good();
     const char *last_good_str = last_good ? selva_string_to_str(last_good, NULL) : NULL;
