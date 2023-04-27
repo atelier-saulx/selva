@@ -253,7 +253,7 @@ struct selva_string *selva_string_createz(const char *in_str, size_t in_len, enu
     size_t compressed_size;
     struct selva_string *tmp;
 
-    if ((flags & (SELVA_STRING_MUTABLE || SELVA_STRING_INTERN || SELVA_STRING_MUTABLE_FIXED)) ||
+    if ((flags & (SELVA_STRING_MUTABLE | SELVA_STRING_INTERN | SELVA_STRING_MUTABLE_FIXED)) ||
         (flags & INVALID_FLAGS_MASK)) {
         return NULL; /* Invalid flags */
     }
