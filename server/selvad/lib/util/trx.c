@@ -29,7 +29,7 @@ void Trx_Sync(const struct trx_state * restrict state, struct trx_label * restri
 
 int Trx_Visit(struct trx * restrict cur_trx, struct trx_label * restrict label) {
     if (cur_trx->id != label->id) {
-        /* Visit & first visit of this trx. */
+        /* Visit & first visit during this trx. */
         label->id = cur_trx->id;
         label->cl = cur_trx->cl;
 

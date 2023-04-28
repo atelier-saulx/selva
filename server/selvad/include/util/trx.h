@@ -20,15 +20,15 @@ typedef uint64_t trxid_t;
  * new transaction.
  */
 struct trx_state {
-    trxid_t id; /*!< Id of the transaction. */
-    trxid_t cl; /*!< Colors used in the transaction. */
-    trxid_t ex; /*!< Traversals that have finished. */
+    trxid_t id; /*!< Id of the currently executing transaction. */
+    trxid_t cl; /*!< Traversal colors used in the transaction. */
+    trxid_t ex; /*!< Traversal colors that have finished in this transaction. */
 };
 
 /**
  * Transaction label/element state.
- * Every element in a data structure should have a label
- * structure of this type.
+ * Every element or node in a data structure should have a label structure of
+ * this type.
  */
 struct trx_label {
     trxid_t id; /*!< Id of the currently executing transaction. */
@@ -48,7 +48,7 @@ struct trx {
 /**
  * Start a new traversal.
  * This function will either start a new transaction or select a new color
- * for an open transaction.
+ * for a transaction currently open.
  */
 int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx);
 
@@ -61,7 +61,7 @@ int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx);
 void Trx_Sync(const struct trx_state * restrict state, struct trx_label * restrict label);
 
 /**
- * Visit a node.
+ * Attempt to visit a transaction label.
  * @returns 0 if the node should not be visited;
  *          1 if the node should be visited.
  */
@@ -73,7 +73,7 @@ int __hot Trx_Visit(struct trx * restrict cur_trx, struct trx_label * restrict l
 int Trx_HasVisited(const struct trx * restrict cur_trx, const struct trx_label * restrict label);
 
 /**
- * End traversal.
+ * End the current traversal.
  */
 void Trx_End(struct trx_state * restrict state, struct trx * restrict cur);
 
