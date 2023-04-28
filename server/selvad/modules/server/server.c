@@ -167,6 +167,17 @@ static void lscmd(struct selva_server_response_out *resp, const void *buf __unus
     selva_send_array_end(resp);
 }
 
+static void lsmod(struct selva_server_response_out *resp, const void *buf __unused, size_t size __unused)
+{
+    const struct evl_module_info *mod = NULL;
+
+    selva_send_array(resp, -1);
+    while ((mod = evl_get_next_module(mod))) {
+        selva_send_str(resp, mod->name, strlen(mod->name));
+    }
+    selva_send_array_end(resp);
+}
+
 static const struct timespec hrt_period = {
     .tv_sec = 5,
     .tv_nsec = 0,
@@ -502,6 +513,7 @@ int selva_server_run_cmd(int8_t cmd_id, int64_t ts, void *msg, size_t msg_size)
 
 IMPORT() {
     evl_import_main(selva_log);
+    evl_import_main(evl_get_next_module);
     evl_import_main(config_resolve);
     evl_import_main(config_list_get);
     evl_import_event_loop();
@@ -531,6 +543,7 @@ __constructor void init(void)
     SELVA_MK_COMMAND(CMD_ID_PING, SELVA_CMD_MODE_PURE, ping);
     SELVA_MK_COMMAND(CMD_ID_ECHO, SELVA_CMD_MODE_PURE, echo);
     SELVA_MK_COMMAND(CMD_ID_LSCMD, SELVA_CMD_MODE_PURE, lscmd);
+    SELVA_MK_COMMAND(CMD_ID_LSMOD, SELVA_CMD_MODE_PURE, lsmod);
     SELVA_MK_COMMAND(CMD_ID_HRT, SELVA_CMD_MODE_PURE, hrt);
     SELVA_MK_COMMAND(CMD_ID_CONFIG, SELVA_CMD_MODE_PURE, config);
     SELVA_MK_COMMAND(CMD_ID_MALLOCSTATS, SELVA_CMD_MODE_PURE, mallocstats);

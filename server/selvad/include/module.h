@@ -9,11 +9,25 @@
 
 #include "_evl_export.h"
 
+struct evl_module_info {
+    char name[80];
+    void *hndl;
+    /*
+     * SLIST_ENTRY() would do the following but this way we avoid to include
+     * the whole header.
+     */
+    struct {
+        struct evl_module_info *sle_next;
+    } entries;
+};
+
 /**
  * Load a module.
  * @returns A handle to the module if it was was loaded successfully.
  */
 EVL_EXPORT(void *, evl_load_module, const char *path);
+
+EVL_EXPORT(const struct evl_module_info *, evl_get_next_module, const struct evl_module_info *mod);
 
 [[nodiscard]]
 static inline void *_evl_import(const char *what, const char *from) {

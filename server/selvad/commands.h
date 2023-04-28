@@ -41,10 +41,11 @@
 #define CMD_ID_LSLANG 4
 
 /**
- * TODO
- * cmd: modinfo
+ * List loaded modules.
+ * module: server
+ * cmd: lsmod
  */
-#define CMD_ID_MODINFO 5
+#define CMD_ID_LSMOD 5
 
 /**
  * Show running configuration.
