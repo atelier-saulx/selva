@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 SAULX
+ * Copyright (c) 2020-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stdint.h>
@@ -20,14 +20,14 @@ int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx) {
     return 0;
 }
 
-void Trx_Sync(const struct trx_state * restrict state, struct trx * restrict label) {
+void Trx_Sync(const struct trx_state * restrict state, struct trx_label * restrict label) {
     if (label->id != state->id) {
         label->id = state->id;
         label->cl = 0; /* Not visited yet. */
     }
 }
 
-int Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label) {
+int Trx_Visit(struct trx * restrict cur_trx, struct trx_label * restrict label) {
     if (cur_trx->id != label->id) {
         /* Visit & first visit of this trx. */
         label->id = cur_trx->id;
@@ -44,7 +44,7 @@ int Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label) {
     return 0; /* Don't visit. */
 }
 
-int Trx_HasVisited(const struct trx * restrict cur_trx, const struct trx * restrict label) {
+int Trx_HasVisited(const struct trx * restrict cur_trx, const struct trx_label * restrict label) {
     return label->id == cur_trx->id && (label->cl & cur_trx->cl) == cur_trx->cl;
 }
 

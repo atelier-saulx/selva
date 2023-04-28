@@ -71,7 +71,7 @@ enum SelvaNodeFlags {
 typedef struct SelvaHierarchyNode {
     Selva_NodeId id; /* Must be first. */
     enum SelvaNodeFlags flags;
-    struct trx trx_label;
+    struct trx_label trx_label;
 #if HIERARCHY_SORT_BY_DEPTH
     ssize_t depth;
 #endif

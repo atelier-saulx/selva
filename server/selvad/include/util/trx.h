@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 SAULX
+ * Copyright (c) 2020-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -12,6 +12,8 @@ typedef uint64_t trxid_t;
 
 /**
  * Global transaction state.
+ * There should be one of these structures once per the whole data structure
+ * to manage the transaction state system.
  * A transaction is reentrant and the same transaction can call Trx_Begin()
  * multiple times. A transaction ends when Trx_End() is called the same number
  * of times as Trx_Begin() was called. The last call to Trx_End() initializes a
@@ -25,9 +27,18 @@ struct trx_state {
 
 /**
  * Transaction label/element state.
- * When used to hold the current reentrant state the variable is typically
- * called trx_cur, while the label in the traversed data structure is
- * called trx_label.
+ * Every element in a data structure should have a label
+ * structure of this type.
+ */
+struct trx_label {
+    trxid_t id; /*!< Id of the currently executing transaction. */
+    trxid_t cl; /*!< Color of the currently executing traversal. */
+};
+
+/**
+ * Current transaction state.
+ * Holds the state of the current transaction. This structure is typically
+ * allocated as a stack variable called trx_cur.
  */
 struct trx {
     trxid_t id; /*!< Id of the currently executing transaction. */
@@ -47,19 +58,19 @@ int Trx_Begin(struct trx_state * restrict state, struct trx * restrict trx);
  * id to the label but you don't need to know later on if the transaction
  * (traversal) actually visited the node.
  */
-void Trx_Sync(const struct trx_state * restrict state, struct trx * restrict label);
+void Trx_Sync(const struct trx_state * restrict state, struct trx_label * restrict label);
 
 /**
  * Visit a node.
  * @returns 0 if the node should not be visited;
  *          1 if the node should be visited.
  */
-int __hot Trx_Visit(struct trx * restrict cur_trx, struct trx * restrict label);
+int __hot Trx_Visit(struct trx * restrict cur_trx, struct trx_label * restrict label);
 
 /**
  * Test if cur_tx has visited label.
  */
-int Trx_HasVisited(const struct trx * restrict cur_trx, const struct trx * restrict label);
+int Trx_HasVisited(const struct trx * restrict cur_trx, const struct trx_label * restrict label);
 
 /**
  * End traversal.
@@ -78,7 +89,7 @@ static inline int Trx_Fin(const struct trx_state * restrict state) {
  * The label age is practically a distance or a difference between the current
  * id and when the label was stamped with an id the last time.
  */
-static inline long long Trx_LabelAge(const struct trx_state * restrict state, const struct trx * restrict label) {
+static inline long long Trx_LabelAge(const struct trx_state * restrict state, const struct trx_label * restrict label) {
     return (long long)(state->id - label->id);
 }
 
