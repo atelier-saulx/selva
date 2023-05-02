@@ -20,8 +20,8 @@
 /**
  * NodeId size including the type prefix.
  */
-#define SELVA_NODE_ID_SIZE      10ul /* Must be at least sizeof(void *) */
-#define SELVA_PRI_NODE_ID_SIZE  "10s"
+#define SELVA_NODE_ID_SIZE      16ul /* Must be at least sizeof(void *) */
+#define SELVA_PRI_NODE_ID_SIZE  "16s"
 /**
  * NodeId type prefix size.
  */
@@ -29,11 +29,11 @@
 /**
  * NodeId of the root node.
  */
-#define ROOT_NODE_ID            "root\0\0\0\0\0\0"
+#define ROOT_NODE_ID            "root\0\0\0\0\0\0\0\0\0\0\0\0"
 /**
  * An empty nodeId.
  */
-#define EMPTY_NODE_ID           "\0\0\0\0\0\0\0\0\0\0"
+#define EMPTY_NODE_ID           "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 
 #define SELVA_ALIASES_KEY       "___selva_aliases"
 

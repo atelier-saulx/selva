@@ -23,7 +23,7 @@
 #include "selva_proto.h"
 #include "../../commands.h"
 
-#define NODE_ID_SIZE 10
+#define NODE_ID_SIZE 16
 
 struct thread_args {
     int fd;
@@ -166,7 +166,7 @@ static int send_modify(int fd, int seqno, typeof_field(struct selva_proto_header
         },
     };
 
-    memcpy(buf.id_str, node_id, NODE_ID_SIZE);
+    strncpy(buf.id_str, node_id, NODE_ID_SIZE);
     memcpy(buf.value2_str, &(uint64_t){seqno}, sizeof(uint64_t));
 
     buf.hdr.chk = htole32(crc32c(0, &buf, sizeof(buf)));
@@ -370,11 +370,7 @@ int main(int argc, char *argv[])
         typeof_field(struct selva_proto_header, flags) frame_extra_flags = (batch && (seqno < n - 1)) ? SELVA_PROTO_HDR_BATCH : 0;
         char node_id[NODE_ID_SIZE + 1];
 
-        if (single_node) {
-            memcpy(node_id, "ma00000001", NODE_ID_SIZE);
-        } else {
-            snprintf(node_id, sizeof(node_id), "ma%.*x", NODE_ID_SIZE - 2, seqno);
-        }
+        snprintf(node_id, sizeof(node_id), "ma%.*x", NODE_ID_SIZE - 2, single_node ? 1 : seqno);
 
         send_modify(sock, seqno++, frame_extra_flags, node_id);
         if (!threaded) {
