@@ -100,7 +100,7 @@ SELVA_TRACE_HANDLE(SelvaObject_get_key);
  * The default is: Do Nothing.
  */
 static const struct SelvaObjectPointerOpts default_ptr_opts = {
-    .ptr_type_id = 0,
+    .ptr_type_id = SELVA_OBJECT_POINTER_NOP,
 };
 SELVA_OBJECT_POINTER_OPTS(default_ptr_opts);
 
@@ -243,7 +243,7 @@ static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
     selva_free(array);
 }
 
-static int clear_key_value(struct SelvaObjectKey *key) {
+static void clear_key_value(struct SelvaObjectKey *key) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
     case SELVA_OBJECT_DOUBLE:
@@ -282,12 +282,9 @@ static int clear_key_value(struct SelvaObjectKey *key) {
          */
         SELVA_LOG(SELVA_LOGL_ERR, "Unknown object value type (%d)",
                   (int)key->type);
-        return SELVA_EINTYPE;
     }
 
     key->type = SELVA_OBJECT_NULL;
-
-    return 0;
 }
 
 /**
@@ -324,7 +321,7 @@ static void remove_key(struct SelvaObject *obj, struct SelvaObjectKey *key) {
     /* Clear and free the key. */
     RB_REMOVE(SelvaObjectKeys, &obj->keys_head, key);
     obj->obj_size--;
-    (void)clear_key_value(key);
+    clear_key_value(key);
 
     if (i >= 0 && i < NR_EMBEDDED_KEYS) {
         /* The key was allocated from the embedded keys. */
@@ -364,12 +361,8 @@ void SelvaObject_Destroy(struct SelvaObject *obj) {
     }
 
     SelvaObject_Clear(obj, NULL);
-    if (obj->flags & SELVA_OBJECT_FLAG_STATIC) {
-        memset(obj, 0, sizeof(*obj));
-    } else if (obj->flags & SELVA_OBJECT_FLAG_DYNAMIC) {
-#if MEM_DEBUG
-        memset(obj, 0, sizeof(*obj));
-#endif
+    memset(obj, 0, sizeof(*obj));
+    if (obj->flags & SELVA_OBJECT_FLAG_DYNAMIC) {
         selva_free(obj);
     }
 }
@@ -437,14 +430,14 @@ static int insert_new_key(struct SelvaObject *obj, const char *name_str, size_t 
     return 0;
 }
 
-static int _insert_new_obj_into_array(struct SelvaObject *obj, const char *s, size_t slen, ssize_t ary_idx, struct SelvaObject **out) {
+static int insert_new_obj_into_array(struct SelvaObject *obj, const char *s, size_t slen, ssize_t ary_idx, struct SelvaObject **out) {
     struct SelvaObject *new_obj;
     int err;
 
     new_obj = SelvaObject_New();
-
     err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
     if (err) {
+        SelvaObject_Destroy(new_obj);
         return err;
     }
 
@@ -458,7 +451,6 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
     const size_t nr_parts = substring_count(key_name_str, sep, key_name_len) + 1;
     char buf[key_name_len + 1]; /* We assume that the length has been sanity checked at this point. */
     struct SelvaObjectKey *key = NULL;
-    struct SelvaObject *cobj = obj; /* Containing object. */
 
     memcpy(buf, key_name_str, key_name_len);
     buf[key_name_len] = '\0';
@@ -497,7 +489,6 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             slen = new_len;
         }
 
-        cobj = obj;
         key = NULL; /* This needs to be cleared on every iteration. */
         nr_parts_found++;
 
@@ -508,8 +499,6 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
 
             obj = key->value;
-            cobj = obj;
-
             is_timeseries = 0;
             key = NULL;
         }
@@ -535,7 +524,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
 
             init_object_array(key, SELVA_OBJECT_OBJECT, ary_idx + 1);
-            err = _insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
+            err = insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
             if (err) {
                 return err;
             }
@@ -547,11 +536,9 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              * Otherwise we can just reuse the old one.
              */
             if (!key) {
-                int err2;
-
-                err2 = insert_new_key(obj, s, slen, &key);
-                if (err2) {
-                    return err2;
+                err = insert_new_key(obj, s, slen, &key);
+                if (err) {
+                    return err;
                 }
             } else {
                 /*
@@ -590,7 +577,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              */
             err = SelvaObject_GetArrayIndexAsSelvaObject(obj, s, slen, ary_idx, &obj);
             if ((flags & SELVA_OBJECT_GETKEY_CREATE) && (err == SELVA_ENOENT || !obj)) {
-                err = _insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
+                err = insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
             }
             if (err) {
                 return err;
@@ -626,7 +613,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
     }
 
     if (flags & SELVA_OBJECT_GETKEY_DELETE) {
-        remove_key(cobj, key);
+        remove_key(obj, key);
         key = NULL;
     }
 
@@ -749,7 +736,7 @@ static inline int array_type_match(const struct SelvaObjectKey *key, enum SelvaO
     return key->type == SELVA_OBJECT_ARRAY && key->subtype == subtype;
 }
 
-static int get_key_modify_array(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, size_t size_hint, struct SelvaObjectKey **key_out) {
+static int get_key_array_modify(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, size_t size_hint, struct SelvaObjectKey **key_out) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -761,15 +748,62 @@ static int get_key_modify_array(struct SelvaObject *obj, const char *key_name_st
     }
 
     if (!array_type_match(key, subtype)) {
-        err = clear_key_value(key);
-        if (err) {
-            return err;
-        }
-
+        clear_key_value(key);
         init_object_array(key, subtype, size_hint);
     }
 
     *key_out = key;
+    return 0;
+}
+
+static int get_selva_set(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaSetType type, struct SelvaSet **set_out) {
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    }
+
+    if (key->type != SELVA_OBJECT_SET) {
+        return SELVA_EINVAL;
+    }
+
+    if (key->selva_set.type != type) {
+        return SELVA_EINTYPE;
+    }
+
+    *set_out = &key->selva_set;
+    return 0;
+}
+
+static int get_selva_set_modify(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
+    TO_STR(key_name);
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    if (!SelvaSet_isValidType(type)) {
+        return SELVA_EINTYPE;
+    }
+
+    err = get_key_modify(obj, key_name_str, key_name_len, &key);
+    if (err) {
+        return err;
+    }
+
+    if (key->type != SELVA_OBJECT_SET) {
+        clear_key_value(key);
+        SelvaSet_Init(&key->selva_set, type);
+        key->type = SELVA_OBJECT_SET;
+    } else if (key->selva_set.type != type) {
+        return SELVA_EINTYPE;
+    }
+
+    *set_out = &key->selva_set;
     return 0;
 }
 
@@ -897,11 +931,7 @@ int SelvaObject_SetDoubleStr(struct SelvaObject *obj, const char *key_name_str, 
         return err;
     }
 
-    err = clear_key_value(key);
-    if (err) {
-        return err;
-    }
-
+    clear_key_value(key);
     key->type = SELVA_OBJECT_DOUBLE;
     key->emb_double_value = value;
 
@@ -935,11 +965,7 @@ int SelvaObject_SetDoubleDefaultStr(struct SelvaObject *obj, const char *key_nam
         return err;
     }
 
-    err = clear_key_value(key);
-    if (err) {
-        return err;
-    }
-
+    clear_key_value(key);
     key->type = SELVA_OBJECT_DOUBLE;
     key->emb_double_value = value;
 
@@ -967,11 +993,7 @@ int SelvaObject_UpdateDoubleStr(struct SelvaObject *obj, const char *key_name_st
         return SELVA_EEXIST;
     }
 
-    err = clear_key_value(key);
-    if (err) {
-        return err;
-    }
-
+    clear_key_value(key);
     key->type = type;
     key->emb_double_value = value;
 
@@ -995,11 +1017,7 @@ int SelvaObject_SetLongLongStr(struct SelvaObject *obj, const char *key_name_str
         return err;
     }
 
-    err = clear_key_value(key);
-    if (err) {
-        return err;
-    }
-
+    clear_key_value(key);
     key->type = SELVA_OBJECT_LONGLONG;
     key->emb_ll_value = value;
 
@@ -1033,11 +1051,7 @@ int SelvaObject_SetLongLongDefaultStr(struct SelvaObject *obj, const char *key_n
         return err;
     }
 
-    err = clear_key_value(key);
-    if (err) {
-        return err;
-    }
-
+    clear_key_value(key);
     key->type = SELVA_OBJECT_LONGLONG;
     key->emb_ll_value = value;
 
@@ -1065,11 +1079,7 @@ int SelvaObject_UpdateLongLongStr(struct SelvaObject *obj, const char *key_name_
         return SELVA_EEXIST;
     }
 
-    err = clear_key_value(key);
-    if (err) {
-        return err;
-    }
-
+    clear_key_value(key);
     key->type = type;
     key->emb_ll_value = value;
 
@@ -1093,11 +1103,7 @@ int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, 
         return err;
     }
 
-    err = clear_key_value(key);
-    if (err) {
-        return err;
-    }
-
+    clear_key_value(key);
     key->type = SELVA_OBJECT_STRING;
     key->value = value;
 
@@ -1127,11 +1133,7 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
         }
         key->emb_double_value += incr;
     } else {
-        err = clear_key_value(key);
-        if (err) {
-            return err;
-        }
-
+        clear_key_value(key);
         key->type = SELVA_OBJECT_DOUBLE;
         key->emb_double_value = default_value;
         if (prev) {
@@ -1165,11 +1167,7 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
         }
         key->emb_ll_value += incr;
     } else {
-        err = clear_key_value(key);
-        if (err) {
-            return err;
-        }
-
+        clear_key_value(key);
         key->type = SELVA_OBJECT_LONGLONG;
         key->emb_ll_value = default_value;
         if (prev) {
@@ -1222,11 +1220,7 @@ int SelvaObject_SetObjectStr(struct SelvaObject *obj, const char *key_name_str, 
         return err;
     }
 
-    err = clear_key_value(key);
-    if (err) {
-        return err;
-    }
-
+    clear_key_value(key);
     key->type = SELVA_OBJECT_OBJECT;
     key->value = value;
 
@@ -1237,38 +1231,6 @@ int SelvaObject_SetObject(struct SelvaObject *obj, const struct selva_string *ke
     TO_STR(key_name);
 
     return SelvaObject_SetObjectStr(obj, key_name_str, key_name_len, value);
-}
-
-static int get_selva_set_modify(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
-    TO_STR(key_name);
-    struct SelvaObjectKey *key;
-    int err;
-
-    assert(obj);
-
-    if (!SelvaSet_isValidType(type)) {
-        return SELVA_EINTYPE;
-    }
-
-    err = get_key_modify(obj, key_name_str, key_name_len, &key);
-    if (err) {
-        return err;
-    }
-
-    if (key->type != SELVA_OBJECT_SET) {
-        err = clear_key_value(key);
-        if (err) {
-            return err;
-        }
-
-        SelvaSet_Init(&key->selva_set, type);
-        key->type = SELVA_OBJECT_SET;
-    } else if (key->selva_set.type != type) {
-        return SELVA_EINTYPE;
-    }
-
-    *set_out = &key->selva_set;
-    return 0;
 }
 
 int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const struct selva_string *key_name, double value) {
@@ -1307,35 +1269,12 @@ int SelvaObject_AddStringSet(struct SelvaObject *obj, const struct selva_string 
     return SelvaSet_Add(selva_set, value);
 }
 
-static int get_selva_set_str(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaSetType type, struct SelvaSet **set_out) {
-    struct SelvaObjectKey *key;
-    int err;
-
-    assert(obj);
-
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err) {
-        return err;
-    }
-
-    if (key->type != SELVA_OBJECT_SET) {
-        return SELVA_EINVAL;
-    }
-
-    if (key->selva_set.type != type) {
-        return SELVA_EINTYPE;
-    }
-
-    *set_out = &key->selva_set;
-    return 0;
-}
-
 int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
     struct SelvaSet *selva_set;
     struct SelvaSetElement *el;
     int err;
 
-    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_DOUBLE, &selva_set);
+    err = get_selva_set(obj, key_name_str, key_name_len, SELVA_SET_TYPE_DOUBLE, &selva_set);
     if (err) {
         return err;
     }
@@ -1360,7 +1299,7 @@ int SelvaObject_RemLongLongSetStr(struct SelvaObject *obj, const char *key_name_
     struct SelvaSetElement *el;
     int err;
 
-    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_LONGLONG, &selva_set);
+    err = get_selva_set(obj, key_name_str, key_name_len, SELVA_SET_TYPE_LONGLONG, &selva_set);
     if (err) {
         return err;
     }
@@ -1385,7 +1324,7 @@ int SelvaObject_RemStringSetStr(struct SelvaObject *obj, const char *key_name_st
     struct SelvaSetElement *el;
     int err;
 
-    err = get_selva_set_str(obj, key_name_str, key_name_len, SELVA_SET_TYPE_STRING, &selva_set);
+    err = get_selva_set(obj, key_name_str, key_name_len, SELVA_SET_TYPE_STRING, &selva_set);
     if (err) {
         return err;
     }
@@ -1498,7 +1437,7 @@ int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str
     struct SelvaObjectKey *key;
     int err;
 
-    err = get_key_modify_array(obj, key_name_str, key_name_len, subtype, 1, &key);
+    err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, 1, &key);
     if (err) {
         return err;
     }
@@ -1517,7 +1456,7 @@ int SelvaObject_AssignArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     struct SelvaObjectKey *key;
     int err;
 
-    err = get_key_modify_array(obj, key_name_str, key_name_len, subtype, idx + 1, &key);
+    err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, idx + 1, &key);
     if (err) {
         return err;
     }
@@ -1536,7 +1475,7 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     struct SelvaObjectKey *key;
     int err;
 
-    err = get_key_modify_array(obj, key_name_str, key_name_len, subtype, idx + 1, &key);
+    err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, idx + 1, &key);
     if (err) {
         return err;
     }
@@ -1644,11 +1583,7 @@ int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str,
         return err;
     }
 
-    err = clear_key_value(key);
-    if (err) {
-        return err;
-    }
-
+    clear_key_value(key);
     key->type = SELVA_OBJECT_POINTER;
     key->value = p;
     key->ptr_opts = opts;
@@ -2551,7 +2486,7 @@ static int rdb_load_object_array(struct selva_io *io, struct SelvaObject *obj, c
     struct SelvaObjectKey *key;
     int err;
 
-    err = get_key_modify_array(obj, name_str, name_len, arrayType, n, &key);
+    err = get_key_array_modify(obj, name_str, name_len, arrayType, n, &key);
     if (err) {
         return err;
     }

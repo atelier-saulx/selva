@@ -61,10 +61,14 @@ typedef void (*SelvaObject_PtrSave)(struct selva_io *io, void *value, void *data
 
 struct SelvaObjectPointerOpts {
     /**
-     * An unique id for serializing the pointer type.
-     * The value 0 is reserved for NOP.
+     * An unique type id for serializing the pointer type data.
      */
-    unsigned ptr_type_id;
+    enum {
+        SELVA_OBJECT_POINTER_NOP = 0, /*!< No operation. No serialization will happen. */
+        SELVA_OBJECT_POINTER_EDGE = 1,
+        SELVA_OBJECT_POINTER_EDGE_CONSTRAINTS = 2,
+        SELVA_OBJECT_POINTER_LANG = 3,
+    } ptr_type_id;
 
     /**
      * Send the pointer value as a reply to the client.
@@ -92,14 +96,6 @@ struct SelvaObjectPointerOpts {
      */
     SelvaObject_PtrSave ptr_save;
 };
-
-/*
- * Pointer types.
- * These types are needed for the serialization of opaque pointer types.
- */
-#define SELVA_OBJECT_POINTER_EDGE               1
-#define SELVA_OBJECT_POINTER_EDGE_CONSTRAINTS   2
-#define SELVA_OBJECT_POINTER_LANG               3
 
 /**
  * Register SELVA_OBJECT_POINTER options statically for RDB loading.
