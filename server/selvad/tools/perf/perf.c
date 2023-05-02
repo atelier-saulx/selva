@@ -120,7 +120,7 @@ static int send_modify(int fd, int seqno, typeof_field(struct selva_proto_header
         .id_hdr = {
             .type = SELVA_PROTO_STRING,
             .flags = 0,
-            .bsize = htole32(10),
+            .bsize = htole32(NODE_ID_SIZE),
         },
         .flags_hdr = {
             .type = SELVA_PROTO_STRING,

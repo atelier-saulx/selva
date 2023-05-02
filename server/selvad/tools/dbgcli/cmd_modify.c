@@ -18,6 +18,8 @@
 # define MSG_MORE 0
 #endif
 
+#define NODE_ID_SIZE 16
+
 static int send_cmd_head(int sock, int cmd_id, int seqno, const char * restrict node_id, const char * restrict flags, int nr_fields)
 {
     const size_t flags_len = strlen(flags);
@@ -25,7 +27,7 @@ static int send_cmd_head(int sock, int cmd_id, int seqno, const char * restrict 
         struct selva_proto_header hdr;
         struct selva_proto_array arr;
         struct selva_proto_string id;
-        char id_str[10];
+        char id_str[NODE_ID_SIZE];
         struct selva_proto_string flags;
     } __packed buf = {
         .hdr = {
@@ -44,7 +46,7 @@ static int send_cmd_head(int sock, int cmd_id, int seqno, const char * restrict 
         .id = {
             .type = SELVA_PROTO_STRING,
             .flags = 0,
-            .bsize = htole32(10),
+            .bsize = htole32(NODE_ID_SIZE),
         },
         .flags = {
             .type = SELVA_PROTO_STRING,
@@ -54,7 +56,7 @@ static int send_cmd_head(int sock, int cmd_id, int seqno, const char * restrict 
     };
     uint32_t chk;
 
-    memcpy(buf.id_str, node_id, min(strlen(node_id), (size_t)10));
+    strncpy(buf.id_str, node_id, NODE_ID_SIZE);
     chk = crc32c(0, &buf, sizeof(buf));
     chk = crc32c(chk, flags, flags_len);
     buf.hdr.chk = htole32(chk);
