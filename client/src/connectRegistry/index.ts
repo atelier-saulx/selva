@@ -89,8 +89,6 @@ const connectRegistry = (
       selvaClient.registryConnection.on(
         'connect',
         () => {
-          console.info('CONNECT')
-
           selvaClient.emit('connect', descriptor)
           getInitialRegistryServers(selvaClient).then(() => {
             selvaClient.emit('added-servers', { event: '*' })
