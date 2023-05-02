@@ -23,8 +23,6 @@
 
 #define MAX_LINE 200
 
-/* TODO REMOVE */
-
 static struct eztrie commands;
 static int seqno = 0;
 
@@ -59,7 +57,9 @@ static int connect_to_server(const char *addr, int port)
 
 static void insert_cmd(struct cmd *cmd)
 {
+#if 0
     printf("Adding: %s\n", cmd->cmd_name);
+#endif
     eztrie_insert(&commands, cmd->cmd_name, cmd);
 }
 
@@ -167,8 +167,6 @@ int main(int argc, char *argv[])
         cmd = get_cmd(args[0]);
         if ((void *)cmd == main) {
             break;
-        } else if (cmd && cmd->cmd_id == 254) { /* !listen pseudo-command */
-            /* NOP */
         } else if (!cmd || !cmd->cmd_req) {
             fprintf(stderr, "Unknown command\n");
             continue;

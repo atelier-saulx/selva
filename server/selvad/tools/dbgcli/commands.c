@@ -50,6 +50,7 @@ static int cmd_object_incrby_req(const struct cmd *cmd, int sock, int seqno, int
  */
 static int generic_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 static void generic_res(const struct cmd *cmd, const void *msg, size_t msg_size);
+static int skip_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 
 /**
  * A map of Selva commands.
@@ -90,7 +91,7 @@ static struct cmd commands[255] = {
     [254] = { /* Pseudo-command: read the socket */
         .cmd_id = 254,
         .cmd_name = "!listen",
-        .cmd_req = NULL,
+        .cmd_req = skip_req,
         .cmd_res = generic_res,
     }
 };
@@ -555,6 +556,11 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
             }
         }
     }
+}
+
+static int skip_req(const struct cmd *, int sock __unused, int seqno __unused, int argc __unused, char *argv[] __unused)
+{
+    return 0;
 }
 
 static void cmd_discover_res(const struct cmd *, const void *msg, size_t msg_size)
