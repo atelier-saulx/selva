@@ -340,10 +340,24 @@ int SelvaObject_GetPointerPartialMatchStr(struct SelvaObject *obj, const char *k
  * @}
  */
 
+/**
+ * @addtogroup selva_object_any
+ * Get any functions.
+ */
+
 int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, struct selva_string *lang, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) __attribute__((access(write_only, 5)));
 int SelvaObject_GetAnyLang(struct SelvaObject *obj, struct selva_string *lang, const struct selva_string *key_name, struct SelvaObjectAny *res) __attribute__((access(write_only, 4)));
 int SelvaObject_GetAnyStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) __attribute__((access(write_only, 4)));
 int SelvaObject_GetAny(struct SelvaObject *obj, const struct selva_string *key_name, struct SelvaObjectAny *res) __attribute__((access(write_only, 3)));
+
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup selva_object_type
+ * Key type and length functions.
+ */
 
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len);
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct selva_string *key_name);
@@ -368,6 +382,10 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, const struct selva_string *key_
  * @param len is an optional argument that will be set to the size of the string returned.
  */
 const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len);
+
+/**
+ * @}
+ */
 
 /**
  * @addtogroup selva_object_metadata
