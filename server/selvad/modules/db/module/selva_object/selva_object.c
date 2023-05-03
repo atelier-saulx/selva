@@ -47,9 +47,9 @@
 #define SELVA_OBJECT_FLAG_STATIC        0x02 /*!< Static allocation, do not free. */
 
 enum SelvaObjectGetKeyFlags {
-    SELVA_OBJECT_GETKEY_CREATE        = 0x1, /*!< Create the key and required nested objects. */
-    SELVA_OBJECT_GETKEY_DELETE        = 0x2, /*!< Delete the key found. */
-    SELVA_OBJECT_GETKEY_PARTIAL       = 0x4, /*!< Return a partial result, the last key found, and the length of the match in key_name_str. */
+    SELVA_OBJECT_GETKEY_CREATE        = 0x01, /*!< Create the key and required nested objects if missing. */
+    SELVA_OBJECT_GETKEY_DELETE        = 0x02, /*!< Delete the key found. */
+    SELVA_OBJECT_GETKEY_PARTIAL       = 0x04, /*!< Return a partial result, the last key found, and the length of the match in key_name_str. */
 };
 
 RB_HEAD(SelvaObjectKeys, SelvaObjectKey);
@@ -504,9 +504,11 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         }
 
         err = get_key(obj, s, slen, 0, &key);
-        if ((err == SELVA_ENOENT || (err == 0 && (key->type != SELVA_OBJECT_ARRAY && nr_parts > nr_parts_found))) && ary_idx >= 0 &&
+        if (ary_idx >= 0 &&
+            (err == SELVA_ENOENT || (err == 0 && (key->type != SELVA_OBJECT_ARRAY && nr_parts > nr_parts_found))) &&
             (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
+             * Expected an array.
              * Either the nested object doesn't exist yet or the nested key is not an object,
              * but we are allowed to create one here. Only create the key if it didn't exist.
              * Otherwise we can just reuse the old one.
@@ -531,6 +533,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         } else if ((err == SELVA_ENOENT || (err == 0 && key->type != SELVA_OBJECT_OBJECT && key->type != SELVA_OBJECT_ARRAY && nr_parts > nr_parts_found)) &&
                    (flags & SELVA_OBJECT_GETKEY_CREATE)) {
             /*
+             * Expected a nested object.
              * Either the nested object doesn't exist yet or the nested key is not an object,
              * but we are allowed to create one here. Only create the key if it didn't exist.
              * Otherwise we can just reuse the old one.
@@ -561,22 +564,22 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
              * Error, bail out.
              */
             return err;
-        } else if (key->type == SELVA_OBJECT_OBJECT) {
+        } else /* no error cases: */ if (key->type == SELVA_OBJECT_OBJECT) {
             /*
              * Keep nesting or return an object if this was the last token.
              */
 
             if (key->user_meta == SELVA_OBJECT_META_SUBTYPE_TIMESERIES) {
-              is_timeseries = 1;
+                is_timeseries = 1;
             }
 
             obj = key->value;
         } else if (key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT && nr_parts > nr_parts_found && ary_idx >= 0) {
             /*
-             * Keep nesting or return an object if this was the last token.
+             * Keep nesting or return an object from the array if this was the last token.
              */
             err = SelvaObject_GetArrayIndexAsSelvaObject(obj, s, slen, ary_idx, &obj);
-            if ((flags & SELVA_OBJECT_GETKEY_CREATE) && (err == SELVA_ENOENT || !obj)) {
+            if ((err == SELVA_ENOENT || !obj) && (flags & SELVA_OBJECT_GETKEY_CREATE)) {
                 err = insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
             }
             if (err) {
@@ -584,7 +587,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             }
         } else {
             /*
-             * Found the final key.
+             * Found the final key or no exact match.
              */
             break;
         }
@@ -592,7 +595,7 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
 
     if (nr_parts_found < nr_parts &&
         key &&
-        flags & SELVA_OBJECT_GETKEY_PARTIAL &&
+        (flags & SELVA_OBJECT_GETKEY_PARTIAL) &&
         s) {
         const size_t off = (size_t)(s - buf + 1) + strlen(s);
 
@@ -679,8 +682,9 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         return get_key_obj(obj, key_name_str, key_name_len, flags, out);
     }
 
-    /* just return the actual array type if getting type of an array field directly. */
-
+    /*
+     * Just return the actual array type if getting type of an array field directly.
+     */
     ary_err = get_array_field_index(key_name_str, key_name_len, NULL);
     if (ary_err == -2) {
         return SELVA_EINVAL;
@@ -709,29 +713,6 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
     return 0;
 }
 
-/**
- * Get key for modify without destroying the original value.
- */
-static int get_key_modify(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObjectKey **out) {
-    struct SelvaObjectKey *key;
-    int err;
-
-    /*
-     * Do get_key() first without create to avoid clearing the original value that we want to modify.
-     * If we get a SELVA_ENOENT error we can safely create the key.
-     */
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err == SELVA_ENOENT) {
-        err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
-    }
-    if (err) {
-        return err;
-    }
-
-    *out = key;
-    return 0;
-}
-
 static inline int array_type_match(const struct SelvaObjectKey *key, enum SelvaObjectType subtype) {
     return key->type == SELVA_OBJECT_ARRAY && key->subtype == subtype;
 }
@@ -742,7 +723,7 @@ static int get_key_array_modify(struct SelvaObject *obj, const char *key_name_st
 
     assert(obj);
 
-    err = get_key_modify(obj, key_name_str, key_name_len, &key);
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
     if (err) {
         return err;
     }
@@ -790,7 +771,7 @@ static int get_selva_set_modify(struct SelvaObject *obj, const struct selva_stri
         return SELVA_EINTYPE;
     }
 
-    err = get_key_modify(obj, key_name_str, key_name_len, &key);
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
     if (err) {
         return err;
     }
@@ -871,54 +852,6 @@ int SelvaObject_GetDouble(struct SelvaObject *obj, const struct selva_string *ke
     return SelvaObject_GetDoubleStr(obj, key_name_str, key_name_len, out);
 }
 
-int SelvaObject_GetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long *out) {
-    struct SelvaObjectKey *key;
-    int err;
-
-    assert(obj);
-
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err) {
-        return err;
-    } else if (key->type != SELVA_OBJECT_LONGLONG) {
-        return SELVA_EINTYPE;
-    }
-
-    *out = key->emb_ll_value;
-
-    return 0;
-}
-
-int SelvaObject_GetLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long *out) {
-    TO_STR(key_name);
-
-    return SelvaObject_GetLongLongStr(obj, key_name_str, key_name_len, out);
-}
-
-int SelvaObject_GetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct selva_string **out) {
-    struct SelvaObjectKey *key;
-    int err;
-
-    assert(obj);
-
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err) {
-        return err;
-    } else if (key->type != SELVA_OBJECT_STRING) {
-        return SELVA_EINTYPE;
-    }
-    assert(key->value);
-
-    *out = key->value;
-
-    return 0;
-}
-
-int SelvaObject_GetString(struct SelvaObject *obj, const struct selva_string *key_name, struct selva_string **out) {
-    TO_STR(key_name);
-
-    return SelvaObject_GetStringStr(obj, key_name_str, key_name_len, out);
-}
 
 int SelvaObject_SetDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
     struct SelvaObjectKey *key;
@@ -1006,6 +939,30 @@ int SelvaObject_UpdateDouble(struct SelvaObject *obj, const struct selva_string 
     return SelvaObject_UpdateDoubleStr(obj, key_name_str, key_name_len, value);
 }
 
+int SelvaObject_GetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long *out) {
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    } else if (key->type != SELVA_OBJECT_LONGLONG) {
+        return SELVA_EINTYPE;
+    }
+
+    *out = key->emb_ll_value;
+
+    return 0;
+}
+
+int SelvaObject_GetLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long *out) {
+    TO_STR(key_name);
+
+    return SelvaObject_GetLongLongStr(obj, key_name_str, key_name_len, out);
+}
+
 int SelvaObject_SetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
     struct SelvaObjectKey *key;
     int err;
@@ -1091,6 +1048,32 @@ int SelvaObject_UpdateLongLong(struct SelvaObject *obj, const struct selva_strin
 
     return SelvaObject_UpdateLongLongStr(obj, key_name_str, key_name_len, value);
 }
+
+int SelvaObject_GetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct selva_string **out) {
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    } else if (key->type != SELVA_OBJECT_STRING) {
+        return SELVA_EINTYPE;
+    }
+    assert(key->value);
+
+    *out = key->value;
+
+    return 0;
+}
+
+int SelvaObject_GetString(struct SelvaObject *obj, const struct selva_string *key_name, struct selva_string **out) {
+    TO_STR(key_name);
+
+    return SelvaObject_GetStringStr(obj, key_name_str, key_name_len, out);
+}
+
 
 int SelvaObject_SetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct selva_string *value) {
     struct SelvaObjectKey *key;
@@ -1496,7 +1479,7 @@ int SelvaObject_RemoveArrayIndexStr(struct SelvaObject *obj, const char *key_nam
 
     assert(obj);
 
-    err = get_key_modify(obj, key_name_str, key_name_len, &key);
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
     if (err) {
         return err;
     }
@@ -1829,6 +1812,19 @@ ssize_t SelvaObject_Len(struct SelvaObject *obj, const struct selva_string *key_
     return SelvaObject_LenStr(obj, key_name_str, key_name_len);
 }
 
+const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len) {
+    if ((size_t)type < num_elem(type_names)) {
+        const struct so_type_name *tn = &type_names[type];
+
+        if (len) {
+            *len = tn->len;
+        }
+        return tn->name;
+    }
+
+    return NULL;
+}
+
 int SelvaObject_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, SelvaObjectMeta_t *meta) {
     int err;
     struct SelvaObjectKey *key;
@@ -1959,19 +1955,6 @@ void *SelvaObject_ForeachValueType(
         return &key->selva_set;
     case SELVA_OBJECT_ARRAY:
         return key->array;
-    }
-
-    return NULL;
-}
-
-const char *SelvaObject_Type2String(enum SelvaObjectType type, size_t *len) {
-    if ((size_t)type < num_elem(type_names)) {
-        const struct so_type_name *tn = &type_names[type];
-
-        if (len) {
-            *len = tn->len;
-        }
-        return tn->name;
     }
 
     return NULL;
