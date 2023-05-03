@@ -46,7 +46,6 @@ OBJ := \
 	   module/shared_strings.o \
 	   module/subscriptions.o \
 	   module/update.o
-#	   module/modinfo.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -I./include -include ../../tunables.h
 LDFLAGS += -ldeflate -lutil -ljemalloc_selva -lhiredis

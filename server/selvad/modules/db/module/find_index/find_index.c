@@ -23,7 +23,6 @@
 #include "db_config.h"
 #include "hierarchy.h"
 #include "selva_db.h"
-#include "modinfo.h"
 #include "selva_object.h"
 #include "selva_onload.h"
 #include "selva_set.h"
