@@ -544,14 +544,9 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                  */
                 clear_key_value(key);
             }
+
             key->type = SELVA_OBJECT_OBJECT;
             key->value = SelvaObject_New();
-
-            if (!key->value) {
-                /* A partial object might have been created! */
-                key->type = SELVA_OBJECT_NULL;
-                return SELVA_ENOMEM;
-            }
 
             obj = key->value;
         } else if (err) {
