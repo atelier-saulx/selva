@@ -6,14 +6,12 @@
 #ifndef _SELVA_INHERIT_H_
 #define _SELVA_INHERIT_H_
 
-struct RedisModuleCtx;
 struct SelvaHierarchy;
 struct SelvaObjectAny;
 struct selva_string;
 
 /**
  * Inherit a field value for given node_id.
- * @param ctx is a pointer to the current Redis context.
  * @param hierarchy is a pointer to the hierarchy.
  * @param lang an optional lang list.
  * @param node_id is the starting node_id.
@@ -35,7 +33,6 @@ int Inherit_FieldValue(
 
 /**
  * Inherit fields and send them to the client in the find command format.
- * @param ctx is a pointer to the current Redis context.
  * @param hierarchy is a pointer to the hierarchy.
  * @param lang an optional lang list.
  * @param node_id is the starting node_id.

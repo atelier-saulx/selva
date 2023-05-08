@@ -9,7 +9,6 @@
 #include "util/svector.h"
 
 struct FindCommand_Args;
-struct RedisModuleCtx;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct SelvaObjectAny;

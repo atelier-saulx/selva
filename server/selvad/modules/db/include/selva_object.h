@@ -47,7 +47,6 @@ enum SelvaObjectReplyFlags {
     ((struct SelvaObject *)((container)->_obj_data))
 
 struct selva_io;
-struct RedisModuleKey;
 struct SVector;
 struct SelvaObject;
 struct SelvaSet;

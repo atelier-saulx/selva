@@ -21,8 +21,6 @@
 #define HIERARCHY_ENCODING_VERSION  5
 
 /* Forward declarations */
-struct RedisModuleCtx;
-struct RedisModuleString;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct Selva_Subscription;
@@ -198,7 +196,7 @@ struct SelvaHierarchy {
         /**
          * The object maps each detached nodeId to a pointer that describes where
          * the detached subtree containing the nodeId is located. E.g. it can be
-         * a tagged pointer to a RedisModuleString that contains a compressed
+         * a tagged pointer to a selva_string that contains a compressed
          * subtree string.
          */
         struct SelvaObject *obj;

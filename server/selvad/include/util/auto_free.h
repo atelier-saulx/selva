@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 SAULX
+ * Copyright (c) 2021-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -7,7 +7,7 @@
 #define AUTO_FREE_H
 
 /**
- * Wrap RedisModule_Free().
+ * Wrap selva_free().
  */
 void _wrap_selva_free(void *p);
 

@@ -38,11 +38,6 @@
 #define SELVA_ALIASES_KEY       "___selva_aliases"
 
 /**
- * Default Redis key name for Selva hierarchy.
- */
-#define HIERARCHY_DEFAULT_KEY "___selva_hierarchy"
-
-/**
  * Reserved field names.
  * @addtogroup selva_reserved_field_names
  * @{

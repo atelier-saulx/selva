@@ -182,8 +182,7 @@ int SelvaSet_Merge(struct SelvaSet *dst, struct SelvaSet *src);
 
 /**
  * Take an union of the given sets.
- * The elements are cloned and selva_strings are refcounted by calling
- * RedisModule_HoldString().
+ * The elements are cloned and selva_strings are duplicated.
  * The last argument of this function must be NULL.
  * @param res should be an empty set initialized with the right type.
  *            `res` must not be a pointer to one of the source sets.

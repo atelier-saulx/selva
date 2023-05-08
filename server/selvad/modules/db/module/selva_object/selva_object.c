@@ -325,7 +325,7 @@ static void remove_key(struct SelvaObject *obj, struct SelvaObjectKey *key) {
         /* The key was allocated from the embedded keys. */
         obj->emb_res |= 1 << i; /* Mark it free. */
     } else {
-        /* The key was allocated with RedisModule_Alloc(). */
+        /* The key was allocated with selva_malloc. */
         selva_free(key);
     }
 }
@@ -2616,7 +2616,7 @@ static struct SelvaObject *load_object_to(struct selva_io *io, int encver, struc
 
         err = load_field(io, obj, encver, level, ptr_load_data);
         if (err) {
-            /* No need to do cleanup as Redis will terminate. */
+            /* No need to do cleanup as we will terminate. */
             return NULL;
         }
     }
@@ -2655,7 +2655,7 @@ struct SelvaObject *SelvaObjectTypeLoad2(struct selva_io *io, int encver, void *
 
         err = load_field(io, obj, encver, 0, ptr_load_data);
         if (err) {
-            /* No need to do cleanup as Redis will terminate. */
+            /* No need to do cleanup as we will terminate. */
             return NULL;
         }
     }

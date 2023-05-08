@@ -935,7 +935,7 @@ out:
 
 /**
  * Find node in set.
- * SELVA.inherit REDIS_KEY NODE_ID [TYPE1[TYPE2[...]]] [FIELD_NAME1[ FIELD_NAME2[ ...]]]
+ * SELVA.inherit NODE_ID [TYPE1[TYPE2[...]]] [FIELD_NAME1[ FIELD_NAME2[ ...]]]
  */
 void SelvaHierarchy_AggregateInCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     __auto_finalizer struct finalizer fin;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -8,9 +8,8 @@
 
 #include "selva_db.h"
 
-struct RedisModuleCtx;
-struct RedisModuleKey;
 struct SelvaHierarchy;
+struct selva_string;
 
 #define SELVA_RESOLVE_NODE_ID   0x40000000
 #define SELVA_RESOLVE_ALIAS     0x20000000

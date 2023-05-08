@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -34,7 +34,6 @@ enum rpn_error {
     RPN_ERR_LAST,
 };
 
-struct RedisModuleKey;
 struct SelvaHierarchy;
 struct SelvaHierarchyNode;
 struct SelvaSet;
