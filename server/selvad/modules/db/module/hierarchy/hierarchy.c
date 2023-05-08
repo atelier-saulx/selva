@@ -113,9 +113,9 @@ struct verifyDetachableSubtree {
 };
 
 /**
- * HierarchyRDBSaveNode() args struct.
+ * HierarchySaveNode() args struct.
  */
-struct HierarchyRDBSaveNode {
+struct HierarchySaveNode {
     struct selva_io *io;
 };
 
@@ -138,7 +138,7 @@ SET_DECLARE(selva_HMCtor, SelvaHierarchyMetadataConstructorHook);
 /* Node metadata destructors. */
 SET_DECLARE(selva_HMDtor, SelvaHierarchyMetadataDestructorHook);
 
-__nonstring static const Selva_NodeId HIERARCHY_RDB_EOF;
+__nonstring static const Selva_NodeId HIERARCHY_SERIALIZATION_EOF;
 
 SelvaHierarchy *main_hierarchy;
 
@@ -266,7 +266,7 @@ void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy) {
 /**
  * Create the default fields of a node object.
  * This function should be called when creating a new node but not when loading
- * nodes from an RDB data.
+ * nodes from a serialized data.
  */
 static int create_node_object(struct SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     const long long now = ts_now();
@@ -329,7 +329,7 @@ static SelvaHierarchyNode *newNode(struct SelvaHierarchy *hierarchy, const Selva
     SelvaHierarchyNode *node;
 
     if (!memcmp(id, EMPTY_NODE_ID, SELVA_NODE_ID_SIZE) ||
-        !memcmp(id, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE)) {
+        !memcmp(id, HIERARCHY_SERIALIZATION_EOF, SELVA_NODE_ID_SIZE)) {
         SELVA_LOG(SELVA_LOGL_WARN, "An attempt to create a node with a reserved id");
         return NULL;
     }
@@ -360,7 +360,7 @@ static SelvaHierarchyNode *newNode(struct SelvaHierarchy *hierarchy, const Selva
         /*
          * Every node is implicit unless it isn't. Modify should clear this flag
          * when explicitly creating a node, that can happen on a later command
-         * call. This flag will be also persisted in the RDB.
+         * call. This flag will be also persisted in the serialized format.
          */
         node->flags |= SELVA_NODE_FLAGS_IMPLICIT;
     }
@@ -377,7 +377,7 @@ static SelvaHierarchyNode *newNode(struct SelvaHierarchy *hierarchy, const Selva
 
 /**
  * Actions that must be executed for a new node.
- * Generally this must be always called after newNode() unless we are RDB loading.
+ * Generally this must be always called after newNode() unless we are loading.
  */
 static void new_node_events(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
         SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, node, SELVA_CREATED_AT_FIELD, sizeof(SELVA_CREATED_AT_FIELD) - 1);
@@ -1850,9 +1850,9 @@ static int full_dfs(
             SelvaHierarchyNode *node = SVector_Pop(&stack);
 
             /*
-             * Note that the RDB save child process won't touch the trxids in
-             * the parent process (separate address space), therefore old nodes
-             * will generally stay old if they are otherwise untouched.
+             * Note that the serialization child process won't touch the trxids
+             * in the parent process (separate address space), therefore old
+             * nodes will generally stay old if they are otherwise untouched.
              */
             if (enAutoCompression && !compressionCandidate &&
                 memcmp(node->id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
@@ -2899,7 +2899,7 @@ static int load_metadata(struct selva_io *io, int encver, SelvaHierarchy *hierar
      * Note that the metadata must be loaded and saved in predefined order.
      */
 
-    err = Edge_RdbLoad(io, encver, hierarchy, node);
+    err = Edge_Load(io, encver, hierarchy, node);
     if (err) {
         return err;
     }
@@ -2908,7 +2908,7 @@ static int load_metadata(struct selva_io *io, int encver, SelvaHierarchy *hierar
      * node object is currently empty because it's not created when
      * isLoading() is true.
      */
-    if (!SelvaObjectTypeRDBLoadTo(io, encver, SelvaObject_Init(node->_obj_data), NULL)) {
+    if (!SelvaObjectTypeLoadTo(io, encver, SelvaObject_Init(node->_obj_data), NULL)) {
         return SELVA_ENOENT;
     }
 
@@ -2916,7 +2916,7 @@ static int load_metadata(struct selva_io *io, int encver, SelvaHierarchy *hierar
 }
 
 /**
- * RDB load a node_id.
+ * Load a node_id.
  * Should be only called by load_node().
  */
 static int load_node_id(struct selva_io *io, Selva_NodeId node_id_out) {
@@ -3032,7 +3032,7 @@ static int load_hierarchy_node(struct selva_io *io, int encver, SelvaHierarchy *
 }
 
 /**
- * RDB load a node and its children.
+ * Load a node and its children.
  * Should be only called by load_tree().
  */
 static int load_node(struct selva_io *io, int encver, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
@@ -3078,7 +3078,7 @@ static int load_node(struct selva_io *io, int encver, SelvaHierarchy *hierarchy,
  * Load a node hierarchy from io.
  * NODE_ID1 | FLAGS | METADATA | NR_CHILDREN | CHILD_ID_0,..
  * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
- * HIERARCHY_RDB_EOF
+ * HIERARCHY_SERIALIZATION_EOF
  */
 static int load_tree(struct selva_io *io, int encver, SelvaHierarchy *hierarchy) {
     while (1) {
@@ -3095,7 +3095,7 @@ static int load_tree(struct selva_io *io, int encver, SelvaHierarchy *hierarchy)
         /*
          * If it's EOF there are no more nodes for this hierarchy.
          */
-        if (!memcmp(node_id, HIERARCHY_RDB_EOF, SELVA_NODE_ID_SIZE)) {
+        if (!memcmp(node_id, HIERARCHY_SERIALIZATION_EOF, SELVA_NODE_ID_SIZE)) {
             break;
         }
 
@@ -3121,7 +3121,7 @@ static int load_tree(struct selva_io *io, int encver, SelvaHierarchy *hierarchy)
     return 0;
 }
 
-SelvaHierarchy *Hierarchy_RDBLoad(struct selva_io *io) {
+SelvaHierarchy *Hierarchy_Load(struct selva_io *io) {
     SelvaHierarchy *hierarchy = NULL;
     int encver;
     int err;
@@ -3143,14 +3143,14 @@ SelvaHierarchy *Hierarchy_RDBLoad(struct selva_io *io) {
     }
 
     if (encver >= 5) {
-        if (!SelvaObjectTypeRDBLoadTo(io, encver, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL)) {
+        if (!SelvaObjectTypeLoadTo(io, encver, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL)) {
             SELVA_LOG(SELVA_LOGL_CRIT, "Failed to node types");
             err = SELVA_HIERARCHY_EINVAL;
             goto error;
         }
     }
 
-    err = EdgeConstraint_RdbLoad(io, encver, &hierarchy->edge_field_constraints);
+    err = EdgeConstraint_Load(io, encver, &hierarchy->edge_field_constraints);
     if (err) {
         SELVA_LOG(SELVA_LOGL_CRIT, "Failed to load the dynamic constraints: %s",
                   selva_strerror(err));
@@ -3203,19 +3203,19 @@ static void save_metadata(struct selva_io *io, SelvaHierarchyNode *node) {
      * Note that the metadata must be loaded and saved in a predefined order.
      */
 
-    Edge_RdbSave(io, node);
-    SelvaObjectTypeRDBSave(io, GET_NODE_OBJ(node), NULL);
+    Edge_Save(io, node);
+    SelvaObjectTypeSave(io, GET_NODE_OBJ(node), NULL);
 }
 
 /**
  * Save a node.
- * Used by Hierarchy_RDBSave() when doing an rdb dump.
+ * Used by Hierarchy_Save() when doing a dump.
  */
-static int HierarchyRDBSaveNode(
+static int HierarchySaveNode(
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         void *arg) {
-    struct HierarchyRDBSaveNode *args = (struct HierarchyRDBSaveNode *)arg;
+    struct HierarchySaveNode *args = (struct HierarchySaveNode *)arg;
     struct selva_io *io = args->io;
 
     selva_io_save_str(io, node->id, SELVA_NODE_ID_SIZE);
@@ -3234,10 +3234,10 @@ static int HierarchyRDBSaveNode(
 /**
  * Save a node from a subtree.
  * Used by Hierarchy_SubtreeSave() when saving a subtree into a string.
- * This function should match with HierarchyRDBSaveNode() but we don't want
+ * This function should match with HierarchySaveNode() but we don't want
  * to do save_detached() here.
  */
-static int HierarchyRDBSaveSubtreeNode(
+static int HierarchySaveSubtreeNode(
         struct SelvaHierarchy *hierarchy __unused,
         struct SelvaHierarchyNode *node,
         void *arg) {
@@ -3251,7 +3251,7 @@ static int HierarchyRDBSaveSubtreeNode(
     return 0;
 }
 
-static void HierarchyRDBSaveChild(
+static void HierarchySaveChild(
         struct SelvaHierarchy *hierarchy __unused,
         const struct SelvaHierarchyTraversalMetadata *metadata __unused,
         struct SelvaHierarchyNode *child,
@@ -3268,24 +3268,24 @@ static void HierarchyRDBSaveChild(
 }
 
 static void save_hierarchy(struct selva_io *io, SelvaHierarchy *hierarchy) {
-    struct HierarchyRDBSaveNode args = {
+    struct HierarchySaveNode args = {
         .io = io,
     };
     const struct SelvaHierarchyCallback cb = {
         .head_cb = NULL,
         .head_arg = NULL,
-        .node_cb = HierarchyRDBSaveNode,
+        .node_cb = HierarchySaveNode,
         .node_arg = &args,
-        .child_cb = HierarchyRDBSaveChild,
+        .child_cb = HierarchySaveChild,
         .child_arg = io,
         .flags = SELVA_HIERARCHY_CALLBACK_FLAGS_INHIBIT_RESTORE,
     };
 
     (void)full_dfs(hierarchy, &cb);
-    selva_io_save_str(io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
+    selva_io_save_str(io, HIERARCHY_SERIALIZATION_EOF, sizeof(HIERARCHY_SERIALIZATION_EOF));
 }
 
-void Hierarchy_RDBSave(struct selva_io *io, SelvaHierarchy *hierarchy) {
+void Hierarchy_Save(struct selva_io *io, SelvaHierarchy *hierarchy) {
     /*
      * Serialization format:
      * ENCVER
@@ -3293,12 +3293,12 @@ void Hierarchy_RDBSave(struct selva_io *io, SelvaHierarchy *hierarchy) {
      * EDGE_CONSTRAINTS
      * NODE_ID1 | FLAGS | METADATA | NR_CHILDREN | CHILD_ID_0,..
      * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
-     * HIERARCHY_RDB_EOF
+     * HIERARCHY_SERIALIZATION_EOF
      */
     hierarchy->flag_isSaving = 1;
     selva_io_save_signed(io, HIERARCHY_ENCODING_VERSION);
-    SelvaObjectTypeRDBSave(io, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL);
-    EdgeConstraint_RdbSave(io, &hierarchy->edge_field_constraints);
+    SelvaObjectTypeSave(io, SELVA_HIERARCHY_GET_TYPES_OBJ(hierarchy), NULL);
+    EdgeConstraint_Save(io, &hierarchy->edge_field_constraints);
     save_hierarchy(io, hierarchy);
     hierarchy->flag_isSaving = 0;
 }
@@ -3317,7 +3317,7 @@ static int load_nodeId(struct selva_io *io, Selva_NodeId nodeId) {
 }
 
 /**
- * Load a subtree from the RDB serialization format back into the hierarchy.
+ * Load a subtree from the serialization format back into the hierarchy.
  * This function should never be called directly.
  */
 static void Hierarchy_SubtreeLoad(SelvaHierarchy *hierarchy, struct selva_string *s) {
@@ -3364,9 +3364,9 @@ static struct selva_string *Hierarchy_SubtreeSave(SelvaHierarchy *hierarchy, str
     const struct SelvaHierarchyCallback cb = {
         .head_cb = NULL,
         .head_arg = NULL,
-        .node_cb = HierarchyRDBSaveSubtreeNode,
+        .node_cb = HierarchySaveSubtreeNode,
         .node_arg = &io,
-        .child_cb = HierarchyRDBSaveChild,
+        .child_cb = HierarchySaveChild,
         .child_arg = &io,
     };
 
@@ -3385,7 +3385,7 @@ static struct selva_string *Hierarchy_SubtreeSave(SelvaHierarchy *hierarchy, str
      * Save the children.
      */
     (void)dfs(hierarchy, node, RELATIONSHIP_CHILD, &cb);
-    selva_io_save_str(&io, HIERARCHY_RDB_EOF, sizeof(HIERARCHY_RDB_EOF));
+    selva_io_save_str(&io, HIERARCHY_SERIALIZATION_EOF, sizeof(HIERARCHY_SERIALIZATION_EOF));
 
     selva_io_end(&io);
 

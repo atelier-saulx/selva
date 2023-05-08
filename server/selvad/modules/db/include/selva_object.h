@@ -14,7 +14,7 @@
 
 /*
  * Object key types.
- * DO NOT REORDER the numbers as they are used for in the RDB storage format.
+ * DO NOT REORDER the numbers as they are used for in the serialization format.
  */
 enum SelvaObjectType {
     SELVA_OBJECT_NULL = 0,
@@ -88,17 +88,17 @@ struct SelvaObjectPointerOpts {
     size_t (*ptr_len)(void *p);
 
     /**
-     * RDB loader for the pointer value.
+     * Deserializer for the pointer value.
      */
     SelvaObject_PtrLoad ptr_load;
     /**
-     * RDB serializer for the pointer value.
+     * Serializer for the pointer value.
      */
     SelvaObject_PtrSave ptr_save;
 };
 
 /**
- * Register SELVA_OBJECT_POINTER options statically for RDB loading.
+ * Register SELVA_OBJECT_POINTER options statically for deserialization.
  */
 #define SELVA_OBJECT_POINTER_OPTS(opts) \
     DATA_SET(selva_objpop, opts)
@@ -535,32 +535,32 @@ int SelvaObject_ReplyWithWildcardStr(
  */
 
 /**
- * Load a SelvaObject from RDB.
+ * Load a SelvaObject.
  * @returns a SelvaObject.
  */
-struct SelvaObject *SelvaObjectTypeRDBLoad(struct selva_io *io, int encver, void *ptr_load_data);
+struct SelvaObject *SelvaObjectTypeLoad(struct selva_io *io, int encver, void *ptr_load_data);
 
-struct SelvaObject *SelvaObjectTypeRDBLoadTo(struct selva_io *io, int encver, struct SelvaObject *obj, void *ptr_load_data);
+struct SelvaObject *SelvaObjectTypeLoadTo(struct selva_io *io, int encver, struct SelvaObject *obj, void *ptr_load_data);
 
 /**
- * Load a SelvaObject or NULL from RDB.
+ * Load a SelvaObject or NULL.
  * @returns NULL if the object length is zero.
  */
-struct SelvaObject *SelvaObjectTypeRDBLoad2(struct selva_io *io, int encver, void *ptr_load_data);
+struct SelvaObject *SelvaObjectTypeLoad2(struct selva_io *io, int encver, void *ptr_load_data);
 
 /**
- * Serialize a SelvaObject in RDB.
+ * Serialize a SelvaObject.
  * @param obj is a pointer to the SelvaObject to be serialized.
  * @param ptr_save_data is an optional pointer to additional data that can be used by a registered pointer type.
  */
-void SelvaObjectTypeRDBSave(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data);
+void SelvaObjectTypeSave(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data);
 
 /**
  * Serialize a SelvaObject or NULL.
  * @param obj is a pointer to the SelvaObject to be serialized. Can be NULL.
  * @param ptr_save_data is an optional pointer to additional data that can be used by a registered pointer type.
  */
-void SelvaObjectTypeRDBSave2(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data);
+void SelvaObjectTypeSave2(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data);
 
 /**
  * @}

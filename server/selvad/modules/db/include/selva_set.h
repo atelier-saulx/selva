@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -97,7 +97,7 @@ static inline void SelvaSet_Init(struct SelvaSet *set, enum SelvaSetType type) {
          * We use __builtin_trap() here to avoid requiring a header file for
          * abort(). Typically we use abort() in places where we are pretty
          * certain that there is an ongoing memory corruption and it would be
-         * potentially dangerous to run any clean up or RDB save. In this case
+         * potentially dangerous to run any clean up or save. In this case
          * it's not as certain as usually but if the caller used
          * SelvaSet_isValidType() before calling this function then we can be
          * quite sure that there is something nasty going on somewhere.

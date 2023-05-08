@@ -25,8 +25,8 @@
 #include "edge.h"
 
 static void EdgeConstraint_Reply(struct selva_server_response_out *resp, void *p);
-static void *so_rdb_load(struct selva_io *io, int encver, void *load_data);
-static void so_rdb_save(struct selva_io *io, void *value, void *load_data);
+static void *so_load(struct selva_io *io, int encver, void *load_data);
+static void so_save(struct selva_io *io, void *value, void *load_data);
 
 #define DYN_CONSTRAINT_NAME_LEN(field_name_len) \
     (SELVA_NODE_TYPE_SIZE + 1 + field_name_len)
@@ -36,8 +36,8 @@ static const struct SelvaObjectPointerOpts obj_opts = {
     .ptr_reply = EdgeConstraint_Reply,
     .ptr_free = NULL, /* We don't allow freeing constraints. */
     .ptr_len = NULL,
-    .ptr_save = so_rdb_save,
-    .ptr_load = so_rdb_load,
+    .ptr_save = so_save,
+    .ptr_load = so_load,
 };
 SELVA_OBJECT_POINTER_OPTS(obj_opts);
 
@@ -192,7 +192,7 @@ static void EdgeConstraint_Reply(struct selva_server_response_out *resp, void *p
     selva_send_str(resp, constraint->bck_field_name_str, constraint->bck_field_name_len);
 }
 
-static void rdb_load_src_node_type(struct selva_io *io, Selva_NodeType type) {
+static void load_src_node_type(struct selva_io *io, Selva_NodeType type) {
     __selva_autofree const char *s;
     size_t len;
 
@@ -204,19 +204,19 @@ static void rdb_load_src_node_type(struct selva_io *io, Selva_NodeType type) {
     }
 }
 
-static void rdb_save_src_node_type(struct selva_io *io, const Selva_NodeType type) {
+static void save_src_node_type(struct selva_io *io, const Selva_NodeType type) {
     selva_io_save_str(io, type, SELVA_NODE_TYPE_SIZE);
 }
 
 /**
  * Deserializer for SelvaObject ptr value.
  */
-static void *so_rdb_load(struct selva_io *io, int encver __unused, void *load_data __unused) {
+static void *so_load(struct selva_io *io, int encver __unused, void *load_data __unused) {
     struct EdgeFieldDynConstraintParams params = { 0 };
     struct EdgeFieldConstraint *constraint;
 
     params.flags = selva_io_load_unsigned(io);
-    rdb_load_src_node_type(io, params.src_node_type);
+    load_src_node_type(io, params.src_node_type);
     selva_string_free(selva_io_load_string(io)); /* Legacy. */
     params.fwd_field_name = selva_io_load_string(io);
     if (params.flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
@@ -234,11 +234,11 @@ static void *so_rdb_load(struct selva_io *io, int encver __unused, void *load_da
 /**
  * Serializer for SelvaObject ptr value.
  */
-static void so_rdb_save(struct selva_io *io, void *value, void *save_data __unused) {
+static void so_save(struct selva_io *io, void *value, void *save_data __unused) {
     const struct EdgeFieldConstraint *constraint = (struct EdgeFieldConstraint *)value;
 
     selva_io_save_unsigned(io, constraint->flags);
-    rdb_save_src_node_type(io, constraint->src_node_type);
+    save_src_node_type(io, constraint->src_node_type);
     selva_io_save_str(io, "", 0); /* Legacy. */
     selva_io_save_str(io, constraint->field_name_str, constraint->field_name_len);
     if (constraint->flags & EDGE_FIELD_CONSTRAINT_FLAG_BIDIRECTIONAL) {
@@ -246,20 +246,20 @@ static void so_rdb_save(struct selva_io *io, void *value, void *save_data __unus
     }
 }
 
-int EdgeConstraint_RdbLoad(struct selva_io *io, int encver, struct EdgeFieldConstraints *data) {
+int EdgeConstraint_Load(struct selva_io *io, int encver, struct EdgeFieldConstraints *data) {
     if (encver < 2) { /* hierarchy encver */
         return 0; /* Only the latest version supports loading metadata. */
     }
 
-    if (!SelvaObjectTypeRDBLoadTo(io, encver, get_dyn_constraints(data), NULL)) {
+    if (!SelvaObjectTypeLoadTo(io, encver, get_dyn_constraints(data), NULL)) {
         return SELVA_ENOENT;
     }
 
     return 0;
 }
 
-void EdgeConstraint_RdbSave(struct selva_io *io, struct EdgeFieldConstraints *data) {
-    SelvaObjectTypeRDBSave(io, get_dyn_constraints(data), NULL);
+void EdgeConstraint_Save(struct selva_io *io, struct EdgeFieldConstraints *data) {
+    SelvaObjectTypeSave(io, get_dyn_constraints(data), NULL);
 }
 
 void Edge_AddConstraintCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {

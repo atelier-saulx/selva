@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -264,9 +264,9 @@ size_t Edge_Refcount(struct SelvaHierarchyNode *node);
 
 void replyWithEdgeField(struct selva_server_response_out *resp, struct EdgeField *edge_field);
 
-int Edge_RdbLoad(struct selva_io *io, int encver, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node);
-void Edge_RdbSave(struct selva_io *io, struct SelvaHierarchyNode *node);
-int EdgeConstraint_RdbLoad(struct selva_io *io, int encver, struct EdgeFieldConstraints *data);
-void EdgeConstraint_RdbSave(struct selva_io *io, struct EdgeFieldConstraints *data);
+int Edge_Load(struct selva_io *io, int encver, struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node);
+void Edge_Save(struct selva_io *io, struct SelvaHierarchyNode *node);
+int EdgeConstraint_Load(struct selva_io *io, int encver, struct EdgeFieldConstraints *data);
+void EdgeConstraint_Save(struct selva_io *io, struct EdgeFieldConstraints *data);
 
 #endif /* _EDGE_H_ */

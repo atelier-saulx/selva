@@ -25,16 +25,16 @@ static void clear_all_fields(struct SelvaHierarchy *hierarchy, struct SelvaHiera
 static void EdgeField_Reply(struct selva_server_response_out *resp, void *p);
 static void EdgeField_Free(void *p);
 static size_t EdgeField_Len(void *p);
-static void *EdgeField_RdbLoad(struct selva_io *io, int encver, void *data);
-static void EdgeField_RdbSave(struct selva_io *io, void *value, void *data);
+static void *EdgeField_Load(struct selva_io *io, int encver, void *data);
+static void EdgeField_Save(struct selva_io *io, void *value, void *data);
 
 static const struct SelvaObjectPointerOpts obj_opts = {
     .ptr_type_id = SELVA_OBJECT_POINTER_EDGE,
     .ptr_reply = EdgeField_Reply,
     .ptr_free = EdgeField_Free,
     .ptr_len = EdgeField_Len,
-    .ptr_save = EdgeField_RdbSave,
-    .ptr_load = EdgeField_RdbLoad,
+    .ptr_save = EdgeField_Save,
+    .ptr_load = EdgeField_Load,
 };
 SELVA_OBJECT_POINTER_OPTS(obj_opts);
 
@@ -854,7 +854,7 @@ static size_t EdgeField_Len(void *p) {
 }
 
 /**
- * Context for RDB loading edges objects.
+ * Context for loading edges objects.
  */
 struct EdgeField_load_data {
     struct SelvaHierarchy *hierarchy;
@@ -862,14 +862,14 @@ struct EdgeField_load_data {
 };
 
 /*
- * A custom SelvaObject pointer RDB loader for EdgeFields.
+ * A custom SelvaObject pointer loader for EdgeFields.
  * Storage format: [
  *   constraint_id,
  *   nr_edges,
  *   dst_id...
  * ]
  */
-static void *EdgeField_RdbLoad(struct selva_io *io, __unused int encver __unused, void *p) {
+static void *EdgeField_Load(struct selva_io *io, __unused int encver __unused, void *p) {
     struct EdgeField_load_data *load_data = (struct EdgeField_load_data *)p;
     struct SelvaHierarchy *hierarchy = load_data->hierarchy;
     Selva_NodeId src_node_id;
@@ -943,22 +943,22 @@ static void *EdgeField_RdbLoad(struct selva_io *io, __unused int encver __unused
     /*
      * Metadata.
      */
-    edge_field->metadata = SelvaObjectTypeRDBLoad2(io, encver, NULL);
+    edge_field->metadata = SelvaObjectTypeLoad2(io, encver, NULL);
 
     return edge_field;
 }
 
-int Edge_RdbLoad(struct selva_io *io, int encver, SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
+int Edge_Load(struct selva_io *io, int encver, SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
     struct SelvaHierarchyMetadata *metadata;
 
     metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 
     /*
-     * We use the SelvaObject RDB loader to load the object which will then
-     * call EdgeField_RdbLoad for each field stored in the object to
+     * We use the SelvaObject loader to load the object which will then
+     * call EdgeField_Load for each field stored in the object to
      * initialize the actual EdgeField structures.
      */
-    metadata->edge_fields.edges = SelvaObjectTypeRDBLoad2(io, encver, &(struct EdgeField_load_data){
+    metadata->edge_fields.edges = SelvaObjectTypeLoad2(io, encver, &(struct EdgeField_load_data){
         .hierarchy = hierarchy,
         .src_node = node,
     });
@@ -967,9 +967,9 @@ int Edge_RdbLoad(struct selva_io *io, int encver, SelvaHierarchy *hierarchy, str
 }
 
 /**
- * Custom RDB save function for saving EdgeFields.
+ * Custom save function for saving EdgeFields.
  */
-static void EdgeField_RdbSave(struct selva_io *io, void *value, __unused void *save_data) {
+static void EdgeField_Save(struct selva_io *io, void *value, __unused void *save_data) {
     const struct EdgeField *edge_field = (struct EdgeField *)value;
     const struct EdgeFieldConstraint *constraint = edge_field->constraint;
     unsigned constraint_id = constraint->constraint_id;
@@ -1000,11 +1000,11 @@ static void EdgeField_RdbSave(struct selva_io *io, void *value, __unused void *s
     /*
      * Metadata.
      */
-    SelvaObjectTypeRDBSave2(io, edge_field->metadata, NULL);
+    SelvaObjectTypeSave2(io, edge_field->metadata, NULL);
 }
 
-void Edge_RdbSave(struct selva_io *io, struct SelvaHierarchyNode *node) {
+void Edge_Save(struct selva_io *io, struct SelvaHierarchyNode *node) {
     struct SelvaHierarchyMetadata *metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
 
-    SelvaObjectTypeRDBSave2(io, metadata->edge_fields.edges, NULL);
+    SelvaObjectTypeSave2(io, metadata->edge_fields.edges, NULL);
 }

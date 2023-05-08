@@ -172,12 +172,12 @@ struct SelvaHierarchy {
     struct {
         /**
          * Inactive nodeIds.
-         * Inactive node ids are listed here on RDB save for further
+         * Inactive node ids are listed here during serialization for further
          * processing. This is a pointer to a memory region shared with the
-         * RDB child process. We can access it lock free because we know exactly
-         * when it's being read and thus can avoid writing it at those times.
-         * NodeIds listed here have been inactive for a long time and are
-         * potential candidates for compression.
+         * serialization child process. We can access it lock free because we
+         * know exactly when it's being read and thus can avoid writing it at
+         * those times. NodeIds listed here have been inactive for a long time
+         * and are potential candidates for compression.
          */
         Selva_NodeId *nodes;
         size_t nr_nodes;
@@ -585,8 +585,8 @@ int HierarchyReply_WithTraversal(
         const Selva_NodeType *types,
         enum SelvaTraversal dir);
 
-SelvaHierarchy *Hierarchy_RDBLoad(struct selva_io *io);
-void Hierarchy_RDBSave(struct selva_io *io, SelvaHierarchy *hierarchy);
+SelvaHierarchy *Hierarchy_Load(struct selva_io *io);
+void Hierarchy_Save(struct selva_io *io, SelvaHierarchy *hierarchy);
 
 extern SelvaHierarchy *main_hierarchy;
 

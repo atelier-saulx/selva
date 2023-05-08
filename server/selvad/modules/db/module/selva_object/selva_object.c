@@ -108,7 +108,7 @@ RB_PROTOTYPE_STATIC(SelvaObjectKeys, SelvaObjectKey, _entry, SelvaObject_Compare
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, unsigned flags, struct SelvaObjectKey **out);
 static void replyWithKeyValue(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObjectKey *key);
 static void replyWithObject(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObject *obj, const char *excluded);
-static struct SelvaObject *rdb_load_object(struct selva_io *io, int encver, int level, void *ptr_load_data);
+static struct SelvaObject *load_object(struct selva_io *io, int encver, int level, void *ptr_load_data);
 
 static int SelvaObject_Compare(const struct SelvaObjectKey *a, const struct SelvaObjectKey *b) {
     /*
@@ -2363,7 +2363,7 @@ int SelvaObject_ReplyWithWildcardStr(
     return 0;
 }
 
-static int rdb_load_object_double(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name) {
+static int load_object_double(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name) {
     double value;
     int err;
 
@@ -2377,7 +2377,7 @@ static int rdb_load_object_double(struct selva_io *io, struct SelvaObject *obj, 
     return 0;
 }
 
-static int rdb_load_object_long_long(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name) {
+static int load_object_long_long(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name) {
     long long value;
     int err;
 
@@ -2391,7 +2391,7 @@ static int rdb_load_object_long_long(struct selva_io *io, struct SelvaObject *ob
     return 0;
 }
 
-static int rdb_load_object_string(struct selva_io *io, int level, struct SelvaObject *obj, const struct selva_string *name) {
+static int load_object_string(struct selva_io *io, int level, struct SelvaObject *obj, const struct selva_string *name) {
     TO_STR(name);
     struct selva_string *value = selva_io_load_string(io);
 
@@ -2422,7 +2422,7 @@ static int rdb_load_object_string(struct selva_io *io, int level, struct SelvaOb
     return 0;
 }
 
-static int rdb_load_object_set(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name) {
+static int load_object_set(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name) {
     enum SelvaSetType setType = selva_io_load_unsigned(io);
     const size_t n = selva_io_load_unsigned(io);
 
@@ -2452,7 +2452,7 @@ static int rdb_load_object_set(struct selva_io *io, struct SelvaObject *obj, con
     return 0;
 }
 
-static int rdb_load_object_array(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name, int encver, void *ptr_load_data) {
+static int load_object_array(struct selva_io *io, struct SelvaObject *obj, const struct selva_string *name, int encver, void *ptr_load_data) {
     TO_STR(name);
     enum SelvaObjectType arrayType = selva_io_load_unsigned(io);
     const size_t n = selva_io_load_unsigned(io);
@@ -2483,7 +2483,7 @@ static int rdb_load_object_array(struct selva_io *io, struct SelvaObject *obj, c
         }
     } else if (arrayType == SELVA_OBJECT_OBJECT) {
         for (size_t i = 0; i < n; i++) {
-            struct SelvaObject *o = SelvaObjectTypeRDBLoad(io, encver, ptr_load_data);
+            struct SelvaObject *o = SelvaObjectTypeLoad(io, encver, ptr_load_data);
             SVector_Insert(key->array, o);
         }
     } else {
@@ -2494,7 +2494,7 @@ static int rdb_load_object_array(struct selva_io *io, struct SelvaObject *obj, c
     return 0;
 }
 
-static int rdb_load_pointer(struct selva_io *io, int encver, struct SelvaObject *obj, const struct selva_string *name, void *ptr_load_data) {
+static int load_pointer(struct selva_io *io, int encver, struct SelvaObject *obj, const struct selva_string *name, void *ptr_load_data) {
     unsigned ptr_type_id;
 
     ptr_type_id = selva_io_load_unsigned(io);
@@ -2528,7 +2528,7 @@ static int rdb_load_pointer(struct selva_io *io, int encver, struct SelvaObject 
     return 0;
 }
 
-static int rdb_load_field(struct selva_io *io, struct SelvaObject *obj, int encver, int level, void *ptr_load_data) {
+static int load_field(struct selva_io *io, struct SelvaObject *obj, int encver, int level, void *ptr_load_data) {
     struct selva_string *name = selva_io_load_string(io);
     const enum SelvaObjectType type = selva_io_load_unsigned(io);
     const SelvaObjectMeta_t user_meta = selva_io_load_unsigned(io);
@@ -2544,13 +2544,13 @@ static int rdb_load_field(struct selva_io *io, struct SelvaObject *obj, int encv
         /* NOP - There is generally no reason to recreate NULLs */
         break;
     case SELVA_OBJECT_DOUBLE:
-        err = rdb_load_object_double(io, obj, name);
+        err = load_object_double(io, obj, name);
         break;
     case SELVA_OBJECT_LONGLONG:
-        err = rdb_load_object_long_long(io, obj, name);
+        err = load_object_long_long(io, obj, name);
         break;
     case SELVA_OBJECT_STRING:
-        err = rdb_load_object_string(io, level, obj, name);
+        err = load_object_string(io, level, obj, name);
         break;
     case SELVA_OBJECT_OBJECT:
         {
@@ -2562,7 +2562,7 @@ static int rdb_load_field(struct selva_io *io, struct SelvaObject *obj, int encv
                 break;
             }
 
-            key->value = rdb_load_object(io, encver, level + 1, ptr_load_data);
+            key->value = load_object(io, encver, level + 1, ptr_load_data);
             if (!key->value) {
                 err = SELVA_EINVAL;
                 break;
@@ -2571,13 +2571,13 @@ static int rdb_load_field(struct selva_io *io, struct SelvaObject *obj, int encv
         }
         break;
     case SELVA_OBJECT_SET:
-        err = rdb_load_object_set(io, obj, name);
+        err = load_object_set(io, obj, name);
         break;
     case SELVA_OBJECT_ARRAY:
-        err = rdb_load_object_array(io, obj, name, encver, ptr_load_data);
+        err = load_object_array(io, obj, name, encver, ptr_load_data);
         break;
     case SELVA_OBJECT_POINTER:
-        err = rdb_load_pointer(io, encver, obj, name, ptr_load_data);
+        err = load_pointer(io, encver, obj, name, ptr_load_data);
         break;
     default:
         SELVA_LOG(SELVA_LOGL_CRIT, "Unknown type");
@@ -2609,12 +2609,12 @@ static int rdb_load_field(struct selva_io *io, struct SelvaObject *obj, int encv
     return 0;
 }
 
-static struct SelvaObject *rdb_load_object_to(struct selva_io *io, int encver, struct SelvaObject *obj, int level, void *ptr_load_data) {
+static struct SelvaObject *load_object_to(struct selva_io *io, int encver, struct SelvaObject *obj, int level, void *ptr_load_data) {
     const size_t obj_size = selva_io_load_unsigned(io);
     for (size_t i = 0; i < obj_size; i++) {
         int err;
 
-        err = rdb_load_field(io, obj, encver, level, ptr_load_data);
+        err = load_field(io, obj, encver, level, ptr_load_data);
         if (err) {
             /* No need to do cleanup as Redis will terminate. */
             return NULL;
@@ -2624,23 +2624,23 @@ static struct SelvaObject *rdb_load_object_to(struct selva_io *io, int encver, s
     return obj;
 }
 
-static struct SelvaObject *rdb_load_object(struct selva_io *io, int encver, int level, void *ptr_load_data) {
-    return rdb_load_object_to(io, encver, SelvaObject_New(), level, ptr_load_data);
+static struct SelvaObject *load_object(struct selva_io *io, int encver, int level, void *ptr_load_data) {
+    return load_object_to(io, encver, SelvaObject_New(), level, ptr_load_data);
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoadTo(struct selva_io *io, int encver, struct SelvaObject *obj, void *ptr_load_data) {
-    return rdb_load_object_to(io, encver, obj, 0, ptr_load_data);
+struct SelvaObject *SelvaObjectTypeLoadTo(struct selva_io *io, int encver, struct SelvaObject *obj, void *ptr_load_data) {
+    return load_object_to(io, encver, obj, 0, ptr_load_data);
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoad(struct selva_io *io, int encver, void *ptr_load_data) {
+struct SelvaObject *SelvaObjectTypeLoad(struct selva_io *io, int encver, void *ptr_load_data) {
     struct SelvaObject *obj;
 
-    obj = rdb_load_object(io, encver, 0, ptr_load_data);
+    obj = load_object(io, encver, 0, ptr_load_data);
 
     return obj;
 }
 
-struct SelvaObject *SelvaObjectTypeRDBLoad2(struct selva_io *io, int encver, void *ptr_load_data) {
+struct SelvaObject *SelvaObjectTypeLoad2(struct selva_io *io, int encver, void *ptr_load_data) {
     const size_t obj_size = selva_io_load_unsigned(io);
     struct SelvaObject *obj;
 
@@ -2653,7 +2653,7 @@ struct SelvaObject *SelvaObjectTypeRDBLoad2(struct selva_io *io, int encver, voi
     for (size_t i = 0; i < obj_size; i++) {
         int err;
 
-        err = rdb_load_field(io, obj, encver, 0, ptr_load_data);
+        err = load_field(io, obj, encver, 0, ptr_load_data);
         if (err) {
             /* No need to do cleanup as Redis will terminate. */
             return NULL;
@@ -2663,7 +2663,7 @@ struct SelvaObject *SelvaObjectTypeRDBLoad2(struct selva_io *io, int encver, voi
     return obj;
 }
 
-static void rdb_save_object_string(struct selva_io *io, struct SelvaObjectKey *key) {
+static void save_object_string(struct selva_io *io, struct SelvaObjectKey *key) {
     if (!key->value) {
         SELVA_LOG(SELVA_LOGL_CRIT, "STRING value missing");
         return;
@@ -2671,7 +2671,7 @@ static void rdb_save_object_string(struct selva_io *io, struct SelvaObjectKey *k
     selva_io_save_string(io, key->value);
 }
 
-static void rdb_save_object_set(struct selva_io *io, struct SelvaObjectKey *key) {
+static void save_object_set(struct selva_io *io, struct SelvaObjectKey *key) {
     const struct SelvaSet *selva_set = &key->selva_set;
 
     selva_io_save_unsigned(io, selva_set->type);
@@ -2700,7 +2700,7 @@ static void rdb_save_object_set(struct selva_io *io, struct SelvaObjectKey *key)
     }
 }
 
-static void rdb_save_object_array(struct selva_io *io, struct SelvaObjectKey *key, void *ptr_save_data) {
+static void save_object_array(struct selva_io *io, struct SelvaObjectKey *key, void *ptr_save_data) {
     const struct SVector *array = key->array;
     const size_t array_size = SVector_Size(array);
 
@@ -2736,14 +2736,14 @@ static void rdb_save_object_array(struct selva_io *io, struct SelvaObjectKey *ke
             struct SelvaObject *k;
 
             k = SVector_GetIndex(array, i);
-            SelvaObjectTypeRDBSave2(io, k, ptr_save_data);
+            SelvaObjectTypeSave2(io, k, ptr_save_data);
         }
     } else {
         SELVA_LOG(SELVA_LOGL_CRIT, "Unknown object array type");
     }
 }
 
-void SelvaObjectTypeRDBSave(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data) {
+void SelvaObjectTypeSave(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data) {
     struct SelvaObjectKey *key;
 
     if (unlikely(!obj)) {
@@ -2768,24 +2768,24 @@ void SelvaObjectTypeRDBSave(struct selva_io *io, struct SelvaObject *obj, void *
             selva_io_save_signed(io, key->emb_ll_value);
             break;
         case SELVA_OBJECT_STRING:
-            rdb_save_object_string(io, key);
+            save_object_string(io, key);
             break;
         case SELVA_OBJECT_OBJECT:
             if (!key->value) {
                 SELVA_LOG(SELVA_LOGL_CRIT, "OBJECT value missing");
                 break;
             }
-            SelvaObjectTypeRDBSave(io, key->value, ptr_save_data);
+            SelvaObjectTypeSave(io, key->value, ptr_save_data);
             break;
         case SELVA_OBJECT_SET:
-            rdb_save_object_set(io, key);
+            save_object_set(io, key);
             break;
         case SELVA_OBJECT_ARRAY:
-            rdb_save_object_array(io, key, ptr_save_data);
+            save_object_array(io, key, ptr_save_data);
             break;
         case SELVA_OBJECT_POINTER:
             if (key->ptr_opts && key->ptr_opts->ptr_save) {
-                selva_io_save_unsigned(io, key->ptr_opts->ptr_type_id); /* This is used to locate the loader on RDB load. */
+                selva_io_save_unsigned(io, key->ptr_opts->ptr_type_id); /* This is used to locate the loader. */
                 key->ptr_opts->ptr_save(io, key->value, ptr_save_data);
             } else {
                 SELVA_LOG(SELVA_LOGL_CRIT, "ptr_save() not given");
@@ -2798,10 +2798,10 @@ void SelvaObjectTypeRDBSave(struct selva_io *io, struct SelvaObject *obj, void *
     }
 }
 
-void SelvaObjectTypeRDBSave2(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data) {
+void SelvaObjectTypeSave2(struct selva_io *io, struct SelvaObject *obj, void *ptr_save_data) {
     if (!obj) {
         selva_io_save_unsigned(io, 0);
     } else {
-        SelvaObjectTypeRDBSave(io, obj, ptr_save_data);
+        SelvaObjectTypeSave(io, obj, ptr_save_data);
     }
 }

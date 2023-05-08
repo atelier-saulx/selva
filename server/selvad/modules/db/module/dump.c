@@ -199,7 +199,7 @@ static int dump_load(struct selva_io *io)
     struct SelvaHierarchy *tmp_hierarchy = main_hierarchy;
     int err = 0;
 
-    main_hierarchy = Hierarchy_RDBLoad(io);
+    main_hierarchy = Hierarchy_Load(io);
     if (main_hierarchy) {
         if (tmp_hierarchy) {
             SelvaModify_DestroyHierarchy(tmp_hierarchy);
@@ -241,7 +241,7 @@ static int dump_save_async(const char *filename)
             return err;
         }
 
-        Hierarchy_RDBSave(&io, main_hierarchy);
+        Hierarchy_Save(&io, main_hierarchy);
         selva_io_end(&io);
 
         exit(0);
@@ -275,7 +275,7 @@ static int dump_save_sync(const char *filename)
         return err;
     }
 
-    Hierarchy_RDBSave(&io, main_hierarchy);
+    Hierarchy_Save(&io, main_hierarchy);
     selva_io_end(&io);
 
     handle_last_good_sync();
