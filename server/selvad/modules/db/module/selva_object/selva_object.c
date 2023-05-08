@@ -308,9 +308,7 @@ static struct SelvaObjectKey *alloc_key(struct SelvaObject *obj, size_t name_len
         key = selva_malloc(key_size);
     }
 
-    if (key) {
-        memset(key, 0, key_size);
-    }
+    memset(key, 0, key_size);
 
     return key;
 }
@@ -409,9 +407,6 @@ static int insert_new_key(struct SelvaObject *obj, const char *name_str, size_t 
     }
 
     key = alloc_key(obj, name_len);
-    if (!key) {
-        return SELVA_ENOMEM;
-    }
 #if 0
     if ((char *)key >= obj->emb_keys && (char *)key < obj->emb_keys + sizeof(obj->emb_keys)) {
         SELVA_LOG(SELVA_LOGL_DBG, "Key \"%.*s\" is embedded %zu", (int)name_len, name_str, EMBEDDED_NAME_MAX);
