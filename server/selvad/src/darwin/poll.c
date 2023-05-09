@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <errno.h>
@@ -9,6 +9,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
+#include "util/ctime.h"
+#include "util/timestamp.h"
 #include "selva_log.h"
 #include "event_loop.h"
 #include "../event_loop_state.h"
@@ -65,6 +67,13 @@ void evl_poll(struct event_loop_state *state, const struct timespec *timeout)
     int nfds = 0;
     int nfds_out;
     const int itim = timeout ? timeout->tv_sec + (int)(timeout->tv_nsec / 1000000000) : -1;
+    struct timespec expire, cur;
+    const struct timespec sleepy = {
+        .tv_nsec = 500,
+    };
+
+    ts_monotime(&expire);
+    timespec_add(&expire, &expire, timeout);
 
     for (int fd = 0; fd < EVENT_LOOP_MAX_FDS; fd++) {
         enum event_type mask = state->fds[fd].mask & (EVENT_TYPE_FD_READABLE | EVENT_TYPE_FD_WRITABLE);
@@ -78,11 +87,22 @@ void evl_poll(struct event_loop_state *state, const struct timespec *timeout)
         }
     }
 
-    /* TODO EINTR might affect the timeout. */
-    while ((nfds_out = poll(state->pfds, nfds, itim)) == -1 &&
-           (errno == EINTR || errno == EAGAIN)) {
-        continue;
-    }
+    do {
+        /* TODO EINTR might affect the timeout. */
+        while ((nfds_out = poll(state->pfds, nfds, itim)) == -1 &&
+               (errno == EINTR || errno == EAGAIN)) {
+            continue;
+        }
+
+        /*
+         * MacOS has a quirky but technically correct implementation of poll()
+         * that may return prematurely if no fds are ready. Hence, we need to
+         * implement our own timeout and retry logic here.
+         */
+        ts_monotime(&cur);
+    } while (nfds_out == 0 &&
+             timespec_cmp(&cur, &expire, <) &&
+             (nanosleep(&sleepy, NULL), 1));
     if (nfds_out > 0) {
         const int offset = state->nr_pending;
         int nr_events = 0;
