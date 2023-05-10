@@ -2862,10 +2862,6 @@ static void auto_compress_proc(struct event *, void *data) {
              * still won't see it here again any time soon.
              */
             (void)detach_subtree(hierarchy, node, SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM);
-            if (!err) {
-                SELVA_LOG(SELVA_LOGL_DBG, "Auto-compressed %.*s",
-                          (int)SELVA_NODE_ID_SIZE, node_id);
-            }
         }
 
         SelvaHierarchy_ClearInactiveNodeIds(hierarchy);
