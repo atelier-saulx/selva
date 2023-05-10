@@ -41,7 +41,11 @@ static int is_dbg_match(const char *where)
         return 0;
     }
 
+#if defined(FNM_EXTMATCH)
     return !fnmatch(dbg_pattern_str, where, FNM_EXTMATCH);
+#else
+    return !fnmatch(dbg_pattern_str, where, 0);
+#endif
 }
 
 void selva_log(enum selva_log_level level, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) {
