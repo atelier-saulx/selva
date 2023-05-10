@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <arpa/inet.h>
@@ -95,7 +95,7 @@ IMPORT() {
 
 __constructor void init(void)
 {
-    SELVA_LOG(SELVA_LOGL_INFO, "Init demo_sock");
+    evl_module_init("demo_sock");
 
     /* Async server for receiving messages. */
     server_sockfd = new_server(3000);

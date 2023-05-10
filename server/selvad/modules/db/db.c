@@ -77,7 +77,7 @@ __constructor void init(void)
     int err;
     Selva_Onload **onload_p;
 
-    SELVA_LOG(SELVA_LOGL_INFO, "Init db");
+    evl_module_init("db");
 
     libdeflate_set_memory_allocator(selva_malloc, selva_free);
 

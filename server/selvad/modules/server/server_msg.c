@@ -30,7 +30,7 @@ int server_recv_message(struct conn_ctx *ctx)
         char peer[CONN_STR_LEN];
 
         conn_to_str(ctx, peer, sizeof(peer));
-        SELVA_LOG(SELVA_LOGL_ERR, "Connection failed client: %s err: \"%s\"",
+        SELVA_LOG(SELVA_LOGL_DBG, "Connection failed client: %s err: \"%s\"",
                   peer, selva_strerror(frame_bsize));
         return frame_bsize;
     }

@@ -451,5 +451,5 @@ IMPORT() {
 
 __constructor static void init(void)
 {
-    SELVA_LOG(SELVA_LOGL_INFO, "Init io");
+    evl_module_init("io");
 }

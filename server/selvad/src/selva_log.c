@@ -48,7 +48,7 @@ static int is_dbg_match(const char *where)
 #endif
 }
 
-void selva_log(enum selva_log_level level, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) {
+void selva_log(enum selva_log_level level, const char * restrict modname, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) {
     va_list args;
 
     if (level > selva_log_level && !(level == SELVA_LOGL_DBG && is_dbg_match(where))) {
@@ -57,7 +57,7 @@ void selva_log(enum selva_log_level level, const char * restrict where, const ch
 
     va_start(args, fmt);
     if (use_colors) fprintf(log_stream, "%s", colors[level]);
-    fprintf(log_stream, "%s:%s: ", where, func);
+    fprintf(log_stream, "%s:%s:%s: ", modname, where, func);
     if (use_colors) fprintf(log_stream, "\033[0m"); /* Reset color. */
     vfprintf(log_stream, fmt, args);
     if (fmt[strlen(fmt) - 1] != '\n') {

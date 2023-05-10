@@ -24,6 +24,7 @@ static const char *modules[] = {
 
 int main(void)
 {
+    evl_module_init("main");
     evl_init();
 
     SELVA_LOG(SELVA_LOGL_INFO, "Selva build: %s pid: %jd",

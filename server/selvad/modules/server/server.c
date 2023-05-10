@@ -188,9 +188,7 @@ static void hrt_cb(struct event *, void *arg)
     struct selva_server_response_out *resp = (struct selva_server_response_out *)arg;
     int tim;
 
-#if 0
-    SELVA_LOG(SELVA_LOGL_INFO, "Sending a heartbeat (%p, %d)", resp, resp->ctx ? resp->ctx->fd : -1);
-#endif
+    SELVA_LOG(SELVA_LOGL_DBG, "Sending a heartbeat (%p, %d)", resp, resp->ctx ? resp->ctx->fd : -1);
 
     selva_send_str(resp, "boum", 4);
 
@@ -517,7 +515,7 @@ static void on_connection(struct event *event, void *arg __unused)
     (void)setsockopt(new_sockfd, SOL_SOCKET, SO_RCVLOWAT, &(int){8}, sizeof(int));
 
     inet_ntop(AF_INET, &client.sin_addr, buf, sizeof(buf));
-    SELVA_LOG(SELVA_LOGL_INFO, "Received a connection from %s:%d", buf, ntohs(client.sin_port));
+    SELVA_LOG(SELVA_LOGL_DBG, "Received a connection from %s:%d", buf, ntohs(client.sin_port));
 
     conn_ctx->fd = new_sockfd;
     conn_ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
@@ -568,9 +566,7 @@ IMPORT() {
 
 __constructor void init(void)
 {
-    const char *selva_port_str = getenv(ENV_PORT_NAME);
-
-    SELVA_LOG(SELVA_LOGL_INFO, "Init server");
+    evl_module_init("server");
 
 	int err = config_resolve("server", server_cfg_map, num_elem(server_cfg_map));
     if (err) {
@@ -579,6 +575,7 @@ __constructor void init(void)
         exit(EXIT_FAILURE);
     }
 
+    const char *selva_port_str = getenv(ENV_PORT_NAME);
     if (selva_port_str) {
         selva_port = strtol(selva_port_str, NULL, 10);
     }

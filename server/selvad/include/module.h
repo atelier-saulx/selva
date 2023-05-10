@@ -1,8 +1,10 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
+#ifndef _EVL_MODULE_H_
+#define _EVL_MODULE_H_
 
 #include <stdio.h>
 #include <dlfcn.h>
@@ -20,6 +22,13 @@ struct evl_module_info {
         struct evl_module_info *sle_next;
     } entries;
 };
+
+const char *evl_modname __attribute__((__common__));
+
+static inline void evl_module_init(const char *name)
+{
+    evl_modname = name;
+}
 
 /**
  * Load a module.
@@ -73,3 +82,5 @@ static inline void *_evl_import(const char *what, const char *from) {
  * before they are needed in a module.
  */
 #define IMPORT() __attribute__((constructor(101))) static void _imports(void)
+
+#endif

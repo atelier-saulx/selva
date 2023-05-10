@@ -526,7 +526,7 @@ IMPORT() {
 
 __constructor void init(void)
 {
-    SELVA_LOG(SELVA_LOGL_INFO, "Init replication");
+    evl_module_init("replication");
 
 	int err = config_resolve("replication", cfg_map, num_elem(cfg_map));
     if (err) {

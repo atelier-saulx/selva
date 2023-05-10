@@ -8,6 +8,10 @@
 
 struct selva_string;
 
+#ifndef _EVL_MODULE_H_
+const char *evl_modname __attribute__((__common__));
+#endif
+
 /**
  * Log levels.
  */
@@ -51,9 +55,9 @@ struct _selva_dyndebug_msg {
 };
 
 #if EVL_MAIN
-void selva_log(enum selva_log_level level, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) __attribute__((__visibility__("default"), format(printf, 4, 5)));
+void selva_log(enum selva_log_level level, const char * restrict modname, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) __attribute__((__visibility__("default"), format(printf, 5, 6)));
 #else
-void (*selva_log)(enum selva_log_level level, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) __attribute__((__common__, format(printf, 4, 5)));
+void (*selva_log)(enum selva_log_level level, const char * restrict modname, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) __attribute__((__common__, format(printf, 5, 6)));
 #endif
 EVL_EXPORT(enum selva_log_level, selva_log_get_level, void);
 EVL_EXPORT(enum selva_log_level, selva_log_set_level, enum selva_log_level new_level);
@@ -61,7 +65,7 @@ EVL_EXPORT(void, selva_log_set_dbgpattern, struct selva_string *s);
 
 #define _SELVA_LOG_WHERESTR (__FILE__ ":" S__LINE__)
 #define _SELVA_LOG(level, where, fmt, ...) \
-    selva_log(level, where, fmt __VA_OPT__(,) __VA_ARGS__)
+    selva_log(level, evl_modname, where, fmt __VA_OPT__(,) __VA_ARGS__)
 
 /**
  * Print to the server logs.

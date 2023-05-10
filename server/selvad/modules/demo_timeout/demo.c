@@ -24,7 +24,7 @@ IMPORT() {
 
 __constructor void init(void)
 {
-    SELVA_LOG(SELVA_LOGL_INFO, "Init demo_timeout");
+    evl_module_init("demo_timeout");
 
     /*
      * Random timeout.
