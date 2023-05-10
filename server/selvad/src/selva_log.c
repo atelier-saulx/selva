@@ -1,26 +1,17 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <fnmatch.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "util/selva_string.h"
 #include "selva_log.h"
 
 static FILE *log_stream;
 static enum selva_log_level selva_log_level = SELVA_LOGL_INFO;
-
-/* FIXME debug log */
-#if 0
-#if __APPLE__ && __MACH__
-extern struct _selva_dyndebug_msg __start_dbg_msg __asm("section$start$__DATA$dbg_msg");
-extern struct _selva_dyndebug_msg __stop_dbg_msg __asm("section$end$__DATA$dbg_msg");
-#else
-extern struct _selva_dyndebug_msg __start_dbg_msg;
-extern struct _selva_dyndebug_msg __stop_dbg_msg;
-#endif
-#endif
 
 static int use_colors;
 static char *colors[] = {
@@ -31,10 +22,32 @@ static char *colors[] = {
     [SELVA_LOGL_DBG] = "\033[0;34m", /* blue */
 };
 
+static struct selva_string *dbg_pattern;
+static const char *dbg_pattern_str;
+
+/**
+ * Test if `dbg_pattern` matches with `where`
+ * - `*` wildcard
+ * - `(pattern-list)` pattern|pattern|...
+ * - `?(pattern-list)` The pattern matches if zero or one occurrences of any of the patterns match
+ * - `*(pattern-list)` The pattern matches if zero or more occurrences of any of the patterns match
+ * - `+(pattern-list)` The pattern matches if one or more occurrences of any of the patterns match
+ * - `@(pattern-list)` The pattern matches if exactly one occurrence of any of the patterns match
+ * - `!(pattern-list)` The pattern matches if the input string cannot be matched with any of the patterns
+ */
+static int is_dbg_match(const char *where)
+{
+    if (!dbg_pattern) {
+        return 0;
+    }
+
+    return !fnmatch(dbg_pattern_str, where, FNM_EXTMATCH);
+}
+
 void selva_log(enum selva_log_level level, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) {
     va_list args;
 
-    if (level > selva_log_level) {
+    if (level > selva_log_level && !(level == SELVA_LOGL_DBG && is_dbg_match(where))) {
         return;
     }
 
@@ -49,123 +62,25 @@ void selva_log(enum selva_log_level level, const char * restrict where, const ch
     va_end(args);
 }
 
-/* FIXME dbgmsg */
-/* FIXME log level */
-#if 0
-static void toggle_dbgmsg(const char * cfg) {
-    struct _selva_dyndebug_msg *msg_opt = &__start_dbg_msg;
-    struct _selva_dyndebug_msg *stop = &__stop_dbg_msg;
-    char strbuf[80];
-    char *file;
-    char *line;
-
-    if (msg_opt == stop) {
-        return;
-    }
-
-    snprintf(strbuf, sizeof(strbuf), "%s", cfg);
-    file = strbuf;
-    line = strchr(strbuf, ':');
-
-    if (line) {
-        line[0] = '\0';
-        line++;
-    }
-
-    while (msg_opt < stop) {
-        if (strcmp(file, msg_opt->file) == 0) {
-            if (line && *line != '\0') {
-                char msgline[12];
-
-                snprintf(msgline, sizeof(msgline), "%d", msg_opt->line);
-                if (strcmp(line, msgline) != 0) {
-                    goto next;
-                }
-            }
-            msg_opt->flags ^= 1;
-        }
-
-next:
-        msg_opt++;
-    }
+enum selva_log_level selva_log_get_level(void) {
+    return selva_log_level;
 }
 
-int SelvaLog_LevelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
+enum selva_log_level selva_log_set_level(enum selva_log_level new_level) {
+    const enum selva_log_level tmp = selva_log_level;
 
-    if (argc == 1) {
-        return RedisModule_ReplyWithStringBuffer(ctx, (char []){ selva_log_level }, 1);
-    } else if (argc == 2) {
-        size_t level_len;
-        const char *level_str = RedisModule_StringPtrLen(argv[1], &level_len);
-        const enum selva_log_level level = (enum selva_log_level)(*level_str);
-        const enum selva_log_level old_level = selva_log_level;
-
-        if (level_len != 1 || level < SELVA_LOGL_CRIT || level >= SELVA_LOGL_DBG) {
-            return replyWithSelvaError(ctx, SELVA_EINVAL);
-        }
-
-        selva_log_level = level;
-        return RedisModule_ReplyWithStringBuffer(ctx, (char []){ old_level }, 1);
-    } else {
-        return RedisModule_WrongArity(ctx);
-    }
+    selva_log_level = new_level;
+    return tmp;
 }
 
-int SelvaLog_DbgCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-
-    if (argc != 2) {
-        return RedisModule_WrongArity(ctx);
+void selva_log_set_dbgpattern(struct selva_string *s)
+{
+    if (dbg_pattern) {
+        selva_string_free(dbg_pattern);
     }
-
-    toggle_dbgmsg(RedisModule_StringPtrLen(argv[1], NULL));
-
-    return RedisModule_ReplyWithLongLong(ctx, 1);
+    dbg_pattern = selva_string_dup(s, 0);
+    dbg_pattern_str = selva_string_to_str(dbg_pattern, NULL);
 }
-
-int SelvaLog_DbgListCommand(RedisModuleCtx *ctx, RedisModuleString **argv __unused, int argc) {
-    RedisModule_AutoMemory(ctx);
-    struct _selva_dyndebug_msg * msg_opt = &__start_dbg_msg;
-    struct _selva_dyndebug_msg * stop = &__stop_dbg_msg;
-
-    if (argc != 1) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    RedisModule_ReplyWithArray(ctx, stop - msg_opt);
-
-    if (msg_opt == stop) {
-        return REDISMODULE_OK;
-    }
-
-    while (msg_opt < stop) {
-        RedisModule_ReplyWithString(ctx, RedisModule_CreateStringPrintf(ctx, "%s:%d: %d", msg_opt->file, msg_opt->line, msg_opt->flags));
-        msg_opt++;
-    }
-
-    return REDISMODULE_OK;
-}
-
-static int SelvaLog_OnLoad(RedisModuleCtx *ctx) {
-    /*
-     * This message is here just to initialize the section used for debug logs.
-     */
-    SELVA_LOG_DBG("Loading selva_log");
-
-    /*
-     * Register commands.
-     */
-    if (RedisModule_CreateCommand(ctx, "selva.log.level", SelvaLog_LevelCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.log.dbg", SelvaLog_DbgCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR ||
-        RedisModule_CreateCommand(ctx, "selva.log.dbglist", SelvaLog_DbgListCommand, "readonly fast", 1, 1, 1) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    return REDISMODULE_OK;
-}
-SELVA_ONLOAD(SelvaLog_OnLoad);
-#endif
 
 __attribute__((constructor(101))) static void init_selva_log(void)
 {

@@ -172,13 +172,11 @@ static void update_index(
          * Delete the res to trigger a full rebuild.
          */
         if (icb->flags.valid) {
-#if 0
             Selva_NodeId node_id;
 
             SelvaHierarchy_GetNodeId(node_id, node);
             SELVA_LOG(SELVA_LOGL_DBG, "The index must be purged and refreshed because %.*s was removed",
                       (int)SELVA_NODE_ID_SIZE, node_id);
-#endif
 
             icb_res_destroy(icb);
             icb_clear_acc(icb); /* Clear to avoid stale data. */
@@ -206,13 +204,12 @@ static void update_index(
 
         if (Selva_SubscriptionFilterMatch(hierarchy, node, marker)) {
             if (!skip_node(icb, node)) {
-#if 0
                 Selva_NodeId node_id;
 
                 SelvaHierarchy_GetNodeId(node_id, node);
                 SELVA_LOG(SELVA_LOGL_DBG, "Adding node %.*s to the index after refresh",
                           (int)SELVA_NODE_ID_SIZE, node_id);
-#endif
+
                 icb_res_add(icb, node);
             }
         }
@@ -240,24 +237,21 @@ static void update_index(
                  */
                 icb_res_destroy(icb);
             } else if (Selva_SubscriptionFilterMatch(hierarchy, node, marker)) {
-                icb_res_add(icb, node);
-#if 0
                 Selva_NodeId node_id;
+
+                icb_res_add(icb, node);
 
                 SelvaHierarchy_GetNodeId(node_id, node);
                 SELVA_LOG(SELVA_LOGL_DBG, "Adding node %.*s to the index",
                           (int)SELVA_NODE_ID_SIZE, node_id);
-#endif
             }
         }
     } else {
-#if 0
         Selva_NodeId node_id;
 
         SelvaHierarchy_GetNodeId(node_id, node);
         SELVA_LOG(SELVA_LOGL_DBG, "NOP %x for node %.*s",
                   (unsigned)event_flags, (int)SELVA_NODE_ID_SIZE, node_id);
-#endif
     }
 }
 
@@ -365,10 +359,8 @@ __attribute__((nonnull (1, 2))) static int destroy_icb(
         struct SelvaFindIndexControlBlock *icb) {
     int err;
 
-#if 0
     SELVA_LOG(SELVA_LOGL_DBG, "Destroying icb for %.*s",
               (int)icb->name_len, icb->name_str);
-#endif
 
     err = discard_index(hierarchy, icb);
     if (err) {
@@ -623,12 +615,10 @@ static void icb_proc(struct event *e __unused, void *data) {
          * doesn't exceed the cut limit determined by poptop.
          */
         poptop_maybe_add(&icb->hierarchy->dyn_index.top_indices, score, icb);
-#if 0
         SELVA_LOG(SELVA_LOGL_DBG, "Maybe added %.*s:%p to poptop with score: %f",
                   (int)icb->name_len, icb->name_str,
                   icb,
                   score);
-#endif
     }
 }
 
@@ -669,9 +659,10 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
         err = set_marker_id(hierarchy, icb);
         if (err) {
             if (err == SELVA_ENOBUFS) {
-                SELVA_LOG_DBG("FIND_INDICES_MAX_HINTS reached. Destroying \"%.*s\": %s\n",
-                              (int)icb->name_len, icb->name_str,
-                              selva_strerror(err));
+                SELVA_LOG(SELVA_LOGL_DBG,
+                          "FIND_INDICES_MAX_HINTS reached. Destroying \"%.*s\": %s\n",
+                          (int)icb->name_len, icb->name_str,
+                          selva_strerror(err));
             } else {
                 SELVA_LOG(SELVA_LOGL_ERR,
                           "Failed to get a new marker id for an index \"%.*s\": %s\n",

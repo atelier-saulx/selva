@@ -55,18 +55,32 @@
 #define CMD_ID_CONFIG 6
 
 /**
+ * Set or get loglevel.
+ * module: server
+ * cmd: loglevel
+ */
+#define CMD_ID_LOGLEVEL 7
+
+/**
+ * Toggle debug messages.
+ * module: server
+ * cmd: dbg
+ */
+#define CMD_ID_DBG 8
+
+/**
  * Show malloc stats.
  * module: server
  * cmd: mallocstats
  */
-#define CMD_ID_MALLOCSTATS 7
+#define CMD_ID_MALLOCSTATS 9
 
 /**
  * Dump a jemalloc prof file.
  * module: server
  * cmd: mallocprofdump
  */
-#define CMD_ID_MALLOCPROFDUMP 8
+#define CMD_ID_MALLOCPROFDUMP 10
 
 /**
  * Load db.

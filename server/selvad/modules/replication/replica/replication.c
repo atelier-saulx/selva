@@ -581,9 +581,6 @@ static enum repl_proto_state handle_recv_cmd(struct seq_state *ss)
         sv.recv_state = RECV_STATE_FRAME;
         return REPL_PROTO_STATE_RECEIVING_CMD;
     } else {
-#if 0
-        SELVA_LOG(SELVA_LOGL_DBG, "Compressed cmd: %d", sv.cmd_compress);
-#endif
         if (sv.cmd_compress) {
             struct selva_string *s = selva_string_create((const char *)ss->msg_buf, sv.cmd_size, SELVA_STRING_COMPRESS);
             size_t new_len = selva_string_getz_ulen(s);
@@ -593,10 +590,6 @@ static enum repl_proto_state handle_recv_cmd(struct seq_state *ss)
                 selva_string_free(s);
                 return REPL_PROTO_STATE_ERR;
             }
-
-#if 0
-            SELVA_LOG(SELVA_LOGL_DBG, "Decompressing cmd");
-#endif
 
             selva_string_decompress(s, (char *)ss->msg_buf);
             selva_string_free(s);

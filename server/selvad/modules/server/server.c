@@ -295,6 +295,50 @@ static void config(struct selva_server_response_out *resp, const void *buf __unu
     }
 }
 
+static void loglevel(struct selva_server_response_out *resp, const void *buf, size_t size)
+{
+    __auto_finalizer struct finalizer fin;
+    int new_level;
+    int argc;
+
+    finalizer_init(&fin);
+
+    argc = selva_proto_scanf(&fin, buf, size, "%d", &new_level);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+    } else if (argc == 0) {
+        selva_send_ll(resp, selva_log_get_level());
+    } else if (argc == 1) {
+        if (new_level < SELVA_LOGL_CRIT || new_level >= SELVA_LOGL_DBG) {
+            selva_send_errorf(resp, SELVA_EINVAL, "Invalid loglevel");
+            return;
+        }
+
+        selva_send_ll(resp, selva_log_set_level(new_level));
+    } else {
+        selva_send_error_arity(resp);
+    }
+}
+
+static void dbg(struct selva_server_response_out *resp, const void *buf, size_t size)
+{
+    __auto_finalizer struct finalizer fin;
+    struct selva_string *pattern;
+    int argc;
+
+    finalizer_init(&fin);
+
+    argc = selva_proto_scanf(&fin, buf, size, "%p", &pattern);
+    if (argc < 0) {
+        selva_send_errorf(resp, argc, "Failed to parse args");
+    } else if (argc == 1) {
+        selva_log_set_dbgpattern(pattern);
+        selva_send_ll(resp, 1);
+    } else {
+        selva_send_error_arity(resp);
+    }
+}
+
 static void mallocstats_send(void *arg, const char *buf)
 {
     struct selva_server_response_out *resp = (struct selva_server_response_out *)arg;
@@ -513,6 +557,9 @@ int selva_server_run_cmd(int8_t cmd_id, int64_t ts, void *msg, size_t msg_size)
 
 IMPORT() {
     evl_import_main(selva_log);
+    evl_import_main(selva_log_get_level);
+    evl_import_main(selva_log_set_level);
+    evl_import_main(selva_log_set_dbgpattern);
     evl_import_main(evl_get_next_module);
     evl_import_main(config_resolve);
     evl_import_main(config_list_get);
@@ -546,6 +593,8 @@ __constructor void init(void)
     SELVA_MK_COMMAND(CMD_ID_LSMOD, SELVA_CMD_MODE_PURE, lsmod);
     SELVA_MK_COMMAND(CMD_ID_HRT, SELVA_CMD_MODE_PURE, hrt);
     SELVA_MK_COMMAND(CMD_ID_CONFIG, SELVA_CMD_MODE_PURE, config);
+    SELVA_MK_COMMAND(CMD_ID_LOGLEVEL, SELVA_CMD_MODE_PURE, loglevel);
+    SELVA_MK_COMMAND(CMD_ID_DBG, SELVA_CMD_MODE_PURE, dbg);
     SELVA_MK_COMMAND(CMD_ID_MALLOCSTATS, SELVA_CMD_MODE_PURE, mallocstats);
     SELVA_MK_COMMAND(CMD_ID_MALLOCPROFDUMP, SELVA_CMD_MODE_PURE, mallocprofdump);
 

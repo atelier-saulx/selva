@@ -92,7 +92,7 @@ int config_resolve(const char *mod_name, const struct config cfg_map[], size_t l
             return err;
         }
 
-        SELVA_LOG_DBG("Selva config changed: %s\n", cfg->name);
+        SELVA_LOG(SELVA_LOGL_DBG, "Selva config changed: %s\n", cfg->name);
     }
 
     config_list_insert(mod_name, cfg_map, len);

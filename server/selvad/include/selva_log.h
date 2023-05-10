@@ -1,8 +1,12 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
+
+#include "_evl_export.h"
+
+struct selva_string;
 
 /**
  * Log levels.
@@ -51,6 +55,9 @@ void selva_log(enum selva_log_level level, const char * restrict where, const ch
 #else
 void (*selva_log)(enum selva_log_level level, const char * restrict where, const char * restrict func, const char * restrict fmt, ...) __attribute__((__common__, format(printf, 4, 5)));
 #endif
+EVL_EXPORT(enum selva_log_level, selva_log_get_level, void);
+EVL_EXPORT(enum selva_log_level, selva_log_set_level, enum selva_log_level new_level);
+EVL_EXPORT(void, selva_log_set_dbgpattern, struct selva_string *s);
 
 #define _SELVA_LOG_WHERESTR (__FILE__ ":" S__LINE__)
 #define _SELVA_LOG(level, where, fmt, ...) \
@@ -64,21 +71,3 @@ void (*selva_log)(enum selva_log_level level, const char * restrict where, const
 #define SELVA_LOG(level, fmt, ...) do { \
     _SELVA_LOG(level, _SELVA_LOG_WHERESTR, __func__, fmt __VA_OPT__(,) __VA_ARGS__); \
 } while (0)
-
-/* FIXME Debug log */
-#if 0
-#if __APPLE__ && __MACH__
-#define __dbg_msg_section __section("__DATA,dbg_msg")
-#else
-#define __dbg_msg_section __section("dbg_msg")
-#endif
-
-#define SELVA_LOG_DBG(fmt, ...) do { \
-    static struct _selva_dyndebug_msg _dbg_msg __dbg_msg_section __used = { .flags = 0, .file = __FILE__, .line = __LINE__ }; \
-    if (_dbg_msg.flags & 1) { \
-        _SELVA_LOG(SELVA_LOGL_DBG, _SELVA_LOG_WHERESTR, __func__, fmt, ##__VA_ARGS__); \
-    } \
-} while (0)
-#endif
-#define SELVA_LOG_DBG(fmt, ...) \
-    SELVA_LOG(SELVA_LOGL_DBG, fmt __VA_OPT__(,) __VA_ARGS__)

@@ -2690,11 +2690,10 @@ static struct selva_string *compress_subtree(SelvaHierarchy *hierarchy, struct S
     err = verifyDetachableSubtree(hierarchy, node);
     if (err) {
         /* Not a valid subtree. */
-#if 0
         SELVA_LOG(SELVA_LOGL_DBG, "%.*s is not a valid subtree for compression: %s",
                   (int)SELVA_NODE_ID_SIZE, node->id,
                   selva_strerror(err));
-#endif
+
         return NULL;
     }
 
@@ -2762,8 +2761,9 @@ static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *
     new_detached_node(hierarchy, node_id, parents, nr_parents);
 
     if (!err) {
-        SELVA_LOG_DBG("Compressed and detached the subtree of %.*s",
-                      (int)SELVA_NODE_ID_SIZE, node_id);
+        SELVA_LOG(SELVA_LOGL_DBG,
+                  "Compressed and detached the subtree of %.*s",
+                  (int)SELVA_NODE_ID_SIZE, node_id);
     }
 
     return err;
@@ -2812,10 +2812,8 @@ static int restore_subtree(SelvaHierarchy *hierarchy, const Selva_NodeId id) {
 
     SELVA_TRACE_END(restore_subtree);
 
-#if 0
     SELVA_LOG(SELVA_LOGL_DBG, "Restored the subtree of %.*s",
               (int)SELVA_NODE_ID_SIZE, id);
-#endif
 
     return err;
 }
@@ -2853,11 +2851,8 @@ static void auto_compress_proc(struct event *, void *data) {
             node = find_node_index(hierarchy, node_id);
             if (!node || node->flags & SELVA_NODE_FLAGS_DETACHED) {
                 /* This should be unlikely to occur at this point. */
-            /* FIXME debug log */
-#if 0
                 SELVA_LOG(SELVA_LOGL_DBG, "Ignoring (%p) %.*s",
                           node, (int)SELVA_NODE_ID_SIZE, node_id);
-#endif
                 continue;
             }
 
@@ -2867,13 +2862,10 @@ static void auto_compress_proc(struct event *, void *data) {
              * still won't see it here again any time soon.
              */
             (void)detach_subtree(hierarchy, node, SELVA_HIERARCHY_DETACHED_COMPRESSED_MEM);
-            /* FIXME debug log */
-#if 0
             if (!err) {
                 SELVA_LOG(SELVA_LOGL_DBG, "Auto-compressed %.*s",
                           (int)SELVA_NODE_ID_SIZE, node_id);
             }
-#endif
         }
 
         SelvaHierarchy_ClearInactiveNodeIds(hierarchy);

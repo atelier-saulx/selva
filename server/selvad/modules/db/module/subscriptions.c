@@ -263,8 +263,8 @@ Selva_SubscriptionMarkerId Selva_GenSubscriptionMarkerId(Selva_SubscriptionMarke
 __attribute__((nonnull (1))) static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
 #if 0
     SELVA_LOG(SELVA_LOGL_DBG, "Destroying marker %p %" PRImrkId " %.*s",
-            marker, marker->marker_id,
-            (int)SELVA_NODE_ID_SIZE, marker->node_id);
+              marker, marker->marker_id,
+              (int)SELVA_NODE_ID_SIZE, marker->node_id);
 #endif
     rpn_destroy(marker->filter_ctx);
 #if MEM_DEBUG

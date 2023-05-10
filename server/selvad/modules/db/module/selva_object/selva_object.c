@@ -2312,10 +2312,8 @@ int SelvaObject_ReplyWithWildcardStr(
                  * This is an unlikely event because the field is known to exist,
                  * but if it happens we must skip to avoid segfaulting.
                  */
-#if 0
                 SELVA_LOG(SELVA_LOGL_DBG, "Failed to get value for \"%.*s\"",
-                        (int)new_field_len, new_field);
-#endif
+                          (int)new_field_len, new_field);
                 continue;
             }
 
