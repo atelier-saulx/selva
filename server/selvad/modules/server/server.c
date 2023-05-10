@@ -307,12 +307,14 @@ static void loglevel(struct selva_server_response_out *resp, const void *buf, si
     } else if (argc == 0) {
         selva_send_ll(resp, selva_log_get_level());
     } else if (argc == 1) {
-        if (new_level < SELVA_LOGL_CRIT || new_level >= SELVA_LOGL_DBG) {
+        new_level += '0';
+
+        if (new_level < SELVA_LOGL_CRIT || new_level > SELVA_LOGL_DBG) {
             selva_send_errorf(resp, SELVA_EINVAL, "Invalid loglevel");
             return;
         }
 
-        selva_send_ll(resp, selva_log_set_level(new_level));
+        selva_send_ll(resp, selva_log_set_level(new_level) - '0');
     } else {
         selva_send_error_arity(resp);
     }
