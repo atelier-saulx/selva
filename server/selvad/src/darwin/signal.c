@@ -86,8 +86,8 @@ static void sig_handler(int sig, siginfo_t *info, void *uap __unused)
 
     int err = write(wfd, &esig, sizeof(esig));
     if (err == -1) {
-        /* TODO proper log. */
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle signo: %d fd: %d err: %s", sig, wfd, strerror(errno));
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle signal. signo: %d fd: %d err: \"%s\"",
+                  sig, wfd, strerror(errno));
     }
 
     errno = saved_errno;

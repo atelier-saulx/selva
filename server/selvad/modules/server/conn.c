@@ -60,7 +60,7 @@ struct conn_ctx *alloc_conn_ctx(void)
 
 static void retry_free_con_ctx(struct event *, void *arg)
 {
-    SELVA_LOG(SELVA_LOGL_INFO, "Retrying free_conn_ctx(%p)\n", arg);
+    SELVA_LOG(SELVA_LOGL_DBG, "Retrying free_conn_ctx(%p)", arg);
     free_conn_ctx((struct conn_ctx *)arg);
 }
 
@@ -82,7 +82,7 @@ void free_conn_ctx(struct conn_ctx *ctx)
             .tv_nsec = 0,
         };
 
-        SELVA_LOG(SELVA_LOGL_INFO, "conn_ctx (%p) %d stream(s) busy, waiting...\n",
+        SELVA_LOG(SELVA_LOGL_DBG, "conn_ctx (%p) %d stream(s) busy, waiting...",
                   ctx,
                   MAX_STREAMS - __builtin_popcount(free_map));
 

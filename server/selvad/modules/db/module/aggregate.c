@@ -250,7 +250,7 @@ static int AggregateCommand_NodeCb(
          */
         err = rpn_bool(rpn_ctx, args->find_args.filter, &take);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed (node: \"%.*s\"): \"%s\"\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed (node: \"%.*s\"): \"%s\"",
                       (int)SELVA_NODE_ID_SIZE, nodeId,
                       rpn_str_error[err]);
             return 1;
@@ -269,7 +269,7 @@ static int AggregateCommand_NodeCb(
 
             err = args->agg(SelvaHierarchy_GetNodeObject(node), args);
             if (err) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: \"%s\"",
                           (int)SELVA_NODE_ID_SIZE, nodeId,
                           selva_strerror(err));
             }
@@ -287,13 +287,19 @@ static int AggregateCommand_NodeCb(
             if (item) {
                 SVector_InsertFast(args->find_args.result, item);
             } else {
+                Selva_NodeId nodeId;
+
                 /*
                  * It's not so easy to make the response fail at this point.
                  * Given that we shouldn't generally even end up here in real
                  * life, it's fairly ok to just log the error and return what
                  * we can.
                  */
-                SELVA_LOG(SELVA_LOGL_ERR, "Out of memory while creating an order result item\n");
+
+                SelvaHierarchy_GetNodeId(nodeId, node);
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order result item for node: %.*s field: \"%s\"",
+                          (int)SELVA_NODE_ID_SIZE, nodeId,
+                          selva_string_to_str(args->find_args.send_param.order_field, NULL));
             }
         }
     }
@@ -311,7 +317,7 @@ static int AggregateCommand_ArrayObjectCb(
     int take = (args->find_args.offset > 0) ? !args->find_args.offset-- : 1;
 
     if (subtype != SELVA_OBJECT_OBJECT) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Array subtype not supported: %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Array subtype not supported: %s",
                   SelvaObject_Type2String(subtype, NULL));
         return 1;
     }
@@ -322,7 +328,7 @@ static int AggregateCommand_ArrayObjectCb(
         /* Set obj to the register */
         err = rpn_set_reg_slvobj(rpn_ctx, 0, obj, 0);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Register set failed: \"%s\"\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Set register obj value failed: \"%s\"",
                       rpn_str_error[err]);
             return 1;
         }
@@ -333,7 +339,7 @@ static int AggregateCommand_ArrayObjectCb(
          */
         err = rpn_bool(rpn_ctx, args->find_args.filter, &take);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed: \"%s\"\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed: \"%s\"",
                       rpn_str_error[err]);
             return 1;
         }
@@ -367,7 +373,8 @@ static int AggregateCommand_ArrayObjectCb(
                  * life, it's fairly ok to just log the error and return what
                  * we can.
                  */
-                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order item");
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an object order item using field: \"%.s\"",
+                          selva_string_to_str(args->find_args.send_param.order_field, NULL));
             }
         }
     }
@@ -415,7 +422,7 @@ static size_t AggregateCommand_AggregateOrderResult(
             err = SELVA_HIERARCHY_ENOENT;
         }
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to aggregate field(s) of the node: \"%.*s\" err: \"%s\"",
                       (int)SELVA_NODE_ID_SIZE, item->node_id,
                       selva_strerror(err));
             continue;
@@ -463,7 +470,7 @@ static size_t AggregateCommand_AggregateOrderArrayResult(
         err = args->agg(PTAG_GETP(item->tagp), args);
         if (err) {
             selva_send_null(args->resp);
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to aggregate field(s) of the node: \"%.*s\" err: \"%s\"",
                       (int)SELVA_NODE_ID_SIZE, item->node_id,
                       selva_strerror(err));
         }
@@ -877,10 +884,10 @@ void SelvaHierarchy_AggregateCommand(struct selva_server_response_out *resp, con
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            SELVA_LOG(SELVA_LOGL_ERR, "Aggregate failed. err: %s dir: %s node_id: \"%.*s\"",
-                      selva_strerror(err),
+            SELVA_LOG(SELVA_LOGL_ERR, "Aggregate failed. dir: %s node_id: \"%.*s\" err: \"%s\"",
                       SelvaTraversal_Dir2str(dir),
-                      (int)SELVA_NODE_ID_SIZE, nodeId);
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      selva_strerror(err));
         }
 
         /*

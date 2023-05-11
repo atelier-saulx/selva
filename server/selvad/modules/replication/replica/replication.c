@@ -745,12 +745,13 @@ static void on_data(struct event *event, void *arg __unused)
             }
             continue;
         case REPL_PROTO_STATE_EXEC_CMD:
-#if 0
-            SELVA_LOG(SELVA_LOGL_INFO, "Replicating cmd: %d\n", sv.cmd_id);
-#endif
+            SELVA_LOG(SELVA_LOGL_DBG, "Replicating cmd: %d", sv.cmd_id);
+
             err = selva_server_run_cmd(sv.cmd_id, sv.cmd_ts, ss->msg_buf, sv.cmd_size);
             if (err) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Failed to replicate a command: %s", selva_strerror(err));
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to replicate a command. cmd_id: %d err: \"%s\"",
+                          sv.cmd_id,
+                          selva_strerror(err));
             }
 
             sv.last_cmd_eid = sv.incoming_cmd_eid;

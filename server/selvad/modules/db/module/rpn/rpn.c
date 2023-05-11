@@ -699,7 +699,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
                 return push_selva_string_result(ctx, any.str);
             } else {
 #if 0
-                SELVA_LOG(SELVA_LOGL_DBG, "Field \"%s\" not found in node: \"%.*s\"\n",
+                SELVA_LOG(SELVA_LOGL_DBG, "Field \"%s\" not found in node: \"%.*s\"",
                           OPERAND_GET_S(field),
                           (int)SELVA_NODE_ID_SIZE, (const void *)OPERAND_GET_S(ctx->reg[0]));
 #endif

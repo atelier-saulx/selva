@@ -119,11 +119,13 @@ static int handle_child_status(pid_t pid, int status, const char *name)
 static void handle_signal(struct event *ev, void *arg __unused)
 {
     struct evl_siginfo esig;
-    int signo;
-    int status;
+    int err, signo, status;
 
-    if (evl_read_sigfd(&esig, ev->fd)) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to read sigfd");
+    err = evl_read_sigfd(&esig, ev->fd);
+    if (err) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to read sigfd. fd: %d err: \"%s\"",
+                  ev->fd,
+                  selva_strerror(err));
         return;
     }
 

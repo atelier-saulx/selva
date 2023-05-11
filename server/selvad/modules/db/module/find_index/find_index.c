@@ -364,7 +364,7 @@ __attribute__((nonnull (1, 2))) static int destroy_icb(
 
     err = discard_index(hierarchy, icb);
     if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to discard an index for \"%.*s\": %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to discard an index for \"%.*s\". err: \"%s\"",
                   (int)icb->name_len, icb->name_str,
                   selva_strerror(err));
         return err;
@@ -372,7 +372,7 @@ __attribute__((nonnull (1, 2))) static int destroy_icb(
 
     err = SelvaFindIndexICB_Del(hierarchy, icb);
     if (err && err != SELVA_ENOENT) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy an index for \"%.*s\": %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy an index for \"%.*s\". err: \"%s\"",
                   (int)icb->name_len, icb->name_str,
                   selva_strerror(err));
         return err;
@@ -445,12 +445,12 @@ static void make_indexing_decission_proc(struct event *e __unused, void *data) {
                  */
                 int err;
 
-                SELVA_LOG(SELVA_LOGL_INFO, "Discarding index for \"%.*s\"\n",
+                SELVA_LOG(SELVA_LOGL_DBG, "Discarding index for \"%.*s\"",
                           (int)icb->name_len, icb->name_str);
 
                 err = discard_index(hierarchy, icb);
                 if (err) {
-                    SELVA_LOG(SELVA_LOGL_ERR, "Failed to discard the index for \"%.*s\": %s\n",
+                    SELVA_LOG(SELVA_LOGL_ERR, "Failed to discard the index for \"%.*s\". err: \"%s\"",
                               (int)icb->name_len, icb->name_str,
                               selva_strerror(err));
                 }
@@ -462,12 +462,12 @@ static void make_indexing_decission_proc(struct event *e __unused, void *data) {
                  */
                 int err;
 
-                SELVA_LOG(SELVA_LOGL_INFO, "Destroying index for \"%.*s\"\n",
+                SELVA_LOG(SELVA_LOGL_DBG, "Destroying index for \"%.*s\"",
                           (int)icb->name_len, icb->name_str);
 
                 err = destroy_icb(hierarchy, icb);
                 if (err) {
-                    SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy the index for \"%.*s\": %s\n",
+                    SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy the index for \"%.*s\". err: \"%s\"",
                               (int)icb->name_len, icb->name_str,
                               selva_strerror(err));
                 }
@@ -508,11 +508,11 @@ static void make_indexing_decission_proc(struct event *e __unused, void *data) {
              */
             err = start_index(hierarchy, icb);
             if (err) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an index for \"%.*s\": %s\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an index for \"%.*s\". err: \"%s\"",
                           (int)icb->name_len, icb->name_str,
                           selva_strerror(err));
             } else {
-                SELVA_LOG(SELVA_LOGL_INFO, "Created an index for \"%.*s\"\n",
+                SELVA_LOG(SELVA_LOGL_DBG, "Created an index for \"%.*s\"",
                           (int)icb->name_len, icb->name_str);
             }
         }
@@ -524,7 +524,7 @@ static void make_indexing_decission_proc(struct event *e __unused, void *data) {
          */
         err = refresh_index(hierarchy, icb);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to refresh the index for \"%.*s\": %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to refresh the index for \"%.*s\". err: \"%s\"",
                       (int)icb->name_len, icb->name_str,
                       selva_strerror(err));
 
@@ -536,7 +536,7 @@ static void make_indexing_decission_proc(struct event *e __unused, void *data) {
              */
             err = destroy_icb(hierarchy, icb);
             if (err) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy the index for \"%.*s\": %s\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to destroy the index for \"%.*s\". err: \"%s\"",
                           (int)icb->name_len, icb->name_str,
                           selva_strerror(err));
             }
@@ -706,7 +706,7 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
          */
         err = SelvaFindIndexICB_Set(hierarchy, name_str, name_len, icb);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to insert a new ICB at \"%.*s\": %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to insert a new ICB at \"%.*s\". err: \"%s\"",
                       (int)name_len, name_str,
                       selva_strerror(err));
 
@@ -717,7 +717,7 @@ static struct SelvaFindIndexControlBlock *upsert_icb(
         /* Finally create a proc timer. */
         create_icb_timer(icb);
     } else if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Get ICB for \"%.*s\" failed: %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Get ICB for \"%.*s\" failed. err: \"%s\"",
                   (int)name_len, name_str,
                   selva_strerror(err));
 
@@ -901,7 +901,7 @@ int SelvaFindIndex_AutoMulti(
                 ind_select = i; /* Select the smallest index res set for fastest lookup. */
             }
         } else if (err != SELVA_ENOENT && err != SELVA_ENOTSUP) {
-            SELVA_LOG(SELVA_LOGL_ERR, "AutoIndex returned an error: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "AutoIndex returned an error: \"%s\"",
                       selva_strerror(err));
         }
     }
@@ -1049,7 +1049,7 @@ static int list_index(struct selva_server_response_out *resp, struct SelvaObject
         } else if (type == SELVA_OBJECT_OBJECT) {
             n += list_index(resp, (struct SelvaObject *)p);
         } else {
-            SELVA_LOG(SELVA_LOGL_ERR, "Unsupported index type: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Unsupported index type: %s",
                       SelvaObject_Type2String(type, NULL));
         }
     }

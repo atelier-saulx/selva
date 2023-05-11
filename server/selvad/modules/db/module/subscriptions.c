@@ -261,11 +261,10 @@ Selva_SubscriptionMarkerId Selva_GenSubscriptionMarkerId(Selva_SubscriptionMarke
  * Destroy and free a marker.
  */
 __attribute__((nonnull (1))) static void destroy_marker(struct Selva_SubscriptionMarker *marker) {
-#if 0
     SELVA_LOG(SELVA_LOGL_DBG, "Destroying marker %p %" PRImrkId " %.*s",
               marker, marker->marker_id,
               (int)SELVA_NODE_ID_SIZE, marker->node_id);
-#endif
+
     rpn_destroy(marker->filter_ctx);
 #if MEM_DEBUG
     memset(marker, 0, sizeof(*marker));
@@ -744,7 +743,7 @@ int Selva_AddSubscriptionAliasMarker(
      */
     filter_expression = rpn_compile("$1 $2 a");
     if (!filter_expression) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to compile a filter for alias \"%s\"\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to compile a filter for alias \"%s\"",
                   selva_string_to_str(alias_name, NULL));
         err = SELVA_RPN_ECOMP;
         goto fail;
@@ -944,13 +943,11 @@ static int SelvaSubscriptions_TraverseMarker(
         err = SelvaHierarchy_Traverse(hierarchy, marker->node_id, dir, &cb);
     }
     if (err) {
-#if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-        SELVA_LOG(SELVA_LOGL_DBG, "Could not fully apply a subscription marker: %s:%" PRImrkId " err: %s",
+        SELVA_LOG(SELVA_LOGL_DBG, "Could not fully apply a subscription marker: %s:%" PRImrkId " err: \"%s\"",
                   Selva_SubscriptionId2str(str, marker->sub->sub_id), marker->marker_id,
                   selva_strerror(err));
-#endif
 
         /*
          * Don't report ENOENT errors because subscriptions are valid for

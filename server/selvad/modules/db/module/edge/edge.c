@@ -724,7 +724,7 @@ static void _clear_all_fields(
                           name);
             }
         } else {
-            SELVA_LOG(SELVA_LOGL_ERR, "Unsupported value type in an edges object: %s key: \"%s\"\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Unsupported value type in an edges object: %s key: \"%s\"",
                       SelvaObject_Type2String(type, NULL),
                       name);
         }

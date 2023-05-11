@@ -116,7 +116,7 @@ static int Inherit_FieldValue_NodeCb(
          * SELVA_ENOENT is expected as not all nodes have all fields set;
          * Any other error is unexpected.
          */
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%.*s\" error: %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%.*s\" err: \"%s\"",
                   (int)SELVA_NODE_ID_SIZE, nodeId,
                   (int)args->field_name_len, args->field_name_str,
                   selva_strerror(err));
@@ -237,7 +237,7 @@ static int Inherit_SendFields_NodeCb(
              * SELVA_ENOENT is expected as not all nodes have all fields set;
              * Any other error is unexpected.
              */
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%.*s\" error: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to get a field value. nodeId: %.*s fieldName: \"%.*s\" err: \"%s\"",
                       (int)SELVA_NODE_ID_SIZE, nodeId,
                       (int)field_name_len, field_name_str,
                       selva_strerror(err));

@@ -329,7 +329,7 @@ static int update_edge(
                 err = SelvaHierarchy_UpsertNode(hierarchy, setOpts->$add + i, &dst_node);
                 if ((err && err != SELVA_HIERARCHY_EEXIST) || !dst_node) {
                     /* See similar case with $value */
-                    SELVA_LOG(SELVA_LOGL_ERR, "Upserting a node failed: %s\n",
+                    SELVA_LOG(SELVA_LOGL_ERR, "Upserting a node failed. err: \"%s\"",
                               selva_strerror(err));
                     return err;
                 }
@@ -539,7 +539,7 @@ string_err:
             if (err == 0) {
                 res++;
             } else if (err != SELVA_EEXIST) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Set (%s) field update failed: %s\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "Set (%s) field update failed. err: \"%s\"",
                           (type == SELVA_MODIFY_OP_SET_TYPE_DOUBLE) ? "double" : "long long",
                           selva_strerror(err));
                 return err;
@@ -1885,7 +1885,7 @@ static void SelvaCommand_Modify(struct selva_server_response_out *resp, const vo
                  * impossible to rollback the command, so we'll just log any
                  * errors received here.
                  */
-                SELVA_LOG(SELVA_LOGL_ERR, "An error occurred while setting an alias \"%s\" -> %.*s: %s\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "An error occurred while setting an alias \"%s\" -> %.*s. err: \"%s\"",
                           alias,
                           (int)SELVA_NODE_ID_SIZE, nodeId,
                           selva_strerror(err));

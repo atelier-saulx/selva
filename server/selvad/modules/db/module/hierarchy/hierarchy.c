@@ -352,7 +352,7 @@ static SelvaHierarchyNode *newNode(struct SelvaHierarchy *hierarchy, const Selva
 
         err = create_node_object(hierarchy, node);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a node object for \"%.*s\": %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a node object for \"%.*s\". err: \"%s\"",
                       (int)SELVA_NODE_ID_SIZE, id,
                       selva_strerror(err));
         }
@@ -424,7 +424,7 @@ static void new_detached_node(SelvaHierarchy *hierarchy, const Selva_NodeId node
     }
 
     if (unlikely(err < 0)) {
-        SELVA_LOG(SELVA_LOGL_CRIT, "Fatal error while creating a detached node %.*s: %s\n",
+        SELVA_LOG(SELVA_LOGL_CRIT, "Fatal error while creating a detached node %.*s. err: \"%s\"",
                   (int)SELVA_NODE_ID_SIZE, node_id,
                   selva_strerror(err));
         abort();
@@ -441,8 +441,9 @@ static int repopulate_detached_head(struct SelvaHierarchy *hierarchy, SelvaHiera
 
     err = create_node_object(hierarchy, node);
     if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to repopulate a detached dummy node %.*s\n",
-                  (int)SELVA_NODE_ID_SIZE, node->id);
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to repopulate a detached dummy node %.*s. err: \"%s\"",
+                  (int)SELVA_NODE_ID_SIZE, node->id,
+                  selva_strerror(err));
         return err;
     }
 
@@ -502,7 +503,7 @@ SelvaHierarchyNode *SelvaHierarchy_FindNode(SelvaHierarchy *hierarchy, const Sel
         SELVA_TRACE_END(find_detached);
         if (err) {
             if (err != SELVA_ENOENT && err != SELVA_HIERARCHY_ENOENT) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Restoring a subtree containing %.*s failed: %s\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "Restoring a subtree containing %.*s failed. err: \"%s\"",
                           (int)SELVA_NODE_ID_SIZE, id,
                           selva_strerror(err));
             }
@@ -601,7 +602,9 @@ static void del_node(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     err = removeRelationships(hierarchy, node, RELATIONSHIP_PARENT);
     if (err < 0) {
         /* Presumably bad things could happen if we'd proceed now. */
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to remove node parent relationships\n");
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to remove node parent relationships. node: %.*s err: %s",
+                  (int)SELVA_NODE_ID_SIZE, id,
+                  selva_strerror(err));
         return;
     }
     if (send_events) {
@@ -629,7 +632,9 @@ static void del_node(SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
              * Well, this is embarassing. The caller won't be happy about
              * having a half-deleted node dangling there.
              */
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to remove node child relationships\n");
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to remove node child relationships. node: %.*s err: \"%s\"",
+                      (int)SELVA_NODE_ID_SIZE, id,
+                      selva_strerror(err));
             return;
         }
 
@@ -763,7 +768,8 @@ static int cross_insert_children(
 
     if (unlikely(node->flags & SELVA_NODE_FLAGS_DETACHED)) {
         /* The subtree must be restored before adding nodes here. */
-        SELVA_LOG(SELVA_LOGL_ERR, "FATAL Cannot add children to a detached node\n");
+        SELVA_LOG(SELVA_LOGL_ERR, "Cannot add children to a detached node %s",
+                  node->id);
         return SELVA_HIERARCHY_ENOTSUP;
     }
 
@@ -780,7 +786,7 @@ static int cross_insert_children(
                     0, NULL,
                     &child);
             if (err < 0) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a child \"%.*s\" for \"%.*s\": %s\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a child \"%.*s\" for \"%.*s\". err: \"%s\"",
                         (int)SELVA_NODE_ID_SIZE, nodes[i],
                         (int)SELVA_NODE_ID_SIZE, node->id,
                         selva_strerror(err));
@@ -887,7 +893,7 @@ static int cross_insert_parents(
                     0, NULL,
                     &parent);
             if (err < 0) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a parent \"%.*s\" for \"%.*s\": %s\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create a parent \"%.*s\" for \"%.*s\". err: \"%s\"",
                         (int)SELVA_NODE_ID_SIZE, nodes[i],
                         (int)SELVA_NODE_ID_SIZE, node->id,
                         selva_strerror(err));
@@ -1112,7 +1118,8 @@ static int removeRelationships(
      */
 #ifndef PU_TEST_BUILD
     if (unlikely(!SVector_Clone(&sub_markers, &node->metadata.sub_markers.vec, NULL))) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Cloning markers failed\n");
+        SELVA_LOG(SELVA_LOGL_ERR, "Cloning markers of the node %.*s failed",
+                  (int)SELVA_NODE_ID_SIZE, node->id);
         return SELVA_HIERARCHY_EINVAL;
     }
 #endif
@@ -2033,9 +2040,10 @@ __attribute__((nonnull (5))) static int exec_edge_filter(
         /* Execute the filter with an empty object. */
         edge_metadata = SelvaObject_Init(tmp_obj);
     } else if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to get edge metadata %.*s -> %.*s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to get edge metadata %.*s -> %.*s. err: \"%s\"",
                   (int)SELVA_NODE_ID_SIZE, edge_field->src_node_id,
-                  (int)SELVA_NODE_ID_SIZE, node->id);
+                  (int)SELVA_NODE_ID_SIZE, node->id,
+                  selva_strerror(err));
         return 0;
     }
 
@@ -2132,7 +2140,7 @@ static int bfs_expression(
         rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));
         rpn_err = rpn_selvaset(rpn_ctx, rpn_expr, &fields);
         if (rpn_err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "RPN field selector expression failed for %.*s: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "RPN field selector expression failed for %.*s: %s",
                       (int)SELVA_NODE_ID_SIZE, node->id,
                       rpn_str_error[rpn_err]);
             continue;
@@ -2356,7 +2364,8 @@ int SelvaHierarchy_Traverse(
         break;
      default:
         /* Should probably use some other traversal function. */
-        SELVA_LOG(SELVA_LOGL_ERR, "Invalid or unsupported traversal requested (%d)\n", (int)dir);
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid or unsupported traversal requested (%d)",
+                  (int)dir);
         err = SELVA_HIERARCHY_ENOTSUP;
     }
 
@@ -2389,7 +2398,7 @@ int SelvaHierarchy_TraverseField(
         return traverse_bfs_edge_field(hierarchy, id, field_name_str, field_name_len, cb);
      default:
         /* Should probably use some other traversal function. */
-        SELVA_LOG(SELVA_LOGL_ERR, "Invalid traversal requested (%d)\n", (int)dir);
+        SELVA_LOG(SELVA_LOGL_ERR, "Invalid traversal requested (%d)", (int)dir);
         return SELVA_HIERARCHY_ENOTSUP;
     }
 }
@@ -2425,7 +2434,7 @@ int SelvaHierarchy_TraverseExpression(
     rpn_err = rpn_selvaset(rpn_ctx, rpn_expr, &fields);
     if (rpn_err) {
         Trx_End(&hierarchy->trx_state, &trx_cur);
-        SELVA_LOG(SELVA_LOGL_ERR, "RPN field selector expression failed for %.*s: %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "RPN field selector expression failed for %.*s: %s",
                   (int)SELVA_NODE_ID_SIZE, head->id,
                   rpn_str_error[rpn_err]);
         return SELVA_HIERARCHY_EINVAL;
@@ -2638,7 +2647,8 @@ static int verifyDetachableSubtree(struct SelvaHierarchy *hierarchy, struct Selv
     int err;
 
     if (!Trx_Fin(trx_state)) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Cannot compress a subtree while another transaction is being executed\n");
+        SELVA_LOG(SELVA_LOGL_ERR, "Cannot compress a subtree of the node %.*s while another transaction is being executed",
+                  (int)SELVA_NODE_ID_SIZE, node->id);
         return SELVA_HIERARCHY_ETRMAX;
     }
 
@@ -2704,7 +2714,7 @@ static struct selva_string *compress_subtree(SelvaHierarchy *hierarchy, struct S
     compressed = selva_string_createz(raw_str, raw_len, 0);
     selva_string_free(raw);
     if (!compressed) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to compress the subtree of %.*s: %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to compress the subtree of %.*s. err: \"%s\"",
                   (int)SELVA_NODE_ID_SIZE, node->id,
                   selva_strerror(err));
 
@@ -2722,7 +2732,7 @@ static int detach_subtree(SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *
     int err;
 
     if (node->flags & SELVA_NODE_FLAGS_DETACHED) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Node already detached: %.*s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Node already detached: %.*s",
                   (int)SELVA_NODE_ID_SIZE, node->id);
         return SELVA_HIERARCHY_EINVAL;
     }
@@ -3431,7 +3441,7 @@ static void SelvaHierarchy_DelNodeCommand(struct selva_server_response_out *resp
             /* TODO How to handle the error correctly? */
             /* DEL_HIERARCHY_NODE_REPLY_IDS would allow us to send errors. */
             if (res != SELVA_HIERARCHY_ENOENT) {
-                SELVA_LOG(SELVA_LOGL_ERR, "Failed to delete the node %.*s: %s\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to delete the node %.*s. err: \"%s\"",
                           (int)SELVA_NODE_ID_SIZE, nodeId,
                           selva_strerror(res));
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <pthread.h>
@@ -56,7 +56,7 @@ static void *server_worker_main(void *argv)
     redisContext *ctx = NULL;
     queue_cb_t *queue = queues + thread_id;
 
-    SELVA_LOG(SELVA_LOGL_INFO, "Started server IO worker: %d\n", thread_id);
+    SELVA_LOG(SELVA_LOGL_INFO, "Started server IO worker: %d", thread_id);
 
     while (true) {
         char *next;

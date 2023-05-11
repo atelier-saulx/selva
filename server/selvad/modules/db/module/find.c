@@ -449,7 +449,7 @@ static int send_node_field(
 
         err = SelvaObject_ReplyWithWildcardStr(resp, lang, obj, field_str, field_len, &resp_count, -1, 0);
         if (err && err != SELVA_ENOENT) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Sending wildcard field \"%.*s\" of %.*s failed: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Sending wildcard field \"%.*s\" of %.*s failed: %s",
                       (int)field_len, field_str,
                       (int)SELVA_NODE_ID_SIZE, nodeId,
                       selva_strerror(err));
@@ -521,7 +521,7 @@ static int send_all_node_data_fields(
             Selva_NodeId node_id;
 
             SelvaHierarchy_GetNodeId(node_id, node);
-            SELVA_LOG(SELVA_LOGL_ERR, "send_node_field(%.*s, %.*s) failed: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "send_node_field(%.*s, %.*s) failed. err: \"%s\"",
                       (int)SELVA_NODE_ID_SIZE, node_id,
                       (int)field_name_len, field_name_str,
                       selva_strerror(res));
@@ -673,7 +673,7 @@ static int send_array_object_field(
 
         err = SelvaObject_ReplyWithWildcardStr(resp, lang, obj, field_str, field_len, &resp_count, -1, 0);
         if (err && err != SELVA_ENOENT) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Sending wildcard field %.*s in array object failed: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Sending wildcard field \"%.*s\" in array object failed. err: \"%s\"",
                       (int)field_len, field_str,
                       selva_strerror(err));
         }
@@ -695,7 +695,7 @@ static int send_array_object_field(
     selva_send_string(resp, full_field_name);
     err = SelvaObject_ReplyWithObject(resp, lang, obj, field, 0);
     if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to send the field (%s) in array object err: \"%s\"\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to send the field \"%s\" in array object err: \"%s\"",
                   field_str,
                   selva_strerror(err));
         selva_send_null(resp);
@@ -741,7 +741,7 @@ static int send_array_object_fields(
                SelvaTraversal_FieldsContains(fields, wildcard, sizeof(wildcard) - 1)) {
         err = SelvaObject_ReplyWithObject(resp, lang, obj, NULL, 0);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send all fields for selva object in array: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send all fields for selva object in array. err: \"%s\"",
                       selva_strerror(err));
         }
     } else {
@@ -830,7 +830,7 @@ static int send_merge_text(
         selva_send_string(resp, obj_path);
         err = SelvaObject_ReplyWithObject(resp, lang, obj, NULL, 0);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send \"%s\" (text) of node_id: \"%.*s\": %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send \"%s\" (text) of node_id: \"%.*s\". err: \"%s\"",
                       selva_string_to_str(obj_path, NULL),
                       (int)SELVA_NODE_ID_SIZE, nodeId,
                       selva_strerror(err));
@@ -885,10 +885,11 @@ static int send_merge_all(
         if (err) {
             TO_STR(obj_path);
 
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send \"%s.%s\" of node_id: \"%.*s\"\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to send the field \"%s.%s\" of node %.*s. err: \"%s\"",
                       obj_path_str,
                       key_name_str,
-                      (int)SELVA_NODE_ID_SIZE, nodeId);
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      selva_strerror(err));
             continue;
         }
 
@@ -941,7 +942,7 @@ static int send_named_merge(
             if (err) {
                 TO_STR(field);
 
-                SELVA_LOG(SELVA_LOGL_ERR, "Failed to send the field (%s) for node_id: \"%.*s\" err: \"%s\"\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to send the field \"%s\" of node \"%.*s\". err: \"%s\"",
                           field_str,
                           (int)SELVA_NODE_ID_SIZE, nodeId,
                           selva_strerror(err));
@@ -1217,7 +1218,7 @@ static void send_node(
 
         selva_send_null(resp);
 
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: \"%s\"",
                   (int)SELVA_NODE_ID_SIZE, SelvaHierarchy_GetNodeId(nodeId, node),
                   selva_strerror(err));
     }
@@ -1257,7 +1258,7 @@ static int process_node_sort(
          * we can.
          */
         SelvaHierarchy_GetNodeId(nodeId, node);
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order item for %.*s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order item for the node %.*s",
                   (int)SELVA_NODE_ID_SIZE, nodeId);
     }
 
@@ -1298,7 +1299,7 @@ static __hot int FindCommand_NodeCb(
          */
         err = rpn_bool(rpn_ctx, args->filter, &take);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed (node: \"%.*s\"): \"%s\"\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Expression failed (node: \"%.*s\"): \"%s\"",
                       (int)SELVA_NODE_ID_SIZE, nodeId,
                       rpn_str_error[err]);
             return 1;
@@ -1326,7 +1327,7 @@ static int process_array_obj_send(
         err = send_array_object_fields(args->fin, args->resp, args->lang, obj, args->send_param.fields);
         if (err) {
             selva_send_null(args->resp);
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s), err: %s",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s), err: \"%s\"",
                       selva_strerror(err));
         }
     } else {
@@ -1493,7 +1494,7 @@ static void postprocess_array(
         err = send_array_object_fields(fin, resp, lang, PTAG_GETP(item->tagp), args->fields);
         if (err) {
             selva_send_null(resp);
-            SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Failed to handle field(s) of the node: \"%.*s\" err: \"%s\"",
                       (int)SELVA_NODE_ID_SIZE, item->node_id,
                       selva_strerror(err));
         }
@@ -1574,7 +1575,7 @@ static void postprocess_inherit(
             if (item) {
                 SVector_InsertFast(&order_result, item);
             } else {
-                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order item for %.*s\n",
+                SELVA_LOG(SELVA_LOGL_ERR, "Failed to create an order item for the node %.*s",
                           (int)SELVA_NODE_ID_SIZE, node_id);
             }
 
@@ -2167,10 +2168,10 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            SELVA_LOG(SELVA_LOGL_ERR, "Find failed. err: %s dir: %s node_id: \"%.*s\"\n",
-                      selva_strerror(err),
+            SELVA_LOG(SELVA_LOGL_ERR, "Find failed. dir: %s node_id: \"%.*s\" err: \"%s\"",
                       SelvaTraversal_Dir2str(dir),
-                      (int)SELVA_NODE_ID_SIZE, nodeId);
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      selva_strerror(err));
         }
 
         /*

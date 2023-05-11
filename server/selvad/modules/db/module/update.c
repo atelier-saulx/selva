@@ -657,10 +657,10 @@ void SelvaCommand_Update(struct selva_server_response_out *resp, const void *buf
              * We can't send an error to the client at this point so we'll just log
              * it and ignore the error.
              */
-            SELVA_LOG(SELVA_LOGL_ERR, "Update failed. err: %s dir: %s node_id: \"%.*s\"",
-                      selva_strerror(err),
+            SELVA_LOG(SELVA_LOGL_ERR, "Update failed. dir: %s node_id: \"%.*s\" err: \"%s\"",
                       SelvaTraversal_Dir2str(dir),
-                      (int)SELVA_NODE_ID_SIZE, nodeId);
+                      (int)SELVA_NODE_ID_SIZE, nodeId,
+                      selva_strerror(err));
         }
     }
 

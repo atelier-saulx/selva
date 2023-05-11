@@ -148,7 +148,7 @@ locale_t SelvaLang_GetLocale(const char *lang_str, size_t lang_len) {
         void *p;
 
         if (lang_len > 0) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Lang \"%.*s\" not found: %s\n",
+            SELVA_LOG(SELVA_LOGL_ERR, "Lang \"%.*s\" not found. err: \"%s\"",
                       (int)lang_len, lang_str,
                       selva_strerror(err));
         }
@@ -168,7 +168,7 @@ static void load_lang(const char *lang, const char *locale_name) {
 
     err = add_lang(lang, locale_name);
     if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Loading locale %s for lang %s failed with error: %s\n",
+        SELVA_LOG(SELVA_LOGL_ERR, "Loading locale %s for lang %s failed. err: \"%s\"",
                 locale_name, lang,
                 selva_strerror(err));
     }
