@@ -56,7 +56,7 @@ __unused static void print_events(const struct pollfd *pfd)
     SET_NFO(9, POLLWRNORM);
 #undef SET_NFO
 
-    SELVA_LOG(SELVA_LOGL_INFO, "event for fd: %d revents:%s%s%s%s%s%s%s%s%s%s",
+    SELVA_LOG(SELVA_LOGL_DBG, "event for fd: %d revents:%s%s%s%s%s%s%s%s%s%s",
               pfd->fd,
               nfo[0], nfo[1], nfo[2], nfo[3], nfo[4],
               nfo[5], nfo[6], nfo[7], nfo[8], nfo[9]);

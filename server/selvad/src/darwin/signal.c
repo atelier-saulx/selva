@@ -82,7 +82,7 @@ static void sig_handler(int sig, siginfo_t *info, void *uap __unused)
         .esi_band = info->si_band,
     };
 
-    SELVA_LOG(SELVA_LOGL_INFO, "Handling signal. signo: %d fd: %d", sig, wfd);
+    SELVA_LOG(SELVA_LOGL_DBG, "Handling signal. signo: %d fd: %d", sig, wfd);
 
     int err = write(wfd, &esig, sizeof(esig));
     if (err == -1) {

@@ -915,7 +915,7 @@ int replication_replica_start(struct sockaddr_in *origin_addr)
     backoff_timeout_init(&sv.backoff);
 
     if (sv.sock) {
-        SELVA_LOG(SELVA_LOGL_INFO, "Close old replication connection");
+        SELVA_LOG(SELVA_LOGL_DBG, "Closing old replication connection");
         shutdown(sv.sock, SHUT_RDWR);
     }
 

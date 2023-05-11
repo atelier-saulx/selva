@@ -276,7 +276,7 @@ void evl_start(void)
             event_loop_state.nr_pending == 0 &&
             event_loop_state.async_nr_awaiting == 0) {
             event_loop_state.state = EVENT_LOOP_RUN_STATE_STOP;
-            SELVA_LOG(SELVA_LOGL_INFO, "EVENT_LOOP_RUN_STATE_STOP");
+            SELVA_LOG(SELVA_LOGL_DBG, "EVENT_LOOP_RUN_STATE_STOP");
         }
     }
 

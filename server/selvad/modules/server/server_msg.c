@@ -42,7 +42,7 @@ int server_recv_message(struct conn_ctx *ctx)
     char peer[CONN_STR_LEN];
 
     conn_to_str(ctx, peer, sizeof(peer));
-    SELVA_LOG(SELVA_LOGL_INFO, "Received a frame. client: %s seqno: %d bytes: %d",
+    SELVA_LOG(SELVA_LOGL_DBG, "Received a frame. client: %s seqno: %d bytes: %d",
               peer,
               (int)seqno,
               (int)frame_bsize);
