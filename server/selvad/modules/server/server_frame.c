@@ -292,10 +292,9 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
     int fd = ctx->fd;
     ssize_t r;
 
-    /* TODO We might want to do this in a single read and add more buffering to reduce syscall overhead. */
     r = tcp_read(fd, &ctx->recv_frame_hdr_buf, sizeof(ctx->recv_frame_hdr_buf));
     if (r <= 0) {
-        /* Drop the connection immediately. */
+        /* Drop the connection immediately on error. */
         return SELVA_PROTO_ECONNRESET;
     } else if (r != (ssize_t)sizeof(struct selva_proto_header)) {
         return SELVA_PROTO_EBADMSG;
