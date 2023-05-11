@@ -7,8 +7,7 @@ OBJ := \
 	   origin/replica_thread.o \
 	   origin/replication.o \
 	   origin/ring_buffer.o \
-	   replica/replication.o \
-	   selva_thread.o
+	   replica/replication.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -DSELVA_REPLICATION_MAIN=1 -include ../../tunables.h
 LDFLAGS += -lutil -ljemalloc_selva

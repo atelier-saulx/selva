@@ -17,7 +17,6 @@
 #include "selva_log.h"
 #include "selva_replication.h"
 #include "selva_server.h"
-#include "../selva_thread.h"
 #include "../eid.h"
 #include "ring_buffer.h"
 #include "../replication.h"
@@ -227,7 +226,7 @@ static void drop_replicas(unsigned replicas)
         assert(replica_id < num_elem(origin_state.replicas));
         r = &origin_state.replicas[replica_id];
 
-        err = pthread_join(r->thread.pthread, NULL);
+        err = pthread_join(r->thread, NULL);
         if (err) {
 #if __GLIBC__
             SELVA_LOG(SELVA_LOGL_ERR, "pthread_join() failed: %s",
@@ -264,7 +263,7 @@ int replication_origin_register_replica(
     memcpy(replica->start_sdb_hash, start_sdb_hash, SELVA_IO_HASH_SIZE);
     replica->sync_mode = mode;
     ring_buffer_add_reader(&origin_state.rb, replica->id);
-    pthread_create(&replica->thread.pthread, NULL, replication_thread, replica);
+    pthread_create(&replica->thread, NULL, replication_thread, replica);
 
     return 0;
 }

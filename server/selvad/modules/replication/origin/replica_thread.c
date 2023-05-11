@@ -15,7 +15,6 @@
 #include "selva_log.h"
 #include "selva_server.h"
 #include "selva_replication.h"
-#include "../selva_thread.h"
 #include "ring_buffer.h"
 #include "../replication.h"
 #include "replica.h"
@@ -101,11 +100,6 @@ void *replication_thread(void *arg)
         selva_send_errorf(resp, SELVA_ENOENT, "Initial state mismatch");
         goto out;
     }
-
-    /* TODO re-enable later */
-#if 0
-    selva_thread_set_self_core(replica->core_id);
-#endif
 
     if (sync_dump(resp, rb, &state, replica->start_sdb_hash, replica->sync_mode)) {
         goto out;

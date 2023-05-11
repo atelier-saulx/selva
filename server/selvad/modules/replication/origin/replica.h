@@ -8,7 +8,7 @@ struct replica {
     /* -- main thread writes -- */
     int in_use; /*!< Used for alloc. See new_replica() and release_replica(). */
     unsigned id; /*!< Replica id. */
-    struct selva_thread thread;
+    pthread_t thread;
     enum replication_sync_mode sync_mode;
     ring_buffer_eid_t start_eid; /*!< Must point to an sdb dump. */
     uint64_t ack_eid; /*!< Last ack'd eid by the replica. */
