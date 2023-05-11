@@ -299,7 +299,7 @@ static int cmd_loglevel_req(const struct cmd *cmd, int sock, int seqno, int argc
     struct {
         struct selva_proto_header hdr;
         struct selva_proto_longlong level;
-    } buf = {
+    } __packed buf = {
         .hdr = {
             .cmd = cmd->cmd_id,
             .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,

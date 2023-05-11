@@ -57,7 +57,7 @@ struct conn_ctx {
         _Atomic unsigned int free_map; /*!< A bit is unset if the corresponding stream_resp is in use. */
         struct selva_server_response_out stream_resp[MAX_STREAMS];
     } streams;
-    struct selva_proto_header recv_frame_hdr_buf;
+    alignas(uint64_t) struct selva_proto_header recv_frame_hdr_buf;
     char *recv_msg_buf; /*!< Buffer for the currently incoming message. */
     size_t recv_msg_buf_size;
     size_t recv_msg_buf_i;

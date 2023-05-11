@@ -252,7 +252,7 @@ static int send_sync_req(int sock)
         struct selva_proto_string sdb_hash_hdr;
         uint8_t sdb_hash[SELVA_IO_HASH_SIZE];
         struct selva_proto_longlong sdb_eid;
-    } __attribute__((packed,aligned(__alignof__(uint64_t)))) buf = { /* TODO alignof might lead to padding */
+    } __packed buf = {
         .hdr = {
             .cmd = CMD_ID_REPLICASYNC,
             .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
@@ -293,7 +293,7 @@ static int send_full_sync_req(int sock)
     const uint32_t seqno = 0;
     struct {
         struct selva_proto_header hdr;
-    } __attribute__((packed,aligned(__alignof__(uint64_t)))) buf = { /* TODO alignof might lead to padding */
+    } __packed buf = {
         .hdr = {
             .cmd = CMD_ID_REPLICASYNC,
             .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
@@ -320,7 +320,7 @@ static int send_status(int sock, uint64_t eid)
     struct {
         struct selva_proto_header hdr;
         struct selva_proto_longlong eid;
-    } __attribute__((packed,aligned(__alignof__(uint64_t)))) buf = { /* TODO alignof might lead to padding */
+    } __packed buf = {
         .hdr = {
             .cmd = CMD_ID_REPLICASTATUS,
             .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
