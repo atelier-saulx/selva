@@ -522,9 +522,6 @@ static void on_connection(struct event *event, void *arg __unused)
     conn_ctx->fd = new_sockfd;
     conn_ctx->recv_state = CONN_CTX_RECV_STATE_NEW;
     conn_ctx->app.tim_hrt = SELVA_EINVAL;
-#if 0
-    server_assign_worker(conn_ctx);
-#endif
 
     evl_wait_fd(new_sockfd, on_data, NULL, on_close, conn_ctx);
 }
@@ -581,10 +578,6 @@ __constructor void init(void)
     if (selva_port_str) {
         selva_port = strtol(selva_port_str, NULL, 10);
     }
-
-#if 0
-    server_start_workers();
-#endif
 
     SELVA_MK_COMMAND(CMD_ID_PING, SELVA_CMD_MODE_PURE, ping);
     SELVA_MK_COMMAND(CMD_ID_ECHO, SELVA_CMD_MODE_PURE, echo);

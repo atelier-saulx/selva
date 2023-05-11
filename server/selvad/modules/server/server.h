@@ -39,9 +39,6 @@ struct conn_ctx {
      * responses but makes processing on the server-side more efficient.
      */
     int8_t batch_active;
-#if 0
-    pthread_t worker_id;
-#endif
     enum {
         CONN_CTX_RECV_STATE_NEW, /*!< Waiting for the next seq; No recv in progress. */
         CONN_CTX_RECV_STATE_FRAGMENT, /*!< Waiting for the next frame of a sequence. */
@@ -69,11 +66,6 @@ struct conn_ctx {
 enum server_send_flags {
     SERVER_SEND_MORE = 0x01,
 };
-
-#if 0
-void server_start_workers(void);
-void server_dispatch2worker(struct conn_ctx *restrict ctx, const char *restrict payload, size_t payload_len);
-#endif
 
 /**
  * @addtogroup conn
