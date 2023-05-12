@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: MIT
  */
 #pragma once
+#pragma GCC diagnostic push
+#pragma GCC diagnostic error "-Wpadded"
 
 /**
  * Maximum frame size including selva_proto_header.
@@ -341,3 +343,5 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void *restrict buf,
 /**
  * @}
  */
+
+#pragma GCC diagnostic pop
