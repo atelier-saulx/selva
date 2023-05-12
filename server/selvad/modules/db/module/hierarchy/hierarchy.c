@@ -2967,7 +2967,7 @@ out:
     return err;
 }
 
-static int load_hierarchy_node(struct selva_io *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
+static int load_hierarchy_node(struct finalizer *fin, struct selva_io *io, int encver, SelvaHierarchy *hierarchy, SelvaHierarchyNode *node) {
     int err;
 
     /*
@@ -3002,7 +3002,7 @@ static int load_hierarchy_node(struct selva_io *io, int encver, SelvaHierarchy *
             }
 
             if (isDecompressingSubtree) {
-                SelvaHierarchyDetached_RemoveNode(hierarchy, child_id);
+                SelvaHierarchyDetached_RemoveNode(fin, hierarchy, child_id);
             }
 
             err = SelvaModify_AddHierarchy(hierarchy, child_id, 0, NULL, 0, NULL);
@@ -3033,12 +3033,12 @@ static int load_hierarchy_node(struct selva_io *io, int encver, SelvaHierarchy *
  * Load a node and its children.
  * Should be only called by load_tree().
  */
-static int load_node(struct selva_io *io, int encver, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
+static int load_node(struct finalizer *fin, struct selva_io *io, int encver, SelvaHierarchy *hierarchy, Selva_NodeId node_id) {
     SelvaHierarchyNode *node;
     int err;
 
     if (isDecompressingSubtree) {
-        SelvaHierarchyDetached_RemoveNode(hierarchy, node_id);
+        SelvaHierarchyDetached_RemoveNode(fin, hierarchy, node_id);
     }
 
     /*
@@ -3066,7 +3066,7 @@ static int load_node(struct selva_io *io, int encver, SelvaHierarchy *hierarchy,
          */
         err = load_detached_node(io, hierarchy, node_id);
     } else {
-        err = load_hierarchy_node(io, encver, hierarchy, node);
+        err = load_hierarchy_node(fin, io, encver, hierarchy, node);
     }
 
     return err;
@@ -3078,7 +3078,7 @@ static int load_node(struct selva_io *io, int encver, SelvaHierarchy *hierarchy,
  * NODE_ID2 | FLAGS | METADATA | NR_CHILDREN | ...
  * HIERARCHY_SERIALIZATION_EOF
  */
-static int load_tree(struct selva_io *io, int encver, SelvaHierarchy *hierarchy) {
+static int load_tree(struct finalizer *fin, struct selva_io *io, int encver, SelvaHierarchy *hierarchy) {
     while (1) {
         Selva_NodeId node_id;
         int err;
@@ -3097,7 +3097,7 @@ static int load_tree(struct selva_io *io, int encver, SelvaHierarchy *hierarchy)
             break;
         }
 
-        err = load_node(io, encver, hierarchy, node_id);
+        err = load_node(fin, io, encver, hierarchy, node_id);
         if (err) {
             return err;
         }
@@ -3120,9 +3120,12 @@ static int load_tree(struct selva_io *io, int encver, SelvaHierarchy *hierarchy)
 }
 
 SelvaHierarchy *Hierarchy_Load(struct selva_io *io) {
+    __auto_finalizer struct finalizer fin;
     SelvaHierarchy *hierarchy = NULL;
     int encver;
     int err;
+
+    finalizer_init(&fin);
 
     flag_isLoading = 1;
 
@@ -3155,7 +3158,7 @@ SelvaHierarchy *Hierarchy_Load(struct selva_io *io) {
         goto error;
     }
 
-    err = load_tree(io, encver, hierarchy);
+    err = load_tree(&fin, io, encver, hierarchy);
     if (err) {
         goto error;
     }
@@ -3319,10 +3322,13 @@ static int load_nodeId(struct selva_io *io, Selva_NodeId nodeId) {
  * This function should never be called directly.
  */
 static void Hierarchy_SubtreeLoad(SelvaHierarchy *hierarchy, struct selva_string *s) {
+    __auto_finalizer struct finalizer fin;
     struct selva_io io;
-    selva_io_init_string_read(&io, s, 0);
     Selva_NodeId nodeId;
     int encver, err;
+
+    finalizer_init(&fin);
+    selva_io_init_string_read(&io, s, 0);
 
     /*
      * 1. Load encoding version
@@ -3343,9 +3349,9 @@ static void Hierarchy_SubtreeLoad(SelvaHierarchy *hierarchy, struct selva_string
         return;
     }
 
-    SelvaHierarchyDetached_RemoveNode(hierarchy, nodeId);
+    SelvaHierarchyDetached_RemoveNode(&fin, hierarchy, nodeId);
 
-    err = load_tree(&io, encver, hierarchy);
+    err = load_tree(&fin, &io, encver, hierarchy);
     if (err) {
         return;
     }

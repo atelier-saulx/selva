@@ -10,6 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "jemalloc.h"
+#include "util/finalizer.h"
 #include "util/ptag.h"
 #include "util/selva_string.h"
 #include "selva_error.h"
@@ -230,7 +231,7 @@ int SelvaHierarchyDetached_Get(
     }
 }
 
-void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id)
+void SelvaHierarchyDetached_RemoveNode(struct finalizer * restrict fin, SelvaHierarchy * restrict hierarchy, const Selva_NodeId node_id)
 {
     struct SelvaObject *index = hierarchy->detached.obj;
     void *p;
@@ -257,10 +258,8 @@ void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_No
          * We know that we still have one or more references to zpath, but
          * we also know that they'll be all cleaned up during this callstack.
          */
-        /*
-         * FIXME Leaking zpath.
-         * We need to create a finalizer somewhere.
-         */
+        finalizer_del(fin, zpath);
+        selva_string_auto_finalize(fin, zpath);
     }
 
     (void)SelvaObject_DelKeyStr(index, node_id, SELVA_NODE_ID_SIZE);

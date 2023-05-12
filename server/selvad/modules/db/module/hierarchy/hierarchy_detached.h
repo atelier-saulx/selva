@@ -66,7 +66,7 @@ int SelvaHierarchyDetached_Get(
  * Note that this function doesn't free the selva_string, that should be
  * done by the caller.
  */
-void SelvaHierarchyDetached_RemoveNode(SelvaHierarchy *hierarchy, const Selva_NodeId node_id);
+void SelvaHierarchyDetached_RemoveNode(struct finalizer * restrict fin, SelvaHierarchy * restrict hierarchy, const Selva_NodeId node_id);
 
 /**
  * Add a node_id to subtree mapping to the detached nodes map.
