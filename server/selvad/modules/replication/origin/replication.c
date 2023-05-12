@@ -369,10 +369,6 @@ void replication_origin_init(void)
         struct replica *r = &origin_state.replicas[i];
 
         r->id = i;
-    /* TODO Do global core mapping */
-#if 0
-        r->core_id = i % nr_cores;
-#endif
         r->rb = &origin_state.rb;
     }
     ring_buffer_init(&origin_state.rb, origin_state.buffer, num_elem(origin_state.buffer), free_replbuf);
