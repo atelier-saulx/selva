@@ -111,6 +111,32 @@ static int find_first_alias(SelvaHierarchy *hierarchy, const SVector *alias_quer
     return 0;
 }
 
+static void defer_alias_change_events(
+        SelvaHierarchy *hierarchy,
+        struct SelvaSet *aliases) {
+    struct SelvaSetElement *el;
+
+    SELVA_SET_STRING_FOREACH(el, aliases) {
+        struct selva_string *alias_name = el->value_string;
+
+        SelvaSubscriptions_DeferAliasChangeEvents(hierarchy, alias_name);
+    }
+}
+
+static void delete_all_node_aliases(SelvaHierarchy *hierarchy, struct SelvaObject *node_obj)
+{
+    const char *field_str = SELVA_ALIASES_FIELD;
+    const size_t field_len = sizeof(SELVA_ALIASES_FIELD) - 1;
+    struct SelvaSet *node_aliases;
+
+    node_aliases = SelvaObject_GetSetStr(node_obj, field_str, field_len);
+    if (node_aliases) {
+        defer_alias_change_events(hierarchy, node_aliases);
+        (void)delete_aliases(hierarchy, node_aliases);
+        (void)SelvaObject_DelKeyStr(node_obj, field_str, field_len);
+    }
+}
+
 static int update_hierarchy(
     SelvaHierarchy *hierarchy,
     const Selva_NodeId node_id,
@@ -377,18 +403,6 @@ static int update_edge(
     }
 }
 
-static void selva_set_defer_alias_change_events(
-        SelvaHierarchy *hierarchy,
-        struct SelvaSet *aliases) {
-    struct SelvaSetElement *el;
-
-    SELVA_SET_STRING_FOREACH(el, aliases) {
-        struct selva_string *alias_name = el->value_string;
-
-        SelvaSubscriptions_DeferAliasChangeEvents(hierarchy, alias_name);
-    }
-}
-
 /**
  * Add all values from value_ptr to the set in obj.field.
  * @returns The number of items added; Otherwise a negative Selva error code is returned.
@@ -454,7 +468,6 @@ static int add_set_values(
                 /* Add to the global aliases hash. */
                 if (is_aliases) {
                     SelvaSubscriptions_DeferAliasChangeEvents(hierarchy, ref);
-
                     update_alias(hierarchy, node_id, ref);
                 }
 
@@ -660,15 +673,15 @@ static int del_set_values(
              */
             err = SelvaObject_RemStringSet(obj, field, ref);
             if (!err) {
-                res++;
-            }
-            selva_string_free(ref);
+                /*
+                 * Remove from the global aliases hash.
+                 */
+                if (is_aliases) {
+                    SelvaSubscriptions_DeferAliasChangeEvents(hierarchy, ref);
+                    delete_alias(hierarchy, ref);
+                }
 
-            /*
-             * Remove from the global aliases hash.
-             */
-            if (is_aliases) {
-                delete_alias(hierarchy, ref);
+                res++;
             }
 
             /* +1 to skip the NUL if cstring */
@@ -677,6 +690,7 @@ static int del_set_values(
                 return SELVA_EINVAL;
             }
 
+            selva_string_free(ref);
             ptr += skip_off;
             i += skip_off;
         }
@@ -824,22 +838,17 @@ int SelvaModify_ModifySet(
 
             /*
              * First we need to delete the aliases of this node from the
-             * ___selva_aliases hash.
+             * global mapping.
              */
             if (!strcmp(field_str, SELVA_ALIASES_FIELD)) {
-                struct SelvaSet *node_aliases;
-
-                node_aliases = SelvaObject_GetSet(obj, field);
-                if (node_aliases) {
-                    selva_set_defer_alias_change_events(hierarchy, node_aliases);
-                    (void)delete_aliases(hierarchy, node_aliases);
-                }
-            }
-
-            err = SelvaObject_DelKey(obj, field);
-            if (err == 0) {
-                /* TODO It would be nice to return the actual number of deletions. */
+                delete_all_node_aliases(hierarchy, obj);
                 err = 1;
+            } else {
+                err = SelvaObject_DelKey(obj, field);
+                if (err == 0) {
+                    /* TODO It would be nice to return the actual number of deletions. */
+                    err = 1;
+                }
             }
 
             return err == SELVA_ENOENT ? 0 : err;
@@ -861,8 +870,10 @@ int SelvaModify_ModifyDel(
     TO_STR(field);
     int err;
 
-    /* RFE should it be possible to delete the aliases field? */
-    if (!strcmp(field_str, "children")) {
+    if (!strcmp(field_str, "aliases")) {
+        delete_all_node_aliases(hierarchy, obj);
+        err = 0;
+    } else if (!strcmp(field_str, "children")) {
         err = SelvaHierarchy_DelChildren(hierarchy, node);
     } else if (!strcmp(field_str, "parents")) {
         err = SelvaHierarchy_DelParents(hierarchy, node);
