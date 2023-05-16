@@ -1450,15 +1450,6 @@ static size_t FindCommand_SendOrderedResult(
     return len;
 }
 
-/*
- * RFE Delete this function.
- */
-#if 0
-static size_t get_nr_out(enum SelvaMergeStrategy merge_strategy, size_t nr_nodes, size_t merge_nr_fields) {
-    return (merge_strategy == MERGE_STRATEGY_NONE) ? nr_nodes : merge_nr_fields;
-}
-#endif
-
 static void postprocess_array(
         struct finalizer *fin,
         struct selva_server_response_out *resp,
@@ -1502,7 +1493,7 @@ static void postprocess_array(
         len++;
     }
 
-    /* Sent len */
+    /* Sent len nr nodes. */
     selva_send_array_end(resp);
 }
 
@@ -1522,7 +1513,7 @@ static void postprocess_sort(
 
     /* returns nr_nodes */
     (void)FindCommand_SendOrderedResult(fin, resp, hierarchy, lang, offset, limit, args, result, &merge_nr_fields);
-    /* Sent  get_nr_out(args->merge_strategy, nr_nodes, merge_nr_fields) */
+    /* Sent (merge_strategy == MERGE_STRATEGY_NONE) ? nr_nodes : merge_nr_fields nodes. */
     selva_send_array_end(resp);
 }
 
@@ -2197,7 +2188,6 @@ static void SelvaHierarchy_FindCommand(struct selva_server_response_out *resp, c
         postprocess(&fin, resp, hierarchy, lang, offset, limit, &send_args, &traverse_result);
         SELVA_TRACE_END(cmd_find_sort_result);
     } else {
-        /* Sent get_nr_out(merge_strategy, nr_nodes, merge_nr_fields) */
         selva_send_array_end(resp);
     }
 #undef SHIFT_ARGS

@@ -2829,7 +2829,6 @@ static void auto_compress_proc(struct event *, void *data) {
 
     SELVA_TRACE_BEGIN_AUTO(auto_compress_proc);
 
-    /* RFE would we like to make the timer configurable at runtime? */
     if (unlikely(backoff.factor == 0.0)) {
         backoff.t_min = (double)selva_glob_config.hierarchy_auto_compress_period_ms,
         backoff.t_max = (double)(selva_glob_config.hierarchy_auto_compress_period_ms + 300),
