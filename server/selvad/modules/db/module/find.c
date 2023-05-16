@@ -210,9 +210,12 @@ static int send_edge_field(
             err = send_edge_field(fin, resp, lang, hierarchy, node, field_prefix_str, field_prefix_len, next_field_str, next_field_len, excluded_fields);
             if (err >= 0) {
                 res += err;
-            } else {
-                /* TODO What to do in case of an error? */
             }
+            /*
+             * Ignore any errors. If an error has occurred it's already  logged
+             * at this point and we don't need to do anything.
+             * Unfortunately the client won't get informed directly.
+             */
         }
 
         return res;
