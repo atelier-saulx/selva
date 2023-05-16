@@ -1918,7 +1918,7 @@ out:
     return err;
 }
 
-#define BFS_TRAVERSE(ctx, hierarchy, head, cb) \
+#define BFS_TRAVERSE(hierarchy, head, cb) \
     SelvaHierarchyHeadCallback head_cb = (cb)->head_cb ? (cb)->head_cb : SelvaHierarchyHeadCallback_Dummy; \
     SelvaHierarchyNodeCallback node_cb = (cb)->node_cb ? (cb)->node_cb : HierarchyNode_Callback_Dummy; \
     SelvaHierarchyChildCallback child_cb = (cb)->child_cb ? (cb)->child_cb : SelvaHierarchyChildCallback_Dummy; \
@@ -1937,14 +1937,14 @@ out:
     while (SVector_Size(&_bfs_q) > 0) { \
         SelvaHierarchyNode *node = SVector_Shift(&_bfs_q);
 
-#define BFS_VISIT_NODE(ctx, hierarchy) \
+#define BFS_VISIT_NODE(hierarchy) \
         /* Note that Trx_Visit() has been already called for this node. */ \
         if (node_cb((hierarchy), node, cb->node_arg)) { \
             Trx_End(&(hierarchy)->trx_state, &trx_cur); \
             return 0; \
         }
 
-#define BFS_VISIT_ADJACENT(ctx, hierarchy, _origin_field_str, _origin_field_len, adj_node) do { \
+#define BFS_VISIT_ADJACENT(hierarchy, _origin_field_str, _origin_field_len, adj_node) do { \
         if (Trx_Visit(&trx_cur, &(adj_node)->trx_label)) { \
             if ((adj_node)->flags & SELVA_NODE_FLAGS_DETACHED) { \
                 int subtree_err = restore_subtree((hierarchy), (adj_node)->id); \
@@ -1963,13 +1963,13 @@ out:
         } \
     } while (0)
 
-#define BFS_VISIT_ADJACENTS(ctx, hierarchy, origin_field_str, origin_field_len, adj_vec) do { \
+#define BFS_VISIT_ADJACENTS(hierarchy, origin_field_str, origin_field_len, adj_vec) do { \
         struct SVectorIterator _bfs_visit_it; \
         \
         SVector_ForeachBegin(&_bfs_visit_it, (adj_vec)); \
         SelvaHierarchyNode *_adj; \
         while ((_adj = SVector_Foreach(&_bfs_visit_it))) { \
-            BFS_VISIT_ADJACENT((ctx), (hierarchy), (origin_field_str), (origin_field_len), _adj); \
+            BFS_VISIT_ADJACENT((hierarchy), (origin_field_str), (origin_field_len), _adj); \
         } \
     } while (0)
 
@@ -2011,7 +2011,6 @@ static SVector *get_adj_vec(SelvaHierarchyNode *node, const char *field_str, siz
 
 /**
  * Execute an edge filter for the node.
- * @param ctx is a pointer to the Redis context.
  * @param edge_filter_ctx is a context for the filter.
  * @param edge_filter is a pointer to the compiled edge filter.
  * @param adj_vec is a pointer to the arcs vector field of an EdgeField structure.
@@ -2077,11 +2076,11 @@ static __hot int bfs(
         return SELVA_HIERARCHY_ENOTSUP;
     }
 
-    BFS_TRAVERSE(ctx, hierarchy, head, cb) {
+    BFS_TRAVERSE(hierarchy, head, cb) {
         const SVector *adj_vec = (SVector *)((char *)node + offset);
 
-        BFS_VISIT_NODE(ctx, hierarchy);
-        BFS_VISIT_ADJACENTS(ctx, hierarchy, origin_field_str, origin_field_len, adj_vec);
+        BFS_VISIT_NODE(hierarchy);
+        BFS_VISIT_ADJACENTS(hierarchy, origin_field_str, origin_field_len, adj_vec);
     } BFS_TRAVERSE_END(hierarchy);
 
     return 0;
@@ -2093,10 +2092,10 @@ static int bfs_edge(
         const char *field_name_str,
         size_t field_name_len,
         const struct SelvaHierarchyCallback * restrict cb) {
-    BFS_TRAVERSE(ctx, hierarchy, head, cb) {
+    BFS_TRAVERSE(hierarchy, head, cb) {
         const struct EdgeField *edge_field;
 
-        BFS_VISIT_NODE(ctx, hierarchy);
+        BFS_VISIT_NODE(hierarchy);
 
         edge_field = Edge_GetField(node, field_name_str, field_name_len);
         if (!edge_field) {
@@ -2109,7 +2108,7 @@ static int bfs_edge(
             continue;
         }
 
-        BFS_VISIT_ADJACENTS(ctx, hierarchy, field_name_str, field_name_len, &edge_field->arcs);
+        BFS_VISIT_ADJACENTS(hierarchy, field_name_str, field_name_len, &edge_field->arcs);
     } BFS_TRAVERSE_END(hierarchy);
 
     return 0;
@@ -2123,7 +2122,7 @@ static int bfs_expression(
         struct rpn_ctx *edge_filter_ctx,
         const struct rpn_expression *edge_filter,
         const struct SelvaHierarchyCallback * restrict cb) {
-    BFS_TRAVERSE(redis_ctx, hierarchy, head, cb) {
+    BFS_TRAVERSE(hierarchy, head, cb) {
         enum rpn_error rpn_err;
         struct SelvaSet fields;
         struct SelvaSetElement *field_el;
@@ -2141,7 +2140,7 @@ static int bfs_expression(
             continue;
         }
 
-        BFS_VISIT_NODE(redis_ctx, hierarchy);
+        BFS_VISIT_NODE(hierarchy);
 
         SELVA_SET_STRING_FOREACH(field_el, &fields) {
             size_t field_len;
@@ -2170,7 +2169,7 @@ static int bfs_expression(
                     continue;
                 }
 
-                BFS_VISIT_ADJACENT(redis_ctx, hierarchy, field_str, field_len, adj);
+                BFS_VISIT_ADJACENT(hierarchy, field_str, field_len, adj);
             }
         }
 
