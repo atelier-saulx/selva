@@ -254,9 +254,7 @@ void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy) {
     SelvaHierarchy_DeinitInactiveNodes(hierarchy);
     mempool_destroy(&hierarchy->node_pool);
 
-#if MEM_DEBUG
     memset(hierarchy, 0, sizeof(*hierarchy));
-#endif
     selva_free(hierarchy);
 }
 
