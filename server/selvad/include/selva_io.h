@@ -67,11 +67,6 @@ struct selva_io {
 
 #define SELVA_IO_FLAGS_MODE_MASK (SELVA_IO_FLAGS_READ | SELVA_IO_FLAGS_WRITE)
 
-/*
- * TODO Move string compression to util
- * TODO Move hierarchy compression stuff to selva_io
- */
-
 SELVA_IO_EXPORT(void, selva_io_get_ver, struct SelvaDbVersionInfo *nfo);
 
 /**
