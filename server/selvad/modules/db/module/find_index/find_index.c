@@ -1330,13 +1330,16 @@ static void SelvaFindIndex_DebugCommand(struct selva_server_response_out *resp, 
     debug_index(resp, hierarchy, (int)((i - 1) / 2));
 }
 
-/* FIXME modinfo */
-#if 0
-static void mod_info(RedisModuleInfoCtx *ctx) {
-    (void)RedisModule_InfoAddFieldDouble(ctx, "lpf_a", lpf_a);
+static void SelvaFindIndex_InfoCommand(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {
+    if (len) {
+        selva_send_error_arity(resp);
+        return;
+    }
+
+    selva_send_array(resp, 2);
+    selva_send_str(resp, "lpf_a", 5);
+    selva_send_ll(resp, lpf_a);
 }
-SELVA_MODINFO("find_index", mod_info);
-#endif
 
 static int FindIndex_OnLoad(void) {
     lpf_a = lpf_geta((float)selva_glob_config.find_indexing_popularity_ave_period, (float)selva_glob_config.find_indexing_icb_update_interval / 1000.0f);
@@ -1345,6 +1348,7 @@ static int FindIndex_OnLoad(void) {
     selva_mk_command(CMD_ID_INDEX_NEW, SELVA_CMD_MODE_PURE, "index.new", SelvaFindIndex_NewCommand);
     selva_mk_command(CMD_ID_INDEX_DEL, SELVA_CMD_MODE_PURE, "index.del", SelvaFindIndex_DelCommand);
     selva_mk_command(CMD_ID_INDEX_DEBUG, SELVA_CMD_MODE_PURE, "index.debug", SelvaFindIndex_DebugCommand);
+    selva_mk_command(CMD_ID_INDEX_INFO, SELVA_CMD_MODE_PURE, "index.info", SelvaFindIndex_InfoCommand);
 
     return 0;
 }
