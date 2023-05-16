@@ -241,14 +241,11 @@ void SelvaModify_DestroyHierarchy(SelvaHierarchy *hierarchy) {
 
     SelvaSubscriptions_DestroyAll(hierarchy);
     /*
-     * If SelvaSubscriptions_DestroyAll() is ran first the we don't need to
-     * bother about cleaning up subscriptions used by the indexing and thus
-     * hopefully the deinit doesn't need a RedisModuleCtx.
+     * If SelvaSubscriptions_DestroyAll() is ran first then we don't need to
+     * bother about cleaning up subscriptions used by the indexing.
      */
     SelvaFindIndex_Deinit(hierarchy);
-
     Edge_DeinitEdgeFieldConstraints(&hierarchy->edge_field_constraints);
-
     SVector_Destroy(&hierarchy->heads);
 
     if (hierarchy->inactive.nr_nodes) {
