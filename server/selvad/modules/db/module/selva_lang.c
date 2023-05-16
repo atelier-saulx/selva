@@ -4,6 +4,7 @@
  */
 #include <ctype.h>
 #include <errno.h>
+#include <langinfo.h>
 #include <string.h>
 #include <strings.h>
 #include "jemalloc.h"
@@ -180,20 +181,19 @@ static void load_lang(const char *lang, const char *locale_name) {
 static void SelvaLang_Reply(struct selva_server_response_out *resp, void *p) {
     const struct SelvaLang *slang = (struct SelvaLang *)p;
 
-    selva_send_array(resp, 2);
+    selva_send_array(resp, 3);
     selva_send_str(resp, slang->name, strnlen(slang->name, LANG_NAME_MAX));
     selva_send_str(resp, slang->territory, strnlen(slang->territory, LANG_TERRITORY_MAX));
+    selva_send_strf(resp, "%s", nl_langinfo_l(_NL_IDENTIFICATION_LANGUAGE, slang->locale));
 }
 
 static void lslang(struct selva_server_response_out *resp, const void *buf __unused, size_t size) {
-    const char msg[] = "test";
-
     if (size != 0) {
         selva_send_error_arity(resp);
         return;
     }
 
-    selva_send_str(resp, msg, sizeof(msg) - 1);
+    SelvaObject_ReplyWithObject(resp, NULL, langs, NULL, 0);
 }
 
 static int SelvaLang_OnLoad(void) {
