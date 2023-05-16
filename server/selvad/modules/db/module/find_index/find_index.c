@@ -822,22 +822,24 @@ int SelvaFindIndex_Auto(
         struct selva_string *filter,
         struct SelvaFindIndexControlBlock **icb_out) {
     SELVA_TRACE_BEGIN_AUTO(FindIndex_AutoIndex);
+
+    if (selva_string_get_len(filter) == 0) {
+       return SELVA_EINVAL;
+    }
+    if (selva_glob_config.find_indices_max == 0) {
+        return SELVA_ENOTSUP;
+    }
+    if (!(dir & allowed_dirs)) {
+        /*
+         * Only index some traversals.
+         */
+        return SELVA_ENOTSUP;
+    }
+
     __auto_finalizer struct finalizer fin;
     struct SelvaFindIndexControlBlock *icb;
 
     finalizer_init(&fin);
-
-    if (selva_string_get_len(filter) == 0 || selva_glob_config.find_indices_max == 0) {
-        /* TODO should it be: find_indices_max == 0 => SELVA_ENOTSUP? */
-        return SELVA_EINVAL;
-    }
-
-    /*
-     * Only index some traversals.
-     */
-    if (!(dir & allowed_dirs)) {
-        return SELVA_ENOTSUP;
-    }
 
     /*
      * Copy the strings.
