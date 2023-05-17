@@ -339,14 +339,14 @@
  * module: db
  * cmd: object.incrby
  */
-#define CMD_ID_OBJECT_INCR_BY 50
+#define CMD_ID_OBJECT_INCRBY 50
 
 /**
  * Increment field value by double.
  * module: db
  * cmd: object.incrbydouble
  */
-#define CMD_ID_OBJECT_INCR_BY_DOUBLE 51
+#define CMD_ID_OBJECT_INCRBY_DOUBLE 51
 
 /**
  * Get the length of a node data object field value.

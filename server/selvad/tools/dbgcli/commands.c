@@ -83,8 +83,8 @@ static struct cmd commands[255] = {
         .cmd_req = cmd_loglevel_req,
         .cmd_res = generic_res,
     },
-    [CMD_ID_OBJECT_INCR_BY] = {
-        .cmd_id = CMD_ID_OBJECT_INCR_BY,
+    [CMD_ID_OBJECT_INCRBY] = {
+        .cmd_id = CMD_ID_OBJECT_INCRBY,
         .cmd_name = "object.incrby",
         .cmd_req = cmd_object_incrby_req,
         .cmd_res = generic_res,

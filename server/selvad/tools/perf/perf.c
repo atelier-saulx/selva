@@ -25,6 +25,8 @@
 
 #define NODE_ID_SIZE 16
 
+typedef typeof_field(struct selva_proto_header, flags) flags_t;
+
 struct thread_args {
     int fd;
     int n;
@@ -81,7 +83,7 @@ static int send_message(int fd, const void *buf, size_t size, int flags)
     return 0;
 }
 
-static int send_modify(int fd, int seqno, typeof_field(struct selva_proto_header, flags) frame_extra_flags, char node_id[NODE_ID_SIZE])
+static int send_modify(int fd, int seqno, flags_t frame_extra_flags, char node_id[NODE_ID_SIZE])
 {
     struct {
         struct selva_proto_header hdr;
@@ -174,12 +176,87 @@ static int send_modify(int fd, int seqno, typeof_field(struct selva_proto_header
     return send_message(fd, &buf, sizeof(buf), 0);
 }
 
-static void handle_response(struct selva_proto_header *resp_hdr, void *msg __unused, size_t msg_size __unused)
+static int send_incrby(int fd, int seqno, flags_t frame_extra_flags, char node_id[NODE_ID_SIZE])
+{
+#define FIELD "thumbs"
+    struct {
+        struct selva_proto_header hdr;
+        struct selva_proto_string id_hdr;
+        char id_str[NODE_ID_SIZE];
+        struct selva_proto_string field_hdr;
+        char field_str[sizeof(FIELD) - 1];
+        struct selva_proto_longlong incrby;
+    } buf = {
+        .hdr = {
+            .cmd = CMD_ID_OBJECT_INCRBY,
+            .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST | frame_extra_flags,
+            .seqno = htole32(seqno),
+            .frame_bsize = htole16(sizeof(buf)),
+            .msg_bsize = 0,
+            .chk = 0,
+        },
+        .id_hdr = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+            .bsize = htole32(NODE_ID_SIZE),
+        },
+        .field_hdr = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+            .bsize = htole32(sizeof(buf.field_str)),
+        },
+        .field_str = FIELD,
+        .incrby = {
+            .type = SELVA_PROTO_LONGLONG,
+            .flags = 0,
+            .v = htole64(1),
+        },
+    };
+#undef FIELD
+
+    strncpy(buf.id_str, node_id, NODE_ID_SIZE);
+
+    buf.hdr.chk = htole32(crc32c(0, &buf, sizeof(buf)));
+
+    return send_message(fd, &buf, sizeof(buf), 0);
+}
+
+static void handle_response(struct selva_proto_header *resp_hdr, void *msg, size_t msg_size)
 {
     if (resp_hdr->cmd < 0) {
         fprintf(stderr, "Invalid cmd_id: %d\n", resp_hdr->cmd);
     } else {
-        /* NOP */
+        size_t i = 0;
+        enum selva_proto_data_type type;
+        size_t data_len;
+        int off;
+
+        off = selva_proto_parse_vtype(msg, msg_size, i, &type, &data_len);
+        if (off <= 0) {
+            if (off < 0) {
+                fprintf(stderr, "Failed to parse a value header: %s\n", selva_strerror(off));
+            }
+            return;
+        }
+
+        i += off;
+
+        if (type == SELVA_PROTO_ERROR) {
+            const char *err_msg_str;
+            size_t err_msg_len;
+            int err, err1;
+
+            err = selva_proto_parse_error(msg, msg_size, i - off, &err1, &err_msg_str, &err_msg_len);
+            if (err) {
+                fprintf(stderr, "Failed to parse an error received: %s\n", selva_strerror(err));
+                return;
+            } else {
+                printf("<Error %s: %.*s>,\n",
+                       selva_strerror(err1),
+                       (int)err_msg_len, err_msg_str);
+            }
+        }
+        /* else NOP */
     }
 }
 
@@ -297,6 +374,42 @@ pthread_t start_recv(int fd, int n)
     return thread;
 }
 
+static void test_modify(int fd, int seqno, flags_t frame_extra_flags)
+{
+    char node_id[NODE_ID_SIZE + 1];
+
+    snprintf(node_id, sizeof(node_id), "ma%.*x", NODE_ID_SIZE - 2, seqno);
+    send_modify(fd, seqno, frame_extra_flags, node_id);
+}
+
+static void test_modify_single(int fd, int seqno, flags_t frame_extra_flags)
+{
+    char node_id[NODE_ID_SIZE + 1];
+
+    snprintf(node_id, sizeof(node_id), "ma%.*x", NODE_ID_SIZE - 2, 1);
+    send_modify(fd, seqno, frame_extra_flags, node_id);
+}
+
+static void test_incrby(int fd, int seqno, flags_t frame_extra_flags)
+{
+    static int first = 1;
+    char node_id[NODE_ID_SIZE + 1];
+
+    snprintf(node_id, sizeof(node_id), "ma%.*x", NODE_ID_SIZE - 2, 1);
+    if (first) {
+        first = 0;
+
+        send_modify(fd, seqno, frame_extra_flags, node_id);
+    }
+    send_incrby(fd, seqno, frame_extra_flags, node_id);
+}
+
+static void (*suites[])(int fd, int seqno, flags_t frame_extra_flags) = {
+    test_modify,
+    test_modify_single,
+    test_incrby,
+};
+
 int main(int argc, char *argv[])
 {
     int c;
@@ -306,12 +419,11 @@ int main(int argc, char *argv[])
     int seqno = 0;
     int batch = 0;
     int threaded = 0;
-    int single_node = 0;
     int n = 1000000;
-
+    unsigned suite = 0;
 
     opterr = 0;
-    while ((c = getopt(argc, argv, "N:p:bts")) != -1) {
+    while ((c = getopt(argc, argv, "N:T:p:bts")) != -1) {
         switch (c) {
         case '?':
             if (optopt == 'p' || optopt == 'N') {
@@ -322,19 +434,23 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
             }
             return 1;
-        case 'N':
+        case 'N': /* number of nodes */
             n = (int)strtol(optarg, NULL, 10);
             break;
-        case 'b':
+        case 'T':
+            suite = (unsigned)strtol(optarg, NULL, 10);
+            if (suite >= num_elem(suites)) {
+                fprintf(stderr, "Invalid test suite\n");
+                return 1;
+            }
+            break;
+        case 'b': /* batching */
             batch = 1;
             break;
-        case 'p':
+        case 'p': /* port */
             port = (int)strtol(optarg, NULL, 10);
             break;
-        case 's':
-            single_node = 1;
-            break;
-        case 't':
+        case 't': /* threaded */
             threaded = 1;
             break;
         default:
@@ -367,12 +483,10 @@ int main(int argc, char *argv[])
 
     ts_monotime(&ts_start);
     while (!flag_stop && seqno < n) {
-        typeof_field(struct selva_proto_header, flags) frame_extra_flags = (batch && (seqno < n - 1)) ? SELVA_PROTO_HDR_BATCH : 0;
-        char node_id[NODE_ID_SIZE + 1];
+        flags_t frame_extra_flags = (batch && (seqno < n - 1)) ? SELVA_PROTO_HDR_BATCH : 0;
 
-        snprintf(node_id, sizeof(node_id), "ma%.*x", NODE_ID_SIZE - 2, single_node ? 1 : seqno);
+        suites[suite](sock, seqno++, frame_extra_flags);
 
-        send_modify(sock, seqno++, frame_extra_flags, node_id);
         if (!threaded) {
             flag_stop |= recv_message(sock);
         }

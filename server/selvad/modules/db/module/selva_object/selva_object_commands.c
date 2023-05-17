@@ -679,8 +679,8 @@ static int SelvaObject_OnLoad(void)
     selva_mk_command(CMD_ID_OBJECT_EXIST, SELVA_CMD_MODE_PURE, "object.exists", SelvaObject_ExistsCommand);
     selva_mk_command(CMD_ID_OBJECT_GET, SELVA_CMD_MODE_PURE, "object.get", SelvaObject_GetCommand);
     selva_mk_command(CMD_ID_OBJECT_SET, SELVA_CMD_MODE_MUTATE, "object.set", SelvaObject_SetCommand);
-    selva_mk_command(CMD_ID_OBJECT_INCR_BY, SELVA_CMD_MODE_MUTATE, "object.incrby", SelvaObject_IncrbyCommand);
-    selva_mk_command(CMD_ID_OBJECT_INCR_BY_DOUBLE, SELVA_CMD_MODE_MUTATE, "object.incrbydouble", SelvaObject_IncrbyDoubleCommand);
+    selva_mk_command(CMD_ID_OBJECT_INCRBY, SELVA_CMD_MODE_MUTATE, "object.incrby", SelvaObject_IncrbyCommand);
+    selva_mk_command(CMD_ID_OBJECT_INCRBY_DOUBLE, SELVA_CMD_MODE_MUTATE, "object.incrbydouble", SelvaObject_IncrbyDoubleCommand);
     selva_mk_command(CMD_ID_OBJECT_TYPE, SELVA_CMD_MODE_PURE, "object.type", SelvaObject_TypeCommand);
     selva_mk_command(CMD_ID_OBJECT_LEN, SELVA_CMD_MODE_PURE, "object.len", SelvaObject_LenCommand);
     selva_mk_command(CMD_ID_OBJECT_GETMETA, SELVA_CMD_MODE_PURE, "object.getMeta", SelvaObject_GetMetaCommand);
