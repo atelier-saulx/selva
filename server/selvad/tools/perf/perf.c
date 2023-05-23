@@ -508,7 +508,7 @@ int main(int argc, char *argv[])
     shutdown(sock, SHUT_RDWR);
     close(sock);
 
-    printf("N: %d modify commands\nt: %.2f %s\nv: %.0f modify/s\n",
+    printf("N: %d commands\nt: %.2f %s\nv: %.0f cmd/s\n",
            seqno,
            t, unit,
            v);
