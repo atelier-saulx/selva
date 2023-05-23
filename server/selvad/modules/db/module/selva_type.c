@@ -18,7 +18,7 @@ struct protected_field {
 #define PROT_FIELD(fname, mode) \
     { .name = fname, .len = sizeof(fname) - 1, .en_mode = mode }
 
-static const struct  protected_field protected_fields[] = {
+static const struct protected_field protected_fields[] = {
     PROT_FIELD(SELVA_ID_FIELD, 0),
     PROT_FIELD(SELVA_TYPE_FIELD, 0),
     PROT_FIELD(SELVA_ALIASES_FIELD, SELVA_FIELD_PROT_WRITE),
@@ -29,6 +29,7 @@ static const struct  protected_field protected_fields[] = {
     PROT_FIELD(SELVA_CREATED_AT_FIELD, SELVA_FIELD_PROT_WRITE),
     PROT_FIELD(SELVA_UPDATED_AT_FIELD, SELVA_FIELD_PROT_WRITE),
 };
+static char prot_bloom[num_elem(protected_fields)] __attribute__((nonstring));
 
 int selva_field_prot_check(const struct selva_string *s, enum selva_field_prot_mode mode)
 {
@@ -41,12 +42,14 @@ int selva_field_prot_check_str(const char *field_str, size_t field_len, enum sel
 {
     int res = 1;
 
-    for (size_t i = 0; i < num_elem(protected_fields); i++) {
-        if (field_len == protected_fields[i].len && !memcmp(field_str, protected_fields[i].name, field_len)) {
-            if (!(mode & protected_fields[i].en_mode)) {
-                res = 0;
+    if (field_len > 0 && memchr(prot_bloom, field_str[0], num_elem(prot_bloom))) {
+        for (size_t i = 0; i < num_elem(protected_fields); i++) {
+            if (field_len == protected_fields[i].len && !memcmp(field_str, protected_fields[i].name, field_len)) {
+                if (!(mode & protected_fields[i].en_mode)) {
+                    res = 0;
+                }
+                break;
             }
-            break;
         }
     }
 
@@ -57,7 +60,8 @@ int selva_field_prot_check_str(const char *field_str, size_t field_len, enum sel
  * Technically a nodeId is always 10 bytes but sometimes a printable
  * representation without padding zeroes is needed.
  */
-size_t Selva_NodeIdLen(const Selva_NodeId nodeId) {
+size_t Selva_NodeIdLen(const Selva_NodeId nodeId)
+{
     size_t len = SELVA_NODE_ID_SIZE;
 
     while (len >= 1 && nodeId[len - 1] == '\0') {
@@ -97,7 +101,8 @@ int selva_string2node_id(Selva_NodeId nodeId, const struct selva_string *s)
  * SHA256 to hex string.
  * The destination buffer must be at least SELVA_SUBSCRIPTION_ID_STR_LEN + 1 bytes.
  */
-char *Selva_SubscriptionId2str(char dest[static SELVA_SUBSCRIPTION_ID_STR_LEN + 1], const Selva_SubscriptionId sub_id) {
+char *Selva_SubscriptionId2str(char dest[static SELVA_SUBSCRIPTION_ID_STR_LEN + 1], const Selva_SubscriptionId sub_id)
+{
     for (size_t i = 0; i < sizeof(Selva_SubscriptionId); i++) {
         const size_t k = 2 * i;
 
@@ -108,7 +113,8 @@ char *Selva_SubscriptionId2str(char dest[static SELVA_SUBSCRIPTION_ID_STR_LEN + 
     return dest;
 }
 
-int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src) {
+int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src)
+{
     char byte[3] = { '\0', '\0', '\0' };
 
     for (size_t i = 0; i < sizeof(Selva_SubscriptionId); i++) {
@@ -126,4 +132,11 @@ int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src) {
     }
 
     return 0;
+}
+
+__constructor static void init_selva_type(void)
+{
+    for (size_t i = 0; i < num_elem(protected_fields); i++) {
+        prot_bloom[i] = protected_fields[i].name[0];
+    }
 }
