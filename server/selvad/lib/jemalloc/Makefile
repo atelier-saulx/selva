@@ -11,7 +11,8 @@ JEMALLOC_CONFIG := --with-version=VERSION \
 				   --with-jemalloc-prefix=selva_ \
 				   --with-private-namespace=selva_ \
 				   --with-install-suffix=_selva \
-				   --with-malloc-conf=xmalloc:true
+				   --with-malloc-conf=xmalloc:true \
+	               --with-lg-vaddr=48
 JEMALLOC_CFLAGS := -std=gnu99 -fPIC -Wall -Wno-missing-braces -pipe -g3 -O3 -funroll-loops
 JEMALLOC_LDFLAGS := $(LDFLAGS)
 
@@ -21,6 +22,7 @@ endif
 ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
 	SELVA_ARCH := darwin_x64
     JEMALLOC_LIBDIR := "@rpath"
+    JEMALLOC_SYS_WITH_LG_VADDR := 48
 endif
 ifndef SELVA_ARCH
 $(error SELVA_ARCH is not set)
