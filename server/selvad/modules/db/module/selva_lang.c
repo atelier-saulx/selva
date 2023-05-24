@@ -180,11 +180,18 @@ static void load_lang(const char *lang, const char *locale_name) {
 
 static void SelvaLang_Reply(struct selva_server_response_out *resp, void *p) {
     const struct SelvaLang *slang = (struct SelvaLang *)p;
+    const char *lang_ident;
+
+#ifdef _NL_IDENTIFICATION_LANGUAGE
+    lang_ident = nl_langinfo_l(_NL_IDENTIFICATION_LANGUAGE, slang->locale);
+#else
+    lang_ident = "";
+#endif
 
     selva_send_array(resp, 3);
     selva_send_str(resp, slang->name, strnlen(slang->name, LANG_NAME_MAX));
     selva_send_str(resp, slang->territory, strnlen(slang->territory, LANG_TERRITORY_MAX));
-    selva_send_strf(resp, "%s", nl_langinfo_l(_NL_IDENTIFICATION_LANGUAGE, slang->locale));
+    selva_send_strf(resp, "%s", lang_ident);
 }
 
 static void lslang(struct selva_server_response_out *resp, const void *buf __unused, size_t size) {
