@@ -4,6 +4,7 @@
 *.d
 *.so
 *.so.*
+*.o
 *.dylib
 /binaries
 # Selva db dumps
