@@ -697,7 +697,7 @@ hll_t *hll_sparse_to_dense(hll_t *ptr)
     uint8_t *end = p + sdslen(sparse);
 
     if (oldhdr->encoding == HLL_DENSE /* already dense */ ||
-        oldhdr->card == 0 /* can't convert an empty hll */
+        !memcmp(oldhdr->card, (typeof(oldhdr->card)){0}, sizeof(oldhdr->card)) /* can't convert an empty hll */
        ) {
         return ptr;
     }
@@ -791,7 +791,7 @@ static int hllSparseSet(hll_t **ptr, long index, uint8_t count)
     /* Step 1: we need to locate the opcode we need to modify to check
      * if a value update is actually needed. */
     sparse = p = ((uint8_t*)hdr) + HLL_HDR_SIZE;
-    end = p + sdslen(hdr) - HLL_HDR_SIZE;
+    end = p + sdslen((sds)hdr) - HLL_HDR_SIZE;
 
     first = 0;
     prev = NULL; /* Points to previous opcode at the end of the loop. */
@@ -949,14 +949,14 @@ static int hllSparseSet(hll_t **ptr, long index, uint8_t count)
     int deltalen = seqlen-oldlen;
 
     if (deltalen > 0 &&
-        sdslen(hdr) + deltalen > hll_sparse_max_bytes) goto promote;
+        sdslen((sds)hdr) + deltalen > hll_sparse_max_bytes) goto promote;
 #if 0
     serverAssert(sdslen(o->ptr) + deltalen <= sdsalloc(o->ptr));
 #endif
     if (deltalen && next) {
         memmove(next + deltalen, next, end - next);
     }
-    sdsIncrLen(hdr, deltalen);
+    sdsIncrLen((sds)hdr, deltalen);
     memcpy(p, seq, seqlen);
     end += deltalen;
 
@@ -988,7 +988,7 @@ updated:
                 if (len <= HLL_SPARSE_VAL_MAX_LEN) {
                     HLL_SPARSE_VAL_SET(p + 1, v1, len);
                     memmove(p, p + 1, end - p);
-                    sdsIncrLen(hdr, -1);
+                    sdsIncrLen((sds)hdr, -1);
                     end--;
                     /* After a merge we reiterate without incrementing 'p'
                      * in order to try to merge the just merged value with
@@ -1245,7 +1245,7 @@ static int hllMerge(uint8_t *max, struct hllhdr *hdr)
         }
     } else {
         uint8_t *p = (uint8_t *)hdr;
-        uint8_t *end = p + sdslen(hdr);
+        uint8_t *end = p + sdslen((sds)hdr);
         long runlen, regval;
 
         p += HLL_HDR_SIZE;
@@ -1318,6 +1318,11 @@ hll_t *hll_create(void)
 void hll_destroy(hll_t *ptr)
 {
     sdsfree(ptr);
+}
+
+size_t hll_bsize(hll_t *ptr)
+{
+    return sdslen(ptr);
 }
 
 /* Check if the object is a String with a valid HLL representation.
