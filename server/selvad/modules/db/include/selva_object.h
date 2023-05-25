@@ -25,6 +25,7 @@ enum SelvaObjectType {
     SELVA_OBJECT_SET = 5,
     SELVA_OBJECT_ARRAY = 6,
     SELVA_OBJECT_POINTER = 7,
+    SELVA_OBJECT_HLL = 8,
 } __packed;
 
 enum SelvaObjectReplyFlags {
@@ -114,7 +115,7 @@ struct SelvaObjectAny {
     char str_lang[LANG_MAX + 1]; /*!< Language of str if applicable. */
     union {
         double d; /*!< SELVA_OBJECT_DOUBLE */
-        long long ll; /*!< SELVA_OBJECT_LONGLONG */
+        long long ll; /*!< SELVA_OBJECT_LONGLONG and SELVA_OBJECT_HLL */
         struct selva_string *str; /* SELVA_OBJECT_STRING */
         struct SelvaObject *obj; /* SELVA_OBJECT_OBJECT */
         struct SelvaSet *set; /*!< SELVA_OBJECT_SET */
@@ -211,14 +212,14 @@ int SelvaObject_SetLongLong(struct SelvaObject *obj, const struct selva_string *
 int SelvaObject_SetLongLongDefaultStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value);
 int SelvaObject_SetLongLongDefault(struct SelvaObject *obj, const struct selva_string *key_name, long long value);
 int SelvaObject_UpdateLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value);
-int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long default_value, long long incr, long long *prev);
-int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long default_value, long long incr, long long *prev);
 
 /**
  * Update a field value.
  * Return SELVA_EEXIST if the current value equals value; Otherwise set value.
  */
 int SelvaObject_UpdateLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long value);
+int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long default_value, long long incr, long long *prev);
+int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long default_value, long long incr, long long *prev);
 
 /**
  * @}
@@ -253,6 +254,19 @@ int SelvaObject_GetObjectStr(struct SelvaObject *obj, const char *key_name_str, 
 int SelvaObject_GetObject(struct SelvaObject *obj, const struct selva_string *key_name, struct SelvaObject **out) __attribute__((access(write_only, 3)));
 int SelvaObject_SetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject *value);
 int SelvaObject_SetObject(struct SelvaObject *obj, const struct selva_string *key_name, struct SelvaObject *in);
+
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup selva_object_hll
+ * HyperLogLog fields.
+ * @{
+ */
+
+int SelvaObject_AddHllStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, const void *el, size_t el_size);
+int SelvaObject_AddHll(struct SelvaObject *obj, const struct selva_string *key_name, const void *el, size_t el_size);
 
 /**
  * @}

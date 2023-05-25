@@ -61,6 +61,7 @@ static int array_foreach_cb_wrapper(union SelvaObjectArrayForeachValue value, en
         cb->cb(svalue, SELVA_SET_TYPE_DOUBLE, cb->cb_arg);
         break;
     case SELVA_OBJECT_LONGLONG:
+    case SELVA_OBJECT_HLL:
         svalue.ll = value.ll;
         cb->cb(svalue, SELVA_SET_TYPE_LONGLONG, cb->cb_arg);
         break;

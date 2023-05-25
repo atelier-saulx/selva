@@ -13,6 +13,7 @@
 #include "linker_set.h"
 #include "tree.h"
 #include "util/cstrings.h"
+#include "util/hll.h"
 #include "util/selva_string.h"
 #include "util/svector.h"
 #include "selva_db.h"
@@ -132,6 +133,7 @@ static const struct so_type_name type_names[] = {
     [SELVA_OBJECT_SET] =          { "selva_set",    9 },
     [SELVA_OBJECT_ARRAY] =        { "array",        5 },
     [SELVA_OBJECT_POINTER] =      { "pointer",      7 },
+    [SELVA_OBJECT_HLL] =          { "hll",          3 },
 };
 
 static void init_obj(struct SelvaObject *obj) {
@@ -233,6 +235,17 @@ static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
          * add support for SelvaObjectPointerOpts.
          */
         break;
+    case SELVA_OBJECT_HLL:
+        {
+            struct SVectorIterator it;
+            hll_t *s;
+
+            SVector_ForeachBegin(&it, array);
+            while ((s = SVector_Foreach(&it))) {
+                hll_destroy(s);
+            }
+        }
+        break;
      default:
         SELVA_LOG(SELVA_LOGL_ERR, "Key clear failed: Unsupported array type %s (%d)",
                   SelvaObject_Type2String(subtype, NULL),
@@ -274,6 +287,10 @@ static void clear_key_value(struct SelvaObjectKey *key) {
             key->ptr_opts->ptr_free(key->value);
         }
         key->value = NULL; /* Not strictly necessary. */
+        break;
+    case SELVA_OBJECT_HLL:
+        hll_destroy(key->value);
+        key->value = NULL;
         break;
     default:
         /*
@@ -389,6 +406,9 @@ size_t SelvaObject_MemUsage(const void *value) {
             if (key->value) {
                 size += SelvaObject_MemUsage(key->value);
             }
+            break;
+        case SELVA_OBJECT_HLL:
+            size += hll_bsize(key->value);
             break;
         default:
             /* 0 */
@@ -1206,6 +1226,35 @@ int SelvaObject_SetObject(struct SelvaObject *obj, const struct selva_string *ke
     return SelvaObject_SetObjectStr(obj, key_name_str, key_name_len, value);
 }
 
+int SelvaObject_AddHllStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, const void *el, size_t el_size) {
+    const enum SelvaObjectType type = SELVA_OBJECT_HLL;
+    struct SelvaObjectKey *key;
+    int err;
+
+    assert(obj);
+
+    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+    if (err) {
+        return err;
+    } else if (key->type != type) {
+        clear_key_value(key);
+        key->type = type;
+        key->value = hll_create();
+    }
+
+    if (hll_add(&key->value, el, el_size)) {
+        return SELVA_EINVAL; /* TODO error? */
+    }
+
+    return 0;
+}
+
+int SelvaObject_AddHll(struct SelvaObject *obj, const struct selva_string *key_name, const void *el, size_t el_size) {
+    TO_STR(key_name);
+
+    return SelvaObject_AddHllStr(obj, key_name_str, key_name_len, el, el_size);
+}
+
 int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const struct selva_string *key_name, double value) {
     struct SelvaSet *selva_set;
     int err;
@@ -1702,6 +1751,9 @@ int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, struct selva_string *lang
     case SELVA_OBJECT_POINTER:
         res->p = key->value;
         break;
+    case SELVA_OBJECT_HLL:
+        res->ll = hll_count(key->value);
+        break;
     }
 
     return 0;
@@ -1787,6 +1839,8 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
         return SVector_Size(key->array);
     case SELVA_OBJECT_POINTER:
         return (key->ptr_opts && key->ptr_opts->ptr_len) ? key->ptr_opts->ptr_len(key->value) : 1;
+    case SELVA_OBJECT_HLL:
+        return hll_count(key->value);
     }
 
     return SELVA_EINTYPE;
@@ -1905,6 +1959,9 @@ void *SelvaObject_ForeachValue(const struct SelvaObject *obj, void **iterator, c
         return &key->selva_set;
     case SELVA_OBJECT_ARRAY:
         return key->array;
+    case SELVA_OBJECT_HLL:
+        /* FIXME */
+        break;
     }
 
     return NULL;
@@ -1945,6 +2002,9 @@ void *SelvaObject_ForeachValueType(
         return &key->selva_set;
     case SELVA_OBJECT_ARRAY:
         return key->array;
+    case SELVA_OBJECT_HLL:
+        /* FIXME */
+        break;
     }
 
     return NULL;
@@ -2051,6 +2111,16 @@ static void replyWithArray(struct selva_server_response_out *resp, struct selva_
             replyWithObject(resp, lang, o, NULL);
         } while (!SVector_Done(&it));
         break;
+    case SELVA_OBJECT_HLL:
+        SVector_ForeachBegin(&it, array);
+
+        do {
+            hll_t *s = SVector_Foreach(&it);
+
+            selva_send_ll(resp, hll_count(s));
+            n++;
+        } while (!SVector_Done(&it));
+        break;
     default:
         SELVA_LOG(SELVA_LOGL_ERR, "Unknown array type: %d", subtype);
         break;
@@ -2125,6 +2195,9 @@ static void replyWithKeyValue(struct selva_server_response_out *resp, struct sel
         } else {
             selva_send_str(resp, "(null pointer)", 14);
         }
+        break;
+    case SELVA_OBJECT_HLL:
+        selva_send_ll(resp, hll_count(key->value));
         break;
     default:
         selva_send_errorf(resp, SELVA_EINTYPE, "Type not supported %d", (int)key->type);
@@ -2207,6 +2280,9 @@ int SelvaObject_ReplyWithObjectStr(
                 break;
             case SELVA_OBJECT_ARRAY:
                 k.array = p;
+                break;
+            case SELVA_OBJECT_HLL:
+                memcpy(&k.emb_ll_value, &(long long){hll_count(p)}, sizeof(long long));
                 break;
             }
 
@@ -2484,6 +2560,8 @@ static int load_object_array(struct selva_io *io, struct SelvaObject *obj, const
             struct SelvaObject *o = SelvaObjectTypeLoad(io, encver, ptr_load_data);
             SVector_Insert(key->array, o);
         }
+    } else if (arrayType == SELVA_OBJECT_HLL) {
+        /* FIXME load hll */
     } else {
         SELVA_LOG(SELVA_LOGL_CRIT, "Unknown array type");
         return SELVA_EINTYPE;
@@ -2576,6 +2654,9 @@ static int load_field(struct selva_io *io, struct SelvaObject *obj, int encver, 
         break;
     case SELVA_OBJECT_POINTER:
         err = load_pointer(io, encver, obj, name, ptr_load_data);
+        break;
+    case SELVA_OBJECT_HLL:
+        /* FIXME load hll */
         break;
     default:
         SELVA_LOG(SELVA_LOGL_CRIT, "Unknown type");
@@ -2736,6 +2817,8 @@ static void save_object_array(struct selva_io *io, struct SelvaObjectKey *key, v
             k = SVector_GetIndex(array, i);
             SelvaObjectTypeSave2(io, k, ptr_save_data);
         }
+    } else if (key->subtype == SELVA_OBJECT_HLL) {
+        /* FIXME save hll */
     } else {
         SELVA_LOG(SELVA_LOGL_CRIT, "Unknown object array type");
     }
@@ -2789,6 +2872,9 @@ void SelvaObjectTypeSave(struct selva_io *io, struct SelvaObject *obj, void *ptr
                 SELVA_LOG(SELVA_LOGL_CRIT, "ptr_save() not given");
                 break;
             }
+            break;
+        case SELVA_OBJECT_HLL:
+            /* FIXME save hll */
             break;
         default:
             SELVA_LOG(SELVA_LOGL_CRIT, "Unknown type");
