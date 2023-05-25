@@ -5,7 +5,9 @@
  * Inspired by: http://www.jera.com/techinfo/jtns/jtn002.html
  */
 
-/* Copyright (c) 2013, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
+/*
+ * Copyright (c) 2023 SAULX
+ * Copyright (c) 2013, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
  * Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi>
  * All rights reserved.
  *
@@ -86,6 +88,19 @@
  */
 #define pu_assert_ptr_equal(message, left, right) do { if (!(left == right)) { \
         printf("FAILED: %s:%d: %s == %s\n\tleft:\t%zx\n\tright:\t%zx\n",       \
+            __FILE__, __LINE__, #left, #right, (size_t)(left), (size_t)(right)); \
+        return message; }                                                      \
+} while(0)
+
+/**
+ * Assert pointer not equal.
+ * Checks if left != right is true.
+ * @param message shown if assert fails.
+ * @param left value.
+ * @param right value.
+ */
+#define pu_assert_ptr_not_equal(message, left, right) do { if (!(left != right)) { \
+        printf("FAILED: %s:%d: %s != %s\n\tleft:\t%zx\n\tright:\t%zx\n",       \
             __FILE__, __LINE__, #left, #right, (size_t)(left), (size_t)(right)); \
         return message; }                                                      \
 } while(0)

@@ -355,7 +355,11 @@ int selva_string_append(struct selva_string *s, const char *str, size_t len)
 
         s->len += len;
         s->p = selva_realloc(s->p, s->len + 1);
-        memcpy(s->p + old_len, str, len);
+        if (str) {
+            memcpy(s->p + old_len, str, len);
+        } else {
+            memset(s->p + old_len, 0, len);
+        }
         s->p[s->len] = '\0';
 
         update_crc(s);

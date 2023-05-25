@@ -18,6 +18,7 @@ OBJ := \
 	eztrie.o \
 	fd_to_str.o \
 	finalizer.o \
+	hll.o \
 	ida.o \
 	mempool.o \
 	poptop.o \
