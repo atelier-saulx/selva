@@ -423,7 +423,7 @@ static inline void sdssetalloc(sds s, size_t len)
 	sh->alloc = len;
 }
 
-static inline size_t sdslen(sds s)
+static inline size_t sdslen(const sds s)
 {
     struct sdshdr *sh = containerofa(s, struct sdshdr, buf);
 
@@ -1186,9 +1186,9 @@ static uint64_t hllCount(struct hllhdr *hdr, int *invalid)
         hllDenseRegHisto(hdr->registers,reghisto);
     } else if (hdr->encoding == HLL_SPARSE) {
         hllSparseRegHisto(hdr->registers,
-                         sdslen((sds)hdr)-HLL_HDR_SIZE,invalid,reghisto);
+                         sdslen((sds)hdr) - HLL_HDR_SIZE, invalid, reghisto);
     } else if (hdr->encoding == HLL_RAW) {
-        hllRawRegHisto(hdr->registers,reghisto);
+        hllRawRegHisto(hdr->registers, reghisto);
     } else {
         /* FIXME no abort
          * Unknown HyperLogLog encoding in hllCount()
@@ -1315,6 +1315,48 @@ hll_t *hll_create(void)
     return hdr;
 }
 
+const char *hll_getstr(hll_t *ptr, size_t *size)
+{
+    sds s = (sds)ptr;
+
+    *size = sdslen(s);
+    return s;
+}
+
+/**
+ * Check if the object is a String with a valid HLL representation.
+ * Return 0 if this is true, otherwise reply to the client
+ * with an error and return -1.
+ */
+static int hll_is_valid(const hll_t *ptr)
+{
+    const struct hllhdr *hdr = ptr;
+
+    if ((hdr->magic[0] != 'H' || hdr->magic[1] != 'Y' ||
+        hdr->magic[2] != 'L' || hdr->magic[3] != 'L') ||
+        hdr->encoding > HLL_MAX_ENCODING ||
+        (hdr->encoding == HLL_DENSE &&
+         sdslen((const sds)ptr) != HLL_DENSE_SIZE)) {
+        return 0;
+    }
+
+    return 1;
+}
+
+hll_t *hll_restore(const char *data, size_t size)
+{
+    sds s;
+
+    if (!hll_is_valid(data)) {
+        return NULL;
+    }
+
+    s = sdsnewlen(size);
+    memcpy(s, data, size);
+
+    return s;
+}
+
 void hll_destroy(hll_t *ptr)
 {
     sdsfree(ptr);
@@ -1323,24 +1365,6 @@ void hll_destroy(hll_t *ptr)
 size_t hll_bsize(hll_t *ptr)
 {
     return sdslen(ptr);
-}
-
-/* Check if the object is a String with a valid HLL representation.
- * Return 0 if this is true, otherwise reply to the client
- * with an error and return -1. */
-static int hll_is_valid(hll_t *ptr)
-{
-    struct hllhdr *hdr = ptr;
-
-    if ((hdr->magic[0] != 'H' || hdr->magic[1] != 'Y' ||
-        hdr->magic[2] != 'L' || hdr->magic[3] != 'L') ||
-        hdr->encoding > HLL_MAX_ENCODING ||
-        (hdr->encoding == HLL_DENSE &&
-         sdslen(ptr) != HLL_DENSE_SIZE)) {
-        return -1;
-    }
-
-    return 0;
 }
 
 /* PFCOUNT var -> approximated cardinality of set. */
@@ -1605,7 +1629,7 @@ void pfdebugCommand(client *c) {
     else if (!strcasecmp(cmd,"decode")) {
         if (c->argc != 3) goto arityerr;
 
-        uint8_t *p = o->ptr, *end = p+sdslen(o->ptr);
+        uint8_t *p = o->ptr, *end = p + sdslen(o->ptr);
         sds decoded = sdsempty();
 
         if (hdr->encoding != HLL_SPARSE) {
@@ -1634,7 +1658,7 @@ void pfdebugCommand(client *c) {
             }
         }
         decoded = sdstrim(decoded," ");
-        addReplyBulkCBuffer(c,decoded,sdslen(decoded));
+        addReplyBulkCBuffer(c,decoded, sdslen(decoded));
         sdsfree(decoded);
     }
     /* PFDEBUG ENCODING <key> */

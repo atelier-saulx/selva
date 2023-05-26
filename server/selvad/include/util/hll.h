@@ -12,6 +12,18 @@ typedef void hll_t;
 hll_t *hll_create(void);
 
 /**
+ * Stringify a HyperLogLog.
+ * The return value must not be freed as it's using the same storage as `ptr`.
+ */
+const char *hll_getstr(hll_t *ptr, size_t *size);
+
+/**
+ * Restore a previously stringified HyperLogLog.
+ * `data` can be freed after this call.
+ */
+hll_t *hll_restore(const char *data, size_t size);
+
+/**
  * Destroy a HyperLogLog data structure.
  */
 void hll_destroy(hll_t *ptr);
