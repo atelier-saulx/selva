@@ -888,24 +888,6 @@ int SelvaModify_ModifyDel(
     return err > 0 ? 0 : err;
 }
 
-/*
- * Tokenize nul-terminated strings from a string with the size of size.
- */
-static const char *sztok(const char *s, size_t size, size_t * restrict i) {
-    const char *r = NULL;
-
-    if (size == 0) {
-        return NULL;
-    }
-
-    if (*i < size - 1) {
-        r = s + *i;
-        *i = *i + strnlen(r, size) + 1;
-    }
-
-    return r;
-}
-
 static int parse_flags(const struct selva_string *arg) {
     TO_STR(arg);
     int flags = 0;

@@ -37,6 +37,77 @@ static int field_matcher(const char *list, const char *field)
     return match;
 }
 
+static char * test_sztok_one(void)
+{
+    const char str[] = "hello";
+
+    const char *s;
+    size_t j = 0;
+    while ((s = sztok(str, sizeof(str), &j))) {
+        pu_assert_str_equal("", s, "hello");
+    }
+
+    return NULL;
+}
+
+static char * test_sztok_two(void)
+{
+    const char str[] = "hello\0world";
+
+    const char *s;
+    size_t j = 0, k = 0;
+    while ((s = sztok(str, sizeof(str), &j))) {
+        if (k++ == 0) {
+            pu_assert_str_equal("", s, "hello");
+        } else {
+            pu_assert_str_equal("", s, "world");
+        }
+    }
+
+    pu_assert_equal("iterations", k, 2);
+
+    return NULL;
+}
+
+static char * test_sztok_with_strlen(void)
+{
+    const char *str = "hello";
+
+    const char *s;
+    size_t j = 0, k = 0;
+    while ((s = sztok(str, strlen(str), &j))) {
+        pu_assert_str_equal("", s, "hello");
+        k++;
+    }
+
+    pu_assert_equal("iterations", k, 1);
+
+    return NULL;
+}
+
+/*
+ * This could be a bit dangerous use case but it might happen.
+ * Safe with selva_string.
+ */
+static char * test_sztok_two_minus(void)
+{
+    const char str[] = "hello\0world";
+
+    const char *s;
+    size_t j = 0, k = 0;
+    while ((s = sztok(str, sizeof(str) - 1, &j))) {
+        if (k++ == 0) {
+            pu_assert_str_equal("", s, "hello");
+        } else {
+            pu_assert_str_equal("", s, "world");
+        }
+    }
+
+    pu_assert_equal("iterations", k, 2);
+
+    return NULL;
+}
+
 static char * test_invalid_cases(void)
 {
     const char *field = "title";
@@ -271,6 +342,10 @@ static char * test_get_array_field_index(void)
 
 void all_tests(void)
 {
+    pu_def_test(test_sztok_one, PU_RUN);
+    pu_def_test(test_sztok_two, PU_RUN);
+    pu_def_test(test_sztok_with_strlen, PU_RUN);
+    pu_def_test(test_sztok_two_minus, PU_RUN);
     pu_def_test(test_invalid_cases, PU_RUN);
     pu_def_test(test_simple_match, PU_RUN);
     pu_def_test(test_simple_no_match, PU_RUN);

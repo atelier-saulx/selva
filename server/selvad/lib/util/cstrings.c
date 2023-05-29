@@ -54,6 +54,21 @@ int str_endswith(const char *str, const char *suffix)
         : !strcmp(str + lenstr - lensuffix, suffix);
 }
 
+const char *sztok(const char *s, size_t size, size_t * restrict i) {
+	const char *r;
+    size_t j = *i;
+
+	if (size == 0 || j >= size - 1) {
+		return NULL;
+	}
+
+    r = s + j;
+    j = j + strnlen(r, size - (uintptr_t)(r - s)) + 1;
+
+    *i = j;
+	return r;
+}
+
 int stringlist_search(const char *list, const char *str) {
     const char *s1 = list;
 
