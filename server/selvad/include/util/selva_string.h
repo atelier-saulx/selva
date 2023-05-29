@@ -35,10 +35,17 @@ enum selva_string_flags {
      */
     SELVA_STRING_INTERN = 0x10,
     /**
+     * Shared buffer.
+     * The string points to a buffer allocated somewhere else. The string can be
+     * freed with selva_string_free() but it's the caller's responsibility to
+     * manage or free the actual buffer.
+     */
+    SELVA_STRING_SHARED = 0x20,
+    /**
      * Compressed string.
      */
-    SELVA_STRING_COMPRESS = 0x20,
-    _SELVA_STRING_LAST_FLAG = 0x40,
+    SELVA_STRING_COMPRESS = 0x40,
+    _SELVA_STRING_LAST_FLAG = 0x80,
 };
 
 /**
