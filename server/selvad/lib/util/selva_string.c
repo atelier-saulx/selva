@@ -166,7 +166,7 @@ static struct selva_string *set_string(struct selva_string *s, const char *str, 
     s->len = len;
 
     if (flags & SELVA_STRING_SHARED) {
-        s->p = str;
+        s->p = (char *)str;
     } else {
         buf = get_buf(s);
         if (str && len > 0) {
