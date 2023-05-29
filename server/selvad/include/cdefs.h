@@ -85,8 +85,6 @@
 
 /*
  * TODO typeof_unqual() will probably make containerofa unnecessary.
- * RFE the type checking could be stronger similar to Linux
- * https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=c7acec713d14c6ce8a20154f9dfda258d6bcad3b
  */
 #define containerofa(a, s, m) \
     ((s *)((uint8_t *)((void *)(a)) - offsetof(s, m)))
