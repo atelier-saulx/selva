@@ -987,6 +987,31 @@ static struct SelvaModify_OpEdgeMeta *SelvaModify_OpEdgeMeta_align(struct finali
     return op;
 }
 
+const char *SelvaModify_OpHll_align(const struct selva_string *data, size_t *size_out) {
+    TO_STR(data);
+    typeof_field(struct SelvaModify_OpHll, $add_len) size;
+    const char *p;
+
+    _Static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Only little endian host is supported");
+
+    if (!data || data_len == 0 || data_len < sizeof(struct SelvaModify_OpHll)) {
+        return NULL;
+    }
+
+    memcpy(&size, data_str + offsetof(struct SelvaModify_OpHll, $add_len), sizeof(size));
+    memcpy(&p, data_str + offsetof(struct SelvaModify_OpHll, $add), sizeof(char *));
+    p = data_str + (uintptr_t)p;
+
+    if (size == 0 ||
+        !in_mem_range(p,  data_str, data_len) ||
+        !in_mem_range(p + size - 1,  data_str, data_len)) {
+        return NULL;
+    }
+
+    *size_out = size;
+    return p;
+}
+
 /**
  * Get the replicate_ts struct.
  */
@@ -1457,6 +1482,32 @@ static enum selva_op_repl_state modify_edge_meta_op(
     return SELVA_OP_REPL_STATE_UPDATED;
 }
 
+static enum selva_op_repl_state modify_hll(
+        struct selva_server_response_out *resp,
+        struct SelvaHierarchyNode *node,
+        struct selva_string *field,
+        struct selva_string *raw_value) {
+    struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
+    TO_STR(field);
+    size_t size;
+    const char *values = SelvaModify_OpHll_align(raw_value, &size);
+
+    if (!values) {
+        selva_send_errorf(resp, SELVA_EINVAL, NULL, 0);
+        return SELVA_OP_REPL_STATE_UNCHANGED;
+    }
+
+    const char *s;
+    size_t it = 0;
+    while ((s = sztok(values, size, &it))) {
+        size_t slen = size - it;
+
+        SelvaObject_AddHllStr(obj, field_str, field_len, s, slen);
+    }
+
+    return SELVA_OP_REPL_STATE_UPDATED;
+}
+
 static void replicate_modify(struct selva_server_response_out *resp, const struct bitmap *replset, struct selva_string **orig_argv, const struct replicate_ts *rs)
 {
     const int leading_args = 2; /* [key, flags] */
@@ -1822,6 +1873,8 @@ static void SelvaCommand_Modify(struct selva_server_response_out *resp, const vo
             continue;
         } else if (type_code == SELVA_MODIFY_ARG_OP_EDGE_META) {
             repl_state = modify_edge_meta_op(&fin, resp, node, field, value);
+        } else if (type_code == SELVA_MODIFY_ARG_OP_HLL) {
+            repl_state = modify_hll(resp, node, field, value);
         } else {
             repl_state = modify_op(&fin, resp, hierarchy, nodeId, node, type_code, field, value);
         }
