@@ -342,8 +342,9 @@ int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize
  * If `precision` is given as `*` with `%s` or `%p` then the string is passed as
  * a pointer and the length is written to a preceeding `size_t` pointer, e.g.
  * `selva_proto_scanf(fin, buf, sz, "%.*s", &len, &s)`.
+ * TODO format checker
  */
-int selva_proto_scanf(struct finalizer * restrict fin, const void *restrict buf, size_t szbuf, const char * restrict fmt, ...) __attribute__((format(scanf, 4, 5)));
+int selva_proto_scanf(struct finalizer * restrict fin, const void *restrict buf, size_t szbuf, const char * restrict fmt, ...); /* __attribute__((format(scanf, 4, 5))); */
 
 /**
  * @}

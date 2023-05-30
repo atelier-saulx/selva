@@ -38,6 +38,11 @@ static int get_node(struct selva_string *key_name, struct SelvaHierarchyNode **n
     return 0;
 }
 
+static void publish_field_change_str(struct SelvaHierarchyNode*node, const char *field_str, size_t field_len)
+{
+    SelvaSubscriptions_DeferFieldChangeEvents(main_hierarchy, node, field_str, field_len);
+}
+
 static void publish_field_change(struct SelvaHierarchyNode *node, struct selva_string *field)
 {
     TO_STR(field);
@@ -342,7 +347,8 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
 {
     __auto_finalizer struct finalizer fin;
     Selva_NodeId node_id;
-    struct selva_string *okey;
+    const char *okey_str;
+    size_t okey_len;
     long long incr, prev;
     int argc, err;
     struct SelvaHierarchyNode *node;
@@ -350,7 +356,7 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
 
     finalizer_init(&fin);
 
-    argc = selva_proto_scanf(&fin, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %p, %lld", node_id, &okey, &incr);
+    argc = selva_proto_scanf(&fin, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %.*s, %lld", node_id, &okey_len, &okey_str, &incr);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
@@ -359,7 +365,7 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
         return;
     }
 
-    if (!selva_field_prot_check(okey, SELVA_FIELD_PROT_WRITE)) {
+    if (!selva_field_prot_check_str(okey_str, okey_len, SELVA_FIELD_PROT_WRITE)) {
         selva_send_errorf(resp, SELVA_ENOTSUP, "Protected field");
         return;
     }
@@ -372,7 +378,7 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
 
     SelvaSubscriptions_FieldChangePrecheck(main_hierarchy, node);
     obj = SelvaHierarchy_GetNodeObject(node);
-    err = SelvaObject_IncrementLongLong(obj, okey, 1, incr, &prev);
+    err = SelvaObject_IncrementLongLongStr(obj, okey_str, okey_len, 1, incr, &prev);
     if (err) {
         selva_send_errorf(resp, err, "Failed to increment");
         return;
@@ -382,14 +388,15 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
     selva_send_ll(resp, prev);
     selva_db_is_dirty = 1;
     selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
-    publish_field_change(node, okey);
+    publish_field_change_str(node, okey_str, okey_len);
 }
 
 void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
 {
     __auto_finalizer struct finalizer fin;
     Selva_NodeId node_id;
-    struct selva_string *okey;
+    const char *okey_str;
+    size_t okey_len;
     double incr, prev;
     int argc, err;
     struct SelvaHierarchyNode *node;
@@ -397,7 +404,7 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
 
     finalizer_init(&fin);
 
-    argc = selva_proto_scanf(&fin, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %p, %lf", node_id, &okey, &incr);
+    argc = selva_proto_scanf(&fin, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %.*s, %lf", node_id, &okey_len, &okey_str, &incr);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
@@ -406,7 +413,7 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
         return;
     }
 
-    if (!selva_field_prot_check(okey, SELVA_FIELD_PROT_WRITE)) {
+    if (!selva_field_prot_check_str(okey_str, okey_len, SELVA_FIELD_PROT_WRITE)) {
         selva_send_errorf(resp, SELVA_ENOTSUP, "Protected field");
         return;
     }
@@ -419,7 +426,7 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
 
     node = SelvaHierarchy_FindNode(main_hierarchy, node_id);
     obj = SelvaHierarchy_GetNodeObject(node);
-    err = SelvaObject_IncrementDouble(obj, okey, 1.0, incr, &prev);
+    err = SelvaObject_IncrementDoubleStr(obj, okey_str, okey_len, 1.0, incr, &prev);
     if (err) {
         selva_send_errorf(resp, err, "Failed to increment");
         return;
@@ -429,7 +436,7 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
     selva_send_double(resp, prev);
     selva_db_is_dirty = 1;
     selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
-    publish_field_change(node, okey);
+    publish_field_change_str(node, okey_str, okey_len);
 }
 
 void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
