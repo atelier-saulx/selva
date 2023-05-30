@@ -337,6 +337,11 @@ int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize
  * - Using width specifier with `%s` changes output from `selva_string` to `char` buffer
  * Since using `%s` with a selva_string structure pointer gives a warning it's
  * also possible achieve the same result using `%p`.
+ * `width` is used with char buffers to specify the maximum number of bytes to
+ * be copied.
+ * If `precision` is given as `*` with `%s` or `%p` then the string is passed as
+ * a pointer and the length is written to a preceeding `size_t` pointer, e.g.
+ * `selva_proto_scanf(fin, buf, sz, "%.*s", &len, &s)`.
  */
 int selva_proto_scanf(struct finalizer * restrict fin, const void *restrict buf, size_t szbuf, const char * restrict fmt, ...) __attribute__((format(scanf, 4, 5)));
 

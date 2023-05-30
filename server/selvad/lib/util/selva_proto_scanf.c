@@ -118,11 +118,26 @@ static enum selva_proto_data_type type_to_selva_proto_type_map[TYPE_pointer + 1]
     [TYPE_pointer] = SELVA_PROTO_STRING,
 };
 
-static char *parse_width(const char *fmt, int *width)
+struct placeholder_state {
+    int width;
+    int precision;
+    enum length_specifier length;
+    enum type_specifier type;
+};
+
+static void reset_placeholder(struct placeholder_state *ps)
+{
+    ps->width = -1;
+    ps->precision = 0;
+    ps->length = LENGTH_none;
+    ps->type = TYPE_void;
+}
+
+static char *parse_width(const char *fmt, struct placeholder_state *ps)
 {
     char *end;
 
-    *width = strtol(fmt, &end, 10);
+    ps->width = strtol(fmt, &end, 10);
     return end;
 }
 
@@ -136,11 +151,11 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
     va_list args;
     size_t buf_i = 0;
     int on_placeholder = 0;
+    struct placeholder_state ps;
     int postponed_array_end = 0;
-    int width = -1;
-    enum length_specifier length = LENGTH_none;
-    enum type_specifier type = TYPE_void;
     int n = 0;
+
+    reset_placeholder(&ps);
 
     if (szbuf == 0) {
         return 0;
@@ -153,9 +168,17 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
 
         if (on_placeholder) {
             switch (ch) {
+            /* precision specifier (pointers) */
+            case '.':
+                if (*(++fmt) == '*') {
+                    ps.precision = -1;
+                } else {
+                    return SELVA_PROTO_EINVAL;
+                }
+                break;
             /* optional width specifiers */
             case '0' ... '9':
-                fmt = parse_width(fmt, &width);
+                fmt = parse_width(fmt, &ps);
                 if (isdigit(*fmt)) {
                     return SELVA_PROTO_EINVAL;
                 }
@@ -163,47 +186,47 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 break;
             /* optional length specifiers */
             case 'l':
-                if (length == LENGTH_none) {
-                    length = LENGTH_l;
-                } else if (length == LENGTH_l) {
-                    length = LENGTH_ll;
+                if (ps.length == LENGTH_none) {
+                    ps.length = LENGTH_l;
+                } else if (ps.length == LENGTH_l) {
+                    ps.length = LENGTH_ll;
                 } else {
                     return SELVA_PROTO_EINVAL;
                 }
                 break;
             case 'h':
-                if (length == LENGTH_none) {
-                    length = LENGTH_h;
-                } else if (length == LENGTH_h) {
-                    length == LENGTH_hh;
+                if (ps.length == LENGTH_none) {
+                    ps.length = LENGTH_h;
+                } else if (ps.length == LENGTH_h) {
+                    ps.length == LENGTH_hh;
                 } else {
                     return SELVA_PROTO_EINVAL;
                 }
                 break;
             case 'j':
-                if (length == LENGTH_none) {
-                    length = LENGTH_j;
+                if (ps.length == LENGTH_none) {
+                    ps.length = LENGTH_j;
                 } else {
                     return SELVA_PROTO_EINVAL;
                 }
                 break;
             case 'z':
-                if (length == LENGTH_none) {
-                    length = LENGTH_z;
+                if (ps.length == LENGTH_none) {
+                    ps.length = LENGTH_z;
                 } else {
                     return SELVA_PROTO_EINVAL;
                 }
                 break;
             case 't':
-                if (length == LENGTH_none) {
-                    length = LENGTH_t;
+                if (ps.length == LENGTH_none) {
+                    ps.length = LENGTH_t;
                 } else {
                     return SELVA_PROTO_EINVAL;
                 }
                 break;
             case 'L':
-                if (length == LENGTH_none) {
-                    length = LENGTH_L;
+                if (ps.length == LENGTH_none) {
+                    ps.length = LENGTH_L;
                 } else {
                     return SELVA_PROTO_EINVAL;
                 }
@@ -211,46 +234,46 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
             /* type specifiers */
             case 'i':
             case 'd':
-                type = type_map_d[length];
-                if (type == TYPE_void) {
+                ps.type = type_map_d[ps.length];
+                if (ps.type == TYPE_void) {
                     return SELVA_PROTO_EINVAL;
                 }
                 break;
             case 'u':
-                type = type_map_u[length];
-                if (type == TYPE_void) {
+                ps.type = type_map_u[ps.length];
+                if (ps.type == TYPE_void) {
                     return SELVA_PROTO_EINVAL;
                 }
                 break;
             case 'f':
-                type = type_map_f[length];
-                if (type == TYPE_void) {
+                ps.type = type_map_f[ps.length];
+                if (ps.type == TYPE_void) {
                     return SELVA_PROTO_EINVAL;
                 }
                 break;
             case 'c':
-                if (length != LENGTH_none) {
+                if (ps.length != LENGTH_none) {
                     return SELVA_PROTO_EINVAL;
                 }
-                type = TYPE_char;
+                ps.type = TYPE_char;
                 break;
             case 's':
-                if (length != LENGTH_none) {
+                if (ps.length != LENGTH_none) {
                     return SELVA_PROTO_EINVAL;
                 }
-                type = TYPE_string;
+                ps.type = TYPE_string;
                 break;
             case 'p':
-                if (length != LENGTH_none) {
+                if (ps.length != LENGTH_none) {
                     return SELVA_PROTO_EINVAL;
                 }
-                type = TYPE_pointer;
+                ps.type = TYPE_pointer;
                 break;
             default:
                 return SELVA_PROTO_EINVAL;
             }
 
-            if (type != TYPE_void) {
+            if (ps.type != TYPE_void) {
                 enum selva_proto_data_type found_type;
                 size_t data_len;
                 int off;
@@ -260,7 +283,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                     return off;
                 }
 
-                if (found_type != type_to_selva_proto_type_map[type]) {
+                if (found_type != type_to_selva_proto_type_map[ps.type]) {
                     return SELVA_PROTO_EBADMSG;
                 }
 
@@ -269,7 +292,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
 
                     memcpy(&v, (char *)buf + buf_i + offsetof(struct selva_proto_longlong, v), sizeof(v));
                     v = le64toh(v);
-                    switch (type) {
+                    switch (ps.type) {
                     case TYPE_char:
                         *va_arg(args, char *) = v;
                         break;
@@ -328,7 +351,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
 
                     memcpy(vbuf, (char *)buf + buf_i + offsetof(struct selva_proto_double, v), sizeof(vbuf));
                     v = ledoubletoh(vbuf);
-                    switch (type) {
+                    switch (ps.type) {
                     case TYPE_float:
                         *va_arg(args, float *) = v;
                         break;
@@ -353,22 +376,30 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                     memcpy(&flags, (char *)buf + buf_i + offsetof(struct selva_proto_string, flags), sizeof(flags));
                     memcpy(&len, (char *)buf + buf_i + offsetof(struct selva_proto_string, bsize), sizeof(len));
 
-                    if (width >= 0) {
-                        char *dest = va_arg(args, char *);
-                        size_t copy_size = min((size_t)width, (size_t)len);
+                    if ((ps.precision == -1 || ps.width >= 0) && (flags & SElVA_PROTO_STRING_FDEFLATE)) {
+                        /*
+                         * A compressed string must be captured as a selva_string with %p.
+                         */
+                        return SELVA_EINTYPE;
+                    }
 
-                        if (flags & SElVA_PROTO_STRING_FDEFLATE) {
-                            /*
-                             * A compressed string must be captured as a selva_string with %p.
-                             */
-                            return SELVA_EINTYPE;
-                        }
+                    if (ps.precision == -1) {
+                        /* pass as a pointer */
+                        size_t *p_size = va_arg(args, size_t *);
+                        const void **p = va_arg(args, const void **);
+
+                        *p_size = ps.width >= 0 && (typeof(len))ps.width < len ? (size_t)ps.width : len;
+                        *p = str;
+                    } else if (ps.width >= 0) {
+                        /* copy to a buffer */
+                        char *dest = va_arg(args, char *);
+                        size_t copy_size = min((size_t)ps.width, (size_t)len);
 
                         memcpy(dest, str, copy_size);
                         dest[copy_size] = '\0';
                     } else {
                         /*
-                         * no width specifier, assume selva_string.
+                         * no width or precision specifier, assume selva_string.
                          *
                          * This would be a great case for %s -> selva_string but
                          * unfortunately there is no way to make
@@ -446,9 +477,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 buf_i += off;
             } else if (ch == '%') {
                 on_placeholder = 1;
-                width = -1;
-                length = LENGTH_none;
-                type = TYPE_void;
+                reset_placeholder(&ps);
             }
         }
     }

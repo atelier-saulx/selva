@@ -221,15 +221,17 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
 {
     struct selva_server_response_out *stream_resp;
     __auto_finalizer struct finalizer fin;
-    uint8_t sdb_hash[SELVA_IO_HASH_SIZE];
+    const uint8_t *sdb_hash = NULL;
+    size_t sdb_hash_len = 0;
     uint64_t sdb_eid;
     enum replication_sync_mode sync_mode;
     int argc, err;
 
     finalizer_init(&fin);
 
-    argc = selva_proto_scanf(&fin, buf, size, "{%" XSTR(SELVA_IO_HASH_SIZE) "s, %" PRIu64 "}", sdb_hash, &sdb_eid);
+    argc = selva_proto_scanf(&fin, buf, size, "{%.*s, %" PRIu64 "}", &sdb_hash_len, &sdb_hash, &sdb_eid);
     if (argc < 0) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse: %s", selva_strerror(argc));
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
     } else if (argc > 0 && argc != 2) {
@@ -254,6 +256,11 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
          * do a partial sync.
          */
         sync_mode = REPLICATION_SYNC_MODE_PARTIAL;
+
+        if (!sdb_hash || sdb_hash_len != SELVA_IO_HASH_SIZE) {
+            selva_send_errorf(resp, SELVA_EINVAL, "Invalid sdb_hash length");
+            return;
+        }
     } else {
         /*
          * Start from whatever dump we know and do a full sync.
@@ -268,7 +275,7 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
         }
 
         sdb_eid = replication_origin_get_last_sdb_eid();
-        memcpy(sdb_hash, last_sdb_hash, sizeof(sdb_hash));
+        sdb_hash = last_sdb_hash;
     }
 
     err = replication_origin_register_replica(stream_resp, sdb_eid, sdb_hash, sync_mode);
