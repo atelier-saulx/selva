@@ -197,21 +197,6 @@ static char * test_intern(void)
     return NULL;
 }
 
-static char * test_shared(void)
-{
-    char str[] = "Hello World!";
-    struct selva_string *s1;
-    struct selva_string *s2;
-
-    s1 = selva_string_create(str, sizeof(str) - 1, SELVA_STRING_SHARED);
-    s2 = selva_string_create(str, sizeof(str) - 1, SELVA_STRING_SHARED | SELVA_STRING_MUTABLE);
-
-    pu_assert_ptr_equal("", str,selva_string_to_str(s1, NULL));
-    pu_assert_ptr_equal("", str, selva_string_to_mstr(s2, NULL));
-
-    return NULL;
-}
-
 void all_tests(void)
 {
     pu_def_test(test_create, PU_RUN);
@@ -224,5 +209,4 @@ void all_tests(void)
     pu_def_test(test_crc, PU_RUN);
     pu_def_test(test_cmp, PU_RUN);
     pu_def_test(test_intern, PU_RUN);
-    pu_def_test(test_shared, PU_RUN);
 }

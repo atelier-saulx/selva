@@ -62,7 +62,7 @@ RB_GENERATE_STATIC(selva_string_rbtree, selva_string, intern_entry, selva_string
  */
 static inline char *get_buf(const struct selva_string *s)
 {
-    return (s->flags & (SELVA_STRING_MUTABLE | SELVA_STRING_SHARED)) ? (char *)s->p : (char *)s->emb;
+    return (s->flags & SELVA_STRING_MUTABLE) ? (char *)s->p : (char *)s->emb;
 }
 
 #define get_buf(S) SELVA_STRING_QP(char, get_buf, (S))
@@ -125,15 +125,6 @@ static struct selva_string *alloc_mutable(size_t len)
     return s;
 }
 
-static struct selva_string *alloc_shared(void)
-{
-    struct selva_string *s;
-
-    s = selva_calloc(1, sizeof(struct selva_string));
-
-    return s;
-}
-
 /**
  * Calculate the buffer size needed for an immuatable selva_string.
  */
@@ -165,16 +156,12 @@ static struct selva_string *set_string(struct selva_string *s, const char *str, 
     s->flags = flags;
     s->len = len;
 
-    if (flags & SELVA_STRING_SHARED) {
-        s->p = (char *)str;
+    buf = get_buf(s);
+    if (str && len > 0) {
+        memcpy(buf, str, len);
+        buf[s->len] = '\0';
     } else {
-        buf = get_buf(s);
-        if (str && len > 0) {
-            memcpy(buf, str, len);
-            buf[s->len] = '\0';
-        } else {
-            memset(buf, '\0', s->len + 1);
-        }
+        memset(buf, '\0', s->len + 1);
     }
 
     update_crc(s);
@@ -210,9 +197,7 @@ struct selva_string *selva_string_create(const char *str, size_t len, enum selva
         return NULL; /* Invalid flags */
     }
 
-    if (flags & SELVA_STRING_SHARED) {
-        s = set_string(alloc_shared(), str, len, flags);
-    } else if (flags & SELVA_STRING_MUTABLE) {
+    if (flags & SELVA_STRING_MUTABLE) {
         s = set_string(alloc_mutable(len), str, len, flags);
     } else if (flags & SELVA_STRING_INTERN) {
         s = selva_string_find_intern(str, len);
@@ -422,11 +407,9 @@ void selva_string_free(_selva_string_ptr_t _s)
         return;
     }
 
-    if (flags & SELVA_STRING_MUTABLE &&
-        !(flags & SELVA_STRING_SHARED)) {
+    if (flags & SELVA_STRING_MUTABLE) {
         selva_free(s->p);
     }
-
     selva_free(s);
 }
 
