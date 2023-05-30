@@ -396,7 +396,9 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                         size_t copy_size = min((size_t)ps.width, (size_t)len);
 
                         memcpy(dest, str, copy_size);
-                        dest[copy_size] = '\0';
+                        if (copy_size < (size_t)ps.width) {
+                            memset(dest + copy_size, '\0', (size_t)ps.width - copy_size);
+                        }
                     } else {
                         /*
                          * no width or precision specifier, assume selva_string.
