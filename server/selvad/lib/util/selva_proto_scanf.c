@@ -280,6 +280,9 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
 
                 off = selva_proto_parse_vtype(buf, szbuf, buf_i, &found_type, &data_len);
                 if (off <= 0) {
+                    if (off = SELVA_PROTO_EINVAL) { /* Presumably buf_i >= szbuf */
+                        goto out;
+                    }
                     return off;
                 }
 
@@ -483,6 +486,14 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
             }
         }
     }
+
+out:
+    /*
+     * The C standard says va_end() is mandatory. However, it's NOP in
+     * GNU C Library and this function expects it to be NOP. If we ever hit a
+     * libc where it's not a NOP then we need to change all the return
+     * statements in this function.
+     */
     va_end(args);
 
     return n;
