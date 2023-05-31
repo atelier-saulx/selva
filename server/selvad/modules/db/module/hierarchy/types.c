@@ -44,16 +44,14 @@ struct selva_string *SelvaHierarchyTypes_Get(struct SelvaHierarchy *hierarchy, c
 
 void SelvaHierarchyTypes_AddCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     struct SelvaHierarchy *hierarchy = main_hierarchy;
-    __auto_finalizer struct finalizer fin;
-    struct selva_string **argv;
-    int argc;
-    struct selva_string *type;
-    struct selva_string *name;
-    int err;
+    const char type[SELVA_NODE_TYPE_SIZE];
+    const char *name_str;
+    size_t name_len;
+    int argc, err;
 
-    finalizer_init(&fin);
-
-    argc = selva_proto_scanf(&fin, buf, len, "%.*s, %p, %p", &type, &name);
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_TYPE ", %.*s",
+                             &type,
+                             &name_len, &name_str);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -63,14 +61,7 @@ void SelvaHierarchyTypes_AddCommand(struct selva_server_response_out *resp, cons
         return;
     }
 
-    TO_STR(type, name);
-
-    if (type_len != 2) {
-        selva_send_error(resp, SELVA_EINTYPE, NULL, 0);
-        return;
-    }
-
-    err = SelvaHierarchyTypes_Add(hierarchy, type_str, name_str, name_len);
+    err = SelvaHierarchyTypes_Add(hierarchy, type, name_str, name_len);
     if (err) {
         selva_send_errorf(resp, err, "Failed to add the type");
         return;
