@@ -180,7 +180,7 @@ static inline int Selva_CmpNodeIdType(const Selva_NodeId nodeId, const char type
  */
 char *Selva_SubscriptionId2str(char dest[SELVA_SUBSCRIPTION_ID_STR_LEN + 1], const Selva_SubscriptionId sub_id);
 
-int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src);
+int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src, size_t len);
 
 /**
  * Set if the database has been modified since last save.

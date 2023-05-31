@@ -281,11 +281,7 @@ int SelvaArgParser_NodeType(Selva_NodeType node_type, const struct selva_string 
 int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, const struct selva_string *arg) {
     TO_STR(arg);
 
-    if (arg_len != SELVA_SUBSCRIPTION_ID_STR_LEN) {
-        return SELVA_SUBSCRIPTIONS_EINVAL;
-    }
-
-    return Selva_SubscriptionStr2id(id, arg_str);
+    return Selva_SubscriptionStr2id(id, arg_str, arg_len);
 }
 
 int SelvaArgParser_MarkerId(Selva_SubscriptionMarkerId *marker_id, const struct selva_string *arg) {

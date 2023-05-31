@@ -113,9 +113,13 @@ char *Selva_SubscriptionId2str(char dest[static SELVA_SUBSCRIPTION_ID_STR_LEN + 
     return dest;
 }
 
-int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src)
+int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src, size_t len)
 {
     char byte[3] = { '\0', '\0', '\0' };
+
+    if (len != SELVA_SUBSCRIPTION_ID_STR_LEN) {
+        return SELVA_SUBSCRIPTIONS_EINVAL;
+    }
 
     for (size_t i = 0; i < sizeof(Selva_SubscriptionId); i++) {
         unsigned long v;
