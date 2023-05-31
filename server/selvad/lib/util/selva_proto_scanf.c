@@ -413,6 +413,10 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                          */
                         struct selva_string *s;
 
+                        if (!fin) {
+                            return SELVA_PROTO_EINVAL;
+                        }
+
                         s = selva_string_create(str, len, (flags & SElVA_PROTO_STRING_FDEFLATE) ? SELVA_STRING_COMPRESS : 0);
                         selva_string_auto_finalize(fin, s);
                         *va_arg(args, struct selva_string **) = s;
