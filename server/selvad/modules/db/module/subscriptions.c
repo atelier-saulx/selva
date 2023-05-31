@@ -2615,7 +2615,7 @@ static int Subscriptions_OnLoad(void) {
     selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_LISTMISSING, SELVA_CMD_MODE_PURE, "selva.subscriptions.listMissing", SelvaSubscriptions_ListMissingCommand);
     selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DEBUG, SELVA_CMD_MODE_PURE, "selva.subscriptions.debug", SelvaSubscriptions_DebugCommand);
     selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DEL, SELVA_CMD_MODE_PURE, "selva.subscriptions.del", SelvaSubscriptions_DelCommand);
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DELMARKER, SELVA_CMD_MODE_PURE, "selva.subscriptions.delmarker", SelvaSubscriptions_DelMarkerCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DELMARKER, SELVA_CMD_MODE_PURE, "selva.subscriptions.delMarker", SelvaSubscriptions_DelMarkerCommand);
 
     return 0;
 }
