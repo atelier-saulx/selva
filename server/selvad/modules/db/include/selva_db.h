@@ -21,7 +21,7 @@
  * NodeId size including the type prefix.
  */
 #define SELVA_NODE_ID_SIZE      16ul /* Must be at least sizeof(void *) */
-#define SELVA_PRI_NODE_ID_SIZE  "16s"
+#define SELVA_PRI_NODE_ID       "16s"
 /**
  * NodeId type prefix size.
  */

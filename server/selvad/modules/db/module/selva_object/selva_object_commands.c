@@ -64,7 +64,7 @@ void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %.*s", node_id, &okey_len, &okey_str);
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s", node_id, &okey_len, &okey_str);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -112,7 +112,7 @@ void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const voi
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %.*s", node_id, &okey_len, &okey_str);
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s", node_id, &okey_len, &okey_str);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -342,7 +342,7 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %.*s, %lld", node_id, &okey_len, &okey_str, &incr);
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s, %lld", node_id, &okey_len, &okey_str, &incr);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
@@ -387,7 +387,7 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %.*s, %lf", node_id, &okey_len, &okey_str, &incr);
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s, %lf", node_id, &okey_len, &okey_str, &incr);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
@@ -430,7 +430,7 @@ void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void 
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %.*s", node_id, &okey_len, &okey_str);
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s", node_id, &okey_len, &okey_str);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -527,7 +527,7 @@ void SelvaObject_LenCommand(struct selva_server_response_out *resp, const void *
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %.*s", node_id, &okey_len, &okey_str);
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s", node_id, &okey_len, &okey_str);
     if (argc != 1 && argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -570,7 +570,7 @@ void SelvaObject_GetMetaCommand(struct selva_server_response_out *resp, const vo
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %.*s", node_id, &okey_len, &okey_str);
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s", node_id, &okey_len, &okey_str);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -610,7 +610,7 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
     struct SelvaObject *obj;
     SelvaObjectMeta_t user_meta;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID_SIZE ", %.*s, %.*s",
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s, %.*s",
                              node_id,
                              &okey_len, &okey_str,
                              &mval_len, &mval_str);
