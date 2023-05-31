@@ -53,10 +53,7 @@ void SelvaHierarchyTypes_AddCommand(struct selva_server_response_out *resp, cons
 
     finalizer_init(&fin);
 
-    const int ARGV_TYPE = 0;
-    const int ARGV_NAME = 1;
-
-    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_scanf(&fin, buf, len, "%.*s, %p, %p", &type, &name);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -66,8 +63,6 @@ void SelvaHierarchyTypes_AddCommand(struct selva_server_response_out *resp, cons
         return;
     }
 
-    type = argv[ARGV_TYPE];
-    name = argv[ARGV_NAME];
     TO_STR(type, name);
 
     if (type_len != 2) {

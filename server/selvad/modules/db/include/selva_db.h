@@ -26,6 +26,7 @@
  * NodeId type prefix size.
  */
 #define SELVA_NODE_TYPE_SIZE    2
+#define SELVA_PRI_NODE_TYPE     "2s"
 /**
  * NodeId of the root node.
  */

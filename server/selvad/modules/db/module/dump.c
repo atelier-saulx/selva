@@ -358,14 +358,12 @@ int dump_auto_sdb(int interval_s)
 static void load_db_cmd(struct selva_server_response_out *resp, const void *buf, size_t len)
 {
     __auto_finalizer struct finalizer fin;
-    struct selva_string **argv;
+    struct selva_string *filename;
     int argc, err;
 
     finalizer_init(&fin);
 
-    const int ARGV_FILENAME  = 0;
-
-    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_scanf(&fin, buf, len, "%p", &filename);
     if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -378,7 +376,7 @@ static void load_db_cmd(struct selva_server_response_out *resp, const void *buf,
     const enum selva_io_flags flags = SELVA_IO_FLAGS_READ;
     struct selva_io io;
 
-    err = selva_io_init(&io, selva_string_to_str(argv[ARGV_FILENAME], NULL), flags);
+    err = selva_io_init(&io, selva_string_to_str(filename, NULL), flags);
     if (err) {
         selva_send_errorf(resp, SELVA_EGENERAL, "Failed to open the dump file");
         return;
@@ -400,15 +398,13 @@ static void load_db_cmd(struct selva_server_response_out *resp, const void *buf,
 static void save_db_cmd(struct selva_server_response_out *resp, const void *buf, size_t len)
 {
     __auto_finalizer struct finalizer fin;
-    struct selva_string **argv;
+    struct selva_string *filename;
     int argc;
     int err;
 
     finalizer_init(&fin);
 
-    const int ARGV_FILENAME  = 0;
-
-    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
+    argc = selva_proto_scanf(&fin, buf, len, "%p", &filename);
     if (argc < 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -424,7 +420,7 @@ static void save_db_cmd(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
-    err = dump_save_async(selva_string_to_str(argv[ARGV_FILENAME], NULL));
+    err = dump_save_async(selva_string_to_str(filename, NULL));
     if (err) {
         if (save_stream_resp) {
             selva_cancel_stream(resp, save_stream_resp);
