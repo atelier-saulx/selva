@@ -234,10 +234,10 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse: %s", selva_strerror(argc));
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;
-    } else if (argc > 0 && argc != 2) {
-        selva_send_error_arity(resp);
-        return;
     }
+
+    /* selva_proto_scanf() should never let us here if this is not true. */
+    assert(argc == 0 || argc == 2);
 
     if (replication_mode != SELVA_REPLICATION_MODE_ORIGIN) {
         send_mode_error(resp);
@@ -434,19 +434,16 @@ static void replicainfo(struct selva_server_response_out *resp, const void *buf 
 
 static void replicastatus(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
-    __auto_finalizer struct finalizer fin;
     uint64_t eid;
     int argc, err;
     unsigned replication_id;
-
-    finalizer_init(&fin);
 
     if (replication_mode != SELVA_REPLICATION_MODE_ORIGIN) {
         selva_send_errorf(resp, SELVA_ENOTSUP, "Not an origin");
         return;
     }
 
-    argc = selva_proto_scanf(&fin, buf, size, "%" PRIu64, &eid);
+    argc = selva_proto_scanf(NULL, buf, size, "%" PRIu64, &eid);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Invalid arguments");
         return;
