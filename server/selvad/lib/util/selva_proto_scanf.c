@@ -278,11 +278,13 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 size_t data_len;
                 int off;
 
+                if (buf_i >= szbuf && !postponed_array_end) {
+                    /* Fewer args given than specified in the fmt string. */
+                    goto out;
+                }
+
                 off = selva_proto_parse_vtype(buf, szbuf, buf_i, &found_type, &data_len);
                 if (off <= 0) {
-                    if (off = SELVA_PROTO_EINVAL) { /* Presumably buf_i >= szbuf */
-                        goto out;
-                    }
                     return off;
                 }
 
