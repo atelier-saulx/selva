@@ -77,12 +77,13 @@ enum selva_log_level selva_log_set_level(enum selva_log_level new_level) {
     return tmp;
 }
 
-void selva_log_set_dbgpattern(struct selva_string *s)
+void selva_log_set_dbgpattern(const char *str, size_t len)
 {
     if (dbg_pattern) {
         selva_string_free(dbg_pattern);
     }
-    dbg_pattern = selva_string_dup(s, 0);
+
+    dbg_pattern = selva_string_create(str, len, 0);
     dbg_pattern_str = selva_string_to_str(dbg_pattern, NULL);
 }
 

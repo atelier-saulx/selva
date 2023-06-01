@@ -295,13 +295,10 @@ static void config(struct selva_server_response_out *resp, const void *buf __unu
 
 static void loglevel(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
-    __auto_finalizer struct finalizer fin;
     int new_level;
     int argc;
 
-    finalizer_init(&fin);
-
-    argc = selva_proto_scanf(&fin, buf, size, "%d", &new_level);
+    argc = selva_proto_scanf(NULL, buf, size, "%d", &new_level);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
     } else if (argc == 0) {
@@ -322,17 +319,15 @@ static void loglevel(struct selva_server_response_out *resp, const void *buf, si
 
 static void dbg(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
-    __auto_finalizer struct finalizer fin;
-    struct selva_string *pattern;
+    const char *pattern_str;
+    size_t pattern_len;
     int argc;
 
-    finalizer_init(&fin);
-
-    argc = selva_proto_scanf(&fin, buf, size, "%p", &pattern);
+    argc = selva_proto_scanf(NULL, buf, size, "%.*s", &pattern_len, &pattern_str);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
     } else if (argc == 1) {
-        selva_log_set_dbgpattern(pattern);
+        selva_log_set_dbgpattern(pattern_str, pattern_len);
         selva_send_ll(resp, 1);
     } else {
         selva_send_error_arity(resp);
@@ -362,7 +357,7 @@ static void mallocstats(struct selva_server_response_out *resp, const void *buf,
         return;
     }
 
-    selva_malloc_stats_print(mallocstats_send, resp, opts ? selva_string_to_str(opts, NULL) : NULL);
+    selva_malloc_stats_print(mallocstats_send, resp, selva_string_to_str(opts, NULL));
 }
 
 static void mallocprofdump(struct selva_server_response_out *resp, const void *buf, size_t size)

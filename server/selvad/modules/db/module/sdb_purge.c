@@ -40,13 +40,10 @@ static int sdb_filter(const struct dirent *d)
 
 static void purge_sdb_cmd(struct selva_server_response_out *resp, const void *buf, size_t len)
 {
-    __auto_finalizer struct finalizer fin;
     uint64_t nr_keep = 0;
     int argc;
 
-    finalizer_init(&fin);
-
-    argc = selva_proto_scanf(&fin, buf, len, "%" PRIu64, &nr_keep);
+    argc = selva_proto_scanf(NULL, buf, len, "%" PRIu64, &nr_keep);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
         return;

@@ -61,7 +61,7 @@ void (*selva_log)(enum selva_log_level level, const char * restrict modname, con
 #endif
 EVL_EXPORT(enum selva_log_level, selva_log_get_level, void);
 EVL_EXPORT(enum selva_log_level, selva_log_set_level, enum selva_log_level new_level);
-EVL_EXPORT(void, selva_log_set_dbgpattern, struct selva_string *s);
+EVL_EXPORT(void, selva_log_set_dbgpattern, const char *str, size_t len);
 
 #define _SELVA_LOG_WHERESTR (__FILE__ ":" S__LINE__)
 #define _SELVA_LOG(level, where, fmt, ...) \

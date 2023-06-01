@@ -220,16 +220,13 @@ static int ensure_sdb(void)
 static void replicasync(struct selva_server_response_out *resp, const void *buf, size_t size)
 {
     struct selva_server_response_out *stream_resp;
-    __auto_finalizer struct finalizer fin;
     const uint8_t *sdb_hash = NULL;
     size_t sdb_hash_len = 0;
     uint64_t sdb_eid;
     enum replication_sync_mode sync_mode;
     int argc, err;
 
-    finalizer_init(&fin);
-
-    argc = selva_proto_scanf(&fin, buf, size, "{%.*s, %" PRIu64 "}", &sdb_hash_len, &sdb_hash, &sdb_eid);
+    argc = selva_proto_scanf(NULL, buf, size, "{%.*s, %" PRIu64 "}", &sdb_hash_len, &sdb_hash, &sdb_eid);
     if (argc < 0) {
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to parse: %s", selva_strerror(argc));
         selva_send_errorf(resp, argc, "Failed to parse args");
