@@ -141,6 +141,14 @@ static char *parse_width(const char *fmt, struct placeholder_state *ps)
     return end;
 }
 
+static int get_skip_off(const void *buf, size_t szbuf, size_t buf_i)
+{
+    enum selva_proto_data_type found_type;
+    size_t data_len;
+
+    return selva_proto_parse_vtype(buf, szbuf, buf_i, &found_type, &data_len);
+}
+
 /*
  * TODO Support reading values into an array
  * E.g. int x[3] <= %3d
@@ -426,9 +434,6 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                     }
                 }
 
-#if 0
-                buf_i += off;
-#endif
                 n++;
 
                 /*
@@ -440,15 +445,11 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
             if (isspace(ch)) {
                 /* NOP */
             } else if (ch == ',') {
-                enum selva_proto_data_type found_type;
-                size_t data_len;
-                int off;
+                int off = get_skip_off(buf, szbuf, buf_i);
 
-                off = selva_proto_parse_vtype(buf, szbuf, buf_i, &found_type, &data_len);
                 if (off <= 0) {
                     return off;
                 }
-
                 buf_i += off;
             } else if (ch == '{') {
                 enum selva_proto_data_type found_type;
@@ -489,12 +490,31 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
 
                     postponed_array_end--;
                     buf_i += off;
+                } else if (*(fmt + 1) == '\0') {
+                    /* We can't be sure later whether a skip is needed so we do it here now. */
+                    int off = get_skip_off(buf, szbuf, buf_i);
+                    if (off > 0) {
+                        buf_i += off;
+                    }
                 }
                 array_level--;
             } else if (ch == '%') {
                 on_placeholder = 1;
                 reset_placeholder(&ps);
             }
+        }
+    }
+
+    /*
+     * Skip the last item if not already skipped so we can check whether more
+     * data was passed than parsed. I.e. checking for arity error.
+     * `,` and `}` already causes a skip.
+     */
+    if (!strchr(",}", *(fmt - 1))) {
+        int off = get_skip_off(buf, szbuf, buf_i);
+
+        if (off > 0) {
+            buf_i += off;
         }
     }
 
@@ -507,8 +527,13 @@ out:
      */
     va_end(args);
 
-    if (array_level > 0) {
-        return SELVA_PROTO_EBADMSG;
+    if (array_level > 0 || buf_i < szbuf) {
+        /*
+         * This could be either SELVA_PROTO_EBADMSG or SELVA_PROTO_EINVAL.
+         * Both seem semantically correct and are used for user supplied
+         * values, e.g. arity error is SELVA_PROTO_EINVAL.
+         */
+        return SELVA_PROTO_EINVAL;
     }
 
     return n;
