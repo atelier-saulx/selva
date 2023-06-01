@@ -21,12 +21,18 @@
  * NodeId size including the type prefix.
  */
 #define SELVA_NODE_ID_SIZE      16ul /* Must be at least sizeof(void *) */
-#define SELVA_PRI_NODE_ID       "16s"
+/**
+ * Scan nodeId with selva_proto_scanf().
+ */
+#define SELVA_SCA_NODE_ID       "16s"
 /**
  * NodeId type prefix size.
  */
 #define SELVA_NODE_TYPE_SIZE    2
-#define SELVA_PRI_NODE_TYPE     "2s"
+/**
+ * Scan nodeType with selva_proto_scanf().
+ */
+#define SELVA_SCA_NODE_TYPE     "2s"
 /**
  * NodeId of the root node.
  */

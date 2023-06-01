@@ -3484,7 +3484,7 @@ static void SelvaHierarchy_ParentsCommand(struct selva_server_response_out *resp
     Selva_NodeId nodeId;
     int argc;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID, nodeId);
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_SCA_NODE_ID, nodeId);
     if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -3534,7 +3534,7 @@ static void SelvaHierarchy_ChildrenCommand(struct selva_server_response_out *res
     Selva_NodeId nodeId;
     int argc;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID, nodeId);
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_SCA_NODE_ID, nodeId);
     if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -3571,7 +3571,7 @@ static void SelvaHierarchy_EdgeListCommand(struct selva_server_response_out *res
     size_t key_name_len = 0;
     int argc;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s",
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_SCA_NODE_ID ", %.*s",
                              nodeId,
                              &key_name_len, &key_name_str);
     if (argc < 0) {
@@ -3629,7 +3629,7 @@ static void SelvaHierarchy_EdgeGetCommand(struct selva_server_response_out *resp
     size_t field_name_len = 0;
     int argc;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s",
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_SCA_NODE_ID ", %.*s",
                              nodeId,
                              &field_name_len, &field_name_str);
     if (argc != 2) {
@@ -3687,7 +3687,7 @@ static void SelvaHierarchy_EdgeGetMetadataCommand(struct selva_server_response_o
     Selva_NodeId dst_node_id;
     int argc, err;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_ID ", %.*s, %" SELVA_PRI_NODE_ID,
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_SCA_NODE_ID ", %.*s, %" SELVA_SCA_NODE_ID,
                              src_node_id,
                              &field_name_len, &field_name_str,
                              dst_node_id);
@@ -3739,7 +3739,7 @@ static void SelvaHierarchy_CompressCommand(struct selva_server_response_out *res
 
     finalizer_init(&fin);
 
-    argc = selva_proto_scanf(&fin, buf, len, "%" SELVA_PRI_NODE_ID ", %p",
+    argc = selva_proto_scanf(&fin, buf, len, "%" SELVA_SCA_NODE_ID ", %p",
                              nodeId, &type_s);
     if (argc != 1 && argc != 2) {
         if (argc < 0) {

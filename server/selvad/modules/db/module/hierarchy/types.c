@@ -49,7 +49,7 @@ void SelvaHierarchyTypes_AddCommand(struct selva_server_response_out *resp, cons
     size_t name_len;
     int argc, err;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_PRI_NODE_TYPE ", %.*s",
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_SCA_NODE_TYPE ", %.*s",
                              &type,
                              &name_len, &name_str);
     if (argc != 2) {
