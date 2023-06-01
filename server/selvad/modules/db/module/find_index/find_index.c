@@ -1234,12 +1234,12 @@ static void SelvaFindIndex_DelCommand(struct selva_server_response_out *resp, co
     SelvaHierarchy *hierarchy = main_hierarchy;
     const char *index_name_str;
     size_t index_name_len;
-    char op[1]; /* TODO pass as an integer */
+    int op;
     struct SelvaFindIndexControlBlock *icb;
     int discard;
     int argc, err;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%.*s, %1s",
+    argc = selva_proto_scanf(NULL, buf, len, "%.*s, %d",
                              &index_name_len, &index_name_str,
                              &op);
     if (argc < 0) {
@@ -1250,11 +1250,11 @@ static void SelvaFindIndex_DelCommand(struct selva_server_response_out *resp, co
     if (argc == 1) {
         discard = 0;
     } else if (argc == 2) {
-        switch (op[0]) {
-        case '0':
+        switch (op) {
+        case 0:
             discard = 0;
             break;
-        case '1':
+        case 1:
             discard = 1;
             break;
         default:
