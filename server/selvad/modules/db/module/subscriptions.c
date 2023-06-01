@@ -2087,10 +2087,14 @@ void SelvaSubscriptions_AddAliasCommand(struct selva_server_response_out *resp, 
      * Get the subscription id.
      */
     Selva_SubscriptionId sub_id;
-    err = Selva_SubscriptionStr2id(sub_id, sub_id_str, sub_id_len);
-    if (err) {
-        selva_send_errorf(resp, err, "Subscription ID");
-        return;
+    if (sub_id_len == SELVA_SUBSCRIPTION_ID_SIZE) {
+        memcpy(sub_id, sub_id_str, SELVA_SUBSCRIPTION_ID_SIZE);
+    } else {
+        err = Selva_SubscriptionStr2id(sub_id, sub_id_str, sub_id_len);
+        if (err) {
+            selva_send_errorf(resp, err, "Subscription ID");
+            return;
+        }
     }
 
     /*
@@ -2347,12 +2351,14 @@ void SelvaSubscriptions_RefreshCommand(struct selva_server_response_out *resp, c
     }
 
     Selva_SubscriptionId sub_id;
-    err = Selva_SubscriptionStr2id(sub_id, sub_id_str, sub_id_len);
-    if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%.*s\"",
-                  (int)sub_id_len, sub_id_str);
-        selva_send_error(resp, err, NULL, 0);
-        return;
+    if (sub_id_len == SELVA_SUBSCRIPTION_ID_SIZE) {
+        memcpy(sub_id, sub_id_str, SELVA_SUBSCRIPTION_ID_SIZE);
+    } else {
+        err = Selva_SubscriptionStr2id(sub_id, sub_id_str, sub_id_len);
+        if (err) {
+            selva_send_errorf(resp, err, "Subscription ID");
+            return;
+        }
     }
 
     struct Selva_Subscription *sub;
@@ -2433,15 +2439,13 @@ void SelvaSubscriptions_DebugCommand(struct selva_server_response_out *resp, con
     SVector *markers = NULL;
 
     if (is_sub_id) {
-        int err;
         Selva_SubscriptionId sub_id;
         struct Selva_Subscription *sub;
+        int err;
 
         err = Selva_SubscriptionStr2id(sub_id, id_str, id_len);
         if (err) {
-            SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%.*s\"",
-                      (int)id_len, id_str);
-            selva_send_error(resp, err, NULL, 0);
+            selva_send_errorf(resp, err, "Subscription ID");
             return;
         }
 
@@ -2490,13 +2494,13 @@ void SelvaSubscriptions_DebugCommand(struct selva_server_response_out *resp, con
  */
 void SelvaSubscriptions_DelCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
-    const char *id_str;
-    size_t id_len;
+    const char *sub_id_str;
+    size_t sub_id_len;
     Selva_SubscriptionId sub_id;
     struct Selva_Subscription *sub;
     int argc, err;
 
-    argc = selva_proto_scanf(NULL, buf, len, "%.*s", &id_len, &id_str);
+    argc = selva_proto_scanf(NULL, buf, len, "%.*s", &sub_id_len, &sub_id_str);
     if (argc != 1) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -2506,12 +2510,14 @@ void SelvaSubscriptions_DelCommand(struct selva_server_response_out *resp, const
         return;
     }
 
-    err = Selva_SubscriptionStr2id(sub_id, id_str, id_len);
-    if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%.*s\"",
-                  (int)id_len, id_str);
-        selva_send_error(resp, err, NULL, 0);
-        return;
+    if (sub_id_len == SELVA_SUBSCRIPTION_ID_SIZE) {
+        memcpy(sub_id, sub_id_str, SELVA_SUBSCRIPTION_ID_SIZE);
+    } else {
+        err = Selva_SubscriptionStr2id(sub_id, sub_id_str, sub_id_len);
+        if (err) {
+            selva_send_errorf(resp, err, "Subscription ID");
+            return;
+        }
     }
 
     sub = find_sub(hierarchy, sub_id);
@@ -2555,12 +2561,14 @@ void SelvaSubscriptions_DelMarkerCommand(struct selva_server_response_out *resp,
      * Get the subscription id.
      */
     Selva_SubscriptionId sub_id;
-    err = Selva_SubscriptionStr2id(sub_id, sub_id_str, sub_id_len);
-    if (err) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%.*s\"",
-                  (int)sub_id_len, sub_id_str);
-        selva_send_error(resp, err, NULL, 0);
-        return;
+    if (sub_id_len == SELVA_SUBSCRIPTION_ID_SIZE) {
+        memcpy(sub_id, sub_id_str, SELVA_SUBSCRIPTION_ID_SIZE);
+    } else {
+        err = Selva_SubscriptionStr2id(sub_id, sub_id_str, sub_id_len);
+        if (err) {
+            selva_send_errorf(resp, err, "Subscription ID");
+            return;
+        }
     }
 
     struct Selva_Subscription *sub;
