@@ -2064,16 +2064,16 @@ void SelvaSubscriptions_AddAliasCommand(struct selva_server_response_out *resp, 
     __auto_finalizer struct finalizer fin;
     const char *sub_id_str;
     size_t sub_id_len;
-    struct selva_string *marker_id_s; /* TODO This could be also passed as a long long. */
+    Selva_SubscriptionMarkerId marker_id;
     struct selva_string *alias_name;
     int argc;
     int err;
 
     finalizer_init(&fin);
 
-    argc = selva_proto_scanf(&fin, buf, len, "%.*s, %p, %p",
+    argc = selva_proto_scanf(&fin, buf, len, "%.*s, %" PRImrkId ", %p",
                              &sub_id_len, &sub_id_str,
-                             &marker_id_s,
+                             &marker_id,
                              &alias_name);
     if (argc < 0) {
         selva_send_errorf(resp, argc, "Failed to parse args");
@@ -2090,16 +2090,6 @@ void SelvaSubscriptions_AddAliasCommand(struct selva_server_response_out *resp, 
     err = Selva_SubscriptionStr2id(sub_id, sub_id_str, sub_id_len);
     if (err) {
         selva_send_errorf(resp, err, "Subscription ID");
-        return;
-    }
-
-    /*
-     * Get the marker id.
-     */
-    Selva_SubscriptionMarkerId marker_id;
-    err = SelvaArgParser_MarkerId(&marker_id, marker_id_s);
-    if (err) {
-        selva_send_errorf(resp, err, "Marker ID");
         return;
     }
 
@@ -2543,15 +2533,15 @@ void SelvaSubscriptions_DelMarkerCommand(struct selva_server_response_out *resp,
     __auto_finalizer struct finalizer fin;
     const char *sub_id_str;
     size_t sub_id_len;
-    struct selva_string *marker_id_s; /* TODO This could be also passed as a long long. */
+    Selva_SubscriptionMarkerId marker_id;
     int argc;
     int err;
 
     finalizer_init(&fin);
 
-    argc = selva_proto_scanf(&fin, buf, len, "%.*s, %p",
+    argc = selva_proto_scanf(&fin, buf, len, "%.*s, %" PRImrkId,
                              &sub_id_len, &sub_id_str,
-                             &marker_id_s);
+                             &marker_id);
     if (argc != 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
@@ -2570,16 +2560,6 @@ void SelvaSubscriptions_DelMarkerCommand(struct selva_server_response_out *resp,
         SELVA_LOG(SELVA_LOGL_ERR, "Invalid sub_id \"%.*s\"",
                   (int)sub_id_len, sub_id_str);
         selva_send_error(resp, err, NULL, 0);
-        return;
-    }
-
-    /*
-     * Get the marker id.
-     */
-    Selva_SubscriptionMarkerId marker_id;
-    err = SelvaArgParser_MarkerId(&marker_id, marker_id_s);
-    if (err) {
-        selva_send_errorf(resp, err, "Marker ID");
         return;
     }
 
