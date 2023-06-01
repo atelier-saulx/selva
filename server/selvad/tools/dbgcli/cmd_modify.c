@@ -18,8 +18,6 @@
 # define MSG_MORE 0
 #endif
 
-#define NODE_ID_SIZE 16
-
 static int send_cmd_head(int sock, int cmd_id, int seqno, const char * restrict node_id, const char * restrict flags, int nr_fields)
 {
     const size_t flags_len = strlen(flags);

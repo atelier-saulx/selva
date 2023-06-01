@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#define NODE_ID_SIZE 16
+
 struct cmd;
 
 typedef int (*cmd_req_fn)(const struct cmd *cmd, int fd, int seqno, int argc, char *argv[]);

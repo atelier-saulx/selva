@@ -330,7 +330,7 @@ static int cmd_object_incrby_req(const struct cmd *cmd, int sock, int seqno, int
     }
 
     const size_t okey_len = strlen(argv[2]);
-    const size_t node_id_len = 10; /* TODO hardcoded len */
+    const size_t node_id_len = NODE_ID_SIZE;
     size_t buf_size = sizeof(struct selva_proto_header) +
              sizeof(struct selva_proto_string) + node_id_len +
              sizeof(struct selva_proto_string) + okey_len +
