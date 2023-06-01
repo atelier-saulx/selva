@@ -152,6 +152,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
     size_t buf_i = 0;
     int on_placeholder = 0;
     struct placeholder_state ps;
+    int array_level = 0;
     int postponed_array_end = 0;
     int n = 0;
 
@@ -278,7 +279,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 size_t data_len;
                 int off;
 
-                if (buf_i >= szbuf && !postponed_array_end) {
+                if (buf_i >= szbuf && array_level == 0) {
                     /* Fewer args given than specified in the fmt string. */
                     goto out;
                 }
@@ -469,23 +470,27 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                     postponed_array_end++;
                 }
 
+                array_level++;
                 buf_i += off;
-            } else if (ch == '}' && postponed_array_end > 0) {
-                enum selva_proto_data_type found_type;
-                size_t data_len;
-                int off;
+            } else if (ch == '}') {
+                if (postponed_array_end > 0) {
+                    enum selva_proto_data_type found_type;
+                    size_t data_len;
+                    int off;
 
-                off = selva_proto_parse_vtype(buf, szbuf, buf_i, &found_type, &data_len);
-                if (off <= 0) {
-                    return off;
+                    off = selva_proto_parse_vtype(buf, szbuf, buf_i, &found_type, &data_len);
+                    if (off <= 0) {
+                        return off;
+                    }
+
+                    if (found_type != SELVA_PROTO_ARRAY_END) {
+                        return SELVA_PROTO_EBADMSG;
+                    }
+
+                    postponed_array_end--;
+                    buf_i += off;
                 }
-
-                if (found_type != SELVA_PROTO_ARRAY_END) {
-                    return SELVA_PROTO_EBADMSG;
-                }
-
-                postponed_array_end--;
-                buf_i += off;
+                array_level--;
             } else if (ch == '%') {
                 on_placeholder = 1;
                 reset_placeholder(&ps);
@@ -501,6 +506,10 @@ out:
      * statements in this function.
      */
     va_end(args);
+
+    if (array_level > 0) {
+        return SELVA_PROTO_EBADMSG;
+    }
 
     return n;
 }
