@@ -29,6 +29,7 @@
 static int selva_port = 3000;
 static int server_backlog_size = 10;
 static int max_clients = 100;
+static int so_reuse;
 static int server_sockfd;
 static int readonly_server;
 static struct command {
@@ -41,6 +42,7 @@ static const struct config server_cfg_map[] = {
     { "SELVA_PORT",             CONFIG_INT, &selva_port },
     { "SERVER_BACKLOG_SIZE",    CONFIG_INT, &server_backlog_size },
     { "SERVER_MAX_CLIENTS",     CONFIG_INT, &max_clients },
+    { "SERVER_SO_REUSE",        CONFIG_INT, &so_reuse },
 };
 
 void selva_server_set_readonly(void)
@@ -398,8 +400,10 @@ static int new_server(int port)
         exit(EXIT_FAILURE);
     }
 
-    (void)setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
-    (void)setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int));
+    if (so_reuse) {
+        (void)setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+        (void)setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int));
+    }
 
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = INADDR_ANY;
