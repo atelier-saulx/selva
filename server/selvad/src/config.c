@@ -78,8 +78,11 @@ int config_resolve(const char *mod_name, const struct config cfg_map[], size_t l
 
         switch (cfg->type) {
         case CONFIG_CSTRING:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
             *((char **)cfg->dp) = str;
             err = 0;
+#pragma GCC diagnostic pop
             break;
         case CONFIG_INT:
             err = parse_int(cfg->dp, str);
