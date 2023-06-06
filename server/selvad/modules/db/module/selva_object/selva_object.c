@@ -2162,95 +2162,96 @@ static void replyWithSelvaSet(struct selva_server_response_out *resp, struct Sel
 
 static void replyWithArray(struct selva_server_response_out *resp, struct selva_string *lang, enum SelvaObjectType subtype, const SVector *array) {
     struct SVectorIterator it;
-    size_t n = 0;
-
-    selva_send_array(resp, -1);
 
     switch (subtype) {
     case SELVA_OBJECT_DOUBLE:
-        SVector_ForeachBegin(&it, array);
+        selva_send_array_embed(resp, SELVA_SEND_ARRAY_EMBED_DOUBLE, SVector_Size(array));
 
+        SVector_ForeachBegin(&it, array);
         do {
             void *pd;
+            char buf[sizeof(double)];
 
             pd = SVector_Foreach(&it);
 
             if (!pd) {
-                selva_send_double(resp, 0.0);
+                htoledouble(buf, 0.0);
             } else {
                 double d;
 
                 memcpy(&d, &pd, sizeof(double));
-                selva_send_double(resp, d);
+                htoledouble(buf, d);
             }
 
-            n++;
+            selva_send_raw(resp, buf, sizeof(buf));
         } while (!SVector_Done(&it));
+
         break;
     case SELVA_OBJECT_LONGLONG:
-        SVector_ForeachBegin(&it, array);
+        selva_send_array_embed(resp, SELVA_SEND_ARRAY_EMBED_LONGLONG, SVector_Size(array));
 
+        SVector_ForeachBegin(&it, array);
         do {
             void *p;
-            long long ll;
+            int64_t v;
 
             p = SVector_Foreach(&it);
-
-            n++;
-            ll = (long long)p;
-            selva_send_ll(resp, ll);
+            v = htole64((long long)p);
+            selva_send_raw(resp, &v, sizeof(v));
         } while (!SVector_Done(&it));
+
         break;
     case SELVA_OBJECT_STRING:
-        SVector_ForeachBegin(&it, array);
+        selva_send_array(resp, SVector_Size(array));
 
+        SVector_ForeachBegin(&it, array);
         do {
             struct selva_string *s;
 
             s = SVector_Foreach(&it);
 
-            n++;
-            if (!s) {
+            if (s) {
+                selva_send_string(resp, s);
+            } else {
                 selva_send_null(resp);
-                continue;
             }
 
-            selva_send_string(resp, s);
         } while (!SVector_Done(&it));
+
         break;
     case SELVA_OBJECT_OBJECT:
-        SVector_ForeachBegin(&it, array);
+        selva_send_array(resp, SVector_Size(array));
 
+        SVector_ForeachBegin(&it, array);
         do {
             struct SelvaObject *o;
 
             o = SVector_Foreach(&it);
 
-            n++;
-            if (!o) {
+            if (o) {
+                replyWithObject(resp, lang, o, NULL);
+            } else {
                 selva_send_null(resp);
-                continue;
             }
-
-            replyWithObject(resp, lang, o, NULL);
         } while (!SVector_Done(&it));
+
+        selva_send_array_end(resp);
         break;
     case SELVA_OBJECT_HLL:
-        SVector_ForeachBegin(&it, array);
+        selva_send_array(resp, SVector_Size(array));
 
+        SVector_ForeachBegin(&it, array);
         do {
             hll_t *s = SVector_Foreach(&it);
 
             selva_send_ll(resp, hll_count(s));
-            n++;
         } while (!SVector_Done(&it));
+
         break;
     default:
-        SELVA_LOG(SELVA_LOGL_ERR, "Unknown array type: %d", subtype);
+        selva_send_errorf(resp, SELVA_EINVAL, "Unknown array type: %d", subtype);
         break;
     }
-
-    selva_send_array_end(resp);
 }
 
 static void replyWithKeyValue(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObjectKey *key) {

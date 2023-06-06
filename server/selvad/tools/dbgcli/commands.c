@@ -530,7 +530,6 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
 
             memcpy(&hdr, msg + i - off, sizeof(hdr));
 
-            /* TODO Support embedded arrays */
             if (hdr.flags & SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH) {
                 printf("%*s[\n", tabs * TAB_WIDTH, "");
                 if (tabs < TABS_MAX) {
@@ -540,13 +539,40 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
                 if (data_len == 0) {
                     printf("%*s[]\n", tabs * TAB_WIDTH, "");
                 } else {
+                    int did_tab = 0;
+
                     printf("%*s[\n", tabs * TAB_WIDTH, "");
                     if (tabs < TABS_MAX) {
                         tabs++;
+                        did_tab = 1;
                     }
 
-                    tabs_hold_stack[tabs] = data_len;
-                    continue; /* Avoid decrementing the tab stack value. */
+                    if (hdr.flags & (SELVA_PROTO_ARRAY_FDOUBLE | SELVA_PROTO_ARRAY_FLONGLONG)) {
+                        printf("%*s", tabs * TAB_WIDTH, "");
+
+                        _Static_assert(sizeof(double) == sizeof(uint64_t));
+                        for (size_t ival = i - off + sizeof(hdr); ival < i; ival += sizeof(uint64_t)) {
+                            if (hdr.flags & SELVA_PROTO_ARRAY_FDOUBLE) {
+                                double d;
+
+                                d = ledoubletoh(msg + ival);
+                                printf("%.2f, ", d);
+                            } else {
+                                uint64_t ll;
+
+                                memcpy(&ll, msg + ival, sizeof(ll));
+                                printf("%" PRId64 ", ", le64toh(ll));
+                            }
+                        }
+
+                        if (did_tab) {
+                            tabs--;
+                        }
+                        printf("\n%*s]\n", tabs * TAB_WIDTH, "");
+                    } else {
+                        tabs_hold_stack[tabs] = data_len;
+                        continue; /* Avoid decrementing the tab stack value. */
+                    }
                 }
             }
         } else if (type == SELVA_PROTO_ARRAY_END) {

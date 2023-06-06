@@ -107,6 +107,12 @@ SELVA_SERVER_EXPORT(void, selva_cancel_stream, struct selva_server_response_out 
 SELVA_SERVER_EXPORT(int, selva_send_end, struct selva_server_response_out *restrict resp);
 
 /**
+ * Send raw data.
+ * Warning: Use carefully because this can break the protocol value parsing.
+ */
+SELVA_SERVER_EXPORT(int, selva_send_raw, struct selva_server_response_out *restrict resp, void *restrict p, size_t len);
+
+/**
  * Send a null value.
  */
 SELVA_SERVER_EXPORT(int, selva_send_null, struct selva_server_response_out *resp);
@@ -193,6 +199,20 @@ SELVA_SERVER_EXPORT(int, selva_send_bin, struct selva_server_response_out *resp,
  */
 SELVA_SERVER_EXPORT(int, selva_send_array, struct selva_server_response_out *resp, int len);
 
+enum selva_send_array_embed_types {
+    SELVA_SEND_ARRAY_EMBED_LONGLONG = 0x01,
+    SELVA_SEND_ARRAY_EMBED_DOUBLE = 0x02,
+};
+
+/**
+ * Send an array with embedded values.
+ * The embedded values can be sent with selva_send_raw() which must be called
+ * exactly as many times as `len` is set when calling this function. The `len`
+ * argument when calling selva_send_raw() must match with the size of the
+ * value type.
+ */
+SELVA_SERVER_EXPORT(int, selva_send_array_embed, struct selva_server_response_out *resp, enum selva_send_array_embed_types type, unsigned len);
+
 /**
  * Terminate a variable length array.
  * Call this only if len was set -1.
@@ -239,6 +259,7 @@ SELVA_SERVER_EXPORT(int, selva_server_run_cmd, int8_t cmd_id, int64_t ts, void *
     apply(selva_start_stream) \
     apply(selva_cancel_stream) \
     apply(selva_send_end) \
+    apply(selva_send_raw) \
     apply(selva_send_null) \
     apply(selva_send_error) \
     apply(selva_send_errorf) \
@@ -251,6 +272,7 @@ SELVA_SERVER_EXPORT(int, selva_server_run_cmd, int8_t cmd_id, int64_t ts, void *
     apply(selva_send_string) \
     apply(selva_send_bin) \
     apply(selva_send_array) \
+    apply(selva_send_array_embed) \
     apply(selva_send_array_end) \
     apply(selva_send_replication_cmd) \
     apply(selva_send_replication_cmd_s) \

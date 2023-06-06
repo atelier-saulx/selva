@@ -50,6 +50,14 @@ int selva_send_flush(struct selva_server_response_out *restrict resp)
     return server_flush_frame_buf(resp, 0);
 }
 
+int selva_send_raw(struct selva_server_response_out *restrict resp, void *restrict p, size_t len)
+{
+    ssize_t res;
+
+    res = server_send_buf(resp, p, len, 0);
+    return (res < 0) ? (int)res : 0;
+}
+
 int selva_send_null(struct selva_server_response_out *resp)
 {
     struct selva_proto_null buf = {
@@ -224,6 +232,30 @@ int selva_send_array(struct selva_server_response_out *resp, int len)
 
     res = server_send_buf(resp, &buf, sizeof(buf), 0);
     return (res < 0) ? (int)res : 0;
+}
+
+int selva_send_array_embed(struct selva_server_response_out *resp, enum selva_send_array_embed_types type, unsigned len)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wenum-conversion"
+#pragma GCC diagnostic ignored "-Wenum-compare"
+    struct selva_proto_array buf = {
+        .type = SELVA_PROTO_ARRAY,
+        .length = htole32(len),
+        .flags = type,
+    };
+    ssize_t res;
+
+    _Static_assert(SELVA_SEND_ARRAY_EMBED_LONGLONG == SELVA_PROTO_ARRAY_FLONGLONG);
+    _Static_assert(SELVA_SEND_ARRAY_EMBED_DOUBLE == SELVA_PROTO_ARRAY_FDOUBLE);
+
+    if (__builtin_popcount(type ^ (SELVA_PROTO_ARRAY_FLONGLONG | SELVA_PROTO_ARRAY_FDOUBLE)) != 1) {
+        return SELVA_EINVAL;
+    }
+
+    res = server_send_buf(resp, &buf, sizeof(buf), 0);
+    return (res < 0) ? (int)res : 0;
+#pragma GCC diagnostic pop
 }
 
 int selva_send_array_end(struct selva_server_response_out *resp)
