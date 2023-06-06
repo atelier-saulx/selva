@@ -1136,7 +1136,7 @@ static enum selva_op_repl_state modify_array_op(
     } else if (type_code == SELVA_MODIFY_ARG_LONGLONG) {
         int err;
         union {
-            char s[sizeof(double)];
+            char s[sizeof(long long)];
             long long ll;
             void *p;
         } v = {
