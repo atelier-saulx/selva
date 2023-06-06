@@ -1435,7 +1435,7 @@ int SelvaObject_GetArrayIndexAsLongLong(struct SelvaObject *obj, const char *key
         return err;
     }
 
-    memcpy(&l, lptr, sizeof(long long));
+    memcpy(&l, &lptr, sizeof(long long));
     *out = l;
     return 0;
 }
@@ -1450,7 +1450,7 @@ int SelvaObject_GetArrayIndexAsDouble(struct SelvaObject *obj, const char *key_n
         return err;
     }
 
-    memcpy(&d, dptr, sizeof(double));
+    memcpy(&d, &dptr, sizeof(double));
     *out = d;
     return 0;
 }
@@ -2265,10 +2265,10 @@ int SelvaObject_ReplyWithObjectStr(
                 k.value = NULL;
                 break;
             case SELVA_OBJECT_DOUBLE:
-                memcpy(&k.emb_double_value, p, sizeof(double));
+                memcpy(&k.emb_double_value, &p, sizeof(double));
                 break;
             case SELVA_OBJECT_LONGLONG:
-                memcpy(&k.emb_ll_value, p, sizeof(long long));
+                memcpy(&k.emb_ll_value, &p, sizeof(long long));
                 break;
             case SELVA_OBJECT_POINTER: /* ptr opts not supported. */
                 k.ptr_opts = &default_ptr_opts;
