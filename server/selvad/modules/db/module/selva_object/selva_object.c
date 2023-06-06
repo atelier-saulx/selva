@@ -187,6 +187,20 @@ retry:
     return NULL; /* Never reached. */
 }
 
+static int is_valid_array_subtype(enum SelvaObjectType subtype)
+{
+    switch (subtype) {
+    case SELVA_OBJECT_LONGLONG:
+    case SELVA_OBJECT_DOUBLE:
+    case SELVA_OBJECT_STRING:
+    case SELVA_OBJECT_OBJECT:
+    case SELVA_OBJECT_HLL:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 /**
  * Init an array on key.
  * The key must be cleared before calling this function.
@@ -739,6 +753,10 @@ static int get_key_array_modify(struct SelvaObject *obj, const char *key_name_st
     }
 
     if (!array_type_match(key, subtype)) {
+        if (!is_valid_array_subtype(subtype)) {
+            return SELVA_EINTYPE;
+        }
+
         clear_key_value(key);
         init_object_array(key, subtype, size_hint);
     }
