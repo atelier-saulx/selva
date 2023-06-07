@@ -217,23 +217,26 @@ static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
     case SELVA_OBJECT_STRING:
         {
             struct SVectorIterator it;
-            struct selva_string *str;
 
             SVector_ForeachBegin(&it, array);
-            while ((str = SVector_Foreach(&it))) {
-                selva_string_free(str);
-            }
+            do {
+                selva_string_free(SVector_Foreach(&it));
+            } while (!SVector_Done(&it));
         }
         break;
     case SELVA_OBJECT_OBJECT:
         {
             struct SVectorIterator it;
-            struct SelvaObject *k;
 
             SVector_ForeachBegin(&it, array);
-            while ((k = SVector_Foreach(&it))) {
-                SelvaObject_Destroy(k);
-            }
+            do {
+                struct SelvaObject *k;
+
+                k = SVector_Foreach(&it);
+                if (k) {
+                    SelvaObject_Destroy(k);
+                }
+            } while (!SVector_Done(&it));
         }
         break;
     case SELVA_OBJECT_POINTER:
@@ -252,12 +255,16 @@ static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
     case SELVA_OBJECT_HLL:
         {
             struct SVectorIterator it;
-            hll_t *s;
 
             SVector_ForeachBegin(&it, array);
-            while ((s = SVector_Foreach(&it))) {
-                hll_destroy(s);
-            }
+            do {
+                hll_t *s;
+
+                s = SVector_Foreach(&it);
+                if (s) {
+                    hll_destroy(s);
+                }
+            } while (!SVector_Done(&it));
         }
         break;
      default:
@@ -422,7 +429,9 @@ size_t SelvaObject_MemUsage(const void *value) {
             }
             break;
         case SELVA_OBJECT_HLL:
-            size += hll_bsize(key->value);
+            if (key->value) {
+                size += hll_bsize(key->value);
+            }
             break;
         default:
             /* 0 */
@@ -2134,6 +2143,14 @@ void *SelvaObject_ForeachValueType(
     return NULL;
 }
 
+static void replyWithSelvaString(struct selva_server_response_out *resp, struct selva_string *s) {
+    if (s) {
+        selva_send_string(resp, s);
+    } else {
+        selva_send_null(resp);
+    }
+}
+
 static void replyWithSelvaSet(struct selva_server_response_out *resp, struct SelvaSet *set) {
     struct SelvaSetElement *el;
     size_t n = 0;
@@ -2158,6 +2175,15 @@ static void replyWithSelvaSet(struct selva_server_response_out *resp, struct Sel
     }
 
     selva_send_array_end(resp);
+}
+
+static void replyWithHll(struct selva_server_response_out *resp, hll_t *hll)
+{
+    if (hll) {
+        selva_send_ll(resp, hll_count(hll));
+    } else {
+        selva_send_null(resp);
+    }
 }
 
 static void replyWithArray(struct selva_server_response_out *resp, struct selva_string *lang, enum SelvaObjectType subtype, const SVector *array) {
@@ -2206,47 +2232,24 @@ static void replyWithArray(struct selva_server_response_out *resp, struct selva_
 
         SVector_ForeachBegin(&it, array);
         do {
-            struct selva_string *s;
-
-            s = SVector_Foreach(&it);
-
-            if (s) {
-                selva_send_string(resp, s);
-            } else {
-                selva_send_null(resp);
-            }
-
+            replyWithSelvaString(resp, SVector_Foreach(&it));
         } while (!SVector_Done(&it));
-
         break;
     case SELVA_OBJECT_OBJECT:
         selva_send_array(resp, SVector_Size(array));
 
         SVector_ForeachBegin(&it, array);
         do {
-            struct SelvaObject *o;
-
-            o = SVector_Foreach(&it);
-
-            if (o) {
-                replyWithObject(resp, lang, o, NULL);
-            } else {
-                selva_send_null(resp);
-            }
+            replyWithObject(resp, lang, SVector_Foreach(&it), NULL);
         } while (!SVector_Done(&it));
-
-        selva_send_array_end(resp);
         break;
     case SELVA_OBJECT_HLL:
         selva_send_array(resp, SVector_Size(array));
 
         SVector_ForeachBegin(&it, array);
         do {
-            hll_t *s = SVector_Foreach(&it);
-
-            selva_send_ll(resp, hll_count(s));
+            replyWithHll(resp, SVector_Foreach(&it));
         } while (!SVector_Done(&it));
-
         break;
     default:
         selva_send_errorf(resp, SELVA_EINVAL, "Unknown array type: %d", subtype);
@@ -2266,11 +2269,7 @@ static void replyWithKeyValue(struct selva_server_response_out *resp, struct sel
         selva_send_ll(resp, key->emb_ll_value);
         break;
     case SELVA_OBJECT_STRING:
-        if (key->value) {
-            selva_send_string(resp, key->value);
-        } else {
-            selva_send_null(resp);
-        }
+        replyWithSelvaString(resp, key->value);
         break;
     case SELVA_OBJECT_OBJECT:
         if (key->value) {
@@ -2322,7 +2321,7 @@ static void replyWithKeyValue(struct selva_server_response_out *resp, struct sel
         }
         break;
     case SELVA_OBJECT_HLL:
-        selva_send_ll(resp, hll_count(key->value));
+        replyWithHll(resp, key->value);
         break;
     default:
         selva_send_errorf(resp, SELVA_EINTYPE, "Type not supported %d", (int)key->type);
@@ -2331,6 +2330,11 @@ static void replyWithKeyValue(struct selva_server_response_out *resp, struct sel
 
 static void replyWithObject(struct selva_server_response_out *resp, struct selva_string *lang, struct SelvaObject *obj, const char *excluded) {
     struct SelvaObjectKey *key;
+
+    if (!obj) {
+        selva_send_null(resp);
+        return;
+    }
 
     selva_send_array(resp, -1);
 
@@ -2401,13 +2405,11 @@ int SelvaObject_ReplyWithObjectStr(
             case SELVA_OBJECT_STRING:
             case SELVA_OBJECT_OBJECT:
             case SELVA_OBJECT_SET:
+            case SELVA_OBJECT_HLL:
                 k.value = p;
                 break;
             case SELVA_OBJECT_ARRAY:
                 k.array = p;
-                break;
-            case SELVA_OBJECT_HLL:
-                memcpy(&k.emb_ll_value, &(long long){hll_count(p)}, sizeof(long long));
                 break;
             }
 
@@ -2681,12 +2683,18 @@ static int load_object_array(struct selva_io *io, struct SelvaObject *obj, const
     case SELVA_OBJECT_STRING:
         for (size_t i = 0; i < n; i++) {
             struct selva_string *value = selva_io_load_string(io);
-            SVector_Insert(key->array, value);
+            size_t value_len;
+
+            (void)selva_string_to_str(value, &value_len);
+            if (value_len) {
+                SVector_SetIndex(key->array, i, value);
+            }
         }
         break;
     case SELVA_OBJECT_OBJECT:
         for (size_t i = 0; i < n; i++) {
             struct SelvaObject *o = SelvaObjectTypeLoad(io, encver, ptr_load_data);
+            /* FIXME fix empty indices, this load doesn't load correctly */
             SVector_Insert(key->array, o);
         }
         break;
@@ -2694,15 +2702,12 @@ static int load_object_array(struct selva_io *io, struct SelvaObject *obj, const
         for (size_t i = 0; i < n; i++) {
             struct selva_string *value = selva_io_load_string(io);
             TO_STR(value);
-            hll_t *hll = hll_restore(value_str, value_len);
 
-            selva_string_free(value);
-
-            if (!hll) {
-                return SELVA_EINVAL;
+            if (value_len) {
+                hll_t *hll = hll_restore(value_str, value_len);
+                selva_string_free(value);
+                SVector_SetIndex(key->array, i, hll);
             }
-
-            SVector_Insert(key->array, hll);
         }
         break;
     default:
@@ -2913,7 +2918,7 @@ struct SelvaObject *SelvaObjectTypeLoad2(struct selva_io *io, int encver, void *
 static void save_object_string(struct selva_io *io, struct SelvaObjectKey *key) {
     if (!key->value) {
         SELVA_LOG(SELVA_LOGL_CRIT, "STRING value missing");
-        return;
+        selva_io_save_str(io, "", 0);
     }
     selva_io_save_string(io, key->value);
 }
@@ -2949,10 +2954,14 @@ static void save_object_set(struct selva_io *io, struct SelvaObjectKey *key) {
 
 static void save_object_hll(struct selva_io *io, void *value) {
     hll_t *hll = value;
-    size_t len;
-    const char *str = hll_getstr(hll, &len);
 
-    selva_io_save_str(io, str, len);
+    if (hll) {
+        size_t len;
+        const char *str = hll_getstr(hll, &len);
+        selva_io_save_str(io, str, len);
+    } else {
+        selva_io_save_str(io, "", 0);
+    }
 }
 
 static void save_object_array(struct selva_io *io, struct SelvaObjectKey *key, void *ptr_save_data) {
@@ -2979,12 +2988,13 @@ static void save_object_array(struct selva_io *io, struct SelvaObjectKey *key, v
             selva_io_save_double(io, num);
         }
     } else if (key->subtype == SELVA_OBJECT_STRING) {
-        struct SVectorIterator it;
-        struct selva_string *str;
+        for (size_t i = 0; i < array_size; i++) {
+            struct selva_string *s;
 
-        SVector_ForeachBegin(&it, key->array);
-        while ((str = SVector_Foreach(&it))) {
-            selva_io_save_string(io, str);
+            s = SVector_GetIndex(array, i);
+            TO_STR(s);
+
+            selva_io_save_str(io, s_str, s_len);
         }
     } else if (key->subtype == SELVA_OBJECT_OBJECT) {
         for (size_t i = 0; i < array_size; i++) {
@@ -2994,12 +3004,8 @@ static void save_object_array(struct selva_io *io, struct SelvaObjectKey *key, v
             SelvaObjectTypeSave2(io, k, ptr_save_data);
         }
     } else if (key->subtype == SELVA_OBJECT_HLL) {
-        struct SVectorIterator it;
-        void *p;
-
-        SVector_ForeachBegin(&it, key->array);
-        while ((p = SVector_Foreach(&it))) {
-            save_object_hll(io, p);
+        for (size_t i = 0; i < array_size; i++) {
+            save_object_hll(io, SVector_GetIndex(array, i));
         }
     } else {
         SELVA_LOG(SELVA_LOGL_CRIT, "Unknown object array type");
