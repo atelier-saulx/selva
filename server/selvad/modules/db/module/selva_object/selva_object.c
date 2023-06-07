@@ -1361,22 +1361,56 @@ int SelvaObject_SetObject(struct SelvaObject *obj, const struct selva_string *ke
 
 int SelvaObject_AddHllStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, const void *el, size_t el_size) {
     const enum SelvaObjectType type = SELVA_OBJECT_HLL;
-    struct SelvaObjectKey *key;
+    ssize_t ary_err, idx;
     int err;
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
-    if (err) {
-        return err;
-    } else if (key->type != type) {
-        clear_key_value(key);
-        key->type = type;
-        key->value = hll_create();
-    }
+    ary_err = get_array_field_index(key_name_str, key_name_len, &idx);
+    if (ary_err == -2) {
+        err = SELVA_EINVAL;
+    } else if (ary_err >= 0) {
+        struct SelvaObjectKey *key;
+        hll_t *hll_orig;
+        hll_t *hll;
+        int err;
 
-    if (hll_add(&key->value, el, el_size)) {
-        return SELVA_EINVAL; /* TODO error? */
+        err = get_key_array_modify(obj, key_name_str, key_name_len, type, 1, &key);
+        if (err) {
+            return err;
+        }
+
+        hll_orig = hll = SVector_GetIndex(key->array, idx);
+        if (!hll) {
+            hll = hll_create();
+            SVector_SetIndex(key->array, idx, hll);
+            hll_orig = hll;
+        }
+
+        if (hll_add(&hll, el, el_size) < 0) {
+            /* RFE Can hll change even when the function fails? */
+            return SELVA_EINVAL; /* TODO error? */
+        }
+
+        /* RFE would capturing the return value of hll_add() help us here. */
+        if (hll_orig != hll) {
+            SVector_SetIndex(key->array, idx, hll);
+        }
+    } else {
+        struct SelvaObjectKey *key;
+
+        err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+        if (err) {
+            return err;
+        } else if (key->type != type) {
+            clear_key_value(key);
+            key->type = type;
+            key->value = hll_create();
+        }
+
+        if (hll_add(&key->value, el, el_size) < 0) {
+            return SELVA_EINVAL; /* TODO error? */
+        }
     }
 
     return 0;
