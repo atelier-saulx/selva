@@ -214,6 +214,51 @@ static void init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType s
     SVector_Init(key->array, size, NULL);
 }
 
+/**
+ * Array value from idx to k.
+ * @param k should be typically allocated from the stack.
+ * @param arr_key is the array key.
+ * @param array is typically key->array.
+ * @returns k.
+ */
+static struct SelvaObjectKey *array_ind_to_key(struct SelvaObjectKey *restrict k, struct SelvaObjectKey *restrict arr_key, ssize_t ary_idx) {
+    assert(arr_key->type == SELVA_OBJECT_ARRAY);
+
+    *k = (struct SelvaObjectKey){
+        .type = arr_key->subtype,
+        .subtype = SELVA_OBJECT_NULL,
+        .user_meta = 0, /* TODO What's the meta value for array members. */
+        .name_len = 0,
+    };
+    void *p = SVector_GetIndex(arr_key->array, ary_idx);
+
+    switch (arr_key->subtype) {
+        case SELVA_OBJECT_NULL:
+            k->value = NULL;
+            break;
+        case SELVA_OBJECT_DOUBLE:
+            memcpy(&k->emb_double_value, &p, sizeof(double));
+            break;
+        case SELVA_OBJECT_LONGLONG:
+            memcpy(&k->emb_ll_value, &p, sizeof(long long));
+            break;
+        case SELVA_OBJECT_POINTER: /* ptr opts not supported. */
+            k->ptr_opts = &default_ptr_opts;
+            [[fallthrough]];
+        case SELVA_OBJECT_STRING:
+        case SELVA_OBJECT_OBJECT:
+        case SELVA_OBJECT_SET:
+        case SELVA_OBJECT_HLL:
+            k->value = p;
+            break;
+        case SELVA_OBJECT_ARRAY:
+            k->array = p;
+            break;
+    }
+
+    return k;
+}
+
 static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
     switch (subtype) {
     case SELVA_OBJECT_STRING:
@@ -1967,33 +2012,31 @@ enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct s
     return SelvaObject_GetTypeStr(obj, key_name_str, key_name_len);
 }
 
-ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
-    struct SelvaObjectKey *key;
-    int err;
-
-    if (!key_name_str) {
-        return obj->obj_size;
-    }
-
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err) {
-        return err;
-    }
-
+/**
+ * Determine the length of a SelvaObjectKey.
+ * @param ary_idx =-1 no index; >0 index given.
+ */
+static ssize_t SelvaObjectKey_Len(struct SelvaObjectKey *key, ssize_t ary_idx) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
-        return 0;
+        return (ary_idx >= 0) ? SELVA_ENOTSUP : 0;
     case SELVA_OBJECT_DOUBLE:
     case SELVA_OBJECT_LONGLONG:
         /* Obviously this is more than one byte but the user doesn't need to care about that. */
-        return 1;
+        return (ary_idx >= 0) ? SELVA_ENOTSUP : 1;
     case SELVA_OBJECT_STRING:
         /*
          * Now we don't exactly know if the value is some utf8 text string
          * or a binary buffer Heck, we don't even know what the caller
          * expects. So, we'll just return the byte size.
          */
-        return (key->value) ? selva_string_get_len(key->value) : 0;
+        if (!key->value) {
+            return 0;
+        } else if (ary_idx >= 0) {
+            return 1;
+        } else {
+            return selva_string_get_len(key->value);
+        }
     case SELVA_OBJECT_OBJECT:
         if (key->value) {
             const struct SelvaObject *obj2 = (const struct SelvaObject *)key->value;
@@ -2003,16 +2046,46 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
             return 0;
         }
     case SELVA_OBJECT_SET:
-        return key->selva_set.size;
+        return (ary_idx >= 0) ? SELVA_ENOTSUP : (ssize_t)key->selva_set.size;
     case SELVA_OBJECT_ARRAY:
-        return SVector_Size(key->array);
+        if (ary_idx >= 0) {
+            struct SelvaObjectKey k;
+
+            return SelvaObjectKey_Len(array_ind_to_key(&k, key, ary_idx), -1);
+        } else {
+            return SVector_Size(key->array);
+        }
     case SELVA_OBJECT_POINTER:
-        return (key->ptr_opts && key->ptr_opts->ptr_len) ? key->ptr_opts->ptr_len(key->value) : 1;
+        if (ary_idx >= 0) {
+            return SELVA_ENOTSUP;
+        } else if (key->ptr_opts && key->ptr_opts->ptr_len) {
+            return key->ptr_opts->ptr_len(key->value);
+        } else {
+            return 1;
+        }
     case SELVA_OBJECT_HLL:
-        return hll_count(key->value);
+        return (ary_idx >= 0) ? SELVA_ENOTSUP : hll_count(key->value);
     }
 
     return SELVA_EINTYPE;
+}
+
+ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
+    struct SelvaObjectKey *key;
+    ssize_t ary_err, idx;
+    int err;
+
+    if (!key_name_str || key_name_len == 0) {
+        return obj->obj_size;
+    }
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    }
+
+    ary_err = get_array_field_index(key_name_str, key_name_len, &idx);
+    return SelvaObjectKey_Len(key, (ary_err >= 0) ? idx : -1);
 }
 
 ssize_t SelvaObject_Len(struct SelvaObject *obj, const struct selva_string *key_name) {
@@ -2389,6 +2462,7 @@ static void replyWithObject(struct selva_server_response_out *resp, struct selva
     selva_send_array_end(resp);
 }
 
+
 int SelvaObject_ReplyWithObjectStr(
         struct selva_server_response_out *resp,
         struct selva_string *lang,
@@ -2417,39 +2491,9 @@ int SelvaObject_ReplyWithObjectStr(
         }
 
         if (key->type == SELVA_OBJECT_ARRAY) {
-            struct SelvaObjectKey k = {
-                .type = key->subtype,
-                    .subtype = SELVA_OBJECT_NULL,
-                    .user_meta = 0, /* TODO What's the meta value for array members. */
-                    .name_len = 0,
-            };
-            void *p = SVector_GetIndex(key->array, ary_idx);
+            struct SelvaObjectKey k;
 
-            switch (key->subtype) {
-            case SELVA_OBJECT_NULL:
-                k.value = NULL;
-                break;
-            case SELVA_OBJECT_DOUBLE:
-                memcpy(&k.emb_double_value, &p, sizeof(double));
-                break;
-            case SELVA_OBJECT_LONGLONG:
-                memcpy(&k.emb_ll_value, &p, sizeof(long long));
-                break;
-            case SELVA_OBJECT_POINTER: /* ptr opts not supported. */
-                k.ptr_opts = &default_ptr_opts;
-                [[fallthrough]];
-            case SELVA_OBJECT_STRING:
-            case SELVA_OBJECT_OBJECT:
-            case SELVA_OBJECT_SET:
-            case SELVA_OBJECT_HLL:
-                k.value = p;
-                break;
-            case SELVA_OBJECT_ARRAY:
-                k.array = p;
-                break;
-            }
-
-            replyWithKeyValue(resp, lang, &k);
+            replyWithKeyValue(resp, lang, array_ind_to_key(&k, key, ary_idx));
         } else {
             return SELVA_ENOTSUP; /* How? */
         }
