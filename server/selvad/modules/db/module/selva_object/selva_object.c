@@ -206,6 +206,8 @@ static int is_valid_array_subtype(enum SelvaObjectType subtype)
  * The key must be cleared before calling this function.
  */
 static void init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType subtype, size_t size) {
+    assert(key->type == SELVA_OBJECT_NULL);
+
     key->type = SELVA_OBJECT_ARRAY;
     key->subtype = subtype;
     key->array = selva_calloc(1, sizeof(SVector));
