@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "typestr.h"
+#include "util/cstrings.h"
 #include "util/finalizer.h"
 #include "util/selva_string.h"
 #include "util/svector.h"
@@ -464,13 +465,11 @@ void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void 
         return;
     }
 
-    selva_send_array(resp, -1);
-    selva_send_str(resp, type_str, type_len);
-
     if (type == SELVA_OBJECT_ARRAY) {
         enum SelvaObjectType subtype = SELVA_OBJECT_NULL;
         const char *subtype_str;
         size_t subtype_len;
+        ssize_t ary_err, idx;
 
         /*
          * TODO It would be nicer if we wouldn't need to look for the subtype
@@ -478,15 +477,25 @@ void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void 
          */
         (void)SelvaObject_GetArrayStr(obj, okey_str, okey_len, &subtype, NULL);
         subtype_str = SelvaObject_Type2String(subtype, &subtype_len);
-        if (subtype_str) {
+        ary_err = get_array_field_index(okey_str, okey_len, &idx);
+
+        if (!subtype_str) {
+            selva_send_array(resp, 2);
+            selva_send_str(resp, type_str, type_len);
+            selva_send_errorf(resp, SELVA_EINTYPE, "invalid key subtype %d", (int)subtype);
+        } else if (ary_err >= 0) {
+            selva_send_array(resp, 1);
             selva_send_str(resp, subtype_str, subtype_len);
         } else {
-            selva_send_errorf(resp, SELVA_EINTYPE, "invalid key subtype %d", (int)subtype);
+            selva_send_array(resp, 2);
+            selva_send_str(resp, type_str, type_len);
+            selva_send_str(resp, subtype_str, subtype_len);
         }
-
-        selva_send_array_end(resp);
     } else if (type == SELVA_OBJECT_SET) {
         const struct SelvaSet *set;
+
+        selva_send_array(resp, 2);
+        selva_send_str(resp, type_str, type_len);
 
         set = SelvaObject_GetSetStr(obj, okey_str, okey_len);
         if (set) {
@@ -511,10 +520,6 @@ void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void 
             /* Technically ENOENT but we already found the key once. */
             selva_send_errorf(resp, SELVA_EINTYPE, "invalid set key");
         }
-
-        selva_send_array_end(resp); /* len: 2 */
-    } else {
-        selva_send_array_end(resp); /* len: 1 */
     }
 }
 
