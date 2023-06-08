@@ -204,6 +204,15 @@ size_t substring_count(const char *string, const char *substring, size_t n) {
     return count;
 }
 
+static int is_multidim_index(const char *field_str, ptrdiff_t i)
+{
+    if (i > 0 && field_str[i - 1] == ']') {
+        return 1;
+    }
+
+    return 0;
+}
+
 ssize_t get_array_field_index(const char *field_str, size_t field_len, ssize_t *res) {
     const char *si;
     char *end;
@@ -219,6 +228,14 @@ ssize_t get_array_field_index(const char *field_str, size_t field_len, ssize_t *
 
     si = memrchr(field_str, '[', field_len - 2);
     if (!si) {
+        return -2;
+    }
+
+    /*
+     * This won't catch all abuse but at least it fails on the most obvious
+     * seemingly correct but unsupported notation.
+     */
+    if (is_multidim_index(field_str, (ptrdiff_t)(si - field_str))) {
         return -2;
     }
 
