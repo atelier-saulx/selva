@@ -2038,7 +2038,10 @@ static ssize_t SelvaObjectKey_Len(struct SelvaObjectKey *key, ssize_t ary_idx) {
             return selva_string_get_len(key->value);
         }
     case SELVA_OBJECT_OBJECT:
-        if (key->value) {
+        if (ary_idx >= 0) {
+            /* Objects are iterable but not indexable. */
+            return SELVA_ENOTSUP;
+        } else if (key->value) {
             const struct SelvaObject *obj2 = (const struct SelvaObject *)key->value;
 
             return obj2->obj_size;
@@ -2057,6 +2060,7 @@ static ssize_t SelvaObjectKey_Len(struct SelvaObjectKey *key, ssize_t ary_idx) {
         }
     case SELVA_OBJECT_POINTER:
         if (ary_idx >= 0) {
+            /* Sets are iterable but not indexable. */
             return SELVA_ENOTSUP;
         } else if (key->ptr_opts && key->ptr_opts->ptr_len) {
             return key->ptr_opts->ptr_len(key->value);
