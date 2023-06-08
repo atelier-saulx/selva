@@ -520,6 +520,9 @@ void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void 
             /* Technically ENOENT but we already found the key once. */
             selva_send_errorf(resp, SELVA_EINTYPE, "invalid set key");
         }
+    } else {
+        selva_send_array(resp, 1);
+        selva_send_str(resp, type_str, type_len);
     }
 }
 
