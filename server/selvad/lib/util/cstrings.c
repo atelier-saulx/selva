@@ -218,12 +218,8 @@ ssize_t get_array_field_index(const char *field_str, size_t field_len, ssize_t *
     char *end;
     ssize_t i;
 
-    if (field_str[field_len - 1] != ']') {
+    if (field_len < 3 || field_str[field_len - 1] != ']') {
         return -1;
-    }
-
-    if (field_len < 3) {
-        return -2;
     }
 
     si = memrchr(field_str, '[', field_len - 2);
