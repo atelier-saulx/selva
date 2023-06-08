@@ -210,7 +210,7 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
                 /* Keep looking. */
                 continue;
             } else if (err) {
-                selva_send_errorf(resp, err, "get_key");
+                selva_send_error(resp, err, NULL, 0);
                 return;
             }
         }
