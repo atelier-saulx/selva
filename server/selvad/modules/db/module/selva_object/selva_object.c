@@ -214,6 +214,27 @@ static void init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType s
     SVector_Init(key->array, size, NULL);
 }
 
+size_t ary_idx_to_abs(ssize_t len, ssize_t ary_idx) {
+    if (ary_idx >= 0) {
+        return ary_idx;
+    } else if (len == 0) {
+        return 0;
+    } else {
+        return imaxabs((len + ary_idx) % len);
+    }
+}
+
+size_t vec_idx_to_abs(SVector *vec, ssize_t ary_idx) {
+    ssize_t len;
+
+    if (ary_idx >= 0) {
+        return ary_idx;
+    }
+
+    len = SVector_Size(vec);
+    return len == 0 ? 0 : imaxabs((len + ary_idx) % len);
+}
+
 /**
  * Array value from idx to k.
  * @param k should be typically allocated from the stack.
@@ -222,6 +243,8 @@ static void init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType s
  * @returns k.
  */
 static struct SelvaObjectKey *array_ind_to_key(struct SelvaObjectKey *restrict k, struct SelvaObjectKey *restrict arr_key, ssize_t ary_idx) {
+    void *p;
+
     assert(arr_key->type == SELVA_OBJECT_ARRAY);
 
     *k = (struct SelvaObjectKey){
@@ -230,7 +253,13 @@ static struct SelvaObjectKey *array_ind_to_key(struct SelvaObjectKey *restrict k
         .user_meta = 0, /* TODO What's the meta value for array members. */
         .name_len = 0,
     };
-    void *p = SVector_GetIndex(arr_key->array, ary_idx);
+
+    if (ary_idx < 0) {
+        ary_idx = vec_idx_to_abs(arr_key->array, ary_idx);
+    }
+
+    /* NULL is fine for an index that doesn't exist. */
+    p = SVector_GetIndex(arr_key->array, ary_idx);
 
     switch (arr_key->subtype) {
         case SELVA_OBJECT_NULL:
@@ -557,8 +586,10 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
         } else if (ary_err >= 0) {
             new_len = ary_err;
 
-            if (ary_idx == -1) {
-                ary_idx = SelvaObject_GetArrayLenStr(obj, s, new_len) - 1;
+            if (ary_idx < 0) {
+                const size_t ary_len = SelvaObject_GetArrayLenStr(obj, s, new_len);
+
+                ary_idx = ary_idx_to_abs(ary_len, ary_idx);
             }
         }
 
@@ -748,7 +779,7 @@ static struct SelvaObjectKey *find_key(struct SelvaObject *obj, const char *key_
 
 static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectGetKeyFlags flags, struct SelvaObjectKey **out) {
     SELVA_TRACE_BEGIN_AUTO(SelvaObject_get_key);
-    int ary_err;
+    ssize_t ary_err;
     struct SelvaObjectKey *key;
 
     /* Prefetch seems to help just a little bit here. */
@@ -758,18 +789,20 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         return SELVA_ENAMETOOLONG;
     }
 
-    if (memmem(key_name_str, key_name_len, ".", 1)) {
-        return get_key_obj(obj, key_name_str, key_name_len, flags, out);
-    }
-
     /*
-     * Just return the actual array type if getting type of an array field directly.
+     * Note that we generally return whatever was found at the key name
+     * ignoring the last index.
      */
     ary_err = get_array_field_index(key_name_str, key_name_len, NULL);
     if (ary_err == -2) {
         return SELVA_EINVAL;
     } else if (ary_err >= 0) {
         key_name_len = ary_err;
+    }
+
+    if (memmem(key_name_str, key_name_len, ".", 1)) {
+        /* Look for a nested object. */
+        return get_key_obj(obj, key_name_str, key_name_len, flags, out);
     }
 
     key = find_key(obj, key_name_str, key_name_len);
@@ -784,6 +817,7 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
         return SELVA_ENOENT;
     }
 
+    /* FIXME What if there was an index given? */
     if (flags & SELVA_OBJECT_GETKEY_DELETE) {
         remove_key(obj, key);
         key = NULL;
@@ -1220,11 +1254,11 @@ int SelvaObject_SetString(struct SelvaObject *obj, const struct selva_string *ke
 }
 
 int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double default_value, double incr, double *prev) {
-    ssize_t ary_err, idx;
+    ssize_t ary_err, ary_idx;
 
     assert(obj);
 
-    ary_err = get_array_field_index(key_name_str, key_name_len, &idx);
+    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
     if (ary_err == -2) {
         return SELVA_EINVAL;
     } else if (ary_err >= 0) {
@@ -1238,7 +1272,8 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
             return err;
         }
 
-        ptr = SVector_GetIndex(key->array, idx);
+        ary_idx = vec_idx_to_abs(key->array, ary_idx);
+        ptr = SVector_GetIndex(key->array, ary_idx);
         if (ptr) {
             memcpy(&d, &ptr, sizeof(d));
             _Static_assert(sizeof(d) == sizeof(ptr));
@@ -1253,7 +1288,7 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
         /* FIXME Default value is handled incorrectly in the array case. */
         d += incr;
         memcpy(&ptr, &d, sizeof(d));
-        SVector_SetIndex(key->array, idx, ptr);
+        SVector_SetIndex(key->array, ary_idx, ptr);
         if (err) {
             return err;
         }
@@ -1291,11 +1326,11 @@ int SelvaObject_IncrementDouble(struct SelvaObject *obj, const struct selva_stri
 }
 
 int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long default_value, long long incr, long long *prev) {
-    ssize_t ary_err, idx;
+    ssize_t ary_err, ary_idx;
 
     assert(obj);
 
-    ary_err = get_array_field_index(key_name_str, key_name_len, &idx);
+    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
     if (ary_err == -2) {
         return SELVA_EINVAL;
     } else if (ary_err >= 0) {
@@ -1309,7 +1344,8 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
             return err;
         }
 
-        ptr = SVector_GetIndex(key->array, idx);
+        ary_idx = vec_idx_to_abs(key->array, ary_idx);
+        ptr = SVector_GetIndex(key->array, ary_idx);
         memcpy(&ll, &ptr, sizeof(ll));
         _Static_assert(sizeof(ll) == sizeof(ptr));
 
@@ -1320,7 +1356,7 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
         /* FIXME Default value is handled incorrectly in the array case. */
         ll += incr;
         memcpy(&ptr, &ll, sizeof(ll));
-        SVector_SetIndex(key->array, idx, (void *)ll);
+        SVector_SetIndex(key->array, ary_idx, (void *)ll);
         if (err) {
             return err;
         }
@@ -1408,12 +1444,12 @@ int SelvaObject_SetObject(struct SelvaObject *obj, const struct selva_string *ke
 
 int SelvaObject_AddHllStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, const void *el, size_t el_size) {
     const enum SelvaObjectType type = SELVA_OBJECT_HLL;
-    ssize_t ary_err, idx;
+    ssize_t ary_err, ary_idx;
     int err;
 
     assert(obj);
 
-    ary_err = get_array_field_index(key_name_str, key_name_len, &idx);
+    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
     if (ary_err == -2) {
         err = SELVA_EINVAL;
     } else if (ary_err >= 0) {
@@ -1427,10 +1463,11 @@ int SelvaObject_AddHllStr(struct SelvaObject *obj, const char *key_name_str, siz
             return err;
         }
 
-        hll_orig = hll = SVector_GetIndex(key->array, idx);
+        ary_idx = vec_idx_to_abs(key->array, ary_idx);
+        hll_orig = hll = SVector_GetIndex(key->array, ary_idx);
         if (!hll) {
             hll = hll_create();
-            SVector_SetIndex(key->array, idx, hll);
+            SVector_SetIndex(key->array, ary_idx, hll);
             hll_orig = hll;
         }
 
@@ -1441,7 +1478,7 @@ int SelvaObject_AddHllStr(struct SelvaObject *obj, const char *key_name_str, siz
 
         /* RFE would capturing the return value of hll_add() help us here. */
         if (hll_orig != hll) {
-            SVector_SetIndex(key->array, idx, hll);
+            SVector_SetIndex(key->array, ary_idx, hll);
         }
     } else {
         struct SelvaObjectKey *key;
@@ -1688,45 +1725,47 @@ int SelvaObject_InsertArray(struct SelvaObject *obj, const struct selva_string *
     return SelvaObject_InsertArrayStr(obj, key_name_str, key_name_len, subtype, p);
 }
 
-int SelvaObject_AssignArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, size_t idx, void *p) {
+int SelvaObject_AssignArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, ssize_t idx, void *p) {
+    const size_t size_hint = idx >= 0 ? idx + 1 : 1;
     struct SelvaObjectKey *key;
     int err;
 
-    err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, idx + 1, &key);
+    err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, size_hint, &key);
     if (err) {
         return err;
     }
 
-    SVector_SetIndex(key->array, idx, p);
+    SVector_SetIndex(key->array, vec_idx_to_abs(key->array, idx), p);
     return 0;
 }
 
-int SelvaObject_AssignArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, size_t idx, void *p) {
+int SelvaObject_AssignArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, ssize_t idx, void *p) {
     TO_STR(key_name);
 
     return SelvaObject_AssignArrayIndexStr(obj, key_name_str, key_name_len, subtype, idx, p);
 }
 
-int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, size_t idx, void *p) {
+int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, ssize_t idx, void *p) {
+    const size_t size_hint = idx >= 0 ? idx + 1 : 1;
     struct SelvaObjectKey *key;
     int err;
 
-    err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, idx + 1, &key);
+    err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, size_hint, &key);
     if (err) {
         return err;
     }
 
-    SVector_InsertIndex(key->array, idx, p);
+    SVector_InsertIndex(key->array, vec_idx_to_abs(key->array, idx), p);
     return 0;
 }
 
-int SelvaObject_InsertArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, size_t idx, void *p) {
+int SelvaObject_InsertArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, ssize_t idx, void *p) {
     TO_STR(key_name);
 
     return SelvaObject_InsertArrayIndexStr(obj, key_name_str, key_name_len, subtype, idx, p);
 }
 
-int SelvaObject_RemoveArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx) {
+int SelvaObject_RemoveArrayIndexStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, ssize_t idx) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -1741,16 +1780,17 @@ int SelvaObject_RemoveArrayIndexStr(struct SelvaObject *obj, const char *key_nam
         return SELVA_EINVAL;
     }
 
-    if (SVector_Size(key->array) < idx) {
+    size_t i = vec_idx_to_abs(key->array, idx);
+    if (SVector_Size(key->array) < i) {
         return SELVA_EINVAL;
     }
 
-    SVector_RemoveIndex(key->array, idx);
+    SVector_RemoveIndex(key->array, i);
 
     return 0;
 }
 
-int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, size_t idx) {
+int SelvaObject_RemoveArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, ssize_t idx) {
     TO_STR(key_name);
 
     return SelvaObject_RemoveArrayIndexStr(obj, key_name_str, key_name_len, idx);
@@ -2014,16 +2054,20 @@ enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct s
 
 /**
  * Determine the length of a SelvaObjectKey.
- * @param ary_idx =-1 no index; >0 index given.
+ * @param ary_idx =0 no index; <0 backwards index (-1 last etc); >0 index + 1.
  */
 static ssize_t SelvaObjectKey_Len(struct SelvaObjectKey *key, ssize_t ary_idx) {
+    if (key->type != SELVA_OBJECT_ARRAY && ary_idx) {
+        return SELVA_ENOTSUP;
+    }
+
     switch (key->type) {
     case SELVA_OBJECT_NULL:
-        return (ary_idx >= 0) ? SELVA_ENOTSUP : 0;
+        return 0;
     case SELVA_OBJECT_DOUBLE:
     case SELVA_OBJECT_LONGLONG:
         /* Obviously this is more than one byte but the user doesn't need to care about that. */
-        return (ary_idx >= 0) ? SELVA_ENOTSUP : 1;
+        return 1;
     case SELVA_OBJECT_STRING:
         /*
          * Now we don't exactly know if the value is some utf8 text string
@@ -2032,16 +2076,11 @@ static ssize_t SelvaObjectKey_Len(struct SelvaObjectKey *key, ssize_t ary_idx) {
          */
         if (!key->value) {
             return 0;
-        } else if (ary_idx >= 0) {
-            return 1;
         } else {
             return selva_string_get_len(key->value);
         }
     case SELVA_OBJECT_OBJECT:
-        if (ary_idx >= 0) {
-            /* Objects are iterable but not indexable. */
-            return SELVA_ENOTSUP;
-        } else if (key->value) {
+        if (key->value) {
             const struct SelvaObject *obj2 = (const struct SelvaObject *)key->value;
 
             return obj2->obj_size;
@@ -2049,26 +2088,23 @@ static ssize_t SelvaObjectKey_Len(struct SelvaObjectKey *key, ssize_t ary_idx) {
             return 0;
         }
     case SELVA_OBJECT_SET:
-        return (ary_idx >= 0) ? SELVA_ENOTSUP : (ssize_t)key->selva_set.size;
+        return (ssize_t)key->selva_set.size;
     case SELVA_OBJECT_ARRAY:
-        if (ary_idx >= 0) {
+        if (ary_idx) {
             struct SelvaObjectKey k;
 
-            return SelvaObjectKey_Len(array_ind_to_key(&k, key, ary_idx), -1);
+            return SelvaObjectKey_Len(array_ind_to_key(&k, key, ary_idx > 0 ? ary_idx - 1 : ary_idx), 0);
         } else {
             return SVector_Size(key->array);
         }
     case SELVA_OBJECT_POINTER:
-        if (ary_idx >= 0) {
-            /* Sets are iterable but not indexable. */
-            return SELVA_ENOTSUP;
-        } else if (key->ptr_opts && key->ptr_opts->ptr_len) {
+        if (key->ptr_opts && key->ptr_opts->ptr_len) {
             return key->ptr_opts->ptr_len(key->value);
         } else {
             return 1;
         }
     case SELVA_OBJECT_HLL:
-        return (ary_idx >= 0) ? SELVA_ENOTSUP : hll_count(key->value);
+        return hll_count(key->value);
     }
 
     return SELVA_EINTYPE;
@@ -2076,7 +2112,7 @@ static ssize_t SelvaObjectKey_Len(struct SelvaObjectKey *key, ssize_t ary_idx) {
 
 ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     struct SelvaObjectKey *key;
-    ssize_t ary_err, idx;
+    ssize_t ary_err, ary_idx;
     int err;
 
     if (!key_name_str || key_name_len == 0) {
@@ -2088,8 +2124,16 @@ ssize_t SelvaObject_LenStr(struct SelvaObject *obj, const char *key_name_str, si
         return err;
     }
 
-    ary_err = get_array_field_index(key_name_str, key_name_len, &idx);
-    return SelvaObjectKey_Len(key, (ary_err >= 0) ? idx : -1);
+    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
+    if (ary_err >= 0) {
+        if (ary_idx >= 0) {
+            ary_idx++;
+        }
+    } else {
+        ary_idx = 0;
+    }
+
+    return SelvaObjectKey_Len(key, ary_idx);
 }
 
 ssize_t SelvaObject_Len(struct SelvaObject *obj, const struct selva_string *key_name) {
