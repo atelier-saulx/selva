@@ -913,10 +913,38 @@ int SelvaObject_DelKey(struct SelvaObject *obj, const struct selva_string *key_n
 
 int SelvaObject_ExistsStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     struct SelvaObjectKey *key;
+    ssize_t ary_idx, ary_err, ary_len;
+    int err;
 
     assert(obj);
 
-    return get_key(obj, key_name_str, key_name_len, 0, &key);
+    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
+    if (ary_err < 0) {
+        err = SELVA_EINVAL;
+    }
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err || ary_err == 0) {
+        return err;
+    }
+
+    assert(key && key->type == SELVA_OBJECT_ARRAY);
+
+    /* array index given */
+    ary_len = SVector_Size(key->array);
+    ary_idx = ary_idx_to_abs(ary_len, ary_idx);
+
+    switch (key->subtype) {
+    case SELVA_OBJECT_LONGLONG:
+    case SELVA_OBJECT_DOUBLE:
+        return (ary_idx < ary_len) ? 0 : SELVA_ENOENT;
+    case SELVA_OBJECT_STRING:
+    case SELVA_OBJECT_OBJECT:
+    case SELVA_OBJECT_HLL:
+        return SVector_GetIndex(key->array, ary_idx) ? 0 : SELVA_ENOENT;
+    default:
+        return SELVA_ENOENT;
+    }
 }
 
 int SelvaObject_Exists(struct SelvaObject *obj, const struct selva_string *key_name) {
