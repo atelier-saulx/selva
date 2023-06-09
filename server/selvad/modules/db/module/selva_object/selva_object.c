@@ -861,9 +861,20 @@ static int get_selva_set(struct SelvaObject *obj, const char *key_name_str, size
 static int get_selva_set_modify(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
     TO_STR(key_name);
     struct SelvaObjectKey *key;
+    ssize_t ary_err;
     int err;
 
     assert(obj);
+
+    /*
+     * SelvaSet in array is not supported.
+     */
+    ary_err = get_array_field_index(key_name_str, key_name_len, NULL);
+    if (ary_err < 0) {
+        return SELVA_EINVAL;
+    } else if (ary_err > 0) {
+        return SELVA_ENOTSUP;
+    }
 
     if (!SelvaSet_isValidType(type)) {
         return SELVA_EINTYPE;

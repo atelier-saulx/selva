@@ -300,12 +300,15 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
         break;
     case 'S': /* SELVA_OBJECT_SET */
         for (int i = ARGV_OVAL; i < argc; i++) {
-            if (SelvaObject_AddStringSet(obj, argv[ARGV_OKEY], argv[i]) == 0) {
+            err = SelvaObject_AddStringSet(obj, argv[ARGV_OKEY], argv[i]);
+            if (err == 0) {
                 finalizer_del(&fin, argv[i]);
                 values_set++;
+            } else if (values_set == 0) {
+                break;
             }
+            err = 0;
         }
-        err = 0;
         break;
     case 'H': /* HyperLogLog */
         for (int i = ARGV_OVAL; i < argc; i++) {
