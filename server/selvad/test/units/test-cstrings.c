@@ -303,10 +303,10 @@ static char * test_get_array_field_index(void)
     ssize_t res;
 
     len = get_array_field_index(str1, sizeof(str1) - 1, &res);
-    pu_assert_equal("", len, -1);
+    pu_assert_equal("", len, 0);
 
     len = get_array_field_index(str2, sizeof(str2) - 1, &res);
-    pu_assert_equal("", len, -2);
+    pu_assert_equal("", len, -1);
 
     len = get_array_field_index(str3, sizeof(str3) - 1, &res);
     pu_assert_equal("", len, 5);
@@ -325,17 +325,16 @@ static char * test_get_array_field_index(void)
     pu_assert_equal("", res, 1);
 
     len = get_array_field_index(str7, sizeof(str7) - 1, &res);
-    pu_assert_equal("", len, -2);
+    pu_assert_equal("", len, -1);
 
     len = get_array_field_index(str8, sizeof(str8) - 1, &res);
-    pu_assert_equal("", len, 0);
-    pu_assert_equal("", res, 1);
+    pu_assert_equal("", len, -1);
 
     len = get_array_field_index(str9, sizeof(str9) - 1, &res);
-    pu_assert_equal("", len, -2);
+    pu_assert_equal("", len, -1);
 
     len = get_array_field_index(str10, sizeof(str10) - 1, &res);
-    pu_assert_equal("", len, -2);
+    pu_assert_equal("", len, -1);
 
     return NULL;
 }

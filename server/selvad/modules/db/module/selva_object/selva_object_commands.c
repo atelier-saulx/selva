@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "typestr.h"
+#include "util/array_field.h"
 #include "util/cstrings.h"
 #include "util/finalizer.h"
 #include "util/selva_string.h"
@@ -469,7 +470,6 @@ void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void 
         enum SelvaObjectType subtype = SELVA_OBJECT_NULL;
         const char *subtype_str;
         size_t subtype_len;
-        ssize_t ary_err, idx;
 
         /*
          * TODO It would be nicer if we wouldn't need to look for the subtype
@@ -477,13 +477,12 @@ void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void 
          */
         (void)SelvaObject_GetArrayStr(obj, okey_str, okey_len, &subtype, NULL);
         subtype_str = SelvaObject_Type2String(subtype, &subtype_len);
-        ary_err = get_array_field_index(okey_str, okey_len, &idx);
 
         if (!subtype_str) {
             selva_send_array(resp, 2);
             selva_send_str(resp, type_str, type_len);
             selva_send_errorf(resp, SELVA_EINTYPE, "invalid key subtype %d", (int)subtype);
-        } else if (ary_err >= 0) {
+        } else if (get_array_field_index(okey_str, okey_len, NULL) > 0) {
             selva_send_array(resp, 1);
             selva_send_str(resp, subtype_str, subtype_len);
         } else {

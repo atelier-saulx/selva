@@ -19,6 +19,7 @@
 #include "selva_proto.h"
 #include "selva_replication.h"
 #include "selva_server.h"
+#include "util/array_field.h"
 #include "util/bitmap.h"
 #include "util/cstrings.h"
 #include "util/finalizer.h"
@@ -1072,17 +1073,16 @@ static enum selva_op_repl_state modify_array_op(
     ssize_t idx;
 
     new_len = get_array_field_index(field_str, field_len, &idx);
-    if (new_len < 0) {
+    if (new_len <= 0) {
         selva_send_errorf(resp, SELVA_EINVAL, "Invalid array index");
         return SELVA_OP_REPL_STATE_UNCHANGED;
     }
 
     struct SelvaObject *obj = SelvaHierarchy_GetNodeObject(node);
 
-    if (idx == -1) {
+    if (idx < 0) {
         const int ary_len = (int)SelvaObject_GetArrayLenStr(obj, field_str, new_len);
-
-        idx = ary_len - 1 + has_push;
+        idx = ary_idx_to_abs(ary_len, idx) + has_push;
         if (idx < 0) {
             selva_send_errorf(resp, SELVA_EINVAL, "Invalid array index %d", idx);
             return SELVA_OP_REPL_STATE_UNCHANGED;
@@ -1769,7 +1769,7 @@ static void SelvaCommand_Modify(struct selva_server_response_out *resp, const vo
             continue;
         }
 
-        if (get_array_field_index(field_str, field_len, NULL) >= 0) {
+        if (get_array_field_index(field_str, field_len, NULL) > 0) {
             repl_state = modify_array_op(&fin, resp, node, &active_insert_idx, has_push, type_code, field, value);
         } else if (type_code == SELVA_MODIFY_ARG_OP_ARRAY_PUSH) {
             TO_STR(value);

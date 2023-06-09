@@ -37,8 +37,6 @@ size_t substring_count(const char *string, const char *substring, size_t n) __at
  */
 void stringlist_remove_prefix(char *dst, const char *src, int len, const char *prefix_str, size_t prefix_len) __attribute__((access(write_only, 1), access(read_only, 2, 3)));
 
-ssize_t get_array_field_index(const char *field_str, size_t field_len, ssize_t *res) __attribute__((access(read_only, 1, 2), access(write_only, 3)));
-
 /**
  * Calculate the number of instances of ch in s.
  */

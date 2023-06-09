@@ -3,10 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 #define _GNU_SOURCE
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
 #include <string.h>
 #include "jemalloc.h"
 #include "util/cstrings.h"
@@ -202,48 +198,6 @@ size_t substring_count(const char *string, const char *substring, size_t n) {
     }
 
     return count;
-}
-
-static int is_multidim_index(const char *field_str, ptrdiff_t i)
-{
-    if (i > 0 && field_str[i - 1] == ']') {
-        return 1;
-    }
-
-    return 0;
-}
-
-ssize_t get_array_field_index(const char *field_str, size_t field_len, ssize_t *res) {
-    const char *si;
-    char *end;
-    ssize_t i;
-
-    if (field_len < 3 || field_str[field_len - 1] != ']') {
-        return -1;
-    }
-
-    si = memrchr(field_str, '[', field_len - 2);
-    if (!si) {
-        return -2;
-    }
-
-    /*
-     * This won't catch all abuse but at least it fails on the most obvious
-     * seemingly correct but unsupported notation.
-     */
-    if (is_multidim_index(field_str, (ptrdiff_t)(si - field_str))) {
-        return -2;
-    }
-
-    i = (ssize_t)strtoll(si + 1, &end, 10);
-    if (end != field_str + field_len - 1) {
-        return -2;
-    }
-    if (res) {
-        *res = i;
-    }
-
-    return (ssize_t)(si - field_str);
 }
 
 int ch_count(const char *s, char ch) {

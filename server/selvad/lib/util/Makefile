@@ -8,6 +8,7 @@ CFLAGS += -Wno-unused-value
 LDFLAGS += -g -L../
 
 OBJ := \
+	array_field.o \
 	auto_free.o \
 	backoff_timeout.o \
 	base64.o \
