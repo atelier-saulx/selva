@@ -1986,6 +1986,10 @@ static void get_any_string(struct SelvaObjectKey *key, struct selva_string *lang
  * @param[out] res is the any result.
  */
 static void key_to_any(struct selva_string *lang, struct SelvaObjectKey *key, struct SelvaObjectAny *res) {
+    res->type = key->type;
+    res->subtype = key->subtype;
+    res->user_meta = key->user_meta;
+
     switch (key->type) {
     case SELVA_OBJECT_NULL:
         res->p = NULL;
@@ -2051,19 +2055,11 @@ int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, struct selva_string *lang
             return SELVA_ENOENT;
         }
 
-        res->type = key->subtype;
-        res->subtype = SELVA_OBJECT_NULL;
-        res->user_meta = key->user_meta;
 
         array_ind_to_key(&k, key, ary_idx);
         k.user_meta = key->user_meta; /* RFE Should array_ind_to_key() do this? */
-
         key_to_any(lang, &k, res);
     } else {
-        res->type = key->type;
-        res->subtype = key->subtype;
-        res->user_meta = key->user_meta;
-
         key_to_any(lang, key, res);
     }
 
