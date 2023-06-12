@@ -1735,12 +1735,11 @@ int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str
     int err;
 
     err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, 1, &key);
-    if (err) {
-        return err;
+    if (!err) {
+        SVector_Insert(key->array, p);
     }
 
-    SVector_Insert(key->array, p);
-    return 0;
+    return err;
 }
 
 int SelvaObject_InsertArray(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, void *p) {
@@ -1755,12 +1754,11 @@ int SelvaObject_AssignArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     int err;
 
     err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, size_hint, &key);
-    if (err) {
-        return err;
+    if (!err) {
+        SVector_SetIndex(key->array, vec_idx_to_abs(key->array, idx), p);
     }
 
-    SVector_SetIndex(key->array, vec_idx_to_abs(key->array, idx), p);
-    return 0;
+    return err;
 }
 
 int SelvaObject_AssignArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, ssize_t idx, void *p) {
@@ -1775,12 +1773,11 @@ int SelvaObject_InsertArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     int err;
 
     err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, size_hint, &key);
-    if (err) {
-        return err;
+    if (!err) {
+        SVector_InsertIndex(key->array, vec_idx_to_abs(key->array, idx), p);
     }
 
-    SVector_InsertIndex(key->array, vec_idx_to_abs(key->array, idx), p);
-    return 0;
+    return err;
 }
 
 int SelvaObject_InsertArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, ssize_t idx, void *p) {
@@ -2215,12 +2212,11 @@ int SelvaObject_GetUserMetaStr(struct SelvaObject *obj, const char *key_name_str
     struct SelvaObjectKey *key;
 
     err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err) {
-        return err;
+    if (!err) {
+        *meta = key->user_meta;
     }
 
-    *meta = key->user_meta;
-    return 0;
+    return err;
 }
 
 int SelvaObject_GetUserMeta(struct SelvaObject *obj, const struct selva_string *key_name, SelvaObjectMeta_t *meta) {
