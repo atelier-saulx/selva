@@ -184,7 +184,7 @@ retry:
     ptr_type_id = 0;
     goto retry;
 
-    __builtin_unreachable();
+    unreachable();
     return NULL; /* Never reached. */
 }
 

@@ -10,6 +10,7 @@
 /* FIXME Not the actual C23 version. */
 #if __STDC_VERSION__ < 202300L
 #define static_assert _Static_assert
+#define unreachable __builtin_unreachable
 #endif
 
 #if defined(__GNUC__) && !defined(__clang__)
