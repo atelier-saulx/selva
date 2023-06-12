@@ -2084,15 +2084,11 @@ int SelvaObject_GetAny(struct SelvaObject *obj, const struct selva_string *key_n
 
 enum SelvaObjectType SelvaObject_GetTypeStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
     struct SelvaObjectKey *key;
-    enum SelvaObjectType type = SELVA_OBJECT_NULL;
     int err;
 
     err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (!err) {
-        type = key->type;
-    }
 
-    return type;
+    return (err) ? SELVA_OBJECT_NULL : key->type;
 }
 
 enum SelvaObjectType SelvaObject_GetType(struct SelvaObject *obj, const struct selva_string *key_name) {
