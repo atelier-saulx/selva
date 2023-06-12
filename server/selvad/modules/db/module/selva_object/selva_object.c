@@ -195,6 +195,7 @@ static int is_valid_array_subtype(enum SelvaObjectType subtype)
     case SELVA_OBJECT_DOUBLE:
     case SELVA_OBJECT_STRING:
     case SELVA_OBJECT_OBJECT:
+    case SELVA_OBJECT_POINTER:
     case SELVA_OBJECT_HLL:
         return 1;
     default:
