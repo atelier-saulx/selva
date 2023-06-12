@@ -108,6 +108,9 @@ struct SelvaObjectPointerOpts {
  */
 #define selvaobject_autofree __attribute__((cleanup(_cleanup_SelvaObject_Destroy)))
 
+/**
+ * Any value.
+ */
 struct SelvaObjectAny {
     enum SelvaObjectType type; /*!< Type of the value. */
     enum SelvaObjectType subtype; /*!< Subtype of the value. Arrays use this. */

@@ -1975,22 +1975,13 @@ static void get_any_string(struct SelvaObjectKey *key, struct selva_string *lang
     }
 }
 
-int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, struct selva_string *lang, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) {
-    struct SelvaObjectKey *key;
-    enum SelvaObjectType type;
-    int err;
-
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err) {
-        return err;
-    }
-
-    res->subtype = key->subtype;
-    res->user_meta = key->user_meta;
-    type = key->type;
-    res->type = type;
-
-    switch (type) {
+/**
+ * @param[in] lang optional lang for strings.
+ * @param[in] key is the key.
+ * @param[out] res is the any result.
+ */
+static void key_to_any(struct selva_string *lang, struct SelvaObjectKey *key, struct SelvaObjectAny *res) {
+    switch (key->type) {
     case SELVA_OBJECT_NULL:
         res->p = NULL;
         break;
@@ -2027,6 +2018,48 @@ int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, struct selva_string *lang
     case SELVA_OBJECT_HLL:
         res->ll = hll_count(key->value);
         break;
+    }
+}
+
+int SelvaObject_GetAnyLangStr(struct SelvaObject *obj, struct selva_string *lang, const char *key_name_str, size_t key_name_len, struct SelvaObjectAny *res) {
+    struct SelvaObjectKey *key;
+    ssize_t ary_err, ary_idx;
+    int err;
+
+    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    if (err) {
+        return err;
+    }
+
+    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
+    if (ary_err < 0) {
+        return SELVA_EINVAL;
+    } else if (ary_err > 0) {
+        struct SelvaObjectKey k;
+
+        if (key->type != SELVA_OBJECT_ARRAY) {
+            /*
+             * The error could be SELVA_ENOTSUP too but perhaps it's more appropriate
+             * to tell the caller that such value doesn't exist. Also many existing
+             * callers only expect SELVA_ENOENT.
+             */
+            return SELVA_ENOENT;
+        }
+
+        res->type = key->subtype;
+        res->subtype = SELVA_OBJECT_NULL;
+        res->user_meta = key->user_meta;
+
+        array_ind_to_key(&k, key, ary_idx);
+        k.user_meta = key->user_meta; /* RFE Should array_ind_to_key() do this? */
+
+        key_to_any(lang, &k, res);
+    } else {
+        res->type = key->type;
+        res->subtype = key->subtype;
+        res->user_meta = key->user_meta;
+
+        key_to_any(lang, key, res);
     }
 
     return 0;

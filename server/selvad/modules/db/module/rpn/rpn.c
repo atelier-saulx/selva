@@ -663,6 +663,7 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
         if (err == SELVA_ENOENT) {
             return (type == RPN_LVTYPE_NUMBER) ? push_double_result(ctx, nan_undefined()) : push_empty_value(ctx);
         }
+        /* FIXME it's probably EINVAL instead of this. */
         return RPN_ERR_ENOMEM; /* Presumably this the only other relevant error. */
     }
 
