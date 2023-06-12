@@ -169,53 +169,6 @@ struct SelvaObject *SelvaObject_Init(char buf[SELVA_OBJECT_BSIZE]) {
     return obj;
 }
 
-static struct SelvaObjectPointerOpts *get_ptr_opts(unsigned ptr_type_id) {
-    struct SelvaObjectPointerOpts **p;
-
-retry:
-    SET_FOREACH(p, selva_objpop) {
-        struct SelvaObjectPointerOpts *opts = *p;
-
-        if (opts->ptr_type_id == ptr_type_id) {
-            return opts;
-        }
-    }
-
-    ptr_type_id = 0;
-    goto retry;
-
-    unreachable();
-    return NULL; /* Never reached. */
-}
-
-static int is_valid_array_subtype(enum SelvaObjectType subtype)
-{
-    switch (subtype) {
-    case SELVA_OBJECT_LONGLONG:
-    case SELVA_OBJECT_DOUBLE:
-    case SELVA_OBJECT_STRING:
-    case SELVA_OBJECT_OBJECT:
-    case SELVA_OBJECT_POINTER:
-    case SELVA_OBJECT_HLL:
-        return 1;
-    default:
-        return 0;
-    }
-}
-
-/**
- * Init an array on key.
- * The key must be cleared before calling this function.
- */
-static void init_object_array(struct SelvaObjectKey *key, enum SelvaObjectType subtype, size_t size) {
-    assert(key->type == SELVA_OBJECT_NULL);
-
-    key->type = SELVA_OBJECT_ARRAY;
-    key->subtype = subtype;
-    key->array = selva_calloc(1, sizeof(SVector));
-    SVector_Init(key->array, size, NULL);
-}
-
 /**
  * Array value from idx to k.
  * @param k should be typically allocated from the stack.
@@ -269,6 +222,35 @@ static struct SelvaObjectKey *array_ind_to_key(struct SelvaObjectKey *restrict k
     return k;
 }
 
+static void clear_array_idx(SVector *array, enum SelvaObjectType subtype, size_t idx) {
+    void *p;
+
+    p = SVector_GetIndex(array, idx);
+    switch (subtype) {
+    case SELVA_OBJECT_STRING:
+        selva_string_free(p);
+        break;
+    case SELVA_OBJECT_OBJECT:
+        SelvaObject_Destroy(p);
+        break;
+    case SELVA_OBJECT_ARRAY:
+    case SELVA_OBJECT_SET:
+    case SELVA_OBJECT_NULL:
+    case SELVA_OBJECT_DOUBLE:
+    case SELVA_OBJECT_LONGLONG:
+    case SELVA_OBJECT_POINTER:
+        /*
+         * NOP
+         * Pointer arrays don't support cleanup but it would be possible to
+         * add support for SelvaObjectPointerOpts.
+         */
+        break;
+    case SELVA_OBJECT_HLL:
+        hll_destroy(p);
+        break;
+    }
+}
+
 static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
     switch (subtype) {
     case SELVA_OBJECT_STRING:
@@ -287,12 +269,7 @@ static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
 
             SVector_ForeachBegin(&it, array);
             do {
-                struct SelvaObject *k;
-
-                k = SVector_Foreach(&it);
-                if (k) {
-                    SelvaObject_Destroy(k);
-                }
+                SelvaObject_Destroy(SVector_Foreach(&it));
             } while (!SVector_Done(&it));
         }
         break;
@@ -334,6 +311,25 @@ static void clear_object_array(enum SelvaObjectType subtype, SVector *array) {
     selva_free(array);
 }
 
+static struct SelvaObjectPointerOpts *get_ptr_opts(unsigned ptr_type_id) {
+    struct SelvaObjectPointerOpts **p;
+
+retry:
+    SET_FOREACH(p, selva_objpop) {
+        struct SelvaObjectPointerOpts *opts = *p;
+
+        if (opts->ptr_type_id == ptr_type_id) {
+            return opts;
+        }
+    }
+
+    ptr_type_id = 0;
+    goto retry;
+
+    unreachable();
+    return NULL; /* Never reached. */
+}
+
 static void clear_key_value(struct SelvaObjectKey *key) {
     switch (key->type) {
     case SELVA_OBJECT_NULL:
@@ -347,11 +343,7 @@ static void clear_key_value(struct SelvaObjectKey *key) {
         }
         break;
     case SELVA_OBJECT_OBJECT:
-        if (key->value) {
-            struct SelvaObject *obj = (struct SelvaObject *)key->value;
-
-            SelvaObject_Destroy(obj);
-        }
+        SelvaObject_Destroy(key->value);
         break;
     case SELVA_OBJECT_SET:
         SelvaSet_Destroy(&key->selva_set);
@@ -504,6 +496,9 @@ size_t SelvaObject_MemUsage(const void *value) {
     return size;
 }
 
+/**
+ * Insert a new key into obj.
+ */
 static int insert_new_key(struct SelvaObject *obj, const char *name_str, size_t name_len, struct SelvaObjectKey **key_out) {
     struct SelvaObjectKey *key;
 
@@ -525,19 +520,32 @@ static int insert_new_key(struct SelvaObject *obj, const char *name_str, size_t 
     return 0;
 }
 
-static int insert_new_obj_into_array(struct SelvaObject *obj, const char *s, size_t slen, ssize_t ary_idx, struct SelvaObject **out) {
+/**
+ * Init an array on key.
+ * The key must be cleared before calling this function.
+ */
+static void init_array_key(struct SelvaObjectKey *key, enum SelvaObjectType subtype, size_t size) {
+    assert(key->type == SELVA_OBJECT_NULL);
+
+    key->type = SELVA_OBJECT_ARRAY;
+    key->subtype = subtype;
+    key->array = selva_calloc(1, sizeof(SVector));
+    SVector_Init(key->array, size, NULL);
+}
+
+/**
+ * Allocate a new object and insert it into an array field.
+ */
+static struct SelvaObject *insert_new_obj_into_array_key(struct SelvaObjectKey *key, size_t ary_idx) {
     struct SelvaObject *new_obj;
-    int err;
+
+    assert(key->type == SELVA_OBJECT_ARRAY && key->subtype == SELVA_OBJECT_OBJECT);
 
     new_obj = SelvaObject_New();
-    err = SelvaObject_AssignArrayIndexStr(obj, s, slen, SELVA_OBJECT_OBJECT, ary_idx, new_obj);
-    if (err) {
-        SelvaObject_Destroy(new_obj);
-        return err;
-    }
+    /* Note that we expect ary_idx to be empty at this point. */
+    SVector_SetIndex(key->array, ary_idx, new_obj);
 
-    *out = new_obj;
-    return 0;
+    return new_obj;
 }
 
 static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectGetKeyFlags flags, struct SelvaObjectKey **out) {
@@ -622,8 +630,8 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
                 clear_key_value(key);
             }
 
-            init_object_array(key, SELVA_OBJECT_OBJECT, ary_idx + 1);
-            err = insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
+            init_array_key(key, SELVA_OBJECT_OBJECT, ary_idx + 1);
+            obj = insert_new_obj_into_array_key(key, ary_idx);
             if (err) {
                 return err;
             }
@@ -670,12 +678,9 @@ static int get_key_obj(struct SelvaObject *obj, const char *key_name_str, size_t
             /*
              * Keep nesting or return an object from the array if this was the last token.
              */
-            err = SelvaObject_GetArrayIndexAsSelvaObject(obj, s, slen, ary_idx, &obj);
-            if ((err == SELVA_ENOENT || !obj) && (flags & SELVA_OBJECT_GETKEY_CREATE)) {
-                err = insert_new_obj_into_array(obj, s, slen, ary_idx, &obj);
-            }
-            if (err) {
-                return err;
+            obj = SVector_GetIndex(key->array, ary_idx);
+            if (!obj && (flags & SELVA_OBJECT_GETKEY_CREATE)) {
+                obj = insert_new_obj_into_array_key(key, ary_idx);
             }
         } else {
             /*
@@ -808,10 +813,29 @@ static int get_key(struct SelvaObject *obj, const char *key_name_str, size_t key
     return 0;
 }
 
+static int is_valid_array_subtype(enum SelvaObjectType subtype)
+{
+    switch (subtype) {
+    case SELVA_OBJECT_LONGLONG:
+    case SELVA_OBJECT_DOUBLE:
+    case SELVA_OBJECT_STRING:
+    case SELVA_OBJECT_OBJECT:
+    case SELVA_OBJECT_POINTER:
+    case SELVA_OBJECT_HLL:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 static inline int array_type_match(const struct SelvaObjectKey *key, enum SelvaObjectType subtype) {
     return key->type == SELVA_OBJECT_ARRAY && key->subtype == subtype;
 }
 
+/**
+ * Get an array field for modify.
+ * If the array doesn't exist yet it will be created.
+ */
 static int get_key_array_modify(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, size_t size_hint, struct SelvaObjectKey **key_out) {
     struct SelvaObjectKey *key;
     int err;
@@ -829,18 +853,42 @@ static int get_key_array_modify(struct SelvaObject *obj, const char *key_name_st
         }
 
         clear_key_value(key);
-        init_object_array(key, subtype, size_hint);
+        init_array_key(key, subtype, size_hint);
     }
 
     *key_out = key;
     return 0;
 }
 
+static int is_valid_selva_set_key(const char *key_name_str, size_t key_name_len) {
+    ssize_t ary_err;
+
+    /*
+     * SelvaSet in an array is not supported.
+     */
+    ary_err = get_array_field_index(key_name_str, key_name_len, NULL);
+    if (ary_err < 0) {
+        return SELVA_EINVAL;
+    } else if (ary_err > 0) {
+        return SELVA_ENOTSUP;
+    }
+
+    return 0;
+}
+
+/**
+ * Get a SelvaSet field.
+ */
 static int get_selva_set(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaSetType type, struct SelvaSet **set_out) {
     struct SelvaObjectKey *key;
     int err;
 
     assert(obj);
+
+    err = is_valid_selva_set_key(key_name_str, key_name_len);
+    if (err) {
+        return err;
+    }
 
     err = get_key(obj, key_name_str, key_name_len, 0, &key);
     if (err) {
@@ -859,22 +907,19 @@ static int get_selva_set(struct SelvaObject *obj, const char *key_name_str, size
     return 0;
 }
 
+/**
+ * Get a SelvaSet field for modify.
+ */
 static int get_selva_set_modify(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
     TO_STR(key_name);
     struct SelvaObjectKey *key;
-    ssize_t ary_err;
     int err;
 
     assert(obj);
 
-    /*
-     * SelvaSet in array is not supported.
-     */
-    ary_err = get_array_field_index(key_name_str, key_name_len, NULL);
-    if (ary_err < 0) {
-        return SELVA_EINVAL;
-    } else if (ary_err > 0) {
-        return SELVA_ENOTSUP;
+    err = is_valid_selva_set_key(key_name_str, key_name_len);
+    if (err) {
+        return err;
     }
 
     if (!SelvaSet_isValidType(type)) {
@@ -1755,11 +1800,15 @@ int SelvaObject_AssignArrayIndexStr(struct SelvaObject *obj, const char *key_nam
     int err;
 
     err = get_key_array_modify(obj, key_name_str, key_name_len, subtype, size_hint, &key);
-    if (!err) {
-        SVector_SetIndex(key->array, vec_idx_to_abs(key->array, idx), p);
+    if (err) {
+        return err;
     }
 
-    return err;
+    idx = vec_idx_to_abs(key->array, idx);
+    clear_array_idx(key->array, key->subtype, idx);
+    SVector_SetIndex(key->array, idx, p);
+
+    return 0;
 }
 
 int SelvaObject_AssignArrayIndex(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaObjectType subtype, ssize_t idx, void *p) {
