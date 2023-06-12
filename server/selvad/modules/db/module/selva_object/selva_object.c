@@ -1683,7 +1683,6 @@ static int SelvaObject_GetArrayIndex(
     }
 
     *out = res;
-
     return 0;
 }
 
@@ -1692,37 +1691,43 @@ int SelvaObject_GetArrayIndexAsRmsStr(struct SelvaObject *obj, const char *key_n
 }
 
 int SelvaObject_GetArrayIndexAsSelvaObject(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, struct SelvaObject **out) {
-    return SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_OBJECT, (void **)out);
+    void *p;
+    int err;
+
+    err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_OBJECT, &p);
+
+    if (!err) {
+        *out = p;
+    }
+    return err;
 }
 
 int SelvaObject_GetArrayIndexAsLongLong(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, long long *out) {
     void *lptr;
     int err;
-    long long l;
 
     err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_LONGLONG, &lptr);
-    if (err) {
-        return err;
-    }
+    if (!err) {
+        long long l;
 
-    memcpy(&l, &lptr, sizeof(long long));
-    *out = l;
-    return 0;
+        memcpy(&l, &lptr, sizeof(long long));
+        *out = l;
+    }
+    return err;
 }
 
 int SelvaObject_GetArrayIndexAsDouble(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, size_t idx, double *out) {
     void *dptr;
     int err;
-    double d;
 
     err = SelvaObject_GetArrayIndex(obj, key_name_str, key_name_len, idx, SELVA_OBJECT_DOUBLE, &dptr);
-    if (err) {
-        return err;
-    }
+    if (!err) {
+        double d;
 
-    memcpy(&d, &dptr, sizeof(double));
-    *out = d;
-    return 0;
+        memcpy(&d, &dptr, sizeof(double));
+        *out = d;
+    }
+    return err;
 }
 
 int SelvaObject_InsertArrayStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaObjectType subtype, void *p) {
