@@ -75,10 +75,14 @@ static void SelvaRpn_Eval(enum SelvaRpnEvalType type, struct selva_server_respon
 
 
     rpn_set_reg(rpn_ctx, 0, reg0_str, reg0_len, 0);
-    if (reg0_len >= SELVA_NODE_ID_SIZE) {
+    if (reg0_len >= 0) {
+        Selva_NodeId node_id;
         struct SelvaHierarchyNode *node;
 
-        node = SelvaHierarchy_FindNode(hierarchy, reg0_str);
+        memset(node_id, '\0', SELVA_NODE_ID_SIZE);
+        memcpy(node_id, reg0_str, min(reg0_len, SELVA_NODE_ID_SIZE));
+
+        node = SelvaHierarchy_FindNode(hierarchy, node_id);
         if (node) {
             rpn_set_hierarchy_node(rpn_ctx, hierarchy, node);
             rpn_set_obj(rpn_ctx, SelvaHierarchy_GetNodeObject(node));

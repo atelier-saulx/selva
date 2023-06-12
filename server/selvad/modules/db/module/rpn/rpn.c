@@ -243,7 +243,7 @@ static inline double js_fmod(double x, double y) {
     return copysign(result, x);
 }
 
-static int rpn_operand2string(struct rpn_ctx *ctx, const struct rpn_operand *o) {
+static void rpn_operand2string(struct rpn_ctx *ctx, const struct rpn_operand *o) {
     const char *str = OPERAND_GET_S(o);
     const size_t len = OPERAND_GET_S_LEN(o);
 
@@ -252,8 +252,6 @@ static int rpn_operand2string(struct rpn_ctx *ctx, const struct rpn_operand *o) 
     } else {
         (void)selva_string_replace(ctx->string, str, len);
     }
-
-    return RPN_ERR_OK;
 }
 
 static struct rpn_operand *alloc_rpn_operand(size_t s_size) {
@@ -660,11 +658,8 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
 
     err = SelvaObject_GetAnyStr(ctx->obj, field_str, field_len, &any);
     if (err || any.type == SELVA_OBJECT_NULL) {
-        if (err == SELVA_ENOENT) {
-            return (type == RPN_LVTYPE_NUMBER) ? push_double_result(ctx, nan_undefined()) : push_empty_value(ctx);
-        }
-        /* FIXME it's probably EINVAL instead of this. */
-        return RPN_ERR_ENOMEM; /* Presumably this the only other relevant error. */
+        return (type == RPN_LVTYPE_NUMBER) ? push_double_result(ctx, nan_undefined()) : push_empty_value(ctx);
+        /* RFE The field_str might be also misformatted, in which case an error would make sense. */
     }
 
     const enum SelvaObjectType field_type = any.type;
@@ -699,11 +694,6 @@ static enum rpn_error rpn_getfld(struct rpn_ctx *ctx, const struct rpn_operand *
             if (field_type == SELVA_OBJECT_STRING && any.str) {
                 return push_selva_string_result(ctx, any.str);
             } else {
-#if 0
-                SELVA_LOG(SELVA_LOGL_DBG, "Field \"%s\" not found in node: \"%.*s\"",
-                          OPERAND_GET_S(field),
-                          (int)SELVA_NODE_ID_SIZE, (const void *)OPERAND_GET_S(ctx->reg[0]));
-#endif
                 return push_empty_value(ctx);
             }
         }
@@ -994,9 +984,7 @@ static enum rpn_error rpn_op_has(struct rpn_ctx *ctx) {
 
     if (set) {
         if (set->type == SELVA_SET_TYPE_STRING) {
-            if(rpn_operand2string(ctx, v)) {
-                return RPN_ERR_ENOMEM;
-            }
+            rpn_operand2string(ctx, v);
 
             return push_int_result(ctx, SelvaSet_Has(set, ctx->string));
         } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
@@ -2151,7 +2139,7 @@ enum rpn_error rpn_string(struct rpn_ctx *ctx, const struct rpn_expression *expr
     *out = selva_string_create(OPERAND_GET_S(res), OPERAND_GET_S_LEN(res), 0);
     free_rpn_operand(&res);
 
-    return *out ? RPN_ERR_OK : RPN_ERR_ENOMEM;
+    return RPN_ERR_OK;
 }
 
 enum rpn_error rpn_selvaset(struct rpn_ctx *ctx, const struct rpn_expression *expr, struct SelvaSet *out) {
