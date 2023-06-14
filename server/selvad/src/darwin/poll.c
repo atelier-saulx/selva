@@ -64,16 +64,19 @@ __unused static void print_events(const struct pollfd *pfd)
 
 void evl_poll(struct event_loop_state *state, const struct timespec *timeout)
 {
-    int nfds = 0;
-    int nfds_out;
-    const int itim = timeout ? timeout->tv_sec + (int)(timeout->tv_nsec / 1000000000) : -1;
+    int nfds = 0, nfds_out, itim;
     struct timespec expire, cur;
     const struct timespec sleepy = {
         .tv_nsec = 500,
     };
 
     ts_monotime(&expire);
-    timespec_add(&expire, &expire, timeout);
+    if (timeout) {
+        itim = timeout->tv_sec + (int)(timeout->tv_nsec / 1000000000);
+        timespec_add(&expire, &expire, timeout);
+    } else {
+        itim = -1;
+    }
 
     for (int fd = 0; fd < EVENT_LOOP_MAX_FDS; fd++) {
         enum event_type mask = state->fds[fd].mask & (EVENT_TYPE_FD_READABLE | EVENT_TYPE_FD_WRITABLE);
