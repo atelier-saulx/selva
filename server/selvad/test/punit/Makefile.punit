@@ -2,7 +2,7 @@
 # PUnit, a portable unit testing framework for C.
 # Inspired by: http://www.jera.com/techinfo/jtns/jtn002.html
 #
-# Copyright (c) 2022 SAULX
+# Copyright (c) 2022-2023 SAULX
 # Copyright (c) 2013, Olli Vanhoja <olli.vanhoja@cs.helsinki.fi>
 # Copyright (c) 2012, Ninjaware Oy, Olli Vanhoja <olli.vanhoja@ninjaware.fi>
 # All rights reserved.
@@ -56,12 +56,15 @@ include $(wildcard *.mk)
 
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 CC ?= gcc
-CFLAGS += -fprofile-arcs -ftest-coverage -Wall -MMD -DPU_TEST_BUILD
-LDFLAGS += -lgcov --coverage
+CFLAGS += -Wall -MMD -DPU_TEST_BUILD
+ifeq ($(uname_S),Linux)
+	CFLAGS +=  -fprofile-arcs -ftest-coverage
+	LDFLAGS += -lgcov --coverage
+endif
 # Link math?
 ifeq ($(PU_LMATH),1)
 ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
-	CFLAGS += -lm -DPU_LMATH
+	CFLAGS +=  -lm -DPU_LMATH
 	LDFLAGS += -lm
 endif
 ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
@@ -126,7 +129,7 @@ bin/%: %.c $(PU_OBJ)
 	@echo "Build test: $(TESTNAME)"
 	@echo "=================================================================="
 	$(eval DEPS := $(patsubst %,./$(ODIR)/%,$(notdir $(SRC-$(TESTNAME):.c=.o))))
-	$(CC) $(LDFLAGS) $(IDIR) $(IDIR_TEST) $^ $(DEPS) -o ./$@
+	$(CC)  -std=gnu2x -g3 $(LDFLAGS) $(IDIR) $(IDIR_TEST) $^ $(DEPS) -o ./$@
 	@echo "=================================================================="
 
 # Run tests

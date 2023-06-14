@@ -23,7 +23,13 @@ CFLAGS := $(CFLAGS) \
 		   -g3 \
 		   -include ../../tunables.h \
 
-LDFLAGS := -Wl,-rpath,'$$ORIGIN'/../../../lib -L ../../lib -ljemalloc_selva -ldeflate
+ifeq ($(uname_S),Linux)
+LDFLAGS := -Wl,-rpath,'$$ORIGIN'/../../../lib
+endif
+ifeq ($(uname_S),Darwin)
+LDFLAGS := -Wl,-rpath,@executable_path/../../../lib
+endif
+LDFLAGS += -L ../../lib -ljemalloc_selva -ldeflate
 
 #export LD_LIBRARY_PATH=`echo $LD_LIBRARY_PATH`:$(LIBDIR)
 
