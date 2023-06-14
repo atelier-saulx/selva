@@ -128,13 +128,11 @@ int main(void) {
 "// crc32c.h\n"
 "// Tables and constants for crc32c.c software and hardware calculations.\n"
 "\n"
-#if 0
 "// Table for a 64-bits-at-a-time software CRC-32C calculation. This table\n"
 "// has built into it the pre and post bit inversion of the CRC."
     );
     crc32c_word_table();
     puts(
-#endif
 "\n// Block sizes for three-way parallel crc computation.  LONG and SHORT\n"
 "// must both be powers of two.  The associated string constants must be set\n"
 "// accordingly, for use in constructing the assembler instructions."

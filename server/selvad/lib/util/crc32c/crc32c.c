@@ -17,6 +17,7 @@
  *
  * crc32c.c -- compute CRC-32C using the Intel crc32 instruction
  * Copyright (C) 2013, 2021 Mark Adler <madler@alumni.caltech.edu>
+ * Copyright (C) 2023 Saulx
  * SPDX-License-Identifier: Zlib
  */
 
@@ -24,6 +25,8 @@
 #include <stdint.h>
 
 #include "crc32c_table.h"
+
+#if defined(__x86_64__)
 
 /* Apply the zeros operator table to crc. */
 static uint32_t crc32c_shift(uint32_t const zeros[][256], uint32_t crc) {
@@ -39,7 +42,7 @@ static uint32_t crc32c_shift(uint32_t const zeros[][256], uint32_t crc) {
  * cycles.
  */
 uint32_t crc32c(uint32_t crc, void const *buf, size_t len) {
-    if (buf == NULL) {
+    if (len == 0) {
         return 0;
     }
 
@@ -127,3 +130,41 @@ uint32_t crc32c(uint32_t crc, void const *buf, size_t len) {
 
     return ~(uint32_t)crc0;
 }
+
+#else /* software implementation */
+
+/* little-endian only */
+uint32_t crc32c(uint32_t crc, void const *buf, size_t len) {
+    if (len == 0) {
+        return 0;
+    }
+
+    unsigned char const *data = buf;
+    while (len && ((uintptr_t)data & 7) != 0) {
+        crc = (crc >> 8) ^ crc32c_table[0][(crc ^ *data++) & 0xff];
+        len--;
+    }
+    size_t n = len >> 3;
+    for (size_t i = 0; i < n; i++) {
+        uint64_t word = crc ^ ((uint64_t const *)data)[i];
+        crc = crc32c_table[7][word & 0xff] ^
+              crc32c_table[6][(word >> 8) & 0xff] ^
+              crc32c_table[5][(word >> 16) & 0xff] ^
+              crc32c_table[4][(word >> 24) & 0xff] ^
+              crc32c_table[3][(word >> 32) & 0xff] ^
+              crc32c_table[2][(word >> 40) & 0xff] ^
+              crc32c_table[1][(word >> 48) & 0xff] ^
+              crc32c_table[0][word >> 56];
+    }
+    data += n << 3;
+    len &= 7;
+    while (len) {
+        len--;
+        crc = (crc >> 8) ^ crc32c_table[0][(crc ^ *data++) & 0xff];
+    }
+
+    return crc;
+}
+
+#endif
+
