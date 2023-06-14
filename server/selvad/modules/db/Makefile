@@ -48,7 +48,7 @@ OBJ := \
 	   module/update.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -I./include -include ../../tunables.h
-LDFLAGS += -ldeflate -lutil -ljemalloc_selva -lhiredis
+LDFLAGS += -ldeflate -lutil -ljemalloc_selva
 TARGET := ../mod_db$(MOD_SUFFIX)
 
 $(TARGET): $(OBJ)

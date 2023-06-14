@@ -9,7 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#if 0
 #include <hiredis/hiredis.h>
+#endif
 #include "util/queue_r.h"
 #include "selva_db.h"
 #include "db_config.h"
@@ -107,12 +109,16 @@ static void async_task_yield(void) {
 
 void *SelvaModify_AsyncTaskWorkerMain(void *argv) {
     uint64_t thread_idx = (uint64_t)argv;
+#if 0
     int port;
     const char *addr;
     redisContext *ctx = NULL;
     queue_cb_t *queue = queues + thread_idx;
+#endif
 
     ASYNC_TASK_LOG("Started async task worker\n");
+    exit(1); /* FIXME */
+#if 0
 
     addr = selva_glob_config.redis_addr;
     port = selva_glob_config.redis_port;
@@ -248,6 +254,7 @@ error:
     ASYNC_TASK_LOG("Thread restarting... Ran for %ld minutes\n", (cur_time.tv_sec - start_time.tv_sec) / 60);
     thread_ids[thread_idx] = 0;
     redisFree(ctx);
+#endif
 
     return NULL;
 }
