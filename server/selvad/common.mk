@@ -28,7 +28,7 @@ ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
 	LIB_SUFFIX := .so
 	MOD_SUFFIX := .so
 endif
-ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
+ifeq ($(uname_S),Darwin) # Assume macOS
 	ROSETTA2 := $(shell sh -c 'sysctl -n sysctl.proc_translated 2>/dev/null || echo 0')
 
 	CFLAGS += -g -Wno-zero-length-array -Wno-c11-extensions -Wno-unknown-attributes
@@ -40,8 +40,7 @@ ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
 		endif
 	endif
 	ifeq ($(uname_M),arm64)
-		# We use Rosetta 2 anyway
-		CFLAGS += -march=x86-64
+		CFLAGS += -mcpu=apple-m1
 	endif
 
 	LIB_SUFFIX := .dylib
