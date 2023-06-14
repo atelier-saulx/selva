@@ -9,6 +9,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "util/svector.h"
+#include "util/cstrings.h"
 #include "util/array_field.h"
 
 static int is_valid_index_notation(const char *field_str, ptrdiff_t i)
