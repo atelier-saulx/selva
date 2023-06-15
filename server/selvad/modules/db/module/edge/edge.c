@@ -2,9 +2,11 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#define _EDGE_C_ 1
 #include <assert.h>
 #include <stddef.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include "jemalloc.h"
@@ -122,27 +124,40 @@ __attribute__((nonnull (1, 2))) static struct EdgeField *alloc_EdgeField(
     return edgeField;
 }
 
-struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *src_node, const char *field_name_str, size_t field_name_len) {
-    const struct SelvaHierarchyMetadata *src_metadata;
+static struct SelvaObject *get_edges(const struct SelvaHierarchyNode *node) {
+    const struct SelvaHierarchyMetadata *metadata;
     struct SelvaObject *edges;
-    int err;
 
     /* Some callers expect that src_node can be NULL. */
-    if (!src_node) {
+    if (!node) {
         return NULL;
     }
 
     /*
      * The edges object is allocated lazily so the called might need to allocate it.
      */
-    src_metadata = SelvaHierarchy_GetNodeMetadataByPtr(src_node);
-    edges = src_metadata->edge_fields.edges;
+    metadata = SelvaHierarchy_GetNodeMetadataByPtr(node);
+    edges = metadata->edge_fields.edges;
+
+    return edges;
+}
+
+#define GET_EDGE_QP(T, F, N, ...) \
+    STATIC_IF (IS_POINTER_CONST((N)), \
+            (const struct SelvaObject *) (F) ((N) __VA_OPT__(,) __VA_ARGS__), \
+            (struct SelvaObject *) (F) ((N) __VA_OPT__(,) __VA_ARGS__))
+#define get_edges(NODE) GET_EDGE_QP(struct SelvaHierarchyNode, get_edges, (NODE))
+
+struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *src_node, const char *field_name_str, size_t field_name_len) {
+    struct SelvaObject *edges;
+    void *p;
+    struct EdgeField *src_edge_field;
+    int err;
+
+    edges = get_edges(src_node);
     if (!edges) {
         return NULL;
     }
-
-    void *p;
-    struct EdgeField *src_edge_field;
 
     err = SelvaObject_GetPointerStr(edges, field_name_str, field_name_len, &p);
     src_edge_field = p;
@@ -762,34 +777,116 @@ int Edge_ClearField(
     return clear_field(hierarchy, src_node, src_edge_field);
 }
 
+static int delete_field(
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *src_node,
+        const char *field_name_str,
+        size_t field_name_len,
+        struct EdgeField *src_edge_field) {
+    struct SelvaObject *edges;
+    int res, err;
+
+    /*
+     * The field should be empty before its deleted from the edges object
+     * because EdgeField_Free() can't call clear_field().
+     */
+    res = clear_field(hierarchy, src_node, src_edge_field);
+    if (res < 0) {
+        return res;
+    }
+
+    edges = SelvaHierarchy_GetNodeMetadataByPtr(src_node)->edge_fields.edges;
+    if (!edges) {
+        return SELVA_ENOENT;
+    }
+
+    /*
+     * Doing this will cause a full cleanup of the edges and origin pointers (EdgeField_Free()).
+     */
+    err = SelvaObject_DelKeyStr(edges, field_name_str, field_name_len);
+    if (err) {
+        SELVA_LOG(SELVA_LOGL_ERR, "Failed to delete the edge field (\"%.*s\"): %s",
+                  (int)field_name_len, field_name_str,
+                  selva_strerror(err));
+    }
+
+    return 0;
+}
+
 int Edge_DeleteField(
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *src_node,
         const char *field_name_str,
         size_t field_name_len) {
-    const struct EdgeField *src_edge_field;
-    int res;
+    struct EdgeField *src_edge_field;
 
     src_edge_field = Edge_GetField(src_node, field_name_str, field_name_len);
     if (!src_edge_field) {
         return SELVA_ENOENT;
     }
 
-    /*
-     * The field should be empty before its deleted from the edges object
-     * because EdgeField_Free() can't call clear_field().
-     */
-    res = Edge_ClearField(hierarchy, src_node, field_name_str, field_name_len);
-    if (res < 0) {
-        return res;
+    return delete_field(hierarchy, src_node, field_name_str, field_name_len, src_edge_field);
+}
+
+int Edge_DeleteAll(
+        struct SelvaHierarchy *hierarchy,
+        struct SelvaHierarchyNode *src_node,
+        const char *field_name_str,
+        size_t field_name_len) {
+    struct SelvaObject *edges;
+    struct SelvaObjectAny any;
+    int err;
+
+    edges = get_edges(src_node);
+    if (!edges) {
+        return SELVA_ENOENT;
     }
 
-    /*
-     * Doing this will cause a full cleanup of the edges and origin pointers (EdgeField_Free()).
-     */
-    if (SelvaObject_DelKeyStr(SelvaHierarchy_GetNodeMetadataByPtr(src_node)->edge_fields.edges, field_name_str, field_name_len)) {
-        SELVA_LOG(SELVA_LOGL_ERR, "Failed to delete the edge field: \"%.*s\"",
-                  (int)field_name_len, field_name_str);
+    err = SelvaObject_GetAnyStr(edges, field_name_str, field_name_len, &any);
+    if (err) {
+        return err;
+    }
+
+    if (any.type == SELVA_OBJECT_POINTER) {
+        struct EdgeField *src_edge_field = any.p;
+
+        /*
+         * A pointer in edges is always an edge field.
+         */
+        return delete_field(hierarchy, src_node, field_name_str, field_name_len, src_edge_field);
+    } else if (any.type == SELVA_OBJECT_OBJECT) {
+        SelvaObject_Iterator *it;
+        const char *key_str;
+
+        it = SelvaObject_ForeachBegin(any.obj);
+        while ((key_str = SelvaObject_ForeachKey(any.obj, &it))) {
+            const size_t key_len = strlen(key_str);
+            const size_t slen = field_name_len + key_len + 2;
+            char s[slen];
+
+            snprintf(s, slen, "%.*s.%.*s",
+                     (int)field_name_len, field_name_str,
+                     (int)key_len, key_str);
+
+            /* recurse */
+            err = Edge_DeleteAll(hierarchy, src_node, s, slen);
+            if (err < 0) {
+                /* RFE Should we delete all we can? */
+                return err;
+            }
+
+            /* Now we should be able to delete this field safely. */
+            err = SelvaObject_DelKeyStr(edges, field_name_str, field_name_len);
+            if (err) {
+                return err;
+            }
+        }
+    } else if (any.type == SELVA_OBJECT_ARRAY) {
+        /* An array of edges, huh? I don't think we support this kind of heresy. */
+        return SELVA_EINTYPE;
+    } else {
+        /* Shouldn't happen? */
+        return SELVA_EINTYPE;
     }
 
     return 0;

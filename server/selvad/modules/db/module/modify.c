@@ -878,12 +878,22 @@ int SelvaModify_ModifyDel(
         err = SelvaHierarchy_DelChildren(hierarchy, node);
     } else if (!strcmp(field_str, "parents")) {
         err = SelvaHierarchy_DelParents(hierarchy, node);
-    } else { /* It's either an edge field or an object field. */
-        err = Edge_DeleteField(hierarchy, node, field_str, field_len);
-        if (err == SELVA_ENOENT) {
-            /* Finally let's try if it's an object field. */
-            err = SelvaObject_DelKeyStr(obj, field_str, field_len);
-        }
+    } else { /* It's an edge field or an object field. */
+        int err1, err2;
+
+        /*
+         * We call both so that also records get cleared.
+         * Example:
+         * rec[]: {
+         *   status: { type: 'boolean' },
+         *   refs: { type: 'references' },
+         * } = rec['nice'] = { status: true, refs: ... }
+         * then
+         * delete rec['nice']
+         */
+        err1 = Edge_DeleteAll(hierarchy, node, field_str, field_len);
+        err2 = SelvaObject_DelKeyStr(obj, field_str, field_len);
+        err = err1 != SELVA_ENOENT ? err1 : err2;
     }
 
     return err > 0 ? 0 : err;
