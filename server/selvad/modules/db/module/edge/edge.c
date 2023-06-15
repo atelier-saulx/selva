@@ -639,14 +639,14 @@ static int clear_field(
     SVECTOR_AUTOFREE(arcs);
     struct SVectorIterator it;
     const struct SelvaHierarchyNode *dst_node;
-    int err = 0;
+    int err = 0, err_bck = 0;
 
     /*
      * Clone the arcs vector to be safe with deletes.
+     * Never fails, and if it does nothing bad will
+     * happen.
      */
-    if (unlikely(!SVector_Clone(&arcs, &edge_field->arcs, NULL))) {
-        return SELVA_ENOMEM;
-    }
+    (void)SVector_Clone(&arcs, &edge_field->arcs, NULL);
 
     SVector_ForeachBegin(&it, &arcs);
     while ((dst_node = SVector_Foreach(&it))) {
@@ -667,6 +667,7 @@ static int clear_field(
                       edge_field,
                       (int)SELVA_NODE_ID_SIZE, dst_node_id,
                       selva_strerror(err));
+            err_bck = err;
         }
     }
 
