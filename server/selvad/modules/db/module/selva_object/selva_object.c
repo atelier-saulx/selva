@@ -864,7 +864,7 @@ static int is_valid_selva_set_key(const char *key_name_str, size_t key_name_len)
     ssize_t ary_err;
 
     /*
-     * SelvaSet in an array is not supported.
+     * SelvaSet in an array is not supported nor indexing into a set.
      */
     ary_err = get_array_field_index(key_name_str, key_name_len, NULL);
     if (ary_err < 0) {
@@ -899,7 +899,8 @@ static int get_selva_set(struct SelvaObject *obj, const char *key_name_str, size
         return SELVA_EINVAL;
     }
 
-    if (key->selva_set.type != type) {
+    if (type <= SELVA_SET_NR_TYPES && /* hack */
+        key->selva_set.type != type) {
         return SELVA_EINTYPE;
     }
 
@@ -1684,17 +1685,14 @@ int SelvaObject_RemStringSet(struct SelvaObject *obj, const struct selva_string 
 }
 
 struct SelvaSet *SelvaObject_GetSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len) {
-    struct SelvaObjectKey *key;
+    struct SelvaSet *set;
     int err;
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
-    if (err || key->type != SELVA_OBJECT_SET) {
-        return NULL;
-    }
+    err = get_selva_set(obj, key_name_str, key_name_len, SELVA_SET_NR_TYPES, &set);
 
-    return &key->selva_set;
+    return err ? NULL : set;
 }
 
 struct SelvaSet *SelvaObject_GetSet(struct SelvaObject *obj, const struct selva_string *key_name) {
