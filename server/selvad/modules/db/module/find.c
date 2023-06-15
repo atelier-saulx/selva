@@ -283,7 +283,6 @@ static int send_edge_field(
 
         Edge_ForeachBegin(&it, edge_field);
         while ((dst_node = Edge_Foreach(&it))) {
-            int nr_fields = 1;
             Selva_NodeId dst_node_id;
 
             SelvaHierarchy_GetNodeId(dst_node_id, dst_node);
@@ -326,36 +325,25 @@ static int send_edge_field(
             }
 
             if (is_wildcard) {
-                int res;
-
                 if (next_prefix_str) {
                     selva_send_array(resp, 2);
                     selva_send_str(resp, next_prefix_str, next_prefix_len - 1);
                     selva_send_array(resp, -1);
-                    nr_fields++;
                 }
 
-                res = send_all_node_data_fields(fin, resp, lang, hierarchy, dst_node, NULL, 0, new_excluded_fields);
+                (void)send_all_node_data_fields(fin, resp, lang, hierarchy, dst_node, NULL, 0, new_excluded_fields);
                 if (next_prefix_str) {
-                    /* Sent res > 0 ? res : 0 */
                     selva_send_array_end(resp);
-                } else if (res >= 0) {
-                    nr_fields += res;
                 }
             } else {
                 struct SelvaObject *dst_obj = SelvaHierarchy_GetNodeObject(dst_node);
-                int res;
 
-                res = send_node_field(fin, resp, lang, hierarchy, dst_node, dst_obj,
+                (void)send_node_field(fin, resp, lang, hierarchy, dst_node, dst_obj,
                                       next_prefix_str, next_prefix_len,
                                       next_field_str, next_field_len,
                                       new_excluded_fields);
-                if (res > 0) {
-                    nr_fields += res;
-                }
             }
 
-            /* Sent 2x nr_fields */
             selva_send_array_end(resp);
         }
 
@@ -1464,7 +1452,6 @@ static void postprocess_array(
         SVector *result) {
     struct TraversalOrderItem *item;
     struct SVectorIterator it;
-    size_t len = 0;
 
     /*
      * First handle the offsetting.
@@ -1492,11 +1479,8 @@ static void postprocess_array(
                       (int)SELVA_NODE_ID_SIZE, item->node_id,
                       selva_strerror(err));
         }
-
-        len++;
     }
 
-    /* Sent len nr nodes. */
     selva_send_array_end(resp);
 }
 
@@ -1580,7 +1564,6 @@ static void postprocess_inherit(
     } else {
         struct SelvaHierarchyNode *node;
         struct SVectorIterator it;
-        size_t nr_nodes = 0;
 
         /*
          * First handle the offsetting.
@@ -1600,10 +1583,8 @@ static void postprocess_inherit(
             }
 
             send_node(fin, resp, hierarchy, lang, node, args, NULL);
-            nr_nodes++;
         }
 
-        /* Sent nr_nodes */
         selva_send_array_end(resp);
     }
 }
