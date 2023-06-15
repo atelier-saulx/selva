@@ -167,13 +167,6 @@ int Edge_Usage(const struct SelvaHierarchyNode *node);
  * @returns A pointer to an EdgeField if node is set and the field is found; Otherwise NULL.
  */
 struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *node, const char *field_name_str, size_t field_name_len);
-#define EDGE_GET_FIELD_QP(T, F, N, ...) \
-    STATIC_IF (IS_POINTER_CONST((N)), \
-            (const struct EdgeField *) (F) ((N) __VA_OPT__(,) __VA_ARGS__), \
-            (struct EdgeField *) (F) ((N) __VA_OPT__(,) __VA_ARGS__))
-#ifndef _EDGE_C_
-#define Edge_GetField(NODE, FIELD_NAME_STR, FIELD_NAME_LEN) EDGE_GET_FIELD_QP(struct SelvaHierarchyNode, Edge_GetField, (NODE), (FIELD_NAME_STR), (FIELD_NAME_LEN))
-#endif
 
 static inline size_t Edge_GetFieldLength(const struct EdgeField *edge_field) {
     return SVector_Size(&edge_field->arcs);

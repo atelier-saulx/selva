@@ -2,7 +2,6 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
-#define _EDGE_C_ 1
 #include <assert.h>
 #include <stddef.h>
 #include <stddef.h>
@@ -141,12 +140,6 @@ static struct SelvaObject *get_edges(const struct SelvaHierarchyNode *node) {
 
     return edges;
 }
-
-#define GET_EDGE_QP(T, F, N, ...) \
-    STATIC_IF (IS_POINTER_CONST((N)), \
-            (const struct SelvaObject *) (F) ((N) __VA_OPT__(,) __VA_ARGS__), \
-            (struct SelvaObject *) (F) ((N) __VA_OPT__(,) __VA_ARGS__))
-#define get_edges(NODE) GET_EDGE_QP(struct SelvaHierarchyNode, get_edges, (NODE))
 
 struct EdgeField *Edge_GetField(const struct SelvaHierarchyNode *src_node, const char *field_name_str, size_t field_name_len) {
     struct SelvaObject *edges;
