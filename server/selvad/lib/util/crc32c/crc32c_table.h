@@ -3,6 +3,9 @@
 
 // Table for a 64-bits-at-a-time software CRC-32C calculation. This table
 // has built into it the pre and post bit inversion of the CRC.
+// Copyright (C) 2013, 2021 Mark Adler <madler@alumni.caltech.edu>
+// SPDX-License-Identifier: Zlib
+
 static uint32_t const crc32c_table[][256] = {
    {0x527d5351, 0xa016d052, 0xb34623a6, 0x412da0a5, 0x95e7c44e, 0x678c474d,
     0x74dcb4b9, 0x86b737ba, 0xd8a40b9e, 0x2acf889d, 0x399f7b69, 0xcbf4f86a,

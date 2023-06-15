@@ -129,7 +129,9 @@ int main(void) {
 "// Tables and constants for crc32c.c software and hardware calculations.\n"
 "\n"
 "// Table for a 64-bits-at-a-time software CRC-32C calculation. This table\n"
-"// has built into it the pre and post bit inversion of the CRC."
+"// has built into it the pre and post bit inversion of the CRC.\n"
+"// Copyright (C) 2013, 2021 Mark Adler <madler@alumni.caltech.edu>\n"
+"// SPDX-License-Identifier: Zlib\n"
     );
     crc32c_word_table();
     puts(
