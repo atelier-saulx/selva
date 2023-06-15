@@ -221,6 +221,61 @@ static int send_incrby(int fd, int seqno, flags_t frame_extra_flags, char node_i
     return send_message(fd, &buf, sizeof(buf), 0);
 }
 
+static int send_hll(int fd, int seqno, flags_t frame_extra_flags, char node_id[NODE_ID_SIZE])
+{
+#define FIELD "clients"
+    struct {
+        struct selva_proto_header hdr;
+        struct selva_proto_string id_hdr;
+        char id_str[NODE_ID_SIZE];
+        struct selva_proto_string field_hdr;
+        char field_str[sizeof(FIELD) - 1];
+        struct selva_proto_string op_hdr;
+        char op_str[1];
+        struct selva_proto_string value_hdr;
+        char value_str[10];
+    } buf = {
+        .hdr = {
+            .cmd = CMD_ID_OBJECT_SET,
+            .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST | frame_extra_flags,
+            .seqno = htole32(seqno),
+            .frame_bsize = htole16(sizeof(buf)),
+            .msg_bsize = 0,
+            .chk = 0,
+        },
+        .id_hdr = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+            .bsize = htole32(NODE_ID_SIZE),
+        },
+        .field_hdr = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+            .bsize = htole32(sizeof(buf.field_str)),
+        },
+        .field_str = FIELD,
+        .op_hdr = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+            .bsize = htole32(sizeof(buf.op_str)),
+        },
+        .op_str = "H",
+        .value_hdr = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+            .bsize = htole32(sizeof(buf.value_str)),
+        },
+    };
+#undef FIELD
+
+    strncpy(buf.id_str, node_id, NODE_ID_SIZE);
+    snprintf(buf.value_str, sizeof(buf.value_str), "%d", seqno);
+
+    buf.hdr.chk = htole32(crc32c(0, &buf, sizeof(buf)));
+
+    return send_message(fd, &buf, sizeof(buf), 0);
+}
+
 static void handle_response(struct selva_proto_header *resp_hdr, void *msg, size_t msg_size)
 {
     if (resp_hdr->cmd < 0) {
@@ -404,10 +459,25 @@ static void test_incrby(int fd, int seqno, flags_t frame_extra_flags)
     send_incrby(fd, seqno, frame_extra_flags, node_id);
 }
 
+static void test_hll(int fd, int seqno, flags_t frame_extra_flags)
+{
+    static int first = 1;
+    char node_id[NODE_ID_SIZE + 1];
+
+    snprintf(node_id, sizeof(node_id), "ma%.*x", NODE_ID_SIZE - 2, 1);
+    if (first) {
+        first = 0;
+
+        send_modify(fd, seqno, frame_extra_flags, node_id);
+    }
+    send_hll(fd, seqno, frame_extra_flags, node_id);
+}
+
 static void (*suites[])(int fd, int seqno, flags_t frame_extra_flags) = {
     test_modify,
     test_modify_single,
     test_incrby,
+    test_hll,
 };
 
 int main(int argc, char *argv[])
