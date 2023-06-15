@@ -2334,24 +2334,20 @@ static void replyWithSelvaString(struct selva_server_response_out *resp, struct 
 
 static void replyWithSelvaSet(struct selva_server_response_out *resp, struct SelvaSet *set) {
     struct SelvaSetElement *el;
-    size_t n = 0;
 
     selva_send_array(resp, -1);
 
     if (set->type == SELVA_SET_TYPE_STRING) {
         SELVA_SET_STRING_FOREACH(el, set) {
             selva_send_string(resp, el->value_string);
-            n++;
         }
     } else if (set->type == SELVA_SET_TYPE_DOUBLE) {
         SELVA_SET_DOUBLE_FOREACH(el, set) {
             selva_send_double(resp, el->value_d);
-            n++;
         }
     } else if (set->type == SELVA_SET_TYPE_LONGLONG) {
         SELVA_SET_LONGLONG_FOREACH(el, set) {
             selva_send_ll(resp, el->value_ll);
-            n++;
         }
     }
 
