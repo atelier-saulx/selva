@@ -20,12 +20,12 @@ void ring_buffer_init(struct ring_buffer* rb, struct ring_buffer_element *buf, s
     rb->len = nelem;
     rb->buf = buf;
     rb->free_element_data = free_element_data;
-    rb->readers_mask = ATOMIC_VAR_INIT(0);
+    atomic_init(&rb->readers_mask, 0);
     pthread_mutex_init(&rb->lock, NULL);
     pthread_cond_init(&rb->cond, NULL);
 
     for (size_t i = 0; i < rb->len; i++) {
-        rb->buf[i].not_read = ATOMIC_VAR_INIT(0);
+        atomic_init(&rb->buf[i].not_read, 0);
     }
 }
 
