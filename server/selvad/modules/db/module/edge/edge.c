@@ -738,7 +738,9 @@ static void _clear_all_fields(
 static void clear_all_fields(struct SelvaHierarchy *hierarchy, struct SelvaHierarchyNode *node) {
     struct SelvaObject *edges = SelvaHierarchy_GetNodeMetadataByPtr(node)->edge_fields.edges;
 
-    _clear_all_fields(hierarchy, node, edges);
+    if (edges) {
+        _clear_all_fields(hierarchy, node, edges);
+    }
 }
 
 int Edge_ClearField(
