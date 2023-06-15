@@ -78,11 +78,20 @@ int config_resolve(const char *mod_name, const struct config cfg_map[], size_t l
 
         switch (cfg->type) {
         case CONFIG_CSTRING:
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincompatible-pointer-types-discards-qualifiers"
+#else
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+#endif
             *((char **)cfg->dp) = str;
             err = 0;
+#ifdef __clang__
+#pragma clang diagnostic pop
+#else
 #pragma GCC diagnostic pop
+#endif
             break;
         case CONFIG_INT:
             err = parse_int(cfg->dp, str);
