@@ -672,7 +672,7 @@ static int clear_field(
     }
 
     /* Return only the last error. */
-    return err ? err : (int)SVector_Size(&arcs);
+    return err_bck ? err_bck : (int)SVector_Size(&arcs);
 }
 
 static void _clear_all_fields(
