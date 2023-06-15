@@ -103,8 +103,8 @@ struct EdgeFieldConstraints {
  */
 struct EdgeField {
     const struct EdgeFieldConstraint *constraint; /*!< A pointer to the constraint of this edge field. */
-    struct SVector arcs; /*!< Pointers to hierarchy nodes. */
     Selva_NodeId src_node_id; /*!< Source/owner nodeId of this edge field. */
+    struct SVector arcs; /*!< Pointers to hierarchy nodes. */
     struct SelvaObject *metadata; /*!< Metadata organized by dst_node_id. Can be NULL. */
 };
 
