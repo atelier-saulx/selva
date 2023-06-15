@@ -1842,9 +1842,11 @@ size_t SelvaObject_GetArrayLen(struct SelvaObject *obj, const struct selva_strin
 int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, void *p, const struct SelvaObjectPointerOpts *opts) {
     struct SelvaObjectKey *key;
     int err;
+    ssize_t ary_idx, ary_err;
 
     assert(obj);
 
+    /* RFE we could just allow NULLs */
     if (!p) {
         /* The value must be non-NULL. */
         return SELVA_EINVAL;
@@ -1855,12 +1857,25 @@ int SelvaObject_SetPointerStr(struct SelvaObject *obj, const char *key_name_str,
         return err;
     }
 
-    clear_key_value(key);
-    key->type = SELVA_OBJECT_POINTER;
-    key->value = p;
-    key->ptr_opts = opts;
+    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
+    if (ary_err < 0) {
+        return SELVA_EINVAL;
+    } else if (ary_err > 0) {
+        size_t new_len = ary_err;
 
-    return 0;
+        /*
+         * We don't support automatic cleanup in the case of arrays.
+         * RFE Is it a mistake?
+         */
+        err = SelvaObject_AssignArrayIndexStr(obj, key_name_str, new_len, SELVA_OBJECT_POINTER, ary_idx, p);
+    } else {
+        clear_key_value(key);
+        key->type = SELVA_OBJECT_POINTER;
+        key->value = p;
+        key->ptr_opts = opts;
+    }
+
+    return err;
 }
 
 int SelvaObject_SetPointer(struct SelvaObject *obj, const struct selva_string *key_name, void *p, const struct SelvaObjectPointerOpts *opts) {
