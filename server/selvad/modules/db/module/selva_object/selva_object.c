@@ -987,6 +987,7 @@ int SelvaObject_ExistsStr(struct SelvaObject *obj, const char *key_name_str, siz
         return (ary_idx < ary_len) ? 0 : SELVA_ENOENT;
     case SELVA_OBJECT_STRING:
     case SELVA_OBJECT_OBJECT:
+    case SELVA_OBJECT_POINTER:
     case SELVA_OBJECT_HLL:
         return SVector_GetIndex(key->array, ary_idx) ? 0 : SELVA_ENOENT;
     default:
