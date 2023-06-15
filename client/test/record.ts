@@ -81,15 +81,14 @@ test.serial('remove object from record', async (t) => {
     },
   })
 
-  t.assert(res1.members[0])
-  t.assert(res1.members[1])
+  t.deepEqualIgnoreOrder(res1.members[0], { x: 'hallo', refs: [thingId] })
+  t.deepEqualIgnoreOrder(res1.members[1], { x: 'doei' })
 
   await client.set({
     $id: id,
     members: {
-      0: {
-        $delete: true,
-      },
+      0: { $delete: true },
+      1: { $delete: true },
     },
   })
 
@@ -106,8 +105,8 @@ test.serial('remove object from record', async (t) => {
     },
   })
 
-  t.assert(!res2.members[0])
-  t.assert(res2.members[1])
+  t.is(res2.members[1], undefined)
+  t.is(res2.members[0], undefined)
 
   await client.destroy()
 })
