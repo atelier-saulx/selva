@@ -280,7 +280,7 @@ static int op_string(
     if (old_type == SELVA_OBJECT_STRING && !SelvaObject_GetString(obj, field, &old_value)) {
         TO_STR(old_value);
 
-        if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
+        if (old_value && old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
             return SELVA_OP_REPL_STATE_UNCHANGED;
         }
     }

@@ -97,7 +97,7 @@ static struct SelvaFindIndexControlBlock *pick_any_order(
 
     /* This kinda should be in icb.c */
     err = SelvaObject_GetObjectStr(hierarchy->dyn_index.index_map, name_str, name_len, &root);
-    if (err) {
+    if (err || !root) {
         return NULL; /* nada */
     }
 

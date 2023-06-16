@@ -184,7 +184,7 @@ int Edge_GetFieldEdgeMetadata(struct EdgeField *edge_field, const Selva_NodeId d
     }
 
     err = SelvaObject_GetObjectStr(edge_field_metadata, dst_node_id, SELVA_NODE_ID_SIZE, &edge_metadata);
-    if (err == SELVA_ENOENT) {
+    if (err == SELVA_ENOENT || !edge_metadata) {
         if (!create) {
             return SELVA_ENOENT;
         }
@@ -842,6 +842,10 @@ int Edge_DeleteAll(
 
     if (any.type == SELVA_OBJECT_POINTER) {
         struct EdgeField *src_edge_field = any.p;
+
+        if (!src_edge_field) {
+            return SELVA_ENOENT;
+        }
 
         /*
          * A pointer in edges is always an edge field.

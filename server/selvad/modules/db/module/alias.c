@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
@@ -20,6 +20,8 @@ int get_alias_str(struct SelvaHierarchy *hierarchy, const char *ref_str, size_t 
     err = SelvaObject_GetStringStr(aliases, ref_str, ref_len, &value);
     if (err) {
         return err;
+    } else if (!value) {
+        return SELVA_ENOENT;
     }
 
     return selva_string2node_id(node_id, value);

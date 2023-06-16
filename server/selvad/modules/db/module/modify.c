@@ -1256,7 +1256,7 @@ static enum selva_op_repl_state modify_op(
         if (old_type == SELVA_OBJECT_STRING && !SelvaObject_GetString(obj, field, &old_value)) {
             TO_STR(old_value);
 
-            if (old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
+            if (old_value && old_value_len == value_len && !memcmp(old_value_str, value_str, value_len)) {
                 if (!strcmp(field_str, "type")) {
                     /*
                      * Always send "UPDATED" for the "type" field because the
@@ -1415,7 +1415,7 @@ static enum selva_op_repl_state modify_edge_meta_op(
         if (old_type == SELVA_OBJECT_STRING && !SelvaObject_GetStringStr(edge_metadata, op->meta_field_name_str, op->meta_field_name_len, &old_value)) {
             TO_STR(old_value);
 
-            if (old_value_len == op->meta_field_value_len && !memcmp(old_value_str, op->meta_field_value_str, op->meta_field_value_len)) {
+            if (old_value && old_value_len == op->meta_field_value_len && !memcmp(old_value_str, op->meta_field_value_str, op->meta_field_value_len)) {
                 selva_send_str(resp, "OK", 2);
                 return SELVA_OP_REPL_STATE_UNCHANGED;
             }

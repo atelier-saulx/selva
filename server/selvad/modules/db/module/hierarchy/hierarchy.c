@@ -3603,7 +3603,10 @@ static void SelvaHierarchy_EdgeListCommand(struct selva_server_response_out *res
         int err;
 
         err = SelvaObject_GetObjectStr(obj, key_name_str, key_name_len, &obj);
-        if (err) {
+        if (err || !obj) {
+            if (!err && !obj) {
+                err = SELVA_ENOENT;
+            }
             selva_send_errorf(resp, err, "Get edge field");
             return;
         }

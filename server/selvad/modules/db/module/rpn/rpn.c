@@ -1259,7 +1259,7 @@ static enum rpn_error rpn_op_rec_filter(struct rpn_ctx *ctx) {
     }
 
     err = SelvaObject_GetObjectStr(edges, field_str, field_len, &obj);
-    if (err) {
+    if (err || !obj) {
         return push_empty_value(ctx);
     }
 

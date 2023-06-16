@@ -189,13 +189,14 @@ static int send_edge_field(
         struct SelvaObject *next_obj;
         SelvaObject_Iterator *it;
         const char *key;
-        int res = 0;
+        int err, res = 0;
 
         if (iswildcard(field_str, field_len)) {
             field_len = 0;
         }
 
-        if (SelvaObject_GetObjectStr(edges, field_str, field_len, &next_obj)) {
+        err = SelvaObject_GetObjectStr(edges, field_str, field_len, &next_obj);
+        if (err || !next_obj) {
             /* Fail if type wasn't SELVA_OBJECT_OBJECT */
             return off;
         }
@@ -988,6 +989,8 @@ static int send_deep_merge(
             err = SelvaObject_GetObjectStr(obj, key_name_str, key_name_len, &next_obj);
             if (err) {
                 return err;
+            } else if (!next_obj) {
+                return SELVA_ENOENT;
             }
 
             err = send_deep_merge(fin, resp, lang, nodeId, fields, next_obj, next_path, nr_fields_out);
@@ -1053,7 +1056,7 @@ static int send_node_object_merge(
     struct SelvaObject *obj;
     if (obj_path_len != 0) {
     err = SelvaObject_GetObject(node_obj, obj_path, &obj);
-        if (err == SELVA_ENOENT || err == SELVA_EINTYPE) {
+        if (err == SELVA_ENOENT || err == SELVA_EINTYPE || !obj) {
             /* Skip this node if the object doesn't exist. */
             return 0;
         } else if (err) {
