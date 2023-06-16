@@ -1109,22 +1109,55 @@ int SelvaObject_SetDoubleDefault(struct SelvaObject *obj, const struct selva_str
 
 int SelvaObject_UpdateDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
     const enum SelvaObjectType type = SELVA_OBJECT_DOUBLE;
+    ssize_t ary_err, ary_idx;
     struct SelvaObjectKey *key;
     int err;
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
-    if (err) {
-        return err;
-    } else if (key->type == type &&
-               key->emb_double_value == value) {
-        return SELVA_EEXIST;
-    }
+    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
+    if (ary_err < 0) {
+        return SELVA_EINVAL;
+    } else if (ary_err > 0) {
+        struct SelvaObjectKey *key;
+        void *ptr;
+        double prev;
+        int err;
 
-    clear_key_value(key);
-    key->type = type;
-    key->emb_double_value = value;
+        /* TODO Shouldn't overwrite existing */
+        err = get_key_array_modify(obj, key_name_str, key_name_len, type, 1, &key);
+        if (err) {
+            return err;
+        }
+
+        ary_idx = vec_idx_to_abs(key->array, ary_idx);
+        ptr = SVector_GetIndex(key->array, ary_idx);
+        if (ptr) {
+            memcpy(&prev, &ptr, sizeof(prev));
+        } else {
+            prev = 0.0;
+        }
+        _Static_assert(sizeof(prev) == sizeof(ptr));
+
+        if (prev == value) {
+            return SELVA_EEXIST;
+        }
+
+        memcpy(&ptr, &value, sizeof(value));
+        SVector_SetIndex(key->array, ary_idx, ptr);
+    } else {
+        err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+        if (err) {
+            return err;
+        } else if (key->type == type &&
+                key->emb_double_value == value) {
+            return SELVA_EEXIST;
+        }
+
+        clear_key_value(key);
+        key->type = type;
+        key->emb_double_value = value;
+    }
 
     return 0;
 }
@@ -1233,22 +1266,51 @@ int SelvaObject_SetLongLongDefault(struct SelvaObject *obj, const struct selva_s
 
 int SelvaObject_UpdateLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
     const enum SelvaObjectType type = SELVA_OBJECT_LONGLONG;
+    ssize_t ary_err, ary_idx;
     struct SelvaObjectKey *key;
     int err;
 
     assert(obj);
 
-    err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
-    if (err) {
-        return err;
-    } else if (key->type == type &&
-               key->emb_ll_value == value) {
-        return SELVA_EEXIST;
-    }
+    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
+    if (ary_err < 0) {
+        return SELVA_EINVAL;
+    } else if (ary_err > 0) {
+        struct SelvaObjectKey *key;
+        void *ptr;
+        long long prev;
+        int err;
 
-    clear_key_value(key);
-    key->type = type;
-    key->emb_ll_value = value;
+        /* TODO Shouldn't overwrite existing */
+        err = get_key_array_modify(obj, key_name_str, key_name_len, type, 1, &key);
+        if (err) {
+            return err;
+        }
+
+        ary_idx = vec_idx_to_abs(key->array, ary_idx);
+        ptr = SVector_GetIndex(key->array, ary_idx);
+        memcpy(&prev, &ptr, sizeof(prev));
+        _Static_assert(sizeof(prev) == sizeof(ptr));
+
+        if (prev == value) {
+            return SELVA_EEXIST;
+        }
+
+        memcpy(&ptr, &value, sizeof(value));
+        SVector_SetIndex(key->array, ary_idx, ptr);
+    } else {
+        err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
+        if (err) {
+            return err;
+        } else if (key->type == type &&
+                key->emb_ll_value == value) {
+            return SELVA_EEXIST;
+        }
+
+        clear_key_value(key);
+        key->type = type;
+        key->emb_ll_value = value;
+    }
 
     return 0;
 }
@@ -1352,9 +1414,6 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
         d += incr;
         memcpy(&ptr, &d, sizeof(d));
         SVector_SetIndex(key->array, ary_idx, ptr);
-        if (err) {
-            return err;
-        }
     } else {
         struct SelvaObjectKey *key;
         int err;
@@ -1420,9 +1479,6 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
         ll += incr;
         memcpy(&ptr, &ll, sizeof(ll));
         SVector_SetIndex(key->array, ary_idx, (void *)ll);
-        if (err) {
-            return err;
-        }
     } else {
         struct SelvaObjectKey *key;
         int err;
