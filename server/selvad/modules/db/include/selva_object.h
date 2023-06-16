@@ -306,6 +306,10 @@ int SelvaObject_SetObject(struct SelvaObject *obj, const struct selva_string *ke
  * @{
  */
 
+/**
+ * Add an element to a Hyperloglog field.
+ * @returns 0 if the field was not modified; 1 if the field was modified; Otwherwise selva error;
+ */
 int SelvaObject_AddHllStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, const void *el, size_t el_size);
 int SelvaObject_AddHll(struct SelvaObject *obj, const struct selva_string *key_name, const void *el, size_t el_size);
 

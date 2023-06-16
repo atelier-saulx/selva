@@ -1557,13 +1557,13 @@ int SelvaObject_SetObject(struct SelvaObject *obj, const struct selva_string *ke
 int SelvaObject_AddHllStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, const void *el, size_t el_size) {
     const enum SelvaObjectType type = SELVA_OBJECT_HLL;
     ssize_t ary_err, ary_idx;
-    int err;
+    int res = 0;
 
     assert(obj);
 
     ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
     if (ary_err < 0) {
-        err = SELVA_EINVAL;
+        return SELVA_EINVAL;
     } else if (ary_err > 0) {
         struct SelvaObjectKey *key;
         hll_t *hll_orig;
@@ -1583,17 +1583,18 @@ int SelvaObject_AddHllStr(struct SelvaObject *obj, const char *key_name_str, siz
             hll_orig = hll;
         }
 
-        if (hll_add(&hll, el, el_size) < 0) {
-            /* RFE Can hll change even when the function fails? */
-            return SELVA_EINVAL; /* TODO error? */
-        }
-
-        /* RFE would capturing the return value of hll_add() help us here. */
-        if (hll_orig != hll) {
-            SVector_SetIndex(key->array, ary_idx, hll);
+        err = hll_add(&hll, el, el_size);
+        if (err < 0) {
+            res = SELVA_EINVAL;
+        } else {
+            res = err;
+            if (hll_orig != hll) {
+                SVector_SetIndex(key->array, ary_idx, hll);
+            }
         }
     } else {
         struct SelvaObjectKey *key;
+        int err;
 
         err = get_key(obj, key_name_str, key_name_len, SELVA_OBJECT_GETKEY_CREATE, &key);
         if (err) {
@@ -1604,12 +1605,11 @@ int SelvaObject_AddHllStr(struct SelvaObject *obj, const char *key_name_str, siz
             key->value = hll_create();
         }
 
-        if (hll_add(&key->value, el, el_size) < 0) {
-            return SELVA_EINVAL; /* TODO error? */
-        }
+        err = hll_add(&key->value, el, el_size);
+        res = (err < 0) ? SELVA_EINVAL : err;
     }
 
-    return 0;
+    return res;
 }
 
 int SelvaObject_AddHll(struct SelvaObject *obj, const struct selva_string *key_name, const void *el, size_t el_size) {

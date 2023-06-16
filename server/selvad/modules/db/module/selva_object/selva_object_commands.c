@@ -316,8 +316,7 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
             const char *key_str = selva_string_to_str(argv[ARGV_OKEY], &key_len);
             const char *el_str = selva_string_to_str(argv[i], &el_len);
 
-            SelvaObject_AddHllStr(obj, key_str, key_len, el_str, el_len);
-            values_set++;
+            values_set += SelvaObject_AddHllStr(obj, key_str, key_len, el_str, el_len);
         }
         err = 0;
         break;

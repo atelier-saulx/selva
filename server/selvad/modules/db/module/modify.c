@@ -1501,6 +1501,7 @@ static enum selva_op_repl_state modify_hll(
     TO_STR(field);
     size_t size;
     const char *values = SelvaModify_OpHll_align(raw_value, &size);
+    int updated = 0;
 
     if (!values) {
         selva_send_errorf(resp, SELVA_EINVAL, NULL, 0);
@@ -1512,10 +1513,11 @@ static enum selva_op_repl_state modify_hll(
     while ((s = sztok(values, size, &it))) {
         size_t slen = size - it;
 
-        SelvaObject_AddHllStr(obj, field_str, field_len, s, slen);
+        /* TODO Shouldn't ignore errors here. */
+        updated |= SelvaObject_AddHllStr(obj, field_str, field_len, s, slen) > 0;
     }
 
-    return SELVA_OP_REPL_STATE_UPDATED;
+    return updated ? SELVA_OP_REPL_STATE_UPDATED : SELVA_OP_REPL_STATE_UNCHANGED;
 }
 
 static void replicate_modify(struct selva_server_response_out *resp, const struct bitmap *replset, struct selva_string **orig_argv, const struct replicate_ts *rs)
