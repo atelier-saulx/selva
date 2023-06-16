@@ -682,7 +682,7 @@ test.serial('ways to clear aliases', async (t) => {
   await client.destroy()
 })
 
-test.only('set alias, get it, remove it, get it again', async (t) => {
+test.serial('set alias, get it, remove it, get it again', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   const al = 'mybeautifulaliasmyesh'
 
