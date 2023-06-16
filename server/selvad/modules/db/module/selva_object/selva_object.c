@@ -1378,7 +1378,7 @@ int SelvaObject_SetString(struct SelvaObject *obj, const struct selva_string *ke
     return SelvaObject_SetStringStr(obj, key_name_str, key_name_len, value);
 }
 
-int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double default_value, double incr, double *prev) {
+int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double default_value, double incr, double *new) {
     ssize_t ary_err, ary_idx;
 
     assert(obj);
@@ -1406,14 +1406,14 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
             d = 0.0;
         }
 
-        if (prev) {
-            *prev = d;
-        }
-
         /* FIXME Default value is handled incorrectly in the array case. */
         d += incr;
         memcpy(&ptr, &d, sizeof(d));
         SVector_SetIndex(key->array, ary_idx, ptr);
+
+        if (new) {
+            *new = d;
+        }
     } else {
         struct SelvaObjectKey *key;
         int err;
@@ -1424,30 +1424,28 @@ int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name
         }
 
         if (key->type == SELVA_OBJECT_DOUBLE) {
-            if (prev) {
-                *prev = key->emb_double_value;
-            }
             key->emb_double_value += incr;
         } else {
             clear_key_value(key);
             key->type = SELVA_OBJECT_DOUBLE;
             key->emb_double_value = default_value;
-            if (prev) {
-                *prev = 0.0;
-            }
+        }
+
+        if (new) {
+            *new = key->emb_double_value;
         }
     }
 
     return 0;
 }
 
-int SelvaObject_IncrementDouble(struct SelvaObject *obj, const struct selva_string *key_name, double default_value, double incr, double *prev) {
+int SelvaObject_IncrementDouble(struct SelvaObject *obj, const struct selva_string *key_name, double default_value, double incr, double *new) {
     TO_STR(key_name);
 
-    return SelvaObject_IncrementDoubleStr(obj, key_name_str, key_name_len, default_value, incr, prev);
+    return SelvaObject_IncrementDoubleStr(obj, key_name_str, key_name_len, default_value, incr, new);
 }
 
-int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long default_value, long long incr, long long *prev) {
+int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long default_value, long long incr, long long *new) {
     ssize_t ary_err, ary_idx;
 
     assert(obj);
@@ -1471,14 +1469,13 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
         memcpy(&ll, &ptr, sizeof(ll));
         _Static_assert(sizeof(ll) == sizeof(ptr));
 
-        if (prev) {
-            *prev = ll;
-        }
-
         /* FIXME Default value is handled incorrectly in the array case. */
         ll += incr;
         memcpy(&ptr, &ll, sizeof(ll));
-        SVector_SetIndex(key->array, ary_idx, (void *)ll);
+        SVector_SetIndex(key->array, ary_idx, ptr);
+        if (new) {
+            *new = ll;
+        }
     } else {
         struct SelvaObjectKey *key;
         int err;
@@ -1489,27 +1486,25 @@ int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_na
         }
 
         if (key->type == SELVA_OBJECT_LONGLONG) {
-            if (prev) {
-                *prev = key->emb_ll_value;
-            }
             key->emb_ll_value += incr;
         } else {
             clear_key_value(key);
             key->type = SELVA_OBJECT_LONGLONG;
             key->emb_ll_value = default_value;
-            if (prev) {
-                *prev = 0;
-            }
+        }
+
+        if (new) {
+            *new = key->emb_ll_value;
         }
     }
 
     return 0;
 }
 
-int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long default_value, long long incr, long long *prev) {
+int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long default_value, long long incr, long long *new) {
     TO_STR(key_name);
 
-    return SelvaObject_IncrementLongLongStr(obj, key_name_str, key_name_len, default_value, incr, prev);
+    return SelvaObject_IncrementLongLongStr(obj, key_name_str, key_name_len, default_value, incr, new);
 }
 
 int SelvaObject_GetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject **out) {

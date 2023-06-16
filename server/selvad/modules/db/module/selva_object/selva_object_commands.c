@@ -342,7 +342,7 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
     Selva_NodeId node_id;
     const char *okey_str;
     size_t okey_len;
-    long long incr, prev;
+    long long incr, new;
     int argc, err;
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
@@ -369,14 +369,14 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
 
     SelvaSubscriptions_FieldChangePrecheck(main_hierarchy, node);
     obj = SelvaHierarchy_GetNodeObject(node);
-    err = SelvaObject_IncrementLongLongStr(obj, okey_str, okey_len, 1, incr, &prev);
+    err = SelvaObject_IncrementLongLongStr(obj, okey_str, okey_len, 1, incr, &new);
     if (err) {
         selva_send_errorf(resp, err, "Failed to increment");
         return;
     }
 
     touch_updated_at(resp, obj);
-    selva_send_ll(resp, prev);
+    selva_send_ll(resp, new);
     selva_db_is_dirty = 1;
     selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
     publish_field_change_str(node, okey_str, okey_len);
@@ -387,7 +387,7 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
     Selva_NodeId node_id;
     const char *okey_str;
     size_t okey_len;
-    double incr, prev;
+    double incr, new;
     int argc, err;
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
@@ -413,14 +413,14 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
     }
 
     obj = SelvaHierarchy_GetNodeObject(node);
-    err = SelvaObject_IncrementDoubleStr(obj, okey_str, okey_len, 1.0, incr, &prev);
+    err = SelvaObject_IncrementDoubleStr(obj, okey_str, okey_len, 1.0, incr, &new);
     if (err) {
         selva_send_errorf(resp, err, "Failed to increment");
         return;
     }
 
     touch_updated_at(resp, obj);
-    selva_send_double(resp, prev);
+    selva_send_double(resp, new);
     selva_db_is_dirty = 1;
     selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
     publish_field_change_str(node, okey_str, okey_len);

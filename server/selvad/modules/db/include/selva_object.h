@@ -215,8 +215,8 @@ int SelvaObject_UpdateDouble(struct SelvaObject *obj, const struct selva_string 
  * Increment a double field value.
  * Can also handle array indexing.
  */
-int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double default_value, double incr, double *prev);
-int SelvaObject_IncrementDouble(struct SelvaObject *obj, const struct selva_string *key_name, double default_value, double incr, double *prev);
+int SelvaObject_IncrementDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double default_value, double incr, double *new);
+int SelvaObject_IncrementDouble(struct SelvaObject *obj, const struct selva_string *key_name, double default_value, double incr, double *new);
 
 /**
  * @}
@@ -256,8 +256,8 @@ int SelvaObject_UpdateLongLong(struct SelvaObject *obj, const struct selva_strin
  * Increment a long long field value.
  * Can also handle array indexing.
  */
-int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long default_value, long long incr, long long *prev);
-int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long default_value, long long incr, long long *prev);
+int SelvaObject_IncrementLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long default_value, long long incr, long long *new);
+int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct selva_string *key_name, long long default_value, long long incr, long long *new);
 
 /**
  * @}
