@@ -369,7 +369,7 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
 
     SelvaSubscriptions_FieldChangePrecheck(main_hierarchy, node);
     obj = SelvaHierarchy_GetNodeObject(node);
-    err = SelvaObject_IncrementLongLongStr(obj, okey_str, okey_len, 1, incr, &new);
+    err = SelvaObject_IncrementLongLongStr(obj, okey_str, okey_len, incr, incr, &new);
     if (err) {
         selva_send_errorf(resp, err, "Failed to increment");
         return;
@@ -413,7 +413,7 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
     }
 
     obj = SelvaHierarchy_GetNodeObject(node);
-    err = SelvaObject_IncrementDoubleStr(obj, okey_str, okey_len, 1.0, incr, &new);
+    err = SelvaObject_IncrementDoubleStr(obj, okey_str, okey_len, incr, incr, &new);
     if (err) {
         selva_send_errorf(resp, err, "Failed to increment");
         return;
