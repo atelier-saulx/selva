@@ -1597,18 +1597,19 @@ static void postprocess_inherit(
  *
  * SELVA.HIERARCHY.find
  * lang
- * dir [field_name/expr]                            Traversal method/direction
- * ["edge_filter" expr]                             Expression to decide whether and edge should be visited
- * ["index" [expr]]                                 Indexing hint
- * ["order" field asc|desc]                         Sort order of the results
- * ["offset" 1234]                                  Skip the first 1234 - 1 results
- * ["limit" 1234]                                   Limit the number of results (Optional)
- * ["merge" path]                                   Merge fields. fields option must be set
- * ["fields(_rpn)|inherit_rpn" field_names|expr]    Return field values instead of node names
- * NODE_IDS                                         One or more node IDs concatenated (10 chars per ID)
- * [expression]                                     RPN filter expression
- * [args...]                                        Register arguments for the RPN filter
+ * dir [field_name/expr]                                Traversal method/direction
+ * ["edge_filter" expr]                                 Expression to decide whether and edge should be visited
+ * ["index" [expr]]                                     Indexing hint
+ * ["order" field asc|desc]                             Sort order of the results
+ * ["offset" 1234]                                      Skip the first 1234 - 1 results
+ * ["limit" 1234]                                       Limit the number of results (Optional)
+ * ["merge" path]                                       Merge fields. fields option must be set
+ * ["fields|fields_rpn|inherit_rpn" field_names|expr]   Return field values instead of node names
+ * NODE_IDS                                             One or more node IDs concatenated (10 chars per ID)
+ * [expression]                                         RPN filter expression
+ * [args...]                                            Register arguments for the RPN filter
  *
+ * `dir` can be any string supported by `SelvaTraversal_ParseDir2()`.
  * The traversed field is typically either ancestors or descendants but it can
  * be any hierarchy or edge field.
  */
