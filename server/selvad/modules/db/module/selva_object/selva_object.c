@@ -1014,43 +1014,19 @@ int SelvaObject_ExistsTopLevel(struct SelvaObject *obj, const struct selva_strin
 }
 
 int SelvaObject_GetDoubleStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double *out) {
-    ssize_t ary_err, ary_idx;
-    struct SelvaObjectKey *key;
+    struct SelvaObjectAny any;
     int err;
 
-    assert(obj);
-
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    err = SelvaObject_GetAnyLangStr(obj, NULL, key_name_str, key_name_len, &any);
     if (err) {
         return err;
     }
 
-    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
-    if (ary_err < 0) {
-        err = SELVA_EINVAL;
-    } else if (ary_err > 0) {
-        void *ptr;
-
-        if (key->type != SELVA_OBJECT_ARRAY || key->subtype != SELVA_OBJECT_DOUBLE) {
-            return SELVA_EINTYPE;
-        }
-
-        ary_idx = vec_idx_to_abs(key->array, ary_idx);
-        ptr = SVector_GetIndex(key->array, ary_idx);
-        if (ptr) {
-            memcpy(out, &ptr, sizeof(*out));
-        } else {
-            *out = 0.0;
-        }
-    } else {
-        get_key(obj, key_name_str, key_name_len, 0, &key);
-        if (key->type != SELVA_OBJECT_DOUBLE) {
-            return SELVA_EINTYPE;
-        }
-
-        *out = key->emb_double_value;
+    if (any.type != SELVA_OBJECT_DOUBLE) {
+        return SELVA_EINTYPE;
     }
 
+    *out = any.d;
     return 0;
 }
 
@@ -1160,38 +1136,19 @@ int SelvaObject_UpdateDouble(struct SelvaObject *obj, const struct selva_string 
 }
 
 int SelvaObject_GetLongLongStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long *out) {
-    ssize_t ary_err, ary_idx;
-    struct SelvaObjectKey *key;
+    struct SelvaObjectAny any;
     int err;
 
-    assert(obj);
-
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    err = SelvaObject_GetAnyLangStr(obj, NULL, key_name_str, key_name_len, &any);
     if (err) {
         return err;
     }
 
-    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
-    if (ary_err < 0) {
-        err = SELVA_EINVAL;
-    } else if (ary_err > 0) {
-        void *ptr;
-
-        if (key->type != SELVA_OBJECT_ARRAY || key->subtype != SELVA_OBJECT_LONGLONG) {
-            return SELVA_EINTYPE;
-        }
-
-        ary_idx = vec_idx_to_abs(key->array, ary_idx);
-        ptr = SVector_GetIndex(key->array, ary_idx);
-        memcpy(out, &ptr, sizeof(*out));
-    } else {
-        if (key->type != SELVA_OBJECT_LONGLONG) {
-            return SELVA_EINTYPE;
-        }
-
-        *out = key->emb_ll_value;
+    if (any.type != SELVA_OBJECT_LONGLONG) {
+        return SELVA_EINTYPE;
     }
 
+    *out = any.ll;
     return 0;
 }
 
@@ -1303,42 +1260,19 @@ int SelvaObject_UpdateLongLong(struct SelvaObject *obj, const struct selva_strin
 }
 
 int SelvaObject_GetStringStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct selva_string **out) {
-    ssize_t ary_err, ary_idx;
-    struct SelvaObjectKey *key;
+    struct SelvaObjectAny any;
     int err;
 
-    assert(obj);
-
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    err = SelvaObject_GetAnyLangStr(obj, NULL, key_name_str, key_name_len, &any);
     if (err) {
         return err;
     }
 
-    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
-    if (ary_err < 0) {
-        err = SELVA_EINVAL;
-    } else if (ary_err > 0) {
-        struct selva_string *s;
-
-        if (key->type != SELVA_OBJECT_ARRAY || key->subtype != SELVA_OBJECT_STRING) {
-            return SELVA_EINTYPE;
-        }
-
-        ary_idx = vec_idx_to_abs(key->array, ary_idx);
-        s = SVector_GetIndex(key->array, ary_idx);
-        if (!s) {
-            return SELVA_ENOENT;
-        }
-        *out = s;
-    } else {
-        if (key->type != SELVA_OBJECT_STRING) {
-            return SELVA_EINTYPE;
-        }
-        assert(key->value);
-
-        *out = key->value;
+    if (any.type != SELVA_OBJECT_STRING) {
+        return SELVA_EINTYPE;
     }
 
+    *out = any.str;
     return 0;
 }
 
@@ -1523,42 +1457,19 @@ int SelvaObject_IncrementLongLong(struct SelvaObject *obj, const struct selva_st
 }
 
 int SelvaObject_GetObjectStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct SelvaObject **out) {
-    ssize_t ary_err, ary_idx;
-    struct SelvaObjectKey *key;
+    struct SelvaObjectAny any;
     int err;
 
-    assert(obj);
-
-    err = get_key(obj, key_name_str, key_name_len, 0, &key);
+    err = SelvaObject_GetAnyLangStr(obj, NULL, key_name_str, key_name_len, &any);
     if (err) {
         return err;
     }
 
-    ary_err = get_array_field_index(key_name_str, key_name_len, &ary_idx);
-    if (ary_err < 0) {
-        err = SELVA_EINVAL;
-    } else if (ary_err > 0) {
-        struct SelvaObject *o;
-
-        if (key->type != SELVA_OBJECT_ARRAY || key->subtype != SELVA_OBJECT_OBJECT) {
-            return SELVA_EINTYPE;
-        }
-
-        ary_idx = vec_idx_to_abs(key->array, ary_idx);
-        o = SVector_GetIndex(key->array, ary_idx);
-        if (!o) {
-            return SELVA_ENOENT;
-        }
-        *out = o;
-    } else {
-        if (key->type != SELVA_OBJECT_OBJECT) {
-            return SELVA_EINTYPE;
-        }
-        assert(key->value);
-
-        *out = key->value;
+    if (any.type != SELVA_OBJECT_OBJECT) {
+        return SELVA_EINTYPE;
     }
 
+    *out = any.obj;
     return 0;
 }
 
