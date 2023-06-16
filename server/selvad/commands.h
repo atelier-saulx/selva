@@ -325,7 +325,7 @@
  * module: db
  * cmd: object.exists
  */
-#define CMD_ID_OBJECT_EXIST 48
+#define CMD_ID_OBJECT_EXISTS 48
 
 /**
  * Get node data object or field.

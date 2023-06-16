@@ -668,7 +668,7 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
 static int SelvaObject_OnLoad(void)
 {
     selva_mk_command(CMD_ID_OBJECT_DEL, SELVA_CMD_MODE_MUTATE, "object.del", SelvaObject_DelCommand);
-    selva_mk_command(CMD_ID_OBJECT_EXIST, SELVA_CMD_MODE_PURE, "object.exists", SelvaObject_ExistsCommand);
+    selva_mk_command(CMD_ID_OBJECT_EXISTS, SELVA_CMD_MODE_PURE, "object.exists", SelvaObject_ExistsCommand);
     selva_mk_command(CMD_ID_OBJECT_GET, SELVA_CMD_MODE_PURE, "object.get", SelvaObject_GetCommand);
     selva_mk_command(CMD_ID_OBJECT_SET, SELVA_CMD_MODE_MUTATE, "object.set", SelvaObject_SetCommand);
     selva_mk_command(CMD_ID_OBJECT_INCRBY, SELVA_CMD_MODE_MUTATE, "object.incrby", SelvaObject_IncrbyCommand);
