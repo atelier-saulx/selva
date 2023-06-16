@@ -2597,16 +2597,16 @@ static int Subscriptions_OnLoad(void) {
      * observed or serialized key values in any way. This is important
      * because we need to be able to create markers on readonly replicas.
      */
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADD, SELVA_CMD_MODE_PURE, "selva.subscriptions.add", SelvaSubscriptions_AddMarkerCommand);
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDALIAS, SELVA_CMD_MODE_PURE, "selva.subscriptions.addAlias", SelvaSubscriptions_AddAliasCommand);
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDMISSING, SELVA_CMD_MODE_PURE, "selva.subscriptions.addMissing", SelvaSubscriptions_AddMissingCommand);
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDTRIGGER, SELVA_CMD_MODE_PURE, "selva.subscriptions.addTrigger", SelvaSubscriptions_AddTriggerCommand);
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_REFRESH, SELVA_CMD_MODE_PURE, "selva.subscriptions.refresh", SelvaSubscriptions_RefreshCommand);
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_LIST, SELVA_CMD_MODE_PURE, "selva.subscriptions.list", SelvaSubscriptions_ListCommand);
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_LISTMISSING, SELVA_CMD_MODE_PURE, "selva.subscriptions.listMissing", SelvaSubscriptions_ListMissingCommand);
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DEBUG, SELVA_CMD_MODE_PURE, "selva.subscriptions.debug", SelvaSubscriptions_DebugCommand);
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DEL, SELVA_CMD_MODE_PURE, "selva.subscriptions.del", SelvaSubscriptions_DelCommand);
-    selva_mk_command(CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DELMARKER, SELVA_CMD_MODE_PURE, "selva.subscriptions.delMarker", SelvaSubscriptions_DelMarkerCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_ADD, SELVA_CMD_MODE_PURE, "selva.subscriptions.add", SelvaSubscriptions_AddMarkerCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_ADDALIAS, SELVA_CMD_MODE_PURE, "selva.subscriptions.addAlias", SelvaSubscriptions_AddAliasCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_ADDMISSING, SELVA_CMD_MODE_PURE, "selva.subscriptions.addMissing", SelvaSubscriptions_AddMissingCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_ADDTRIGGER, SELVA_CMD_MODE_PURE, "selva.subscriptions.addTrigger", SelvaSubscriptions_AddTriggerCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_REFRESH, SELVA_CMD_MODE_PURE, "selva.subscriptions.refresh", SelvaSubscriptions_RefreshCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_LIST, SELVA_CMD_MODE_PURE, "selva.subscriptions.list", SelvaSubscriptions_ListCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_LISTMISSING, SELVA_CMD_MODE_PURE, "selva.subscriptions.listMissing", SelvaSubscriptions_ListMissingCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_DEBUG, SELVA_CMD_MODE_PURE, "selva.subscriptions.debug", SelvaSubscriptions_DebugCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_DEL, SELVA_CMD_MODE_PURE, "selva.subscriptions.del", SelvaSubscriptions_DelCommand);
+    selva_mk_command(CMD_ID_SUBSCRIPTIONS_DELMARKER, SELVA_CMD_MODE_PURE, "selva.subscriptions.delMarker", SelvaSubscriptions_DelMarkerCommand);
 
     return 0;
 }

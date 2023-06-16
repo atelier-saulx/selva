@@ -388,70 +388,70 @@
  * module: db
  * cmd: subscriptions.add
  */
-#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADD 57
+#define CMD_ID_SUBSCRIPTIONS_ADD 57
 
 /**
  * Add subscription marker.
  * module: db
  * cmd: subscriptions.addAlias
  */
-#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDALIAS 58
+#define CMD_ID_SUBSCRIPTIONS_ADDALIAS 58
 
 /**
  * Add subscription marker.
  * module: db
  * cmd: subscriptions.addMissing
  */
-#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDMISSING 59
+#define CMD_ID_SUBSCRIPTIONS_ADDMISSING 59
 
 /**
  * Add subscription trigger.
  * module: db
  * cmd: subscriptions.addTrigger
  */
-#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_ADDTRIGGER 60
+#define CMD_ID_SUBSCRIPTIONS_ADDTRIGGER 60
 
 /**
  * Refresh subscription.
  * module: db
  * cmd: subscriptions.refresh
  */
-#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_REFRESH 61
+#define CMD_ID_SUBSCRIPTIONS_REFRESH 61
 
 /**
  * List all current subscriptions on this server.
  * module: db
  * cmd: subscriptions.list
  */
-#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_LIST 62
+#define CMD_ID_SUBSCRIPTIONS_LIST 62
 
 /**
  * List triggers for missing nodes.
  * module: db
  * cmd: subscriptions.listMissing
  */
-#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_LISTMISSING 63
+#define CMD_ID_SUBSCRIPTIONS_LISTMISSING 63
 
 /**
  * Describe a subscription or marker.
  * module: db
  * cmd: subscriptions.debug
  */
-#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DEBUG 64
+#define CMD_ID_SUBSCRIPTIONS_DEBUG 64
 
 /**
  * Delete a subscription.
  * module: db
  * cmd: subscriptions.del
  */
-#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DEL 65
+#define CMD_ID_SUBSCRIPTIONS_DEL 65
 
 /**
  * Delete a subscription marker.
  * module: db
  * cmd: subscriptions.delmarker
  */
-#define CMD_ID_SUBSCRIPTIONS_SUBSCRIPTIONS_DELMARKER 66
+#define CMD_ID_SUBSCRIPTIONS_DELMARKER 66
 
 /**
  * Modify a single node.
