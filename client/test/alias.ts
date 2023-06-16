@@ -3,6 +3,7 @@ import { connect } from '../src/index'
 import { start } from '@saulx/selva-server'
 import './assertions'
 import getPort from 'get-port'
+import { wait } from '@saulx/utils'
 
 let srv
 let port: number
@@ -625,28 +626,25 @@ test.serial('alias and merge = false', async (t) => {
     //aliases: [],
   })
 
-  t.deepEqual(
-    await client.redis.hgetall('___selva_aliases'),
-    { nice_match: match1, nicer_match: match2 }
-  )
+  t.deepEqual(await client.redis.hgetall('___selva_aliases'), {
+    nice_match: match1,
+    nicer_match: match2,
+  })
   const res1 = await client.redis.selva_object_get('', match1)
-  t.deepEqual(
-    res1,
-    [
-      'aliases',
-      [ 'nice_match' ],
-      'createdAt',
-      res1[3],
-      'id',
-      match1,
-      'title',
-      [ 'en', 'lol' ],
-      'type',
-      'match',
-      'updatedAt',
-      res1[11]
-    ]
-  )
+  t.deepEqual(res1, [
+    'aliases',
+    ['nice_match'],
+    'createdAt',
+    res1[3],
+    'id',
+    match1,
+    'title',
+    ['en', 'lol'],
+    'type',
+    'match',
+    'updatedAt',
+    res1[11],
+  ])
 
   await client.delete('root')
   await client.destroy()
@@ -676,9 +674,68 @@ test.serial('ways to clear aliases', async (t) => {
     aliases: [],
   })
 
-  t.deepEqual(await client.redis.hgetall('___selva_aliases'), null);
+  t.deepEqual(await client.redis.hgetall('___selva_aliases'), null)
   t.deepEqual(await client.redis.selva_object_get('', match1, 'aliases'), null)
   t.deepEqual(await client.redis.selva_object_get('', match2, 'aliases'), null)
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+test.only('set alias, get it, remove it, get it again', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+  const al = 'mybeautifulaliasmyesh'
+
+  const custom1 = await client.set({
+    type: 'custom',
+    aliases: [al],
+    value: 0,
+  })
+
+  const data = await client.get({
+    $alias: al,
+    id: true,
+    value: true,
+  })
+
+  console.log('data', data)
+
+  t.deepEqualIgnoreOrder(data, {
+    id: custom1,
+    value: 0,
+  })
+
+  let cnt = 0
+
+  client
+    .observe({
+      $alias: al,
+      id: true,
+      value: true,
+      aliases: true,
+    })
+    .subscribe((data, checksum) => {
+      console.log(data, checksum)
+      cnt++
+    })
+
+  await wait(3000)
+
+  await client.set({
+    $id: custom1,
+    value: 1,
+  })
+
+  await wait(250)
+
+  await client.set({
+    $id: custom1,
+    aliases: { $delete: [al] },
+  })
+
+  await wait(3000)
+
+  t.is(cnt, 3) // initial + change value + remove alias
 
   await client.delete('root')
   await client.destroy()
