@@ -1,11 +1,46 @@
 <!--
-Copyright (c) 2022 SAULX
+Copyright (c) 2022-2023 SAULX
 
 SPDX-License-Identifier: MIT
 -->
 
 Selva Protocol
 ==============
+
+
+```
++-----------------------+
+| selva_proto value     |
++-----------------------+
+| selva_proto msg/frame |
++-----------------------+
+|           TCP         |
++-----------------------+
+|           IP          |
++-----------------------+
+```
+Protocol stack
+
+
+```
+  +------------------------------+
+  | parse selva_proto values     |   lib/util parses
+  +------------------------------+
+                  |
+  +------------------------------+
+  |            command           |   module implementing commands
+  +------------------------------+
+                  |
+  +------------------------------+
+  | assemble selva_proto message |  server module
+  +------------------------------+
+                  |
+  +------------------------------+
+  |            TCP/IP            |
+  +------------------------------+
+```
+Call stack
+
 
 The Selva Protocol (`selva_proto`) is defined in the
 [selva\_proto.h](../include/selva_proto.h) header file.

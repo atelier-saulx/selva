@@ -12,6 +12,13 @@
  * for optimal network utilization.
  */
 #define SELVA_PROTO_FRAME_SIZE_MAX 5840
+
+/**
+ * Maximum selva_proto message size.
+ * This is the biggest message that can be gathered and buffered for parsing and
+ * execution. Larger messages can be sent and received using streaming
+ * strategies.
+ */
 #define SELVA_PROTO_MSG_SIZE_MAX   1073741824
 
 struct finalizer;
@@ -43,8 +50,9 @@ struct selva_proto_header {
         /**
          * Part of a stream response.
          * This is set for both the stack response_out to indicate that a stream
-         * response was created and in the stream_resp struct so that it's send
-         * to the client to help parsing the stream properly.
+         * response was created and in the stream_resp struct so that it's sent
+         * to the client to help receiving and parsing the incoming stream
+         * properly.
          * See selva_start_stream().
          */
         SELVA_PROTO_HDR_STREAM   = 0x10,
@@ -55,7 +63,11 @@ struct selva_proto_header {
          * as long as the connection is not interrupted.
          */
         SELVA_PROTO_HDR_BATCH    = 0x08,
-        SELVA_PROTO_HDR_FDEFLATE = 0x01, /*!< Compressed with deflate. TODO Not implemented. */
+        /**
+         * Compressed with deflate.
+         * TODO Not implemented.
+         */
+        SELVA_PROTO_HDR_FDEFLATE = 0x01,
     } __packed flags;
     /**
      * Sequence number selected by the request sender (typically client).
@@ -64,7 +76,12 @@ struct selva_proto_header {
      * that frames will be delivered in the original order.
      */
     uint32_t seqno;
-    uint16_t frame_bsize; /*!< Size of the frame (incl the header). */
+    /**
+     * Size of the frame (incl the header).
+     * This must be always set correctly or the receiver will not be able to
+     * track frames and will reset the connection.
+     */
+    uint16_t frame_bsize;
     /**
      * The full message size excluding headers if known; Otherwise 0.
      * This can be used to help allocating sufficient buffer space for the
@@ -82,6 +99,10 @@ static_assert(sizeof(struct selva_proto_header) == (2 * sizeof(uint64_t)), "Head
 
 /**
  * Selva protocol data types.
+ * These are the possible values that can be encapsulated in a selva_proto
+ * message. The data value system is a proper layer on top of the messaging
+ * system (selva_proto frames), meaning that it's not mandatory the encode
+ * messages using these types.
  */
 enum selva_proto_data_type {
     SELVA_PROTO_NULL = 0, /*!< A null. */
@@ -259,6 +280,9 @@ struct selva_proto_control {
     enum selva_proto_data_type type;
 } __packed;
 
+/**
+ * selva_proto structure to a literal string.
+ */
 #define selva_proto_typeof_str(v) _Generic((v), \
         struct selva_proto_null: "null", \
         struct selva_proto_error: "error", \
@@ -266,6 +290,8 @@ struct selva_proto_control {
         struct selva_proto_longlong: "long long", \
         struct selva_proto_string: "string", \
         struct selva_proto_array: "array", \
+        struct selva_proto_replication_cmd: "replication cmd", \
+        struct selva_proto_replication_sdb: "replication sdb", \
         struct selva_proto_control: "control")
 
 /**
@@ -287,7 +313,8 @@ int selva_proto_verify_frame_chk(
 
 /**
  * Selva_proto type code to a human readable string.
- * @param len is optional.
+ * @param type is the type.
+ * @param[out] len is optional.
  */
 #if __has_c_attribute(unsequenced)
 [[unsequenced]]
@@ -304,15 +331,25 @@ int selva_proto_parse_vtype(const void *buf, size_t bsize, size_t i, enum selva_
 
 /**
  * Parse selva_proto_error.
+ * @param buf is a pointer to the beginning of the received frame.
  * @param i is offset to buf. i < bsize.
  */
 int selva_proto_parse_error(const void *buf, size_t bsize, size_t i, int *err_out, const char **msg_str_out, size_t *msg_len_out);
 
 /**
- * parse selva_proto_replication.
+ * parse a selva_proto_replication value.
+ * @param buf is a pointer to the beginning of the received frame.
+ * @param i is offset to buf. i < bsize.
  */
 int selva_proto_parse_replication_cmd(const void *buf, size_t bsize, size_t i, uint64_t *eid, int64_t *ts, int8_t *cmd_id, int *compressed, size_t *data_size);
 
+/**
+ * Parse a selva_proto_replication_sdb value.
+ * @param buf is a pointer to the beginning of the received frame.
+ * @param i is offset to buf. i < bsize.
+ * @param[out] eid is the eid of this sdb.
+ * @param[out] is the size of the following data blob. The file data is unframed.
+ */
 int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, uint64_t *eid, size_t *data_size);
 
 /**
