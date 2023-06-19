@@ -537,7 +537,7 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
                 }
             } else {
                 if (data_len == 0) {
-                    printf("%*s[]\n", tabs * TAB_WIDTH, "");
+                    printf("%*s[],\n", tabs * TAB_WIDTH, "");
                 } else {
                     int did_tab = 0;
 
@@ -568,7 +568,7 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
                         if (did_tab) {
                             tabs--;
                         }
-                        printf("\n%*s]\n", tabs * TAB_WIDTH, "");
+                        printf("\n%*s],\n", tabs * TAB_WIDTH, "");
                     } else {
                         tabs_hold_stack[tabs] = data_len;
                         continue; /* Avoid decrementing the tab stack value. */
@@ -585,7 +585,7 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
             if (tabs > 0) {
                 tabs--;
             }
-            printf("%*s]\n", tabs * TAB_WIDTH, "");
+            printf("%*s],\n", tabs * TAB_WIDTH, "");
         } else if (type == SELVA_PROTO_REPLICATION_CMD) {
             uint64_t eid;
             int64_t ts;
@@ -618,7 +618,7 @@ static void generic_res(const struct cmd *cmd __unused, const void *msg, size_t 
                 if (tabs > 0) {
                     tabs--;
                 }
-                printf("%*s]\n", tabs * TAB_WIDTH, "");
+                printf("%*s],\n", tabs * TAB_WIDTH, "");
             }
         }
     }
