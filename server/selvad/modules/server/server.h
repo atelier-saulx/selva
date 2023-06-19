@@ -113,8 +113,22 @@ size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize);
  * @}
  */
 
+/**
+ * Receive a chuck of a message.
+ * @returns <0 if receive failed; =0 if more frames are needed to reassemble the message; =1 if the message is now received completely.
+ */
 int server_recv_message(struct conn_ctx *ctx);
+
+/**
+ * Receive a single frame from a connection.
+ */
 ssize_t server_recv_frame(struct conn_ctx *ctx);
+
+/**
+ * Flush outgoing frame buffer.
+ * Sends the data currently in the outgoing buffer.
+ * @param last_frame if set the current message will be terminated.
+ */
 int server_flush_frame_buf(struct selva_server_response_out *resp, int last_frame);
 
 /**

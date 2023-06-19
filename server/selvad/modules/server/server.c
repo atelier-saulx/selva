@@ -443,7 +443,7 @@ static void on_data(struct event *event, void *arg)
         const uint32_t seqno = le32toh(ctx->recv_frame_hdr_buf.seqno);
         struct selva_server_response_out resp = {
             .ctx = ctx,
-            .cork = 1, /* Cork the full response. This will be turned of if a stream is started. */
+            .cork = 1, /* Cork the full response. This will be turned off if a stream is started. */
             .cmd = ctx->recv_frame_hdr_buf.cmd,
             .frame_flags = SELVA_PROTO_HDR_FFIRST,
             .seqno = seqno,
