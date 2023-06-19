@@ -2287,7 +2287,7 @@ void *SelvaObject_ForeachBegin(struct SelvaObject *obj) {
     return RB_MIN(SelvaObjectKeys, &obj->keys_head);
 }
 
-const char *SelvaObject_ForeachKey(const struct SelvaObject *obj, void **iterator) {
+const char *SelvaObject_ForeachKey(const struct SelvaObject *obj, SelvaObject_Iterator **iterator) {
     struct SelvaObjectKey *key = *iterator;
     (void)obj; /* This makes the compiler think we are actually using obj. */
 
@@ -2300,7 +2300,7 @@ const char *SelvaObject_ForeachKey(const struct SelvaObject *obj, void **iterato
     return key->name;
 }
 
-void *SelvaObject_ForeachValue(const struct SelvaObject *obj, void **iterator, const char **name_out, enum SelvaObjectType type) {
+void *SelvaObject_ForeachValue(const struct SelvaObject *obj, SelvaObject_Iterator **iterator, const char **name_out, enum SelvaObjectType type) {
     struct SelvaObjectKey *key;
     (void)obj; /* This makes the compiler think we are actually using obj. */
 
@@ -2342,7 +2342,7 @@ void *SelvaObject_ForeachValue(const struct SelvaObject *obj, void **iterator, c
 
 void *SelvaObject_ForeachValueType(
         const struct SelvaObject *obj,
-        void **iterator,
+        SelvaObject_Iterator **iterator,
         const char **name_out,
         enum SelvaObjectType *type_out) {
     struct SelvaObjectKey *key;

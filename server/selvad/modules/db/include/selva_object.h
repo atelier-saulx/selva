@@ -519,7 +519,7 @@ void *SelvaObject_ForeachValue(
  */
 void *SelvaObject_ForeachValueType(
         const struct SelvaObject *obj,
-        void **iterator,
+        SelvaObject_Iterator **iterator,
         const char **name_out,
         enum SelvaObjectType *type_out);
 
