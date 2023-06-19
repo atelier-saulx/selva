@@ -363,130 +363,136 @@
 #define CMD_ID_OBJECT_SET 53
 
 /**
+ * module: db
+ * cmd: object.keys
+ */
+#define CMD_ID_OBJECT_KEYS 54
+
+/**
  * Get the type of a node data object field.
  * module: db
  * cmd: object.type
  */
-#define CMD_ID_OBJECT_TYPE 54
+#define CMD_ID_OBJECT_TYPE 55
 
 /**
  * Get the metadata associated with a node data object field.
  * module: db
  * cmd: object.getMeta
  */
-#define CMD_ID_OBJECT_GETMETA 55
+#define CMD_ID_OBJECT_GETMETA 56
 
 /**
  * Set the metadata associated with a node data object field.
  * module: db
  * cmd: object.setMeta
  */
-#define CMD_ID_OBJECT_SETMETA 56
+#define CMD_ID_OBJECT_SETMETA 57
 
 /**
  * Add subscription marker.
  * module: db
  * cmd: subscriptions.add
  */
-#define CMD_ID_SUBSCRIPTIONS_ADD 57
+#define CMD_ID_SUBSCRIPTIONS_ADD 58
 
 /**
  * Add subscription marker.
  * module: db
  * cmd: subscriptions.addAlias
  */
-#define CMD_ID_SUBSCRIPTIONS_ADDALIAS 58
+#define CMD_ID_SUBSCRIPTIONS_ADDALIAS 59
 
 /**
  * Add subscription marker.
  * module: db
  * cmd: subscriptions.addMissing
  */
-#define CMD_ID_SUBSCRIPTIONS_ADDMISSING 59
+#define CMD_ID_SUBSCRIPTIONS_ADDMISSING 60
 
 /**
  * Add subscription trigger.
  * module: db
  * cmd: subscriptions.addTrigger
  */
-#define CMD_ID_SUBSCRIPTIONS_ADDTRIGGER 60
+#define CMD_ID_SUBSCRIPTIONS_ADDTRIGGER 61
 
 /**
  * Refresh subscription.
  * module: db
  * cmd: subscriptions.refresh
  */
-#define CMD_ID_SUBSCRIPTIONS_REFRESH 61
+#define CMD_ID_SUBSCRIPTIONS_REFRESH 62
 
 /**
  * List all current subscriptions on this server.
  * module: db
  * cmd: subscriptions.list
  */
-#define CMD_ID_SUBSCRIPTIONS_LIST 62
+#define CMD_ID_SUBSCRIPTIONS_LIST 63
 
 /**
  * List triggers for missing nodes.
  * module: db
  * cmd: subscriptions.listMissing
  */
-#define CMD_ID_SUBSCRIPTIONS_LISTMISSING 63
+#define CMD_ID_SUBSCRIPTIONS_LISTMISSING 64
 
 /**
  * Describe a subscription or marker.
  * module: db
  * cmd: subscriptions.debug
  */
-#define CMD_ID_SUBSCRIPTIONS_DEBUG 64
+#define CMD_ID_SUBSCRIPTIONS_DEBUG 65
 
 /**
  * Delete a subscription.
  * module: db
  * cmd: subscriptions.del
  */
-#define CMD_ID_SUBSCRIPTIONS_DEL 65
+#define CMD_ID_SUBSCRIPTIONS_DEL 66
 
 /**
  * Delete a subscription marker.
  * module: db
  * cmd: subscriptions.delmarker
  */
-#define CMD_ID_SUBSCRIPTIONS_DELMARKER 66
+#define CMD_ID_SUBSCRIPTIONS_DELMARKER 67
 
 /**
  * Modify a single node.
  * module: db
  * cmd: modify
  */
-#define CMD_ID_MODIFY 67
+#define CMD_ID_MODIFY 68
 
 /**
  * Update nodes using a query.
  * module: db
  * cmd: update
  */
-#define CMD_ID_UPDATE 68
+#define CMD_ID_UPDATE 69
 
 /**
  * Start replication stream.
  * module: replication
  * cmd: replicasync
  */
-#define CMD_ID_REPLICASYNC 69
+#define CMD_ID_REPLICASYNC 70
 
 /**
  * Set this node as a replica of another node.
  * module: replication
  * cmd: replicaof
  */
-#define CMD_ID_REPLICAOF 70
+#define CMD_ID_REPLICAOF 71
 
 /**
  * Show the current status of the replication module.
  * module: replication
  * cmd: replicainfo
  */
-#define CMD_ID_REPLICAINFO 71
+#define CMD_ID_REPLICAINFO 72
 
 /**
  * Replica status message.
@@ -494,7 +500,7 @@
  * module: replication
  * cmd: replicastatus
  */
-#define CMD_ID_REPLICASTATUS 72
+#define CMD_ID_REPLICASTATUS 73
 
 /**
  * Wait for replicas to sync.
@@ -503,4 +509,4 @@
  * module: replication
  * cmd: replicawait
  */
-#define CMD_ID_REPLICAWAIT 73
+#define CMD_ID_REPLICAWAIT 74

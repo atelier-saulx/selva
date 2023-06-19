@@ -425,6 +425,53 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
     publish_field_change_str(node, okey_str, okey_len);
 }
 
+void SelvaObject_KeysCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
+{
+    Selva_NodeId node_id;
+    const char *okey_str;
+    size_t okey_len;
+    int argc;
+    struct SelvaHierarchyNode *node;
+    struct SelvaObject *obj;
+
+    argc = selva_proto_scanf(NULL, buf, len, "%" SELVA_SCA_NODE_ID ", %.*s", node_id, &okey_len, &okey_str);
+    if (argc != 1 && argc != 2) {
+        if (argc < 0) {
+            selva_send_errorf(resp, argc, "Failed to parse args");
+        } else {
+            selva_send_error_arity(resp);
+        }
+        return;
+    }
+
+    node = SelvaHierarchy_FindNode(main_hierarchy, node_id);
+    if (!node) {
+        selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
+        return;
+    }
+
+    obj = SelvaHierarchy_GetNodeObject(node);
+    if (argc == 2) {
+        int err;
+
+        err = SelvaObject_GetObjectStr(obj, okey_str, okey_len, &obj);
+        if (err || !obj) {
+            selva_send_errorf(resp, err, "Get key");
+            return;
+        }
+    }
+
+    selva_send_array(resp, -1);
+
+    const char *skey;
+    SelvaObject_Iterator *it = SelvaObject_ForeachBegin(obj);
+    while ((skey = SelvaObject_ForeachKey(obj, &it))) {
+        selva_send_strf(resp, "%s", skey);
+    }
+
+    selva_send_array_end(resp);
+}
+
 void SelvaObject_TypeCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
 {
     Selva_NodeId node_id;
@@ -672,6 +719,7 @@ static int SelvaObject_OnLoad(void)
     selva_mk_command(CMD_ID_OBJECT_SET, SELVA_CMD_MODE_MUTATE, "object.set", SelvaObject_SetCommand);
     selva_mk_command(CMD_ID_OBJECT_INCRBY, SELVA_CMD_MODE_MUTATE, "object.incrby", SelvaObject_IncrbyCommand);
     selva_mk_command(CMD_ID_OBJECT_INCRBY_DOUBLE, SELVA_CMD_MODE_MUTATE, "object.incrbydouble", SelvaObject_IncrbyDoubleCommand);
+    selva_mk_command(CMD_ID_OBJECT_KEYS, SELVA_CMD_MODE_PURE, "object.keys", SelvaObject_KeysCommand);
     selva_mk_command(CMD_ID_OBJECT_TYPE, SELVA_CMD_MODE_PURE, "object.type", SelvaObject_TypeCommand);
     selva_mk_command(CMD_ID_OBJECT_LEN, SELVA_CMD_MODE_PURE, "object.len", SelvaObject_LenCommand);
     selva_mk_command(CMD_ID_OBJECT_GETMETA, SELVA_CMD_MODE_PURE, "object.getMeta", SelvaObject_GetMetaCommand);
