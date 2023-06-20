@@ -244,6 +244,7 @@ static void replicasync(struct selva_server_response_out *resp, const void *buf,
         sync_mode = REPLICATION_SYNC_MODE_PARTIAL;
 
         if (!sdb_hash || sdb_hash_len != SELVA_IO_HASH_SIZE) {
+            selva_cancel_stream(resp, stream_resp);
             selva_send_errorf(resp, SELVA_EINVAL, "Invalid sdb_hash length");
             return;
         }
