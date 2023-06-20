@@ -107,6 +107,7 @@ static enum selva_proto_data_type type_to_selva_proto_type_map[TYPE_pointer + 1]
     [TYPE_ptrdiff_t] = SELVA_PROTO_LONGLONG,
     [TYPE_uchar] = SELVA_PROTO_LONGLONG,
     [TYPE_ushort] = SELVA_PROTO_LONGLONG,
+    [TYPE_uint] = SELVA_PROTO_LONGLONG,
     [TYPE_ulong] = SELVA_PROTO_LONGLONG,
     [TYPE_ulonglong] = SELVA_PROTO_LONGLONG,
     [TYPE_uintmax_t] = SELVA_PROTO_LONGLONG,
