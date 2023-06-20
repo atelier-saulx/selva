@@ -24,6 +24,10 @@
 
 #define CHK_T typeof_field(struct selva_proto_header, chk)
 
+#ifndef MSG_MORE
+# define MSG_MORE 0
+#endif
+
 /**
  * Modify a single node.
  */
