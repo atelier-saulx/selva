@@ -589,6 +589,8 @@ __constructor void init(void)
     SELVA_MK_COMMAND(CMD_ID_MALLOCSTATS, SELVA_CMD_MODE_PURE, mallocstats);
     SELVA_MK_COMMAND(CMD_ID_MALLOCPROFDUMP, SELVA_CMD_MODE_PURE, mallocprofdump);
 
+    pubsub_init();
+
     /* Async server for receiving messages. */
     conn_init(max_clients);
     server_sockfd = new_server(selva_port);

@@ -510,3 +510,24 @@
  * cmd: replicawait
  */
 #define CMD_ID_REPLICAWAIT 74
+
+/**
+ * Publish a message to a channel.
+ * module: server
+ * cmd: publish
+ */
+#define CMD_ID_PUBLISH 75
+
+/**
+ * Subscribe to a channel.
+ * module: server
+ * cmd: subscribe
+ */
+#define CMD_ID_SUBSCRIBE 76
+
+/**
+ * Unsubscribe from a channel.
+ * module: server
+ * cmd: unsubscribe
+ */
+#define CMD_ID_UNSUBSCRIBE 77

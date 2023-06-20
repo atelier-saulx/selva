@@ -10,6 +10,8 @@
 struct selva_server_response_out;
 struct conn_ctx;
 
+typedef uint16_t pubsub_ch_mask_t;
+
 /**
  * Outgoing response.
  */
@@ -47,6 +49,7 @@ struct conn_ctx {
     /**
      * Application specific data.
      */
+    pubsub_ch_mask_t pubsub_ch_mask; /*!< Subscribed to the channels in this mask. */
     struct {
         int tim_hrt; /*!< Server heartbeat timer. */
     } app;
@@ -108,6 +111,33 @@ void free_stream_resp(struct selva_server_response_out *stream_resp);
  */
 size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize);
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup pubsub
+ * Publish–subscribe.
+ * @{
+ */
+
+void pubsub_init(void);
+
+/**
+ * Forcefully remove all streams belonging to ctx from pubsub.
+ */
+void pubsub_teardown(struct conn_ctx *ctx);
+
+/**
+ * Gracefully unsubscribe all pubsub streams.
+ */
+void pubsub_unsubscribe_all(struct conn_ctx *ctx);
+
+/**
+ * Unsubscribe ctx from channel.
+ */
+int pubsub_unsubscribe(struct conn_ctx *ctx, unsigned ch_id);
 
 /**
  * @}

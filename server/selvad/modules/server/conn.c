@@ -66,7 +66,12 @@ static void retry_free_con_ctx(struct event *, void *arg)
 
 void free_conn_ctx(struct conn_ctx *ctx)
 {
-    const unsigned free_map = atomic_load(&ctx->streams.free_map);
+    unsigned free_map = atomic_load(&ctx->streams.free_map);
+
+    if (free_map != ALL_STREAMS_FREE && ctx->pubsub_ch_mask != 0) {
+        pubsub_teardown(ctx);
+        free_map = atomic_load(&ctx->streams.free_map);
+    }
 
     if (free_map == ALL_STREAMS_FREE) {
         int i = ctx->inuse;
@@ -125,6 +130,8 @@ void free_stream_resp(struct selva_server_response_out *stream_resp)
         old_free_map = atomic_load(&ctx->streams.free_map);
         new_free_map = old_free_map | 1 << (unsigned)((ptrdiff_t)stream_resp - (ptrdiff_t)ctx->streams.stream_resp);
     } while (!atomic_compare_exchange_weak(&ctx->streams.free_map, &old_free_map, new_free_map));
+
+    stream_resp->ctx = NULL;
 }
 
 size_t conn_to_str(struct conn_ctx *ctx, char buf[CONN_STR_LEN], size_t bsize)

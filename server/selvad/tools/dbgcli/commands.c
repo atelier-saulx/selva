@@ -43,6 +43,9 @@ static int cmd_lscmd_req(const struct cmd *cmd, int sock, int seqno, int argc, c
 static int cmd_loglevel_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 static int cmd_object_incrby_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
 
+static int cmd_publish_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
+static int cmd_subscribe_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[]);
+
 /*
  * Currently most commands encode the request arguments using strings and send
  * back more properly formatted responses (using integers, arrays, etc.). This
@@ -87,6 +90,24 @@ static struct cmd commands[255] = {
         .cmd_id = CMD_ID_OBJECT_INCRBY,
         .cmd_name = "object.incrby",
         .cmd_req = cmd_object_incrby_req,
+        .cmd_res = generic_res,
+    },
+    [CMD_ID_PUBLISH] = {
+        .cmd_id = CMD_ID_PUBLISH,
+        .cmd_name = "publish",
+        .cmd_req = cmd_publish_req,
+        .cmd_res = generic_res,
+    },
+    [CMD_ID_SUBSCRIBE] = {
+        .cmd_id = CMD_ID_SUBSCRIBE,
+        .cmd_name = "subscribe",
+        .cmd_req = cmd_subscribe_req,
+        .cmd_res = generic_res,
+    },
+    [CMD_ID_UNSUBSCRIBE] = {
+        .cmd_id = CMD_ID_UNSUBSCRIBE,
+        .cmd_name = "unsubscribe",
+        .cmd_req = cmd_subscribe_req,
         .cmd_res = generic_res,
     },
     [253] = {
@@ -382,6 +403,85 @@ static int cmd_object_incrby_req(const struct cmd *cmd, int sock, int seqno, int
         return -1;
     }
 
+    return 0;
+}
+
+static int cmd_publish_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[])
+{
+    if (argc != 3) {
+        fprintf(stderr, "Invalid arguments\n");
+        return -1;
+    }
+
+    const char *message_str = argv[2];
+    const size_t message_len = strlen(message_str);
+    struct {
+        struct selva_proto_header hdr;
+        struct selva_proto_longlong channel;
+        struct selva_proto_string message;
+    } __packed buf = {
+        .hdr = {
+            .cmd = cmd->cmd_id,
+            .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
+            .seqno = htole32(seqno),
+            .frame_bsize = htole16(sizeof(buf) + message_len),
+            .msg_bsize = 0,
+            .chk = 0,
+        },
+        .channel = {
+            .type = SELVA_PROTO_LONGLONG,
+            .v = htole64(strtol(argv[1], NULL, 10))
+        },
+        .message = {
+            .type = SELVA_PROTO_STRING,
+            .flags = 0,
+            .bsize = htole32(message_len),
+        },
+    };
+    uint32_t chk;
+
+    chk = crc32c(0, &buf, sizeof(buf));
+    chk = crc32c(chk, message_str, message_len);
+    buf.hdr.chk = htole32(chk);
+
+    if (send_message(sock, &buf, sizeof(buf), MSG_MORE) ||
+        send_message(sock, message_str, message_len, 0)
+       ) {
+        return -1;
+    }
+    return 0;
+}
+
+static int cmd_subscribe_req(const struct cmd *cmd, int sock, int seqno, int argc, char *argv[])
+{
+    if (argc != 2) {
+        fprintf(stderr, "Invalid arguments\n");
+        return -1;
+    }
+
+    struct {
+        struct selva_proto_header hdr;
+        struct selva_proto_longlong channel;
+    } __packed buf = {
+        .hdr = {
+            .cmd = cmd->cmd_id,
+            .flags = SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
+            .seqno = htole32(seqno),
+            .frame_bsize = htole16(sizeof(buf)),
+            .msg_bsize = 0,
+            .chk = 0,
+        },
+        .channel = {
+            .type = SELVA_PROTO_LONGLONG,
+            .v = htole64(strtol(argv[1], NULL, 10))
+        },
+    };
+
+    buf.hdr.chk = htole32(crc32c(0, &buf, sizeof(buf)));
+
+    if (send_message(sock, &buf, sizeof(buf), 0)) {
+        return -1;
+    }
     return 0;
 }
 

@@ -386,11 +386,11 @@ int selva_send_end(struct selva_server_response_out *restrict resp)
     server_uncork_resp(resp);
 
     if (resp->frame_flags & SELVA_PROTO_HDR_STREAM) {
-        /* Note that this function still needs resp->ctx. */
+        /* Note that this function needs resp->ctx. */
         free_stream_resp(resp);
+    } else {
+        resp->ctx = NULL; /* Make sure nothing will be sent anymore. */
     }
-
-    resp->ctx = NULL; /* Make sure nothing will be sent anymore. */
 
     return err;
 }

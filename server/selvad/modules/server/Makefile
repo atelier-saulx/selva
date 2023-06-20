@@ -1,12 +1,13 @@
-# Copyright (c) 2022 SAULX
+# Copyright (c) 2022-2023 SAULX
 # SPDX-License-Identifier: MIT
 
 OBJ := \
 	   conn.o \
+	   pubsub.o \
+	   selva_send.o \
 	   server.o \
 	   server_frame.o \
-	   server_msg.o \
-	   selva_send.o
+	   server_msg.o
 DEP := $(OBJ:%.o=%.d)
 CFLAGS += -DSELVA_SERVER_MAIN=1
 LDFLAGS += -lutil -ljemalloc_selva
