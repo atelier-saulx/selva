@@ -22,7 +22,6 @@
 #include "selva_proto.h"
 #include "selva_server.h"
 #include "arg_parser.h"
-#include "async_task.h"
 #include "hierarchy.h"
 #include "resolve.h"
 #include "rpn.h"
@@ -1765,6 +1764,11 @@ static void send_update_events(struct SelvaHierarchy *hierarchy) {
 
     SVector_ForeachBegin(&it, &def->updates);
     while ((sub = SVector_Foreach(&it))) {
+        struct SelvaSubscriptions_PubsubMessage msg = {
+            .event_type = SELVA_SUB_UPDATE,
+        };
+
+        memcpy(msg.sub_id, sub->sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
 #if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
@@ -1772,7 +1776,7 @@ static void send_update_events(struct SelvaHierarchy *hierarchy) {
                   Selva_SubscriptionId2str(str, sub->sub_id));
 #endif
 
-        AsyncTask_PublishSubscriptionUpdate(sub->sub_id);
+        selva_pubsub_publish(SELVA_SUBSCRIPTIONS_PUBSUB_CH_ID, &msg, sizeof(msg));
     }
     SVector_Clear(&def->updates);
 }
@@ -1784,6 +1788,12 @@ static void send_trigger_events(struct SelvaHierarchy *hierarchy) {
 
     SVector_ForeachBegin(&it, &def->triggers);
     while ((marker = SVector_Foreach(&it))) {
+        struct SelvaSubscriptions_PubsubMessage msg = {
+            .event_type = SELVA_SUB_TRIGGER,
+        };
+
+        memcpy(msg.sub_id, marker->sub->sub_id, SELVA_SUBSCRIPTION_ID_SIZE);
+        memcpy(msg.node_id, marker->filter_history.node_id, SELVA_NODE_ID_SIZE);
 #if 0
         char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
@@ -1791,7 +1801,7 @@ static void send_trigger_events(struct SelvaHierarchy *hierarchy) {
                   Selva_SubscriptionId2str(str, marker->sub->sub_id));
 #endif
 
-        AsyncTask_PublishSubscriptionTrigger(marker->sub->sub_id, marker->filter_history.node_id);
+        selva_pubsub_publish(SELVA_SUBSCRIPTIONS_PUBSUB_CH_ID, &msg, sizeof(msg));
     }
     SVector_Clear(&def->triggers);
 }

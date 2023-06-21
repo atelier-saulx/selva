@@ -29,7 +29,6 @@
 #include "selva_replication.h"
 #include "selva_server.h"
 #include "arg_parser.h"
-#include "async_task.h"
 #include "db_config.h"
 #include "dump.h"
 #include "edge.h"

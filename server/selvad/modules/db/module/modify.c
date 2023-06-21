@@ -27,7 +27,6 @@
 #include "util/selva_string.h"
 #include "util/svector.h"
 #include "arg_parser.h"
-#include "async_task.h"
 #include "comparator.h"
 #include "db_config.h"
 #include "hierarchy.h"

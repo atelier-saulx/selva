@@ -210,6 +210,20 @@ struct SelvaSubscriptions_DeferredEvents {
     SVector triggers; /*!< A set of Selva_SubscriptionMarkers */
 };
 
+/**
+ * A structure used for sending subscription messages over selva_pubsub.
+ */
+struct SelvaSubscriptions_PubsubMessage {
+    enum {
+        SELVA_SUB_UPDATE = 1,
+        SELVA_SUB_TRIGGER = 2,
+    } __packed event_type;
+    Selva_SubscriptionId sub_id;
+    Selva_NodeId node_id;
+};
+
+#define SELVA_SUBSCRIPTIONS_PUBSUB_CH_ID 0
+
 int SelvaSubscriptions_hasActiveMarkers(const struct SelvaHierarchyMetadata *node_metadata);
 
 /**

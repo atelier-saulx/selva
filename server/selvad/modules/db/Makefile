@@ -6,7 +6,6 @@ OBJ := \
 	   module/aggregate.o \
 	   module/alias.o \
 	   module/arg_parser.o \
-	   module/async_task.o \
 	   module/comparator.o \
 	   module/dump.o \
 	   module/edge/edge.o \

@@ -110,14 +110,34 @@ int pubsub_unsubscribe(struct conn_ctx *ctx, unsigned ch_id)
     return 0;
 }
 
+int selva_pubsub_publish(unsigned ch_id, const void *message_str, size_t message_len)
+{
+    struct SVectorIterator it;
+    struct selva_server_response_out *stream_resp;
+
+    if (ch_id >= NR_CHANNELS) {
+        return SELVA_EINVAL;
+    }
+
+    SVector_ForeachBegin(&it, &channels[ch_id].subscribers);
+    while ((stream_resp = SVector_Foreach(&it))) {
+        selva_send_str(stream_resp, message_str, message_len);
+        (void)selva_send_flush(stream_resp);
+        /*
+         * We ignore errors for now and let on_close handler take care of the
+         * cleanup.
+         */
+    }
+
+    return 0;
+}
+
 static void publish(struct selva_server_response_out *resp, const void *buf, size_t len)
 {
     unsigned ch_id;
     const char *message_str;
     size_t message_len;
-    int argc;
-    struct SVectorIterator it;
-    struct selva_server_response_out *stream_resp;
+    int argc, err;
 
     argc = selva_proto_scanf(NULL, buf, len, "%u, %.*s", &ch_id, &message_len, &message_str);
     if (argc != 2) {
@@ -129,19 +149,10 @@ static void publish(struct selva_server_response_out *resp, const void *buf, siz
         return;
     }
 
-    if (ch_id >= NR_CHANNELS) {
-        selva_send_errorf(resp, SELVA_EINVAL, "Invalid channel id");
+    err = selva_pubsub_publish(ch_id, message_str, message_len);
+    if (err) {
+        selva_send_errorf(resp, err, "Publish failed");
         return;
-    }
-
-    SVector_ForeachBegin(&it, &channels[ch_id].subscribers);
-    while ((stream_resp = SVector_Foreach(&it))) {
-        selva_send_str(stream_resp, message_str, message_len);
-        (void)selva_send_flush(stream_resp);
-        /*
-         * We ignore errors for now and let on_close handler take care of the
-         * cleanup.
-         */
     }
 
     selva_send_ll(resp, 1);

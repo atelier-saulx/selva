@@ -6,7 +6,6 @@
 #ifndef SELVA_MODIFY_H
 #define SELVA_MODIFY_H
 
-#include "async_task.h"
 #include "selva_object.h"
 
 struct SelvaHierarchy;
