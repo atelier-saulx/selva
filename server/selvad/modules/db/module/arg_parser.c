@@ -286,9 +286,11 @@ int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, const struct selva_st
 
 int SelvaArgParser_MarkerId(Selva_SubscriptionMarkerId *marker_id, const struct selva_string *arg) {
     long long ll;
+    int err;
 
-    if (!selva_string_to_ll(arg, &ll)) {
-        return SELVA_SUBSCRIPTIONS_EINVAL;
+    err = selva_string_to_ll(arg, &ll);
+    if (err) {
+        return err;
     }
 
     *marker_id = (Selva_SubscriptionMarkerId)ll;
