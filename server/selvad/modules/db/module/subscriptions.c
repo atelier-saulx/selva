@@ -2132,7 +2132,7 @@ void SelvaSubscriptions_AddAliasCommand(struct selva_server_response_out *resp, 
 
 /**
  * Add missing node/alias markers.
- * SUBSCRIPTIONS.ADDMISSING KEY SUB_ID NODEID|ALIAS...
+ * SUBSCRIPTIONS.ADDMISSING SUB_ID NODEID|ALIAS...
  */
 void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
@@ -2143,6 +2143,9 @@ void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp
 
     finalizer_init(&fin);
 
+    const int ARGV_SUB_ID    = 0;
+    const int ARGV_IDS       = 1;
+
     argc = selva_proto_buf2strings(&fin, buf, len, &argv);
     if (argc < 2) {
         if (argc < 0) {
@@ -2152,9 +2155,6 @@ void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp
         }
         return;
     }
-
-    const int ARGV_SUB_ID    = 0;
-    const int ARGV_IDS       = 1;
 
     Selva_SubscriptionId sub_id;
     err = SelvaArgParser_SubscriptionId(sub_id, argv[ARGV_SUB_ID]);
@@ -2201,7 +2201,7 @@ void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp
 
 /**
  * Add a trigger marker.
- * SUBSCRIPTIONS.ADDTRIGGER KEY SUB_ID MARKER_ID EVENT_TYPE [filter expression] [filter args...]
+ * SUBSCRIPTIONS.ADDTRIGGER SUB_ID MARKER_ID EVENT_TYPE [filter expression] [filter args...]
  */
 void SelvaSubscriptions_AddTriggerCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
@@ -2344,7 +2344,7 @@ out:
 }
 
 /*
- * SUBSCRIPTIONS.refresh KEY SUB_ID
+ * SUBSCRIPTIONS.refresh SUB_ID
  */
 void SelvaSubscriptions_RefreshCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     SELVA_TRACE_BEGIN_AUTO(cmd_subscriptions_refresh);
@@ -2391,7 +2391,6 @@ void SelvaSubscriptions_RefreshCommand(struct selva_server_response_out *resp, c
 
 /**
  * List all subscriptions.
- * KEY
  */
 void SelvaSubscriptions_ListCommand(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
