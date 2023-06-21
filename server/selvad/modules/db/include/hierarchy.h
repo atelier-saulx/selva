@@ -131,7 +131,9 @@ struct SelvaHierarchy {
          * When a subscription is removed the markers for missing nodes should
          * be deleted.
          */
-        struct SelvaObject *missing;
+        struct {
+            STATIC_SELVA_OBJECT(_obj_data);
+        } missing;
 
         /**
          * Special subscription markers.
