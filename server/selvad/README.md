@@ -44,8 +44,6 @@ Running the Server
 
 | Name |                                | Description               |
 |---------------------------------------|---------------------------|
-`REDIS_ADDR`                            | for publishing events.    |
-`REDIS_PORT`                            | for publishing events.    |
 `DEBUG_MODIFY_REPLICATION_DELAY_NS`     |                           |
 `HIERARCHY_INITIAL_VECTOR_LEN`          |                           |
 `HIERARCHY_EXPECTED_RESP_LEN`           |                           |

@@ -35,8 +35,6 @@ struct selva_glob_config selva_glob_config = {
     .find_indexing_icb_update_interval = 5000,
     .find_indexing_interval = 60000,
     .find_indexing_popularity_ave_period = 216000,
-    .redis_addr = "127.0.0.1",
-    .redis_port = 6379,
     .auto_save_interval = 0,
 };
 
@@ -52,8 +50,6 @@ static const struct config cfg_map[] = {
     { "FIND_INDEXING_ICB_UPDATE_INTERVAL",      CONFIG_INT,     &selva_glob_config.find_indexing_icb_update_interval },
     { "FIND_INDEXING_INTERVAL",                 CONFIG_INT,     &selva_glob_config.find_indexing_interval },
     { "FIND_INDEXING_POPULARITY_AVE_PERIOD",    CONFIG_INT,     &selva_glob_config.find_indexing_popularity_ave_period },
-    { "REDIS_ADDR",                             CONFIG_CSTRING, &selva_glob_config.redis_addr },
-    { "REDIS_PORT",                             CONFIG_INT,     &selva_glob_config.redis_port },
     { "AUTO_SAVE_INTERVAL",                     CONFIG_INT,     &selva_glob_config.auto_save_interval },
 };
 
