@@ -71,7 +71,7 @@ const kCRCTable = Int32Array.of(
   0xbe2da0a5, 0x4c4623a6, 0x5f16d052, 0xad7d5351,
 );
 
-module.exports = (buf, initial) => {
+export default (buf, initial) => {
   if (!Buffer.isBuffer(buf)) {
     buf = Buffer.from(buf);
   }
