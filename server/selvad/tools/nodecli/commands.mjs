@@ -89,3 +89,35 @@ export function modify(nodeId, fields) {
 
   return Buffer.concat([head, ...fieldsBuf]);
 }
+
+export function objectGet(lang, nodeId, ...fields) {
+  const fields_len = () => {
+    if (!fields) return 0;
+    return fields.reduce((acc, cur) => acc + selva_proto_string_def.size + Buffer.byteLength(cur), 0)
+  };
+  const msg = Buffer.allocUnsafe(
+    selva_proto_string_def.size + (lang ? Buffer.byteLength(lang) : 0) + // lang
+    selva_proto_string_def.size + SELVA_NODE_ID_SIZE +
+    fields_len(),
+  );
+
+  let off = 0;
+
+  // lang
+  off += serializeString(msg, off, lang || '');
+
+  // nodeId
+  off += serializeWithOffset(selva_proto_string_def, msg, off, {
+    type: SELVA_PROTO_STRING,
+    bsize: SELVA_NODE_ID_SIZE,
+  });
+  msg.write(nodeId, off, SELVA_NODE_ID_SIZE, 'latin1');
+  off += SELVA_NODE_ID_SIZE;
+
+  // opt fields
+  for (const field of fields) {
+    off += serializeString(msg, off, field);
+  }
+
+  return msg;
+}

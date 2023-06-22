@@ -112,7 +112,7 @@ function parse_hdr_replication_sdb(buf) {
 
 function parse_value(buf) {
   // FIXME `[CM_ID]: fun` would be better but JS doesn't have that
-  const parse_hdr = [
+  const hdr_parsers = [
     parse_hdr_null,
     parse_hdr_error,
     parse_hdr_double,
@@ -124,7 +124,13 @@ function parse_value(buf) {
     parse_hdr_replication_sdb,
   ];
 
-  const [v, vsize] = parse_hdr[buf.readUInt8(0)](buf);
+  const type = buf.readUInt8(0);
+  const parser = hdr_parsers[type];
+  if (!parser) {
+    throw new Error(`Invalid type: ${type}`);
+  }
+
+  const [v, vsize] = parser(buf);
   return [v, vsize < buf.length ? buf.slice(vsize) : null];
 }
 
@@ -139,24 +145,24 @@ function _process_seq(buf, n) {
     let v;
     [v, rest] = parse_value(rest);
 
-    if (v.type) {
+    if (v && v.type) {
       if (v.type == SELVA_PROTO_ARRAY) {
         if (v.flags & SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH) {
           return _process_seq(rest, -2);
         } else if (v.flags & SELVA_PROTO_ARRAY_FLONGLONG) {
           const a = [];
           for (let i = 0; i < v.length; i++) {
-            a.push(buf.readBigInt64LE(selva_proto_array_def.size + i * 8));
+            a.push(rest.readBigInt64LE(i * 8));
           }
           result.push(a);
-          rest = buf.splice(selva_proto_array_def.size + v.length * 8);
+          rest = rest.slice(v.length * 8);
         } else if (v.flags & SELVA_PROTO_ARRAY_FDOUBLE) {
           const a = [];
           for (let i = 0; i < v.length; i++) {
-            a.push(buf.readDoubleLE(selva_proto_array_def.size + i * 8));
+            a.push(rest.readDoubleLE(i * 8));
           }
           result.push(a);
-          rest = buf.splice(selva_proto_array_def.size + v.length * 8);
+          rest = rest.slice(v.length * 8);
         } else { /* Read v.length values */
           const [r, new_rest] = _process_seq(rest, v.length);
           if (r.length != v.length) {
@@ -297,7 +303,7 @@ export async function connect(port, host) {
       reqWrap(CMD_ID_LSCMD, lscmd).then((res) => {
         const commands = {}; // Discovered commands
         for (const [cmdId, cmdName] of res) {
-          commands[cmdName] = (buf) => reqWrap(cmdId, sendMsg, Number(cmdId), buf);
+          commands[cmdName.replace(/\./g,'_')] = (buf) => reqWrap(cmdId, sendMsg, Number(cmdId), buf);
         }
 
         resolveClient({
