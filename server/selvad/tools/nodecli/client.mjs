@@ -93,14 +93,12 @@ function parse_hdr_string(buf) {
 function parse_hdr_array(buf) {
   const def = selva_proto_array_def;
   const v = deserialize(def, buf);
-  /* TODO Embedded array */
   return [v, def.size];
 }
 
 function parse_hdr_array_end(buf) {
   const def = selva_proto_control_def;
   const v = deserialize(def, buf);
-  /* TODO Embedded array */
   return [v, def.size];
 }
 
@@ -153,7 +151,12 @@ function _process_seq(buf, n) {
           result.push(a);
           rest = buf.splice(selva_proto_array_def.size + v.length * 8);
         } else if (v.flags & SELVA_PROTO_ARRAY_FDOUBLE) {
-          /* TODO */
+          const a = [];
+          for (let i = 0; i < v.length; i++) {
+            a.push(buf.readDoubleLE(selva_proto_array_def.size + i * 8));
+          }
+          result.push(a);
+          rest = buf.splice(selva_proto_array_def.size + v.length * 8);
         } else { /* Read v.length values */
           const [r, new_rest] = _process_seq(rest, v.length);
           if (r.length != v.length) {
