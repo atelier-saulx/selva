@@ -29,6 +29,19 @@ function serializeString(buf, off, str) {
   return wr1 + wr2;
 }
 
+export function toSelvaProtoStrings(...strings) {
+  const buf = Buffer.allocUnsafe(
+    strings.map((s) => selva_proto_string_def.size + Buffer.byteLength(s)).reduce((acc, cur) => acc + cur, 0)
+  );
+  let off = 0;
+
+  for (const s of strings) {
+    off += serializeString(buf, off, s);
+  }
+
+  return buf;
+}
+
 export function modify(nodeId, fields) {
   const head = Buffer.alloc(
     selva_proto_array_def.size +
