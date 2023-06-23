@@ -13,11 +13,18 @@
 #include "util/tcp.h"
 #include "endian.h"
 #include "selva_error.h"
+#if 0
+#include "selva_log.h"
+#endif
 #include "selva_proto.h"
 #include "selva_server.h"
 #include "server.h"
 
 #define MAX_RETRIES 3
+
+/*
+ * NOTICE: All logs are commented out for perf. Please keep it this way in prod.
+ */
 
 static int send_frame(int sockfd, const void *buf, size_t len, int flags)
 {
@@ -297,13 +304,20 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
         /* Drop the connection immediately on error. */
         return SELVA_PROTO_ECONNRESET;
     } else if (r != (ssize_t)sizeof(struct selva_proto_header)) {
+#if 0
+        SELVA_LOG(SELVA_LOGL_DBG, "Header size mismatch: %zu", (size_t)r);
+#endif
         return SELVA_PROTO_EBADMSG;
     }
 
     const ssize_t frame_bsize = le16toh(ctx->recv_frame_hdr_buf.frame_bsize); /* We know it's aligned. */
     const size_t frame_payload_size = frame_bsize - sizeof(struct selva_proto_header);
 
+    /* FIXME should be frame_bsize */
     if (frame_payload_size > SELVA_PROTO_FRAME_SIZE_MAX) {
+#if 0
+        SELVA_LOG(SELVA_LOGL_DBG, "Frame too large: %zu", frame_payload_size);
+#endif
         return SELVA_PROTO_EBADMSG;
     } else if (frame_payload_size > 0) {
         /*
@@ -322,6 +336,9 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
              */
             return SELVA_PROTO_ECONNRESET;
         } else if (r != (ssize_t)frame_payload_size) {
+#if 0
+            SELVA_LOG(SELVA_LOGL_DBG, "Received frame has incorrect size");
+#endif
             return SELVA_PROTO_EBADMSG;
         }
 
@@ -336,6 +353,10 @@ ssize_t server_recv_frame(struct conn_ctx *ctx)
                                       frame_payload_size)) {
         /* Discard the frame */
         ctx->recv_msg_buf_i -= frame_payload_size;
+
+#if 0
+        SELVA_LOG(SELVA_LOGL_DBG, "Checksum mismatch");
+#endif
         return SELVA_PROTO_EBADMSG;
     }
 
