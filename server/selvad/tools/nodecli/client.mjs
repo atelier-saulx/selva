@@ -36,6 +36,16 @@ import {
   selva_proto_control_def,
 } from './selva_proto.mjs';
 
+// Returns current seqno and selects the next free seqno
+function nextSeqno(state) {
+  const isInUse = (num) => state.pubsub.some((sub) => sub[0] === num);
+  const seqno = state.seqno;
+
+  while (isInUse(++state.seqno));
+
+  return seqno;
+}
+
 // Returns [frame_hdr, frame, rest]
 function find_first_frame(buf) {
   const frame_hdr = deserialize(selva_proto_header_def, buf);
@@ -134,7 +144,7 @@ function parse_value(buf) {
   return [v, vsize < buf.length ? buf.slice(vsize) : null];
 }
 
-function _process_seq(buf, n) {
+function processSeq(buf, n) {
   if (buf.length == 0) {
     return;
   }
@@ -148,7 +158,7 @@ function _process_seq(buf, n) {
     if (v && v.type) {
       if (v.type == SELVA_PROTO_ARRAY) {
         if (v.flags & SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH) {
-          return _process_seq(rest, -2);
+          return processSeq(rest, -2);
         } else if (v.flags & SELVA_PROTO_ARRAY_FLONGLONG) {
           const a = [];
           for (let i = 0; i < v.length; i++) {
@@ -164,7 +174,7 @@ function _process_seq(buf, n) {
           result.push(a);
           rest = rest.slice(v.length * 8);
         } else { /* Read v.length values */
-          const [r, new_rest] = _process_seq(rest, v.length);
+          const [r, new_rest] = processSeq(rest, v.length);
           if (r.length != v.length) {
             throw new Error(`Invalid array size: ${r.length} != ${v.length}`);
           }
@@ -190,8 +200,8 @@ function _process_seq(buf, n) {
   return [result, rest];
 }
 
-function process_seq(cmd, seqno, buf) {
-  return _process_seq(buf, -1)[0];
+export function processMessage(buf) {
+  return processSeq(buf, -1)[0];
 }
 
 // Send a message buffer containing selva_proto values.
@@ -208,7 +218,7 @@ function sendMsg(state, cmd, buf) {
     serialize(selva_proto_header_def, frame, {
       cmd,
       flags: SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
-      seqno: state.seqno++,
+      seqno: nextSeqno(state),
       frame_bsize: frame.length,
       msg_bsize: 0,
       chk: 0,
@@ -233,7 +243,7 @@ function sendMsg(state, cmd, buf) {
     serialize(selva_proto_header_def, frame, {
       cmd,
       flags,
-      seqno: state.seqno++,
+      seqno: nextSeqno(state),
       frame_bsize: frame.length,
       msg_bsize: buf.length,
       chk: 0,
@@ -245,12 +255,12 @@ function sendMsg(state, cmd, buf) {
   }
 }
 
-export function ping(state) {
+function ping(state) {
   const frame = Buffer.allocUnsafe(selva_proto_header_def.size);
   serialize(selva_proto_header_def, frame, {
     cmd: CMD_ID_PING,
     flags: SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
-    seqno: state.seqno++,
+    seqno: nextSeqno(state),
     frame_bsize: frame.length,
     msg_bsize: 0,
     chk: 0,
@@ -260,12 +270,12 @@ export function ping(state) {
   state.socket.write(frame);
 }
 
-export function lscmd(state) {
+function lscmd(state) {
   const frame = Buffer.allocUnsafe(selva_proto_header_def.size);
   serialize(selva_proto_header_def, frame, {
     cmd: CMD_ID_LSCMD,
     flags: SELVA_PROTO_HDR_FFIRST | SELVA_PROTO_HDR_FLAST,
-    seqno: state.seqno++,
+    seqno: nextSeqno(state),
     frame_bsize: frame.length,
     msg_bsize: 0,
 		chk: 0,
@@ -275,11 +285,38 @@ export function lscmd(state) {
   state.socket.write(frame);
 }
 
+function subscribe(state, commands, channel, cb) {
+  const msg = Buffer.allocUnsafe(selva_proto_longlong_def.size);
+  const seqno = state.seqno;
+
+  serialize(selva_proto_longlong_def, msg, {
+    type: SELVA_PROTO_LONGLONG,
+    v: BigInt(channel),
+  });
+
+  sendMsg(state, commands.subscribe.id, msg);
+
+  // Note that the response stream will never contain the channel number.
+  // However, we know that the seqno will remain the same so we can lock
+  // into that. We can also promise to never reuse this seqno.
+  state.pubsub[channel] = [seqno, cb];
+  console.log(`Subscribed to channel ${channel} with seqno ${seqno}`);
+}
+
+const cmdName2prop = (str) =>
+  str.toLowerCase().replace(/([.][a-z])/g, group =>
+    group
+    .toUpperCase()
+    .replace('\.', '')
+  );
+
 export async function connect(port, host) {
   return new Promise((resolveClient, rejectClient) => {
     const socket = new net.Socket();
     const msgBuffers = {}; // seqno: Buffer
     const pendingReqs = {}; // seqno: { cmdId, resolve }
+    const pubsub = []; // [seqno, cb]
+    const commands = {}; // Discovered commands
 
     socket.connect(port, host, () => {
       console.log(`CONNECTED TO: ${host}:${port}`);
@@ -287,12 +324,18 @@ export async function connect(port, host) {
       const state = {
         socket,
         seqno: 0,
-        msgBuffers, // seqno: Buffer
+        msgBuffers,
         pendingReqs,
+        pubsub,
       };
 
       const reqWrap = (cmdId, cmdFn, ...args) => new Promise((resolveReq, rejectReq) => {
-        pendingReqs[state.seqno] = { cmdId, resolve: resolveReq, reject: rejectReq };
+        pendingReqs[state.seqno] = {
+          cmdId: Number(cmdId),
+          resolve: resolveReq,
+          reject: rejectReq
+        };
+
         try {
           cmdFn(state, ...args);
         } catch (e) {
@@ -300,10 +343,12 @@ export async function connect(port, host) {
         }
       });
 
+      // Discover all other commands
       reqWrap(CMD_ID_LSCMD, lscmd).then((res) => {
-        const commands = {}; // Discovered commands
         for (const [cmdId, cmdName] of res) {
-          commands[cmdName.replace(/\./g,'_')] = (buf) => reqWrap(cmdId, sendMsg, Number(cmdId), buf);
+          const prop = cmdName2prop(cmdName);
+          commands[prop] = (buf) => reqWrap(cmdId, sendMsg, Number(cmdId), buf);
+          commands[prop].id = Number(cmdId);
         }
 
         resolveClient({
@@ -311,6 +356,7 @@ export async function connect(port, host) {
           sendMsg: (cmdId, buf) => sendMsg(state, cmdId, buf),
           ping: () => reqWrap(CMD_ID_PING, ping),
           lscmd: () => reqWrap(CMD_ID_LSCMD, lscmd),
+          subscribe: (channel, cb) => subscribe(state, commands, channel, cb),
           cmd: commands,
         })
       }).catch(rejectClient);
@@ -336,20 +382,32 @@ export async function connect(port, host) {
             msgBuffers[frame_hdr.seqno] = Buffer.concat([msgBuffers[frame_hdr.seqno], frame.slice(2 * 8)]);
           }
 
-          if (frame_hdr.flags & SELVA_PROTO_HDR_FLAST) {
+          if (frame_hdr.flags & SELVA_PROTO_HDR_STREAM) {
+            if (commands.subscribe && commands.subscribe.id === frame_hdr.cmd) {
+              const sub = pubsub.find((sub) => sub[0] === frame_hdr.seqno);
+              if (sub) {
+                sub[1](frame.slice(2 * 8));
+              } else {
+                console.error(`Pubsub listener not found. seqno: ${frame_hdr.seqno}`);
+              }
+            } else {
+              // TODO Support streams for other commands
+              console.error('Streams not supported');
+            }
+          } else if (frame_hdr.flags & SELVA_PROTO_HDR_FLAST) {
             console.log(`RESP CMD: ${frame_hdr.cmd} SEQNO: ${frame_hdr.seqno}`);
-            const res = process_seq(frame_hdr.cmd, frame_hdr.seqno, msgBuffers[frame_hdr.seqno]);
+            const res = processMessage(msgBuffers[frame_hdr.seqno]);
             delete msgBuffers[frame_hdr.seqno];
             const req = pendingReqs[frame_hdr.seqno];
 
-            if (req && req.cmdId == frame_hdr.cmd) {
+            if (req && req.cmdId === frame_hdr.cmd) {
               delete pendingReqs[frame_hdr.seqno];
               req.resolve(res);
             } else {
               console.error(`Unexpected response! seqno: ${frame_hdr.seqno} cmd_id: ${frame_hdr.cmd}`);
               // TODO Better error handling
               if (req) {
-                req.rejectReq(new Error());
+                req.reject(new Error());
                 delete pendingReqs[frame_hdr.seqno];
               }
             }
@@ -363,7 +421,7 @@ export async function connect(port, host) {
     socket.on('close', () => {
       for (const seqno in pendingReqs) {
         const req = pendingReqs[seqno];
-        req.rejectReq(new Error('Connection reset'));
+        req.reject(new Error('Connection reset'));
       }
 
       console.log('Connection closed');
