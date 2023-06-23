@@ -436,5 +436,9 @@ export async function connect(port, host) {
 
       console.log('Connection closed');
     });
+
+    socket.on('error', (e) => {
+      rejectClient(e);
+    });
   });
 }
