@@ -121,7 +121,7 @@ int selva_pubsub_publish(unsigned ch_id, const void *message_str, size_t message
 
     SVector_ForeachBegin(&it, &channels[ch_id].subscribers);
     while ((stream_resp = SVector_Foreach(&it))) {
-        selva_send_str(stream_resp, message_str, message_len);
+        selva_send_bin(stream_resp, message_str, message_len);
         (void)selva_send_flush(stream_resp);
         /*
          * We ignore errors for now and let on_close handler take care of the
