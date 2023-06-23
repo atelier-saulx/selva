@@ -386,7 +386,12 @@ export async function connect(port, host) {
             if (commands.subscribe && commands.subscribe.id === frame_hdr.cmd) {
               const sub = pubsub.find((sub) => sub[0] === frame_hdr.seqno);
               if (sub) {
-                sub[1](frame.slice(2 * 8));
+                // Make a copy of the data to avoid surprises.
+                const orig = frame.slice(2 * 8);
+                const msg = Buffer.allocUnsafe(orig.length);
+                orig.copy(msg);
+
+                setImmediate(() => sub[1](msg));
               } else {
                 console.error(`Pubsub listener not found. seqno: ${frame_hdr.seqno}`);
               }
@@ -402,7 +407,9 @@ export async function connect(port, host) {
 
             if (req && req.cmdId === frame_hdr.cmd) {
               delete pendingReqs[frame_hdr.seqno];
-              req.resolve(res);
+
+              // Keep processing data if there is still something incoming.
+              setImmediate(() => req.resolve(res));
             } else {
               console.error(`Unexpected response! seqno: ${frame_hdr.seqno} cmd_id: ${frame_hdr.cmd}`);
               // TODO Better error handling
