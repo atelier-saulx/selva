@@ -13,6 +13,12 @@ const SelvaSubscriptions_PubsubMessage_def = compile([
   { name: 'node_id', type: 'cstring', size: 16 },
 ], { align: false });
 
+const EventTypeMap = [
+  'NONE',
+  'SELVA_SUB_UPDATE',
+  'SELVA_SUB_TRIGGER'
+];
+
 connect(PORT, HOST).then(async (client) => {
   console.log(await client.ping());
   //console.log(await client.lscmd());
@@ -33,6 +39,7 @@ connect(PORT, HOST).then(async (client) => {
     // However, we can be pretty confident with ch0 as it's only sending very
     // short messages that should fit within a single frame.
     const ev = deserialize(SelvaSubscriptions_PubsubMessage_def, processMessage(msg)[0]);
+    ev.event_type = EventTypeMap[ev.event_type];
     ev.sub_id = Buffer.from(ev.sub_id).toString('hex');
     console.log('event:', ev);
   });
