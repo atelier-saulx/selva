@@ -43,7 +43,7 @@ static uint32_t crc32c_shift(uint32_t const zeros[][256], uint32_t crc) {
  */
 uint32_t crc32c(uint32_t crc, void const *buf, size_t len) {
     if (len == 0) {
-        return 0;
+        return crc;
     }
 
     // Pre-process the crc.
@@ -136,7 +136,7 @@ uint32_t crc32c(uint32_t crc, void const *buf, size_t len) {
 /* little-endian only */
 uint32_t crc32c(uint32_t crc, void const *buf, size_t len) {
     if (len == 0) {
-        return 0;
+        return crc;
     }
 
     unsigned char const *data = buf;
