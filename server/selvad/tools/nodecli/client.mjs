@@ -38,7 +38,7 @@ import {
 
 // Returns current seqno and selects the next free seqno
 function nextSeqno(state) {
-  const isInUse = (num) => state.pubsub.some((sub) => sub[0] === num);
+  const isInUse = (num) => !!state.streams[num];
   const seqno = state.seqno;
 
   while (isInUse(++state.seqno));
@@ -299,8 +299,15 @@ function subscribe(state, commands, channel, cb) {
   // Note that the response stream will never contain the channel number.
   // However, we know that the seqno will remain the same so we can lock
   // into that. We can also promise to never reuse this seqno.
-  state.pubsub[channel] = [seqno, cb];
+  state.streams[seqno] = cb;
   console.log(`Subscribed to channel ${channel} with seqno ${seqno}`);
+}
+
+function hrt(state, commands) {
+  const seqno = state.seqno;
+
+  sendMsg(state, commands.hrt.id, null);
+  state.streams[seqno] = (_buf) => console.log('Received heartbeat');
 }
 
 const cmdName2prop = (str) =>
@@ -315,7 +322,7 @@ export async function connect(port, host) {
     const socket = new net.Socket();
     const msgBuffers = {}; // seqno: Buffer
     const pendingReqs = {}; // seqno: { cmdId, resolve }
-    const pubsub = []; // [seqno, cb]
+    const streams = []; // callbacks
     const commands = {}; // Discovered commands
 
     socket.connect(port, host, () => {
@@ -326,7 +333,7 @@ export async function connect(port, host) {
         seqno: 0,
         msgBuffers,
         pendingReqs,
-        pubsub,
+        streams,
       };
 
       const reqWrap = (cmdId, cmdFn, ...args) => new Promise((resolveReq, rejectReq) => {
@@ -357,6 +364,7 @@ export async function connect(port, host) {
           ping: () => reqWrap(CMD_ID_PING, ping),
           lscmd: () => reqWrap(CMD_ID_LSCMD, lscmd),
           subscribe: (channel, cb) => subscribe(state, commands, channel, cb),
+          hrt: () => hrt(state, commands),
           cmd: commands,
         })
       }).catch(rejectClient);
@@ -383,21 +391,16 @@ export async function connect(port, host) {
           }
 
           if (frame_hdr.flags & SELVA_PROTO_HDR_STREAM) {
-            if (commands.subscribe && commands.subscribe.id === frame_hdr.cmd) {
-              const sub = pubsub.find((sub) => sub[0] === frame_hdr.seqno);
-              if (sub) {
-                // Make a copy of the data to avoid surprises.
-                const orig = frame.slice(2 * 8);
-                const msg = Buffer.allocUnsafe(orig.length);
-                orig.copy(msg);
+            const sub = streams[frame_hdr.seqno];
+            if (sub) {
+              // Make a copy of the data to avoid surprises.
+              const orig = frame.slice(2 * 8);
+              const msg = Buffer.allocUnsafe(orig.length);
+              orig.copy(msg);
 
-                setImmediate(() => sub[1](msg));
-              } else {
-                console.error(`Pubsub listener not found. seqno: ${frame_hdr.seqno}`);
-              }
+              setImmediate(() => sub(msg));
             } else {
-              // TODO Support streams for other commands
-              console.error('Streams not supported');
+              console.error(`Stream listener not found. seqno: ${frame_hdr.seqno}`);
             }
           } else if (frame_hdr.flags & SELVA_PROTO_HDR_FLAST) {
             console.log(`RESP CMD: ${frame_hdr.cmd} SEQNO: ${frame_hdr.seqno}`);

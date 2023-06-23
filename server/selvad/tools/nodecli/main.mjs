@@ -48,6 +48,8 @@ connect(PORT, HOST).then(async (client) => {
   await client.cmd.subscriptionsRefresh(toSelvaProtoStrings('2c35a5a4782b114c01c1ed600475532641423b1bf5bf26a6645637e989f79b61'));
 
   console.log(await client.cmd.modify(modify('ma00000000000001', [['test', 'new field value']])));
+
+  //await client.hrt();
 }).catch((err) => {
   console.error(err);
   process.exit(1);
