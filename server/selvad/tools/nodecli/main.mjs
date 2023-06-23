@@ -50,6 +50,9 @@ connect(PORT, HOST).then(async (client) => {
   console.log(await client.cmd.modify(modify('ma00000000000001', [['test', 'new field value']])));
 
   //await client.hrt();
+  //console.log(await client.cmd.lslang());
+  //console.log(await client.cmd.lsmod());
+  //console.log(await client.cmd.config());
 }).catch((err) => {
   console.error(err);
   process.exit(1);

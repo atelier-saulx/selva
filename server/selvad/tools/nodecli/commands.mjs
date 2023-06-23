@@ -115,7 +115,7 @@ export function modify(nodeId, fields) {
 
       boff += serializeString(buf, boff, '3');
       boff += serializeString(buf, boff, field);
-      boff += serializeBin(buf, boff, bv); // We currently send nums as a bin buffers
+      boff += serializeBin(buf, boff, bv); // We currently send nums as bin buffers
 
       return buf;
     } else {
