@@ -1,10 +1,13 @@
 // vim: tabstop=2 shiftwidth=2 expandtab
 import { serialize } from 'data-record';
 import {
+    SELVA_PROTO_LONGLONG,
     SELVA_PROTO_STRING,
     SELVA_PROTO_ARRAY,
+    SELVA_PROTO_STRING_FBINARY,
     selva_proto_string_def,
     selva_proto_array_def,
+    selva_proto_longlong_def,
 } from './selva_proto.mjs';
 
 const SELVA_NODE_ID_SIZE = 16;
@@ -12,6 +15,13 @@ const SELVA_NODE_ID_SIZE = 16;
 function serializeWithOffset(def, buf, off, obj) {
   serialize(def, buf.slice(off, off + def.size), obj);
   return def.size;
+}
+
+function serializeLongLong(buf, off, v) {
+  return serializeWithOffset(selva_proto_longlong_def, buf, off, {
+    type: SELVA_PROTO_LONGLONG,
+    v: BigInt(v),
+  });
 }
 
 function serializeString(buf, off, str) {
@@ -25,6 +35,17 @@ function serializeString(buf, off, str) {
   if (wr2 != bsize) {
     throw new Error("Buffer overflow");
   }
+
+  return wr1 + wr2;
+}
+
+function serializeBin(buf, off, v) {
+  const wr1 = serializeWithOffset(selva_proto_string_def, buf, off, {
+    type: SELVA_PROTO_STRING,
+    flags: SELVA_PROTO_STRING_FBINARY,
+    bsize: v.length,
+  });
+  const wr2 = v.copy(buf, off + wr1);
 
   return wr1 + wr2;
 }
@@ -83,16 +104,18 @@ export function modify(nodeId, fields) {
 
       return buf;
     } else if (typeof value == 'number') {
-      const sv = `${value}`;
       const buf = Buffer.alloc(
         selva_proto_string_def.size + 1 + // mod type
         selva_proto_string_def.size + Buffer.byteLength(field, 'utf8') +
-        selva_proto_string_def.size + Buffer.byteLength(sv, 'utf8'));
+        selva_proto_string_def.size + 8);
       let boff = 0;
 
-      boff += serializeString(buf, boff, '0');
+      const bv = Buffer.allocUnsafe(8);
+      bv.writeBigUInt64LE(BigInt(value));
+
+      boff += serializeString(buf, boff, '3');
       boff += serializeString(buf, boff, field);
-      boff += serializeString(buf, boff, sv);
+      boff += serializeBin(buf, boff, bv); // We currently send nums as a bin buffers
 
       return buf;
     } else {
