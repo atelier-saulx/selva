@@ -68,6 +68,7 @@ struct SelvaObjectPointerOpts {
         SELVA_OBJECT_POINTER_EDGE = 1,
         SELVA_OBJECT_POINTER_EDGE_CONSTRAINTS = 2,
         SELVA_OBJECT_POINTER_LANG = 3,
+        SELVA_OBJECT_POINTER_SUBS_MISSING = 4,
     } ptr_type_id;
 
     /**
@@ -89,10 +90,12 @@ struct SelvaObjectPointerOpts {
 
     /**
      * Deserializer for the pointer value.
+     * Optional. Must be set if ptr_save is set.
      */
     SelvaObject_PtrLoad ptr_load;
     /**
      * Serializer for the pointer value.
+     * Optional.
      */
     SelvaObject_PtrSave ptr_save;
 };

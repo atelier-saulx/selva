@@ -59,6 +59,12 @@ static const struct SelvaArgParser_EnumType trigger_event_types[] = {
     }
 };
 
+static void Selva_Subscription_reply(struct selva_server_response_out *resp, void *p);
+static const struct SelvaObjectPointerOpts subs_missing_obj_opts = {
+    .ptr_type_id = SELVA_OBJECT_POINTER_SUBS_MISSING,
+    .ptr_reply = Selva_Subscription_reply,
+};
+
 SELVA_TRACE_HANDLE(cmd_subscriptions_refresh);
 
 static struct Selva_Subscription *find_sub(SelvaHierarchy *hierarchy, const Selva_SubscriptionId sub_id);
@@ -2187,7 +2193,7 @@ void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp
         Selva_SubscriptionId2str(key_str + arg_len + 1, sub_id);
         key_str[key_len] = '\0';
 
-        err = SelvaObject_SetPointerStr(hierarchy->subs.missing, key_str, key_len, sub, NULL);
+        err = SelvaObject_SetPointerStr(hierarchy->subs.missing, key_str, key_len, sub, &subs_missing_obj_opts);
         if (err) {
             selva_send_error(resp, err, NULL, 0);
             return;
@@ -2389,6 +2395,16 @@ void SelvaSubscriptions_RefreshCommand(struct selva_server_response_out *resp, c
     }
 }
 
+static void Selva_Subscription_reply(struct selva_server_response_out *resp, void *p)
+{
+    struct Selva_Subscription *sub = p;
+    char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
+
+    selva_send_array(resp, 2);
+    selva_send_str(resp, Selva_SubscriptionId2str(str, sub->sub_id), SELVA_SUBSCRIPTION_ID_STR_LEN);
+    selva_send_ll(resp, SVector_Size(&sub->markers));
+}
+
 /**
  * List all subscriptions.
  */
@@ -2404,9 +2420,7 @@ void SelvaSubscriptions_ListCommand(struct selva_server_response_out *resp, cons
     selva_send_array(resp, -1);
 
     RB_FOREACH(sub, hierarchy_subscriptions_tree, &hierarchy->subs.head) {
-        char str[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
-
-        selva_send_str(resp, Selva_SubscriptionId2str(str, sub->sub_id), SELVA_SUBSCRIPTION_ID_STR_LEN);
+        Selva_Subscription_reply(resp, sub);
     }
 
     selva_send_array_end(resp);
