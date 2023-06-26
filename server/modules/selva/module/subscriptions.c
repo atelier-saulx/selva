@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #define _POSIX_C_SOURCE 200809L
@@ -1413,7 +1413,7 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaHierarchy *hierar
     }
 
     /* Finally delete the ID as all events were deferred. */
-    SelvaObject_DelKeyStr(obj, id_str, id_len);
+    SelvaObject_DelKeyStr(hierarchy->subs.missing, id_str, id_len);
 }
 
 /**
