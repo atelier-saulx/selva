@@ -1,5 +1,5 @@
 // vim: tabstop=2 shiftwidth=2 expandtab
-import { serialize } from 'data-record';
+import { compile, createRecord, serialize } from 'data-record';
 import {
     SELVA_PROTO_LONGLONG,
     SELVA_PROTO_STRING,
@@ -11,6 +11,63 @@ import {
 } from './selva_proto.mjs';
 
 const SELVA_NODE_ID_SIZE = 16;
+
+const OP_SET_TYPE = {
+  char: 0,
+  reference: 1,
+  double: 2,
+  long_long: 3,
+}
+
+const doubleDef = compile([{ name: 'd', type: 'double_le' }])
+
+const longLongDef = compile([{ name: 'd', type: 'int64_le' }])
+
+const opSetDefCstring = compile([
+  { name: 'op_set_type', type: 'int8' },
+  { name: 'delete_all', type: 'int8' },
+  { name: 'constraint_id', type: 'uint16_le' },
+  /* 32 zeroed bytes */
+  { name: '$add', type: 'cstring_p' },
+  { name: '$delete', type: 'cstring_p' },
+  { name: '$value', type: 'cstring_p' },
+]);
+
+const opSetDefDouble = compile([
+  { name: 'op_set_type', type: 'int8' },
+  { name: 'delete_all', type: 'int8' },
+  /* 48 zeroed bytes */
+  { name: '$add', type: 'double_le_p' },
+  { name: '$delete', type: 'double_le_p' },
+  { name: '$value', type: 'double_le_p' },
+]);
+
+const opSetDefInt64 = compile([
+  { name: 'op_set_type', type: 'int8' },
+  { name: 'delete_all', type: 'int8' },
+  /* 48 zeroed bytes */
+  { name: '$add', type: 'int64_le_p' },
+  { name: '$delete', type: 'int64_le_p' },
+  { name: '$value', type: 'int64_le_p' },
+]);
+
+const edgeMetaDef = compile([
+  { name: 'op_code', type: 'int8' },
+  { name: 'delete_all', type: 'int8' },
+  { name: 'dst_node_id', type: 'cstring', size: SELVA_NODE_ID_SIZE },
+  { name: 'meta_field_name', type: 'cstring_p' },
+  { name: 'meta_field_value', type: 'cstring_p' },
+]);
+
+const incrementDef = compile([
+  { name: '$default', type: 'int64_le' },
+  { name: '$increment', type: 'int64_le' },
+]);
+
+const incrementDoubleDef = compile([
+  { name: '$default', type: 'double_le' },
+  { name: '$increment', type: 'double_le' },
+]);
 
 function serializeWithOffset(def, buf, off, obj) {
   serialize(def, buf.slice(off, off + def.size), obj);
@@ -116,6 +173,22 @@ export function modify(nodeId, fields) {
       boff += serializeString(buf, boff, '3');
       boff += serializeString(buf, boff, field);
       boff += serializeBin(buf, boff, bv); // We currently send nums as bin buffers
+
+      return buf;
+    } else if (Array.isArray(value)) { // set
+      const opSet = createRecord(opSetDefCstring, {
+        op_set_type: OP_SET_TYPE.char,
+        $value: value.map((s) => `${s}\0`).join(''),
+      });
+      const buf = Buffer.alloc(
+        selva_proto_string_def.size + 1 + // mod type
+        selva_proto_string_def.size + Buffer.byteLength(field, 'utf8') +
+        selva_proto_string_def.size + opSet.length);
+      let boff = 0;
+
+      boff += serializeString(buf, boff, '5');
+      boff += serializeString(buf, boff, field);
+      boff += serializeBin(buf, boff, opSet);
 
       return buf;
     } else {

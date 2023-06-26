@@ -1,6 +1,5 @@
 // vim: tabstop=2 shiftwidth=2 expandtab
-import { compile, serialize, deserialize } from 'data-record';
-import crc32c from './crc32c.mjs';
+import { compile } from 'data-record';
 
 export const SELVA_PROTO_FRAME_SIZE_MAX = 5840;
 export const SELVA_PROTO_MSG_SIZE_MAX = 1073741824;
