@@ -2180,9 +2180,19 @@ void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp
         }
     }
 
+    struct SelvaObject *missing = GET_STATIC_SELVA_OBJECT(&hierarchy->subs.missing);
     long long n = 0;
     for (int i = ARGV_IDS; i < argc; i++) {
-        struct SelvaObject *missing = GET_STATIC_SELVA_OBJECT(&hierarchy->subs.missing);
+        Selva_NodeId resolved_node_id;
+
+        if (SelvaResolve_NodeId(hierarchy, (struct selva_string *[]){ argv[i] }, 1, resolved_node_id) > 0) {
+            /*
+             * Node exists.
+             * Note that the subscription might have been created anyway.
+             */
+            continue;
+        }
+
         size_t arg_len;
         const char *arg_str = selva_string_to_str(argv[i], &arg_len);
         size_t key_len = arg_len + 1 + SELVA_SUBSCRIPTION_ID_STR_LEN;
