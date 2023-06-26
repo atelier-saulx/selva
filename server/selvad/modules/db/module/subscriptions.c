@@ -2074,7 +2074,7 @@ out:
 }
 
 /*
- * KEY SUB_ID MARKER_ID ALIAS_NAME
+ * SUB_ID MARKER_ID ALIAS_NAME
  */
 void SelvaSubscriptions_AddAliasCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
@@ -2136,7 +2136,7 @@ void SelvaSubscriptions_AddAliasCommand(struct selva_server_response_out *resp, 
 
 /**
  * Add missing node/alias markers.
- * SUBSCRIPTIONS.ADDMISSING SUB_ID NODEID|ALIAS...
+ * SUB_ID NODEID|ALIAS...
  */
 void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp, const void *buf, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
