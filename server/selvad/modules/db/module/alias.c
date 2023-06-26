@@ -6,8 +6,10 @@
 #include <sys/types.h>
 #include "util/selva_string.h"
 #include "selva_error.h"
+#include "selva_server.h"
 #include "selva_object.h"
 #include "selva_db.h"
+#include "selva_onload.h"
 #include "selva_set.h"
 #include "hierarchy.h"
 
@@ -86,3 +88,23 @@ void update_alias(SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct 
 
     SelvaObject_SetString(aliases, ref, selva_string_create(node_id, Selva_NodeIdLen(node_id), 0));
 }
+
+static void lsaliases(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {
+    SelvaHierarchy *hierarchy = main_hierarchy;
+    struct SelvaObject *aliases = GET_STATIC_SELVA_OBJECT(&hierarchy->aliases);
+
+    if (len > 0) {
+        selva_send_error_arity(resp);
+        return;
+    }
+
+
+    (void)SelvaObject_ReplyWithObjectStr(resp, NULL, aliases, NULL, 0, 0);
+}
+
+static int Alias_OnLoad(void) {
+    SELVA_MK_COMMAND(CMD_ID_LSALIASES, SELVA_CMD_MODE_PURE, lsaliases);
+
+    return 0;
+}
+SELVA_ONLOAD(Alias_OnLoad);

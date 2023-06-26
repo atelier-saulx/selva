@@ -474,25 +474,32 @@
 #define CMD_ID_UPDATE 69
 
 /**
+ * List node aliases.
+ * module: db
+ * cmd: lsaliases
+ */
+#define CMD_ID_LSALIASES 70
+
+/**
  * Start replication stream.
  * module: replication
  * cmd: replicasync
  */
-#define CMD_ID_REPLICASYNC 70
+#define CMD_ID_REPLICASYNC 71
 
 /**
  * Set this node as a replica of another node.
  * module: replication
  * cmd: replicaof
  */
-#define CMD_ID_REPLICAOF 71
+#define CMD_ID_REPLICAOF 72
 
 /**
  * Show the current status of the replication module.
  * module: replication
  * cmd: replicainfo
  */
-#define CMD_ID_REPLICAINFO 72
+#define CMD_ID_REPLICAINFO 73
 
 /**
  * Replica status message.
@@ -500,7 +507,7 @@
  * module: replication
  * cmd: replicastatus
  */
-#define CMD_ID_REPLICASTATUS 73
+#define CMD_ID_REPLICASTATUS 74
 
 /**
  * Wait for replicas to sync.
@@ -509,25 +516,25 @@
  * module: replication
  * cmd: replicawait
  */
-#define CMD_ID_REPLICAWAIT 74
+#define CMD_ID_REPLICAWAIT 75
 
 /**
  * Publish a message to a channel.
  * module: server
  * cmd: publish
  */
-#define CMD_ID_PUBLISH 75
+#define CMD_ID_PUBLISH 76
 
 /**
  * Subscribe to a channel.
  * module: server
  * cmd: subscribe
  */
-#define CMD_ID_SUBSCRIBE 76
+#define CMD_ID_SUBSCRIBE 77
 
 /**
  * Unsubscribe from a channel.
  * module: server
  * cmd: unsubscribe
  */
-#define CMD_ID_UNSUBSCRIBE 77
+#define CMD_ID_UNSUBSCRIBE 78
