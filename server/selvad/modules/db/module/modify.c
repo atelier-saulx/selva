@@ -498,25 +498,26 @@ static int add_set_values(
          * This makes the set in obj.field equal to the set defined by value_str.
          */
         if (remove_diff) {
-            struct SelvaSetElement *set_el;
-            struct SelvaSetElement *tmp;
             struct SelvaSet *objSet = SelvaObject_GetSet(obj, field);
+            if (objSet) {
+                struct SelvaSetElement *set_el;
+                struct SelvaSetElement *tmp;
 
-            assert(objSet);
-            SELVA_SET_STRING_FOREACH_SAFE(set_el, objSet, tmp) {
-                struct selva_string *el = set_el->value_string;
+                SELVA_SET_STRING_FOREACH_SAFE(set_el, objSet, tmp) {
+                    struct selva_string *el = set_el->value_string;
 
-                if (!SVector_Search(&new_set, (void *)el)) {
-                    /* el doesn't exist in new_set, therefore it should be removed. */
-                    SelvaSet_DestroyElement(SelvaSet_Remove(objSet, el));
+                    if (!SVector_Search(&new_set, (void *)el)) {
+                        /* el doesn't exist in new_set, therefore it should be removed. */
+                        SelvaSet_DestroyElement(SelvaSet_Remove(objSet, el));
 
-                    if (is_aliases) {
-                        SelvaSubscriptions_DeferAliasChangeEvents(hierarchy, el);
-                        delete_alias(hierarchy, el);
+                        if (is_aliases) {
+                            SelvaSubscriptions_DeferAliasChangeEvents(hierarchy, el);
+                            delete_alias(hierarchy, el);
+                        }
+
+                        selva_string_free(el);
+                        res++; /* This too is a change to the set! */
                     }
-
-                    selva_string_free(el);
-                    res++; /* This too is a change to the set! */
                 }
             }
         }
