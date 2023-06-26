@@ -87,6 +87,12 @@ void update_alias(SelvaHierarchy *hierarchy, const Selva_NodeId node_id, struct 
     }
 
     SelvaObject_SetString(aliases, ref, selva_string_create(node_id, Selva_NodeIdLen(node_id), 0));
+
+    /*
+     * This alias might have been a missing accessor.
+     */
+    TO_STR(ref);
+    SelvaSubscriptions_DeferMissingAccessorEvents(hierarchy, ref_str, ref_len);
 }
 
 static void lsaliases(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {

@@ -2202,6 +2202,7 @@ void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp
         Selva_SubscriptionId2str(key_str + arg_len + 1, sub_id);
         key_str[key_len] = '\0';
 
+        /* We don't need to care if it was already set. */
         err = SelvaObject_SetPointerStr(missing, key_str, key_len, sub, &subs_missing_obj_opts);
         if (err) {
             selva_send_error(resp, err, NULL, 0);
