@@ -11,6 +11,7 @@ import {
 } from './selva_proto.mjs';
 
 const SELVA_NODE_ID_SIZE = 16;
+const SELVA_SUBSCRIPTION_ID_SIZE = 32;
 
 const OP_SET_TYPE = {
   char: 0,
@@ -226,6 +227,50 @@ export function objectGet(lang, nodeId, ...fields) {
   // opt fields
   for (const field of fields) {
     off += serializeString(msg, off, field);
+  }
+
+  return msg;
+}
+
+export function subscriptionsAddAlias(subId, markerId, aliasName) {
+  const msg = Buffer.allocUnsafe(
+    selva_proto_string_def.size + Buffer.byteLength(subId, 'hex') +
+    selva_proto_longlong_def.size +
+    selva_proto_string_def.size + Buffer.byteLength(aliasName, 'utf8')
+  );
+
+  let off = 0;
+
+  // subId
+  off += serializeBin(msg, off, Buffer.from(subId, 'hex'));
+
+  // markerId
+  off += serializeWithOffset(selva_proto_longlong_def, msg, off, {
+    type: SELVA_PROTO_LONGLONG,
+    v: markerId,
+  });
+
+  // aliasName
+  serializeString(msg, off, aliasName);
+
+  return msg;
+}
+
+export function subscriptionsAddMissing(subId, ...names) {
+  const msg = Buffer.allocUnsafe(
+    selva_proto_string_def.size + Buffer.byteLength(subId) + //Buffer.byteLength(subId, 'hex') +
+    names.reduce((acc, cur) => acc + selva_proto_string_def.size + Buffer.byteLength(cur, 'utf8'), 0)
+  );
+
+  let off = 0;
+
+  // subId
+  //off += serializeBin(msg, off, Buffer.from(subId, 'hex'));
+  off += serializeString(msg, off, subId);
+
+  // names
+  for (const name of names) {
+    off += serializeString(msg, off, name);
   }
 
   return msg;
