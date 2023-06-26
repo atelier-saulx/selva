@@ -1370,16 +1370,13 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaHierarchy *hierar
     struct SelvaObject *obj;
     int err;
 
-    if (SelvaObject_ExistsStr(missing, id_str, id_len)) {
-        return;
-    }
-
     /* Get the <id> object containing a number of subscription pointers for this id. */
     err = SelvaObject_GetObjectStr(missing, id_str, id_len, &obj);
     if (err || !obj) {
-        if (!err && !obj) {
-            err = SELVA_ENOENT;
+        if (err == SELVA_ENOENT || (!err && !obj)) {
+            return;
         }
+
         SELVA_LOG(SELVA_LOGL_ERR, "Failed to get missing accessor marker: %s",
                   selva_strerror(err));
         return;
@@ -1397,7 +1394,7 @@ void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaHierarchy *hierar
     }
 
     /* Finally delete the ID as all events were deferred. */
-    SelvaObject_DelKeyStr(obj, id_str, id_len);
+    SelvaObject_DelKeyStr(missing, id_str, id_len);
 }
 
 /**
