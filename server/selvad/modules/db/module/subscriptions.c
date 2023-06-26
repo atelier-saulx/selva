@@ -285,13 +285,13 @@ __attribute__((nonnull (1))) static void destroy_marker(struct Selva_Subscriptio
 }
 
 static void remove_sub_missing_accessor_markers(SelvaHierarchy *hierarchy, const struct Selva_Subscription *sub) {
-    struct SelvaObject *missing = hierarchy->subs.missing;
+    struct SelvaObject *missing = GET_STATIC_SELVA_OBJECT(&hierarchy->subs.missing);
     SelvaObject_Iterator *it_missing;
     struct SelvaObject *subs;
     const char *nodeIdOrAlias;
     char sub_id[SELVA_SUBSCRIPTION_ID_STR_LEN + 1];
 
-    if (!sub || !missing) {
+    if (!sub) {
         return;
     }
 
@@ -434,7 +434,7 @@ static void SelvaSubscriptions_InitDeferredEvents(struct SelvaHierarchy *hierarc
 void SelvaSubscriptions_InitHierarchy(SelvaHierarchy *hierarchy) {
     RB_INIT(&hierarchy->subs.head);
 
-    hierarchy->subs.missing = SelvaObject_New();
+    SelvaObject_Init(hierarchy->subs.missing._obj_data);
 
     SelvaSubscriptions_InitMarkersStruct(&hierarchy->subs.detached_markers);
     SelvaSubscriptions_InitDeferredEvents(hierarchy);
@@ -448,7 +448,7 @@ void SelvaSubscriptions_DestroyAll(SelvaHierarchy *hierarchy) {
     SelvaSubscriptions_DestroyDeferredEvents(hierarchy);
 
     destroy_all_sub_markers(hierarchy);
-    SelvaObject_Destroy(hierarchy->subs.missing);
+    SelvaObject_Destroy(GET_STATIC_SELVA_OBJECT(&hierarchy->subs.missing));
 
     /*
      * Do this as the last step because destroy_all_sub_markers() will access
@@ -1364,17 +1364,18 @@ static void defer_trigger_event(
  */
 void SelvaSubscriptions_DeferMissingAccessorEvents(struct SelvaHierarchy *hierarchy, const char *id_str, size_t id_len) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
+    struct SelvaObject *missing = GET_STATIC_SELVA_OBJECT(&hierarchy->subs.missing);
     struct Selva_Subscription *sub;
     SelvaObject_Iterator *it;
     struct SelvaObject *obj;
     int err;
 
-    if (SelvaObject_ExistsStr(hierarchy->subs.missing, id_str, id_len)) {
+    if (SelvaObject_ExistsStr(missing, id_str, id_len)) {
         return;
     }
 
     /* Get the <id> object containing a number of subscription pointers for this id. */
-    err = SelvaObject_GetObjectStr(hierarchy->subs.missing, id_str, id_len, &obj);
+    err = SelvaObject_GetObjectStr(missing, id_str, id_len, &obj);
     if (err || !obj) {
         if (!err && !obj) {
             err = SELVA_ENOENT;
@@ -2184,6 +2185,7 @@ void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp
 
     long long n = 0;
     for (int i = ARGV_IDS; i < argc; i++) {
+        struct SelvaObject *missing = GET_STATIC_SELVA_OBJECT(&hierarchy->subs.missing);
         size_t arg_len;
         const char *arg_str = selva_string_to_str(argv[i], &arg_len);
         size_t key_len = arg_len + 1 + SELVA_SUBSCRIPTION_ID_STR_LEN;
@@ -2193,7 +2195,7 @@ void SelvaSubscriptions_AddMissingCommand(struct selva_server_response_out *resp
         Selva_SubscriptionId2str(key_str + arg_len + 1, sub_id);
         key_str[key_len] = '\0';
 
-        err = SelvaObject_SetPointerStr(hierarchy->subs.missing, key_str, key_len, sub, &subs_missing_obj_opts);
+        err = SelvaObject_SetPointerStr(missing, key_str, key_len, sub, &subs_missing_obj_opts);
         if (err) {
             selva_send_error(resp, err, NULL, 0);
             return;
@@ -2428,6 +2430,7 @@ void SelvaSubscriptions_ListCommand(struct selva_server_response_out *resp, cons
 
 void SelvaSubscriptions_ListMissingCommand(struct selva_server_response_out *resp, const void *buf __unused, size_t len) {
     SelvaHierarchy *hierarchy = main_hierarchy;
+    struct SelvaObject *missing = GET_STATIC_SELVA_OBJECT(&hierarchy->subs.missing);
     int err;
 
     if (len != 0) {
@@ -2435,7 +2438,7 @@ void SelvaSubscriptions_ListMissingCommand(struct selva_server_response_out *res
         return;
     }
 
-    err = SelvaObject_ReplyWithObject(resp, NULL, hierarchy->subs.missing, NULL, 0);
+    err = SelvaObject_ReplyWithObject(resp, NULL, missing, NULL, 0);
     if (err) {
         selva_send_error(resp, err, NULL, 0);
     }
