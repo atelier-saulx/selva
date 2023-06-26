@@ -311,7 +311,7 @@ function hrt(state, commands) {
 }
 
 const cmdName2prop = (str) =>
-  str.toLowerCase().replace(/([.][a-z])/g, group =>
+  str.replace(/([.][a-z])/g, group =>
     group
     .toUpperCase()
     .replace('\.', '')
