@@ -41,12 +41,12 @@ int SelvaResolve_NodeId(
 
             /* We assume that root always exists. */
             if (!memcmp(node_id, ROOT_NODE_ID, SELVA_NODE_ID_SIZE)) {
-                res = SELVA_RESOLVE_NODE_ID;
+                res = SELVA_RESOLVE_NODE_ID | i;
                 break;
             }
 
             if (SelvaHierarchy_NodeExists(hierarchy, node_id)) {
-                res = SELVA_RESOLVE_NODE_ID;
+                res = SELVA_RESOLVE_NODE_ID | i;
                 break;
             }
         }
@@ -56,7 +56,7 @@ int SelvaResolve_NodeId(
         if (!get_alias(hierarchy, id, tmp_id)) {
             if (SelvaHierarchy_NodeExists(hierarchy, tmp_id)) {
                 memcpy(node_id, tmp_id, SELVA_NODE_ID_SIZE);
-                res = SELVA_RESOLVE_ALIAS;
+                res = SELVA_RESOLVE_ALIAS | i;
                 break;
             }
         }
