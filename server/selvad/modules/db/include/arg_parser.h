@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 SAULX
+ * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -70,12 +70,7 @@ int SelvaArgParser_Enum(
 int SelvaArgParser_NodeType(
         Selva_NodeType node_type,
         const struct selva_string *arg);
-int SelvaArgParser_SubscriptionId(
-        Selva_SubscriptionId id,
-        const struct selva_string *arg);
-int SelvaArgParser_MarkerId(
-        Selva_SubscriptionMarkerId *marker_id,
-        const struct selva_string *arg);
+
 /**
  * Parse index hints from Redis command args.
  * Parses index hints from argv until the first keyword mismatch.

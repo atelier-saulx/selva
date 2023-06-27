@@ -108,7 +108,7 @@ void SelvaResolve_NodeIdCommand(struct selva_server_response_out *resp, const vo
         const Selva_SubscriptionMarkerId marker_id = Selva_GenSubscriptionMarkerId(0, selva_string_to_str(alias_name, NULL));
         int err;
 
-        err = SelvaArgParser_SubscriptionId(sub_id, argv_sub_id);
+        err = Selva_SubscriptionString2id(sub_id, argv_sub_id);
         if (err) {
             selva_send_errorf(resp, err, "Invalid sub_id \"%s\"\n", argv_sub_id_str);
             return;

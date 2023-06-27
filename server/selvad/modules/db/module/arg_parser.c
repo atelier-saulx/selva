@@ -278,25 +278,6 @@ int SelvaArgParser_NodeType(Selva_NodeType node_type, const struct selva_string 
     return 0;
 }
 
-int SelvaArgParser_SubscriptionId(Selva_SubscriptionId id, const struct selva_string *arg) {
-    TO_STR(arg);
-
-    return Selva_SubscriptionStr2id(id, arg_str, arg_len);
-}
-
-int SelvaArgParser_MarkerId(Selva_SubscriptionMarkerId *marker_id, const struct selva_string *arg) {
-    long long ll;
-    int err;
-
-    err = selva_string_to_ll(arg, &ll);
-    if (err) {
-        return err;
-    }
-
-    *marker_id = (Selva_SubscriptionMarkerId)ll;
-    return 0;
-}
-
 int SelvaArgParser_IndexHints(selva_stringList *out, struct selva_string **argv, int argc) {
     struct selva_string **list = NULL;
     int n = 0;

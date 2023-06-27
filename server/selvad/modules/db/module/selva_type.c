@@ -138,6 +138,13 @@ int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src, size_t 
     return 0;
 }
 
+int Selva_SubscriptionString2id(Selva_SubscriptionId id, const struct selva_string *s)
+{
+    TO_STR(s);
+
+    return Selva_SubscriptionStr2id(id, s_str, s_len);
+}
+
 __constructor static void init_selva_type(void)
 {
     for (size_t i = 0; i < num_elem(protected_fields); i++) {

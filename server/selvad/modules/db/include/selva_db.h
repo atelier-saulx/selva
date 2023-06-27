@@ -189,6 +189,8 @@ char *Selva_SubscriptionId2str(char dest[SELVA_SUBSCRIPTION_ID_STR_LEN + 1], con
 
 int Selva_SubscriptionStr2id(Selva_SubscriptionId dest, const char *src, size_t len);
 
+int Selva_SubscriptionString2id(Selva_SubscriptionId id, const struct selva_string *s);
+
 /**
  * Set if the database has been modified since last save.
  */
