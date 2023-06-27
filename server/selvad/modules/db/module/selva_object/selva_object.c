@@ -899,7 +899,7 @@ static int get_selva_set(struct SelvaObject *obj, const char *key_name_str, size
         return SELVA_EINVAL;
     }
 
-    if (type <= SELVA_SET_NR_TYPES && /* hack */
+    if (type < SELVA_SET_NR_TYPES && /* hack */
         key->selva_set.type != type) {
         return SELVA_EINTYPE;
     }

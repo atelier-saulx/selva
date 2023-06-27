@@ -744,7 +744,7 @@ int Selva_AddSubscriptionAliasMarker(
 
     /*
      * Compile the filter.
-     * `ALIAS_NAME in aliases`
+     * `aliases has alias_name`
      */
     filter_expression = rpn_compile("$1 $2 a");
     if (!filter_expression) {
