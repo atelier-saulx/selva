@@ -40,16 +40,19 @@ static int get_node(struct selva_string *key_name, struct SelvaHierarchyNode **n
     return 0;
 }
 
-static void publish_field_change_str(struct SelvaHierarchyNode*node, const char *field_str, size_t field_len)
+static void publish_field_change_str(struct SelvaHierarchyNode *node, const char *field_str, size_t field_len)
 {
-    SelvaSubscriptions_DeferFieldChangeEvents(main_hierarchy, node, field_str, field_len);
+    struct SelvaHierarchy *hierarchy = main_hierarchy;
+
+    SelvaSubscriptions_DeferFieldChangeEvents(hierarchy, node, field_str, field_len);
+    SelvaSubscriptions_SendDeferredEvents(hierarchy);
 }
 
 static void publish_field_change(struct SelvaHierarchyNode *node, struct selva_string *field)
 {
     TO_STR(field);
 
-    SelvaSubscriptions_DeferFieldChangeEvents(main_hierarchy, node, field_str, field_len);
+    publish_field_change_str(node, field_str, field_len);
 }
 
 static void touch_updated_at(struct selva_server_response_out *resp, struct SelvaObject *root_obj)
