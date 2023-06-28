@@ -1165,9 +1165,6 @@ void SelvaSubscriptions_ClearAllMarkers(
 
 void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaHierarchy *hierarchy) {
     struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
-    if (!def) {
-        return;
-    }
 
     SVector_Destroy(&def->updates);
     SVector_Destroy(&def->triggers);
