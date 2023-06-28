@@ -9,7 +9,6 @@
 #include "selva_db.h"
 #include "traversal.h"
 #include "util/svector.h"
-#include "rpn.h"
 
 struct SelvaHierarchy;
 struct SelvaHierarchyCallback;
@@ -17,6 +16,8 @@ struct SelvaHierarchyMetadata;
 struct Selva_Subscription;
 struct Selva_SubscriptionMarker;
 struct hierarchy_subscriptions_tree;
+struct rpn_ctx;
+struct rpn_expression;
 struct selva_string;
 
 /**
@@ -419,7 +420,15 @@ void SelvaSubscriptions_DeferTriggerEvents(
         struct SelvaHierarchy *hierarchy,
         struct SelvaHierarchyNode *node,
         enum Selva_SubscriptionTriggerType event_type);
+
+/**
+ * Send all currently deferred events to the pubsub channel.
+ * This function MUST be called by any command that has deferred any
+ * subscription events during its execution. Failing to call this function
+ * will leave events in the buffers until this function is called.
+ */
 void SelvaSubscriptions_SendDeferredEvents(struct SelvaHierarchy *hierarchy);
+
 void SelvaSubscriptions_ReplyWithMarker(struct selva_server_response_out *resp, struct Selva_SubscriptionMarker *marker);
 
 #endif /* SELVA_MODIFY_SUBSCRIPTIONS */
