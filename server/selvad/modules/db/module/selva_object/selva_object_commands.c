@@ -48,17 +48,23 @@ static void publish_field_change_str(struct SelvaHierarchyNode *node, const char
     SelvaSubscriptions_SendDeferredEvents(hierarchy);
 }
 
-static void publish_field_change(struct SelvaHierarchyNode *node, struct selva_string *field)
-{
-    TO_STR(field);
-
-    publish_field_change_str(node, field_str, field_len);
-}
-
 static void touch_updated_at(struct selva_server_response_out *resp, struct SelvaObject *root_obj)
 {
     SelvaObject_SetLongLongStr(root_obj, SELVA_UPDATED_AT_FIELD, sizeof(SELVA_UPDATED_AT_FIELD) - 1, selva_resp_to_ts(resp));
 }
+
+#define so_send_x(resp, x) _Generic((x), \
+        struct selva_string *: selva_send_string, \
+        double: selva_send_double, \
+        default: selva_send_ll \
+        )((resp), (x))
+
+#define MODIFIED(resp, resp_value) \
+    touch_updated_at(resp, obj); \
+    so_send_x((resp), (resp_value)); \
+    selva_db_is_dirty = 1; \
+    selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len); \
+    publish_field_change_str(node, okey_str, okey_len)
 
 void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
 {
@@ -100,11 +106,7 @@ void SelvaObject_DelCommand(struct selva_server_response_out *resp, const void *
         selva_send_error(resp, err, NULL, 0);
         return;
     } else {
-        touch_updated_at(resp, obj);
-        selva_send_ll(resp, 1);
-        selva_db_is_dirty = 1;
-        selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
-        publish_field_change_str(node, okey_str, okey_len);
+        MODIFIED(resp, 1);
     }
 }
 
@@ -331,12 +333,9 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
         return;
     }
 
-    touch_updated_at(resp, obj);
-    selva_send_ll(resp, values_set);
-    selva_db_is_dirty = 1;
-    selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
-    publish_field_change(node, argv[ARGV_OKEY]);
-    return;
+    size_t okey_len;
+    const char *okey_str = selva_string_to_str(argv[ARGV_OKEY], &okey_len);
+    MODIFIED(resp, values_set);
 }
 
 void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
@@ -377,11 +376,7 @@ void SelvaObject_IncrbyCommand(struct selva_server_response_out *resp, const voi
         return;
     }
 
-    touch_updated_at(resp, obj);
-    selva_send_ll(resp, new);
-    selva_db_is_dirty = 1;
-    selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
-    publish_field_change_str(node, okey_str, okey_len);
+    MODIFIED(resp, new);
 }
 
 void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
@@ -421,11 +416,7 @@ void SelvaObject_IncrbyDoubleCommand(struct selva_server_response_out *resp, con
         return;
     }
 
-    touch_updated_at(resp, obj);
-    selva_send_double(resp, new);
-    selva_db_is_dirty = 1;
-    selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
-    publish_field_change_str(node, okey_str, okey_len);
+    MODIFIED(resp, new);
 }
 
 void SelvaObject_KeysCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
@@ -707,11 +698,7 @@ void SelvaObject_SetMetaCommand(struct selva_server_response_out *resp, const vo
         return;
     }
 
-    touch_updated_at(resp, obj);
-    selva_send_ll(resp, 1);
-    selva_db_is_dirty = 1;
-    selva_replication_replicate(selva_resp_to_ts(resp), selva_resp_to_cmd_id(resp), buf, len);
-    publish_field_change_str(node, okey_str, okey_len);
+    MODIFIED(resp, 1);
 }
 
 static int SelvaObject_OnLoad(void)
