@@ -358,11 +358,6 @@ int Selva_SubscriptionFilterMatch(
         struct Selva_SubscriptionMarker *marker);
 
 /**
- * Destroy all deferred events.
- */
-void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaHierarchy *hierarchy);
-
-/**
  * Inherit subscription markers from a parent to child nodes.
  */
 void SelvaSubscriptions_InheritParent(

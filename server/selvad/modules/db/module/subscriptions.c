@@ -367,7 +367,6 @@ int SelvaSubscriptions_DeleteMarkerByPtr(SelvaHierarchy *hierarchy, struct Selva
     return delete_marker(hierarchy, marker->sub, marker->marker_id);
 }
 
-
 /**
  * Remove and destroy all markers of a subscription.
  */
@@ -403,6 +402,13 @@ static void destroy_sub(SelvaHierarchy *hierarchy, struct Selva_Subscription *su
     memset(sub, 0, sizeof(*sub));
 #endif
     selva_free(sub);
+}
+
+void destroy_deferred_events(struct SelvaHierarchy *hierarchy) {
+    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
+
+    SVector_Destroy(&def->updates);
+    SVector_Destroy(&def->triggers);
 }
 
 /*
@@ -443,9 +449,9 @@ void SelvaSubscriptions_InitHierarchy(SelvaHierarchy *hierarchy) {
 void SelvaSubscriptions_DestroyAll(SelvaHierarchy *hierarchy) {
     /*
      * If we destroy the defer vectors first then clearing the subs won't be
-     * able to defer any events.
+     * able to defer any events, as we want.
      */
-    SelvaSubscriptions_DestroyDeferredEvents(hierarchy);
+    destroy_deferred_events(hierarchy);
 
     destroy_all_sub_markers(hierarchy);
     SelvaObject_Destroy(GET_STATIC_SELVA_OBJECT(&hierarchy->subs.missing));
@@ -1161,13 +1167,6 @@ void SelvaSubscriptions_ClearAllMarkers(
         marker->marker_action(hierarchy, marker, flags, NULL, 0, node);
     }
     SVector_Clear(&metadata->sub_markers.vec);
-}
-
-void SelvaSubscriptions_DestroyDeferredEvents(struct SelvaHierarchy *hierarchy) {
-    struct SelvaSubscriptions_DeferredEvents *def = &hierarchy->subs.deferred_events;
-
-    SVector_Destroy(&def->updates);
-    SVector_Destroy(&def->triggers);
 }
 
 void SelvaSubscriptions_InheritParent(
