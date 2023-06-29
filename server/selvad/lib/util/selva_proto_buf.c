@@ -48,8 +48,9 @@ int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize
             selva_string_auto_finalize(fin, s);
 
             list_len++;
-            list = selva_realloc(list, list_len * sizeof(struct selva_string *));
+            list = selva_realloc(list, (list_len + 1) * sizeof(struct selva_string *));
             list[list_len - 1] = s;
+            list[list_len] = NULL;
             *out = list;
         } else if (type == SELVA_PROTO_ARRAY || type == SELVA_PROTO_ARRAY_END) {
             /* NOP */

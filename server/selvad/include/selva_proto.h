@@ -360,7 +360,7 @@ int selva_proto_parse_replication_sdb(const void *buf, size_t bsize, size_t i, u
  * Also the output list `out` is added to the finalizer.
  * @param buf is a message buffer supposed to contain selva proto values.
  * @param bsize is the size of buf in bytes.
- * @param[out] out is pointer to the variable that will store the array of selva_string pointers.
+ * @param[out] out is pointer to the variable that will store the array of selva_string pointers. The array is always terminated with a NULL pointer.
  * @returns If successful, returns the number of strings in out; Otherwise an error code is returned.
  */
 int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize, struct selva_string ***out);
