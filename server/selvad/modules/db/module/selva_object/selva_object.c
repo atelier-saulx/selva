@@ -911,8 +911,7 @@ static int get_selva_set(struct SelvaObject *obj, const char *key_name_str, size
 /**
  * Get a SelvaSet field for modify.
  */
-static int get_selva_set_modify(struct SelvaObject *obj, const struct selva_string *key_name, enum SelvaSetType type, struct SelvaSet **set_out) {
-    TO_STR(key_name);
+static int get_selva_set_modify(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, enum SelvaSetType type, struct SelvaSet **set_out) {
     struct SelvaObjectKey *key;
     int err;
 
@@ -1618,11 +1617,29 @@ int SelvaObject_AddHll(struct SelvaObject *obj, const struct selva_string *key_n
     return SelvaObject_AddHllStr(obj, key_name_str, key_name_len, el, el_size);
 }
 
-int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const struct selva_string *key_name, double value) {
+int SelvaObject_AddDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {
     struct SelvaSet *selva_set;
     int err;
 
-    err = get_selva_set_modify(obj, key_name, SELVA_SET_TYPE_DOUBLE, &selva_set);
+    err = get_selva_set_modify(obj, key_name_str, key_name_len, SELVA_SET_TYPE_DOUBLE, &selva_set);
+    if (err) {
+        return err;
+    }
+
+    return SelvaSet_Add(selva_set, value);
+}
+
+int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const struct selva_string *key_name, double value) {
+    TO_STR(key_name);
+
+    return SelvaObject_AddDoubleSetStr(obj, key_name_str, key_name_len, value);
+}
+
+int SelvaObject_AddLongLongSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value) {
+    struct SelvaSet *selva_set;
+    int err;
+
+    err = get_selva_set_modify(obj, key_name_str, key_name_len, SELVA_SET_TYPE_LONGLONG, &selva_set);
     if (err) {
         return err;
     }
@@ -1631,10 +1648,16 @@ int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const struct selva_string 
 }
 
 int SelvaObject_AddLongLongSet(struct SelvaObject *obj, const struct selva_string *key_name, long long value) {
+    TO_STR(key_name);
+
+    return SelvaObject_AddDoubleSetStr(obj, key_name_str, key_name_len, value);
+}
+
+int SelvaObject_AddStringSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct selva_string *value) {
     struct SelvaSet *selva_set;
     int err;
 
-    err = get_selva_set_modify(obj, key_name, SELVA_SET_TYPE_LONGLONG, &selva_set);
+    err = get_selva_set_modify(obj, key_name_str, key_name_len, SELVA_SET_TYPE_STRING, &selva_set);
     if (err) {
         return err;
     }
@@ -1643,15 +1666,9 @@ int SelvaObject_AddLongLongSet(struct SelvaObject *obj, const struct selva_strin
 }
 
 int SelvaObject_AddStringSet(struct SelvaObject *obj, const struct selva_string *key_name, struct selva_string *value) {
-    struct SelvaSet *selva_set;
-    int err;
+    TO_STR(key_name);
 
-    err = get_selva_set_modify(obj, key_name, SELVA_SET_TYPE_STRING, &selva_set);
-    if (err) {
-        return err;
-    }
-
-    return SelvaSet_Add(selva_set, value);
+    return SelvaObject_AddStringSetStr(obj, key_name_str, key_name_len, value);
 }
 
 int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value) {

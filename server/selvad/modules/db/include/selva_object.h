@@ -326,8 +326,11 @@ int SelvaObject_AddHll(struct SelvaObject *obj, const struct selva_string *key_n
  * @{
  */
 
+int SelvaObject_AddDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value);
 int SelvaObject_AddDoubleSet(struct SelvaObject *obj, const struct selva_string *key_name, double value);
+int SelvaObject_AddLongLongSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, long long value);
 int SelvaObject_AddLongLongSet(struct SelvaObject *obj, const struct selva_string *key_name, long long value);
+int SelvaObject_AddStringSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, struct selva_string *value);
 int SelvaObject_AddStringSet(struct SelvaObject *obj, const struct selva_string *key_name, struct selva_string *value);
 int SelvaObject_RemDoubleSetStr(struct SelvaObject *obj, const char *key_name_str, size_t key_name_len, double value);
 int SelvaObject_RemDoubleSet(struct SelvaObject *obj, const struct selva_string *key_name, double value);
