@@ -2,6 +2,7 @@
  * Copyright (c) 2022-2023 SAULX
  * SPDX-License-Identifier: MIT
  */
+#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -230,8 +231,12 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
 void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
 {
     __auto_finalizer struct finalizer fin;
-    struct selva_string **argv;
     int argc;
+    Selva_NodeId node_id;
+    size_t okey_len;
+    const char *okey_str;
+    char type;
+    struct selva_string **oval;
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
     size_t values_set = 0;
@@ -239,13 +244,12 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
 
     finalizer_init(&fin);
 
-    const int ARGV_KEY = 0;
-    const int ARGV_OKEY = 1;
-    const int ARGV_TYPE = 2;
-    const int ARGV_OVAL = 3;
-
-    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
-    if (argc <= ARGV_TYPE) {
+    argc = selva_proto_scanf(&fin, buf, len, "%" SELVA_SCA_NODE_ID ", %.*s, %c, ...",
+                             &node_id,
+                             &okey_len, &okey_str,
+                             &type,
+                             &oval);
+    if (argc < 4) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
         } else {
@@ -254,27 +258,20 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
         return;
     }
 
-    if (!selva_field_prot_check(argv[ARGV_OKEY], SELVA_FIELD_PROT_WRITE)) {
+    if (!selva_field_prot_check_str(okey_str, okey_len, SELVA_FIELD_PROT_WRITE)) {
         selva_send_errorf(resp, SELVA_ENOTSUP, "Protected field");
         return;
     }
 
-    size_t type_len;
-    const char type = selva_string_to_str(argv[ARGV_TYPE], &type_len)[0];
-
-    if (type_len != 1) {
-        selva_send_errorf(resp, SELVA_EINVAL, "Invalid or missing type argument");
-        return;
-    }
-
-    if (!(argc == 4 || ((type == 'S' || type == 'H') && argc >= 4))) {
+    assert(oval);
+    if (type != 'S' && type != 'H' && oval[1]) {
         selva_send_error_arity(resp);
         return;
     }
 
-    err = get_node(argv[ARGV_KEY], &node);
-    if (err) {
-        selva_send_error(resp, err, NULL, 0);
+    node = SelvaHierarchy_FindNode(main_hierarchy, node_id);
+    if (!node) {
+        selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
         return;
     }
 
@@ -283,31 +280,31 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
 
     switch (type) {
     case 'f': /* SELVA_OBJECT_DOUBLE */
-        err = SelvaObject_SetDouble(
-            obj,
-            argv[ARGV_OKEY],
-            strtod(selva_string_to_str(argv[ARGV_OVAL], NULL), NULL));
+        err = SelvaObject_SetDoubleStr(
+            obj, okey_str, okey_len,
+            strtod(selva_string_to_str(oval[0], NULL), NULL));
         values_set++;
         break;
     case 'i': /* SELVA_OBJECT_LONGLONG */
-        err = SelvaObject_SetLongLong(
-            obj,
-            argv[ARGV_OKEY],
-            strtoll(selva_string_to_str(argv[ARGV_OVAL], NULL), NULL, 10));
+        err = SelvaObject_SetLongLongStr(
+            obj, okey_str, okey_len,
+            strtoll(selva_string_to_str(oval[0], NULL), NULL, 10));
         values_set++;
         break;
     case 's': /* SELVA_OBJECT_STRING */
-        err = SelvaObject_SetString(obj, argv[ARGV_OKEY], argv[ARGV_OVAL]);
+        err = SelvaObject_SetStringStr(obj, okey_str, okey_len, oval[0]);
         if (err == 0) {
-            finalizer_del(&fin, argv[ARGV_OVAL]);
+            finalizer_del(&fin, oval[0]);
         }
         values_set++;
         break;
     case 'S': /* SELVA_OBJECT_SET */
-        for (int i = ARGV_OVAL; i < argc; i++) {
-            err = SelvaObject_AddStringSet(obj, argv[ARGV_OKEY], argv[i]);
+        for (int i = 0; i < argc - 3; i++) {
+            struct selva_string *el = oval[i];
+
+            err = SelvaObject_AddStringSetStr(obj, okey_str, okey_len, el);
             if (err == 0) {
-                finalizer_del(&fin, argv[i]);
+                finalizer_del(&fin, el);
                 values_set++;
             } else if (values_set == 0) {
                 break;
@@ -316,12 +313,11 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
         }
         break;
     case 'H': /* HyperLogLog */
-        for (int i = ARGV_OVAL; i < argc; i++) {
-            size_t key_len, el_len;
-            const char *key_str = selva_string_to_str(argv[ARGV_OKEY], &key_len);
-            const char *el_str = selva_string_to_str(argv[i], &el_len);
+        for (int i = 0; i < argc - 3; i++) {
+            size_t el_len;
+            const char *el_str = selva_string_to_str(oval[i], &el_len);
 
-            values_set += SelvaObject_AddHllStr(obj, key_str, key_len, el_str, el_len);
+            values_set += SelvaObject_AddHllStr(obj, okey_str, okey_len, el_str, el_len);
         }
         err = 0;
         break;
@@ -333,8 +329,6 @@ void SelvaObject_SetCommand(struct selva_server_response_out *resp, const void *
         return;
     }
 
-    size_t okey_len;
-    const char *okey_str = selva_string_to_str(argv[ARGV_OKEY], &okey_len);
     MODIFIED(resp, values_set);
 }
 
