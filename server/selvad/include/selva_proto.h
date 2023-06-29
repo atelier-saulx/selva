@@ -384,6 +384,8 @@ int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize
  * be fewer than expected in the format string. However, if the buffer buf is
  * not fully consumed by the format string then the function will return an
  * error (SELVA_PROTO_EINVAL).
+ *
+ * See [doc/selva_proto.md](/server/selvad/doc/selva_proto.md) for the complete documentation.
  * TODO format checker
  */
 int selva_proto_scanf(struct finalizer * restrict fin, const void *restrict buf, size_t szbuf, const char * restrict fmt, ...); /* __attribute__((format(scanf, 4, 5))); */
