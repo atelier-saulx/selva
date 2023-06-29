@@ -469,9 +469,10 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 err = selva_proto_buf2strings(fin, buf + buf_i, szbuf - buf_i, rest);
                 if (err < 0) {
                     return err;
+                } else if (err > 0) {
+                    n++;
                 }
 
-                n++;
                 fmt += 2;
                 buf_i = szbuf;
             } else if (ch == '{') { /* Begin array. */
