@@ -464,11 +464,17 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 flags = *((uint8_t *)buf + buf_i + offsetof(struct selva_proto_array, flags));
                 if (flags & SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH) {
                     postponed_array_end++;
+                } else if (flags & SELVA_PROTO_ARRAY_FLONGLONG) {
+                    /* TODO Support embedded arrays */
+                    return SELVA_PROTO_ENOTSUP;
+                } else if (flags & SELVA_PROTO_DOUBLE) {
+                    /* TODO Support embedded arrays */
+                    return SELVA_PROTO_ENOTSUP;
                 }
 
                 array_level++;
                 buf_i += off;
-            } else if (ch == '}') {
+            } else if (ch == '}') { /* End array. */
                 if (postponed_array_end > 0) {
                     enum selva_proto_data_type found_type;
                     size_t data_len;

@@ -136,6 +136,8 @@ static int parse_hdr_array(const char *buf, size_t bsize, enum selva_proto_data_
     vtype = hdr.flags & (SELVA_PROTO_ARRAY_FLONGLONG | SELVA_PROTO_ARRAY_FDOUBLE);
     if (!vtype) {
         vsize = sizeof(hdr);
+    } else if (__builtin_popcount(vtype) > 1 || (vtype && (hdr.flags & SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH))) {
+        return SELVA_PROTO_EBADMSG;
     } else if (vtype == SELVA_PROTO_ARRAY_FLONGLONG) {
         vsize = sizeof(hdr) + hdr.length * sizeof(int64_t);
     } else if (vtype == SELVA_PROTO_ARRAY_FDOUBLE) {
