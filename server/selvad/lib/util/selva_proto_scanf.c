@@ -299,7 +299,19 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 }
 
                 if (found_type != type_to_selva_proto_type_map[ps.type]) {
-                    return SELVA_PROTO_EBADMSG;
+                    if (found_type == SELVA_PROTO_STRING && ps.type == TYPE_char) {
+                        /*
+                         * We allow capturing a char from both
+                         * SELVA_PROTO_LONGLONG and SELVA_PROTO_STRING.
+                         * However a char array can be currently read only from a
+                         * SELVA_PROTO_STRING.
+                         */
+                        if (ps.width < 0) {
+                            ps.width = 1;
+                        }
+                    } else {
+                        return SELVA_PROTO_EBADMSG;
+                    }
                 }
 
                 if (found_type == SELVA_PROTO_LONGLONG) {
@@ -439,14 +451,30 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
         } else {
             if (isspace(ch)) {
                 /* NOP */
-            } else if (ch == ',') {
+            } else if (ch == ',') { /* jump to next selva_proto value. */
                 int off = get_skip_off(buf, szbuf, buf_i);
 
                 if (off <= 0) {
                     return off;
                 }
                 buf_i += off;
-            } else if (ch == '{') {
+            } else if (ch == '.' && fmt[1] == '.' && fmt[2] == '.' && fmt[3] == '\0') { /* rest */
+                struct selva_string ***rest = va_arg(args, struct selva_string ***);
+                int err;
+
+                if (!fin) {
+                    return SELVA_PROTO_EINVAL;
+                }
+
+                err = selva_proto_buf2strings(fin, buf + buf_i, szbuf - buf_i, rest);
+                if (err < 0) {
+                    return err;
+                }
+
+                n++;
+                fmt += 2;
+                buf_i = szbuf;
+            } else if (ch == '{') { /* Begin array. */
                 enum selva_proto_data_type found_type;
                 size_t data_len;
                 int off;

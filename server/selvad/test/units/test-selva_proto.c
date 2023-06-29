@@ -127,7 +127,89 @@ static char * test_scanf_basic(void)
     return NULL;
 }
 
+static char * test_scanf_rest(void)
+{
+    __auto_finalizer struct finalizer fin;
+    finalizer_init(&fin);
+
+    /*
+     * ["root", "field", 'H', "a", "b", "c", "d"]
+     * => node_id, field, type, rest
+     */
+    struct {
+        struct selva_proto_string a0;
+        char a0s[sizeof("root") - 1];
+        struct selva_proto_string a1;
+        char a1s[sizeof("field") - 1];
+        struct selva_proto_string a2;
+        char a2s[sizeof("H") - 1];
+        struct selva_proto_string a3;
+        char a3s[sizeof("a") - 1];
+        struct selva_proto_string a4;
+        char a4s[sizeof("b") - 1];
+        struct selva_proto_string a5;
+        char a5s[sizeof("c") - 1];
+        struct selva_proto_string a6;
+        char a6s[sizeof("d") - 1];
+    } __packed buf = {
+        .a0 = {
+            .type = SELVA_PROTO_STRING,
+            .bsize = sizeof(buf.a0s),
+        },
+        .a0s = { 'r', 'o', 'o', 't' },
+        .a1 = {
+            .type = SELVA_PROTO_STRING,
+            .bsize = sizeof(buf.a1s),
+        },
+        .a1s = { 'f', 'i', 'e', 'l', 'd' },
+        .a2 = {
+            .type = SELVA_PROTO_STRING,
+            .bsize = sizeof(buf.a2s),
+        },
+        .a2s = { 'H' },
+        .a3 = {
+            .type = SELVA_PROTO_STRING,
+            .bsize = sizeof(buf.a3s),
+        },
+        .a3s = { 'a' },
+        .a4 = {
+            .type = SELVA_PROTO_STRING,
+            .bsize = sizeof(buf.a4s),
+        },
+        .a4s = { 'b' },
+        .a5 = {
+            .type = SELVA_PROTO_STRING,
+            .bsize = sizeof(buf.a5s),
+        },
+        .a5s = { 'c' },
+        .a6 = {
+            .type = SELVA_PROTO_STRING,
+            .bsize = sizeof(buf.a6s),
+        },
+        .a6s = { 'd' },
+    };
+
+    char node_id[5] = {0};
+    size_t field_len;
+    const char *field_str;
+    char type;
+    struct selva_string **rest;
+    int argc = selva_proto_scanf(&fin, &buf, sizeof(buf), "%4s, %.*s, %c, ...",
+                                 node_id,
+                                 &field_len, &field_str,
+                                 &type,
+                                 &rest);
+
+    pu_assert_equal("argc", argc, 4);
+    pu_assert_str_equal("node_id", node_id, "root");
+    pu_assert("field", field_len == 5 && !memcmp(field_str, "field", 5));
+    pu_assert_str_equal("rest[0]", selva_string_to_str(rest[0], NULL), "a");
+
+    return NULL;
+}
+
 void all_tests(void)
 {
     pu_def_test(test_scanf_basic, PU_RUN);
+    pu_def_test(test_scanf_rest, PU_RUN);
 }
