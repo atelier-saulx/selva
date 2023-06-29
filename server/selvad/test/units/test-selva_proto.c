@@ -203,7 +203,11 @@ static char * test_scanf_rest(void)
     pu_assert_equal("argc", argc, 4);
     pu_assert_str_equal("node_id", node_id, "root");
     pu_assert("field", field_len == 5 && !memcmp(field_str, "field", 5));
+    pu_assert_equal("type", type, 'H');
     pu_assert_str_equal("rest[0]", selva_string_to_str(rest[0], NULL), "a");
+    pu_assert_str_equal("rest[1]", selva_string_to_str(rest[1], NULL), "b");
+    pu_assert_str_equal("rest[2]", selva_string_to_str(rest[2], NULL), "c");
+    pu_assert_str_equal("rest[3]", selva_string_to_str(rest[3], NULL), "d");
 
     return NULL;
 }
