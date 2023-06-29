@@ -470,7 +470,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 if (err < 0) {
                     return err;
                 } else if (err > 0) {
-                    n++;
+                    n += err;
                 }
 
                 fmt += 2;
