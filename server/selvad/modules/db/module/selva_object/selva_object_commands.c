@@ -169,12 +169,11 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
     }
 
     for (int i = 0; i < argc - 2; i++) {
-        const struct selva_string *okey = okeys[i];
-        TO_STR(okey);
-
-        int err = 0;
+        size_t okey_len;
+        const char *okey_str = selva_string_to_str(okeys[i], &okey_len);
 
         if (strstr(okey_str, ".*.")) {
+            int err;
             long resp_count = 0;
 
             selva_send_array(resp, -1);
@@ -193,6 +192,8 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
 
             selva_send_array_end(resp);
         } else {
+            int err;
+
             err = SelvaObject_ReplyWithObjectStr(resp, lang, obj, okey_str, okey_len, 0);
             if (err == SELVA_ENOENT) {
                 /* Keep looking. */
