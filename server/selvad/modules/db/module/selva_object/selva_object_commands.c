@@ -23,24 +23,6 @@
 #include "selva_set.h"
 #include "selva_object.h"
 
-static int get_node(struct selva_string *key_name, struct SelvaHierarchyNode **node)
-{
-    Selva_NodeId nodeId;
-    int err;
-
-    err = selva_string2node_id(nodeId, key_name);
-    if (err) {
-        return err;
-    }
-
-    *node = SelvaHierarchy_FindNode(main_hierarchy, nodeId);
-    if (!(*node)) {
-        return SELVA_HIERARCHY_ENOENT;
-    }
-
-    return 0;
-}
-
 static void publish_field_change_str(struct SelvaHierarchyNode *node, const char *field_str, size_t field_len)
 {
     struct SelvaHierarchy *hierarchy = main_hierarchy;
@@ -151,19 +133,20 @@ void SelvaObject_ExistsCommand(struct selva_server_response_out *resp, const voi
 void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *buf, size_t len)
 {
     __auto_finalizer struct finalizer fin;
-    struct selva_string **argv;
-    int argc, err;
+    struct selva_string *lang;
+    Selva_NodeId node_id;
+    struct selva_string **okeys;
+    int argc;
     struct SelvaHierarchyNode *node;
     struct SelvaObject *obj;
 
     finalizer_init(&fin);
 
-    const int ARGV_LANG = 0;
-    const int ARGV_KEY = 1;
-    const int ARGV_OKEY = 2;
-
-    argc = selva_proto_buf2strings(&fin, buf, len, &argv);
-    if (argc != 2 && argc != 3) {
+    argc = selva_proto_scanf(&fin, buf, len, "%p, %" SELVA_SCA_NODE_ID ", ...",
+                             &lang,
+                             &node_id,
+                             &okeys);
+    if (argc < 2) {
         if (argc < 0) {
             selva_send_errorf(resp, argc, "Failed to parse args");
         } else {
@@ -172,11 +155,9 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
         return;
     }
 
-    struct selva_string *lang = argv[ARGV_LANG];
-
-    err = get_node(argv[ARGV_KEY], &node);
-    if (err) {
-        selva_send_error(resp, err, NULL, 0);
+    node = SelvaHierarchy_FindNode(main_hierarchy, node_id);
+    if (!node) {
+        selva_send_error(resp, SELVA_HIERARCHY_ENOENT, NULL, 0);
         return;
     }
 
@@ -187,8 +168,8 @@ void SelvaObject_GetCommand(struct selva_server_response_out *resp, const void *
         return;
     }
 
-    for (int i = ARGV_OKEY; i < argc; i++) {
-        const struct selva_string *okey = argv[i];
+    for (int i = 0; i < argc - 2; i++) {
+        const struct selva_string *okey = okeys[i];
         TO_STR(okey);
 
         int err = 0;
