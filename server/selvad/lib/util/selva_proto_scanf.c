@@ -531,6 +531,9 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
             } else if (ch == '%') {
                 on_placeholder = 1;
                 reset_placeholder(&ps);
+            } else {
+                /* Invalid format string. */
+                return SELVA_PROTO_EINVAL;
             }
         }
     }
