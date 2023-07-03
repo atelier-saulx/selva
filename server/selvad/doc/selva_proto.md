@@ -119,16 +119,16 @@ not fully consumed by the error (`SELVA_PROTO_EINVAL`).
 |---------------|-------------|
 | .*            | The string `s` is passed as a pointer and the length is written to the preceeding `size_t` argument. |
 
-| **length/specifiers** | `i`, `d`          | `u`                       | `f`               | `c`       | `s`, `p`                          |
-|-----------------------|-------------------|---------------------------|-------------------|-----------|-----------------------------------|
-| (none)                | `int*`            | `unsigned int*`           | `float*`          | `char*`   | `struct selva_string*` or `char*` |
-| `hh`                  | `signed char*`    | `unsigned char*`          |                   |           |                                   |
-| `h`                   | `short int*`      | `unsigned short int*`     |                   |           |                                   |
-| `l`                   | `long int*`       | `unsigned long int*`      | `double*`         |           |                                   |
-| `ll`                  | `long long int*`  | `unsigned long long int*` |                   |           |                                   |
-| `j`                   | `intmax_t*`       | `uintmax_t*`              |                   |           |                                   |
-| `z`                   | `size_t*`         | `size_t*`                 |                   |           |                                   |
-| `t`                   | `ptrdiff_t*`      | `ptrdiff_t*`              |                   |           |                                   |
-| `L`                   |                   |                           | `long double*`    |           |                                   |
+| **length/specifiers** | `i`, `d`          | `u`                       | `f`               | `c`       | `s`, `p`                              |
+|-----------------------|-------------------|---------------------------|-------------------|-----------|---------------------------------------|
+| (none)                | `int*`            | `unsigned int*`           | `float*`          | `char*`   | `struct selva_string**` or `char*`    |
+| `hh`                  | `signed char*`    | `unsigned char*`          |                   |           |                                       |
+| `h`                   | `short int*`      | `unsigned short int*`     |                   |           |                                       |
+| `l`                   | `long int*`       | `unsigned long int*`      | `double*`         |           |                                       |
+| `ll`                  | `long long int*`  | `unsigned long long int*` |                   |           |                                       |
+| `j`                   | `intmax_t*`       | `uintmax_t*`              |                   |           |                                       |
+| `z`                   | `size_t*`         | `size_t*`                 |                   |           |                                       |
+| `t`                   | `ptrdiff_t*`      | `ptrdiff_t*`              |                   |           |                                       |
+| `L`                   |                   |                           | `long double*`    |           |                                       |
 
 An empty value signifies an illegal state.
