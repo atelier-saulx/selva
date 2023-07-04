@@ -28,7 +28,7 @@ static char * test_scanf_basic(void)
     finalizer_init(&fin);
 
     /*
-     * [5.0, 42, "hello", [["hello", "world"], [1, 2, 3]]]
+     * [5.0, 42, "hello", [["hello", "world"], [1, 2, 3], 7]]
      */
     struct {
         struct selva_proto_double d;
@@ -41,13 +41,10 @@ static char * test_scanf_basic(void)
         char as0_str[sizeof("hello") - 1];
         struct selva_proto_string as1;
         char as1_str[sizeof("world") - 1];
-        /* TODO Embedded arrays are not supported */
-#if 0
         struct selva_proto_array all;
         long long all0;
         long long all1;
         long long all2;
-#endif
         struct selva_proto_longlong ll2;
     } __packed buf = {
         .d = {
@@ -65,7 +62,7 @@ static char * test_scanf_basic(void)
         .s_str = { 'h', 'e', 'l', 'l', 'o' },
         .container = {
             .type = SELVA_PROTO_ARRAY,
-            .length = 2,
+            .length = 3,
         },
         .as = {
             .type = SELVA_PROTO_ARRAY,
@@ -81,7 +78,6 @@ static char * test_scanf_basic(void)
             .bsize = sizeof(buf.as1_str),
         },
         .as1_str = { 'w', 'o', 'r', 'l', 'd' },
-#if 0
         .all = {
             .type = SELVA_PROTO_ARRAY,
             .flags = SELVA_PROTO_ARRAY_FLONGLONG,
@@ -90,25 +86,25 @@ static char * test_scanf_basic(void)
         .all0 = 1,
         .all1 = 2,
         .all2 = 3,
-#endif
         .ll2 = {
             .type = SELVA_PROTO_LONGLONG,
             .v = 7,
         },
     };
 
-    double d;
-    long long ll, ll2;
-    size_t s_len;
-    const char *s_str;
-    struct selva_string *as0;
-    struct selva_string *as1;
-    int all[3];
-    int argc = selva_proto_scanf(&fin, &buf, sizeof(buf), "%lf, %lld, %.*s, {{%p, %p}, %d}",
+    double d = 0;
+    long long ll = -1, ll2 = -1;
+    size_t s_len = 0;
+    const char *s_str = NULL;
+    struct selva_string *as0 = NULL;
+    struct selva_string *as1 = NULL;
+    int all[3] = {0};
+    int argc = selva_proto_scanf(&fin, &buf, sizeof(buf), "%lf, %lld, %.*s, {{%p, %p}, { %d, %d, %d }, %lld}",
                                  &d,
                                  &ll,
                                  &s_len, &s_str,
                                  &as0, &as1,
+                                 &all[0], &all[1], &all[2],
                                  &ll2);
 
     pu_assert_equal("argc", argc, 6);
@@ -117,11 +113,10 @@ static char * test_scanf_basic(void)
     pu_assert("", s_len == 5 && !memcmp(s_str, "hello", 5));
     pu_assert_str_equal("", selva_string_to_str(as0, NULL), "hello");
     pu_assert_str_equal("", selva_string_to_str(as1, NULL), "world");
-#if 0
     pu_assert_equal("", all[0], 1);
     pu_assert_equal("", all[1], 2);
     pu_assert_equal("", all[2], 3);
-#endif
+    printf("ll2: %lld\n", ll2);
     pu_assert_equal("", ll2, 7);
 
     return NULL;
@@ -200,7 +195,7 @@ static char * test_scanf_rest(void)
                                  &type,
                                  &rest);
 
-    pu_assert_equal("argc", argc, 4);
+    pu_assert_equal("argc", argc, 7);
     pu_assert_str_equal("node_id", node_id, "root");
     pu_assert("field", field_len == 5 && !memcmp(field_str, "field", 5));
     pu_assert_equal("type", type, 'H');
