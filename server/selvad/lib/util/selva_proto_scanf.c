@@ -510,6 +510,9 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 if (flags & SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH) {
                     postponed_array_end++;
                 } else if (flags & (SELVA_PROTO_ARRAY_FLONGLONG | SELVA_PROTO_DOUBLE)) {
+                    /*
+                     * Embedded array.
+                     */
                     uint8_t *data = (uint8_t *)buf + buf_i + sizeof(struct selva_proto_array);
 
                     for (size_t i = 0; i < data_len; i++) {
@@ -552,8 +555,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                     fmt = strchr(fmt, '}');
                     if (!fmt) {
                         return SELVA_PROTO_EINVAL;
-                    }
-                    if (fmt[1] == ',') {
+                    } else if (fmt[1] == ',') {
                         /* Don't want to do a new skip. */
                         fmt++;
                     }
@@ -571,9 +573,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                     off = selva_proto_parse_vtype(buf, szbuf, buf_i, &found_type, &data_len);
                     if (off <= 0) {
                         return off;
-                    }
-
-                    if (found_type != SELVA_PROTO_ARRAY_END) {
+                    } else if (found_type != SELVA_PROTO_ARRAY_END) {
                         return SELVA_PROTO_EBADMSG;
                     }
 
@@ -582,10 +582,12 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 } else if (fmt[1] == '\0') {
                     /* We can't be sure later whether a skip is needed so we do it here now. */
                     int off = get_skip_off(buf, szbuf, buf_i);
+
                     if (off > 0) {
                         buf_i += off;
                     }
                 }
+
                 array_level--;
             } else {
                 /* Invalid format string. */

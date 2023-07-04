@@ -116,7 +116,6 @@ static char * test_scanf_basic(void)
     pu_assert_equal("", all[0], 1);
     pu_assert_equal("", all[1], 2);
     pu_assert_equal("", all[2], 3);
-    printf("ll2: %lld\n", ll2);
     pu_assert_equal("", ll2, 7);
 
     return NULL;
