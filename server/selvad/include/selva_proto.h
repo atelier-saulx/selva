@@ -377,7 +377,7 @@ int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize
  * `width` is used with char buffers to specify the maximum number of bytes to
  * be copied.
  * If `precision` is given as `*` with `%s` or `%p` then the string is passed as
- * a pointer and the length is written to a preceeding `size_t` pointer, e.g.
+ * a pointer and the length is written to a preceding `size_t` pointer, e.g.
  * `selva_proto_scanf(fin, buf, sz, "%.*s", &len, &s)`.
  *
  * The function returns the number of arguments successfully parsed, which can

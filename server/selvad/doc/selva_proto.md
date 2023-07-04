@@ -94,7 +94,7 @@ also possible achieve the same result using `%p`.
 `width` is used with char buffers to specify the maximum number of bytes to
 be copied.
 If `precision` is given as `*` with `%s` or `%p` then the string is passed as
-a pointer and the length is written to `size_t` pointer argument preceeding the
+a pointer and the length is written to `size_t` pointer argument preceding the
 string pointer, e.g. `selva_proto_scanf(fin, buf, sz, "%.*s", &len, &s)`.
 
 The function returns the number of arguments successfully parsed, which can
@@ -117,7 +117,7 @@ not fully consumed by the error (`SELVA_PROTO_EINVAL`).
 
 | .precision    | Description |
 |---------------|-------------|
-| .*            | The string `s` is passed as a pointer and the length is written to the preceeding `size_t` argument. |
+| .*            | The string `s` is passed as a pointer and the length is written to the preceding `size_t` argument. |
 
 | **length/specifiers** | `i`, `d`          | `u`                       | `f`               | `c`       | `s`, `p`                              |
 |-----------------------|-------------------|---------------------------|-------------------|-----------|---------------------------------------|
