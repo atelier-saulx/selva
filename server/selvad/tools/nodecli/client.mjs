@@ -27,7 +27,7 @@ import {
   selva_proto_double_def,
   selva_proto_longlong_def,
   SELVA_PROTO_STRING_FBINARY,
-  SElVA_PROTO_STRING_FDEFLATE,
+  SELVA_PROTO_STRING_FDEFLATE,
   selva_proto_string_def,
   SELVA_PROTO_ARRAY_FPOSTPONED_LENGTH,
   SELVA_PROTO_ARRAY_FLONGLONG,

@@ -61,7 +61,7 @@ export const selva_proto_longlong_def = compile([
 ], { align: false });
 
 export const SELVA_PROTO_STRING_FBINARY = 0x01; /*!< Expect binary data. */
-export const SElVA_PROTO_STRING_FDEFLATE = 0x02; /*!< Compressed with deflate. */
+export const SELVA_PROTO_STRING_FDEFLATE = 0x02; /*!< Compressed with deflate. */
 
 export const selva_proto_string_def = compile([
   { name: 'type', type: 'int8' },

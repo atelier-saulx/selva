@@ -44,7 +44,7 @@ int selva_proto_buf2strings(struct finalizer *fin, const char *buf, size_t bsize
             struct selva_string *s;
 
             memcpy(&flags, buf + i - off + offsetof(struct selva_proto_string, flags), sizeof(flags));
-            s = selva_string_create(buf + i - data_len, data_len, (flags & SElVA_PROTO_STRING_FDEFLATE) ? SELVA_STRING_COMPRESS : 0);
+            s = selva_string_create(buf + i - data_len, data_len, (flags & SELVA_PROTO_STRING_FDEFLATE) ? SELVA_STRING_COMPRESS : 0);
             selva_string_auto_finalize(fin, s);
 
             list_len++;

@@ -207,7 +207,7 @@ int selva_send_strf(struct selva_server_response_out *resp, const char *fmt, ...
 int selva_send_string(struct selva_server_response_out *resp, const struct selva_string *s)
 {
     TO_STR(s);
-    typeof_field(struct selva_proto_string, flags) flags = (selva_string_get_flags(s) & SELVA_STRING_COMPRESS) ? SElVA_PROTO_STRING_FDEFLATE : 0;
+    typeof_field(struct selva_proto_string, flags) flags = (selva_string_get_flags(s) & SELVA_STRING_COMPRESS) ? SELVA_PROTO_STRING_FDEFLATE : 0;
 
     return selva_send_str_wflags(resp, s_str, s_len, flags);
 }

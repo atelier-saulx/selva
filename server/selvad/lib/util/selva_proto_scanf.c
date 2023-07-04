@@ -415,7 +415,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                 memcpy(&flags, (char *)buf + buf_i + offsetof(struct selva_proto_string, flags), sizeof(flags));
                 memcpy(&len, (char *)buf + buf_i + offsetof(struct selva_proto_string, bsize), sizeof(len));
 
-                if ((ps.precision == -1 || ps.width >= 0) && (flags & SElVA_PROTO_STRING_FDEFLATE)) {
+                if ((ps.precision == -1 || ps.width >= 0) && (flags & SELVA_PROTO_STRING_FDEFLATE)) {
                     /*
                      * A compressed string must be captured as a selva_string with %p.
                      */
@@ -455,7 +455,7 @@ int selva_proto_scanf(struct finalizer * restrict fin, const void * restrict buf
                         return SELVA_PROTO_EINVAL;
                     }
 
-                    s = selva_string_create(str, len, (flags & SElVA_PROTO_STRING_FDEFLATE) ? SELVA_STRING_COMPRESS : 0);
+                    s = selva_string_create(str, len, (flags & SELVA_PROTO_STRING_FDEFLATE) ? SELVA_STRING_COMPRESS : 0);
                     selva_string_auto_finalize(fin, s);
                     *va_arg(args, struct selva_string **) = s;
                 }
