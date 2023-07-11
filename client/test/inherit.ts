@@ -54,6 +54,18 @@ test.before(async (t) => {
           imaginary: { type: 'string' },
         },
       },
+      role: {
+        prefix: 'rl',
+        fields: {
+          name: { type: 'string' },
+        },
+      },
+      subscription: {
+        prefix: 'su',
+      },
+      user: {
+        prefix: 'us',
+      },
     },
   })
   await client.destroy()
@@ -554,6 +566,10 @@ test.serial('$field + inherit from root + query root', async (t) => {
 
   try {
     await client.updateSchema({
+      name: {
+        $field: 'anotherProperty.name',
+        $inherit: { $type: 'typeImInheriting' },
+      },
       rootType: {
         fields: {
           //@ts-ignore
@@ -584,6 +600,10 @@ test.serial('$field + inherit from root + query root', async (t) => {
   await client.set({
     $id: 'root',
     layout: {
+      name: {
+        $field: 'anotherProperty.name',
+        $inherit: { $type: 'typeImInheriting' },
+      },
       default: {
         components: [
           {
@@ -653,6 +673,64 @@ test.serial('$all + object', async (t) => {
     { id: 'geD', type: 'genre', flaprdol: { name: 'hello' } },
     'inherit'
   )
+
+  await client.destroy()
+})
+
+test.serial.only('airhub case', async (t) => {
+  const client = connect({ port: port }, { loglevel: 'info' })
+
+  await client.set({
+    $id: 'rlA',
+    name: 'roleA',
+  })
+  await client.set({
+    $id: 'rlB',
+    name: 'roleB',
+  })
+
+  await client.set({
+    $id: 'suA',
+    parents: ['rlA'],
+  })
+  await client.set({
+    $id: 'suB',
+    parents: ['rlB'],
+  })
+  await client.set({
+    $id: 'usA',
+    parents: ['suA', 'suB'],
+  })
+
+  const result = await client.get({
+    $id: 'usA',
+    roles: {
+      name: {
+        $inherit: { $type: 'role' },
+      },
+      $list: {
+        $find: {
+          $traverse: 'parents',
+          $filter: {
+            $field: 'type',
+            $operator: '=',
+            $value: 'subscription',
+          },
+        },
+      },
+    },
+  })
+  t.deepEqual(result, {
+    roles: [
+      {
+        name: 'roleA',
+      },
+      {
+        name: 'roleB',
+      },
+    ],
+  })
+  console.log(JSON.stringify(result, null, 2))
 
   await client.destroy()
 })
