@@ -78,6 +78,13 @@ const connectRegistry = (
         port,
         host,
       }
+      const timer = setTimeout(() => {
+        if (!selvaClient.registryConnection.connected) {
+          // this check is needed even though the timer should be cleared if the registry is connected, weird
+          connectRegistry(selvaClient, connectOptions)
+        }
+      }, 5e3)
+
       const registryConnection = createConnection(descriptor)
 
       registryConnection.attachClient(selvaClient)
@@ -90,7 +97,7 @@ const connectRegistry = (
         'connect',
         () => {
           console.info('CONNECT')
-
+          clearTimeout(timer)
           selvaClient.emit('connect', descriptor)
           getInitialRegistryServers(selvaClient).then(() => {
             selvaClient.emit('added-servers', { event: '*' })
