@@ -4,13 +4,14 @@ import { startRegistry, startSubscriptionManager } from '@saulx/selva-server'
 import { worker } from './assertions'
 import getPort from 'get-port'
 import { wait } from '../src/util'
-
+import { fork } from 'child_process'
+import { join } from 'path'
 let srv
 let s
 let port: number
 
 test.before(async (t) => {
-  port = await getPort()
+  port = 2222 // hardcoded for child_process
   srv = await startRegistry({
     port,
   })
@@ -104,5 +105,56 @@ test.serial('recon to new origin', async (t) => {
 
   await client.destroy()
 
+  t.pass()
+})
+
+test.serial.only('recon to existing origin', async (t) => {
+  const startOrigin = async () => {
+    console.info('- start origin in childprocess')
+    const childProcess = fork(
+      join(__dirname, 'assertions/selvaOriginChildProcess.js')
+    )
+    await wait(1e3)
+    return childProcess
+  }
+
+  let p = await startOrigin()
+  const client = connect({ port })
+  console.info('====================== do a get()')
+  const x = await client.get({
+    $id: 'root',
+    id: true,
+  })
+
+  console.info('++++++++++++++++++++++ result 1', x)
+  console.info('---------------------- now we kill the child_process')
+  p.kill()
+
+  await wait(1e3)
+  console.info('====================== now do another get()')
+  const getPromise = client
+    .get({
+      $id: 'root',
+      id: true,
+    })
+    .then(async (x2) => {
+      // THIS NEVER HAPPENS
+      console.info('++++++++++++++++++++++ this should happen but does not', x2)
+    })
+
+  await wait(1e3)
+  console.info('---------------------- now we start a new child_process')
+  p = await startOrigin()
+
+  const x3 = await client.get({
+    $id: 'root',
+    id: true,
+  })
+
+  console.log('///////////// this one works though', x3)
+
+  await getPromise
+  await client.destroy()
+  p.kill()
   t.pass()
 })
