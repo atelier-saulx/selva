@@ -36,6 +36,10 @@ function ast2inlineRpn(schema: Schema, f: FilterAST | null): string | null {
         return Number.isNaN(num) ? null : `"${f.$field}" g #${num} F`
       }
     case 'has':
+      if (['ancestors', 'children', 'descendants', 'parents'].includes(f.$field)) {
+        return null
+      }
+
       if (typeof f.$value === 'string') {
         return `"${f.$value}" "${f.$field}" a`
       } else if (typeof f.$value === 'number') {
