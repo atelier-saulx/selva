@@ -128,6 +128,7 @@ test.serial.only('recon to existing origin', async (t) => {
 
   console.info('++++++++++++++++++++++ result 1', x)
   console.info('---------------------- now we kill the child_process')
+
   p.kill()
 
   await wait(1e3)
