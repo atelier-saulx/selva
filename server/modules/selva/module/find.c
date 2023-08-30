@@ -1912,7 +1912,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
          * Limit and indexing can be only used together when an order is requested
          * to guarantee a deterministic response order.
          */
-        if (limit != -1 && order == SELVA_RESULT_ORDER_NONE) {
+        if (limit != -1 && order == SELVA_RESULT_ORDER_NONE ||
+            offset == -1) {
             nr_index_hints = 0;
         }
     }
@@ -1982,8 +1983,8 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
         struct FindCommand_Args args = {
             .lang = lang,
             .nr_nodes = &nr_nodes,
-            .skip = ind_select >= 0 ? 0 : SelvaTraversal_GetSkip(dir),
-            .offset = (order == SELVA_RESULT_ORDER_NONE) ? offset : 0,
+            .skip = ind_select >= 0 || offset == -1 ? 0 : SelvaTraversal_GetSkip(dir),
+            .offset = (order == SELVA_RESULT_ORDER_NONE) && offset > 0 ? offset : 0,
             .limit = (order == SELVA_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
