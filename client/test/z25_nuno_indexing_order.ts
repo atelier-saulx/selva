@@ -34,6 +34,12 @@ test.before(async (t) => {
           name: { type: 'string' },
         },
       },
+      something: {
+        prefix: 'so',
+        fields: {
+          name: { type: 'string' },
+        },
+      },
     },
   })
   await client.destroy()
@@ -59,6 +65,10 @@ test.serial.only(
         type: 'book',
         name,
       })
+      await client.set({
+        type: 'something',
+        name,
+      })
       items.push({ id, name })
     }
 
@@ -68,7 +78,7 @@ test.serial.only(
         books: {
           id: true,
           $list: {
-            $sort: { $field: 'name', $order: 'asc' },
+            // $sort: { $field: 'name', $order: 'asc' },
             $offset: 20 * index,
             $limit: 20,
             $find: {
