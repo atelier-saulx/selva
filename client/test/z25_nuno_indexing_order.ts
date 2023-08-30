@@ -59,11 +59,16 @@ test.serial.only(
 
     const items: { id: string; name: string }[] = []
 
+    const parentId = await client.set({
+      type: 'something',
+      name: 'parent',
+    })
     for (let index = 0; index < 100; index++) {
       const name = `Book ${index}`
       const id = await client.set({
         type: 'book',
         name,
+        parents: [parentId],
       })
       await client.set({
         type: 'something',
@@ -77,6 +82,7 @@ test.serial.only(
       const query = {
         books: {
           id: true,
+          parents: true,
           $list: {
             // $sort: { $field: 'name', $order: 'asc' },
             $offset: 20 * index,
@@ -88,6 +94,11 @@ test.serial.only(
                   $field: 'type',
                   $operator: '=',
                   $value: 'book',
+                },
+                {
+                  $field: 'parents',
+                  $operator: 'has',
+                  $value: [parentId],
                 },
               ],
             },
