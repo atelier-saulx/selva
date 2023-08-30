@@ -1232,7 +1232,7 @@ static __hot int FindCommand_NodeCb(
         void *arg) {
     struct FindCommand_Args *args = (struct FindCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->rpn_ctx;
-    int take = (args->offset > 0) ? !args->offset-- : 1;
+    int take = SelvaTraversal_ProcessSkip(args);
 
     args->acc_tot++;
     if (take && rpn_ctx) {
@@ -1258,6 +1258,7 @@ static __hot int FindCommand_NodeCb(
         }
     }
 
+    take = take && SelvaTraversal_ProcessOffset(args);
     if (take) {
         args->acc_take++;
 
@@ -1323,7 +1324,7 @@ static int FindCommand_ArrayObjectCb(
     struct FindCommand_ArrayObjectCb *args = (struct FindCommand_ArrayObjectCb *)arg;
     struct FindCommand_Args *find_args = args->find_args;
     struct rpn_ctx *rpn_ctx = find_args->rpn_ctx;
-    int take = (find_args->offset > 0) ? !find_args->offset-- : 1;
+    int take = SelvaTraversal_ProcessSkip(args->find_args);
 
     if (subtype != SELVA_OBJECT_OBJECT) {
         SELVA_LOG(SELVA_LOGL_ERR, "Array subtype not supported: %s",
@@ -1354,6 +1355,7 @@ static int FindCommand_ArrayObjectCb(
         }
     }
 
+    take = take && SelvaTraversal_ProcessOffset(args->find_args);
     if (take) {
         return find_args->process_obj(args->ctx, find_args, obj);
     }
@@ -1977,11 +1979,11 @@ static int SelvaHierarchy_FindCommand(RedisModuleCtx *ctx, RedisModuleString **a
          * Run BFS/DFS.
          */
         ssize_t tmp_limit = -1;
-        const size_t skip = ind_select >= 0 ? 0 : SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
         struct FindCommand_Args args = {
             .lang = lang,
             .nr_nodes = &nr_nodes,
-            .offset = (order == SELVA_RESULT_ORDER_NONE) ? offset + skip : skip,
+            .skip = ind_select >= 0 ? 0 : SelvaTraversal_GetSkip(dir),
+            .offset = (order == SELVA_RESULT_ORDER_NONE) ? offset : 0,
             .limit = (order == SELVA_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,

@@ -227,7 +227,7 @@ static int AggregateCommand_NodeCb(
     Selva_NodeId nodeId;
     struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->find_args.rpn_ctx;
-    int take = (args->find_args.offset > 0) ? !args->find_args.offset-- : 1;
+    int take = SelvaTraversal_ProcessSkip(&args->find_args);
 
     SelvaHierarchy_GetNodeId(nodeId, node);
 
@@ -252,6 +252,7 @@ static int AggregateCommand_NodeCb(
         }
     }
 
+    take = take && SelvaTraversal_ProcessOffset(&args->find_args);
     if (take) {
         const int sort = !!args->find_args.send_param.order_field;
 
@@ -303,7 +304,7 @@ static int AggregateCommand_ArrayObjectCb(
     struct SelvaObject *obj = value.obj;
     struct AggregateCommand_Args *args = (struct AggregateCommand_Args *)arg;
     struct rpn_ctx *rpn_ctx = args->find_args.rpn_ctx;
-    int take = (args->find_args.offset > 0) ? !args->find_args.offset-- : 1;
+    int take = SelvaTraversal_ProcessSkip(&args->find_args);
 
     if (subtype != SELVA_OBJECT_OBJECT) {
         SELVA_LOG(SELVA_LOGL_ERR, "Array subtype not supported: %s\n",
@@ -334,6 +335,7 @@ static int AggregateCommand_ArrayObjectCb(
         }
     }
 
+    take = take && SelvaTraversal_ProcessOffset(&args->find_args);
     if (take) {
         const int sort = !!args->find_args.send_param.order_field;
 
@@ -794,11 +796,11 @@ int SelvaHierarchy_AggregateCommand(RedisModuleCtx *ctx, RedisModuleString **arg
          * Run BFS/DFS.
          */
         ssize_t tmp_limit = -1;
-        const size_t skip = ind_select >= 0 ? 0 : SelvaTraversal_GetSkip(dir); /* Skip n nodes from the results. */
         args.find_args = (struct FindCommand_Args){
             .lang = lang,
             .nr_nodes = &nr_nodes,
-            .offset = (order == SELVA_RESULT_ORDER_NONE) ? offset + skip : skip,
+            .skip = ind_select >= 0 ? 0 : SelvaTraversal_GetSkip(dir),
+            .offset = (order == SELVA_RESULT_ORDER_NONE) ? offset : 0,
             .limit = (order == SELVA_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
             .filter = filter_expression,
@@ -1120,6 +1122,7 @@ int SelvaHierarchy_AggregateInCommand(RedisModuleCtx *ctx, RedisModuleString **a
         struct FindCommand_Args find_args = {
             .lang = lang,
             .nr_nodes = &array_len,
+            .skip = 0,
             .offset = (order == SELVA_RESULT_ORDER_NONE) ? offset : 0,
             .limit = (order == SELVA_RESULT_ORDER_NONE) ? &limit : &tmp_limit,
             .rpn_ctx = rpn_ctx,
