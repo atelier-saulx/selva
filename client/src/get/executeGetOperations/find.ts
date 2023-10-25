@@ -436,7 +436,6 @@ export async function checkForNextRefresh(
       if (!withoutTimebased) {
         newFork.$and = [newFilter]
       }
-
       const args = ast2rpn(
         (passedSchema || client.schemas[ctx.db]).types,
         newFork,

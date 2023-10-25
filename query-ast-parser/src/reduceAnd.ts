@@ -257,6 +257,13 @@ function reduceAnd(fork: WithRequired<Fork, '$and'>): string | null {
             ($a === '!=' && $b === '=')
           ) {
             fn = isNotEqualAndIsEqual
+          } else if (
+            (typeof prevFilter.$value === 'string' &&
+              prevFilter.$value.startsWith('now')) ||
+            (typeof filter.$value === 'string' &&
+              filter.$value.startsWith('now'))
+          ) {
+            continue
           } else if (($a === '>' && $b === '<') || ($a === '<' && $b === '>')) {
             fn = isLargerThenAndSmallerThen
           } else if ($a === '>' && $b === '>') {
@@ -283,6 +290,7 @@ function reduceAnd(fork: WithRequired<Fork, '$and'>): string | null {
           }
         }
       }
+
       if (addFilter) {
         filters[filters.length] = filter
       }

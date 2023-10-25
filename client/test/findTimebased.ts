@@ -95,6 +95,65 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
+test.serial('subs same field', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+  await client.set({
+    $id: 'root',
+    title: {
+      en: 'root',
+    },
+  })
+
+  await client.set({
+    $id: 'ma1',
+    startTime: Date.now(),
+  })
+
+  await client.set({
+    $id: 'ma2',
+    startTime: Date.now(),
+  })
+
+  const res: any = await new Promise((resolve) => {
+    client
+      .observe({
+        $id: 'root',
+        items: {
+          id: true,
+          $list: {
+            $find: {
+              $traverse: 'descendants',
+              $filter: [
+                {
+                  $field: 'startTime',
+                  $operator: '>',
+                  $value: 'now-1m',
+                },
+                {
+                  $field: 'startTime',
+                  $operator: '<',
+                  $value: 'now+1m',
+                },
+              ],
+            },
+          },
+        },
+      })
+      .subscribe((res) => {
+        resolve(res)
+      })
+  })
+
+  t.deepEqualIgnoreOrder(res?.items, [
+    {
+      id: 'ma1',
+    },
+    {
+      id: 'ma2',
+    },
+  ])
+})
+
 test.serial('subs layout', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
   let now = Date.now()
