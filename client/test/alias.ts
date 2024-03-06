@@ -740,3 +740,130 @@ test.serial('set alias, get it, remove it, get it again', async (t) => {
   await client.delete('root')
   await client.destroy()
 })
+
+test.serial('should not cache $alias with get', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const alias = 'this_is_an_alias'
+
+  t.deepEqualIgnoreOrder(
+    await client.get({
+      $language: 'en',
+      $alias: alias,
+      id: true,
+      title: true,
+      aliases: true,
+    }),
+    {
+      $isNull: true,
+    }
+  )
+
+  const id = await client.set({
+    aliases: [alias],
+    type: 'match',
+    title: { en: 'yesh' },
+  })
+
+  const result = await client.get({
+    $language: 'en',
+    $alias: alias,
+    id: true,
+    title: true,
+    aliases: true,
+  })
+
+  t.deepEqualIgnoreOrder(result, {
+    id,
+    title: 'yesh',
+    aliases: [alias],
+  })
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+// This is known behaviour. We will deal with this in the new database
+test.serial.failing('should not cache $alias with observe', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const alias = 'this_is_an_alias'
+
+  const query = {
+    $language: 'en',
+    $alias: alias,
+    id: true,
+    title: true,
+    aliases: true,
+  }
+
+  const result1 = await new Promise((resolve) => {
+    client.observe(query).subscribe(resolve)
+  })
+
+  t.deepEqualIgnoreOrder(result1, {
+    $isNull: true,
+  })
+
+  await client.set({
+    aliases: [alias],
+    type: 'match',
+    title: { en: 'yesh' },
+  })
+
+  const result2 = await new Promise((resolve) => {
+    client.observe(query).subscribe(resolve)
+  })
+
+  t.deepEqualIgnoreOrder(result2, {
+    title: 'yesh',
+    aliases: [alias],
+  })
+
+  await client.delete('root')
+  await client.destroy()
+})
+
+// This is known behaviour. We will deal with this in the new database
+test.serial.failing('subscribing to alias', async (t) => {
+  t.timeout(3000)
+  const client = connect({ port }, { loglevel: 'info' })
+
+  const alias = 'this_is_an_alias'
+
+  const query = {
+    $language: 'en',
+    $alias: alias,
+    id: true,
+    title: true,
+    aliases: true,
+  }
+
+  let cnt = 0
+  await new Promise((resolve) => {
+    client.observe(query).subscribe((data, checksum) => {
+      cnt++
+      console.log(cnt, data, checksum)
+      if (cnt === 1) {
+        t.deepEqualIgnoreOrder(data, {
+          $isNull: true,
+        })
+        console.log('counting')
+        client.set({
+          aliases: [alias],
+          type: 'match',
+          title: { en: 'yesh' },
+        })
+      } else if (cnt === 2) {
+        t.deepEqualIgnoreOrder(data, {
+          title: 'yesh',
+          aliases: [alias],
+        })
+        resolve
+      }
+    })
+  })
+
+  await client.delete('root')
+  await client.destroy()
+})
