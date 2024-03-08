@@ -35,30 +35,6 @@ function ast2inlineRpn(schema: Schema, f: FilterAST | null): string | null {
         const num = Number(f.$value)
         return Number.isNaN(num) ? null : `"${f.$field}" g #${num} F`
       }
-    case 'has':
-      if (['ancestors', 'children', 'descendants', 'parents'].includes(f.$field)) {
-        return null
-      }
-
-      if (typeof f.$value === 'string') {
-        return `"${f.$value}" "${f.$field}" a`
-      } else if (typeof f.$value === 'number') {
-        return `#${f.$value} "${f.$field}" a`
-      } else if (Array.isArray(f.$value)) {
-        if (typeof f.$value[0] === 'string') {
-          if (f.$value.some((v: string) => v.includes('"'))) {
-            // We can't inline quotes at the moment
-            return null
-          }
-
-          const a = `{${f.$value.map((v) => `"${v}"`).join(',')}}`
-          return `"${f.$field}" ${a} l`
-        } else if (typeof f.$value[0] === 'number') {
-          const a = `{${f.$value.map((v) => `#${v}`).join(',')}}`
-          return `"${f.$field}" ${a} l`
-        }
-        return null
-      }
     case 'exists':
       return `"${f.$field}" h`
     case 'notExists':
