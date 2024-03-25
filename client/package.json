@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "21.2.2",
+  "version": "21.2.3",
   "license": "MIT",
   "main": "dist/src/index.js",
   "scripts": {
@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@types/pg": "^8.6.1",
-    "@saulx/selva-server": "21.2.2",
+    "@saulx/selva-server": "21.2.3",
     "before-exit": "1.0.0",
     "async-exec": "^1.1.0",
     "@sindresorhus/fnv1a": "^2.0.1",
@@ -73,7 +73,7 @@
     "pg-native": "3.0.0",
     "squel": "^5.13.0",
     "data-record": "^1.0.0",
-    "@saulx/selva-query-ast-parser": "^4.2.0",
+    "@saulx/selva-query-ast-parser": "^4.0.2",
     "@types/uuid": "^8.3.0",
     "chalk": "^4.1.0",
     "@saulx/redis-client": "^1.0.0",
