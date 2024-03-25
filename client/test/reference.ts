@@ -698,6 +698,35 @@ test.serial('list of simple singular reference', async (t) => {
   await client.destroy()
 })
 
+test.serial.only('test bidirectional 2', async (t) => {
+  const client = connect({ port }, { loglevel: 'info' })
+  const clubId = 'cl1'
+
+  await client.set({
+    $id: clubId,
+    title: {
+      en: 'Ajax',
+    },
+  })
+
+  const matchId1 = 'ma1'
+  const matchId2 = 'ma2'
+
+  await client.set({
+    $id: matchId1,
+    bidirClub: clubId,
+  })
+
+  await wait(1e3)
+
+  await client.set({
+    $id: matchId2,
+    bidirClub: clubId,
+  })
+
+  t.pass()
+})
+
 test.serial('simple singular bidirectional reference', async (t) => {
   const client = connect({ port }, { loglevel: 'info' })
 
