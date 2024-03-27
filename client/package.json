@@ -1,6 +1,6 @@
 {
   "name": "@saulx/selva",
-  "version": "21.2.3",
+  "version": "21.2.3-fix.1",
   "license": "MIT",
   "main": "dist/src/index.js",
   "scripts": {
