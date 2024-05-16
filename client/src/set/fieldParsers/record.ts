@@ -19,6 +19,10 @@ export default async (
 
   const fn = fieldParsers[fields.values.type]
 
+  if (Object.keys(payload).filter((key) => /\./g.test(key)).length) {
+    throw new Error('Cannot use "." in a record key')
+  }
+
   if (payload.$delete) {
     result.push('7', field, '')
     return 0
