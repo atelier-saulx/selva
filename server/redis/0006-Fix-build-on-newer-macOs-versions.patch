@@ -1,0 +1,75 @@
+From bc87c55f1471da4b14210bf60f5e9336d27e2106 Mon Sep 17 00:00:00 2001
+From: Olli Vanhoja <olli.vanhoja@gmail.com>
+Date: Thu, 30 May 2024 11:33:50 +0200
+Subject: [PATCH] Fix build on newer macOs versions
+
+---
+ src/config.h |  4 ++--
+ src/debug.c  | 15 +++------------
+ 2 files changed, 5 insertions(+), 14 deletions(-)
+
+diff --git a/src/config.h b/src/config.h
+index b9c68f38b..004f9c17c 100644
+--- a/src/config.h
++++ b/src/config.h
+@@ -40,7 +40,7 @@
+ #endif
+ 
+ /* Define redis_fstat to fstat or fstat64() */
+-#if defined(__APPLE__) && !defined(MAC_OS_X_VERSION_10_6)
++#if defined(__APPLE__) && !defined(__arm64__)
+ #define redis_fstat fstat64
+ #define redis_stat stat64
+ #else
+@@ -79,7 +79,7 @@
+ #define HAVE_EPOLL 1
+ #endif
+ 
+-#if (defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_6)) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
++#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
+ #define HAVE_KQUEUE 1
+ #endif
+ 
+diff --git a/src/debug.c b/src/debug.c
+index a85ffe210..563675931 100644
+--- a/src/debug.c
++++ b/src/debug.c
+@@ -593,7 +593,7 @@ NULL
+             return;
+         dictExpand(c->db->dict,keys);
+         long valsize = 0;
+-        if ( c->argc == 5 && getLongFromObjectOrReply(c, c->argv[4], &valsize, NULL) != C_OK ) 
++        if ( c->argc == 5 && getLongFromObjectOrReply(c, c->argv[4], &valsize, NULL) != C_OK )
+             return;
+         for (j = 0; j < keys; j++) {
+             snprintf(buf,sizeof(buf),"%s:%lu",
+@@ -925,16 +925,7 @@ void bugReportStart(void) {
+ 
+ #ifdef HAVE_BACKTRACE
+ static void *getMcontextEip(ucontext_t *uc) {
+-#if defined(__APPLE__) && !defined(MAC_OS_X_VERSION_10_6)
+-    /* OSX < 10.6 */
+-    #if defined(__x86_64__)
+-    return (void*) uc->uc_mcontext->__ss.__rip;
+-    #elif defined(__i386__)
+-    return (void*) uc->uc_mcontext->__ss.__eip;
+-    #else
+-    return (void*) uc->uc_mcontext->__ss.__srr0;
+-    #endif
+-#elif defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_6)
++#if defined(__APPLE__)
+     /* OSX >= 10.6 */
+     #if defined(_STRUCT_X86_THREAD_STATE64) && !defined(__i386__)
+     return (void*) uc->uc_mcontext->__ss.__rip;
+@@ -1001,7 +992,7 @@ void logRegisters(ucontext_t *uc) {
+     serverLog(LL_WARNING|LL_RAW, "\n------ REGISTERS ------\n");
+ 
+ /* OSX */
+-#if defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_6)
++#if defined(__APPLE__)
+   /* OSX AMD64 */
+     #if defined(_STRUCT_X86_THREAD_STATE64) && !defined(__i386__)
+     serverLog(LL_WARNING,
+-- 
+2.39.3 (Apple Git-146)
+
