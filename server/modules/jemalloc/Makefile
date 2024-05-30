@@ -11,12 +11,18 @@ JEMALLOC_CONFIG := --with-version=VERSION \
 JEMALLOC_CFLAGS := -std=gnu99 -fPIC -Wall -Wno-missing-braces -pipe -g3 -O3 -funroll-loops
 JEMALLOC_LDFLAGS := $(LDFLAGS)
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+uname_M := $(shell sh -c 'uname -m 2>/dev/null || echo not')
 
 ifeq ($(uname_S),Linux) # Assume Intel x86-64 Linux
 	SELVA_ARCH := linux_x64
 endif
-ifeq ($(uname_S),Darwin) # Assume x86-64 macOS
-	SELVA_ARCH := darwin_x64
+ifeq ($(uname_S),Darwin)
+	ifeq ($(uname_M),x86_64)
+		SELVA_ARCH := darwin_x64
+	endif
+	ifeq ($(uname_M),arm64)
+		SELVA_ARCH := darwin_m1
+	endif
     JEMALLOC_LIBDIR := "@executable_path"
 endif
 
