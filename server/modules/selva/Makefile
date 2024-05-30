@@ -67,9 +67,10 @@ CFLAGS += $(IDIR) -include tunables.h \
 	-fPIC \
 	-fno-strict-aliasing
 LIBDIR := $(patsubst %,lib/%,$(LIBS))
-SHOBJ_LDLIBS := -lc -ljemalloc_selva -lhiredis -lcrypto -lssl
+SHOBJ_LDLIBS := -lc -ljemalloc_selva -lhiredis
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
+	SHOBJ_LDLIBS += -lcrypto -lssl
 	CFLAGS += -include include/linux_cdefs.h \
 			  -fisolate-erroneous-paths-attribute
 	SHOBJ_CFLAGS ?= -fno-common -g -ggdb
@@ -79,9 +80,18 @@ endif
 ifeq ($(uname_S),Darwin) # macOS
 	CFLAGS += -include include/macos_cdefs.h
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
-	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup -rpath @executable_path/../binaries/darwin_x64/
-	LIBDIR += ../binaries/darwin_x64
-	LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib $(wildcard /usr/local/Cellar/openssl@1.1/1.1.1*/lib)
+	SHOBJ_LDFLAGS ?= -bundle -undefined dynamic_lookup 
+	ifeq ($(uname_M),x86_64)
+		SHOBJ_LDLIBS += -lcrypto -lssl
+		SHOBJ_LDFLAGS += -rpath @executable_path/../binaries/darwin_x64/
+		LIBDIR += ../binaries/darwin_x64
+		LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib $(wildcard /usr/local/Cellar/openssl@1.1/1.1.1*/lib)
+	endif
+	ifeq ($(uname_M),arm64)
+		SHOBJ_LDFLAGS += -rpath @executable_path/../binaries/darwin_m1/
+		LIBDIR += ../binaries/darwin_m1
+		LIBDIR += /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib
+	endif
 endif
 ifeq ($(SELVA_TRACE),1)
 	CFLAGS += -I/opt/intel/oneapi/vtune/2021.7.1/sdk/include -DSELVA_TRACE=1
