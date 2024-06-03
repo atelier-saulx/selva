@@ -10,7 +10,7 @@ import { GetOptions } from '../'
 import find from './find'
 import aggregate from './aggregate'
 import inherit from './inherit'
-import timeseries from './timeseries'
+// import timeseries from './timeseries'
 import { Rpn, bfsExpr2rpn } from '@saulx/selva-query-ast-parser'
 import { FieldSchemaArrayLike, Schema } from '~selva/schema'
 import { ServerDescriptor } from '~selva/types'
@@ -548,11 +548,7 @@ export function typeCast(
   }
 
   if (fs.timeseries) {
-    const vIdx = x.findIndex((el) => {
-      return el === '_value'
-    })
-
-    x = x[vIdx + 1]
+    console.warn('Timeseries not is discontinued in this version.')
   }
 
   const cast = TYPE_CASTS[fs.type]
@@ -895,17 +891,14 @@ export const executeGetOperation = async (
     )
   } else if (op.type === 'find') {
     if (op.isTimeseries) {
-      return timeseries(client, op, lang, ctx)
-    } else {
-      return find(client, op, lang, ctx, schema)
+      console.warn('Timeseries not is discontinued in this version.')
     }
+    return find(client, op, lang, ctx, schema)
   } else if (op.type === 'aggregate') {
     if (op.isTimeseries) {
-      // add this later...
-      return timeseries(client, op, lang, ctx)
-    } else {
-      return aggregate(client, op, lang, ctx, schema)
+      console.warn('Timeseries not is discontinued in this version.')
     }
+    return aggregate(client, op, lang, ctx, schema)
   } else if (op.type === 'inherit') {
     return inherit(client, op, lang, ctx, schema)
   } else if (op.type === 'raw') {
