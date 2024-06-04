@@ -248,10 +248,10 @@
   resolved "https://registry.npmjs.org/@saulx/prettier-config/-/prettier-config-1.0.0.tgz"
   integrity "sha1-pu8WF4lTSD1VcJ7LHjQU+jUlnDg= sha512-UtITV+SUiK6gaNsUdQKHJbffHiNsh1dt+IxZSiUqFcgbq16iWAYWPfty/pchNzYwMgXmjsuIN98++WE4DWdQ/g=="
 
-"@saulx/selva@21.2.3":
-  version "21.2.3"
-  resolved "https://registry.yarnpkg.com/@saulx/selva/-/selva-21.2.3.tgz#6cd74b7424d06aec6ea586c6608ea4f173b328c3"
-  integrity sha512-P7WIbwbhzP91W2vQz49cKspT2UIuyD/yX9RkNxXL57Iz1VcOY55cYsCqPEVMd7EuZRwB/mPvxNRMzCU/KsXjAA==
+"@saulx/selva@21.3.0.1":
+  version "21.3.0"
+  resolved "https://registry.yarnpkg.com/@saulx/selva/-/selva-21.3.0.tgz#032dd3c921e9ff72b28609a46c0c018f9a3eacc9"
+  integrity sha512-ld4t2nrpbebJIUF304msxpn5OnaXAc+TelP9AhG0vGRSzOPAS/eDiUZWPW9HUDEkB9PXzfg2w/Rz3aDKsn12VQ==
   dependencies:
     "@saulx/diff" "^1.1.3"
     "@saulx/redis-client" "^1.0.0"

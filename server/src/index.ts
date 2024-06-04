@@ -1,8 +1,5 @@
-import { Client as PgClient } from 'pg'
 import { Options, ServerOptions } from './types'
 import { SelvaServer, startServer } from './server'
-import PostgresManager from './server/postgresManager'
-import { startTimeseriesWorker } from './server/timeseriesWorker'
 import getPort from 'get-port'
 import chalk from 'chalk'
 import os from 'os'
@@ -10,13 +7,8 @@ import { join } from 'path'
 import fs from 'fs'
 import { TextServer } from './server/text'
 import mkdirp from 'mkdirp'
-import updateRegistry from './server/updateRegistry'
-import updateTimeseriesRegistry from './server/updateTimeseriesRegistry'
-import { connect, ServerDescriptor } from '@saulx/selva'
 
 export * as s3Backups from './backup-plugins/s3'
-
-export { startTimeseriesWorker }
 
 const resolveOpts = async (opts: Options): Promise<ServerOptions> => {
   let parsedOpts: ServerOptions
@@ -222,94 +214,6 @@ export async function startTimeseriesRegistry(opts: Options) {
   return startServer('timeseriesRegistry', parsedOpts)
 }
 
-export async function startTimeseries(opts: Options) {
-  const parsedOpts = await resolveOpts(opts)
-
-  // TODO
-  const password = 'baratta'
-  const host = '127.0.0.1'
-
-  const db = new PostgresManager({
-    port: parsedOpts.port,
-    password,
-    name: `main`,
-  })
-  db.start()
-
-  // client ready check
-  let ctr = 0
-  while (ctr < 1000) {
-    ++ctr
-    try {
-      const client = new PgClient({
-        connectionString: `postgres://postgres:${password}@${host}:${parsedOpts.port}`,
-      })
-      await client.connect()
-      await client.query(`select 1`, [])
-      client.end()
-      break
-    } catch (e) {
-      // nop
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-  }
-
-  const selvaClient = connect(parsedOpts.registry)
-
-  const tsServer = {
-    isDestroyed: false,
-    pm: db,
-    selvaClient,
-  }
-
-  const info: ServerDescriptor = {
-    type: 'timeseries',
-    port: parsedOpts.port,
-    host: parsedOpts.host,
-  }
-
-  db.on('stats', (rawStats) => {
-    if (rawStats.runtimeInfo) {
-      const stats = {
-        cpu: rawStats.runtimeInfo.cpu,
-        timestamp: rawStats.runtimeInfo.timestamp,
-      }
-
-      updateRegistry(
-        tsServer,
-        Object.assign(
-          {
-            stats,
-          },
-          info
-        )
-      )
-    }
-
-    if (rawStats.pgInfo) {
-      const stats = {
-        cpu: rawStats.runtimeInfo.cpu,
-        memory: rawStats.runtimeInfo.cpu,
-        timestamp: rawStats.runtimeInfo.timestamp,
-        tableMeta: rawStats.pgInfo,
-      }
-
-      updateTimeseriesRegistry(
-        tsServer,
-        Object.assign(
-          {
-            stats,
-          },
-          info
-        )
-      )
-    }
-  })
-
-  return db
-}
-
-// TODO: extract timeseries stuff out, we don't really need it for 99.99% of tests
 export async function start(opts: Options) {
   const parsedOpts = await resolveOpts(opts)
 
@@ -342,39 +246,6 @@ export async function start(opts: Options) {
     },
   })
 
-  // const tsRegistry = await startTimeseriesRegistry({
-  //   registry: {
-  //     port: parsedOpts.port,
-  //     host: parsedOpts.host,
-  //   },
-  // })
-
-  // const timeseriesPostgres = await startTimeseries({
-  //   registry: {
-  //     port: parsedOpts.port,
-  //     host: parsedOpts.host,
-  //   },
-  //   // TODO: make port configurable
-  //   port: 5436,
-  // })
-
-  // const timeseries = await startTimeseriesQueue({
-  //   registry,
-  //   // @ts-ignore
-  //   dir: opts.dir,
-  //   pipeRedisLogs: parsedOpts.pipeRedisLogs || {
-  //     stdout: true,
-  //     stderr: true,
-  //   },
-  // })
-  //
-  // const timeseriesWorker = await startTimeseriesWorker({
-  //   registry: {
-  //     port: parsedOpts.port,
-  //     host: parsedOpts.host,
-  //   },
-  // })
-
   const subs = await startSubscriptionManager({
     registry: {
       port: parsedOpts.port,
@@ -394,104 +265,6 @@ export async function start(opts: Options) {
     await origin.destroy()
     await subs.destroy()
     await subsRegistry.destroy()
-    // await timeseries.destroy()
-    // await tsRegistry.destroy()
-    // timeseriesPostgres.destroy() // not async
-    // await timeseriesWorker.destroy()
-  })
-
-  return registry
-}
-
-export async function startWithTimeseries(opts: Options) {
-  const parsedOpts = await resolveOpts(opts)
-
-  // TODO: for now all in different ports, fix later
-  const err = validate(
-    parsedOpts,
-    [],
-    ['registry', 'backups', 'name', 'default']
-  )
-
-  if (err) {
-    console.error(`Error starting selva server ${chalk.red(err)}`)
-    throw new Error(err)
-  }
-
-  const registry = await startServer('registry', {
-    ...parsedOpts,
-    name: 'registry',
-  })
-
-  const origin = await startOrigin({
-    name: 'default',
-    registry,
-    // @ts-ignore
-    dir: opts.dir,
-    selvaOptions: parsedOpts.selvaOptions,
-    pipeRedisLogs: parsedOpts.pipeRedisLogs || {
-      stdout: true,
-      stderr: true,
-    },
-  })
-
-  const tsRegistry = await startTimeseriesRegistry({
-    registry: {
-      port: parsedOpts.port,
-      host: parsedOpts.host,
-    },
-  })
-
-  const timeseriesPostgres = await startTimeseries({
-    registry: {
-      port: parsedOpts.port,
-      host: parsedOpts.host,
-    },
-    // TODO: make port configurable
-    port: 5436,
-  })
-
-  const timeseries = await startTimeseriesQueue({
-    registry,
-    // @ts-ignore
-    dir: opts.dir,
-    pipeRedisLogs: parsedOpts.pipeRedisLogs || {
-      stdout: true,
-      stderr: true,
-    },
-  })
-
-  const timeseriesWorker = await startTimeseriesWorker({
-    registry: {
-      port: parsedOpts.port,
-      host: parsedOpts.host,
-    },
-  })
-
-  const subs = await startSubscriptionManager({
-    registry: {
-      port: parsedOpts.port,
-      host: parsedOpts.host,
-    },
-  })
-
-  const subsRegistry = await startSubscriptionRegistry({
-    registry: {
-      port: parsedOpts.port,
-      host: parsedOpts.host,
-    },
-  })
-
-  registry.on('close', async () => {
-    // TODO: Remove comment
-    // console.log('Close all servers does it work ?')
-    await origin.destroy()
-    await subs.destroy()
-    await subsRegistry.destroy()
-    await timeseries.destroy()
-    await tsRegistry.destroy()
-    timeseriesPostgres.destroy() // not async
-    await timeseriesWorker.destroy()
   })
 
   return registry
