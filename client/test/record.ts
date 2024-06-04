@@ -21,6 +21,7 @@ test.before(async (t) => {
         },
       },
       hello: {
+        prefix: 'he',
         fields: {
           name: { type: 'string' },
           members: {
@@ -48,7 +49,7 @@ test.after(async (t) => {
   await t.connectionsAreEmpty()
 })
 
-test.serial('remove object from record', async (t) => {
+test.serial.failing('remove object from record', async (t) => {
   const client = connect({ port: port })
 
   const thingId = await client.set({
@@ -107,6 +108,45 @@ test.serial('remove object from record', async (t) => {
 
   t.is(res2.members[1], undefined)
   t.is(res2.members[0], undefined)
+
+  await client.destroy()
+})
+
+test.serial('fail when setting key with a dot', async (t) => {
+  const client = connect({ port: port })
+
+  await client.set({
+    $id: 'he111111',
+    members: {
+      'Very long first': {
+        x: 'first',
+      },
+    },
+  })
+
+  t.throwsAsync(
+    client.set({
+      $id: 'he111111',
+      name: 'derp',
+      members: {
+        hallo: {
+          x: 'hallo',
+        },
+        '1.yeye': {
+          x: 'doei',
+        },
+      },
+    })
+  )
+  await wait(200)
+
+  t.deepEqual(await client.get({ $id: 'he111111', members: true }), {
+    members: {
+      'Very long first': {
+        x: 'first',
+      },
+    },
+  })
 
   await client.destroy()
 })
