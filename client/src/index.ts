@@ -23,7 +23,6 @@ import { updateSchema } from './schema/updateSchema'
 import { getSchema } from './schema/getSchema'
 import conformToSchema from './schema/conformToSchema'
 import initializeSchema from './schema/initializeSchema'
-import { TimeseriesClient } from './timeseries'
 import { GetOptions, ObserveEventOptions, GetResult, get } from './get'
 import { SetOptions, set, setWithMeta } from './set'
 import { IdOptions } from 'lua/src/id'
@@ -49,7 +48,6 @@ let clientId = 0
 
 export class SelvaClient extends EventEmitter {
   public redis: Redis
-  public pg: TimeseriesClient
 
   public selvaId: string
 
@@ -143,7 +141,6 @@ export class SelvaClient extends EventEmitter {
     this.selvaId = ++clientId + ''
     this.redis = new Redis(this)
     connectRegistry(this, opts)
-    this.pg = new TimeseriesClient(this)
   }
 
   connect(opts: ConnectOptions) {
