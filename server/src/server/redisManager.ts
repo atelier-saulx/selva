@@ -29,7 +29,7 @@ export default class RedisManager extends ProcessManager {
   ) {
     const { host, port, selvaClient, type, name } = opts
 
-    const platform = process.platform === 'linux' ? 'linux_x64' : 'darwin_x64'
+    const platform = process.platform + '_' + process.arch
     const command = `${__dirname}/../../modules/binaries/${platform}/redis-server-selva`
     super(command, {
       args,
@@ -38,16 +38,16 @@ export default class RedisManager extends ProcessManager {
           ? {
               REDIS_PORT: port.toString(),
               SERVER_TYPE: type,
-              LD_LIBRARY_PATH: `${__dirname}/../../modules/binaries/linux_x64:/usr/local/lib`,
+              LD_LIBRARY_PATH: `${__dirname}/../../modules/binaries/${platform}:/usr/local/lib`,
               LOCPATH: pathResolve(
                 __dirname,
-                '../../modules/binaries/linux_x64/locale'
+                `../../modules/binaries/${platform}/locale`
               ), // MacOS libSystem will ignore this
             }
           : {
               REDIS_PORT: port.toString(),
               SERVER_TYPE: type ,
-              DYLD_FALLBACK_LIBRARY_PATH: `${__dirname}/../../modules/binaries/darwin_x64`,
+              DYLD_FALLBACK_LIBRARY_PATH: `${__dirname}/../../modules/binaries/${platform}`,
             },
     })
 
